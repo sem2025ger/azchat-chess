@@ -247,25 +247,14 @@ export default function ChessBoard({
 
 function PieceImage({
   piece,
-  theme
+
 }: {
   piece: { type: string; color: string };
   theme: PieceTheme;
 }) {
-  const styleMap: Record<string, { whiteText: string; blackText: string }> = {
-    classic: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
-    neo: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
-    alpha: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
-    merida: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
-    dubrovny: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
-    governor: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
-    caliente: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
-    'pieces-wood': { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
-    glass: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
-    cases: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' }
-  };
 
-  const _style = styleMap[String(theme)] || styleMap.classic;
+
+
 
   const unicodePieces: Record<string, string> = {
     wK: '♔',
