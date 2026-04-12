@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useThemeContext, type BoardTheme, type PieceTheme } from '../context/ThemeContext';
@@ -16,12 +16,12 @@ export default function ChessBoard({
   orientation = 'w',
   pieceTheme
 }: {
-  className?: string,
-  showCoordinates?: boolean,
-  game?: Chess,
-  onMove?: (source: string, target: string, promotion?: string) => boolean,
-  orientation?: 'w' | 'b',
-  pieceTheme?: PieceTheme
+  className?: string;
+  showCoordinates?: boolean;
+  game?: Chess;
+  onMove?: (source: string, target: string, promotion?: string) => boolean;
+  orientation?: 'w' | 'b';
+  pieceTheme?: PieceTheme;
 }) {
   const { board, pieces: globalPieces, specialThemesEnabled } = useThemeContext();
   const pieces = pieceTheme || globalPieces;
@@ -32,7 +32,7 @@ export default function ChessBoard({
 
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
-  const [lastMove, setLastMove] = useState<{ from: string, to: string } | null>(null);
+  const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
 
   useEffect(() => {
     const history = activeGame.history({ verbose: true }) as Move[];
@@ -44,33 +44,34 @@ export default function ChessBoard({
     }
   }, [activeGame, activeGame.fen(), trigger]);
 
-  const boardThemeClasses: Record<BoardTheme, { light: string, dark: string }> = {
-    'Green': { light: 'bg-[#ebecd0]', dark: 'bg-[#779556]' },
-    'Wood': { light: 'bg-[#debc8d]', dark: 'bg-[#8b4a1c]' },
-    'Glass': { light: 'bg-white/20 backdrop-blur-sm', dark: 'bg-black/30 backdrop-blur-md' },
-    'Brown': { light: 'bg-[#f0d9b5]', dark: 'bg-[#b58863]' },
+  const boardThemeClasses: Record<BoardTheme, { light: string; dark: string }> = {
+    Green: { light: 'bg-[#ebecd0]', dark: 'bg-[#779556]' },
+    Wood: { light: 'bg-[#debc8d]', dark: 'bg-[#8b4a1c]' },
+    Glass: { light: 'bg-white/20 backdrop-blur-sm', dark: 'bg-black/30 backdrop-blur-md' },
+    Brown: { light: 'bg-[#f0d9b5]', dark: 'bg-[#b58863]' },
     'Ice Sea': { light: 'bg-[#dee3e6]', dark: 'bg-[#8ca2ad]' },
-    'Newspaper': { light: 'bg-[#ffffff]', dark: 'bg-[#d1d1d1]' },
-    'Walnut': { light: 'bg-[#e3c16f]', dark: 'bg-[#b88b4a]' },
-    'Sky': { light: 'bg-[#8ebad9]', dark: 'bg-[#4b7399]' },
-    'Lolz': { light: 'bg-[#ffffcf]', dark: 'bg-[#ffcf62]' },
-    'Stone': { light: 'bg-[#e0e0e0]', dark: 'bg-[#a0a0a0]' },
+    Newspaper: { light: 'bg-[#ffffff]', dark: 'bg-[#d1d1d1]' },
+    Walnut: { light: 'bg-[#e3c16f]', dark: 'bg-[#b88b4a]' },
+    Sky: { light: 'bg-[#8ebad9]', dark: 'bg-[#4b7399]' },
+    Lolz: { light: 'bg-[#ffffcf]', dark: 'bg-[#ffcf62]' },
+    Stone: { light: 'bg-[#e0e0e0]', dark: 'bg-[#a0a0a0]' },
     'Warm Gold': { light: 'bg-[#f0d192]', dark: 'bg-[#a67c37]' },
     'Muted Gold': { light: 'bg-[#d9c5a0]', dark: 'bg-[#7d6b41]' },
     'Obsidian Gold': { light: 'bg-[#c4a671]', dark: 'bg-[#1a1a1a]' },
     'Charcoal Gold': { light: 'bg-[#b09b7c]', dark: 'bg-[#2b2b2b]' },
-    'Champagne': { light: 'bg-[#f2e1c2]', dark: 'bg-[#c5ad85]' },
-    'Luxury Beige': { light: 'bg-[#e5d5b3]', dark: 'bg-[#a68d60]' },
+    Champagne: { light: 'bg-[#f2e1c2]', dark: 'bg-[#c5ad85]' },
+    'Luxury Beige': { light: 'bg-[#e5d5b3]', dark: 'bg-[#a68d60]' }
   };
 
   const activeBoardTheme = specialThemesEnabled
-    ? (boardThemeClasses[board] || boardThemeClasses['Green'])
-    : boardThemeClasses['Green'];
+    ? boardThemeClasses[board] || boardThemeClasses.Green
+    : boardThemeClasses.Green;
 
   const ranks = orientation === 'w' ? [8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8];
-  const files = orientation === 'w'
-    ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-    : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
+  const files =
+    orientation === 'w'
+      ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+      : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
 
   const handleMove = (source: string, target: string) => {
     const moveObj = { from: source, to: target, promotion: 'q' };
@@ -251,35 +252,20 @@ function PieceImage({
   piece: { type: string; color: string };
   theme: PieceTheme;
 }) {
-  const styleMap: Record<string, string> = {
-    classic: 'cburnett',
-    neo: 'neo',
-    alpha: 'alpha',
-    merida: 'merida',
-    dubrovny: 'dubrovny',
-    governor: 'governor',
-    caliente: 'caliente',
-    'pieces-wood': 'wood',
-    glass: 'glass',
-    cases: 'cases'
+  const styleMap: Record<string, { whiteText: string; blackText: string }> = {
+    classic: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
+    neo: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
+    alpha: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
+    merida: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
+    dubrovny: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
+    governor: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
+    caliente: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
+    'pieces-wood': { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
+    glass: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' },
+    cases: { whiteText: '♔♕♖♗♘♙', blackText: '♚♛♜♝♞♟' }
   };
 
-  const style = styleMap[String(theme)] || 'cburnett';
-  const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
-
-  const sources = useMemo(() => {
-    return [
-      `https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/${style}/${pieceCode}.svg`,
-      `https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/${pieceCode}.svg`,
-      `https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/wikipedia/${pieceCode}.svg`,
-    ];
-  }, [style, pieceCode]);
-
-  const [srcIndex, setSrcIndex] = useState(0);
-
-  useEffect(() => {
-    setSrcIndex(0);
-  }, [style, pieceCode]);
+  const _style = styleMap[String(theme)] || styleMap.classic;
 
   const unicodePieces: Record<string, string> = {
     wK: '♔',
@@ -293,38 +279,31 @@ function PieceImage({
     bR: '♜',
     bB: '♝',
     bN: '♞',
-    bP: '♟',
+    bP: '♟'
   };
 
-  const currentSrc = sources[srcIndex];
-  const allFailed = srcIndex >= sources.length;
-
-  if (allFailed) {
-    return (
-      <div className="w-full h-full flex items-center justify-center pointer-events-none select-none">
-        <span
-          className={cx(
-            'leading-none select-none',
-            'text-[2.2rem] md:text-[3rem] drop-shadow-[0px_3px_6px_rgba(0,0,0,0.45)]',
-            piece.color === 'w' ? 'text-white' : 'text-neutral-900'
-          )}
-        >
-          {unicodePieces[pieceCode] || ''}
-        </span>
-      </div>
-    );
-  }
+  const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
+  const symbol = unicodePieces[pieceCode] || '';
 
   return (
-    <div className="w-full h-full p-[2px] pointer-events-none select-none flex items-center justify-center">
-      <img
-        key={`${pieceCode}-${style}-${srcIndex}`}
-        src={currentSrc}
-        draggable={false}
-        alt=""
-        className="w-full h-full object-contain drop-shadow-[0px_3px_6px_rgba(0,0,0,0.5)]"
-        onError={() => setSrcIndex((prev) => prev + 1)}
-      />
+    <div className="w-full h-full flex items-center justify-center pointer-events-none select-none">
+      <span
+        className={cx(
+          'leading-none select-none',
+          'text-[2rem] sm:text-[2.4rem] md:text-[2.8rem] lg:text-[3.2rem]',
+          'drop-shadow-[0px_3px_6px_rgba(0,0,0,0.55)]',
+          piece.color === 'w'
+            ? 'text-[#f8f8f8] [text-shadow:0_1px_0_rgba(255,255,255,0.35),0_3px_6px_rgba(0,0,0,0.45)]'
+            : 'text-[#111111] [text-shadow:0_1px_0_rgba(255,255,255,0.08),0_3px_6px_rgba(0,0,0,0.5)]'
+        )}
+        style={{
+          fontFamily: '"Times New Roman", "Noto Sans Symbols", "Segoe UI Symbol", serif',
+          fontWeight: 700,
+          lineHeight: 1
+        }}
+      >
+        {symbol}
+      </span>
     </div>
   );
 }
