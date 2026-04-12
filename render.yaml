@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: hubbychat-server
+    env: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: CLIENT_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
