@@ -35,7 +35,7 @@ export default function HomeScreen() {
         <div className="hidden lg:flex flex-col items-center xl:items-end w-full xl:w-[48%] max-w-[500px] shrink-0 relative perspective-1000 mt-[5vh] xl:mt-0">
           <div className="relative w-full aspect-square rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 rotate-y-[12deg] rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
-            <ChessBoard />
+            <ChessBoard pieceTheme="classic" />
           </div>
           <div className="mt-5 bg-black/60 backdrop-blur-xl border border-white/10 px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce-slow ring-1 ring-white/5 z-20 self-center xl:self-end xl:-mr-6">
             <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center shrink-0">

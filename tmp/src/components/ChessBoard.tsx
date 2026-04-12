@@ -13,15 +13,18 @@ export default function ChessBoard({
   showCoordinates = true,
   game,
   onMove,
-  orientation = 'w'
+  orientation = 'w',
+  pieceTheme
 }: { 
   className?: string, 
   showCoordinates?: boolean,
   game?: Chess,
   onMove?: (source: string, target: string, promotion?: string) => boolean,
-  orientation?: 'w' | 'b'
+  orientation?: 'w' | 'b',
+  pieceTheme?: PieceTheme
 }) {
-  const { board, pieces, specialThemesEnabled } = useThemeContext();
+  const { board, pieces: globalPieces, specialThemesEnabled } = useThemeContext();
+  const pieces = pieceTheme || globalPieces;
   const [localGame, setLocalGame] = useState(new Chess());
   
   const activeGame = game || localGame;
@@ -223,6 +226,8 @@ export default function ChessBoard({
 
 function PieceImage({ piece, theme }: { piece: { type: string, color: string }, theme: PieceTheme }) {
   let style = theme || 'classic';
+  // If the user selects 'classic', we use 'cburnett' by default as it's the most premium looking standard set.
+  // However, for the homepage, we allow any theme that's passed in.
   if (style === 'classic') style = 'cburnett' as PieceTheme;
   const url = `https://lichess1.org/assets/piece/${style}/${piece.color}${piece.type.toUpperCase()}.svg`;
   
