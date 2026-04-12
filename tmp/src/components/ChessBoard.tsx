@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useThemeContext, type BoardTheme, type PieceTheme } from '../context/ThemeContext';
@@ -28,13 +28,12 @@ export default function ChessBoard({
   const [localGame, setLocalGame] = useState(new Chess());
 
   const activeGame = game || localGame;
-  const [trigger, setTrigger] = useState(0); // Force re-render on local moves
+  const [trigger, setTrigger] = useState(0);
 
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
   const [lastMove, setLastMove] = useState<{ from: string, to: string } | null>(null);
 
-  // Sync last move highlight
   useEffect(() => {
     const history = activeGame.history({ verbose: true }) as Move[];
     if (history.length > 0) {
@@ -45,7 +44,6 @@ export default function ChessBoard({
     }
   }, [activeGame, activeGame.fen(), trigger]);
 
-  // Premium Board Color Palettes
   const boardThemeClasses: Record<BoardTheme, { light: string, dark: string }> = {
     'Green': { light: 'bg-[#ebecd0]', dark: 'bg-[#779556]' },
     'Wood': { light: 'bg-[#debc8d]', dark: 'bg-[#8b4a1c]' },
@@ -65,13 +63,17 @@ export default function ChessBoard({
     'Luxury Beige': { light: 'bg-[#e5d5b3]', dark: 'bg-[#a68d60]' },
   };
 
-  const activeBoardTheme = specialThemesEnabled ? (boardThemeClasses[board] || boardThemeClasses['Green']) : boardThemeClasses['Green'];
+  const activeBoardTheme = specialThemesEnabled
+    ? (boardThemeClasses[board] || boardThemeClasses['Green'])
+    : boardThemeClasses['Green'];
 
   const ranks = orientation === 'w' ? [8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8];
-  const files = orientation === 'w' ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
+  const files = orientation === 'w'
+    ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+    : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
 
   const handleMove = (source: string, target: string) => {
-    let moveObj = { from: source, to: target, promotion: 'q' }; // auto promote to queen for now
+    const moveObj = { from: source, to: target, promotion: 'q' };
 
     if (onMove) {
       if (onMove(source, target, 'q')) {
@@ -83,13 +85,13 @@ export default function ChessBoard({
       try {
         const move = activeGame.move(moveObj);
         if (move) {
-          setLocalGame(new Chess(activeGame.fen())); // copy to trigger re-render
-          setTrigger(t => t + 1);
+          setLocalGame(new Chess(activeGame.fen()));
+          setTrigger((t) => t + 1);
           setSelectedSquare(null);
           setLegalMoves([]);
           return true;
         }
-      } catch (e) {
+      } catch {
         return false;
       }
     }
@@ -113,13 +115,13 @@ export default function ChessBoard({
       if (piece && piece.color === activeGame.turn()) {
         setSelectedSquare(square);
         const moves = activeGame.moves({ square: square as Square, verbose: true }) as Move[];
-        setLegalMoves(moves.map(m => m.to));
+        setLegalMoves(moves.map((m) => m.to));
       } else {
         setSelectedSquare(null);
         setLegalMoves([]);
       }
-    } catch (e) {
-      // handles invalid engine state nicely
+    } catch {
+      // ignore invalid state
     }
   };
 
@@ -145,33 +147,38 @@ export default function ChessBoard({
   };
 
   return (
-    <div className={cx(
-      "w-full rounded-lg relative overflow-hidden transition-all duration-500",
-      "p-2 md:p-3 bg-[#262421] border-[6px] border-[#312e2b] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.4)]",
-      className
-    )}>
-      {/* Wood Grain Texture Overlay for the frame */}
+    <div
+      className={cx(
+        'w-full rounded-lg relative overflow-hidden transition-all duration-500',
+        'p-2 md:p-3 bg-[#262421] border-[6px] border-[#312e2b] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.4)]',
+        className
+      )}
+    >
       <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
 
       <div className="aspect-square w-full rounded-sm overflow-hidden relative shadow-2xl border border-black/40">
-        {/* Board Tiles */}
         <div className="grid grid-cols-8 grid-rows-8 w-full h-full relative z-0">
-          {ranks.map((rank, rIndex) => (
+          {ranks.map((rank, rIndex) =>
             files.map((file, fIndex) => {
               const squareRef = `${file}${rank}`;
-              const isDark = (orientation === 'w') ? (rIndex + fIndex) % 2 !== 0 : (rIndex + fIndex) % 2 === 0;
-              const tileBg = isDark ? activeBoardTheme.dark : activeBoardTheme.light;
+              const isDark =
+                orientation === 'w'
+                  ? (rIndex + fIndex) % 2 !== 0
+                  : (rIndex + fIndex) % 2 === 0;
 
+              const tileBg = isDark ? activeBoardTheme.dark : activeBoardTheme.light;
               const isSelected = selectedSquare === squareRef;
               const isLastMove = lastMove?.from === squareRef || lastMove?.to === squareRef;
               const isLegalMove = legalMoves.includes(squareRef);
-
               const piece = activeGame.get(squareRef as Square);
 
               return (
                 <div
                   key={squareRef}
-                  className={cx("w-full h-full relative group transition-colors duration-150 flex items-center justify-center", tileBg)}
+                  className={cx(
+                    'w-full h-full relative group transition-colors duration-150 flex items-center justify-center',
+                    tileBg
+                  )}
                   onClick={() => onSquareClick(squareRef)}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, squareRef)}
@@ -179,9 +186,10 @@ export default function ChessBoard({
                   <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
 
                   {isLastMove && <div className="absolute inset-0 bg-yellow-400/30 pointer-events-none" />}
-                  {isSelected && <div className="absolute inset-0 bg-white/20 border-2 border-white/50 pointer-events-none" />}
+                  {isSelected && (
+                    <div className="absolute inset-0 bg-white/20 border-2 border-white/50 pointer-events-none" />
+                  )}
 
-                  {/* Legal Move Dot */}
                   {isLegalMove && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
                       {piece ? (
@@ -193,12 +201,23 @@ export default function ChessBoard({
                   )}
 
                   {showCoordinates && fIndex === 0 && (
-                    <span className={cx("absolute top-0.5 left-1 text-[0.55rem] md:text-[0.7rem] font-bold select-none z-10 pointer-events-none", isDark ? "text-white/50" : "text-black/40")}>
+                    <span
+                      className={cx(
+                        'absolute top-0.5 left-1 text-[0.55rem] md:text-[0.7rem] font-bold select-none z-10 pointer-events-none',
+                        isDark ? 'text-white/50' : 'text-black/40'
+                      )}
+                    >
                       {rank}
                     </span>
                   )}
+
                   {showCoordinates && rIndex === 7 && (
-                    <span className={cx("absolute bottom-0.5 right-1 text-[0.55rem] md:text-[0.7rem] font-bold select-none z-10 pointer-events-none", isDark ? "text-white/50" : "text-black/40")}>
+                    <span
+                      className={cx(
+                        'absolute bottom-0.5 right-1 text-[0.55rem] md:text-[0.7rem] font-bold select-none z-10 pointer-events-none',
+                        isDark ? 'text-white/50' : 'text-black/40'
+                      )}
+                    >
                       {file}
                     </span>
                   )}
@@ -207,8 +226,9 @@ export default function ChessBoard({
                     <div
                       draggable
                       onDragStart={(e) => handleDragStart(e, squareRef)}
-                      className={cx("absolute inset-0 z-30 cursor-grab active:cursor-grabbing hover:scale-[1.05] transition-transform duration-150",
-                        isSelected ? "scale-[1.1]" : ""
+                      className={cx(
+                        'absolute inset-0 z-30 cursor-grab active:cursor-grabbing hover:scale-[1.05] transition-transform duration-150',
+                        isSelected ? 'scale-[1.1]' : ''
                       )}
                     >
                       <PieceImage piece={piece} theme={pieces} />
@@ -217,48 +237,93 @@ export default function ChessBoard({
                 </div>
               );
             })
-          ))}
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function PieceImage({ piece, theme }: { piece: { type: string, color: string }, theme: PieceTheme }) {
-  // Map internal theme names to Lichess theme names
+function PieceImage({
+  piece,
+  theme
+}: {
+  piece: { type: string; color: string };
+  theme: PieceTheme;
+}) {
   const styleMap: Record<string, string> = {
-    'classic': 'cburnett', // Most elegant and standard classic set
-    'neo': 'neo',          // Modern premium look
-    'alpha': 'alpha',
-    'merida': 'merida',
-    'dubrovny': 'dubrovny',
-    'governor': 'governor',
-    'caliente': 'caliente',
+    classic: 'cburnett',
+    neo: 'neo',
+    alpha: 'alpha',
+    merida: 'merida',
+    dubrovny: 'dubrovny',
+    governor: 'governor',
+    caliente: 'caliente',
     'pieces-wood': 'wood',
-    'glass': 'glass',
-    'cases': 'cases'
+    glass: 'glass',
+    cases: 'cases'
   };
 
-  const style = styleMap[theme as string] || styleMap['classic'];
+  const style = styleMap[String(theme)] || 'cburnett';
+  const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
 
-  // Use a more stable and direct source for Lichess piece assets
-  // Using the absolute GitHub path ensures reliability if the main CDN is flaky
-  const url = `https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/${style}/${piece.color}${piece.type.toUpperCase()}.svg`;
+  const sources = useMemo(() => {
+    return [
+      `https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/${style}/${pieceCode}.svg`,
+      `https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/cburnett/${pieceCode}.svg`,
+      `https://cdn.jsdelivr.net/gh/lichess-org/lila@master/public/piece/wikipedia/${pieceCode}.svg`,
+    ];
+  }, [style, pieceCode]);
+
+  const [srcIndex, setSrcIndex] = useState(0);
+
+  useEffect(() => {
+    setSrcIndex(0);
+  }, [style, pieceCode]);
+
+  const unicodePieces: Record<string, string> = {
+    wK: '♔',
+    wQ: '♕',
+    wR: '♖',
+    wB: '♗',
+    wN: '♘',
+    wP: '♙',
+    bK: '♚',
+    bQ: '♛',
+    bR: '♜',
+    bB: '♝',
+    bN: '♞',
+    bP: '♟',
+  };
+
+  const currentSrc = sources[srcIndex];
+  const allFailed = srcIndex >= sources.length;
+
+  if (allFailed) {
+    return (
+      <div className="w-full h-full flex items-center justify-center pointer-events-none select-none">
+        <span
+          className={cx(
+            'leading-none select-none',
+            'text-[2.2rem] md:text-[3rem] drop-shadow-[0px_3px_6px_rgba(0,0,0,0.45)]',
+            piece.color === 'w' ? 'text-white' : 'text-neutral-900'
+          )}
+        >
+          {unicodePieces[pieceCode] || ''}
+        </span>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full h-full p-0.5 pointer-events-none select-none">
+    <div className="w-full h-full p-[2px] pointer-events-none select-none flex items-center justify-center">
       <img
-        src={url}
+        key={`${pieceCode}-${style}-${srcIndex}`}
+        src={currentSrc}
         draggable={false}
-        alt={`${piece.color}${piece.type}`}
-        className="w-full h-full object-contain filter drop-shadow-[0px_4px_6px_rgba(0,0,0,0.6)]"
-        onError={(e) => {
-          // Robust fallback: if themed piece fails, try the standard set
-          const target = e.target as HTMLImageElement;
-          if (!target.src.includes('wikipedia')) {
-            target.src = `https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/wikipedia/${piece.color}${piece.type.toUpperCase()}.svg`;
-          }
-        }}
+        alt=""
+        className="w-full h-full object-contain drop-shadow-[0px_3px_6px_rgba(0,0,0,0.5)]"
+        onError={() => setSrcIndex((prev) => prev + 1)}
       />
     </div>
   );
