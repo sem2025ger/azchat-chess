@@ -8,15 +8,15 @@ function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
 
-export default function ChessBoard({ 
-  className, 
+export default function ChessBoard({
+  className,
   showCoordinates = true,
   game,
   onMove,
   orientation = 'w',
   pieceTheme
-}: { 
-  className?: string, 
+}: {
+  className?: string,
   showCoordinates?: boolean,
   game?: Chess,
   onMove?: (source: string, target: string, promotion?: string) => boolean,
@@ -26,13 +26,13 @@ export default function ChessBoard({
   const { board, pieces: globalPieces, specialThemesEnabled } = useThemeContext();
   const pieces = pieceTheme || globalPieces;
   const [localGame, setLocalGame] = useState(new Chess());
-  
+
   const activeGame = game || localGame;
   const [trigger, setTrigger] = useState(0); // Force re-render on local moves
 
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
-  const [lastMove, setLastMove] = useState<{from: string, to: string} | null>(null);
+  const [lastMove, setLastMove] = useState<{ from: string, to: string } | null>(null);
 
   // Sync last move highlight
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function ChessBoard({
 
   const handleMove = (source: string, target: string) => {
     let moveObj = { from: source, to: target, promotion: 'q' }; // auto promote to queen for now
-    
+
     if (onMove) {
       if (onMove(source, target, 'q')) {
         setSelectedSquare(null);
@@ -118,7 +118,7 @@ export default function ChessBoard({
         setSelectedSquare(null);
         setLegalMoves([]);
       }
-    } catch(e) {
+    } catch (e) {
       // handles invalid engine state nicely
     }
   };
@@ -161,26 +161,26 @@ export default function ChessBoard({
               const squareRef = `${file}${rank}`;
               const isDark = (orientation === 'w') ? (rIndex + fIndex) % 2 !== 0 : (rIndex + fIndex) % 2 === 0;
               const tileBg = isDark ? activeBoardTheme.dark : activeBoardTheme.light;
-              
+
               const isSelected = selectedSquare === squareRef;
               const isLastMove = lastMove?.from === squareRef || lastMove?.to === squareRef;
               const isLegalMove = legalMoves.includes(squareRef);
-              
+
               const piece = activeGame.get(squareRef as Square);
 
               return (
-                <div 
-                  key={squareRef} 
+                <div
+                  key={squareRef}
                   className={cx("w-full h-full relative group transition-colors duration-150 flex items-center justify-center", tileBg)}
                   onClick={() => onSquareClick(squareRef)}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, squareRef)}
                 >
                   <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-                  
+
                   {isLastMove && <div className="absolute inset-0 bg-yellow-400/30 pointer-events-none" />}
                   {isSelected && <div className="absolute inset-0 bg-white/20 border-2 border-white/50 pointer-events-none" />}
-                  
+
                   {/* Legal Move Dot */}
                   {isLegalMove && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
@@ -202,12 +202,12 @@ export default function ChessBoard({
                       {file}
                     </span>
                   )}
-                  
+
                   {piece && (
-                    <div 
+                    <div
                       draggable
                       onDragStart={(e) => handleDragStart(e, squareRef)}
-                      className={cx("absolute inset-0 z-30 cursor-grab active:cursor-grabbing hover:scale-[1.05] transition-transform duration-150", 
+                      className={cx("absolute inset-0 z-30 cursor-grab active:cursor-grabbing hover:scale-[1.05] transition-transform duration-150",
                         isSelected ? "scale-[1.1]" : ""
                       )}
                     >
@@ -225,18 +225,41 @@ export default function ChessBoard({
 }
 
 function PieceImage({ piece, theme }: { piece: { type: string, color: string }, theme: PieceTheme }) {
-  let style = theme || 'classic';
-  // If the user selects 'classic', we use 'cburnett' by default as it's the most premium looking standard set.
-  // However, for the homepage, we allow any theme that's passed in.
-  if (style === 'classic') style = 'cburnett' as PieceTheme;
-  const url = `https://lichess1.org/assets/piece/${style}/${piece.color}${piece.type.toUpperCase()}.svg`;
-  
+  // Map internal theme names to Lichess theme names
+  const styleMap: Record<string, string> = {
+    'classic': 'cburnett', // Most elegant and standard classic set
+    'neo': 'neo',          // Modern premium look
+    'alpha': 'alpha',
+    'merida': 'merida',
+    'dubrovny': 'dubrovny',
+    'governor': 'governor',
+    'caliente': 'caliente',
+    'pieces-wood': 'wood',
+    'glass': 'glass',
+    'cases': 'cases'
+  };
+
+  const style = styleMap[theme as string] || styleMap['classic'];
+
+  // Use a more stable and direct source for Lichess piece assets
+  // Using the absolute GitHub path ensures reliability if the main CDN is flaky
+  const url = `https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/${style}/${piece.color}${piece.type.toUpperCase()}.svg`;
+
   return (
-    <img 
-      src={url} 
-      draggable={false}
-      alt={`${piece.color}${piece.type}`} 
-      className="w-full h-full object-contain filter drop-shadow-[0px_3px_4px_rgba(0,0,0,0.5)] pointer-events-none select-none"
-    />
+    <div className="w-full h-full p-0.5 pointer-events-none select-none">
+      <img
+        src={url}
+        draggable={false}
+        alt={`${piece.color}${piece.type}`}
+        className="w-full h-full object-contain filter drop-shadow-[0px_4px_6px_rgba(0,0,0,0.6)]"
+        onError={(e) => {
+          // Robust fallback: if themed piece fails, try the standard set
+          const target = e.target as HTMLImageElement;
+          if (!target.src.includes('wikipedia')) {
+            target.src = `https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/wikipedia/${piece.color}${piece.type.toUpperCase()}.svg`;
+          }
+        }}
+      />
+    </div>
   );
 }
