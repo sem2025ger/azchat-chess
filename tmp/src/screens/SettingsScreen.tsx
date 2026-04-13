@@ -11,8 +11,8 @@ function cx(...inputs: (string | undefined | null | false)[]) {
 
 export default function SettingsScreen() {
   const {
-    board: boardTheme, setBoard: setBoardTheme,
-    pieces: pieceStyle, setPieces: setPieceStyle,
+    boardTheme, setBoardTheme,
+    pieceTheme, setPieceTheme,
     sound: soundTheme, setSound: setSoundTheme
   } = useThemeContext();
   const { language, setLanguage, t } = useLanguage();
@@ -86,11 +86,11 @@ export default function SettingsScreen() {
                 onClick={() => {
                   const b = boardThemes.find(bt => bt.name === p.board)?.id;
                   if (b) setBoardTheme(b as any);
-                  setPieceStyle(p.pieces as any);
+                  setPieceTheme(p.pieces as any);
                 }}
                 className={cx(
                   "px-4 py-3 rounded-2xl bg-white/5 border border-white/10 hover:border-chess-gold/40 hover:bg-white/10 transition-all text-left group shadow-xl",
-                  boardTheme.toLowerCase() === p.board.toLowerCase() && pieceStyle === p.pieces ? "border-chess-gold bg-chess-gold/5" : ""
+                  boardTheme === p.board && pieceTheme === p.pieces ? "border-chess-gold bg-chess-gold/5" : ""
                 )}
               >
                 <div className="text-[0.6rem] font-black text-neutral-500 uppercase tracking-widest group-hover:text-chess-gold transition-colors">{p.name}</div>
@@ -141,10 +141,10 @@ export default function SettingsScreen() {
               {pieceStyles.map((style) => (
                 <button
                   key={style.id}
-                  onClick={() => setPieceStyle(style.id as any)}
+                  onClick={() => setPieceTheme(style.id as any)}
                   className={cx(
                     "flex flex-col items-center gap-2 p-2 rounded-[1.5rem] border transition-all duration-500 group/piece relative overflow-hidden shadow-xl active:scale-95",
-                    pieceStyle === style.id
+                    pieceTheme === style.id
                       ? "bg-chess-active/10 border-chess-active/40 ring-2 ring-chess-active/20"
                       : "bg-black/20 border-white/5 hover:border-white/20 hover:bg-black/40"
                   )}
@@ -152,7 +152,7 @@ export default function SettingsScreen() {
                   <div className="w-12 h-12 flex items-center justify-center p-1 bg-white/5 rounded-xl border border-white/5 shadow-inner group-hover/piece:scale-110 transition-transform">
                      <img src={`/pieces/${style.id}/wK.svg`} alt={style.name} className="w-full h-full object-contain" />
                   </div>
-                  <span className={cx("text-[0.5rem] font-black uppercase tracking-widest text-center italic", pieceStyle === style.id ? "text-chess-active" : "text-neutral-500 group-hover/piece:text-neutral-400")}>
+                  <span className={cx("text-[0.5rem] font-black uppercase tracking-widest text-center italic", pieceTheme === style.id ? "text-chess-active" : "text-neutral-500 group-hover/piece:text-neutral-400")}>
                     {style.name}
                   </span>
                 </button>
@@ -240,7 +240,7 @@ export default function SettingsScreen() {
                     <div className="flex justify-between items-center p-4 bg-white/[0.03] rounded-2xl border border-white/5 shadow-inner">
                        <div className="flex flex-col">
                           <span className="text-[0.5rem] font-black text-neutral-600 uppercase tracking-widest italic">{t('settings.pieceSet')}</span>
-                          <span className="text-[0.85rem] font-black text-white mt-0.5 font-mono">{pieceStyle.toUpperCase()} SET</span>
+                          <span className="text-[0.85rem] font-black text-white mt-0.5 font-mono">{pieceTheme.toUpperCase()} SET</span>
                        </div>
                        <Monitor size={18} className="text-neutral-700" />
                     </div>
@@ -249,7 +249,7 @@ export default function SettingsScreen() {
 
               {/* Reset Control */}
               <button 
-                onClick={() => { setBoardTheme('Obsidian Gold'); setPieceStyle('classic'); setLanguage('az'); setSoundTheme('Default'); }}
+                onClick={() => { setBoardTheme('Obsidian Gold'); setPieceTheme('classic'); setLanguage('az'); setSoundTheme('Default'); }}
                 className="mt-6 w-full py-4 rounded-2xl border-2 border-white/5 hover:border-white/10 bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white transition-all text-xs font-black uppercase tracking-[0.4em] italic shadow-2xl active:scale-95"
               >
                 {t('settings.reset')} Studio

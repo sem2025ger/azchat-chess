@@ -21,7 +21,7 @@ export default function ChessBoard({
   onMove?: (source: string, target: string, promotion?: string) => boolean;
   orientation?: 'w' | 'b';
 }) {
-  const { board, pieces, specialThemesEnabled } = useThemeContext();
+  const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
   const [localGame, setLocalGame] = useState(new Chess());
 
   const activeGame = game || localGame;
@@ -65,7 +65,7 @@ export default function ChessBoard({
   };
 
   const activeBoardTheme = specialThemesEnabled
-    ? boardThemeClasses[board] || boardThemeClasses.Green
+    ? boardThemeClasses[boardTheme] || boardThemeClasses.Green
     : boardThemeClasses.Green;
 
   const ranks = orientation === 'w' ? [8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8];
@@ -233,7 +233,7 @@ export default function ChessBoard({
                         isSelected ? 'scale-[1.1]' : ''
                       )}
                     >
-                      <PieceImage piece={piece} theme={pieces} />
+                      <PieceImage piece={piece} theme={pieceTheme} />
                     </div>
                   )}
                 </div>

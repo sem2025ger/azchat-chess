@@ -11,10 +11,10 @@ interface ThemeContextType {
   setSpecialThemesEnabled: (val: boolean) => void;
   background: BackgroundTheme;
   setBackground: (val: BackgroundTheme) => void;
-  pieces: PieceTheme;
-  setPieces: (val: PieceTheme) => void;
-  board: BoardTheme;
-  setBoard: (val: BoardTheme) => void;
+  pieceTheme: PieceTheme;
+  setPieceTheme: (val: PieceTheme) => void;
+  boardTheme: BoardTheme;
+  setBoardTheme: (val: BoardTheme) => void;
   sound: SoundTheme;
   setSound: (val: SoundTheme) => void;
 }
@@ -24,16 +24,16 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [specialThemesEnabled, setSpecialThemesEnabled] = useState(true);
   const [background, setBackground] = useState<BackgroundTheme>('Game Room');
-  const [pieces, setPieces] = useState<PieceTheme>('classic');
-  const [board, setBoard] = useState<BoardTheme>('Obsidian Gold');
+  const [pieceTheme, setPieceTheme] = useState<PieceTheme>('classic');
+  const [boardTheme, setBoardTheme] = useState<BoardTheme>('Obsidian Gold');
   const [sound, setSound] = useState<SoundTheme>('Default');
 
   return (
     <ThemeContext.Provider value={{
       specialThemesEnabled, setSpecialThemesEnabled,
       background, setBackground,
-      pieces, setPieces,
-      board, setBoard,
+      pieceTheme, setPieceTheme,
+      boardTheme, setBoardTheme,
       sound, setSound
     }}>
       {children}
