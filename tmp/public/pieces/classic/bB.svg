@@ -1,7 +1,1 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45">
-  <defs></defs>
-  <g fill="#454545" stroke="#1a1a1a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" >
-    <path d="M 9,36 c 3.39,-0.47 8.5,-1.5 13.5,-1.5 5,0 10.11,1.03 13.5,1.5 1,0.14 1,2 0,2 -3.39,-0.47 -8.5,-1.5 -13.5,-1.5 -5,0 -10.11,1.03 -13.5,1.5 -1,0.14 -1,2 0,2 z M 15,32 c 2.5,2.5 12.5,2.5 15,0 0.5,-1.5 0,-2 0,-2 0,-2.5 -2.5,-4 -2.5,-4 5.5,-1.5 6,-11.5 -5,-15.5 -11,4 -10.5,14 -5,15.5 0,0 -2.5,1.5 -2.5,4 0,0 -0.5,0.5 0,2 z M 25,8 a 2.5,2.5 0 1 1 -5,0 2.5,2.5 0 1 1 5,0 z" />
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45"><g fill="none" fill-rule="evenodd" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g fill="#000" stroke-linecap="butt"><path d="M9 36c3.39-.47 8.5-1.5 13.5-1.5 5 0 10.11 1.03 13.5 1.5 1 .14 1 2 0 2-3.39-.47-8.5-1.5-13.5-1.5-5 0-10.11 1.03-13.5 1.5-1 .14-1 2 0 2zM15 32c2.5 2.5 12.5 2.5 15 0 .5-1.5 0-2 0-2 0-2.5-2.5-4-2.5-4 5.5-1.5 6-11.5-5-15.5-11 4-10.5 14-5 15.5 0 0-2.5 1.5-2.5 4 0 0-.5.5 0 2zM25 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 1 1 5 0z"/><path d="M17.5 26h10M15 30h15m-7.5-14.5v5M20 18h5" stroke="#fff" stroke-width="1" stroke-linejoin="miter"/></g></g></svg>
