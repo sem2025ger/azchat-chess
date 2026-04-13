@@ -2,9 +2,9 @@ import { createContext, useContext, useState, type ReactNode } from 'react';
 
 // Defines the options
 export type BackgroundTheme = 'Standard' | 'Game Room' | 'Classic Wood' | 'Modern Glass';
-export type PieceTheme = 'neo' | 'classic' | 'wood' | 'glass' | 'marble' | 'tournament';
+export type PieceTheme = 'classic' | 'neo' | 'tournament' | 'wood' | 'glass' | 'marble';
 export type BoardTheme = 'Green' | 'Wood' | 'Glass' | 'Brown' | 'Ice Sea' | 'Newspaper' | 'Walnut' | 'Sky' | 'Lolz' | 'Stone' | 'Warm Gold' | 'Muted Gold' | 'Obsidian Gold' | 'Charcoal Gold' | 'Champagne' | 'Luxury Beige' | 'Ivory' | 'Tournament' | 'Blue Steel' | 'Marble Sand';
-export type SoundTheme = 'Default' | 'Nature' | 'Metal' | 'Marble' | 'Space' | 'Beat' | 'Lolz' | 'Newspaper' | 'Pebble' | 'Events / Esports World Cup';
+export type SoundTheme = 'Default' | 'Nature' | 'Digital' | 'Arcade' | 'Off';
 
 interface ThemeContextType {
   specialThemesEnabled: boolean;

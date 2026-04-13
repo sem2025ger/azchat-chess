@@ -22,6 +22,7 @@ export default function ChessBoard({
   orientation?: 'w' | 'b';
 }) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
+  console.log('[THEME_DEBUG] ChessBoard Active Theme:', pieceTheme);
   const [localGame, setLocalGame] = useState(new Chess());
 
   const activeGame = game || localGame;
@@ -253,9 +254,10 @@ function PieceImage({
   piece: { type: string; color: string };
   theme: PieceTheme;
 }) {
-  const pieceSetName = String(theme).toLowerCase();
+  const pieceSetName = theme || 'classic'; // Fallback only to classic if undefined
   const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
   const src = `/pieces/${pieceSetName}/${pieceCode}.svg`;
+  console.log('[THEME_DEBUG] PieceImage Source:', src);
 
   return (
     <div className="w-full h-full flex items-center justify-center p-[8%] pointer-events-none select-none">

@@ -86,6 +86,7 @@ export default function SettingsScreen() {
                 onClick={() => {
                   const b = boardThemes.find(bt => bt.name === p.board)?.id;
                   if (b) setBoardTheme(b as any);
+                  console.log('[THEME_DEBUG] Clicked Preset Pieces:', p.pieces);
                   setPieceTheme(p.pieces as any);
                 }}
                 className={cx(
@@ -141,7 +142,10 @@ export default function SettingsScreen() {
               {pieceStyles.map((style) => (
                 <button
                   key={style.id}
-                  onClick={() => setPieceTheme(style.id as any)}
+                  onClick={() => {
+                    console.log('[THEME_DEBUG] Clicked Style:', style.id);
+                    setPieceTheme(style.id as any);
+                  }}
                   className={cx(
                     "flex flex-col items-center gap-2 p-2 rounded-[1.5rem] border transition-all duration-500 group/piece relative overflow-hidden shadow-xl active:scale-95",
                     pieceTheme === style.id
