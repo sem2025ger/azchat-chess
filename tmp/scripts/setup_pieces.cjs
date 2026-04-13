@@ -1,13 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const themes = ['classic', 'neo', 'tournament', 'wood', 'glass', 'marble'];
+// ONLY classic for now as requested
+const themes = ['classic'];
 const pieces = ['K', 'Q', 'R', 'B', 'N', 'P'];
 const colors = ['w', 'b'];
 
 /**
  * Premium Staunton-style SVG paths
- * Optimized for recognition and professional aesthetics.
+ * Optimized for professional recognition.
  */
 const paths = {
   K: 'M 22.5,11.63 V 6 M 20,8 h 5 M 22.5,25 s 4.5,-7.5 3,-10 c -1.5,-2.5 -6,-2.5 -6,0 0,2.5 3,10 3,10 z M 9,36 c 3.39,-0.47 8.5,-1.5 13.5,-1.5 5,0 10.11,1.03 13.5,1.5 1,0.14 1,2 0,2 -3.39,-0.47 -8.5,-1.5 -13.5,-1.5 -5,0 -10.11,1.03 -13.5,1.5 -1,0.14 -1,2 0,2 z M 11.5,30 c 3.5,-1 8,-1.5 11,-1.5 3,0 7.5,0.5 11,1.5 1.5,0.43 1.5,2 0,2 -3.39,-1 -8,-1.5 -11,-1.5 -3,0 -7.5,0.5 -11,1.5 -1.5,0.43 -1.5,2 0,2 z M 11.5,33 c 3.5,-1 8,-1.5 11,-1.5 3,0 7.5,0.5 11,1.5 1.5,0.43 1.5,2 0,2 -3.5,-1 -8,-1.5 -11,-1.5 -3,0 -7.5,0.5 -11,1.5 -1.5,0.43 -1.5,2 0,2 z',
@@ -20,45 +21,18 @@ const paths = {
 
 const getStyles = (theme, color) => {
   const isWhite = color === 'w';
-  const mainColor = isWhite ? '#FFFFFF' : '#000000';
-  const strokeColor = isWhite ? '#000000' : '#FFFFFF';
 
   switch (theme) {
     case 'classic':
-      return { fill: mainColor, stroke: strokeColor, strokeWidth: isWhite ? '1.5' : '1.2' };
-    case 'neo':
       return {
-        fill: isWhite ? 'url(#grad-neo-w)' : 'url(#grad-neo-b)',
-        stroke: isWhite ? '#222' : '#ddd',
-        strokeWidth: '1',
-        defs: `<linearGradient id="grad-neo-w" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff"/><stop offset="100%" stop-color="#ddd"/></linearGradient><linearGradient id="grad-neo-b" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#444"/><stop offset="100%" stop-color="#111"/></linearGradient>`
-      };
-    case 'tournament':
-      return { fill: mainColor, stroke: strokeColor, strokeWidth: '2.5' };
-    case 'wood':
-      return {
-        fill: isWhite ? 'url(#grad-wood-w)' : 'url(#grad-wood-b)',
-        stroke: isWhite ? '#5d3a1a' : '#2a1806',
-        strokeWidth: '1.2',
-        defs: `<linearGradient id="grad-wood-w" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#eecd9d"/><stop offset="100%" stop-color="#b58863"/></linearGradient><linearGradient id="grad-wood-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8b4a1c"/><stop offset="100%" stop-color="#2a1806"/></linearGradient>`
-      };
-    case 'glass':
-      return {
-        fill: isWhite ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)',
-        stroke: isWhite ? '#8fffff' : '#ffffff',
+        fill: isWhite ? '#ffffff' : '#454545',
+        stroke: isWhite ? '#999999' : '#1a1a1a',
         strokeWidth: '1.5',
-        defs: `<radialGradient id="glass-shine" cx="30%" cy="30%" r="50%"><stop offset="0%" stop-color="#fff" stop-opacity="0.8"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient>`,
-        extra: `<circle cx="15" cy="15" r="10" fill="url(#glass-shine)" opacity="0.3"/>`
-      };
-    case 'marble':
-      return {
-        fill: isWhite ? 'url(#grad-marble-w)' : 'url(#grad-marble-b)',
-        stroke: '#888',
-        strokeWidth: '0.8',
-        defs: `<linearGradient id="grad-marble-w" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff"/><stop offset="30%" stop-color="#eee"/><stop offset="70%" stop-color="#ddd"/><stop offset="100%" stop-color="#fff"/></linearGradient><linearGradient id="grad-marble-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#333"/><stop offset="50%" stop-color="#000"/><stop offset="100%" stop-color="#333"/></linearGradient>`
+        defs: isWhite ? `<filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur in="SourceAlpha" stdDeviation="0.8" /><feOffset dx="0.5" dy="0.5" result="offsetblur" /><feComponentTransfer><feFuncA type="linear" slope="0.3"/></feComponentTransfer><feMerge><feMergeNode /><feMergeNode in="SourceGraphic" /></feMerge></filter>` : '',
+        extraAttr: isWhite ? 'filter="url(#soft-shadow)"' : ''
       };
     default:
-      return { fill: mainColor, stroke: strokeColor, strokeWidth: '1' };
+      return { fill: isWhite ? '#ffffff' : '#000000', stroke: isWhite ? '#000000' : '#ffffff', strokeWidth: '1', extraAttr: '' };
   }
 };
 
@@ -70,13 +44,19 @@ const setupPieces = () => {
     colors.forEach(color => {
       pieces.forEach(type => {
         const style = getStyles(theme, color);
-        const svg = `<?xml version="1.0" encoding="UTF-8"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45"><defs>${style.defs || ''}</defs><g fill="${style.fill}" stroke="${style.stroke}" stroke-width="${style.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"><path d="${paths[type]}" />${style.extra || ''}</g></svg>`;
+        const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" width="45" height="45">
+  <defs>${style.defs || ''}</defs>
+  <g fill="${style.fill}" stroke="${style.stroke}" stroke-width="${style.strokeWidth}" stroke-linecap="round" stroke-linejoin="round" ${style.extraAttr || ''}>
+    <path d="${paths[type]}" />
+  </g>
+</svg>`;
         const fileName = `${color}${type}.svg`;
         fs.writeFileSync(path.join(dir, fileName), svg);
       });
     });
   });
-  console.log('Successfully generated 72 premium chess pieces across 6 themes.');
+  console.log('Successfully generated classic chess pieces with improved visual quality.');
 };
 
 setupPieces();
