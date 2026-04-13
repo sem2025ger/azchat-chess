@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { useThemeContext, type BoardTheme } from '../context/ThemeContext';
+import { useThemeContext, type BoardTheme, type PieceTheme } from '../context/ThemeContext';
 import { Chess, type Square, type Move } from 'chess.js';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
@@ -21,7 +21,7 @@ export default function ChessBoard({
   onMove?: (source: string, target: string, promotion?: string) => boolean;
   orientation?: 'w' | 'b';
 }) {
-  const { board, specialThemesEnabled } = useThemeContext();
+  const { board, pieces, specialThemesEnabled } = useThemeContext();
   const [localGame, setLocalGame] = useState(new Chess());
 
   const activeGame = game || localGame;
@@ -57,7 +57,11 @@ export default function ChessBoard({
     'Obsidian Gold': { light: 'bg-[#c4a671]', dark: 'bg-[#1a1a1a]' },
     'Charcoal Gold': { light: 'bg-[#b09b7c]', dark: 'bg-[#2b2b2b]' },
     Champagne: { light: 'bg-[#f2e1c2]', dark: 'bg-[#c5ad85]' },
-    'Luxury Beige': { light: 'bg-[#e5d5b3]', dark: 'bg-[#a68d60]' }
+    'Luxury Beige': { light: 'bg-[#e5d5b3]', dark: 'bg-[#a68d60]' },
+    'Ivory': { light: 'bg-[#f1eddf]', dark: 'bg-[#b8a184]' },
+    'Tournament': { light: 'bg-[#ececd1]', dark: 'bg-[#739552]' },
+    'Blue Steel': { light: 'bg-[#d1d5db]', dark: 'bg-[#4b5563]' },
+    'Marble Sand': { light: 'bg-[#e5e7eb]', dark: 'bg-[#a3a3a3]' }
   };
 
   const activeBoardTheme = specialThemesEnabled
@@ -229,7 +233,7 @@ export default function ChessBoard({
                         isSelected ? 'scale-[1.1]' : ''
                       )}
                     >
-                      <PieceImage piece={piece} />
+                      <PieceImage piece={piece} theme={pieces} />
                     </div>
                   )}
                 </div>
@@ -243,52 +247,27 @@ export default function ChessBoard({
 }
 
 function PieceImage({
-  piece
+  piece,
+  theme
 }: {
   piece: { type: string; color: string };
+  theme: PieceTheme;
 }) {
-  const piecePaths: Record<string, string[]> = {
-    wK: ["M22.5,11.63V6M20,8h5", "M22.5,25s4.5-7.5,3-10c-1.5-2.5-6-2.5-6-2.5s-4.5,0-6,2.5c-1.5,2.5,3,10,3,10", "M11.5,37c5.5,3.5,15.5,3.5,21,0v-7s9,0,9-7c0-2-1-4-3-4h-2.5s2.5-3,2.5-5.5c0-3-2.5-5.5-5.5-5.5s-5.5,2.5-5.5,5.5c0,2.5,2.5,5.5,2.5,5.5H24.5V11.63c2-0.5,3-2.5,3-4.13c0-2.5-2-4.5-4.5-4.5s-4.5,2-4.5,4.5c0,1.63,1,3.63,3,4.13V13.5H18.5s2.5-3,2.5-5.5c0-3-2.5-5.5-5.5-5.5s-5.5,2.5-5.5,5.5c0,2.5,2.5,5.5,2.5,5.5H10c-2,0-3,2-3,4c0,7,9,7,9,7v7", "M11.5,30c5.5-3,15.5-3,21,0", "M11.5,33.5c5.5-3,15.5-3,21,0", "M11.5,37c5.5-3,15.5-3,21,0"],
-    wQ: ["M9,26c8.5-1.5,21-1.5,27,0l2-12c0,0,1,0,1,1s-1.5,1-1.5,1.5c0,1,1.5,1,1.5,2s-1.5,1-1.5,1.5c0,1,1.5,1,1.5,2s-1.5,1-1.5,2c0,1,1.5,1,1.5,1s-1.5,1-1.5,1.5c0,1,1.5,1,1.5,1", "M9,26c0,0,1.5-4,3-4s2,4,2,4", "M14,26c0,0,1.5-4,3-4s2,4,2,4", "M19,26c0,0,1.5-4,3-4s2,4,2,4", "M24,26c0,0,1.5-4,3-4s2,4,2,4", "M29,26c0,0,1.5-4,3-4s2,4,2,4", "M11.5,30c5.5-3,15.5-3,21,0", "M11.5,33.5c5.5-3,15.5-3,21,0", "M11.5,37c5.5-3,15.5-3,21,0"],
-    wR: ["M9,39h27v-3H9V39z", "M12,36v-4h21v4H12z", "M11,14V9h4v2h5V9h5v2h5V9h4v5", "M34,14l-3,3H14l-3-3", "M31,17v12.5H14V17", "M31,29.5l1.5,2.5h-20l1.5-2.5", "M11,14h23"],
-    wB: ["M9,36c3.39,0,6.78,0,10.17,0,3.39,0,6.78,0,10.17,0V33H9v3z", "M15,32c2.5,2.5,12.5,2.5,15,0,0.5-1.5,0-2,0-2,0-2.5-2.5-4-2.5-4,5.5-1.5,6-11.5-5-15.5-11,4-10.5,14-5,15.5,0,0,2.5,1.5,2.5,4,0,0,0.5,0.5,0,2z", "M25,8a2.5,2.5 0 1,1 -5,0 2.5,2.5 0 1,1 5,0z", "M17.5,26h10", "M15,30c2.5-3,12.5-3,15,0", "M15,33c2.5-3,12.5-3,15,0"],
-    wN: ["M22,10s4,4,4,8c0,5-1,5-1,5l1,1,1,3c0,3-1,4-2,4l-4-4-5,1s-1,2-5,2c-4,0-5-2-5-2,1-1,1-2,1-2,0-3-1-3-1-3s1-2,4-3c3-1,1-3,1-3,0-3,4-7,4-7l2-2,2,2", "M24,18c0.5,0,1,0.5,1,1s-0.5,1-1,1-1-0.5-1-1,0.5-1,1-1z", "M9,26c0,0,2,0,10,0"],
-    wP: ["M22,9c-2.21,0-4,1.79-4,4c0,0.89,0.29,1.71,0.78,2.38C17.33,16.5,16,18.59,16,21c0,2.03,0.94,3.84,2.41,5.03C15.41,27.09,11,31.58,11,37h23c0-5.42-4.41-9.91-7.41-10.97C28.06,24.84,29,23.03,29,21c0-2.41-1.33-4.5-2.78-5.62c0.49-0.67,0.78-1.49,0.78-2.38c0-2.21-1.79-4-4-4z", "M11,37c5.5-3,15.5-3,21,0"],
-    bK: ["M22.5,11.63V6M20,8h5", "M22.5,25s4.5-7.5,3-10c-1.5-2.5-6-2.5-6-2.5s-4.5,0-6,2.5c-1.5,2.5,3,10,3,10", "M11.5,37c5.5,3.5,15.5,3.5,21,0v-7s9,0,9-7c0-2-1-4-3-4h-2.5s2.5-3,2.5-5.5c0-3-2.5-5.5-5.5-5.5s-5.5,2.5-5.5,5.5c0,2.5,2.5,5.5,2.5,5.5H24.5V11.63c2-0.5,3-2.5,3-4.13c0-2.5-2-4.5-4.5-4.5s-4.5,2-4.5,4.5c0,1.63,1,3.63,3,4.13V13.5H18.5s2.5-3,2.5-5.5c0-3-2.5-5.5-5.5-5.5s-5.5,2.5-5.5,5.5c0,2.5,2.5,5.5,2.5,5.5H10c-2,0-3,2-3,4c0,7,9,7,9,7v7", "M11.5,30c5.5-3,15.5-3,21,0", "M11.5,33.5c5.5-3,15.5-3,21,0", "M11.5,37c5.5-3,15.5-3,21,0"],
-    bQ: ["M9,26c8.5-1.5,21-1.5,27,0l2-12c0,0,1,0,1,1s-1.5,1-1.5,1.5c0,1,1.5,1,1.5,2s-1.5,1-1.5,1.5c0,1,1.5,1,1.5,2s-1.5,1-1.5,2c0,1,1.5,1,1.5,1s-1.5,1-1.5,1.5c0,1,1.5,1,1.5,1", "M9,26c0,0,1.5-4,3-4s2,4,2,4", "M14,26c0,0,1.5-4,3-4s2,4,2,4", "M19,26c0,0,1.5-4,3-4s2,4,2,4", "M24,26c0,0,1.5-4,3-4s2,4,2,4", "M29,26c0,0,1.5-4,3-4s2,4,2,4", "M11.5,30c5.5-3,15.5-3,21,0", "M11.5,33.5c5.5-3,15.5-3,21,0", "M11.5,37c5.5-3,15.5-3,21,0"],
-    bR: ["M9,39h27v-3H9V39z", "M12,36v-4h21v4H12z", "M11,14V9h4v2h5V9h5v2h5V9h4v5", "M34,14l-3,3H14l-3-3", "M31,17v12.5H14V17", "M31,29.5l1.5,2.5h-20l1.5-2.5", "M11,14h23"],
-    bB: ["M9,36c3.39,0,6.78,0,10.17,0,3.39,0,6.78,0,10.17,0V33H9v3z", "M15,32c2.5,2.5,12.5,2.5,15,0,0.5-1.5,0-2,0-2,0-2.5-2.5-4-2.5-4,5.5-1.5,6-11.5-5-15.5-11,4-10.5,14-5,15.5,0,0,2.5,1.5,2.5,4,0,0,0.5,0.5,0,2z", "M25,8a2.5,2.5 0 1,1 -5,0 2.5,2.5 0 1,1 5,0z", "M17.5,26h10", "M15,30c2.5-3,12.5-3,15,0", "M15,33c2.5-3,12.5-3,15,0"],
-    bN: ["M22,10s4,4,4,8c0,5-1,5-1,5l1,1,1,3c0,3-1,4-2,4l-4-4-5,1s-1,2-5,2c-4,0-5-2-5-2,1-1,1-2,1-2,0-3-1-3-1-3s1-2,4-3c3-1,1-3,1-3,0-3,4-7,4-7l2-2,2,2", "M24,18c0.5,0,1,0.5,1,1s-0.5,1-1,1-1-0.5-1-1,0.5-1,1-1z", "M9,26c0,0,2,0,10,0"],
-    bP: ["M22,9c-2.21,0-4,1.79-4,4c0,0.89,0.29,1.71,0.78,2.38C17.33,16.5,16,18.59,16,21c0,2.03,0.94,3.84,2.41,5.03C15.41,27.09,11,31.58,11,37h23c0-5.42-4.41-9.91-7.41-10.97C28.06,24.84,29,23.03,29,21c0-2.41-1.33-4.5-2.78-5.62c0.49-0.67,0.78-1.49,0.78-2.38c0-2.21-1.79-4-4-4z", "M11,37c5.5-3,15.5-3,21,0"],
-  };
-
-  const code = `${piece.color}${piece.type.toUpperCase()}`;
-  const paths = piecePaths[code] || [];
-  const isWhite = piece.color === 'w';
+  const pieceSetName = String(theme).toLowerCase();
+  const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
+  const src = `/pieces/${pieceSetName}/${pieceCode}.svg`;
 
   return (
     <div className="w-full h-full flex items-center justify-center p-[8%] pointer-events-none select-none">
-      <svg
-        viewBox="0 0 45 45"
-        className={cx(
-          "w-full h-full transform-gpu transition-transform overflow-visible",
-          isWhite 
-            ? "drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]" 
-            : "drop-shadow-[0_1px_2px_rgba(255,255,255,0.2)]"
-        )}
-      >
-        <g
-          fill={isWhite ? "#ffffff" : "#262421"}
-          stroke={isWhite ? "#262421" : "#ffffff"}
-          strokeWidth="1.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          {paths.map((d, i) => (
-            <path key={i} d={d} />
-          ))}
-        </g>
-      </svg>
+      <img
+        src={src}
+        alt={pieceCode}
+        className="w-full h-full object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] transform-gpu"
+        onError={(e) => {
+          // Fallback if asset is missing (though we shouldn't have missing assets)
+          (e.target as HTMLImageElement).style.display = 'none';
+        }}
+      />
     </div>
   );
 }
