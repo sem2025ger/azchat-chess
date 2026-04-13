@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
@@ -22,7 +22,7 @@ function App() {
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
             <Route path="/" element={<Layout />}>
-              <Route index element={<Navigate to="/play" replace />} />
+              <Route index element={<HomeScreen />} />
               <Route path="home" element={<HomeScreen />} />
               <Route path="play" element={<PlayScreen />} />
               <Route path="game" element={<GameScreen />} />
