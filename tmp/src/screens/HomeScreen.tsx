@@ -53,20 +53,15 @@ export default function HomeScreen() {
         </div>
 
         {/* RIGHT COLUMN: Dashboard */}
-        <div className="flex-1 w-full flex flex-col justify-start content-start max-w-2xl xl:max-w-[580px] z-20 xl:-mt-6 gap-4">
+        <div className="flex-1 w-full flex flex-col justify-start content-start max-w-2xl xl:max-w-[580px] z-20 xl:-mt-12 gap-5">
 
           {/* 1. Header & CTA */}
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col items-start gap-2">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-white/[0.04] border border-white/[0.07] rounded-full backdrop-blur-md">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
-                <span className="text-[0.6rem] font-bold text-neutral-500 uppercase tracking-[0.25em]">{t('home.platformDemo')}</span>
-              </div>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col items-start gap-1">
               <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-black text-white tracking-tighter leading-[0.95] transform-gpu">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-chess-gold via-white to-white">HubbyChat</span>
                 <span className="ml-2 text-white/90">CHESS</span>
               </h1>
-              <p className="text-[0.8rem] text-neutral-500 font-medium leading-relaxed max-w-sm">{t('home.subtitle')}</p>
             </div>
 
             <Link to="/play" className="group flex items-center justify-center gap-2.5 px-8 py-3 bg-chess-active text-black font-black text-[0.9rem] rounded-2xl shadow-[0_20px_50px_-15px_rgba(0,206,209,0.5)] hover:scale-[1.03] hover:bg-cyan-300 transition-all duration-300 active:scale-95 w-full sm:w-auto sm:self-start">
