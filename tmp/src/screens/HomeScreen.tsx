@@ -21,7 +21,40 @@ export default function HomeScreen() {
   ];
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden items-center justify-center bg-[#161512] transition-all relative">
+    <div className="flex flex-col h-full w-full overflow-hidden items-center justify-center bg-[#161512] transition-all relative home-screen-root">
+      {/* 
+        Mobile Board Overrides
+        Hiding the layout header and forcing wood/brown theme colors only on mobile Home.
+      */}
+      <style>{`
+        @media (max-width: 1024px) {
+          /* Hide global header controls */
+          header.shrink-0 { 
+            display: none !important; 
+          }
+          /* Enlarge board container and remove perspective on mobile */
+          .board-container {
+            max-width: 95vw !important;
+            padding: 0 !important;
+          }
+          .board-perspective {
+            transform: none !important;
+            rotate: 0 !important;
+          }
+          /* Force Wood/Brown Board Theme Colors */
+          .bg-\\[\\#ebecd0\\] { background-color: #f0d9b5 !important; } /* light Green -> light Brown */
+          .bg-\\[\\#779556\\] { background-color: #b58863 !important; } /* dark Green -> dark Brown */
+          .bg-\\[\\#ececd1\\] { background-color: #f0d9b5 !important; } /* light Tournament -> light Brown */
+          .bg-\\[\\#739552\\] { background-color: #b58863 !important; } /* dark Tournament -> dark Brown */
+          
+          /* Refined Coordinates */
+          .text-\\[0\\.55rem\\] { 
+            font-size: 0.5rem !important; 
+            opacity: 0.6 !important; 
+            font-weight: 800 !important;
+          }
+        }
+      `}</style>
 
       {/* Dynamic Background Elements */}
       <div className="absolute top-[-10%] left-[-8%] w-[600px] h-[600px] bg-chess-active/[0.03] blur-[180px] rounded-full pointer-events-none" />
@@ -29,26 +62,13 @@ export default function HomeScreen() {
       <div className="absolute top-[40%] left-[30%] w-[800px] h-[800px] bg-white/[0.006] blur-[200px] rounded-full pointer-events-none" />
 
       {/* Macro 2-Column Layout - Vertical stack on mobile/tablet, Row on XL */}
-      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-6 xl:gap-14 z-10 h-full px-4 sm:px-8 md:px-12 xl:px-16 py-4 xl:py-4 max-h-none xl:max-h-[900px] overflow-y-auto xl:overflow-visible">
+      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-6 xl:gap-14 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-16 py-4 xl:py-4 max-h-none xl:max-h-[900px] overflow-y-auto xl:overflow-visible">
 
         {/* LEFT COLUMN: Dominant Chessboard Anchor */}
-        {/* DO NOT TOUCH CHESSBOARD SIZE, POSITION, OR ALIGNMENT */}
-        <div className="flex flex-col items-center xl:items-end w-full xl:w-[55%] max-w-[590px] shrink-0 relative perspective-1000 mt-2 xl:mt-0">
-          <div className="relative w-full aspect-square rounded-[1.5rem] md:rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0">
+        <div className="flex flex-col items-center xl:items-end w-full xl:w-[55%] max-w-[590px] shrink-0 relative perspective-1000 mt-2 xl:mt-0 board-container">
+          <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
-            <ChessBoard />
-          </div>
-          <div className="mt-4 md:mt-5 bg-black/70 backdrop-blur-2xl border border-white/[0.07] px-4 md:px-5 py-2 md:py-2.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce-slow ring-1 ring-white/[0.04] z-20 self-center xl:self-end xl:-mr-6">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center shrink-0">
-              <span className="font-black text-[0.6rem] text-indigo-400 tracking-tighter">GM</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[0.72rem] font-black text-white italic tracking-wider">SiberianTiger</span>
-              <span className="text-[0.5rem] font-bold text-neutral-500 uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
-                Searching...
-              </span>
-            </div>
+            <ChessBoard className="!border-none !p-1 md:!p-3" />
           </div>
         </div>
 
