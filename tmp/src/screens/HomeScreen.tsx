@@ -28,17 +28,17 @@ export default function HomeScreen() {
       <div className="absolute bottom-[-10%] right-[-8%] w-[600px] h-[600px] bg-chess-gold/[0.03] blur-[180px] rounded-full pointer-events-none" />
       <div className="absolute top-[40%] left-[30%] w-[800px] h-[800px] bg-white/[0.006] blur-[200px] rounded-full pointer-events-none" />
 
-      {/* Macro 2-Column Layout */}
-      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-8 xl:gap-14 z-10 h-full px-5 sm:px-8 md:px-12 xl:px-16 py-4 max-h-[900px]">
+      {/* Macro 2-Column Layout - Vertical stack on mobile/tablet, Row on XL */}
+      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-10 xl:gap-14 z-10 h-full px-4 sm:px-8 md:px-12 xl:px-16 py-6 xl:py-4 max-h-none xl:max-h-[900px] overflow-y-auto xl:overflow-visible">
 
         {/* LEFT COLUMN: Dominant Chessboard Anchor */}
         {/* DO NOT TOUCH CHESSBOARD SIZE, POSITION, OR ALIGNMENT */}
-        <div className="hidden lg:flex flex-col items-center xl:items-end w-full xl:w-[55%] max-w-[590px] shrink-0 relative perspective-1000 mt-[5vh] xl:mt-0">
-          <div className="relative w-full aspect-square rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 rotate-y-[12deg] rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0">
+        <div className="flex flex-col items-center xl:items-end w-full xl:w-[55%] max-w-[590px] shrink-0 relative perspective-1000 mt-2 xl:mt-0">
+          <div className="relative w-full aspect-square rounded-[1.5rem] md:rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
             <ChessBoard />
           </div>
-          <div className="mt-5 bg-black/70 backdrop-blur-2xl border border-white/[0.07] px-5 py-2.5 rounded-2xl shadow-2xl flex items-center gap-3.5 animate-bounce-slow ring-1 ring-white/[0.04] z-20 self-center xl:self-end xl:-mr-6">
+          <div className="mt-4 md:mt-5 bg-black/70 backdrop-blur-2xl border border-white/[0.07] px-4 md:px-5 py-2 md:py-2.5 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce-slow ring-1 ring-white/[0.04] z-20 self-center xl:self-end xl:-mr-6">
             <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center shrink-0">
               <span className="font-black text-[0.6rem] text-indigo-400 tracking-tighter">GM</span>
             </div>
@@ -53,12 +53,12 @@ export default function HomeScreen() {
         </div>
 
         {/* RIGHT COLUMN: Dashboard */}
-        <div className="flex-1 w-full flex flex-col justify-start content-start max-w-2xl xl:max-w-[580px] z-20 xl:-mt-12 gap-5">
+        <div className="flex-1 w-full flex flex-col justify-start content-start max-w-2xl xl:max-w-[580px] z-20 xl:-mt-12 gap-5 mb-8 xl:mb-0">
 
           {/* 1. Header & CTA */}
           <div className="flex flex-col gap-4">
             <div className="flex flex-col items-start gap-1">
-              <h1 className="text-4xl md:text-5xl lg:text-[3.25rem] font-black text-white tracking-tighter leading-[0.95] transform-gpu">
+              <h1 className="text-3xl md:text-5xl lg:text-[3.25rem] font-black text-white tracking-tighter leading-[0.95] transform-gpu">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-chess-gold via-white to-white">HubbyChat</span>
                 <span className="ml-2 text-white/90">CHESS</span>
               </h1>
@@ -71,7 +71,7 @@ export default function HomeScreen() {
           </div>
 
           {/* 2. Mini Stats */}
-          <div className="flex items-center justify-between px-6 py-2.5 bg-white/[0.03] backdrop-blur-md rounded-2xl border border-white/[0.06]">
+          <div className="flex items-center justify-between px-4 md:px-6 py-2.5 bg-white/[0.03] backdrop-blur-md rounded-2xl border border-white/[0.06]">
             {stats.map((s, i) => (
               <div key={i} className="flex flex-col items-center gap-0.5">
                 <div className={cx("flex items-center gap-1.5 font-black text-[0.9rem] tabular-nums", s.color)}>
