@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import ChessBoard from '../components/ChessBoard';
-import { Play, Grid, Trophy, MessageSquare, Activity, Users, Globe } from 'lucide-react';
+import { Play, Trophy, Activity, Users, Globe } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
@@ -12,7 +12,7 @@ function cx(...inputs: (string | undefined | null | false)[]) {
 
 export default function HomeScreen() {
   const { t } = useLanguage();
-  const { user, profile } = useAuth();
+  useAuth();
 
   const stats = [
     { label: t('home.stats.players'), value: '34,102', icon: Users, color: 'text-emerald-400' },
@@ -73,118 +73,44 @@ export default function HomeScreen() {
         </div>
 
         {/* RIGHT COLUMN: Dashboard */}
-        <div className="flex-1 w-full flex flex-col justify-start content-start max-w-2xl xl:max-w-[580px] z-20 xl:-mt-12 gap-4 mb-4 xl:mb-0">
+        <div className="flex-1 w-full flex flex-col justify-start content-start max-w-2xl xl:max-w-[500px] z-20 xl:-mt-24 gap-6 mb-4 xl:mb-0">
 
-          {/* 1. Header & CTA */}
+          {/* 1. Main CTA */}
           <div className="flex flex-col gap-4">
-            <div className="hidden xl:flex flex-col items-start gap-1">
-              <h1 className="text-3xl md:text-5xl lg:text-[3.25rem] font-black text-white tracking-tighter leading-[0.95] transform-gpu">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-chess-gold via-white to-white">HubbyChat</span>
-                <span className="ml-2 text-white/90">CHESS</span>
-              </h1>
-            </div>
-
-            <Link to="/play" className="group flex items-center justify-center gap-2.5 px-8 py-3.5 bg-chess-active text-black font-black text-[0.95rem] rounded-2xl shadow-[0_20px_50px_-15px_rgba(0,206,209,0.5)] hover:scale-[1.03] hover:bg-cyan-300 transition-all duration-300 active:scale-95 w-full sm:w-auto sm:self-start lg:mt-[-1rem] xl:mt-0">
-              <Play fill="currentColor" size={18} className="group-hover:rotate-12 transition-transform" />
+            <Link to="/play" className="group flex items-center justify-center gap-2.5 px-8 py-4 bg-chess-active text-black font-black text-[1rem] rounded-2xl shadow-[0_20px_50px_-15px_rgba(0,206,209,0.5)] hover:scale-[1.03] hover:bg-cyan-300 transition-all duration-300 active:scale-95 w-full sm:w-auto sm:self-start transform-gpu">
+              <Play fill="currentColor" size={20} className="group-hover:rotate-12 transition-transform" />
               {t('home.playNow')}
             </Link>
           </div>
 
           {/* 2. Mini Stats */}
-          <div className="flex items-center justify-between px-4 md:px-6 py-2.5 bg-white/[0.03] backdrop-blur-md rounded-2xl border border-white/[0.06]">
+          <div className="flex items-center justify-between px-6 py-3.5 bg-white/[0.03] backdrop-blur-md rounded-2xl border border-white/[0.06] shadow-xl">
             {stats.map((s, i) => (
               <div key={i} className="flex flex-col items-center gap-0.5">
-                <div className={cx("flex items-center gap-1.5 font-black text-[0.9rem] tabular-nums", s.color)}>
-                  <s.icon size={13} strokeWidth={2.5} />
+                <div className={cx("flex items-center gap-1.5 font-black text-[0.95rem] tabular-nums", s.color)}>
+                  <s.icon size={14} strokeWidth={2.5} />
                   {s.value}
                 </div>
-                <span className="text-[0.5rem] font-bold text-neutral-600 uppercase tracking-[0.2em]">{s.label}</span>
+                <span className="text-[0.55rem] font-bold text-neutral-600 uppercase tracking-[0.2em]">{s.label}</span>
               </div>
             ))}
           </div>
 
-          {/* 3. Action Dashboard (2x2) */}
-          <div className="grid grid-cols-2 gap-2">
-            {/* Continue Last Game */}
-            <Link to="/game" className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.05] p-2.5 rounded-2xl hover:bg-white/[0.05] hover:border-white/[0.12] transition-all duration-300 group">
-              <div className="w-10 h-10 rounded-xl bg-chess-active/10 border border-chess-active/20 flex flex-col items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
-                <span className="text-[0.4rem] font-black text-chess-active uppercase tracking-widest leading-none mb-0.5">VS</span>
-                <span className="text-[0.45rem] font-bold text-white">PRO</span>
-              </div>
-              <div className="flex flex-col overflow-hidden min-w-0">
-                <span className="text-[0.55rem] font-bold text-neutral-600 uppercase tracking-[0.15em]">{t('home.dashboard.continue')}</span>
-                <span className="text-[0.75rem] font-black text-white truncate group-hover:text-chess-active transition-colors">{profile?.username || user?.user_metadata?.username || 'Guest'}</span>
-              </div>
-            </Link>
-
-            {/* Last Analysis */}
-            <Link to="/game" className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.05] p-2.5 rounded-2xl hover:bg-white/[0.05] hover:border-white/[0.12] transition-all duration-300 group">
-              <div className="w-10 h-10 rounded-xl bg-chess-gold/10 border border-chess-gold/20 flex flex-col items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
-                <span className="text-[0.4rem] font-black text-chess-gold uppercase tracking-widest leading-none mb-0.5">EVAL</span>
-                <span className="text-[0.45rem] font-bold text-white">+1.4</span>
-              </div>
-              <div className="flex flex-col overflow-hidden min-w-0">
-                <span className="text-[0.55rem] font-bold text-neutral-600 uppercase tracking-[0.15em]">{t('home.dashboard.analysis')}</span>
-                <span className="text-[0.75rem] font-black text-white truncate group-hover:text-chess-gold transition-colors">Sicilian Defense</span>
-              </div>
-            </Link>
-
-            {/* Community Activity */}
-            <Link to="/chat" className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.05] p-2.5 rounded-2xl hover:bg-white/[0.05] hover:border-white/[0.12] transition-all duration-300 group">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
-                <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
-              </div>
-              <div className="flex flex-col overflow-hidden min-w-0">
-                <span className="text-[0.55rem] font-bold text-neutral-600 uppercase tracking-[0.15em]">{t('home.dashboard.community')}</span>
-                <span className="text-[0.75rem] font-black text-white truncate group-hover:text-emerald-400 transition-colors">4 {t('play.friend')} Online</span>
-              </div>
-            </Link>
-
-            {/* Daily Tournament */}
-            <Link to="/play" className="flex items-center gap-3 bg-white/[0.02] border border-white/[0.05] p-2.5 rounded-2xl hover:bg-white/[0.05] hover:border-white/[0.12] transition-all duration-300 group">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col items-center justify-center shrink-0 group-hover:scale-105 transition-transform duration-300">
-                <span className="text-[0.4rem] font-black text-purple-400 uppercase tracking-widest leading-none mb-0.5">IN</span>
-                <span className="text-[0.45rem] font-bold text-white">2H</span>
-              </div>
-              <div className="flex flex-col overflow-hidden min-w-0">
-                <span className="text-[0.55rem] font-bold text-neutral-600 uppercase tracking-[0.15em]">{t('home.dashboard.tournament')}</span>
-                <span className="text-[0.75rem] font-black text-white truncate group-hover:text-purple-400 transition-colors">Global Arena Blitz</span>
-              </div>
-            </Link>
-          </div>
-
-          {/* 4. Feature Cards */}
-          <div className="grid grid-cols-2 gap-2">
+          {/* 3. Rating Card (Profile) */}
+          <div className="w-full">
             <FeatureCard
-              to="/play" icon={<Play size={16} />} title={t('home.cards.play.title')}
-              desc={t('home.cards.play.desc')} color="text-chess-active"
-              bg="bg-chess-active/10" border="border-chess-active/20"
-              accent="bg-chess-active/40"
-            />
-            <FeatureCard
-              to="/game" icon={<Grid size={17} />} title={t('home.cards.game.title')}
-              desc={t('home.cards.game.desc')} color="text-chess-gold"
-              bg="bg-chess-gold/10" border="border-chess-gold/20"
-              accent="bg-chess-gold/40"
-            />
-            <FeatureCard
-              to="/profile" icon={<Trophy size={17} />} title={t('home.cards.profile.title')}
-              desc={t('home.cards.profile.desc')} color="text-purple-400"
-              bg="bg-purple-500/10" border="border-purple-500/20"
+              to="/profile" 
+              icon={<Trophy size={18} />} 
+              title="Рейтинг и Профиль"
+              desc="Ваши достижения и статистика" 
+              color="text-purple-400"
+              bg="bg-purple-500/10" 
+              border="border-purple-500/20"
               accent="bg-purple-500/40"
             />
-            <FeatureCard
-              to="/chat" icon={<MessageSquare size={17} />} title={t('home.cards.chat.title')}
-              desc={t('home.cards.chat.desc')} color="text-emerald-400"
-              bg="bg-emerald-500/10" border="border-emerald-500/20"
-              accent="bg-emerald-500/40"
-            />
           </div>
-
         </div>
-
       </div>
-
     </div>
   );
 }
