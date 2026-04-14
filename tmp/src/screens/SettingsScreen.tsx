@@ -192,9 +192,8 @@ export default function SettingsScreen() {
         );
       default:
         return (
-            <div className="space-y-5 animate-fade-in px-2">
+            <div className="space-y-4 animate-fade-in px-2 pt-4">
               <div className="space-y-3">
-                <h2 className="text-[0.65rem] font-black text-neutral-500 uppercase tracking-[0.4em] italic px-2">{t('settings.appearance')}</h2>
                 <div className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-1.5 border border-white/10 shadow-2xl space-y-1">
                   <HubLink 
                     icon={<Palette size={18} />} 
@@ -242,13 +241,13 @@ export default function SettingsScreen() {
   };
 
   return (
-    <div className="min-h-full w-full bg-[#161512] flex flex-col items-center relative transition-all overflow-x-hidden p-4 md:p-8">
+    <div className="min-h-full w-full bg-[#161512] flex flex-col items-center relative transition-all overflow-x-hidden pt-0 px-2 pb-6 md:p-8">
       {/* Background Decor */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-[85rem] z-10">
-        <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4 px-2">
+        <header className="hidden md:flex mb-8 flex-col md:flex-row md:items-end justify-between gap-4 px-2">
           <div className="space-y-1">
             <h1 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter leading-none transform-gpu drop-shadow-2xl">
               {t('settings.title')}
