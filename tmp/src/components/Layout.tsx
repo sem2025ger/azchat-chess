@@ -115,12 +115,13 @@ export default function Layout() {
       </aside>
 
       {/* Mobile Bottom Navigation - Visible only on Small Screens */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-2xl border-t border-white/[0.05] flex items-center justify-around px-2 z-50">
-        <MobileNavItem to="/home" icon={<Home size={22} />} label={t('nav.home')} />
-        <MobileNavItem to="/play" icon={<Play size={22} />} label={t('nav.play')} />
-        <MobileNavItem to="/game" icon={<Grid size={22} />} label={t('nav.game')} />
-        <MobileNavItem to="/chat" icon={<MessageSquare size={22} />} label={t('nav.chat')} />
-        <MobileNavItem to="/profile" icon={<User size={22} />} label={t('nav.profile')} />
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-2xl border-t border-white/[0.05] flex items-center justify-around px-1 z-50">
+        <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} />
+        <MobileNavItem to="/play" icon={<Play size={20} />} label={t('nav.play')} />
+        <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} />
+        <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} />
+        <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} />
+        <MobileNavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} />
       </nav>
 
       {/* Main Content Area */}
