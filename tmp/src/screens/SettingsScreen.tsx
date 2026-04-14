@@ -192,43 +192,43 @@ export default function SettingsScreen() {
         );
       default:
         return (
-          <div className="space-y-8 animate-fade-in px-2">
-            <div className="space-y-4">
-              <h2 className="text-[0.65rem] font-black text-neutral-500 uppercase tracking-[0.4em] italic px-2">{t('settings.appearance')}</h2>
-              <div className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-2 border border-white/10 shadow-2xl space-y-1">
-                <HubLink 
-                  icon={<Palette size={18} />} 
-                  title={t('settings.boardAppearance')} 
-                  value={boardTheme} 
-                  onClick={() => setActiveSubView('board')} 
-                  preview={<div className={cx("w-6 h-6 rounded-md", boardThemes.find(t => t.id === boardTheme)?.color)} />}
-                />
-                <HubLink 
-                  icon={<Monitor size={18} />} 
-                  title={t('settings.pieceStyles')} 
-                  value={pieceTheme.toUpperCase()} 
-                  onClick={() => setActiveSubView('pieces')} 
-                  preview={<img src={`/pieces/${pieceTheme}/wK.svg`} alt="Piece" className="w-6 h-6 object-contain" />}
-                />
-                <HubLink 
-                  icon={<LayoutIcon size={18} />} 
-                  title={t('settings.activeTheme')} 
-                  value={background} 
-                  onClick={() => setActiveSubView('background')} 
-                  preview={<div className={cx("w-6 h-6 rounded-md border border-white/10", bgThemes.find(t => t.id === background)?.class)} />}
-                />
-                <HubLink icon={<Sparkles size={18} />} title="Studio Presets" onClick={() => setActiveSubView('presets')} />
+            <div className="space-y-5 animate-fade-in px-2">
+              <div className="space-y-3">
+                <h2 className="text-[0.65rem] font-black text-neutral-500 uppercase tracking-[0.4em] italic px-2">{t('settings.appearance')}</h2>
+                <div className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-1.5 border border-white/10 shadow-2xl space-y-1">
+                  <HubLink 
+                    icon={<Palette size={18} />} 
+                    title={t('settings.boardAppearance')} 
+                    value={boardTheme} 
+                    onClick={() => setActiveSubView('board')} 
+                    preview={<div className={cx("w-6 h-6 rounded-md", boardThemes.find(t => t.id === boardTheme)?.color)} />}
+                  />
+                  <HubLink 
+                    icon={<Monitor size={18} />} 
+                    title={t('settings.pieceStyles')} 
+                    value={pieceTheme.toUpperCase()} 
+                    onClick={() => setActiveSubView('pieces')} 
+                    preview={<img src={`/pieces/${pieceTheme}/wK.svg`} alt="Piece" className="w-6 h-6 object-contain" />}
+                  />
+                  <HubLink 
+                    icon={<LayoutIcon size={18} />} 
+                    title={t('settings.activeTheme')} 
+                    value={background} 
+                    onClick={() => setActiveSubView('background')} 
+                    preview={<div className={cx("w-6 h-6 rounded-md border border-white/10", bgThemes.find(t => t.id === background)?.class)} />}
+                  />
+                  <HubLink icon={<Sparkles size={18} />} title="Studio Presets" onClick={() => setActiveSubView('presets')} />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <h2 className="text-[0.65rem] font-black text-neutral-500 uppercase tracking-[0.4em] italic px-2">Sound & Game</h2>
-              <div className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-2 border border-white/10 shadow-2xl space-y-1">
-                <HubLink icon={<Volume2 size={18} />} title={t('settings.soundThemes')} value={soundTheme.toUpperCase()} onClick={() => setActiveSubView('sound')} />
-                <HubLink icon={<Clock size={18} />} title={t('play.timeControl')} value="Config in Play" onClick={() => navigate('/play')} />
-                <HubLink icon={<Globe size={18} />} title={t('settings.changeLanguage')} value={language.toUpperCase()} onClick={() => setActiveSubView('language')} />
+              <div className="space-y-3">
+                <h2 className="text-[0.65rem] font-black text-neutral-500 uppercase tracking-[0.4em] italic px-2">Sound & Game</h2>
+                <div className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-1.5 border border-white/10 shadow-2xl space-y-1">
+                  <HubLink icon={<Volume2 size={18} />} title={t('settings.soundThemes')} value={soundTheme.toUpperCase()} onClick={() => setActiveSubView('sound')} />
+                  <HubLink icon={<Clock size={18} />} title={t('play.timeControl')} value="Config in Play" onClick={() => navigate('/play')} />
+                  <HubLink icon={<Globe size={18} />} title={t('settings.changeLanguage')} value={language.toUpperCase()} onClick={() => setActiveSubView('language')} />
+                </div>
               </div>
-            </div>
 
             <button 
               onClick={() => { setBoardTheme('Obsidian Gold'); setPieceTheme('classic'); setLanguage('az'); setSoundTheme('Default'); setBackground('Game Room'); }}
@@ -362,8 +362,8 @@ export default function SettingsScreen() {
 
 function HubLink({ icon, title, value, onClick, preview }: { icon: any; title: string; value?: string; onClick: () => void; preview?: React.ReactNode }) {
   return (
-    <button onClick={onClick} className="w-full flex items-center gap-4 p-5 hover:bg-white/[0.04] transition-all group rounded-2xl active:scale-[0.98]">
-      <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-neutral-400 group-hover:text-white transition-colors border border-white/5 shadow-inner">
+    <button onClick={onClick} className="w-full flex items-center gap-4 p-4 hover:bg-white/[0.04] transition-all group rounded-2xl active:scale-[0.98]">
+      <div className="w-9 h-9 rounded-2xl bg-white/5 flex items-center justify-center text-neutral-400 group-hover:text-white transition-colors border border-white/5 shadow-inner">
         {icon}
       </div>
       <div className="flex-1 flex flex-col items-start overflow-hidden text-left">
@@ -371,7 +371,7 @@ function HubLink({ icon, title, value, onClick, preview }: { icon: any; title: s
         {value && <span className="text-[0.6rem] font-black text-chess-gold uppercase tracking-widest mt-0.5 opacity-60 truncate w-full">{value}</span>}
       </div>
       {preview && <div className="shrink-0">{preview}</div>}
-      <ChevronRight size={18} className="text-neutral-700 group-hover:text-white transition-all transform group-hover:translate-x-1" />
+      <ChevronRight size={16} className="text-neutral-700 group-hover:text-white transition-all transform group-hover:translate-x-1" />
     </button>
   );
 }

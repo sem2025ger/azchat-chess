@@ -29,7 +29,7 @@ export default function HomeScreen() {
       <div className="absolute top-[40%] left-[30%] w-[800px] h-[800px] bg-white/[0.006] blur-[200px] rounded-full pointer-events-none" />
 
       {/* Macro 2-Column Layout - Vertical stack on mobile/tablet, Row on XL */}
-      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-10 xl:gap-14 z-10 h-full px-4 sm:px-8 md:px-12 xl:px-16 py-6 xl:py-4 max-h-none xl:max-h-[900px] overflow-y-auto xl:overflow-visible">
+      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-6 xl:gap-14 z-10 h-full px-4 sm:px-8 md:px-12 xl:px-16 py-4 xl:py-4 max-h-none xl:max-h-[900px] overflow-y-auto xl:overflow-visible">
 
         {/* LEFT COLUMN: Dominant Chessboard Anchor */}
         {/* DO NOT TOUCH CHESSBOARD SIZE, POSITION, OR ALIGNMENT */}
@@ -53,18 +53,18 @@ export default function HomeScreen() {
         </div>
 
         {/* RIGHT COLUMN: Dashboard */}
-        <div className="flex-1 w-full flex flex-col justify-start content-start max-w-2xl xl:max-w-[580px] z-20 xl:-mt-12 gap-5 mb-8 xl:mb-0">
+        <div className="flex-1 w-full flex flex-col justify-start content-start max-w-2xl xl:max-w-[580px] z-20 xl:-mt-12 gap-4 mb-4 xl:mb-0">
 
           {/* 1. Header & CTA */}
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col items-start gap-1">
+            <div className="hidden xl:flex flex-col items-start gap-1">
               <h1 className="text-3xl md:text-5xl lg:text-[3.25rem] font-black text-white tracking-tighter leading-[0.95] transform-gpu">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-chess-gold via-white to-white">HubbyChat</span>
                 <span className="ml-2 text-white/90">CHESS</span>
               </h1>
             </div>
 
-            <Link to="/play" className="group flex items-center justify-center gap-2.5 px-8 py-3 bg-chess-active text-black font-black text-[0.9rem] rounded-2xl shadow-[0_20px_50px_-15px_rgba(0,206,209,0.5)] hover:scale-[1.03] hover:bg-cyan-300 transition-all duration-300 active:scale-95 w-full sm:w-auto sm:self-start">
+            <Link to="/play" className="group flex items-center justify-center gap-2.5 px-8 py-3.5 bg-chess-active text-black font-black text-[0.95rem] rounded-2xl shadow-[0_20px_50px_-15px_rgba(0,206,209,0.5)] hover:scale-[1.03] hover:bg-cyan-300 transition-all duration-300 active:scale-95 w-full sm:w-auto sm:self-start lg:mt-[-1rem] xl:mt-0">
               <Play fill="currentColor" size={18} className="group-hover:rotate-12 transition-transform" />
               {t('home.playNow')}
             </Link>
