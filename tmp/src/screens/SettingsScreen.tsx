@@ -72,15 +72,19 @@ export default function SettingsScreen() {
         return (
           <div className="space-y-6 animate-fade-in">
             <SubViewHeader title={t('settings.boardAppearance')} onBack={() => setActiveSubView('main')} />
-            <div className="grid grid-cols-2 gap-3 px-2">
+            <div className="flex flex-col gap-2 px-2">
               {boardThemes.map((theme) => (
-                <SelectionCard 
+                <button
                   key={theme.id}
-                  active={boardTheme === theme.id}
                   onClick={() => setBoardTheme(theme.id as any)}
-                  title={theme.name}
-                  preview={<div className={cx("w-full h-full rounded-lg", theme.color)} />}
-                />
+                  className={cx(
+                    "flex items-center justify-between p-4 rounded-2xl border transition-all",
+                    boardTheme === theme.id ? "bg-chess-gold/10 border-chess-gold/40 text-chess-gold" : "bg-white/[0.03] border-white/5 text-neutral-400"
+                  )}
+                >
+                  <span className="font-black uppercase tracking-widest text-sm">{theme.name}</span>
+                  {boardTheme === theme.id && <Check size={18} className="text-chess-gold" />}
+                </button>
               ))}
             </div>
           </div>
@@ -106,15 +110,19 @@ export default function SettingsScreen() {
         return (
           <div className="space-y-6 animate-fade-in">
             <SubViewHeader title={t('settings.activeTheme')} onBack={() => setActiveSubView('main')} />
-            <div className="grid grid-cols-2 gap-3 px-2">
+            <div className="flex flex-col gap-2 px-2">
               {bgThemes.map((bg) => (
-                <SelectionCard 
+                <button
                   key={bg.id}
-                  active={background === bg.id}
                   onClick={() => setBackground(bg.id)}
-                  title={bg.name}
-                  preview={<div className={cx("w-full h-full rounded-lg border border-white/10", bg.class)} />}
-                />
+                  className={cx(
+                    "flex items-center justify-between p-4 rounded-2xl border transition-all",
+                    background === bg.id ? "bg-purple-500/10 border-purple-500/40 text-purple-300" : "bg-white/[0.03] border-white/5 text-neutral-400"
+                  )}
+                >
+                  <span className="font-black uppercase tracking-widest text-sm">{bg.name}</span>
+                  {background === bg.id && <Check size={18} className="text-purple-400" />}
+                </button>
               ))}
             </div>
           </div>
@@ -241,38 +249,24 @@ export default function SettingsScreen() {
   };
 
   return (
-    <div className="min-h-full w-full bg-[#161512] flex flex-col items-center relative transition-all overflow-x-hidden pt-0 px-2 pb-6 md:p-8">
+    <div className="min-h-full w-full bg-[#161512] flex flex-col items-center relative transition-all overflow-x-hidden pt-0 px-2 pb-6 md:px-8 md:pb-8 md:pt-3">
       {/* Background Decor */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-[85rem] z-10">
-        <header className="hidden md:flex mb-8 flex-col md:flex-row md:items-end justify-between gap-4 px-2">
-          <div className="space-y-1">
-            <h1 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter leading-none transform-gpu drop-shadow-2xl">
-              {t('settings.title')}
-            </h1>
-            <p className="text-[0.65rem] text-neutral-500 font-black uppercase tracking-[0.5em] italic opacity-60">Customization Studio</p>
-          </div>
-          <div className="hidden md:flex px-6 py-2.5 bg-white/5 backdrop-blur-3xl rounded-[2rem] border border-white/10 shadow-2xl items-center gap-4">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_15px_#10b981]" />
-            <span className="text-[0.7rem] font-black text-neutral-300 uppercase tracking-widest">{t('play.playersOnline')}: 34,102</span>
-          </div>
-        </header>
-
         {/* Desktop View: Unified Grid */}
-        <div className="hidden lg:grid grid-cols-12 gap-8 h-[calc(100vh-200px)]">
+        <div className="hidden lg:grid grid-cols-12 gap-8 h-[calc(100vh-100px)]">
           <div className="col-span-7 space-y-6 overflow-y-auto pr-4 custom-scrollbar">
             {/* Board Appearance */}
             <section className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-6 border border-white/10 shadow-2xl relative">
               <h2 className="text-xl font-black text-white mb-6 flex items-center gap-4 italic uppercase tracking-tighter">
                 <Palette size={20} className="text-chess-gold" /> {t('settings.boardAppearance')}
               </h2>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="flex flex-wrap gap-2">
                 {boardThemes.map((theme) => (
-                  <button key={theme.id} onClick={() => setBoardTheme(theme.id as any)} className={cx("flex flex-col items-center gap-2 p-2 rounded-2xl border transition-all active:scale-95", boardTheme === theme.id ? "bg-chess-gold/10 border-chess-gold/40" : "bg-black/20 border-white/5 hover:border-white/20")}>
-                    <div className={cx("w-full h-16 rounded-xl shadow-xl", theme.color)} />
-                    <span className="text-[0.6rem] font-black uppercase text-neutral-500 mt-1">{theme.name}</span>
+                  <button key={theme.id} onClick={() => setBoardTheme(theme.id as any)} className={cx("px-4 py-2 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.15em] transition-all active:scale-95", boardTheme === theme.id ? "bg-chess-gold/15 border-chess-gold/50 text-chess-gold shadow-[0_0_18px_rgba(223,176,98,0.12)]" : "bg-black/20 border-white/5 text-neutral-500 hover:border-white/15 hover:text-neutral-300")}>
+                    {theme.name}
                   </button>
                 ))}
               </div>
@@ -298,38 +292,24 @@ export default function SettingsScreen() {
               <h2 className="text-xl font-black text-white mb-6 flex items-center gap-4 italic uppercase tracking-tighter">
                 <LayoutIcon size={20} className="text-purple-400" /> {t('settings.activeTheme')}
               </h2>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="flex flex-wrap gap-2">
                 {bgThemes.map((bg) => (
-                  <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("flex flex-col items-center gap-2 p-2 rounded-2xl border transition-all active:scale-95", background === bg.id ? "bg-purple-500/10 border-purple-500/40" : "bg-black/20 border-white/5 hover:border-white/20")}>
-                    <div className={cx("w-full h-16 rounded-xl border border-white/10", bg.class)} />
-                    <span className="text-[0.6rem] font-black uppercase text-neutral-500 mt-1">{bg.name}</span>
+                  <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("px-4 py-2 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.15em] transition-all active:scale-95", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300 shadow-[0_0_18px_rgba(168,85,247,0.12)]" : "bg-black/20 border-white/5 text-neutral-500 hover:border-white/15 hover:text-neutral-300")}>
+                    {bg.name}
                   </button>
                 ))}
               </div>
             </section>
 
-            {/* Sound & Language Row */}
-            <div className="grid grid-cols-2 gap-6">
-              <section className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-6 border border-white/10 shadow-2xl">
-                <h3 className="text-sm font-black text-neutral-400 mb-4 uppercase tracking-widest">{t('settings.soundThemes')}</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {['Default', 'Nature', 'Digital', 'Arcade', 'Off'].map(s => (
-                    <button key={s} onClick={() => setSoundTheme(s === 'Off' ? 'off' as any : s as any)} className={cx("py-3 rounded-xl border text-[0.6rem] font-black uppercase tracking-tighter transition-all", soundTheme === s.toLowerCase() ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:text-neutral-400")}>{s}</button>
-                  ))}
-                </div>
-              </section>
-              <section className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-6 border border-white/10 shadow-2xl">
-                <h3 className="text-sm font-black text-neutral-400 mb-4 uppercase tracking-widest">{t('settings.changeLanguage')}</h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {languages.map(l => (
-                    <button key={l.id} onClick={() => setLanguage(l.id as any)} className={cx("flex flex-col items-center py-3 rounded-xl border transition-all", language === l.id ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:text-neutral-400")}>
-                      <span className="text-xl">{l.flag}</span>
-                      <span className="text-[0.5rem] font-black">{l.id.toUpperCase()}</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            </div>
+            {/* Sound Themes */}
+            <section className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-4 border border-white/10 shadow-2xl">
+              <h3 className="text-sm font-black text-neutral-400 mb-3 uppercase tracking-widest">{t('settings.soundThemes')}</h3>
+              <div className="flex flex-wrap gap-2">
+                {['Default', 'Nature', 'Digital', 'Arcade', 'Off'].map(s => (
+                  <button key={s} onClick={() => setSoundTheme(s === 'Off' ? 'off' as any : s as any)} className={cx("px-4 py-2 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.15em] transition-all active:scale-95", soundTheme === s.toLowerCase() ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:border-white/15 hover:text-neutral-400")}>{s}</button>
+                ))}
+              </div>
+            </section>
           </div>
 
           <div className="col-span-5 relative">
