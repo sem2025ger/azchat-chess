@@ -250,14 +250,17 @@ export default function SettingsScreen() {
 
   return (
     <div className="min-h-full w-full bg-[#161512] flex flex-col items-center relative transition-all overflow-x-hidden pt-0 px-2 pb-6 md:px-8 md:pb-8 md:pt-3">
+      {/* Hide the global header strip (search, bell, user) on this page */}
+      <style>{`header.shrink-0 { display: none !important; }`}</style>
+
       {/* Background Decor */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-[85rem] z-10">
         {/* Desktop View: Unified Grid */}
-        <div className="hidden lg:grid grid-cols-12 gap-8 h-[calc(100vh-100px)]">
-          <div className="col-span-7 space-y-6 overflow-y-auto pr-4 custom-scrollbar">
+        <div className="hidden lg:grid grid-cols-12 gap-8">
+          <div className="col-span-7 space-y-6 pr-4">
             {/* Board Appearance */}
             <section className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-6 border border-white/10 shadow-2xl relative">
               <h2 className="text-xl font-black text-white mb-6 flex items-center gap-4 italic uppercase tracking-tighter">
@@ -331,7 +334,7 @@ export default function SettingsScreen() {
         </div>
 
         {/* Mobile View: Hub and Spoke */}
-        <div className="lg:hidden w-full overflow-y-auto max-h-[calc(100vh-160px)] custom-scrollbar">
+        <div className="lg:hidden w-full overflow-y-auto max-h-[calc(100vh-80px)] custom-scrollbar">
           {renderMobileView()}
         </div>
       </div>
