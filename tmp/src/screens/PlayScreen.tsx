@@ -71,7 +71,7 @@ export default function PlayScreen() {
       `}</style>
 
       {/* Inner composition — slight upward offset so board sits higher in the viewport */}
-      <div className="w-full max-w-[1600px] flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-10 px-4 lg:px-12 py-4 lg:py-0 lg:-mt-12">
+      <div className="w-full max-w-[1600px] flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-10 px-4 lg:px-12 py-4 lg:py-0 lg:-mt-16">
 
         {/* ── Board Column ─────────────────────────────────────── */}
         <div className="w-full max-w-[65vh] lg:max-w-[74vh] xl:max-w-[82vh] flex flex-col justify-center flex-shrink-0 animate-fade-in-up relative group">
@@ -153,7 +153,7 @@ export default function PlayScreen() {
         </div>
 
         {/* ── Right Panel ──────────────────────────────────────── */}
-        <div className="w-full max-w-md lg:w-[460px] xl:w-[500px] flex-shrink-0 flex flex-col gap-3 animate-fade-in-right delay-200 lg:pb-0 lg:h-[90vh] 2xl:h-[84vh] max-h-[960px]">
+        <div className="w-full max-w-md lg:w-[460px] xl:w-[500px] flex-shrink-0 flex flex-col gap-3 animate-fade-in-right delay-200 lg:pb-0 lg:h-[94vh] 2xl:h-[88vh] max-h-[1020px]">
 
           {/* Compact search row — replaces the large header search */}
           <div className="flex items-center justify-end shrink-0 px-1">
