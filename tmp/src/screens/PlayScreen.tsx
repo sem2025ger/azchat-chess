@@ -153,7 +153,7 @@ export default function PlayScreen() {
         </div>
 
         {/* ── Right Panel ──────────────────────────────────────── */}
-        <div className="w-full max-w-md lg:w-[460px] xl:w-[500px] flex-shrink-0 flex flex-col gap-3 animate-fade-in-right delay-200 lg:pb-0 lg:h-[94vh] 2xl:h-[88vh] max-h-[1020px]">
+        <div className="w-full max-w-md lg:w-[460px] xl:w-[500px] flex-shrink-0 flex flex-col gap-2 animate-fade-in-right delay-200 lg:pb-0 lg:h-[94vh] 2xl:h-[88vh] max-h-[1020px]">
 
           {/* Compact search row — replaces the large header search */}
           <div className="flex items-center justify-end shrink-0 px-1">
@@ -171,23 +171,23 @@ export default function PlayScreen() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-chess-active/5 blur-[80px] rounded-full -mr-32 -mt-32 pointer-events-none group-hover/card:bg-chess-active/10 transition-colors duration-1000" />
 
             {/* Tabs */}
-            <div className="flex bg-black/40 p-2 gap-2 relative z-10 border-b border-white/5 shrink-0">
-              <button className="flex-1 py-3 bg-white/10 rounded-2xl text-[0.6rem] font-black text-white border border-white/10 shadow-2xl tracking-[0.2em] uppercase italic transition-all active:scale-95 leading-none">
+            <div className="flex bg-black/40 p-1.5 gap-2 relative z-10 border-b border-white/5 shrink-0">
+              <button className="flex-1 py-2 bg-white/10 rounded-2xl text-[0.6rem] font-black text-white border border-white/10 shadow-2xl tracking-[0.2em] uppercase italic transition-all active:scale-95 leading-none">
                 {t('play.tabs.play')}
               </button>
-              <button className="flex-1 py-3 text-[0.6rem] font-black text-neutral-500 hover:text-white transition-all uppercase tracking-[0.2em] px-2 italic text-center leading-none">
+              <button className="flex-1 py-2 text-[0.6rem] font-black text-neutral-500 hover:text-white transition-all uppercase tracking-[0.2em] px-2 italic text-center leading-none">
                 {t('play.tabs.tournaments')}
               </button>
-              <button className="flex-1 py-3 text-[0.6rem] font-black text-neutral-500 hover:text-white transition-all uppercase tracking-[0.2em] px-2 italic text-center leading-none">
+              <button className="flex-1 py-2 text-[0.6rem] font-black text-neutral-500 hover:text-white transition-all uppercase tracking-[0.2em] px-2 italic text-center leading-none">
                 {t('play.tabs.computer')}
               </button>
             </div>
 
-            <div className="p-5 md:p-6 space-y-4 flex-1 relative z-10 custom-scrollbar overflow-y-auto">
+            <div className="p-3 md:p-4 space-y-3 flex-1 relative z-10 custom-scrollbar overflow-y-auto">
 
               {/* Time Control */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center bg-black/30 px-6 py-4 rounded-[1.5rem] border border-white/5 shadow-inner group/val">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center bg-black/30 px-4 py-2.5 rounded-[1.5rem] border border-white/5 shadow-inner group/val">
                   <span className="text-[0.6rem] text-neutral-500 font-black uppercase tracking-[0.3em] group-hover/val:text-neutral-400 transition-colors">{t('play.timeControl')}</span>
                   <div className="flex items-center gap-3">
                     <Clock size={16} className="text-chess-active animate-pulse" />
@@ -195,11 +195,11 @@ export default function PlayScreen() {
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-3">
                   {Object.entries(presets).map(([category, times]) => (
-                    <div key={category} className="space-y-4">
-                      <div className="flex items-center gap-4 text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.25em] pl-2">
-                        <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/5 border border-white/10 shadow-lg">
+                    <div key={category} className="space-y-2">
+                      <div className="flex items-center gap-3 text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.25em] pl-2">
+                        <div className="flex items-center justify-center w-6 h-6 rounded-xl bg-white/5 border border-white/10 shadow-lg">
                           {category === 'Bullet' && <Zap size={14} className="text-yellow-400" />}
                           {category === 'Blitz' && <Sparkles size={14} className="text-orange-400" />}
                           {category === 'Rapid' && <Shield size={14} className="text-emerald-400" />}
@@ -207,13 +207,13 @@ export default function PlayScreen() {
                         <span className="flex-1">{category}</span>
                         <div className="h-px w-10 bg-white/[0.05]" />
                       </div>
-                      <div className="grid grid-cols-4 gap-3 px-1">
+                      <div className="grid grid-cols-4 gap-2 px-1">
                         {times.map(time => (
                           <button
                             key={time}
                             onClick={() => setTimeControl(time)}
                             className={cx(
-                              'py-4 rounded-2xl text-[0.7rem] font-black transition-all border relative overflow-hidden group/btn active:scale-90',
+                              'py-2.5 rounded-2xl text-[0.7rem] font-black transition-all border relative overflow-hidden group/btn active:scale-90',
                               timeControl === time
                                 ? 'bg-chess-active/10 border-chess-active/50 text-white shadow-[0_15px_30px_rgba(0,206,209,0.3)] ring-1 ring-chess-active/20'
                                 : 'bg-neutral-800/40 border-white/5 text-neutral-400 hover:border-white/20 hover:text-neutral-200',
@@ -249,7 +249,7 @@ export default function PlayScreen() {
             </div>
 
             {/* Start Game CTA */}
-            <div className="p-4 md:p-5 bg-black/60 border-t border-white/10 space-y-4 relative z-10 shadow-2xl shrink-0">
+            <div className="p-3 md:p-4 bg-black/60 border-t border-white/10 space-y-3 relative z-10 shadow-2xl shrink-0">
               <button
                 onClick={() => {
                   if (!isConnected) return;
