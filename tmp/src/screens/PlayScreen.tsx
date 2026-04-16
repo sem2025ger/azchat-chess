@@ -71,7 +71,7 @@ export default function PlayScreen() {
       `}</style>
 
       {/* Inner composition — slight upward offset so board sits higher in the viewport */}
-      <div className="w-full max-w-[1600px] flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-10 px-4 lg:px-12 py-4 lg:py-0 lg:-mt-8">
+      <div className="w-full max-w-[1600px] flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-10 px-4 lg:px-12 py-4 lg:py-0 lg:-mt-12">
 
         {/* ── Board Column ─────────────────────────────────────── */}
         <div className="w-full max-w-[65vh] lg:max-w-[74vh] xl:max-w-[82vh] flex flex-col justify-center flex-shrink-0 animate-fade-in-up relative group">
@@ -114,19 +114,19 @@ export default function PlayScreen() {
           )}
 
           {/* Opponent (top) */}
-          <div className="flex justify-between items-end mb-4 px-4 animate-fade-in-up delay-100">
-            <div className="flex items-center gap-5">
+          <div className="flex justify-between items-end mb-2 px-4 animate-fade-in-up delay-100">
+            <div className="flex items-center gap-3">
               <div className="relative group/avatar">
-                <div className="w-14 h-14 bg-neutral-900 rounded-[1.25rem] border border-white/5 flex items-center justify-center text-2xl shadow-2xl transition-all duration-500 group-hover/avatar:scale-110 group-hover/avatar:-rotate-3 relative z-10">🇦🇿</div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-[3px] border-[#161512] shadow-xl z-20" />
+                <div className="w-10 h-10 bg-neutral-900 rounded-[1rem] border border-white/5 flex items-center justify-center text-lg shadow-2xl transition-all duration-500 group-hover/avatar:scale-110 group-hover/avatar:-rotate-3 relative z-10">🇦🇿</div>
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#161512] shadow-xl z-20" />
                 <div className="absolute inset-0 bg-chess-gold/10 blur-xl rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity" />
               </div>
               <div>
-                <div className="font-black text-white text-lg leading-none tracking-tight flex items-center gap-3 italic">
+                <div className="font-black text-white text-sm leading-none tracking-tight flex items-center gap-2 italic">
                   {profile?.username || user?.user_metadata?.username || 'Guest'}
-                  <span className="bg-chess-gold/20 text-chess-gold text-[0.55rem] px-2 py-0.5 rounded-lg font-black tracking-widest border border-chess-gold/20 shadow-[0_0_15px_rgba(223,176,98,0.2)]">{profile?.role || 'PLAYER'}</span>
+                  <span className="bg-chess-gold/20 text-chess-gold text-[0.5rem] px-1.5 py-0.5 rounded-md font-black tracking-widest border border-chess-gold/20 shadow-[0_0_15px_rgba(223,176,98,0.2)]">{profile?.role || 'PLAYER'}</span>
                 </div>
-                <div className="text-[0.6rem] text-neutral-500 font-black uppercase tracking-[0.25em] mt-1.5 opacity-60">{t('play.eliteRating')}</div>
+                <div className="text-[0.55rem] text-neutral-500 font-black uppercase tracking-[0.25em] mt-1 opacity-60">{t('play.eliteRating')}</div>
               </div>
             </div>
           </div>
@@ -138,22 +138,22 @@ export default function PlayScreen() {
           </div>
 
           {/* Waiting player (bottom) */}
-          <div className="flex justify-between items-start mt-4 px-4 animate-fade-in-up delay-100 opacity-20 filter grayscale">
-            <div className="flex items-center gap-5">
-              <div className="w-14 h-14 bg-neutral-900 rounded-[1.25rem] border border-white/5 flex items-center justify-center text-2xl shadow-2xl relative">
+          <div className="flex justify-between items-start mt-2 px-4 animate-fade-in-up delay-100 opacity-20 filter grayscale">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-neutral-900 rounded-[1rem] border border-white/5 flex items-center justify-center text-lg shadow-2xl relative">
                 🇹🇷
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-neutral-700 rounded-full border-[3px] border-[#161512] shadow-xl" />
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-neutral-700 rounded-full border-2 border-[#161512] shadow-xl" />
               </div>
               <div>
-                <div className="font-black text-white text-lg leading-none tracking-tight italic">{t('play.waiting')}</div>
-                <div className="text-[0.6rem] text-neutral-500 font-black uppercase tracking-[0.25em] mt-1.5">PLAYER_2</div>
+                <div className="font-black text-white text-sm leading-none tracking-tight italic">{t('play.waiting')}</div>
+                <div className="text-[0.55rem] text-neutral-500 font-black uppercase tracking-[0.25em] mt-1">PLAYER_2</div>
               </div>
             </div>
           </div>
         </div>
 
         {/* ── Right Panel ──────────────────────────────────────── */}
-        <div className="w-full max-w-md lg:w-[460px] xl:w-[500px] flex-shrink-0 flex flex-col gap-3 animate-fade-in-right delay-200 lg:pb-0 lg:h-[84vh] 2xl:h-[78vh] max-h-[900px]">
+        <div className="w-full max-w-md lg:w-[460px] xl:w-[500px] flex-shrink-0 flex flex-col gap-3 animate-fade-in-right delay-200 lg:pb-0 lg:h-[90vh] 2xl:h-[84vh] max-h-[960px]">
 
           {/* Compact search row — replaces the large header search */}
           <div className="flex items-center justify-end shrink-0 px-1">
