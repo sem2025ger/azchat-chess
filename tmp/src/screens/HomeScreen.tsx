@@ -29,14 +29,18 @@ export default function HomeScreen() {
   return (
     <div className="flex flex-col h-full w-full overflow-hidden items-center justify-center bg-[#161512] transition-all relative home-screen-root">
       <style>{`
-        /* Lighten black pieces on Home board only — soft charcoal, not deep black */
+        /* All pieces slightly larger on Home board */
+        .home-board img {
+          transform: scale(1.16);
+        }
+        /* Lighten black pieces on Home board — charcoal, not deep black */
         .home-board img[src$="bK.svg"],
         .home-board img[src$="bQ.svg"],
         .home-board img[src$="bR.svg"],
         .home-board img[src$="bB.svg"],
         .home-board img[src$="bN.svg"],
         .home-board img[src$="bP.svg"] {
-          filter: brightness(1.7) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+          filter: brightness(2.5) drop-shadow(0 2px 4px rgba(0,0,0,0.4));
         }
         @media (max-width: 1024px) {
           .board-container {
@@ -69,7 +73,7 @@ export default function HomeScreen() {
       <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-12 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-16 py-2 xl:py-0 overflow-y-auto xl:overflow-visible">
 
         {/* LEFT: Chessboard */}
-        <div className="flex flex-col items-center xl:items-end w-full xl:w-[55%] max-w-[610px] shrink-0 relative perspective-1000 board-container xl:-mt-4">
+        <div className="flex flex-col items-center xl:items-end w-full xl:w-[57%] max-w-[660px] shrink-0 relative perspective-1000 board-container xl:-mt-8">
           <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
             <ChessBoard className="!border-none !p-1 md:!p-3" />
