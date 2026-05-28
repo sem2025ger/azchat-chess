@@ -1,10 +1,8 @@
-import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ChessBoard from '../components/ChessBoard';
 import { Play, Trophy, Activity, Users, Globe } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { useThemeContext } from '../context/ThemeContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -15,10 +13,8 @@ function cx(...inputs: (string | undefined | null | false)[]) {
 export default function HomeScreen() {
   const { t } = useLanguage();
   useAuth();
-  const { setBoardTheme } = useThemeContext();
 
-  // Force Obsidian Night board on this screen
-  useEffect(() => { setBoardTheme('Obsidian Gold'); }, []);
+  // User preferences applied automatically via ThemeContext
 
   const stats = [
     { label: t('home.stats.players'), value: '34,102', icon: Users, color: 'text-emerald-400' },
@@ -27,7 +23,7 @@ export default function HomeScreen() {
   ];
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden items-center justify-center bg-[#161512] transition-all relative home-screen-root">
+    <div className="flex flex-col h-full w-full overflow-hidden items-center justify-center bg-transparent transition-all relative home-screen-root">
       <style>{`
         /* All pieces slightly larger on Home board */
         .home-board img {
@@ -76,12 +72,23 @@ export default function HomeScreen() {
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[57%] max-w-[660px] shrink-0 relative perspective-1000 board-container xl:-mt-12">
           <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
-            <ChessBoard className="!border-none !p-1 md:!p-3" />
+            <ChessBoard overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3" />
           </div>
         </div>
 
-        {/* RIGHT: Premium Dashboard */}
-        <div className="flex-1 w-full flex flex-col justify-center max-w-2xl xl:max-w-[420px] z-20 gap-4 mb-4 xl:mb-0 xl:-mt-6">
+        {/* RIGHT: Premium Dashboard Container */}
+        <div className="flex-1 w-full flex flex-col justify-center items-center xl:items-stretch max-w-2xl xl:max-w-[420px] z-20 gap-4 mb-4 xl:mb-0 xl:-mt-10 xl:ml-8">
+          
+          {/* Premium Flags Block */}
+          <div className="flex items-center justify-center gap-7 py-5 px-12 rounded-[2.2rem] bg-[#121212]/90 backdrop-blur-3xl border-[2px] border-transparent panel-glow-cycle transition-all shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] self-center w-auto shrink-0 z-30 mb-2">
+             <GermanyFlag />
+             <TurkeyFlag />
+             <AzerbaijanFlag />
+          </div>
+
+          {/* Premium Dashboard Card */}
+          <div className="w-full flex flex-col justify-center gap-4 bg-[#121212]/80 backdrop-blur-2xl p-6 rounded-[2.5rem] border-[2px] border-transparent border-b-[4px] border-b-black/40 panel-glow-cycle transition-all relative">
+
 
           {/* 1. Hero Brand Header */}
           <div className="flex flex-col gap-2">
@@ -92,7 +99,7 @@ export default function HomeScreen() {
               </span>
             </div>
 
-            <h1 className="text-[2.5rem] xl:text-[2.9rem] font-black text-white leading-[0.95] tracking-[-0.03em] italic">
+            <h1 className="text-[2.5rem] xl:text-[2.9rem] font-black text-glow-cycle leading-[0.95] tracking-[-0.03em] italic">
               Chess<span className="text-chess-active"> Arena</span>
             </h1>
 
@@ -104,7 +111,7 @@ export default function HomeScreen() {
           {/* 2. Premium Play Now CTA */}
           <Link
             to="/play"
-            className="group relative flex items-center justify-between gap-4 px-5 py-3.5 bg-gradient-to-r from-chess-gold via-amber-400 to-amber-500 hover:from-amber-300 hover:via-yellow-300 hover:to-amber-400 text-black rounded-2xl shadow-[0_14px_40px_-8px_rgba(223,176,98,0.45)] hover:shadow-[0_18px_48px_-6px_rgba(223,176,98,0.65)] hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-300 transform-gpu ring-1 ring-amber-300/20 overflow-hidden w-full"
+            className="group relative flex items-center justify-between gap-4 px-5 py-3.5 btn-glow-cycle border border-white/20 text-black rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-full"
           >
             {/* Shimmer sweep on hover */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
@@ -114,7 +121,7 @@ export default function HomeScreen() {
                 <Play fill="currentColor" size={15} className="group-hover:scale-110 transition-transform duration-200 ml-0.5" />
               </div>
               <div className="flex flex-col items-start leading-none">
-                <span className="font-black text-[0.95rem] tracking-tight uppercase italic">{t('home.playNow')}</span>
+                <span className="font-black text-[0.95rem] tracking-tight uppercase italic text-shadow-cycle">{t('home.playNow')}</span>
                 <span className="text-[0.5rem] font-black opacity-50 tracking-[0.22em] uppercase mt-0.5">Quick Match · Ranked</span>
               </div>
             </div>
@@ -157,6 +164,7 @@ export default function HomeScreen() {
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
@@ -170,7 +178,7 @@ function FeatureCard({
     <Link
       to={to}
       className={cx(
-        'group relative flex items-center gap-3 bg-white/[0.015] backdrop-blur-2xl rounded-2xl p-3.5 border hover:bg-white/[0.04] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_36px_-10px_rgba(0,0,0,0.7)] overflow-hidden',
+        'group relative flex items-center gap-3 bg-white/[0.015] backdrop-blur-2xl rounded-2xl p-3.5 border hover:bg-white/[0.04] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_36px_-10px_rgba(0,0,0,0.7)] active:scale-95 overflow-hidden',
         border,
       )}
     >
@@ -210,3 +218,38 @@ function ChevronRight({ size, className }: { size: number; className?: string })
     </svg>
   );
 }
+
+function GermanyFlag() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="62" height="44" viewBox="0 0 5 3" className="rounded-md shrink-0 ring-1 ring-white/10 shadow-lg premium-flag-glow premium-flag-1 transition-all duration-500">
+      <rect width="5" height="3" y="0" x="0" fill="#000"/>
+      <rect width="5" height="2" y="1" x="0" fill="#D00"/>
+      <rect width="5" height="1" y="2" x="0" fill="#FFCE00"/>
+    </svg>
+  );
+}
+
+function TurkeyFlag() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="62" height="44" viewBox="0 0 1200 800" className="rounded-md shrink-0 ring-1 ring-white/10 shadow-lg premium-flag-glow premium-flag-2 transition-all duration-500">
+      <rect width="1200" height="800" fill="#E30A17"/>
+      <circle cx="425" cy="400" r="200" fill="#fff"/>
+      <circle cx="475" cy="400" r="160" fill="#E30A17"/>
+      <polygon points="709.84,203.21 644.39,404.54 815.82,279.99 603.86,279.99 775.29,404.54" fill="#fff"/>
+    </svg>
+  );
+}
+
+function AzerbaijanFlag() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="62" height="44" viewBox="0 0 1200 600" className="rounded-md shrink-0 ring-1 ring-white/10 shadow-lg premium-flag-glow premium-flag-3 transition-all duration-500">
+      <rect width="1200" height="200" fill="#00b5e2"/>
+      <rect width="1200" height="200" y="200" fill="#ef3340"/>
+      <rect width="1200" height="200" y="400" fill="#509e2f"/>
+      <circle cx="560" cy="300" r="75" fill="#fff"/>
+      <circle cx="585" cy="300" r="60" fill="#ef3340"/>
+      <path fill="#fff" d="M660,260 L665,285 L690,280 L675,300 L690,320 L665,315 L660,340 L650,315 L625,320 L640,300 L625,280 L650,285 Z" />
+    </svg>
+  );
+}
+

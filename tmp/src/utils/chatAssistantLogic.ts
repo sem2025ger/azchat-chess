@@ -66,10 +66,15 @@ export function rewriteMessage(text: string, tone: 'polite' | 'friendly' | 'neut
   return `${rules[tone]}${text.charAt(0).toUpperCase() + text.slice(1)}`;
 }
 
-export function translateMock(text: string, targetLang: 'az' | 'tr' | 'ru'): string {
+import { type Language } from '../translations';
+
+export function translateMock(text: string, targetLang: Language): string {
   if (!text) return "";
   
-  const prefixes = {
+  const prefixes: Record<Language, string> = {
+    en: "[EN Translation]: ",
+    de: "[DE Übersetzung]: ",
+    ua: "[UA Переклад]: ",
     az: "[AZ Tərcümə]: ",
     tr: "[TR Çeviri]: ",
     ru: "[RU Перевод]: ",

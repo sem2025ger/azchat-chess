@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+
+import type { BoardTheme, PieceTheme } from '../lib/chessThemes';
 
 // Defines the options
-export type BackgroundTheme = 'Standard' | 'Game Room' | 'Classic Wood' | 'Modern Glass';
-export type PieceTheme = 'classic' | 'neo' | 'tournament' | 'wood' | 'glass' | 'marble';
-export type BoardTheme = 'Green' | 'Wood' | 'Glass' | 'Brown' | 'Ice Sea' | 'Newspaper' | 'Walnut' | 'Sky' | 'Lolz' | 'Stone' | 'Warm Gold' | 'Muted Gold' | 'Obsidian Gold' | 'Charcoal Gold' | 'Champagne' | 'Luxury Beige' | 'Ivory' | 'Tournament' | 'Blue Steel' | 'Marble Sand';
-export type SoundTheme = 'Default' | 'Nature' | 'Digital' | 'Arcade' | 'Off';
+export type BackgroundTheme = 'Void Black' | 'Deep Space' | 'Velvet Gold' | 'Champagne Light' | 'Coffee Brown' | 'Walnut Dark' | 'Emerald Night' | 'Royal Blue' | 'Royal Violet' | 'Obsidian Gold';
+export type SoundTheme = 'Default' | 'Soft' | 'Classic' | 'Muted / Off';
 
 interface ThemeContextType {
   specialThemesEnabled: boolean;
@@ -22,11 +22,38 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [specialThemesEnabled, setSpecialThemesEnabled] = useState(true);
-  const [background, setBackground] = useState<BackgroundTheme>('Game Room');
-  const [pieceTheme, setPieceTheme] = useState<PieceTheme>('classic');
-  const [boardTheme, setBoardTheme] = useState<BoardTheme>('Obsidian Gold');
-  const [sound, setSound] = useState<SoundTheme>('Default');
+  const [specialThemesEnabled, setSpecialThemesEnabled] = useState(() => {
+    const saved = localStorage.getItem('chess_specialThemesEnabled');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  
+  const [background, setBackground] = useState<BackgroundTheme>(() => {
+    const saved = localStorage.getItem('chess_background');
+    if (saved === 'Standard') return 'Void Black';
+    if (saved === 'Game Room') return 'Deep Space';
+    if (saved === 'Velvet Gold Background') return 'Velvet Gold';
+    const validThemes = ['Void Black', 'Deep Space', 'Velvet Gold', 'Champagne Light', 'Coffee Brown', 'Walnut Dark', 'Emerald Night', 'Royal Blue', 'Royal Violet', 'Obsidian Gold'];
+    if (saved && validThemes.includes(saved)) return saved as BackgroundTheme;
+    return 'Void Black';
+  });
+  
+  const [pieceTheme, setPieceTheme] = useState<PieceTheme>(() => {
+    return (localStorage.getItem('chess_pieceTheme') as PieceTheme) || 'neo';
+  });
+  
+  const [boardTheme, setBoardTheme] = useState<BoardTheme>(() => {
+    return (localStorage.getItem('chess_boardTheme') as BoardTheme) || 'Classic Wood';
+  });
+  
+  const [sound, setSound] = useState<SoundTheme>(() => {
+    return (localStorage.getItem('chess_sound') as SoundTheme) || 'Default';
+  });
+
+  useEffect(() => { localStorage.setItem('chess_specialThemesEnabled', JSON.stringify(specialThemesEnabled)); }, [specialThemesEnabled]);
+  useEffect(() => { localStorage.setItem('chess_background', background); }, [background]);
+  useEffect(() => { localStorage.setItem('chess_pieceTheme', pieceTheme); }, [pieceTheme]);
+  useEffect(() => { localStorage.setItem('chess_boardTheme', boardTheme); }, [boardTheme]);
+  useEffect(() => { localStorage.setItem('chess_sound', sound); }, [sound]);
 
   return (
     <ThemeContext.Provider value={{

@@ -112,8 +112,8 @@ export default function ProfileScreen() {
 
   if (!session) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-8 md:px-8 overflow-hidden bg-[#161512] h-full flex flex-col items-center justify-center relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-chess-gold/5 via-transparent to-chess-active/5 pointer-events-none" />
+      <div className="max-w-6xl mx-auto px-4 py-8 md:px-8 overflow-hidden bg-transparent h-full flex flex-col items-center justify-center relative">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-overlay"></div>
         
         <div className="w-full max-w-md bg-neutral-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] animate-fade-in-up relative overflow-hidden ring-1 ring-white/5">
           <div className="absolute -left-20 -top-20 w-[400px] h-[400px] bg-chess-gold/10 blur-[120px] pointer-events-none" />
@@ -173,7 +173,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-2 md:px-8 md:py-3 overflow-hidden bg-[#161512] h-full">
+    <div className="max-w-6xl mx-auto px-4 py-2 md:px-8 md:py-3 overflow-hidden bg-transparent h-full">
 
       {/* Profile Identity - High Fidelity */}
       <div className="bg-neutral-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-5 md:p-7 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] animate-fade-in-up flex flex-col md:flex-row items-center gap-6 mb-4 relative overflow-hidden ring-1 ring-white/5 group">

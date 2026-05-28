@@ -62,18 +62,19 @@ export default function ChatScreen() {
   };
 
   return (
-    <div className="flex-1 w-full max-w-[85rem] mx-auto px-4 pb-4 md:px-6 md:pb-6 flex gap-4 animate-fade-in bg-[#161512] overflow-hidden items-stretch lg:-mt-4 lg:py-2 lg:max-h-[calc(100vh-90px)]">
+    <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center bg-transparent p-4 md:p-6 lg:p-8 overflow-hidden animate-fade-in">
+      <div className="w-full max-w-[85rem] mx-auto flex gap-6 items-stretch h-[85vh] max-h-[850px] min-h-[500px]">
 
       {/* Main Chat Area - Premium Container */}
-      <div className="flex-1 flex flex-col bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] border border-white/5 shadow-[0_60px_120px_-30px_rgba(0,0,0,1)] overflow-hidden relative border-b-[8px] border-black/60 ring-1 ring-white/5">
+      <div className="flex-1 flex flex-col bg-transparent backdrop-blur-3xl rounded-[2.5rem] border-[2px] border-transparent overflow-hidden relative border-b-[4px] border-b-black/40 panel-glow-cycle transition-all">
 
         {/* Professional Global Header */}
-        <div className="h-16 shrink-0 border-b border-white/[0.03] flex items-center px-6 gap-4 bg-white/[0.02]">
+        <div className="h-16 shrink-0 border-b border-white/[0.03] flex items-center px-6 gap-4 bg-transparent">
           <div className="w-10 h-10 rounded-xl bg-chess-active/10 flex items-center justify-center text-chess-active border border-chess-active/20 shadow-[0_0_20px_#00ced120]">
             <Globe size={20} />
           </div>
           <div className="flex-1">
-            <h2 className="font-black text-white text-base leading-tight tracking-tighter uppercase italic">{t('chat.globalTitle')}</h2>
+            <h2 className="font-black text-glow-cycle text-base leading-tight tracking-tighter uppercase italic">{t('chat.globalTitle')}</h2>
             <div className="flex items-center gap-2 text-[0.6rem] text-neutral-500 font-black uppercase tracking-[0.25em] mt-0.5 italic">
               <span>{t('chat.subtitle')}</span>
               <div className="w-1 h-1 rounded-full bg-white/10" />
@@ -189,13 +190,13 @@ export default function ChatScreen() {
       </div>
 
       {/* Online List - Product Style */}
-      <div className="hidden lg:flex w-[280px] xl:w-[320px] flex-col bg-neutral-900/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-[0_80px_160px_-40px_rgba(0,0,0,1)] overflow-hidden animate-fade-in-right border-b-[8px] border-black/60 ring-1 ring-white/5 lg:h-full min-h-0">
+      <div className="hidden lg:flex w-[280px] xl:w-[320px] flex-col bg-neutral-900/60 backdrop-blur-3xl rounded-[2.5rem] border-[2px] border-transparent overflow-hidden animate-fade-in-right border-b-[4px] border-b-black/40 panel-glow-cycle transition-all h-full">
         <div className="h-16 border-b border-white/[0.03] flex items-center px-5 gap-3 bg-white/[0.02] shrink-0">
           <div className="w-9 h-9 bg-chess-gold/10 rounded-xl flex items-center justify-center text-chess-gold border border-chess-gold/20 shadow-[0_0_20px_#dfb06220]">
             <Users size={18} />
           </div>
           <div className="flex-1">
-            <h2 className="font-black text-white text-sm leading-tight uppercase italic">{t('chat.onlineUsers')}</h2>
+            <h2 className="font-black text-glow-cycle text-sm leading-tight uppercase italic">{t('chat.onlineUsers')}</h2>
             <div className="text-[0.55rem] font-black text-neutral-600 uppercase tracking-widest mt-0.5 italic">{t('chat.worldPlayers')}</div>
           </div>
         </div>
@@ -233,6 +234,7 @@ export default function ChatScreen() {
         </div>
       </div>
 
+      </div>
     </div>
   );
 }

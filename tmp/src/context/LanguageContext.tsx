@@ -10,13 +10,16 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('az');
+  const [language, setLanguageState] = useState<Language>(() => {
+    const savedCode = localStorage.getItem('app-language') as Language;
+    if (savedCode && ['en', 'de', 'az', 'tr', 'ua', 'ru'].includes(savedCode)) {
+      return savedCode;
+    }
+    return 'az';
+  });
 
   useEffect(() => {
-    const savedCode = localStorage.getItem('app-language') as Language;
-    if (savedCode && ['ru', 'az', 'tr'].includes(savedCode)) {
-      setLanguageState(savedCode);
-    }
+    // Keep for sync across tabs if needed
   }, []);
 
   const setLanguage = (lang: Language) => {

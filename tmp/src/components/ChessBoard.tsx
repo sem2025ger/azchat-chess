@@ -1,8 +1,29 @@
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { useThemeContext, type BoardTheme, type PieceTheme } from '../context/ThemeContext';
-import { Chess, type Square, type Move } from 'chess.js';
+import { useThemeContext } from '../context/ThemeContext';
+import { BOARD_THEMES, type BoardTheme } from '../lib/chessThemes';
+import { Chess, type Square, type Move, type PieceSymbol, type Color } from 'chess.js';
+
+interface PieceData {
+  id: string;
+  type: PieceSymbol;
+  color: Color;
+  square: Square;
+}
+
+function getBoardPieces(game: Chess): PieceData[] {
+  const pieces: PieceData[] = [];
+  const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  for (let r = 1; r <= 8; r++) {
+    for (const f of files) {
+      const sq = `${f}${r}` as Square;
+      const p = game.get(sq);
+      if (p) pieces.push({ id: '', type: p.type, color: p.color, square: sq });
+    }
+  }
+  return pieces;
+}
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -13,13 +34,15 @@ export default function ChessBoard({
   showCoordinates = true,
   game,
   onMove,
-  orientation = 'w'
+  orientation = 'w',
+  overrideBoardTheme
 }: {
   className?: string;
   showCoordinates?: boolean;
   game?: Chess;
   onMove?: (source: string, target: string, promotion?: string) => boolean;
   orientation?: 'w' | 'b';
+  overrideBoardTheme?: BoardTheme;
 }) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
   console.log('[THEME_DEBUG] ChessBoard Active Theme:', pieceTheme);
@@ -32,6 +55,8 @@ export default function ChessBoard({
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
 
+  const [visualPieces, setVisualPieces] = useState<PieceData[]>([]);
+
   useEffect(() => {
     const history = activeGame.history({ verbose: true }) as Move[];
     if (history.length > 0) {
@@ -40,34 +65,45 @@ export default function ChessBoard({
     } else {
       setLastMove(null);
     }
+
+    const current = getBoardPieces(activeGame);
+    setVisualPieces(prev => {
+      if (prev.length === 0) return current.map((p, i) => ({ ...p, id: `init-${i}` }));
+      
+      const result: PieceData[] = [];
+      const unusedCurrent = new Set(current);
+
+      // Keep pieces that didn't move
+      for (const p of prev) {
+        const match = current.find(c => c.square === p.square && c.color === p.color && c.type === p.type && unusedCurrent.has(c));
+        if (match) {
+          result.push({ ...p, square: match.square, type: match.type });
+          unusedCurrent.delete(match);
+        }
+      }
+
+      // Match moved pieces
+      const movedOld = prev.filter(p => !result.includes(p));
+      const newCurrent = Array.from(unusedCurrent);
+
+      for (const nc of newCurrent) {
+        const oldMatchIdx = movedOld.findIndex(o => o.color === nc.color && (o.type === nc.type || nc.type === 'q'));
+        if (oldMatchIdx !== -1) {
+          const old = movedOld.splice(oldMatchIdx, 1)[0];
+          result.push({ ...old, square: nc.square, type: nc.type });
+        } else {
+          result.push({ ...nc, id: `new-${Math.random()}` });
+        }
+      }
+
+      return result;
+    });
   }, [activeGame, activeGame.fen(), trigger]);
 
-  const boardThemeClasses: Record<BoardTheme, { light: string; dark: string }> = {
-    Green: { light: 'bg-[#ebecd0]', dark: 'bg-[#779556]' },
-    Wood: { light: 'bg-[#debc8d]', dark: 'bg-[#8b4a1c]' },
-    Glass: { light: 'bg-white/20 backdrop-blur-sm', dark: 'bg-black/30 backdrop-blur-md' },
-    Brown: { light: 'bg-[#f0d9b5]', dark: 'bg-[#b58863]' },
-    'Ice Sea': { light: 'bg-[#dee3e6]', dark: 'bg-[#8ca2ad]' },
-    Newspaper: { light: 'bg-[#ffffff]', dark: 'bg-[#d1d1d1]' },
-    Walnut: { light: 'bg-[#e3c16f]', dark: 'bg-[#b88b4a]' },
-    Sky: { light: 'bg-[#8ebad9]', dark: 'bg-[#4b7399]' },
-    Lolz: { light: 'bg-[#ffffcf]', dark: 'bg-[#ffcf62]' },
-    Stone: { light: 'bg-[#e0e0e0]', dark: 'bg-[#a0a0a0]' },
-    'Warm Gold': { light: 'bg-[#f0d192]', dark: 'bg-[#a67c37]' },
-    'Muted Gold': { light: 'bg-[#d9c5a0]', dark: 'bg-[#7d6b41]' },
-    'Obsidian Gold': { light: 'bg-[#c4a671]', dark: 'bg-[#1a1a1a]' },
-    'Charcoal Gold': { light: 'bg-[#b09b7c]', dark: 'bg-[#2b2b2b]' },
-    Champagne: { light: 'bg-[#f2e1c2]', dark: 'bg-[#c5ad85]' },
-    'Luxury Beige': { light: 'bg-[#e5d5b3]', dark: 'bg-[#a68d60]' },
-    'Ivory': { light: 'bg-[#f1eddf]', dark: 'bg-[#b8a184]' },
-    'Tournament': { light: 'bg-[#ececd1]', dark: 'bg-[#739552]' },
-    'Blue Steel': { light: 'bg-[#d1d5db]', dark: 'bg-[#4b5563]' },
-    'Marble Sand': { light: 'bg-[#e5e7eb]', dark: 'bg-[#a3a3a3]' }
-  };
-
+  const activeBoardThemeName: BoardTheme = overrideBoardTheme || boardTheme || 'Classic Green';
   const activeBoardTheme = specialThemesEnabled
-    ? boardThemeClasses[boardTheme] || boardThemeClasses.Green
-    : boardThemeClasses.Green;
+    ? BOARD_THEMES[activeBoardThemeName as BoardTheme] || BOARD_THEMES['Classic Green']
+    : BOARD_THEMES['Classic Green'];
 
   const ranks = orientation === 'w' ? [8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8];
   const files =
@@ -173,7 +209,6 @@ export default function ChessBoard({
               const isSelected = selectedSquare === squareRef;
               const isLastMove = lastMove?.from === squareRef || lastMove?.to === squareRef;
               const isLegalMove = legalMoves.includes(squareRef);
-              const piece = activeGame.get(squareRef as Square);
 
               return (
                 <div
@@ -195,10 +230,10 @@ export default function ChessBoard({
 
                   {isLegalMove && (
                     <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-                      {piece ? (
-                        <div className="w-full h-full border-4 border-black/20 rounded-full scale-[0.85]" />
+                      {activeGame.get(squareRef as Square) ? (
+                        <div className="w-full h-full border-[5px] border-black/20 rounded-full scale-[0.85]" />
                       ) : (
-                        <div className="w-1/4 h-1/4 rounded-full bg-black/20 backdrop-blur-[2px]" />
+                        <div className="w-[30%] h-[30%] rounded-full bg-black/20 backdrop-blur-[2px]" />
                       )}
                     </div>
                   )}
@@ -225,22 +260,37 @@ export default function ChessBoard({
                     </span>
                   )}
 
-                  {piece && (
-                    <div
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, squareRef)}
-                      className={cx(
-                        'absolute inset-0 z-30 cursor-grab active:cursor-grabbing hover:scale-[1.05] transition-transform duration-150',
-                        isSelected ? 'scale-[1.1]' : ''
-                      )}
-                    >
-                      <PieceImage piece={piece} theme={pieceTheme} />
-                    </div>
-                  )}
                 </div>
               );
             })
           )}
+          
+          {/* Absolute Piece Layer for Smooth Animation */}
+          <div className="absolute inset-0 pointer-events-none z-30">
+            {visualPieces.map((p) => {
+              const fileIdx = files.indexOf(p.square[0]);
+              const rankIdx = ranks.indexOf(parseInt(p.square[1]));
+              if (fileIdx === -1 || rankIdx === -1) return null;
+              
+              const isSelected = selectedSquare === p.square;
+
+              return (
+                <div
+                  key={p.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, p.square)}
+                  onClick={() => onSquareClick(p.square)}
+                  className={cx(
+                    'absolute w-[12.5%] h-[12.5%] transition-all duration-[150ms] ease-out pointer-events-auto cursor-grab active:cursor-grabbing hover:scale-[1.05]',
+                    isSelected ? 'scale-[1.1] drop-shadow-2xl z-40' : 'z-30'
+                  )}
+                  style={{ left: `${fileIdx * 12.5}%`, top: `${rankIdx * 12.5}%` }}
+                >
+                  <PieceImage piece={p} theme={pieceTheme} />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -252,11 +302,13 @@ function PieceImage({
   theme
 }: {
   piece: { type: string; color: string };
-  theme: PieceTheme;
+  theme: string;
 }) {
   const pieceSetName = theme || 'classic'; // Fallback only to classic if undefined
   const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
-  const src = `/pieces/${pieceSetName}/${pieceCode}.svg`;
+  const src = pieceSetName === 'cburnett-classic'
+    ? `/chess-assets/pieces/cburnett/${pieceCode}.svg`
+    : `/pieces/${pieceSetName}/${pieceCode}.svg`;
   console.log('[THEME_DEBUG] PieceImage Source:', src);
 
   return (

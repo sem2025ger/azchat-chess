@@ -6,28 +6,59 @@ import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import ChessBoard from '../components/ChessBoard';
-import { useThemeContext } from '../context/ThemeContext';
-import { Shield, Zap, Users, Trophy, X, Loader2, Sparkles, Swords, Clock, Search } from 'lucide-react';
+
+import { Shield, Zap, Users, Trophy, X, Loader2, Sparkles, Swords, Clock, ChevronDown } from 'lucide-react';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
 
+type AccentTheme = 'gold' | 'cyan' | 'violet';
+
 export default function PlayScreen() {
   const { t } = useLanguage();
-  const [timeControl, setTimeControl] = useState('10 min');
-  const [matchType, setMatchType] = useState('Rated');
-  const [region, setRegion] = useState('Global');
+  const [timeControl, setTimeControl] = useState('3 min.');
   const [isSearching, setIsSearching] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
+  const [accentTheme, setAccentTheme] = useState<AccentTheme>('gold');
+  const [isTimeExpanded, setIsTimeExpanded] = useState(false);
 
   const navigate = useNavigate();
-  const { socket, isConnected } = useSocket();
+  const { socket } = useSocket();
   const { user, profile } = useAuth();
-  const { setBoardTheme } = useThemeContext();
 
-  // Force Chess.com green board on this screen
-  useEffect(() => { setBoardTheme('Green'); }, []);
+  // Primary colors based on theme
+  const accentColors = {
+    gold: {
+      primary: 'text-amber-400',
+      bg: 'bg-amber-400',
+      border: 'border-amber-400/50',
+      shadow: 'shadow-amber-400/20',
+      gradient: 'from-amber-400 via-yellow-500 to-amber-600',
+      glow: 'after:bg-amber-400/20',
+      dot: 'bg-[#dfb062]'
+    },
+    cyan: {
+      primary: 'text-cyan-400',
+      bg: 'bg-cyan-400',
+      border: 'border-cyan-400/50',
+      shadow: 'shadow-cyan-400/20',
+      gradient: 'from-cyan-400 via-cyan-500 to-cyan-600',
+      glow: 'after:bg-cyan-400/20',
+      dot: 'bg-cyan-400'
+    },
+    violet: {
+      primary: 'text-violet-400',
+      bg: 'bg-violet-400',
+      border: 'border-violet-400/50',
+      shadow: 'shadow-violet-400/20',
+      gradient: 'from-violet-400 via-purple-500 to-violet-600',
+      glow: 'after:bg-violet-400/20',
+      dot: 'bg-violet-400'
+    }
+  };
+
+  // User preferences applied automatically via ThemeContext
 
   useEffect(() => {
     if (!socket) return;
@@ -38,12 +69,6 @@ export default function PlayScreen() {
     socket.on('match_found', onMatchFound);
     return () => { socket.off('match_found', onMatchFound); };
   }, [socket, navigate]);
-
-  const presets = {
-    Bullet: ['1+0', '2+1'],
-    Blitz: ['3+0', '3+2', '5+0', '5+3'],
-    Rapid: ['10+0', '10+5', '15+10'],
-  };
 
   useEffect(() => {
     let interval: any;
@@ -61,243 +86,271 @@ export default function PlayScreen() {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const timePresets = {
+    Bullet: ['1 min.', '1 | 1', '2 | 1'],
+    Blitz: ['3 min.', '3 | 2', '5 min.'],
+    Rapid: ['10 min.', '15 | 10', '30 min.'],
+  };
+
+  const getCategory = (tc: string): string => {
+    for (const [cat, items] of Object.entries(timePresets)) {
+      if (items.includes(tc)) return cat;
+    }
+    return 'Blitz';
+  };
+
+  const categoryIcons: Record<string, React.ReactNode> = {
+    Bullet: <Zap size={14} className="text-orange-400" />,
+    Blitz:  <Sparkles size={14} className="text-yellow-400" />,
+    Rapid:  <Shield size={14} className="text-emerald-400" />,
+  };
+
   return (
-    <div className="flex flex-col h-full w-full overflow-y-auto lg:overflow-hidden items-center justify-center relative custom-scrollbar bg-[#161512]">
-      <style>{`
-        /* Larger / denser pieces on Play page only */
-        .play-board img {
-          transform: scale(1.12);
-        }
-      `}</style>
+    <div className="h-full w-full bg-transparent flex flex-col items-center justify-center p-1 lg:p-2 xl:p-3 overflow-hidden relative">
+      
 
-      {/* Inner composition — slight upward offset so board sits higher in the viewport */}
-      <div className="w-full max-w-[1600px] flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-10 px-4 lg:px-12 py-4 lg:py-0 lg:-mt-16">
+      <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px] gap-2 xl:gap-4 items-start justify-center flex-1 min-h-0">
 
-        {/* ── Board Column ─────────────────────────────────────── */}
-        <div className="w-full max-w-[65vh] lg:max-w-[74vh] xl:max-w-[82vh] flex flex-col justify-center flex-shrink-0 animate-fade-in-up relative group">
+        {/* ── Left Side: Chess Board ────────────────────────────── */}
+        <div className="w-full flex flex-col gap-1.5 animate-fade-in-up min-h-0">
+          {/* Opponent Info */}
+          <div className="flex items-center gap-2 px-1 shrink-0">
+            <div className="w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 flex items-center justify-center text-base shadow-2xl relative">
+               🇦🇿
+               <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border border-[#0a0a0a]" />
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2 leading-none">
+                <span className="font-black text-white text-xs italic tracking-tighter uppercase">{t('play.opponent')}</span>
+                <span className="bg-white/10 text-white/40 text-[0.4rem] px-1 py-0.5 rounded-sm font-black uppercase tracking-[0.15em] border border-white/5">GM</span>
+              </div>
+              <span className="text-[0.45rem] text-neutral-600 font-bold uppercase tracking-[0.2em] italic mt-0.5">{t('play.eliteRating')}</span>
+            </div>
+          </div>
 
-          {/* Matchmaking overlay */}
-          {isSearching && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-auto">
-              <div className="absolute inset-0 bg-black/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 ring-1 ring-white/10 animate-fade-in" />
-              <div className="relative z-10 flex flex-col items-center text-center p-12 transform transition-all duration-700 animate-scale-up">
-
-                <div className="relative mb-10">
-                  <div className="absolute inset-0 bg-chess-active/20 blur-[80px] rounded-full animate-pulse" />
-                  <div className="w-32 h-32 bg-white/5 rounded-full flex items-center justify-center border border-white/10 relative overflow-hidden group">
-                    <Loader2 size={64} className="text-chess-active animate-spin-slow opacity-40 absolute" />
-                    <Swords size={40} className="text-chess-active animate-bounce relative z-10" />
+          <div className="relative group/board flex-1 flex flex-col min-h-0 justify-center">
+            {/* Matchmaking Overlay */}
+            {isSearching && (
+              <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[2rem] overflow-hidden">
+                <div className="absolute inset-0 bg-black/95 backdrop-blur-3xl transition-all duration-700" />
+                <div className="relative z-10 flex flex-col items-center text-center p-4 animate-scale-up scale-75 lg:scale-90">
+                  <div className="w-20 h-20 mb-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden group/loader shadow-2xl">
+                    <Loader2 size={40} className={cx("animate-spin-slow absolute opacity-20", accentColors[accentTheme].primary)} />
+                    <Swords size={28} className={cx("animate-bounce", accentColors[accentTheme].primary)} />
                   </div>
+                  <h2 className="text-2xl font-black text-white uppercase italic skew-x-[-6deg] mb-1 tracking-tighter">{t('play.searching')}</h2>
+                  <p className="text-neutral-500 text-[0.55rem] font-black uppercase tracking-[0.2em] mb-6 opacity-60 italic">{t('play.searchingDesc')}</p>
+                  <div className="bg-white/[0.03] px-8 py-3 rounded-xl border border-white/10 font-mono text-2xl font-bold text-white mb-6 shadow-inner flex items-center gap-2">
+                    <Clock size={16} className="text-neutral-600" />
+                    {formatTime(searchTime)}
+                  </div>
+                  <button 
+                    onClick={() => setIsSearching(false)}
+                    className="flex items-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg font-black text-[0.65rem] uppercase tracking-widest transition-all active:scale-95 shadow-2xl group/cancel"
+                  >
+                    <X size={14} className="group-hover:rotate-90 transition-transform" /> {t('play.cancel')}
+                  </button>
                 </div>
-
-                <div className="space-y-4 mb-10">
-                  <h2 className="text-4xl font-black text-white tracking-widest uppercase italic transform-gpu skew-x-[-4deg] drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]">{t('play.searching')}</h2>
-                  <p className="text-neutral-500 font-black flex items-center justify-center gap-3 text-[0.7rem] uppercase tracking-[0.3em]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
-                    {t('play.searchingDesc')}
-                  </p>
-                </div>
-
-                <div className="bg-black/60 px-10 py-5 rounded-[2rem] border border-white/5 font-mono text-4xl font-black text-white mb-12 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] ring-1 ring-white/5 tabular-nums">
-                  {formatTime(searchTime)}
-                </div>
-
-                <button
-                  onClick={() => setIsSearching(false)}
-                  className="group flex items-center gap-3 px-10 py-4 bg-white/5 hover:bg-red-500/10 border border-white/5 hover:border-red-500/30 rounded-[1.5rem] transition-all text-neutral-500 hover:text-red-400 font-black text-[0.75rem] uppercase tracking-widest shadow-2xl active:scale-95"
-                >
-                  <X size={20} className="group-hover:rotate-90 transition-transform duration-500" />
-                  {t('play.cancel')}
-                </button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Opponent (top) */}
-          <div className="flex justify-between items-end mb-2 px-4 animate-fade-in-up delay-100">
-            <div className="flex items-center gap-3">
-              <div className="relative group/avatar">
-                <div className="w-10 h-10 bg-neutral-900 rounded-[1rem] border border-white/5 flex items-center justify-center text-lg shadow-2xl transition-all duration-500 group-hover/avatar:scale-110 group-hover/avatar:-rotate-3 relative z-10">🇦🇿</div>
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#161512] shadow-xl z-20" />
-                <div className="absolute inset-0 bg-chess-gold/10 blur-xl rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity" />
-              </div>
-              <div>
-                <div className="font-black text-white text-sm leading-none tracking-tight flex items-center gap-2 italic">
-                  {profile?.username || user?.user_metadata?.username || 'Guest'}
-                  <span className="bg-chess-gold/20 text-chess-gold text-[0.5rem] px-1.5 py-0.5 rounded-md font-black tracking-widest border border-chess-gold/20 shadow-[0_0_15px_rgba(223,176,98,0.2)]">{profile?.role || 'PLAYER'}</span>
-                </div>
-                <div className="text-[0.55rem] text-neutral-500 font-black uppercase tracking-[0.25em] mt-1 opacity-60">{t('play.eliteRating')}</div>
-              </div>
+            <div 
+              className="w-full aspect-square bg-neutral-900 rounded-[2rem] border-[6px] border-neutral-800/50 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-white/10 relative transition-all duration-700 group-hover/board:border-neutral-800 self-center"
+              style={{ maxWidth: 'min(600px, calc(100vh - 130px))' }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
+              <ChessBoard overrideBoardTheme="Classic Green" className="border-none p-0 bg-transparent shadow-none" />
             </div>
           </div>
 
-          {/* Board */}
-          <div className="relative rounded-[2.5rem] overflow-hidden shadow-[0_80px_160px_-40px_rgba(0,0,0,1)] ring-1 ring-white/5 play-board">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none z-10" />
-            <ChessBoard />
-          </div>
-
-          {/* Waiting player (bottom) */}
-          <div className="flex justify-between items-start mt-2 px-4 animate-fade-in-up delay-100 opacity-20 filter grayscale">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-neutral-900 rounded-[1rem] border border-white/5 flex items-center justify-center text-lg shadow-2xl relative">
-                🇹🇷
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-neutral-700 rounded-full border-2 border-[#161512] shadow-xl" />
+          {/* User Info */}
+          <div className="flex items-center gap-2 px-1 opacity-60 hover:opacity-100 transition-opacity shrink-0">
+            <div className="w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 flex items-center justify-center text-base shadow-2xl relative">🇹🇷</div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2 leading-none">
+                <span className="font-black text-white text-xs italic tracking-tighter uppercase">{profile?.username || user?.user_metadata?.username || 'Guest'}</span>
+                <span className={cx("bg-opacity-20 text-[0.4rem] px-1 py-0.5 rounded-sm font-black uppercase tracking-[0.15em] border", accentColors[accentTheme].bg, accentColors[accentTheme].primary, accentColors[accentTheme].border)}>YOU</span>
               </div>
-              <div>
-                <div className="font-black text-white text-sm leading-none tracking-tight italic">{t('play.waiting')}</div>
-                <div className="text-[0.55rem] text-neutral-500 font-black uppercase tracking-[0.25em] mt-1">PLAYER_2</div>
-              </div>
+              <span className="text-[0.45rem] text-neutral-600 font-bold uppercase tracking-[0.2em] italic mt-0.5">PLAYER: {profile?.ratingBlitz || 1200}</span>
             </div>
           </div>
         </div>
 
-        {/* ── Right Panel ──────────────────────────────────────── */}
-        <div className="w-full max-w-md lg:w-[460px] xl:w-[500px] flex-shrink-0 flex flex-col gap-2 animate-fade-in-right delay-200 lg:pb-0 lg:h-[94vh] 2xl:h-[88vh] max-h-[1020px]">
-
-          {/* Compact search row — replaces the large header search */}
-          <div className="flex items-center justify-end shrink-0 px-1">
-            <button
-              className="w-9 h-9 flex items-center justify-center bg-white/[0.04] border border-white/[0.07] rounded-full hover:bg-white/[0.08] hover:border-white/10 transition-all group/srch shadow-lg active:scale-95"
-              aria-label="Search"
-            >
-              <Search size={13} className="text-neutral-500 group-hover/srch:text-white transition-colors duration-200" />
-            </button>
-          </div>
-
-          {/* Main Configuration Card */}
-          <div className="bg-neutral-900/60 backdrop-blur-[40px] rounded-[3rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col flex-1 border-b-[8px] border-black/60 relative group/card min-h-0">
-
-            <div className="absolute top-0 right-0 w-64 h-64 bg-chess-active/5 blur-[80px] rounded-full -mr-32 -mt-32 pointer-events-none group-hover/card:bg-chess-active/10 transition-colors duration-1000" />
-
-            {/* Tabs */}
-            <div className="flex bg-black/40 p-1.5 gap-2 relative z-10 border-b border-white/5 shrink-0">
-              <button className="flex-1 py-2 bg-white/10 rounded-2xl text-[0.6rem] font-black text-white border border-white/10 shadow-2xl tracking-[0.2em] uppercase italic transition-all active:scale-95 leading-none">
-                {t('play.tabs.play')}
-              </button>
-              <button className="flex-1 py-2 text-[0.6rem] font-black text-neutral-500 hover:text-white transition-all uppercase tracking-[0.2em] px-2 italic text-center leading-none">
-                {t('play.tabs.tournaments')}
-              </button>
-              <button className="flex-1 py-2 text-[0.6rem] font-black text-neutral-500 hover:text-white transition-all uppercase tracking-[0.2em] px-2 italic text-center leading-none">
-                {t('play.tabs.computer')}
-              </button>
-            </div>
-
-            <div className="p-3 md:p-4 space-y-3 flex-1 relative z-10 custom-scrollbar overflow-y-auto">
-
-              {/* Time Control */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center bg-black/30 px-4 py-2.5 rounded-[1.5rem] border border-white/5 shadow-inner group/val">
-                  <span className="text-[0.6rem] text-neutral-500 font-black uppercase tracking-[0.3em] group-hover/val:text-neutral-400 transition-colors">{t('play.timeControl')}</span>
-                  <div className="flex items-center gap-3">
-                    <Clock size={16} className="text-chess-active animate-pulse" />
-                    <span className="text-chess-active font-black tracking-tight text-2xl italic leading-none">{timeControl}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {Object.entries(presets).map(([category, times]) => (
-                    <div key={category} className="space-y-2">
-                      <div className="flex items-center gap-3 text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.25em] pl-2">
-                        <div className="flex items-center justify-center w-6 h-6 rounded-xl bg-white/5 border border-white/10 shadow-lg">
-                          {category === 'Bullet' && <Zap size={14} className="text-yellow-400" />}
-                          {category === 'Blitz' && <Sparkles size={14} className="text-orange-400" />}
-                          {category === 'Rapid' && <Shield size={14} className="text-emerald-400" />}
-                        </div>
-                        <span className="flex-1">{category}</span>
-                        <div className="h-px w-10 bg-white/[0.05]" />
-                      </div>
-                      <div className="grid grid-cols-4 gap-2 px-1">
-                        {times.map(time => (
-                          <button
-                            key={time}
-                            onClick={() => setTimeControl(time)}
-                            className={cx(
-                              'py-2.5 rounded-2xl text-[0.7rem] font-black transition-all border relative overflow-hidden group/btn active:scale-90',
-                              timeControl === time
-                                ? 'bg-chess-active/10 border-chess-active/50 text-white shadow-[0_15px_30px_rgba(0,206,209,0.3)] ring-1 ring-chess-active/20'
-                                : 'bg-neutral-800/40 border-white/5 text-neutral-400 hover:border-white/20 hover:text-neutral-200',
-                            )}
-                          >
-                            <div className={cx('absolute inset-0 bg-chess-active/10 opacity-0 transition-opacity', timeControl === time ? 'opacity-100' : 'group-hover/btn:opacity-50')} />
-                            <span className="relative z-10 tracking-tight">{time}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Match Rules */}
-              <div className="grid grid-cols-2 gap-6 pt-4">
-                <div className="space-y-3">
-                  <label className="text-[0.55rem] font-black text-neutral-600 uppercase tracking-[0.3em] pl-3 italic">{t('play.matchType')}</label>
-                  <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 ring-1 ring-white/5">
-                    <button onClick={() => setMatchType('Rated')} className={cx('flex-1 py-3 rounded-xl text-[0.6rem] font-black transition-all uppercase tracking-widest leading-none', matchType === 'Rated' ? 'bg-chess-gold/20 text-chess-gold shadow-2xl border border-chess-gold/30' : 'text-neutral-600 hover:text-neutral-300')}>RATED</button>
-                    <button onClick={() => setMatchType('Casual')} className={cx('flex-1 py-3 rounded-xl text-[0.6rem] font-black transition-all uppercase tracking-widest leading-none', matchType === 'Casual' ? 'bg-white/10 text-white shadow-2xl border border-white/10' : 'text-neutral-600 hover:text-neutral-300')}>CASUAL</button>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <label className="text-[0.55rem] font-black text-neutral-600 uppercase tracking-[0.3em] pl-3 italic">{t('play.region')}</label>
-                  <div className="flex bg-black/40 p-1.5 rounded-[1.5rem] border border-white/5 ring-1 ring-white/5">
-                    <button onClick={() => setRegion('Global')} className={cx('flex-1 py-3 rounded-xl text-[0.6rem] font-black transition-all uppercase tracking-widest leading-none', region === 'Global' ? 'bg-white/10 text-white shadow-2xl border border-white/10' : 'text-neutral-600 hover:text-neutral-300')}>GLOBAL</button>
-                    <button onClick={() => setRegion('AZ/TR')} className={cx('flex-1 py-3 rounded-xl text-[0.6rem] font-black transition-all uppercase tracking-widest leading-none', region === 'AZ/TR' ? 'bg-chess-active/20 text-chess-active shadow-2xl border border-chess-active/30' : 'text-neutral-600 hover:text-neutral-300')}>AZ/TR</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Start Game CTA */}
-            <div className="p-3 md:p-4 bg-black/60 border-t border-white/10 space-y-3 relative z-10 shadow-2xl shrink-0">
+        {/* ── Right Side: Control Panel ────────────────────────── */}
+        <div className="w-full flex flex-col animate-fade-in-right">
+          {/* Theme Selector — sits neatly above the settings panel */}
+          <div className="flex items-center justify-center gap-4 mb-2 bg-black/40 backdrop-blur-3xl px-4 py-1.5 rounded-full border border-white/5 ring-1 ring-white/5 shrink-0 shadow-2xl self-center">
+            {(['gold', 'cyan', 'violet'] as AccentTheme[]).map(theme => (
               <button
-                onClick={() => {
-                  if (!isConnected) return;
-                  setIsSearching(true);
-                  socket?.emit('join_queue', { timeControl, userId: user?.id, rating: profile?.ratingBlitz });
-                }}
-                className="w-full py-4 bg-gradient-to-r from-chess-gold via-amber-400 to-amber-500 hover:from-amber-400 hover:to-yellow-400 text-black rounded-3xl font-black text-xl shadow-[0_20px_40px_-10px_rgba(223,176,98,0.5)] transition-all hover:translate-y-[-2px] active:translate-y-[1px] flex items-center justify-center gap-4 group/play ring-1 ring-white/10"
+                key={theme}
+                onClick={() => setAccentTheme(theme)}
+                className="flex items-center gap-1.5 group transition-all"
               >
-                <span className="tracking-tighter italic uppercase">{t('play.startGame')}</span>
-                <div className="w-[1.5px] h-6 bg-black/15 group-hover/play:scale-y-110 transition-transform" />
-                <div className="bg-white/30 px-3 py-1 rounded-xl text-[0.65rem] font-black backdrop-blur-md shadow-inner tracking-widest">{timeControl}</div>
+                <div className={cx(
+                  "w-1.5 h-1.5 rounded-full transition-all duration-300 ring-2",
+                  accentColors[theme].dot,
+                  accentTheme === theme ? "ring-white/10 scale-125 shadow-[0_0_8px_rgba(255,255,255,0.2)]" : "ring-transparent opacity-60 scale-100 hover:opacity-100"
+                )} />
+                <span className={cx(
+                  "text-[0.5rem] font-black uppercase tracking-[0.1em] transition-colors",
+                  accentTheme === theme ? "text-white" : "text-neutral-500 group-hover:text-neutral-300"
+                )}>
+                  {theme}
+                </span>
               </button>
+            ))}
+          </div>
+          {/* Spacer: aligns panel top with board top (opponent header height + gap = 38px, minus theme bar ~28px already used) */}
+          <div className="h-[10px] shrink-0" />
+          <div className="bg-[#121212] rounded-[2.5rem] border-[2px] border-transparent overflow-hidden flex flex-col relative group/panel border-b-[4px] border-black/40 panel-glow-cycle transition-all">
+            
+            {/* Dynamic Background Glow removed since panel-glow-cycle handles it */}
 
-              <div className="flex items-center justify-center gap-3">
-                <div className="flex-1 h-px bg-white/[0.03]" />
-                <div className="flex items-center gap-3 text-[0.65rem] font-black text-neutral-500 tracking-[0.3em] uppercase italic">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_15px_#10b981]" />
-                  34,102 {t('play.playersOnline')}
-                </div>
-                <div className="flex-1 h-px bg-white/[0.03]" />
+
+            <div className="p-2 space-y-2 overflow-y-auto custom-scrollbar relative z-10">
+
+              {/* ── Collapsible Time Control Accordion ─────────────── */}
+              <div className="space-y-2">
+
+                {/* Summary / Toggle Button */}
+                <button
+                  onClick={() => setIsTimeExpanded(v => !v)}
+                  className={cx(
+                    "w-full flex items-center justify-center gap-4 px-4 py-4 rounded-2xl border transition-all duration-200 group/tc active:scale-[0.98]",
+                    isTimeExpanded
+                      ? cx("bg-white/[0.04] border-white/10", accentColors[accentTheme].border)
+                      : "bg-[#181818] border-white/5 hover:border-white/10 hover:bg-[#1e1e1e]"
+                  )}
+                >
+                  {/* Category icon */}
+                  <div className={cx(
+                    "w-10 h-10 rounded-xl flex items-center justify-center border border-white/5 transition-all duration-300 shrink-0",
+                    isTimeExpanded ? "bg-white/[0.06]" : "bg-white/[0.03]"
+                  )}>
+                    {categoryIcons[getCategory(timeControl)]}
+                  </div>
+                  {/* Selected time + category label — centered */}
+                  <div className="flex flex-col items-center leading-none gap-1">
+                    <span className="text-xl font-black italic uppercase tracking-tight text-glow-cycle">
+                      {timeControl}
+                    </span>
+                    <span className="text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.2em]">
+                      {getCategory(timeControl)}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    size={16}
+                    className={cx(
+                      "text-neutral-500 transition-transform duration-300 group-hover/tc:text-neutral-300 shrink-0",
+                      isTimeExpanded ? "rotate-180" : ""
+                    )}
+                  />
+                </button>
+
+                {/* Expanded Grid */}
+                {isTimeExpanded && (
+                  <div className="space-y-2 pt-1">
+                    {Object.entries(timePresets).map(([category, items]) => (
+                      <div key={category} className="space-y-1.5">
+                        <div className="flex items-center gap-1.5 px-0.5 opacity-50">
+                          <div className="w-4 h-4 flex items-center justify-center rounded-md bg-white/[0.03] border border-white/5">
+                            {category === 'Bullet' && <Zap size={10} className="text-orange-400" />}
+                            {category === 'Blitz' && <Sparkles size={10} className="text-yellow-400" />}
+                            {category === 'Rapid' && <Shield size={10} className="text-emerald-400" />}
+                          </div>
+                          <span className="text-[0.6rem] font-black text-glow-cycle uppercase tracking-[0.12em] italic">{category}</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {items.map(item => (
+                            <button
+                              key={item}
+                              onClick={() => { setTimeControl(item); setIsTimeExpanded(false); }}
+                              className={cx(
+                                "py-2 rounded-lg text-[0.72rem] font-black transition-all duration-150 border shadow-2xl relative group/btn overflow-hidden active:scale-95",
+                                timeControl === item
+                                  ? cx("bg-white/[0.06] text-white border-opacity-60 ring-1", accentColors[accentTheme].border, accentTheme === 'gold' ? 'ring-amber-500/20' : accentTheme === 'cyan' ? 'ring-cyan-500/20' : 'ring-violet-500/20')
+                                  : "bg-[#181818] border-white/5 text-neutral-500 hover:border-white/10 hover:text-neutral-300 hover:bg-[#1a1a1a]"
+                              )}
+                            >
+                              <div className={cx(
+                                "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-300",
+                                accentColors[accentTheme].gradient,
+                                timeControl === item ? 'opacity-10' : 'group-hover/btn:opacity-5'
+                              )} />
+                              <span className={cx("relative z-10 tracking-tight italic uppercase", timeControl === item ? "text-glow-cycle" : "")}>{item}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+
             </div>
-          </div>
 
-          {/* Action Widgets */}
-          <div className="grid grid-cols-2 gap-3 shrink-0">
-            <button className="flex items-center gap-3 p-4 bg-white/[0.03] border border-white/5 rounded-[1.5rem] hover:bg-chess-active/5 hover:border-chess-active/20 transition-all group/opt active:scale-95 shadow-xl">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 group-hover/opt:scale-110 group-hover/opt:rotate-6 transition-all duration-500 border border-indigo-500/10 shadow-xl shrink-0">
-                <Users size={18} />
-              </div>
-              <div className="flex flex-col items-start overflow-hidden">
-                <span className="text-[0.55rem] font-black text-white italic uppercase tracking-[0.1em] truncate w-full text-left">{t('play.friend')}</span>
-                <span className="text-[0.45rem] font-black text-neutral-500 uppercase tracking-widest mt-0.5 truncate w-full text-left">{t('play.directLink')}</span>
-              </div>
-            </button>
-            <button className="flex items-center gap-3 p-4 bg-white/[0.03] border border-white/5 rounded-[1.5rem] hover:bg-chess-gold/5 hover:border-chess-gold/20 transition-all group/opt active:scale-95 shadow-xl">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover/opt:scale-110 group-hover/opt:-rotate-6 transition-all duration-500 border border-amber-500/10 shadow-xl shrink-0">
-                <Trophy size={18} />
-              </div>
-              <div className="flex flex-col items-start overflow-hidden">
-                <span className="text-[0.55rem] font-black text-white italic uppercase tracking-[0.1em] truncate w-full text-left">{t('play.tournaments')}</span>
-                <span className="text-[0.45rem] font-black text-neutral-500 uppercase tracking-widest mt-0.5 truncate w-full text-left">{t('play.communityLabel')}</span>
-              </div>
-            </button>
-          </div>
+            {/* CTA Area */}
+            <div className="p-2 bg-black/60 border-t border-white/10 space-y-1.5 relative z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
+               <button
+                  onClick={() => setIsSearching(true)}
+                  className={cx(
+                    "w-full py-2.5 rounded-[2rem] relative overflow-hidden transition-all duration-[150ms] group/cta active:scale-[0.97] border border-white/20 btn-glow-cycle"
+                  )}
+               >
+                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/cta:opacity-100 transition-opacity duration-[150ms]" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+                  <div className="relative z-10 flex items-center justify-center gap-3">
+                    <span className="text-shadow-cycle font-black text-base italic tracking-tighter uppercase leading-none transform group-hover:scale-105 transition-transform duration-500">{t('play.startGame')}</span>
+                    <div className="px-2 py-0.5 bg-black/90 backdrop-blur-xl rounded-lg text-white font-black text-[0.65rem] shadow-2xl border border-white/10 flex items-center gap-1.5">
+                      <Clock size={11} className="text-neutral-500" />
+                      {timeControl}
+                    </div>
+                  </div>
+               </button>
 
+               <div className="flex items-center justify-center gap-2 opacity-60">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
+                  <span className="text-glow-cycle font-black text-[0.65rem] tracking-widest italic">34,102</span>
+                  <span className="text-neutral-600 font-black text-[0.55rem] uppercase tracking-[0.1em] italic">{t('play.playersOnline')}</span>
+               </div>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="p-2 grid grid-cols-2 gap-1.5 bg-black/40 border-t border-white/5 shrink-0">
+              <FooterActionBtn 
+                icon={<Users size={14} />} 
+                label={t('play.friend')} 
+                sublabel={t('play.directLink')} 
+                onClick={() => alert('Play with friend not implemented yet')}
+              />
+              <FooterActionBtn 
+                icon={<Trophy size={14} />} 
+                label={t('play.tournaments')} 
+                sublabel={t('play.communityLabel')} 
+                onClick={() => alert('Tournaments not implemented yet')}
+              />
+            </div>
+
+          </div>
+          {/* Spacer: matches user footer height so panel bottom aligns with board bottom */}
+          <div className="h-[38px] shrink-0" />
         </div>
       </div>
     </div>
+  );
+}
+
+function FooterActionBtn({ icon, label, sublabel, onClick }: { icon: React.ReactNode, label: string, sublabel: string, onClick?: () => void }) {
+  return (
+    <button onClick={onClick} className="flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.05] hover:border-white/10 transition-all duration-150 group/fbtn shadow-2xl active:scale-95 text-left relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+      <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-neutral-500 group-hover/fbtn:scale-110 group-hover/fbtn:text-white group-hover/fbtn:bg-white/10 transition-all duration-200 border border-white/5 shadow-xl relative z-10 shrink-0">
+        {icon}
+      </div>
+      <div className="flex flex-col overflow-hidden relative z-10">
+        <span className="text-[0.6rem] font-black text-white uppercase tracking-[0.05em] italic truncate">{label}</span>
+        <span className="text-[0.45rem] font-black text-neutral-700 uppercase tracking-[0.02em] mt-0.5 truncate">{sublabel}</span>
+      </div>
+    </button>
   );
 }

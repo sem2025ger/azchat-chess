@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+
 import AIChatAssistant from '../components/AIChatAssistant';
 import { translateMock } from '../utils/chatAssistantLogic';
 import EvaluationBar from '../components/EvaluationBar';
@@ -21,6 +22,8 @@ function cx(...inputs: (string | undefined | null | false)[]) {
 export default function GameScreen() {
   const { t, language } = useLanguage();
   const { user, profile } = useAuth();
+
+  // User preferences applied automatically via ThemeContext
   const [activeTab, setActiveTab] = useState<'moves' | 'chat' | 'analysis'>('moves');
   const [timeLeft, setTimeLeft] = useState({ black: 600, white: 600 });
 
@@ -207,7 +210,7 @@ export default function GameScreen() {
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-2 lg:px-4 xl:px-6 pb-0 lg:pb-1 pt-0 gap-3 overflow-hidden bg-[#161512] animate-fade-in relative transition-all lg:items-center lg:-mt-12 lg:h-[calc(100vh-85px)]">
+    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-2 lg:px-4 xl:px-6 pb-0 lg:pb-1 pt-0 gap-3 overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-12 lg:h-[calc(100vh-85px)]">
 
       {/* Board Area - Central Focus */}
       <div className="flex-1 flex flex-col items-center justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-12">
@@ -251,7 +254,7 @@ export default function GameScreen() {
 
             <div className="flex-1 w-full max-h-full aspect-square relative rounded-[1.5rem] overflow-hidden shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[8px] border-black/60 ring-1 ring-white/5 mx-auto">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
-              <ChessBoard game={game} onMove={handleGameMove} orientation={playerColor} />
+              <ChessBoard overrideBoardTheme="Classic Green" game={game} onMove={handleGameMove} orientation={playerColor} />
             </div>
           </div>
 
@@ -280,7 +283,7 @@ export default function GameScreen() {
       </div>
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-neutral-900/60 backdrop-blur-[60px] rounded-[2rem] border border-white/10 shadow-2xl h-fit lg:min-h-[610px] animate-fade-in-right relative overflow-hidden border-b-[8px] border-black/80 ring-1 ring-white/5 min-h-0">
+      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-[#121212]/80 backdrop-blur-[60px] rounded-[2rem] border-[2px] border-transparent shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] h-fit lg:min-h-[610px] animate-fade-in-right relative overflow-hidden border-b-[4px] border-b-black/40 panel-glow-cycle transition-all min-h-0">
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
@@ -303,7 +306,7 @@ export default function GameScreen() {
                 )}
               >
                 <tab.icon size={12} className={cx("transition-transform group-hover:scale-110", activeTab === tab.id ? "text-chess-active" : "text-neutral-700")} />
-                <span className="truncate w-full text-center scale-90 opacity-80 leading-tight">{tab.label}</span>
+                <span className={cx("truncate w-full text-center scale-90 leading-tight font-black", activeTab === tab.id ? "text-glow-cycle opacity-100" : "opacity-80")}>{tab.label}</span>
               </button>
             ))}
           </div>
@@ -344,10 +347,10 @@ export default function GameScreen() {
                 </table>
               </div>
               <div className="h-11 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-6 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]">
-                <button className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all shadow-xl active:scale-90 group"><Rewind size={18} className="group-hover:scale-110 transition-transform" /></button>
-                <button className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all shadow-xl active:scale-90 group"><ChevronLeft size={24} className="group-hover:translate-x-1 transition-transform" /></button>
-                <button className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all shadow-xl active:scale-90 group"><ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" /></button>
-                <button className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all shadow-xl active:scale-90 group"><FastForward size={18} className="group-hover:scale-110 transition-transform" /></button>
+                <button onClick={() => alert('Review mode not implemented yet')} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group"><Rewind size={18} className="group-hover:scale-110 transition-transform" /></button>
+                <button onClick={() => alert('Review mode not implemented yet')} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group"><ChevronLeft size={24} className="group-hover:translate-x-1 transition-transform" /></button>
+                <button onClick={() => alert('Review mode not implemented yet')} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group"><ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" /></button>
+                <button onClick={() => alert('Review mode not implemented yet')} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group"><FastForward size={18} className="group-hover:scale-110 transition-transform" /></button>
               </div>
             </div>
           )}
@@ -409,12 +412,12 @@ export default function GameScreen() {
 
         {/* Professional Game Control Center */}
         <div className="p-2 bg-black/60 border-t border-white/10 grid grid-cols-2 gap-2 shrink-0 shadow-[0_-30px_60px_-15px_rgba(0,0,0,0.8)] relative z-30 ring-1 ring-white/5 backdrop-blur-3xl">
-          <button className="flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl bg-white/5 hover:bg-red-500/10 text-neutral-500 hover:text-red-400 font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 group shadow-2xl transition-all active:scale-95 hover:border-red-500/20 ring-1 ring-white/5">
-            <Flag size={16} className="group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-500" />
+          <button onClick={() => alert('Resign not implemented yet')} className="flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl bg-white/5 hover:bg-red-500/10 text-neutral-500 hover:text-red-400 font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 group shadow-2xl transition-all duration-150 active:scale-95 hover:border-red-500/20 ring-1 ring-white/5">
+            <Flag size={16} className="group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-200" />
             {t('game.resign')}
           </button>
-          <button className="flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 shadow-2xl transition-all active:scale-95 group hover:border-white/20 ring-1 ring-white/5">
-            <Handshake size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-all duration-500" />
+          <button onClick={() => alert('Draw offer not implemented yet')} className="flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 shadow-2xl transition-all duration-150 active:scale-95 group hover:border-white/20 ring-1 ring-white/5">
+            <Handshake size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-all duration-200" />
             {t('game.draw')}
           </button>
         </div>
