@@ -46,8 +46,8 @@ export default function SettingsScreen() {
 
   const presets = [
     { name: 'Classical Pro', board: 'Classic Green', pieces: 'classic' },
-    { name: 'Modern Dark', board: 'Premium Gold', pieces: 'neo' },
-    { name: 'Nature Wood', board: 'Classic Wood', pieces: 'wood' },
+    { name: 'Modern Dark', board: 'Premium Gold', pieces: 'cburnett-classic' },
+    { name: 'Nature Wood', board: 'Classic Wood', pieces: 'classic' },
   ];
 
   const languages = [

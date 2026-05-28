@@ -210,7 +210,7 @@ export default function ChatScreen() {
             { name: 'Cyrus_99', flag: '🇦🇿', rank: 'candidate', color: 'text-neutral-600' },
             { name: 'PolgarX', flag: '🇭🇺', rank: 'GM', color: 'text-chess-active' },
           ].map((u, i) => (
-            <div key={i} className="flex items-center gap-3 px-3 py-2.5 bg-white/[0.02] border border-transparent rounded-2xl hover:bg-white/[0.05] hover:border-white/[0.1] transition-all group/user cursor-pointer shadow-xl active:scale-95 relative overflow-hidden ring-1 ring-transparent hover:ring-white/5">
+            <div key={i} onClick={() => alert('Viewing user profile not implemented yet')} className="flex items-center gap-3 px-3 py-2.5 bg-white/[0.02] border border-transparent rounded-2xl hover:bg-white/[0.05] hover:border-white/[0.1] transition-all group/user cursor-pointer shadow-xl active:scale-95 relative overflow-hidden ring-1 ring-transparent hover:ring-white/5">
               <div className="absolute top-0 right-0 w-12 h-12 bg-white/[0.02] blur-xl rounded-full translate-x-6 -translate-y-6" />
               <div className="w-9 h-9 rounded-xl bg-neutral-950 flex items-center justify-center shrink-0 text-xl border border-white/5 group-hover/user:scale-110 group-hover/user:rotate-3 transition-all duration-500 relative z-10">
                 {u.flag}
@@ -227,7 +227,7 @@ export default function ChatScreen() {
           ))}
         </div>
         <div className="px-4 py-3 bg-black/40 border-t border-white/[0.03] shrink-0">
-          <button className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-[0.6rem] font-black text-neutral-400 hover:text-white uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-2 group/all active:scale-95 leading-none">
+          <button onClick={() => alert('Matchmaking queue not implemented yet')} className="w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-[0.6rem] font-black text-neutral-400 hover:text-white uppercase tracking-[0.25em] transition-all flex items-center justify-center gap-2 group/all active:scale-95 leading-none">
             <Activity size={12} className="group-hover/all:rotate-12 transition-transform" />
             {t('chat.joinQueue')}
           </button>

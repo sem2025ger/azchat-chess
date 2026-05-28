@@ -306,14 +306,14 @@ export default function ProfileScreen() {
         <div className="lg:col-span-2 space-y-3 animate-fade-in-up delay-300">
           <div className="flex items-center justify-between px-2">
             <h2 className="text-lg font-black text-white italic tracking-tighter uppercase">{t('profile.recentGames')}</h2>
-            <button className="text-[0.6rem] font-black text-chess-active uppercase tracking-widest hover:translate-x-1 transition-transform inline-flex items-center gap-2 group">
+            <button onClick={() => alert('Full match history not implemented yet')} className="text-[0.6rem] font-black text-chess-active uppercase tracking-widest hover:translate-x-1 transition-transform inline-flex items-center gap-2 group">
               {t('profile.viewHistory')} <ChevronRight size={14} className="group-hover:scale-110" />
             </button>
           </div>
 
           <div className="space-y-2.5">
             {recentGames.map((g, i) => (
-              <div key={i} className="bg-neutral-900/40 backdrop-blur-3xl border border-white/5 px-5 py-4 rounded-[1.75rem] flex items-center justify-between hover:bg-neutral-900/60 transition-all cursor-pointer group/game shadow-xl ring-1 ring-white/5">
+              <div key={i} onClick={() => alert('Game review not implemented yet')} className="bg-neutral-900/40 backdrop-blur-3xl border border-white/5 px-5 py-4 rounded-[1.75rem] flex items-center justify-between hover:bg-neutral-900/60 transition-all cursor-pointer group/game shadow-xl ring-1 ring-white/5">
                 <div className="flex items-center gap-5">
                   <div className={cx(
                     "w-12 h-12 rounded-[1rem] flex items-center justify-center font-black text-lg shadow-2xl transition-all duration-500 group-hover/game:scale-110 group-hover/game:rotate-3 border border-current shrink-0",
@@ -338,7 +338,7 @@ export default function ProfileScreen() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 pr-2">
-                  <button className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl text-[0.6rem] font-black text-neutral-500 uppercase tracking-widest border border-white/5 opacity-0 group-hover/game:opacity-100 transition-all hover:bg-chess-active/10 hover:text-chess-active hover:border-chess-active/20 group/rev">
+                  <button onClick={(e) => { e.stopPropagation(); alert('Game review not implemented yet'); }} className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl text-[0.6rem] font-black text-neutral-500 uppercase tracking-widest border border-white/5 opacity-0 group-hover/game:opacity-100 transition-all hover:bg-chess-active/10 hover:text-chess-active hover:border-chess-active/20 group/rev">
                     {t('profile.review')}
                     <ChevronRight size={12} className="group-hover/rev:translate-x-1 transition-transform" />
                   </button>
