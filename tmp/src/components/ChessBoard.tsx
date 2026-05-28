@@ -112,10 +112,17 @@ export default function ChessBoard({
       : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
 
   const handleMove = (source: string, target: string) => {
-    const moveObj = { from: source, to: target, promotion: 'q' };
+    let promotion = 'q';
+    const piece = activeGame.get(source as Square);
+    if (piece?.type === 'p' && (target[1] === '8' || target[1] === '1')) {
+      const p = prompt('Promote to? (q, r, b, n)', 'q');
+      promotion = p && ['q','r','b','n'].includes(p.toLowerCase()) ? p.toLowerCase() : 'q';
+    }
+
+    const moveObj = { from: source, to: target, promotion };
 
     if (onMove) {
-      if (onMove(source, target, 'q')) {
+      if (onMove(source, target, promotion)) {
         setSelectedSquare(null);
         setLegalMoves([]);
         return true;
@@ -124,10 +131,18 @@ export default function ChessBoard({
       try {
         const move = activeGame.move(moveObj);
         if (move) {
-          setLocalGame(new Chess(activeGame.fen()));
+          const nextGame = new Chess(activeGame.fen());
+          setLocalGame(nextGame);
           setTrigger((t) => t + 1);
           setSelectedSquare(null);
           setLegalMoves([]);
+          if (nextGame.isGameOver()) {
+            setTimeout(() => {
+              if (nextGame.isCheckmate()) alert('Checkmate! Game Over.');
+              else if (nextGame.isDraw()) alert('Draw! Game Over.');
+              else alert('Game Over!');
+            }, 300);
+          }
           return true;
         }
       } catch {

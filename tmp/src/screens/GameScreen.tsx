@@ -140,7 +140,11 @@ export default function GameScreen() {
         
         // Ensure game over states are handled properly
         if (g.isGameOver()) {
-          // You could show a game over modal here
+          setTimeout(() => {
+            if (g.isCheckmate()) alert('Checkmate! Game Over.');
+            else if (g.isDraw()) alert('Draw! Game Over.');
+            else alert('Game Over!');
+          }, 300);
         }
         return true;
       }
