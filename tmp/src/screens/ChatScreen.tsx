@@ -62,8 +62,8 @@ export default function ChatScreen() {
   };
 
   return (
-    <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center bg-transparent p-4 md:p-6 lg:p-8 overflow-hidden animate-fade-in">
-      <div className="w-full max-w-[85rem] mx-auto flex gap-6 items-stretch h-[85vh] max-h-[850px] min-h-[500px]">
+    <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center bg-transparent p-2 md:p-6 lg:p-8 overflow-hidden animate-fade-in">
+      <div className="w-full max-w-[85rem] mx-auto flex gap-6 items-stretch h-full lg:h-[85vh] lg:max-h-[850px] lg:min-h-[500px]">
 
       {/* Main Chat Area - Premium Container */}
       <div className="flex-1 flex flex-col bg-transparent backdrop-blur-3xl rounded-[2.5rem] border-[2px] border-transparent overflow-hidden relative border-b-[4px] border-b-black/40 panel-glow-cycle transition-all">

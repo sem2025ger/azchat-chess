@@ -178,7 +178,7 @@ export default function PlayScreen() {
         {/* ── Right Side: Control Panel ────────────────────────── */}
         <div className="w-full flex flex-col animate-fade-in-right">
           {/* Theme Selector — sits neatly above the settings panel */}
-          <div className="flex items-center justify-center gap-4 mb-2 bg-black/40 backdrop-blur-3xl px-4 py-1.5 rounded-full border border-white/5 ring-1 ring-white/5 shrink-0 shadow-2xl self-center">
+          <div className="flex items-center justify-center gap-4 mb-0.5 md:mb-2 bg-black/40 backdrop-blur-3xl px-4 py-1.5 rounded-full border border-white/5 ring-1 ring-white/5 shrink-0 shadow-2xl self-center scale-90 md:scale-100">
             {(['gold', 'cyan', 'violet'] as AccentTheme[]).map(theme => (
               <button
                 key={theme}
@@ -199,9 +199,9 @@ export default function PlayScreen() {
               </button>
             ))}
           </div>
-          {/* Spacer: aligns panel top with board top (opponent header height + gap = 38px, minus theme bar ~28px already used) */}
-          <div className="h-[10px] shrink-0" />
-          <div className="bg-[#121212] rounded-[2.5rem] border-[2px] border-transparent overflow-hidden flex flex-col relative group/panel border-b-[4px] border-black/40 panel-glow-cycle transition-all">
+          {/* Spacer: aligns panel top with board top */}
+          <div className="h-[4px] md:h-[10px] shrink-0" />
+          <div className="bg-[#121212] rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-transparent overflow-hidden flex flex-col relative group/panel border-b-[4px] border-black/40 panel-glow-cycle transition-all">
             
             {/* Dynamic Background Glow removed since panel-glow-cycle handles it */}
 
@@ -215,7 +215,7 @@ export default function PlayScreen() {
                 <button
                   onClick={() => setIsTimeExpanded(v => !v)}
                   className={cx(
-                    "w-full flex items-center justify-center gap-4 px-4 py-4 rounded-2xl border transition-all duration-200 group/tc active:scale-[0.98]",
+                    "w-full flex items-center justify-center gap-3 md:gap-4 px-3 py-3 md:px-4 md:py-4 rounded-xl md:rounded-2xl border transition-all duration-200 group/tc active:scale-[0.98]",
                     isTimeExpanded
                       ? cx("bg-white/[0.04] border-white/10", accentColors[accentTheme].border)
                       : "bg-[#181818] border-white/5 hover:border-white/10 hover:bg-[#1e1e1e]"
@@ -332,7 +332,7 @@ export default function PlayScreen() {
 
           </div>
           {/* Spacer: matches user footer height so panel bottom aligns with board bottom */}
-          <div className="h-[38px] shrink-0" />
+          <div className="h-[10px] md:h-[38px] shrink-0" />
         </div>
       </div>
     </div>

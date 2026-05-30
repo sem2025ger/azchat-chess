@@ -214,7 +214,7 @@ export default function GameScreen() {
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-2 lg:px-4 xl:px-6 pb-2 lg:pb-1 pt-2 lg:pt-0 gap-3 overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-12 h-[calc(100dvh-80px)] lg:h-[calc(100vh-85px)]">
+    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-2 lg:px-4 xl:px-6 pb-2 lg:pb-1 pt-2 lg:pt-0 gap-2 lg:gap-3 overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-12 h-full lg:h-[calc(100vh-85px)]">
 
       {/* Board Area - Central Focus */}
       <div className="flex-1 flex flex-col items-center justify-center lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-12">
@@ -256,7 +256,7 @@ export default function GameScreen() {
               />
             </div>
 
-            <div className="flex-1 w-full max-h-full aspect-square relative rounded-[1.5rem] overflow-hidden shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[8px] border-black/60 ring-1 ring-white/5 mx-auto max-w-[calc(100dvh-400px)] lg:max-w-none">
+            <div className="flex-1 w-full max-h-full aspect-square relative rounded-[1.5rem] overflow-hidden shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[8px] border-black/60 ring-1 ring-white/5 mx-auto max-w-[calc(100dvh-350px)] lg:max-w-none">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               <ChessBoard overrideBoardTheme="Classic Green" game={game} onMove={handleGameMove} orientation={playerColor} />
             </div>
@@ -287,7 +287,7 @@ export default function GameScreen() {
       </div>
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-[#121212]/80 backdrop-blur-[60px] rounded-[2rem] border-[2px] border-transparent shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] h-fit lg:min-h-[610px] min-h-[250px] animate-fade-in-right relative overflow-hidden border-b-[4px] border-b-black/40 panel-glow-cycle transition-all">
+      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-[#121212]/80 backdrop-blur-[60px] rounded-[1.5rem] lg:rounded-[2rem] border-[2px] border-transparent shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] flex-1 min-h-[200px] lg:h-fit lg:min-h-[610px] animate-fade-in-right relative overflow-hidden border-b-[4px] border-b-black/40 panel-glow-cycle transition-all">
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">

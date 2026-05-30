@@ -343,7 +343,7 @@ export default function SettingsScreen() {
         </div>
 
         {/* Mobile View: Hub and Spoke */}
-        <div className="lg:hidden w-full overflow-y-auto max-h-[calc(100vh-80px)] custom-scrollbar">
+        <div className="lg:hidden w-full h-full min-h-0 flex flex-col">
           {renderMobileView()}
         </div>
       </div>

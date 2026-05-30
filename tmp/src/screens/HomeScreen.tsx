@@ -69,7 +69,7 @@ export default function HomeScreen() {
       <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-12 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-16 py-2 xl:py-0 overflow-y-auto xl:overflow-visible">
 
         {/* LEFT: Chessboard */}
-        <div className="flex flex-col items-center xl:items-end w-full xl:w-[57%] max-w-[660px] shrink-0 relative perspective-1000 board-container xl:-mt-12">
+        <div className="flex flex-col items-center xl:items-end w-full xl:w-[57%] max-w-[320px] md:max-w-[660px] shrink-0 relative perspective-1000 board-container xl:-mt-12">
           <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
             <ChessBoard overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3" />
@@ -80,14 +80,14 @@ export default function HomeScreen() {
         <div className="flex-1 w-full flex flex-col justify-center items-center xl:items-stretch max-w-2xl xl:max-w-[420px] z-20 gap-4 mb-4 xl:mb-0 xl:-mt-10 xl:ml-8">
           
           {/* Premium Flags Block */}
-          <div className="flex items-center justify-center gap-7 py-5 px-12 rounded-[2.2rem] bg-[#121212]/90 backdrop-blur-3xl border-[2px] border-transparent panel-glow-cycle transition-all shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] self-center w-auto shrink-0 z-30 mb-2">
+          <div className="flex items-center justify-center gap-4 md:gap-7 py-3 md:py-5 px-8 md:px-12 rounded-[2rem] md:rounded-[2.2rem] bg-[#121212]/90 backdrop-blur-3xl border-[2px] border-transparent panel-glow-cycle transition-all shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-90 md:scale-100">
              <GermanyFlag />
              <TurkeyFlag />
              <AzerbaijanFlag />
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="w-full flex flex-col justify-center gap-4 bg-[#121212]/80 backdrop-blur-2xl p-6 rounded-[2.5rem] border-[2px] border-transparent border-b-[4px] border-b-black/40 panel-glow-cycle transition-all relative">
+          <div className="w-full flex flex-col justify-center gap-3 md:gap-4 bg-[#121212]/80 backdrop-blur-2xl p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-transparent border-b-[4px] border-b-black/40 panel-glow-cycle transition-all relative">
 
 
           {/* 1. Hero Brand Header */}
@@ -99,7 +99,7 @@ export default function HomeScreen() {
               </span>
             </div>
 
-            <h1 className="text-[2.5rem] xl:text-[2.9rem] font-black text-glow-cycle leading-[0.95] tracking-[-0.03em] italic">
+            <h1 className="text-[2.2rem] md:text-[2.5rem] xl:text-[2.9rem] font-black text-glow-cycle leading-[0.95] tracking-[-0.03em] italic">
               Chess<span className="text-chess-active"> Arena</span>
             </h1>
 
