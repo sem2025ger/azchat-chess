@@ -105,7 +105,7 @@ export default function Layout() {
       </aside>
 
       {/* Mobile Bottom Navigation - Visible only on Small Screens */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-black/80 backdrop-blur-2xl border-t border-white/[0.05] flex items-center justify-around px-1 z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-2xl border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-2 min-h-[4rem]">
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} />
         <MobileNavItem to="/play" icon={<Play size={20} />} label={t('nav.play')} />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} />
@@ -115,7 +115,7 @@ export default function Layout() {
       </nav>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative overflow-hidden pb-16 md:pb-0">
+      <main className="flex-1 flex flex-col relative overflow-hidden pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-0">
         {/* Dynamic decorative glows */}
         <div className="absolute top-[-25%] right-[-15%] w-[60%] h-[60%] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none animate-pulse-slow" />
         <div className="absolute bottom-[-25%] left-[-15%] w-[60%] h-[60%] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none animate-pulse-slow active-animation-delay" />

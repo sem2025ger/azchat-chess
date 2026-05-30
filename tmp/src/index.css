@@ -26,6 +26,14 @@
     @apply bg-black/40 backdrop-blur-2xl border border-white/5 shadow-2xl;
   }
 
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
   .text-glow-gold {
      text-shadow: 0 0 20px rgba(223, 176, 98, 0.4);
   }
