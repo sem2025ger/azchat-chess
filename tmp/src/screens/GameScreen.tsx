@@ -214,12 +214,12 @@ export default function GameScreen() {
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-2 lg:px-4 xl:px-6 pb-2 lg:pb-1 pt-2 lg:pt-0 gap-2 lg:gap-3 overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-12 h-full lg:h-[calc(100vh-85px)]">
+    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-2 lg:px-4 xl:px-6 pb-6 lg:pb-1 pt-2 lg:pt-0 gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-12 h-full lg:h-[calc(100vh-85px)]">
 
       {/* Board Area - Central Focus */}
-      <div className="flex-1 flex flex-col items-center justify-center lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-12">
+      <div className="flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-12 lg:flex-1">
 
-        <div className="w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-center h-full gap-1 relative mx-auto min-h-0">
+        <div className="w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full">
 
           <div className="flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10">
             <div className="flex items-center gap-2.5">
@@ -242,7 +242,7 @@ export default function GameScreen() {
             </div>
           </div>
 
-          <div className="relative flex gap-4 md:gap-6 h-full min-h-0 flex-1 w-full justify-center group/board items-center py-1">
+          <div className="relative flex gap-4 md:gap-6 w-full justify-center group/board items-center py-1 lg:h-full lg:min-h-0 lg:flex-1">
 
             <div className={cx(
               "transition-all duration-1000 ease-in-out self-stretch rounded-2xl overflow-hidden py-1",
@@ -256,7 +256,7 @@ export default function GameScreen() {
               />
             </div>
 
-            <div className="flex-1 w-full max-h-full aspect-square relative rounded-[1.5rem] overflow-hidden shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[8px] border-black/60 ring-1 ring-white/5 mx-auto max-w-[calc(100dvh-350px)] lg:max-w-none">
+            <div className="w-full aspect-square relative rounded-[1.5rem] overflow-hidden shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[8px] border-black/60 ring-1 ring-white/5 mx-auto max-w-[94vw] sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               <ChessBoard overrideBoardTheme="Classic Green" game={game} onMove={handleGameMove} orientation={playerColor} />
             </div>
@@ -287,7 +287,7 @@ export default function GameScreen() {
       </div>
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-[#121212]/80 backdrop-blur-[60px] rounded-[1.5rem] lg:rounded-[2rem] border-[2px] border-transparent shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] flex-1 min-h-[200px] lg:h-fit lg:min-h-[610px] animate-fade-in-right relative overflow-hidden border-b-[4px] border-b-black/40 panel-glow-cycle transition-all">
+      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-[#121212]/80 backdrop-blur-[60px] rounded-[1.5rem] lg:rounded-[2rem] border-[2px] border-transparent shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-[400px] lg:h-fit lg:min-h-[610px] animate-fade-in-right relative overflow-hidden border-b-[4px] border-b-black/40 panel-glow-cycle transition-all lg:flex-1">
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
