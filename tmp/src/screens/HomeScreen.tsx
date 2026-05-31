@@ -77,17 +77,17 @@ export default function HomeScreen() {
         </div>
 
         {/* RIGHT: Premium Dashboard Container */}
-        <div className="flex-1 w-full flex flex-col justify-center items-center xl:items-stretch max-w-2xl xl:max-w-[420px] z-20 gap-4 mb-4 xl:mb-0 xl:-mt-10 xl:ml-8">
+        <div className="flex-1 w-full flex flex-col justify-center items-center xl:items-stretch max-w-2xl xl:max-w-[420px] z-20 gap-2 md:gap-4 mb-4 xl:mb-0 -mt-6 md:-mt-0 xl:-mt-10 xl:ml-8">
           
           {/* Premium Flags Block */}
-          <div className="flex items-center justify-center gap-4 md:gap-7 py-3 md:py-5 px-8 md:px-12 rounded-[2rem] md:rounded-[2.2rem] bg-[#121212]/90 backdrop-blur-3xl border-[2px] border-transparent panel-glow-cycle transition-all shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-90 md:scale-100">
+          <div className="flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[#121212]/90 backdrop-blur-3xl border-[2px] border-transparent panel-glow-cycle transition-all shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100">
              <GermanyFlag />
-             <TurkeyFlag />
              <AzerbaijanFlag />
+             <TurkeyFlag />
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="w-full flex flex-col justify-center gap-3 md:gap-4 bg-[#121212]/80 backdrop-blur-2xl p-4 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-transparent border-b-[4px] border-b-black/40 panel-glow-cycle transition-all relative">
+          <div className="w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/80 backdrop-blur-2xl p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-transparent border-b-[4px] border-b-black/40 panel-glow-cycle transition-all relative">
 
 
           {/* 1. Hero Brand Header */}
@@ -103,7 +103,7 @@ export default function HomeScreen() {
               Chess<span className="text-chess-active"> Arena</span>
             </h1>
 
-            <p className="text-[0.68rem] text-neutral-500 font-semibold leading-relaxed max-w-[320px]">
+            <p className="hidden md:block text-[0.68rem] text-neutral-500 font-semibold leading-relaxed max-w-[320px]">
               {t('home.subtitle')}
             </p>
           </div>
@@ -133,7 +133,7 @@ export default function HomeScreen() {
           </Link>
 
           {/* 3. Stat Blocks */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="hidden md:grid grid-cols-3 gap-2">
             {stats.map((s, i) => (
               <div
                 key={i}
@@ -151,16 +151,18 @@ export default function HomeScreen() {
           </div>
 
           {/* 4. Rating / Profile Card */}
-          <FeatureCard
-            to="/profile"
-            icon={<Trophy size={16} />}
-            title={t('home.cards.profile.title')}
-            desc={t('home.cards.profile.desc')}
-            color="text-chess-gold"
-            bg="bg-chess-gold/[0.08]"
-            border="border-chess-gold/[0.18]"
-            accent="bg-chess-gold/30"
-          />
+          <div className="hidden md:block">
+            <FeatureCard
+              to="/profile"
+              icon={<Trophy size={16} />}
+              title={t('home.cards.profile.title')}
+              desc={t('home.cards.profile.desc')}
+              color="text-chess-gold"
+              bg="bg-chess-gold/[0.08]"
+              border="border-chess-gold/[0.18]"
+              accent="bg-chess-gold/30"
+            />
+          </div>
         </div>
       </div>
     </div>
