@@ -214,12 +214,12 @@ export default function GameScreen() {
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-2 lg:px-4 xl:px-6 pb-6 lg:pb-1 pt-2 lg:pt-0 gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-12 min-h-full lg:h-[calc(100vh-85px)]">
+    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-12 min-h-full lg:h-[calc(100vh-85px)]">
 
       {/* Board Area - Central Focus */}
       <div className="flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-12 lg:flex-1">
 
-        <div className="w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full">
+        <div className="w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full">
 
           <div className="flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10">
             <div className="flex items-center gap-2.5">
@@ -242,10 +242,10 @@ export default function GameScreen() {
             </div>
           </div>
 
-          <div className="relative flex gap-4 md:gap-6 w-full justify-center group/board items-center py-1 lg:h-full lg:min-h-0 lg:flex-1">
+          <div className="relative flex gap-0 md:gap-6 w-full justify-center group/board items-center py-0 md:py-1 lg:h-full lg:min-h-0 lg:flex-1">
 
             <div className={cx(
-              "transition-all duration-1000 ease-in-out self-stretch rounded-2xl overflow-hidden py-1",
+              "hidden md:block transition-all duration-1000 ease-in-out self-stretch rounded-2xl overflow-hidden py-1",
               activeTab === 'analysis' ? "w-6 md:w-8 opacity-100 translate-x-0" : "w-0 opacity-0 overflow-hidden -translate-x-8 pointer-events-none"
             )}>
               <EvaluationBar
@@ -256,7 +256,7 @@ export default function GameScreen() {
               />
             </div>
 
-            <div className="w-full aspect-square relative rounded-[1.5rem] overflow-hidden shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[8px] border-black/60 ring-1 ring-white/5 mx-auto max-w-[94vw] sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full">
+            <div className="w-full max-w-none shrink-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               <ChessBoard overrideBoardTheme="Classic Green" game={game} onMove={handleGameMove} orientation={playerColor} />
             </div>
@@ -287,10 +287,10 @@ export default function GameScreen() {
       </div>
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-[#121212]/80 backdrop-blur-[60px] rounded-[1.5rem] lg:rounded-[2rem] border-[2px] border-transparent shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-[400px] lg:h-fit lg:min-h-[610px] animate-fade-in-right relative overflow-hidden border-b-[4px] border-b-black/40 panel-glow-cycle transition-all lg:flex-1">
+      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-fit lg:min-h-[610px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all lg:flex-1 mx-2 md:mx-0">
 
         {/* Premium Segmented Control Tab Navigation */}
-        <nav className="p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
+        <nav className="hidden md:block p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">
             <div
               className={cx(
@@ -316,7 +316,7 @@ export default function GameScreen() {
           </div>
         </nav>
 
-        <div className="flex-1 overflow-hidden flex flex-col bg-black/[0.05]">
+        <div className="hidden md:flex flex-1 overflow-hidden flex-col bg-black/[0.05]">
 
           {activeTab === 'moves' && (
             <div className="flex-1 flex flex-col overflow-hidden animate-fade-in bg-black/[0.1]">
@@ -415,12 +415,12 @@ export default function GameScreen() {
         </div>
 
         {/* Professional Game Control Center */}
-        <div className="p-2 bg-black/60 border-t border-white/10 grid grid-cols-2 gap-2 shrink-0 shadow-[0_-30px_60px_-15px_rgba(0,0,0,0.8)] relative z-30 ring-1 ring-white/5 backdrop-blur-3xl">
-          <button onClick={() => alert('Resign not implemented yet')} className="flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl bg-white/5 hover:bg-red-500/10 text-neutral-500 hover:text-red-400 font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 group shadow-2xl transition-all duration-150 active:scale-95 hover:border-red-500/20 ring-1 ring-white/5">
+        <div className="p-2 bg-transparent md:bg-black/60 border-0 md:border-t border-white/10 flex md:grid md:grid-cols-2 gap-2 shrink-0 shadow-none md:shadow-[0_-30px_60px_-15px_rgba(0,0,0,0.8)] relative z-30 ring-0 md:ring-1 ring-white/5 md:backdrop-blur-3xl">
+          <button onClick={() => alert('Resign not implemented yet')} className="flex-1 flex md:flex-col items-center justify-center gap-1 py-1.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-red-500/10 text-neutral-500 hover:text-red-400 font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 group shadow-2xl transition-all duration-150 active:scale-95 hover:border-red-500/20 ring-1 ring-white/5">
             <Flag size={16} className="group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-200" />
             {t('game.resign')}
           </button>
-          <button onClick={() => alert('Draw offer not implemented yet')} className="flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 shadow-2xl transition-all duration-150 active:scale-95 group hover:border-white/20 ring-1 ring-white/5">
+          <button onClick={() => alert('Draw offer not implemented yet')} className="flex-1 flex md:flex-col items-center justify-center gap-1 py-1.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 shadow-2xl transition-all duration-150 active:scale-95 group hover:border-white/20 ring-1 ring-white/5">
             <Handshake size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-all duration-200" />
             {t('game.draw')}
           </button>
