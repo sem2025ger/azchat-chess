@@ -109,10 +109,10 @@ export default function PlayScreen() {
     <div className="min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto lg:overflow-hidden relative pb-6 lg:pb-3">
       
 
-      <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px] gap-4 xl:gap-4 items-start justify-center flex-1 min-h-0 pt-2 lg:pt-0">
+      <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px] gap-2 lg:gap-4 items-start justify-center flex-1 min-h-0 pt-0 lg:pt-0">
 
         {/* ── Left Side: Chess Board ────────────────────────────── */}
-        <div className="w-full flex flex-col gap-1.5 animate-fade-in-up min-h-0">
+        <div className="w-full flex flex-col gap-1 md:gap-1.5 animate-fade-in-up min-h-0">
           {/* Opponent Info */}
           <div className="flex items-center gap-2 px-1 shrink-0">
             <div className="w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 flex items-center justify-center text-base shadow-2xl relative">
@@ -178,7 +178,7 @@ export default function PlayScreen() {
         {/* ── Right Side: Control Panel ────────────────────────── */}
         <div className="w-full flex flex-col animate-fade-in-right">
           {/* Theme Selector — sits neatly above the settings panel */}
-          <div className="flex items-center justify-center gap-4 mb-0.5 md:mb-2 bg-black/40 backdrop-blur-3xl px-4 py-1.5 rounded-full border border-white/5 ring-1 ring-white/5 shrink-0 shadow-2xl self-center scale-90 md:scale-100">
+          <div className="hidden md:flex items-center justify-center gap-4 mb-0.5 md:mb-2 bg-black/40 backdrop-blur-3xl px-4 py-1.5 rounded-full border border-white/5 ring-1 ring-white/5 shrink-0 shadow-2xl self-center scale-90 md:scale-100">
             {(['gold', 'cyan', 'violet'] as AccentTheme[]).map(theme => (
               <button
                 key={theme}
@@ -200,7 +200,7 @@ export default function PlayScreen() {
             ))}
           </div>
           {/* Spacer: aligns panel top with board top */}
-          <div className="h-[4px] md:h-[10px] shrink-0" />
+          <div className="h-0 md:h-[10px] shrink-0" />
           <div className="bg-[#121212] rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-transparent overflow-hidden flex flex-col relative group/panel border-b-[4px] border-black/40 panel-glow-cycle transition-all">
             
             {/* Dynamic Background Glow removed since panel-glow-cycle handles it */}
@@ -332,7 +332,7 @@ export default function PlayScreen() {
 
           </div>
           {/* Spacer: matches user footer height so panel bottom aligns with board bottom */}
-          <div className="h-[10px] md:h-[38px] shrink-0" />
+          <div className="h-0 md:h-[38px] shrink-0" />
         </div>
       </div>
     </div>
