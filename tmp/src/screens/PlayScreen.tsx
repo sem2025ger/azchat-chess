@@ -106,7 +106,7 @@ export default function PlayScreen() {
   };
 
   return (
-    <div className="h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto lg:overflow-hidden relative pb-6 lg:pb-3">
+    <div className="min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto lg:overflow-hidden relative pb-6 lg:pb-3">
       
 
       <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px] gap-4 xl:gap-4 items-start justify-center flex-1 min-h-0 pt-2 lg:pt-0">

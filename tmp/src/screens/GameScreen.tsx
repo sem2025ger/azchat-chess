@@ -214,7 +214,7 @@ export default function GameScreen() {
   }
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-2 lg:px-4 xl:px-6 pb-6 lg:pb-1 pt-2 lg:pt-0 gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-12 h-full lg:h-[calc(100vh-85px)]">
+    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-2 lg:px-4 xl:px-6 pb-6 lg:pb-1 pt-2 lg:pt-0 gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-12 min-h-full lg:h-[calc(100vh-85px)]">
 
       {/* Board Area - Central Focus */}
       <div className="flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-12 lg:flex-1">

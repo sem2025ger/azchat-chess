@@ -23,7 +23,7 @@ export default function HomeScreen() {
   ];
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden items-center justify-center bg-transparent transition-all relative home-screen-root">
+    <div className="flex flex-col min-h-full xl:h-full w-full xl:overflow-hidden items-center justify-start xl:justify-center bg-transparent transition-all relative home-screen-root">
       <style>{`
         /* All pieces slightly larger on Home board */
         .home-board img {

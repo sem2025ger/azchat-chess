@@ -30,7 +30,7 @@ export default function Layout() {
   const currentBgClass = specialThemesEnabled ? (bgClasses[background] || bgClasses['Void Black']) : bgClasses['Void Black'];
 
   return (
-    <div className={cx("h-[100dvh] w-full flex selection:bg-chess-gold/30 selection:text-white", currentBgClass)}>
+    <div className={cx("min-h-screen w-full flex selection:bg-chess-gold/30 selection:text-white", currentBgClass)}>
 
       {/* Premium Sidebar Navigation - Hidden on Mobile */}
       <aside className="hidden md:flex w-20 xl:w-72 bg-black/40 backdrop-blur-3xl border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
