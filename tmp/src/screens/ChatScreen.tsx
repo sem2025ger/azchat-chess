@@ -62,87 +62,81 @@ export default function ChatScreen() {
   };
 
   return (
-    <div className="flex-1 w-full h-full min-h-0 flex items-center justify-center bg-transparent p-2 md:p-6 lg:p-8 overflow-hidden animate-fade-in">
-      <div className="w-full max-w-[85rem] mx-auto flex gap-6 items-stretch h-full lg:h-[85vh] lg:max-h-[850px] lg:min-h-[500px]">
+    <div className="flex-1 w-full flex flex-col lg:flex-row items-center justify-start lg:justify-center bg-transparent p-2 pt-4 lg:p-8 lg:pt-8 overflow-hidden animate-fade-in min-h-0">
+      <div className="w-full max-w-[85rem] mx-auto flex gap-6 items-stretch h-[calc(100dvh-6rem)] lg:h-[85vh] lg:max-h-[850px] lg:min-h-[500px]">
 
       {/* Main Chat Area - Premium Container */}
-      <div className="flex-1 flex flex-col bg-transparent backdrop-blur-3xl rounded-[2.5rem] border-[2px] border-transparent overflow-hidden relative border-b-[4px] border-b-black/40 panel-glow-cycle transition-all">
+      <div className="flex-1 flex flex-col bg-[#16171a]/95 lg:bg-neutral-900/60 backdrop-blur-3xl rounded-[2rem] lg:rounded-[2.5rem] border border-chess-active/40 overflow-hidden relative shadow-[0_0_25px_rgba(0,206,209,0.15)] transition-all">
 
         {/* Professional Global Header */}
-        <div className="h-16 shrink-0 border-b border-white/[0.03] flex items-center px-6 gap-4 bg-transparent">
-          <div className="w-10 h-10 rounded-xl bg-chess-active/10 flex items-center justify-center text-chess-active border border-chess-active/20 shadow-[0_0_20px_#00ced120]">
-            <Globe size={20} />
+        <div className="h-14 lg:h-16 shrink-0 border-b border-white/[0.05] flex items-center px-4 lg:px-6 gap-3 lg:gap-4 bg-black/20 z-10">
+          <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-chess-active/10 flex items-center justify-center text-chess-active border border-chess-active/20 shadow-[0_0_15px_#00ced130]">
+            <Globe size={18} className="lg:w-5 lg:h-5" />
           </div>
           <div className="flex-1">
-            <h2 className="font-black text-glow-cycle text-base leading-tight tracking-tighter uppercase italic">{t('chat.globalTitle')}</h2>
-            <div className="flex items-center gap-2 text-[0.6rem] text-neutral-500 font-black uppercase tracking-[0.25em] mt-0.5 italic">
-              <span>{t('chat.subtitle')}</span>
-              <div className="w-1 h-1 rounded-full bg-white/10" />
-              <span className="text-chess-gold">{t('chat.communityHub')}</span>
+            <h2 className="font-black text-premium-animate text-[0.85rem] lg:text-base leading-tight tracking-wide uppercase">ARENA CHAT</h2>
+            <div className="text-[0.55rem] lg:text-[0.6rem] text-chess-active/80 font-black uppercase tracking-[0.2em] mt-0.5">
+              LIVE PLAYERS
             </div>
           </div>
           <div className="bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 flex items-center gap-2 shadow-inner">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
-            <span className="text-[0.6rem] font-black text-emerald-400 uppercase tracking-widest leading-none">34,102 {t('chat.liveCount')}</span>
+            <span className="text-[0.55rem] lg:text-[0.6rem] font-black text-emerald-400 uppercase tracking-widest leading-none">34K</span>
           </div>
         </div>
 
         {/* Dynamic Message Stream */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-4 space-y-4 bg-black/[0.1]">
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 lg:px-6 py-3 lg:py-4 space-y-2.5 lg:space-y-3 bg-transparent">
           {msgs.map((m, i) => (
-            <div key={i} className={cx("flex gap-3 max-w-[90%] animate-fade-in-up", m.type === 'self' ? "ml-auto flex-row-reverse" : "")}>
-
+            <div key={i} className={cx(
+              "flex gap-3 px-3 py-2.5 lg:px-4 lg:py-3 border border-transparent rounded-2xl transition-all relative overflow-hidden ring-1 ring-transparent group/msg shadow-lg",
+              m.type === 'system' ? "w-full text-center bg-amber-500/5 ring-amber-500/10 justify-center" : 
+              (m.type === 'self' ? "ml-auto bg-chess-gold/5 ring-chess-gold/10 hover:ring-chess-gold/20 hover:bg-chess-gold/10 max-w-[92%] lg:max-w-[85%]" : "mr-auto bg-white/[0.02] hover:bg-white/[0.04] hover:ring-white/10 max-w-[92%] lg:max-w-[85%]")
+            )}>
+              {/* Glow effect on hover */}
               {m.type !== 'system' && (
-                <div className="w-9 h-9 rounded-[0.875rem] bg-neutral-950 flex items-center justify-center shrink-0 border border-white/5 text-xl shadow-2xl transition-transform hover:scale-110 active:scale-95 cursor-default relative">
-                  <div className="absolute inset-0 bg-white/[0.02] rounded-[0.875rem] opacity-0 group-hover:opacity-100" />
+                <div className="absolute top-0 right-0 w-12 h-12 bg-white/[0.02] blur-xl rounded-full translate-x-4 -translate-y-4" />
+              )}
+              
+              {m.type !== 'system' && (
+                <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-neutral-950 flex items-center justify-center shrink-0 text-lg lg:text-xl border border-white/5 relative z-10 shadow-inner group-hover/msg:rotate-3 transition-transform">
                   {m.region}
                 </div>
               )}
 
-              <div className={cx(
-                "flex flex-col group relative",
-                m.type === 'self' ? "items-end" : "items-start"
-              )}>
+              <div className={cx("flex flex-col relative z-10 flex-1 min-w-0", m.type === 'system' ? "items-center" : "")}>
                 {m.type !== 'system' && (
-                  <div className="flex items-baseline gap-2 mb-1 px-2">
-                    <span className={cx("text-[0.65rem] font-black uppercase tracking-[0.25em] italic", m.type === 'self' ? "text-chess-gold" : "text-neutral-500")}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={cx("text-[0.7rem] lg:text-[0.75rem] font-black uppercase tracking-[0.1em] truncate", m.type === 'self' ? "text-chess-gold" : "text-neutral-300 group-hover/msg:text-white transition-colors")}>
                       {m.user}
-                      {m.type === 'self' && <span className="ml-1.5 px-1.5 py-0.5 bg-chess-gold/10 text-[0.5rem] rounded-md tracking-normal italic opacity-60 font-bold border border-chess-gold/20">{t('chat.youBadge')}</span>}
                     </span>
-                    <span className="text-[0.55rem] text-neutral-700 font-black tabular-nums">{m.time}</span>
+                    <span className="text-[0.55rem] text-neutral-600 font-black tabular-nums ml-auto">{m.time}</span>
                   </div>
                 )}
-
-                <div className="relative group/bubble">
-                  <div className={cx(
-                    "px-5 py-2.5 rounded-[1.75rem] text-[0.82rem] font-black shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-300 relative border leading-relaxed",
-                    m.type === 'system'
-                      ? "bg-amber-500/10 text-amber-200 border-amber-500/20 mx-auto rounded-2xl italic text-center px-8 shadow-inner tracking-tight"
-                      : m.type === 'self'
-                        ? "bg-chess-gold/10 text-white border-chess-gold/20 rounded-tr-none hover:border-chess-gold/40 hover:bg-chess-gold/[0.15] ring-1 ring-chess-gold/5"
-                        : "bg-white/[0.03] text-neutral-100 rounded-tl-none border-white/[0.05] hover:border-white/20 hover:bg-white/[0.06] backdrop-blur-md ring-1 ring-white/5"
-                  )}>
-                    {translatedIndices[i] || m.msg}
-                  </div>
-
-                  {/* Floating Action Button for Translation */}
-                  {m.type === 'user' && (
-                    <button
-                      onClick={() => handleTranslateMessage(i, m.msg)}
-                      className="absolute -right-10 top-1/2 -translate-y-1/2 p-2 opacity-0 group-hover/bubble:opacity-100 transition-all text-neutral-600 hover:text-chess-active bg-neutral-950/80 rounded-xl border border-white/10 shadow-2xl backdrop-blur-3xl ring-1 ring-white/10 active:scale-90"
-                      title={t('chat.assistant.translateBubble')}
-                    >
-                      <Languages size={14} strokeWidth={2.5} />
-                    </button>
-                  )}
+                <div className={cx(
+                  "text-[0.75rem] lg:text-[0.82rem] font-medium leading-snug break-words",
+                  m.type === 'system' ? "text-amber-200 font-black uppercase tracking-widest text-[0.6rem] lg:text-[0.7rem]" : (m.type === 'self' ? "text-white" : "text-neutral-300")
+                )}>
+                  {translatedIndices[i] || m.msg}
                 </div>
               </div>
+
+              {/* Translation Button */}
+              {m.type === 'user' && (
+                <button
+                  onClick={() => handleTranslateMessage(i, m.msg)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 opacity-0 group-hover/msg:opacity-100 transition-all text-neutral-500 hover:text-chess-active bg-neutral-900/90 rounded-lg border border-white/10 shadow-2xl backdrop-blur-3xl active:scale-90"
+                  title={t('chat.assistant.translateBubble')}
+                >
+                  <Languages size={14} className="lg:w-4 lg:h-4" />
+                </button>
+              )}
             </div>
           ))}
         </div>
 
         {/* Integrated User Input Control */}
-        <div className="px-5 py-3 border-t border-white/[0.05] bg-black/60 relative z-30 shadow-[0_-20px_60px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
+        <div className="px-3 pt-2.5 pb-5 lg:px-5 lg:py-3 border-t border-white/[0.05] bg-black/40 relative z-30 shrink-0">
 
           {showAssistant && (
             <div className="animate-fade-in-up mb-2">
@@ -154,8 +148,8 @@ export default function ChatScreen() {
             </div>
           )}
 
-          <div className="relative flex items-center gap-3 group/input">
-            <div className="absolute -inset-1 bg-gradient-to-r from-chess-gold/20 to-chess-active/20 blur opacity-0 group-hover/input:opacity-100 transition-opacity rounded-[2rem] pointer-events-none" />
+          <div className="relative flex items-center gap-2 lg:gap-3 group/input">
+            <div className="absolute -inset-1 bg-gradient-to-r from-chess-active/10 to-blue-500/10 blur opacity-0 group-hover/input:opacity-100 transition-opacity rounded-[2rem] pointer-events-none" />
 
             <div className="flex-1 relative">
               <input
@@ -164,27 +158,27 @@ export default function ChatScreen() {
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                 placeholder={t('chat.sendPlaceholder')}
-                className="w-full bg-neutral-950 border border-white/10 rounded-[2rem] py-3.5 pl-6 pr-14 text-sm text-white placeholder-neutral-800 font-black shadow-[inset_0_4px_12px_rgba(0,0,0,0.8)] focus:outline-none focus:border-chess-active focus:ring-1 focus:ring-chess-active/30 transition-all tracking-tight leading-none"
+                className="w-full bg-black/50 border border-white/10 rounded-[1.5rem] lg:rounded-[2rem] py-2.5 lg:py-3.5 pl-4 lg:pl-6 pr-10 lg:pr-14 text-[0.75rem] lg:text-sm text-white placeholder-neutral-500 font-medium shadow-[inset_0_2px_8px_rgba(0,0,0,0.5)] focus:outline-none focus:border-chess-active focus:ring-1 focus:ring-chess-active/30 transition-all tracking-wide leading-none"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              <div className="absolute right-2 lg:right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 lg:gap-1.5">
                 <button
                   onClick={() => setShowAssistant(!showAssistant)}
                   className={cx(
-                    "p-2 rounded-xl transition-all shadow-2xl active:scale-95 group/spark",
-                    showAssistant ? "bg-chess-active text-white scale-110" : "text-neutral-700 hover:text-chess-active hover:bg-chess-active/10"
+                    "p-1.5 lg:p-2 rounded-lg lg:rounded-xl transition-all active:scale-95 group/spark",
+                    showAssistant ? "bg-chess-active text-white scale-110" : "text-neutral-500 lg:text-neutral-700 hover:text-chess-active hover:bg-chess-active/10"
                   )}
                 >
-                  <Sparkles size={18} className="group-hover/spark:rotate-12 transition-transform duration-500" />
+                  <Sparkles size={14} className="lg:w-[18px] lg:h-[18px] group-hover/spark:rotate-12 transition-transform duration-500" />
                 </button>
               </div>
             </div>
 
             <button
-              onClick={handleSendMessage}
-              className="w-12 h-12 bg-white/[0.02] hover:bg-white/[0.06] text-neutral-600 hover:text-white rounded-[1.25rem] flex items-center justify-center border border-white/[0.04] transition-all shadow-2xl active:scale-95 group/send ring-1 ring-white/5 active:translate-y-px"
-            >
-              <Send size={20} strokeWidth={2.5} className="group-hover/send:translate-x-1 group-hover/send:-translate-y-1 transition-transform duration-500" />
-            </button>
+               onClick={handleSendMessage}
+               className="w-9 h-9 lg:w-12 lg:h-12 bg-white/5 lg:bg-white/[0.02] hover:bg-white/10 lg:hover:bg-white/[0.06] text-neutral-400 lg:text-neutral-300 hover:text-white rounded-[1rem] lg:rounded-[1.25rem] flex items-center justify-center border border-white/10 lg:border-white/[0.04] transition-all shadow-xl active:scale-95 group/send ring-1 ring-white/5"
+             >
+               <Send size={16} strokeWidth={2.5} className="lg:w-5 lg:h-5 group-hover/send:translate-x-1 group-hover/send:-translate-y-1 transition-transform duration-500" />
+             </button>
           </div>
         </div>
       </div>
@@ -196,7 +190,7 @@ export default function ChatScreen() {
             <Users size={18} />
           </div>
           <div className="flex-1">
-            <h2 className="font-black text-glow-cycle text-sm leading-tight uppercase italic">{t('chat.onlineUsers')}</h2>
+            <h2 className="font-black text-premium-animate text-[0.75rem] lg:text-sm leading-tight uppercase italic">{t('chat.onlineUsers')}</h2>
             <div className="text-[0.55rem] font-black text-neutral-600 uppercase tracking-widest mt-0.5 italic">{t('chat.worldPlayers')}</div>
           </div>
         </div>
