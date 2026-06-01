@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
@@ -26,6 +26,8 @@ export default function GameScreen() {
   // User preferences applied automatically via ThemeContext
   const [activeTab, setActiveTab] = useState<'moves' | 'chat' | 'analysis'>('moves');
   const [timeLeft, setTimeLeft] = useState({ black: 600, white: 600 });
+  const [viewMoveIndex, setViewMoveIndex] = useState<number>(-1);
+  const [positionHistory, setPositionHistory] = useState<string[]>(() => [new Chess().fen()]);
 
   // Chess Game State
   const [game, setGame] = useState(new Chess());
@@ -41,6 +43,8 @@ export default function GameScreen() {
     };
     const onUpdate = (data: any) => {
       setGame(new Chess(data.fen));
+      setPositionHistory(prev => prev[prev.length - 1] === data.fen ? prev : [...prev, data.fen]);
+      setViewMoveIndex(-1);
       if (data.whiteTime !== undefined) {
          setTimeLeft({ white: data.whiteTime, black: data.blackTime });
       }
@@ -121,16 +125,23 @@ export default function GameScreen() {
   }, [activeTab, game.fen()]);
 
   const handleGameMove = (source: string, target: string, promotion: string = 'q') => {
+    if (viewMoveIndex !== -1) {
+      setViewMoveIndex(-1);
+      return false;
+    }
     try {
       const g = new Chess(game.fen());
       const move = g.move({ from: source, to: target, promotion });
       if (move) {
         if (socket && roomId) {
           socket.emit('make_move', { roomId, move: { from: source, to: target, promotion } });
-          // Note: standard approach waits for update_board event to confirm move, but we can optimistically update
           setGame(g);
+          setPositionHistory(prev => prev[prev.length - 1] === g.fen() ? prev : [...prev, g.fen()]);
+          setViewMoveIndex(-1);
         } else {
           setGame(g);
+          setPositionHistory(prev => prev[prev.length - 1] === g.fen() ? prev : [...prev, g.fen()]);
+          setViewMoveIndex(-1);
         }
         
         // Auto-analyze move if analysis pane is open
@@ -213,10 +224,23 @@ export default function GameScreen() {
     });
   }
 
+  const displayedGame = useMemo(() => {
+    if (viewMoveIndex === -1) return game;
+    try {
+      const safeIndex = Math.max(0, Math.min(viewMoveIndex, positionHistory.length - 1));
+      return new Chess(positionHistory[safeIndex]);
+    } catch (e) {
+      console.error("Failed to load historical FEN", e);
+      return game;
+    }
+  }, [game, viewMoveIndex, positionHistory]);
+
+  const hasHistory = positionHistory.length > 1;
+
   return (
     <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-12 min-h-full lg:h-[calc(100vh-85px)]">
 
-      {/* Board Area - Central Focus */}
+      {/* Mobile Analysis Drawer Header */}
       <div className="flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-12 lg:flex-1">
 
         <div className="w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full">
@@ -258,7 +282,13 @@ export default function GameScreen() {
 
             <div className="w-full max-w-none shrink-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
-              <ChessBoard overrideBoardTheme="Classic Green" game={game} onMove={handleGameMove} orientation={playerColor} />
+              <ChessBoard
+                overrideBoardTheme="Classic Green"
+                game={displayedGame}
+                onMove={handleGameMove}
+                orientation={playerColor}
+                readOnly={viewMoveIndex !== -1}
+              />
             </div>
           </div>
 
@@ -412,6 +442,66 @@ export default function GameScreen() {
             />
           )}
 
+        </div>
+
+        {viewMoveIndex !== -1 && (
+          <div className="md:hidden text-center text-chess-gold text-xs font-bold animate-pulse mt-2 -mb-1">
+            Replay mode — press Live to move
+          </div>
+        )}
+        {/* Mobile Move Controls Row */}
+        <div className="flex md:hidden items-center justify-between gap-2 py-2 px-1 mx-2 shrink-0 mt-auto mb-1 z-10">
+          <button 
+            onClick={() => { if (hasHistory) setViewMoveIndex(0); }} 
+            disabled={!hasHistory} 
+            className="flex-1 flex justify-center text-white p-2.5 rounded-xl transition-all duration-150 active:scale-90 disabled:opacity-30 disabled:pointer-events-none bg-white/5 border border-white/10 backdrop-blur-md shadow-xl hover:bg-white/10 ring-1 ring-white/5"
+          >
+            <Rewind size={18} />
+          </button>
+          
+          <button 
+            onClick={() => { 
+              if (!hasHistory) return;
+              const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
+              setViewMoveIndex(Math.max(0, currentIndex - 1));
+            }} 
+            disabled={!hasHistory} 
+            className="flex-1 flex justify-center text-white p-2.5 rounded-xl transition-all duration-150 active:scale-90 disabled:opacity-30 disabled:pointer-events-none bg-white/5 border border-white/10 backdrop-blur-md shadow-xl hover:bg-white/10 ring-1 ring-white/5"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          
+          <button 
+            onClick={() => setViewMoveIndex(-1)} 
+            disabled={!hasHistory} 
+            className="flex-[1.5] flex justify-center text-white hover:text-white p-2.5 rounded-xl transition-all duration-150 active:scale-90 disabled:opacity-30 disabled:pointer-events-none bg-chess-active/80 border border-chess-active/50 shadow-[0_5px_15px_rgba(0,206,209,0.3)] ring-1 ring-chess-active/40"
+          >
+            <History size={20} className={viewMoveIndex !== -1 ? "animate-pulse" : ""} />
+          </button>
+          
+          <button 
+            onClick={() => {
+              if (!hasHistory) return;
+              if (viewMoveIndex === -1) return;
+              if (viewMoveIndex >= positionHistory.length - 2) {
+                setViewMoveIndex(-1);
+              } else {
+                setViewMoveIndex(viewMoveIndex + 1);
+              }
+            }} 
+            disabled={!hasHistory} 
+            className="flex-1 flex justify-center text-white p-2.5 rounded-xl transition-all duration-150 active:scale-90 disabled:opacity-30 disabled:pointer-events-none bg-white/5 border border-white/10 backdrop-blur-md shadow-xl hover:bg-white/10 ring-1 ring-white/5"
+          >
+            <ChevronRight size={22} />
+          </button>
+          
+          <button 
+            onClick={() => setViewMoveIndex(-1)} 
+            disabled={!hasHistory} 
+            className="flex-1 flex justify-center text-white p-2.5 rounded-xl transition-all duration-150 active:scale-90 disabled:opacity-30 disabled:pointer-events-none bg-white/5 border border-white/10 backdrop-blur-md shadow-xl hover:bg-white/10 ring-1 ring-white/5"
+          >
+            <FastForward size={18} />
+          </button>
         </div>
 
         {/* Professional Game Control Center */}

@@ -35,7 +35,8 @@ export default function ChessBoard({
   game,
   onMove,
   orientation = 'w',
-  overrideBoardTheme
+  overrideBoardTheme,
+  readOnly = false,
 }: {
   className?: string;
   showCoordinates?: boolean;
@@ -43,6 +44,7 @@ export default function ChessBoard({
   onMove?: (source: string, target: string, promotion?: string) => boolean;
   orientation?: 'w' | 'b';
   overrideBoardTheme?: BoardTheme;
+  readOnly?: boolean;
 }) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
   console.log('[THEME_DEBUG] ChessBoard Active Theme:', pieceTheme);
@@ -58,6 +60,11 @@ export default function ChessBoard({
   const [visualPieces, setVisualPieces] = useState<PieceData[]>([]);
 
   useEffect(() => {
+    setSelectedSquare(null);
+    setLegalMoves([]);
+  }, [activeGame.fen(), orientation, readOnly]);
+
+  useEffect(() => {
     const history = activeGame.history({ verbose: true }) as Move[];
     if (history.length > 0) {
       const last = history[history.length - 1];
@@ -67,37 +74,12 @@ export default function ChessBoard({
     }
 
     const current = getBoardPieces(activeGame);
-    setVisualPieces(prev => {
-      if (prev.length === 0) return current.map((p, i) => ({ ...p, id: `init-${i}` }));
-      
-      const result: PieceData[] = [];
-      const unusedCurrent = new Set(current);
-
-      // Keep pieces that didn't move
-      for (const p of prev) {
-        const match = current.find(c => c.square === p.square && c.color === p.color && c.type === p.type && unusedCurrent.has(c));
-        if (match) {
-          result.push({ ...p, square: match.square, type: match.type });
-          unusedCurrent.delete(match);
-        }
-      }
-
-      // Match moved pieces
-      const movedOld = prev.filter(p => !result.includes(p));
-      const newCurrent = Array.from(unusedCurrent);
-
-      for (const nc of newCurrent) {
-        const oldMatchIdx = movedOld.findIndex(o => o.color === nc.color && (o.type === nc.type || nc.type === 'q'));
-        if (oldMatchIdx !== -1) {
-          const old = movedOld.splice(oldMatchIdx, 1)[0];
-          result.push({ ...old, square: nc.square, type: nc.type });
-        } else {
-          result.push({ ...nc, id: `new-${Math.random()}` });
-        }
-      }
-
-      return result;
-    });
+    setVisualPieces(
+      current.map((p) => ({
+        ...p,
+        id: `${p.color}${p.type}-${p.square}`,
+      }))
+    );
   }, [activeGame, activeGame.fen(), trigger]);
 
   const activeBoardThemeName: BoardTheme = overrideBoardTheme || boardTheme || 'Classic Green';
@@ -153,33 +135,62 @@ export default function ChessBoard({
   };
 
   const onSquareClick = (square: string) => {
-    if (selectedSquare === square) {
-      setSelectedSquare(null);
-      setLegalMoves([]);
+    if (readOnly) {
       return;
     }
 
-    if (selectedSquare) {
-      const moved = handleMove(selectedSquare, square);
-      if (moved) return;
-    }
+    const clickedPiece = activeGame.get(square as Square);
 
-    try {
-      const piece = activeGame.get(square as Square);
-      if (piece && piece.color === activeGame.turn()) {
-        setSelectedSquare(square);
-        const moves = activeGame.moves({ square: square as Square, verbose: true }) as Move[];
-        setLegalMoves(moves.map((m) => m.to));
-      } else {
+    if (selectedSquare) {
+      if (selectedSquare === square) {
         setSelectedSquare(null);
         setLegalMoves([]);
+        return;
       }
-    } catch {
-      // ignore invalid state
+
+      const selectedPiece = activeGame.get(selectedSquare as Square);
+      if (!selectedPiece || selectedPiece.color !== activeGame.turn()) {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+      } else {
+        const validMoves = activeGame.moves({ square: selectedSquare as Square, verbose: true }) as Move[];
+        const isLegal = validMoves.some(m => m.to === square);
+
+        if (isLegal) {
+          setSelectedSquare(null);
+          setLegalMoves([]);
+          handleMove(selectedSquare, square);
+          return;
+        } else {
+          if (clickedPiece && clickedPiece.color === activeGame.turn()) {
+            setSelectedSquare(square);
+            const newMoves = activeGame.moves({ square: square as Square, verbose: true }) as Move[];
+            setLegalMoves(newMoves.map((m) => m.to));
+            return;
+          } else {
+            setSelectedSquare(null);
+            setLegalMoves([]);
+            return;
+          }
+        }
+      }
+    }
+
+    if (clickedPiece && clickedPiece.color === activeGame.turn()) {
+      setSelectedSquare(square);
+      const moves = activeGame.moves({ square: square as Square, verbose: true }) as Move[];
+      setLegalMoves(moves.map((m) => m.to));
+    } else {
+      setSelectedSquare(null);
+      setLegalMoves([]);
     }
   };
 
   const handleDragStart = (e: React.DragEvent, square: string) => {
+    if (readOnly) {
+      e.preventDefault();
+      return;
+    }
     const piece = activeGame.get(square as Square);
     if (piece && piece.color === activeGame.turn()) {
       e.dataTransfer.setData('text/plain', square);
@@ -190,6 +201,7 @@ export default function ChessBoard({
 
   const handleDrop = (e: React.DragEvent, square: string) => {
     e.preventDefault();
+    if (readOnly) return;
     const source = e.dataTransfer.getData('text/plain');
     if (source && source !== square) {
       handleMove(source, square);
@@ -203,7 +215,7 @@ export default function ChessBoard({
   return (
     <div
       className={cx(
-        'w-full rounded-lg relative overflow-hidden transition-all duration-500',
+        'w-full rounded-lg relative overflow-hidden transition-all duration-500 touch-manipulation',
         'p-2 md:p-3 bg-[#262421] border-[6px] border-[#312e2b] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.4)]',
         className
       )}
@@ -296,7 +308,7 @@ export default function ChessBoard({
                   onDragStart={(e) => handleDragStart(e, p.square)}
                   onClick={() => onSquareClick(p.square)}
                   className={cx(
-                    'absolute w-[12.5%] h-[12.5%] transition-all duration-[150ms] ease-out pointer-events-auto cursor-grab active:cursor-grabbing hover:scale-[1.05]',
+                    'absolute w-[12.5%] h-[12.5%] transition-all duration-[150ms] ease-out pointer-events-none md:pointer-events-auto cursor-grab active:cursor-grabbing hover:scale-[1.05]',
                     isSelected ? 'scale-[1.1] drop-shadow-2xl z-40' : 'z-30'
                   )}
                   style={{ left: `${fileIdx * 12.5}%`, top: `${rankIdx * 12.5}%` }}
