@@ -47,7 +47,6 @@ export default function ChessBoard({
   readOnly?: boolean;
 }) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
-  console.log('[THEME_DEBUG] ChessBoard Active Theme:', pieceTheme);
   const [localGame, setLocalGame] = useState(new Chess());
 
   const activeGame = game || localGame;
@@ -336,7 +335,6 @@ function PieceImage({
   const src = pieceSetName === 'cburnett-classic'
     ? `/chess-assets/pieces/cburnett/${pieceCode}.svg`
     : `/pieces/${pieceSetName}/${pieceCode}.svg`;
-  console.log('[THEME_DEBUG] PieceImage Source:', src);
 
   return (
     <div className="w-full h-full flex items-center justify-center p-[8%] pointer-events-none select-none">
