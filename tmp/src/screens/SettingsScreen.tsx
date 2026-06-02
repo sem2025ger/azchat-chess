@@ -201,7 +201,8 @@ export default function SettingsScreen() {
         return (
             <div className="space-y-4 animate-fade-in px-2 pt-4">
               <div className="space-y-3">
-                <div className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-1.5 border border-white/10 shadow-2xl space-y-1">
+                <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl">
+                  <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
                   <HubLink 
                     icon={<Palette size={18} />} 
                     title={t('settings.boardAppearance')} 
@@ -224,15 +225,18 @@ export default function SettingsScreen() {
                     preview={<div className={cx("w-6 h-6 rounded-md border border-white/10", bgThemes.find(t => t.id === background)?.class)} />}
                   />
                   <HubLink icon={<Sparkles size={18} />} title="Studio Presets" onClick={() => setActiveSubView('presets')} />
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <h2 className="text-[0.65rem] font-black text-neutral-500 uppercase tracking-[0.4em] italic px-2">Sound & Game</h2>
-                <div className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-1.5 border border-white/10 shadow-2xl space-y-1">
+                <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl">
+                  <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
                   <HubLink icon={<Volume2 size={18} />} title={t('settings.soundThemes')} value={soundTheme.toUpperCase()} onClick={() => setActiveSubView('sound')} />
                   <HubLink icon={<Clock size={18} />} title={t('play.timeControl')} value="Config in Play" onClick={() => navigate('/play')} />
                   <HubLink icon={<Globe size={18} />} title={t('settings.changeLanguage')} value={language.toUpperCase()} onClick={() => setActiveSubView('language')} />
+                  </div>
                 </div>
               </div>
 
@@ -258,7 +262,8 @@ export default function SettingsScreen() {
         <div className="hidden lg:grid grid-cols-12 gap-6">
           <div className="col-span-7 space-y-4 pr-4">
             {/* Board Appearance */}
-            <section className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-5 border border-white/10 shadow-xl relative">
+            <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-xl">
+              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-5 relative h-full">
               <h2 className="text-xl font-black text-white mb-4 flex items-center gap-4 italic uppercase tracking-tighter">
                 <Palette size={20} className="text-chess-gold" /> {t('settings.boardAppearance')}
               </h2>
@@ -278,10 +283,12 @@ export default function SettingsScreen() {
                   );
                 })}
               </div>
-            </section>
+              </section>
+            </div>
 
             {/* Piece Styles */}
-            <section className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-5 border border-white/10 shadow-xl relative">
+            <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-xl">
+              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-5 relative h-full">
               <h2 className="text-xl font-black text-white mb-4 flex items-center gap-4 italic uppercase tracking-tighter">
                 <Monitor size={20} className="text-chess-active" /> {t('settings.pieceStyles')}
               </h2>
@@ -297,10 +304,12 @@ export default function SettingsScreen() {
                   </button>
                 ))}
               </div>
-            </section>
+              </section>
+            </div>
 
             {/* Background Theme */}
-            <section className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-5 border border-white/10 shadow-xl relative">
+            <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-xl">
+              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-5 relative h-full">
               <h2 className="text-xl font-black text-white mb-4 flex items-center gap-4 italic uppercase tracking-tighter">
                 <LayoutIcon size={20} className="text-purple-400" /> {t('settings.activeTheme')}
               </h2>
@@ -311,21 +320,25 @@ export default function SettingsScreen() {
                   </button>
                 ))}
               </div>
-            </section>
+              </section>
+            </div>
 
             {/* Sound Themes */}
-            <section className="bg-neutral-900/40 backdrop-blur-3xl rounded-[2.5rem] p-4 border border-white/10 shadow-2xl">
+            <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-xl">
+              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 relative h-full">
               <h3 className="text-sm font-black text-neutral-400 mb-3 uppercase tracking-widest">{t('settings.soundThemes')}</h3>
               <div className="flex flex-wrap gap-2">
                 {['Default', 'Soft', 'Classic', 'Muted / Off'].map(s => (
                   <button key={s} onClick={() => setSoundTheme(s as any)} className={cx("px-4 py-2 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.15em] transition-all active:scale-95", soundTheme === s ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:border-white/15 hover:text-neutral-400")}>{s}</button>
                 ))}
               </div>
-            </section>
+              </section>
+            </div>
           </div>
 
           <div className="col-span-5 relative">
-            <div className="sticky top-0 bg-neutral-900/60 backdrop-blur-3xl rounded-[3rem] p-8 border border-white/10 shadow-2xl flex flex-col items-center gap-8">
+            <div className="sticky top-0 p-[1px] rounded-[3rem] settings-animated-border shadow-2xl">
+              <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(3rem-1px)] p-8 flex flex-col items-center gap-8 h-full">
               <div className="flex items-center justify-between w-full">
                 <span className="text-[0.7rem] font-black text-neutral-400 uppercase tracking-[0.4em] italic">{t('settings.livePreview')}</span>
                 <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.5rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
@@ -337,6 +350,7 @@ export default function SettingsScreen() {
                 <PreviewStat label={t('settings.boardEngine')} value={boardTheme} icon={<Palette size={16} />} />
                 <PreviewStat label={t('settings.pieceSet')} value={pieceTheme.toUpperCase()} icon={<Monitor size={16} />} />
                 <PreviewStat label="BG THEME" value={background} icon={<LayoutIcon size={16} />} />
+              </div>
               </div>
             </div>
           </div>

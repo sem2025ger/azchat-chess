@@ -370,3 +370,23 @@
   0% { background-position: 0% center; }
   100% { background-position: -200% center; }
 }
+
+/* Settings Animated Glow Border */
+.settings-animated-border {
+  background: linear-gradient(135deg, rgba(0, 206, 209, 0.5), rgba(168, 85, 247, 0.5), rgba(59, 130, 246, 0.5), rgba(223, 176, 98, 0.5), rgba(0, 206, 209, 0.5));
+  background-size: 300% 300%;
+  animation: settingsBorderGlow 10s ease-in-out infinite;
+}
+
+@keyframes settingsBorderGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-animated-border {
+    animation: none;
+    background: linear-gradient(135deg, rgba(0, 206, 209, 0.5), rgba(168, 85, 247, 0.5));
+  }
+}
