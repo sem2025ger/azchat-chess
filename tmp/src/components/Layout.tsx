@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Home, Play, Grid, MessageSquare, User, Settings, Globe, Circle } from 'lucide-react';
 import { useThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -11,6 +11,10 @@ function cx(...inputs: (string | undefined | null | false)[]) {
 }
 
 export default function Layout() {
+  const location = useLocation();
+  const needsConstrainedScroll =
+    location.pathname.startsWith('/profile') ||
+    location.pathname.startsWith('/settings');
   const { background, specialThemesEnabled } = useThemeContext();
   const { language, setLanguage, t } = useLanguage();
 
@@ -30,7 +34,11 @@ export default function Layout() {
   const currentBgClass = specialThemesEnabled ? (bgClasses[background] || bgClasses['Void Black']) : bgClasses['Void Black'];
 
   return (
-    <div className={cx("min-h-screen w-full flex selection:bg-chess-gold/30 selection:text-white", currentBgClass)}>
+    <div className={cx(
+      needsConstrainedScroll ? "h-[100dvh] overflow-hidden" : "min-h-screen",
+      "w-full flex selection:bg-chess-gold/30 selection:text-white",
+      currentBgClass
+    )}>
 
       {/* Premium Sidebar Navigation - Hidden on Mobile */}
       <aside className="hidden md:flex w-20 xl:w-72 bg-black/40 backdrop-blur-3xl border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
@@ -115,12 +123,18 @@ export default function Layout() {
       </nav>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col relative overflow-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+      <main className={cx(
+        "flex-1 flex flex-col relative overflow-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0",
+        needsConstrainedScroll && "min-h-0"
+      )}>
         {/* Dynamic decorative glows */}
         <div className="absolute top-[-25%] right-[-15%] w-[60%] h-[60%] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none animate-pulse-slow" />
         <div className="absolute bottom-[-25%] left-[-15%] w-[60%] h-[60%] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none animate-pulse-slow active-animation-delay" />
 
-        <div className="flex-1 overflow-y-auto relative z-10 custom-scrollbar overscroll-none flex flex-col">
+        <div className={cx(
+          "flex-1 overflow-y-auto relative z-10 custom-scrollbar flex flex-col",
+          needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : "overscroll-none"
+        )}>
           <Outlet />
         </div>
       </main>
