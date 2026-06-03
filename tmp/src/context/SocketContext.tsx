@@ -15,8 +15,13 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // In production, use the deployment URL; fallback to localhost for development
-    const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:4000';
+    const serverUrl = import.meta.env.VITE_SERVER_URL;
+
+    if (!serverUrl) {
+      console.warn("Multiplayer disabled: VITE_SERVER_URL is not configured.");
+      return;
+    }
+
     const newSocket = io(serverUrl);
     
     newSocket.on('connect', () => {
