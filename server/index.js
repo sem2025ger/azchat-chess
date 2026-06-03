@@ -54,10 +54,10 @@ io.on('connection', (socket) => {
       const roomData = {
         roomId,
         game: new Chess(),
-        players: [
-          { socket: player1, color: colors[0] },
-          { socket: player2, color: colors[1] }
-        ]
+        players: {
+          w: colors[0] === 'w' ? player1.id : player2.id,
+          b: colors[0] === 'b' ? player1.id : player2.id
+        }
       };
       
       activeRooms.set(roomId, roomData);
@@ -75,21 +75,36 @@ io.on('connection', (socket) => {
 
   socket.on('make_move', (payload) => {
     try {
-      if (!payload || typeof payload !== 'object') return;
+      if (!payload || typeof payload !== 'object') {
+        socket.emit('move_rejected', { reason: "invalid_payload" });
+        console.log(`[reject] invalid_payload from ${socket.id} roomId=undefined`);
+        return;
+      }
       const { roomId, move } = payload;
-      if (!roomId || !move) return;
+      if (!roomId || !move) {
+        socket.emit('move_rejected', { reason: "invalid_payload" });
+        console.log(`[reject] invalid_payload from ${socket.id} roomId=${roomId}`);
+        return;
+      }
 
       const roomData = activeRooms.get(roomId);
       if (!roomData) {
-        socket.emit('move_rejected', { reason: "Room not found" });
+        socket.emit('move_rejected', { reason: "room_not_found" });
+        console.log(`[reject] room_not_found from ${socket.id} roomId=${roomId}`);
         return;
       }
 
       const game = roomData.game;
-      const result = game.move(move);
+      if (roomData.players[game.turn()] !== socket.id) {
+        socket.emit('move_rejected', { reason: "not_your_turn" });
+        console.log(`[reject] not_your_turn from ${socket.id} roomId=${roomId}`);
+        return;
+      }
 
+      const result = game.move(move);
       if (!result) {
-        socket.emit('move_rejected', { reason: "Invalid move" });
+        socket.emit('move_rejected', { reason: "illegal_move" });
+        console.log(`[reject] illegal_move from ${socket.id} roomId=${roomId}`);
         return;
       }
 
@@ -106,7 +121,8 @@ io.on('connection', (socket) => {
       }
     } catch (e) {
       console.error("Error processing move:", e);
-      socket.emit('move_rejected', { reason: "Malformed payload or internal error" });
+      socket.emit('move_rejected', { reason: "invalid_payload" });
+      console.log(`[reject] invalid_payload from ${socket.id} roomId=${payload?.roomId}`);
     }
   });
 
@@ -124,9 +140,8 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('game_over', { reason: "opponent_disconnected" });
         
         // Cleanup
-        roomData.players.forEach(p => {
-          socketToRoom.delete(p.socket.id);
-        });
+        socketToRoom.delete(roomData.players.w);
+        socketToRoom.delete(roomData.players.b);
         activeRooms.delete(roomId);
       }
     }
