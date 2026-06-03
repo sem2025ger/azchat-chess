@@ -226,10 +226,8 @@ export default function ChessBoard({
           {ranks.map((rank, rIndex) =>
             files.map((file, fIndex) => {
               const squareRef = `${file}${rank}`;
-              const isDark =
-                orientation === 'w'
-                  ? (rIndex + fIndex) % 2 !== 0
-                  : (rIndex + fIndex) % 2 === 0;
+              const fileCode = file.charCodeAt(0) - 96; // a=1, ..., h=8
+              const isDark = (fileCode + rank) % 2 === 0;
 
               const tileBg = isDark ? activeBoardTheme.dark : activeBoardTheme.light;
               const isSelected = selectedSquare === squareRef;
