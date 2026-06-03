@@ -291,7 +291,10 @@ export default function PlayScreen() {
             {/* CTA Area */}
             <div className="p-2 bg-black/60 border-t border-white/10 space-y-1.5 relative z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
                <button
-                  onClick={() => setIsSearching(true)}
+                  onClick={() => {
+                    setIsSearching(true);
+                    if (socket) socket.emit('join_queue');
+                  }}
                   className={cx(
                     "w-full py-2.5 rounded-[2rem] relative overflow-hidden transition-all duration-[150ms] group/cta active:scale-[0.97] border border-white/20 btn-glow-cycle"
                   )}
