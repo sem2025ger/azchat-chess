@@ -36,12 +36,17 @@ export default function GameScreen() {
   const roomId = searchParams.get('roomId');
   const playerColor = (searchParams.get('color') as 'w' | 'b') || 'w';
 
+  const lastConfirmedFenRef = useRef(new Chess().fen());
+  const [moveRejectMessage, setMoveRejectMessage] = useState<string | null>(null);
+
   useEffect(() => {
     if (!socket || !roomId) return;
     const onStart = (data: any) => {
       setTimeLeft({ white: data.whiteTime, black: data.blackTime });
     };
     const onUpdate = (data: any) => {
+      lastConfirmedFenRef.current = data.fen;
+      setMoveRejectMessage(null);
       setGame(new Chess(data.fen));
       setPositionHistory(prev => prev[prev.length - 1] === data.fen ? prev : [...prev, data.fen]);
       setViewMoveIndex(-1);
@@ -52,16 +57,38 @@ export default function GameScreen() {
     const onGameOver = (data: any) => {
       // Basic implementation; could trigger a modal state
       setTimeout(() => alert(`Game Over! Result: ${data.reason}`), 500);
-    }
+    };
+
+    const onMoveRejected = (data: { reason?: string }) => {
+      const confirmedFen = lastConfirmedFenRef.current;
+      const rollbackGame = new Chess(confirmedFen);
+
+      setGame(rollbackGame);
+      setPositionHistory((prev) => {
+        const idx = prev.lastIndexOf(confirmedFen);
+        return idx >= 0 ? prev.slice(0, idx + 1) : [confirmedFen];
+      });
+      setViewMoveIndex(-1);
+
+      let msg = "Move rejected by server.";
+      if (data?.reason === 'not_your_turn') msg = "Move rejected: it is not your turn.";
+      else if (data?.reason === 'illegal_move') msg = "Move rejected: illegal move.";
+      else if (data?.reason === 'invalid_payload') msg = "Move rejected: invalid move data.";
+      else if (data?.reason === 'room_not_found') msg = "Game session expired. Please start a new game.";
+      
+      setMoveRejectMessage(msg);
+    };
     
     socket.on('game_start', onStart);
     socket.on('update_board', onUpdate);
     socket.on('game_over', onGameOver);
+    socket.on('move_rejected', onMoveRejected);
     
     return () => { 
       socket.off('game_start', onStart);
       socket.off('update_board', onUpdate); 
       socket.off('game_over', onGameOver);
+      socket.off('move_rejected', onMoveRejected);
     };
   }, [socket, roomId]);
 
@@ -282,6 +309,11 @@ export default function GameScreen() {
 
             <div className="w-full max-w-none shrink-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
+              {moveRejectMessage && (
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-red-500/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl backdrop-blur-md animate-fade-in text-center pointer-events-none">
+                  {moveRejectMessage}
+                </div>
+              )}
               <ChessBoard
                 overrideBoardTheme="Classic Green"
                 game={displayedGame}
