@@ -108,20 +108,7 @@ export default function GameScreen() {
   const [engineResult, setEngineResult] = useState<EngineResult | null>(null);
   const [isAnalysing, setIsAnalysing] = useState(false);
 
-  // Ticking timer effect depending on turn
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        const turn = game.turn();
-        return {
-          ...prev,
-          white: turn === 'w' ? Math.max(prev.white - 1, 0) : prev.white,
-          black: turn === 'b' ? Math.max(prev.black - 1, 0) : prev.black
-        };
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [game]);
+  // Ticking timer effect removed (Phase 2C-A) to prevent desync until real server clocks are implemented.
 
   // Engine Initialization
   useEffect(() => {
