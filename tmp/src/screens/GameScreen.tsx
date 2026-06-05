@@ -38,6 +38,18 @@ export default function GameScreen() {
 
   const lastConfirmedFenRef = useRef(new Chess().fen());
   const [moveRejectMessage, setMoveRejectMessage] = useState<string | null>(null);
+  const [gameOverMessage, setGameOverMessage] = useState<string | null>(null);
+
+  const mapGameOverReason = (reason?: string) => {
+    switch (reason) {
+      case 'opponent_disconnected': return "Opponent disconnected. Game over.";
+      case 'checkmate': return "Game over: checkmate.";
+      case 'draw': return "Game over: draw.";
+      case 'stalemate': return "Game over: stalemate.";
+      case 'game_over': return "Game over.";
+      default: return "Game over.";
+    }
+  };
 
   useEffect(() => {
     if (!socket || !roomId) return;
@@ -55,8 +67,7 @@ export default function GameScreen() {
       }
     };
     const onGameOver = (data: any) => {
-      // Basic implementation; could trigger a modal state
-      setTimeout(() => alert(`Game Over! Result: ${data.reason}`), 500);
+      setGameOverMessage(mapGameOverReason(data?.reason));
     };
 
     const onMoveRejected = (data: { reason?: string }) => {
@@ -165,11 +176,10 @@ export default function GameScreen() {
         
         // Ensure game over states are handled properly
         if (g.isGameOver()) {
-          setTimeout(() => {
-            if (g.isCheckmate()) alert('Checkmate! Game Over.');
-            else if (g.isDraw()) alert('Draw! Game Over.');
-            else alert('Game Over!');
-          }, 300);
+          if (g.isCheckmate()) setGameOverMessage('Game over: checkmate.');
+          else if (g.isDraw()) setGameOverMessage('Game over: draw.');
+          else if (g.isStalemate()) setGameOverMessage('Game over: stalemate.');
+          else setGameOverMessage('Game over.');
         }
         return true;
       }
@@ -296,17 +306,31 @@ export default function GameScreen() {
 
             <div className="w-full max-w-none shrink-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
-              {moveRejectMessage && (
+              
+              {gameOverMessage ? (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+                  <div className="bg-neutral-900 border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 text-center">
+                    <span className="text-white font-black text-xl tracking-wide">{gameOverMessage}</span>
+                    <button 
+                      onClick={() => window.location.href = '/play'} 
+                      className="bg-chess-active hover:bg-chess-active/80 text-white px-6 py-2 rounded-xl font-bold transition-all active:scale-95 shadow-lg"
+                    >
+                      New Game
+                    </button>
+                  </div>
+                </div>
+              ) : moveRejectMessage ? (
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-red-500/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl backdrop-blur-md animate-fade-in text-center pointer-events-none">
                   {moveRejectMessage}
                 </div>
-              )}
+              ) : null}
+
               <ChessBoard
                 overrideBoardTheme="Classic Green"
                 game={displayedGame}
                 onMove={handleGameMove}
                 orientation={playerColor}
-                readOnly={viewMoveIndex !== -1}
+                readOnly={viewMoveIndex !== -1 || !!gameOverMessage}
               />
             </div>
           </div>
