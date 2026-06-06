@@ -73,6 +73,77 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('create_private_room', () => {
+    const roomId = crypto.randomUUID();
+    const isWhite = Math.random() > 0.5;
+    
+    const roomData = {
+      roomId,
+      game: new Chess(),
+      isPrivate: true,
+      status: 'pending',
+      players: {
+        w: isWhite ? socket.id : null,
+        b: isWhite ? null : socket.id
+      }
+    };
+    
+    activeRooms.set(roomId, roomData);
+    socketToRoom.set(socket.id, roomId);
+    socket.join(roomId);
+    
+    console.log(`Private match created: ${roomId} by ${socket.id}`);
+    socket.emit('private_room_created', { roomId });
+  });
+
+  socket.on('join_private_room', (payload) => {
+    try {
+      if (!payload || typeof payload !== 'object' || !payload.roomId || typeof payload.roomId !== 'string') {
+        socket.emit('join_failed', { reason: "room_not_found" });
+        return;
+      }
+      
+      const roomId = payload.roomId;
+      const roomData = activeRooms.get(roomId);
+      
+      if (!roomData || !roomData.isPrivate) {
+        socket.emit('join_failed', { reason: "room_not_found" });
+        return;
+      }
+      
+      if (roomData.status === 'active' || (roomData.players.w && roomData.players.b)) {
+        socket.emit('join_failed', { reason: "room_full" });
+        return;
+      }
+      
+      if (roomData.players.w === socket.id || roomData.players.b === socket.id) {
+        socket.emit('join_failed', { reason: "already_in_room" });
+        return;
+      }
+      
+      // Join behavior
+      const emptyColor = roomData.players.w === null ? 'w' : 'b';
+      const creatorColor = emptyColor === 'w' ? 'b' : 'w';
+      const creatorSocketId = roomData.players[creatorColor];
+      
+      roomData.players[emptyColor] = socket.id;
+      roomData.status = 'active';
+      
+      socketToRoom.set(socket.id, roomId);
+      socket.join(roomId);
+      
+      console.log(`Private match joined: ${roomId} [${creatorSocketId}=${creatorColor}, ${socket.id}=${emptyColor}]`);
+      
+      io.to(creatorSocketId).emit('match_found', { roomId, color: creatorColor });
+      socket.emit('match_found', { roomId, color: emptyColor });
+      
+      io.to(roomId).emit('game_start', { whiteTime: 600, blackTime: 600 });
+    } catch (e) {
+      console.error("Error joining private room:", e);
+      socket.emit('join_failed', { reason: "room_not_found" });
+    }
+  });
+
   socket.on('make_move', (payload) => {
     try {
       if (!payload || typeof payload !== 'object') {
@@ -91,6 +162,12 @@ io.on('connection', (socket) => {
       if (!roomData) {
         socket.emit('move_rejected', { reason: "room_not_found" });
         console.log(`[reject] room_not_found from ${socket.id} roomId=${roomId}`);
+        return;
+      }
+
+      if (!roomData.players.w || !roomData.players.b) {
+        socket.emit('move_rejected', { reason: "game_not_started" });
+        console.log(`[reject] game_not_started from ${socket.id} roomId=${roomId}`);
         return;
       }
 
@@ -137,11 +214,13 @@ io.on('connection', (socket) => {
     if (roomId) {
       const roomData = activeRooms.get(roomId);
       if (roomData) {
-        io.to(roomId).emit('game_over', { reason: "opponent_disconnected" });
+        if (roomData.players.w && roomData.players.b) {
+          io.to(roomId).emit('game_over', { reason: "opponent_disconnected" });
+        }
         
         // Cleanup
-        socketToRoom.delete(roomData.players.w);
-        socketToRoom.delete(roomData.players.b);
+        if (roomData.players.w) socketToRoom.delete(roomData.players.w);
+        if (roomData.players.b) socketToRoom.delete(roomData.players.b);
         activeRooms.delete(roomId);
       }
     }
