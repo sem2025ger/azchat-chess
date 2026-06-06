@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useLanguage } from '../context/LanguageContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import ChessBoard from '../components/ChessBoard';
 
-import { Shield, Zap, Users, Trophy, X, Loader2, Sparkles, Swords, Clock, ChevronDown } from 'lucide-react';
+import { Shield, Zap, Users, Trophy, X, Loader2, Sparkles, Swords, Clock, ChevronDown, Copy, Check } from 'lucide-react';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -23,8 +23,18 @@ export default function PlayScreen() {
   const [accentTheme, setAccentTheme] = useState<AccentTheme>('gold');
   const [isTimeExpanded, setIsTimeExpanded] = useState(false);
 
+  const [isPrivateCreating, setIsPrivateCreating] = useState(false);
+  const [privateRoomId, setPrivateRoomId] = useState<string | null>(null);
+  const [isJoiningPrivate, setIsJoiningPrivate] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  
+  const [searchParams] = useSearchParams();
+  const hasAutoJoinedRef = useRef(false);
+  const roomParam = searchParams.get('room');
+
   const navigate = useNavigate();
-  const { socket } = useSocket();
+  const { socket, isConnected } = useSocket();
   const { user, profile } = useAuth();
 
   // Primary colors based on theme
@@ -64,11 +74,43 @@ export default function PlayScreen() {
     if (!socket) return;
     const onMatchFound = (data: any) => {
       setIsSearching(false);
+      setIsPrivateCreating(false);
+      setIsJoiningPrivate(false);
       navigate(`/game?roomId=${data.roomId}&color=${data.color}`);
     };
+    
+    const onPrivateRoomCreated = (data: { roomId: string }) => {
+      setPrivateRoomId(data.roomId);
+    };
+    
+    const onJoinFailed = (data: { reason: string }) => {
+      setIsJoiningPrivate(false);
+      if (data.reason === 'room_not_found') setJoinError("Room not found or expired.");
+      else if (data.reason === 'room_full') setJoinError("This room is already full.");
+      else if (data.reason === 'already_in_room') setJoinError("You are already in this room.");
+      else setJoinError("Failed to join room.");
+      
+      setTimeout(() => setJoinError(null), 5000);
+    };
+
     socket.on('match_found', onMatchFound);
-    return () => { socket.off('match_found', onMatchFound); };
+    socket.on('private_room_created', onPrivateRoomCreated);
+    socket.on('join_failed', onJoinFailed);
+    
+    return () => { 
+      socket.off('match_found', onMatchFound); 
+      socket.off('private_room_created', onPrivateRoomCreated);
+      socket.off('join_failed', onJoinFailed);
+    };
   }, [socket, navigate]);
+
+  useEffect(() => {
+    if (roomParam && socket && isConnected && !hasAutoJoinedRef.current) {
+      hasAutoJoinedRef.current = true;
+      setIsJoiningPrivate(true);
+      socket.emit('join_private_room', { roomId: roomParam });
+    }
+  }, [roomParam, socket, isConnected]);
 
   useEffect(() => {
     let interval: any;
@@ -129,8 +171,13 @@ export default function PlayScreen() {
           </div>
 
           <div className="relative group/board flex-1 flex flex-col min-h-0 justify-center">
+            {joinError && (
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[60] bg-red-500/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl backdrop-blur-md animate-fade-in text-center pointer-events-none whitespace-nowrap">
+                {joinError}
+              </div>
+            )}
             {/* Matchmaking Overlay */}
-            {isSearching && (
+            {(isSearching || isPrivateCreating || isJoiningPrivate) && (
               <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[2rem] overflow-hidden">
                 <div className="absolute inset-0 bg-black/95 backdrop-blur-3xl transition-all duration-700" />
                 <div className="relative z-10 flex flex-col items-center text-center p-4 animate-scale-up scale-75 lg:scale-90">
@@ -138,14 +185,49 @@ export default function PlayScreen() {
                     <Loader2 size={40} className={cx("animate-spin-slow absolute opacity-20", accentColors[accentTheme].primary)} />
                     <Swords size={28} className={cx("animate-bounce", accentColors[accentTheme].primary)} />
                   </div>
-                  <h2 className="text-2xl font-black text-white uppercase italic skew-x-[-6deg] mb-1 tracking-tighter">{t('play.searching')}</h2>
-                  <p className="text-neutral-500 text-[0.55rem] font-black uppercase tracking-[0.2em] mb-6 opacity-60 italic">{t('play.searchingDesc')}</p>
-                  <div className="bg-white/[0.03] px-8 py-3 rounded-xl border border-white/10 font-mono text-2xl font-bold text-white mb-6 shadow-inner flex items-center gap-2">
-                    <Clock size={16} className="text-neutral-600" />
-                    {formatTime(searchTime)}
-                  </div>
+                  <h2 className="text-2xl font-black text-white uppercase italic skew-x-[-6deg] mb-1 tracking-tighter">
+                    {isSearching ? t('play.searching') : isJoiningPrivate ? "Joining private room..." : "Waiting for friend..."}
+                  </h2>
+                  <p className="text-neutral-500 text-[0.55rem] font-black uppercase tracking-[0.2em] mb-6 opacity-60 italic">
+                    {isSearching ? t('play.searchingDesc') : "Get ready for a great match"}
+                  </p>
+                  
+                  {isSearching && (
+                    <div className="bg-white/[0.03] px-8 py-3 rounded-xl border border-white/10 font-mono text-2xl font-bold text-white mb-6 shadow-inner flex items-center gap-2">
+                      <Clock size={16} className="text-neutral-600" />
+                      {formatTime(searchTime)}
+                    </div>
+                  )}
+                  
+                  {isPrivateCreating && privateRoomId && (
+                    <div className="bg-white/[0.03] px-4 py-3 rounded-xl border border-white/10 w-full max-w-[300px] mb-6 flex flex-col items-center gap-3">
+                      <span className="text-[0.6rem] font-black text-neutral-400 uppercase tracking-widest">Share this link:</span>
+                      <div className="flex items-center w-full gap-2 bg-black/40 border border-white/5 rounded-lg p-1">
+                        <input 
+                          readOnly 
+                          value={`${window.location.origin}/play?room=${privateRoomId}`}
+                          className="bg-transparent text-white text-[0.6rem] font-mono px-2 py-1 w-full outline-none truncate"
+                        />
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/play?room=${privateRoomId}`);
+                            setCopiedLink(true);
+                            setTimeout(() => setCopiedLink(false), 2000);
+                          }}
+                          className="bg-white/10 hover:bg-white/20 p-1.5 rounded-md transition-colors shrink-0"
+                        >
+                          {copiedLink ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-white" />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                   <button 
-                    onClick={() => setIsSearching(false)}
+                    onClick={() => {
+                      setIsSearching(false);
+                      setIsPrivateCreating(false);
+                      setIsJoiningPrivate(false);
+                    }}
                     className="flex items-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg font-black text-[0.65rem] uppercase tracking-widest transition-all active:scale-95 shadow-2xl group/cancel"
                   >
                     <X size={14} className="group-hover:rotate-90 transition-transform" /> {t('play.cancel')}
@@ -323,7 +405,16 @@ export default function PlayScreen() {
                 icon={<Users size={14} />} 
                 label={t('play.friend')} 
                 sublabel={t('play.directLink')} 
-                onClick={() => alert('Play with friend not implemented yet')}
+                onClick={() => {
+                  if (socket && isConnected) {
+                    setIsPrivateCreating(true);
+                    setPrivateRoomId(null);
+                    socket.emit('create_private_room');
+                  } else {
+                    setJoinError("Connection not ready. Please try again.");
+                    setTimeout(() => setJoinError(null), 5000);
+                  }
+                }}
               />
               <FooterActionBtn 
                 icon={<Trophy size={14} />} 
