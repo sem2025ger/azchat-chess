@@ -74,6 +74,22 @@ io.on('connection', (socket) => {
   });
 
   socket.on('create_private_room', () => {
+    const existingRoomId = socketToRoom.get(socket.id);
+    if (existingRoomId) {
+      const existingRoom = activeRooms.get(existingRoomId);
+      if (existingRoom) {
+        if (existingRoom.isPrivate === true && existingRoom.status === 'pending' && (existingRoom.players.w === socket.id || existingRoom.players.b === socket.id)) {
+          socket.emit('private_room_created', { roomId: existingRoomId });
+          return;
+        } else {
+          socket.emit('join_failed', { reason: "already_in_room" });
+          return;
+        }
+      } else {
+        socketToRoom.delete(socket.id);
+      }
+    }
+
     const roomId = crypto.randomUUID();
     const isWhite = Math.random() > 0.5;
     
