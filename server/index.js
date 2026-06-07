@@ -73,6 +73,24 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('cancel_matchmaking', () => {
+    waitingQueue = waitingQueue.filter((waitingSocket) => waitingSocket.id !== socket.id);
+
+    const roomId = socketToRoom.get(socket.id);
+    if (roomId) {
+      const room = activeRooms.get(roomId);
+      if (room) {
+        if (room.isPrivate === true && room.status === 'pending' && (room.players.w === socket.id || room.players.b === socket.id)) {
+          activeRooms.delete(roomId);
+          socketToRoom.delete(socket.id);
+          socket.leave(roomId);
+        }
+      } else {
+        socketToRoom.delete(socket.id);
+      }
+    }
+  });
+
   socket.on('create_private_room', () => {
     const existingRoomId = socketToRoom.get(socket.id);
     if (existingRoomId) {
