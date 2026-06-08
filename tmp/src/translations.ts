@@ -26,8 +26,8 @@ export const translations: TranslationDictionary = {
   'home.cards.play.desc': { en: 'Find an opponent in Bullet, Blitz or Rapid.', de: 'Gegner finden in Bullet, Blitz oder Rapid.', ua: 'Знайдіть супротивника у Bullet, Blitz або Rapid.', ru: 'Найдите противника в Bullet, Blitz или Rapid.', az: 'Bullet, Blitz və ya Rapid rejimində rəqib tap.', tr: 'Bullet, Blitz veya Rapid modunda rakip bul.' },
   'home.cards.game.title': { en: 'Active Game', de: 'Aktives Spiel', ua: 'Активна гра', ru: 'Активная игра', az: 'Aktiv Oyun', tr: 'Aktif Oyun' },
   'home.cards.game.desc': { en: 'Return to your current matches or analysis.', de: 'Zurück zu deinen aktuellen Matches oder zur Analyse.', ua: 'Поверніться до своїх поточних матчів або аналізу.', ru: 'Вернитесь к своим текущим матчам или анализу.', az: 'Cari matçlarına və ya analizə qayıt.', tr: 'Mevcut maçlarına veya analize dön.' },
-  'home.cards.profile.title': { en: 'Ranking', de: 'Rangliste', ua: 'Рейтинг', ru: 'Рейтинг', az: 'Reytinq', tr: 'Sıralama' },
-  'home.cards.profile.desc': { en: 'Check your rating and country standing.', de: 'Überprüfe deine Bewertung und deinen Landesrang.', ua: 'Перевірте свій рейтинг та позицію в країні.', ru: 'Проверьте свой рейтинг и положение в стране.', az: 'Reytinqini və ölkə üzrə mövqeyini yoxla.', tr: 'Reytingini ve ülke sıralamanı kontrol et.' },
+  'home.cards.profile.title': { en: 'Player Profile', de: 'Spielerprofil', ua: 'Профіль гравця', ru: 'Профиль игрока', az: 'Oyunçu Profili', tr: 'Oyuncu Profili' },
+  'home.cards.profile.desc': { en: 'Manage your profile and player settings.', de: 'Verwalte dein Profil und deine Spielereinstellungen.', ua: 'Керуйте своїм профілем та налаштуваннями гравця.', ru: 'Управляйте своим профилем и настройками игрока.', az: 'Profilinizi və oyunçu parametrlərinizi idarə edin.', tr: 'Profilini ve oyuncu ayarlarını yönet.' },
   'home.cards.chat.title': { en: 'Community', de: 'Community', ua: 'Спільнота', ru: 'Сообщество', az: 'İcma', tr: 'Topluluk' },
   'home.cards.chat.desc': { en: 'Join global chat and make friends.', de: 'Trete dem globalen Chat bei und finde Freunde.', ua: 'Приєднуйтесь до глобального чату та заводьте друзів.', ru: 'Присоединяйтесь к глобальному чату и заводите друзей.', az: 'Qlobal söhbətə qoşul və dostlar tap.', tr: 'Küresel sohbete katıl ve arkadaşlar edin.' },
 
@@ -186,4 +186,18 @@ export const translations: TranslationDictionary = {
   'settings.appearance': { en: 'Appearance', de: 'Aussehen', ua: 'Зовнішній вигляд', ru: 'Внешний вид', az: 'Görünüş', tr: 'Görünüm' },
   'settings.preferences': { en: 'System Preferences', de: 'Systemeinstellungen', ua: 'Налаштування системи', ru: 'Настройки системы', az: 'Sistem Ayarları', tr: 'Sistem Ayarları' },
   'settings.activeTheme': { en: 'Active Theme', de: 'Aktives Theme', ua: 'Активна тема', ru: 'Активная тема', az: 'Aktiv Tema', tr: 'Aktif Tema' },
+
+  'home.stats.live.value': { en: 'Live', de: 'Live', ua: 'Онлайн', ru: 'Онлайн', az: 'Canlı', tr: 'Canlı' },
+  'home.stats.live.label': { en: 'Online Play', de: 'Online-Spiel', ua: 'Гра', ru: 'Игра', az: 'Oyun', tr: 'Oyun' },
+  'home.stats.friend.value': { en: 'Friend', de: 'Freund', ua: 'Друг', ru: 'Друг', az: 'Dost', tr: 'Arkadaş' },
+  'home.stats.friend.label': { en: 'Private Link', de: 'Privatlink', ua: 'Приватне посилання', ru: 'Приватная ссылка', az: 'Şəxsi link', tr: 'Özel link' },
+  'home.stats.languages.value': { en: '6', de: '6', ua: '6', ru: '6', az: '6', tr: '6' },
+  'home.stats.languages.label': { en: 'Languages', de: 'Sprachen', ua: 'Мов', ru: 'Языков', az: 'Dil', tr: 'Dil' },
+  
+  'home.playNow.subtitle': { en: 'Quick Match · Live Multiplayer', de: 'Schnellspiel · Online-Multiplayer', ua: 'Швидка гра · Онлайн-мультиплеєр', ru: 'Быстрая игра · Онлайн-мультиплеер', az: 'Sürətli oyun · Onlayn multiplayer', tr: 'Hızlı oyun · Online çok oyunculu' },
+  'play.matchmakingStatus': { en: 'matchmaking', de: 'Matchmaking', ua: 'пошук гри', ru: 'поиск игры', az: 'matç axtarışı', tr: 'eşleştirme' },
+  
+  'play.liveStatus': { en: 'LIVE', de: 'LIVE', ua: 'ОНЛАЙН', ru: 'ОНЛАЙН', az: 'CANLI', tr: 'CANLI' },
+  'play.playerMode': { en: 'Player Mode', de: 'Spielermodus', ua: 'Режим гравця', ru: 'Режим игрока', az: 'Oyunçu rejimi', tr: 'Oyuncu modu' },
+  'play.guestMode': { en: 'Guest Mode', de: 'Gastmodus', ua: 'Гостьовий режим', ru: 'Гостевой режим', az: 'Qonaq rejimi', tr: 'Misafir modu' },
 };

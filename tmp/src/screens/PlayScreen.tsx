@@ -259,7 +259,7 @@ export default function PlayScreen() {
                 <span className="font-black text-white text-xs italic tracking-tighter uppercase">{profile?.username || user?.user_metadata?.username || 'Guest'}</span>
                 <span className={cx("bg-opacity-20 text-[0.4rem] px-1 py-0.5 rounded-sm font-black uppercase tracking-[0.15em] border", accentColors[accentTheme].bg, accentColors[accentTheme].primary, accentColors[accentTheme].border)}>YOU</span>
               </div>
-              <span className="text-[0.45rem] text-neutral-600 font-bold uppercase tracking-[0.2em] italic mt-0.5">PLAYER: {profile?.ratingBlitz || 1200}</span>
+              <span className="text-[0.45rem] text-neutral-600 font-bold uppercase tracking-[0.2em] italic mt-0.5">{(profile?.username || user?.user_metadata?.username) ? t('play.playerMode') : t('play.guestMode')}</span>
             </div>
           </div>
         </div>
@@ -401,8 +401,8 @@ export default function PlayScreen() {
 
                <div className="flex items-center justify-center gap-2 opacity-60">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
-                  <span className="text-glow-cycle font-black text-[0.65rem] tracking-widest italic">34,102</span>
-                  <span className="text-neutral-600 font-black text-[0.55rem] uppercase tracking-[0.1em] italic">{t('play.playersOnline')}</span>
+                  <span className="text-glow-cycle font-black text-[0.65rem] tracking-widest italic">{t('play.liveStatus')}</span>
+                  <span className="text-neutral-600 font-black text-[0.55rem] uppercase tracking-[0.1em] italic">{t('play.matchmakingStatus')}</span>
                </div>
             </div>
 

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import ChessBoard from '../components/ChessBoard';
-import { Play, Trophy, Activity, Users, Globe } from 'lucide-react';
+import { Play, Trophy, Users, Globe, Swords } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
@@ -17,9 +17,9 @@ export default function HomeScreen() {
   // User preferences applied automatically via ThemeContext
 
   const stats = [
-    { label: t('home.stats.players'), value: '34,102', icon: Users, color: 'text-emerald-400' },
-    { label: t('home.stats.activeMatches'), value: '12,450', icon: Activity, color: 'text-chess-active' },
-    { label: t('home.stats.countries'), value: '3', icon: Globe, color: 'text-chess-gold' },
+    { label: t('home.stats.live.label'), value: t('home.stats.live.value'), icon: Swords, color: 'text-chess-active' },
+    { label: t('home.stats.friend.label'), value: t('home.stats.friend.value'), icon: Users, color: 'text-emerald-400' },
+    { label: t('home.stats.languages.label'), value: t('home.stats.languages.value'), icon: Globe, color: 'text-chess-gold' },
   ];
 
   return (
@@ -122,7 +122,7 @@ export default function HomeScreen() {
               </div>
               <div className="flex flex-col items-start leading-none">
                 <span className="font-black text-[0.95rem] tracking-tight uppercase italic text-shadow-cycle">{t('home.playNow')}</span>
-                <span className="text-[0.5rem] font-black opacity-50 tracking-[0.22em] uppercase mt-0.5">Quick Match · Ranked</span>
+                <span className="text-[0.5rem] font-black opacity-50 tracking-[0.22em] uppercase mt-0.5">{t('home.playNow.subtitle')}</span>
               </div>
             </div>
 
