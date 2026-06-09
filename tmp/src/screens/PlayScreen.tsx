@@ -427,7 +427,7 @@ export default function PlayScreen() {
                 icon={<Trophy size={14} />} 
                 label={t('play.tournaments')} 
                 sublabel={t('play.communityLabel')} 
-                onClick={() => alert('Tournaments not implemented yet')}
+                disabled={true}
               />
             </div>
 
@@ -440,11 +440,28 @@ export default function PlayScreen() {
   );
 }
 
-function FooterActionBtn({ icon, label, sublabel, onClick }: { icon: React.ReactNode, label: string, sublabel: string, onClick?: () => void }) {
+function FooterActionBtn({ icon, label, sublabel, onClick, disabled }: { icon: React.ReactNode, label: string, sublabel: string, onClick?: () => void, disabled?: boolean }) {
   return (
-    <button onClick={onClick} className="flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.05] hover:border-white/10 transition-all duration-150 group/fbtn shadow-2xl active:scale-95 text-left relative overflow-hidden">
+    <button
+      disabled={disabled}
+      aria-disabled={disabled ? "true" : undefined}
+      onClick={onClick}
+      className={cx(
+        "flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/5 rounded-xl transition-all duration-150 group/fbtn shadow-2xl text-left relative overflow-hidden",
+        disabled
+          ? "opacity-50 cursor-not-allowed"
+          : "hover:bg-white/[0.05] hover:border-white/10 active:scale-95"
+      )}
+    >
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
-      <div className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-neutral-500 group-hover/fbtn:scale-110 group-hover/fbtn:text-white group-hover/fbtn:bg-white/10 transition-all duration-200 border border-white/5 shadow-xl relative z-10 shrink-0">
+      <div
+        className={cx(
+          "w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 shadow-xl relative z-10 shrink-0 transition-all duration-200",
+          disabled
+            ? "text-neutral-600"
+            : "text-neutral-500 group-hover/fbtn:scale-110 group-hover/fbtn:text-white group-hover/fbtn:bg-white/10"
+        )}
+      >
         {icon}
       </div>
       <div className="flex flex-col overflow-hidden relative z-10">
