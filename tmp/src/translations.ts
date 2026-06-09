@@ -147,6 +147,9 @@ export const translations: TranslationDictionary = {
   'profile.globalRank': { en: 'Global Rank', de: 'Globaler Rang', ua: 'Глобальний рейтинг', ru: 'Мировой рейтинг', az: 'Qlobal Sıralama', tr: 'Küresel Sıralama' },
   'profile.winRate': { en: 'Win Rate', de: 'Siegquote', ua: 'Відсоток перемог', ru: 'Процент побед', az: 'Qalibiyyət nisbəti', tr: 'Kazanma oranı' },
   'profile.viewHistory': { en: 'View History', de: 'Verlauf anzeigen', ua: 'Переглянути історію', ru: 'Вся история', az: 'Bütün tarixçə', tr: 'Tüm geçmiş' },
+  'profile.unrated': { en: 'Unrated', de: 'Ohne Wertung', ua: 'Без рейтингу', ru: 'Без рейтинга', az: 'Reytinqsiz', tr: 'Reytingsiz' },
+  'profile.newPlayer': { en: 'New player', de: 'Neuer Spieler', ua: 'Новий гравець', ru: 'Новый игрок', az: 'Yeni oyunçu', tr: 'Yeni oyuncu' },
+  'profile.unranked': { en: 'Unranked', de: 'Ohne Rang', ua: 'Без рангу', ru: 'Без ранга', az: 'Rangsız', tr: 'Sıralamasız' },
 
   // Settings screen
   'settings.subtitle': { en: 'Configuration & Appearance', de: 'Konfiguration & Aussehen', ua: 'Конфігурація та зовнішній вигляд', ru: 'Конфигурация и внешний вид', az: 'Konfiqurasiya və Görünüş', tr: 'Yapılandırma ve Görünüm' },

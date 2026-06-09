@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, Trophy, Swords, Zap, Activity, Calendar, MapPin, ChevronRight, Award, LogOut, Loader2, KeyRound, Mail, User as UserIcon } from 'lucide-react';
+import { Target, Swords, Zap, Activity, Calendar, MapPin, LogOut, Loader2, KeyRound, Mail, User as UserIcon } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
@@ -60,9 +60,9 @@ export default function ProfileScreen() {
   const [errorMsg, setErrorMsg] = useState('');
 
   const stats = [
-    { label: 'Blitz', value: profile?.ratingBlitz || '1200', icon: Zap, color: 'text-amber-400', bg: 'bg-amber-400/5', border: 'border-amber-400/20' },
-    { label: 'Rapid', value: profile?.ratingRapid || '1200', icon: Target, color: 'text-chess-active', bg: 'bg-chess-active/5', border: 'border-chess-active/20' },
-    { label: 'Bullet', value: profile?.ratingBullet || '1200', icon: Swords, color: 'text-rose-400', bg: 'bg-rose-400/5', border: 'border-rose-400/20' },
+    { label: 'Blitz', value: profile?.ratingBlitz ?? t('profile.unrated'), icon: Zap, color: 'text-amber-400', bg: 'bg-amber-400/5', border: 'border-amber-400/20' },
+    { label: 'Rapid', value: profile?.ratingRapid ?? t('profile.unrated'), icon: Target, color: 'text-chess-active', bg: 'bg-chess-active/5', border: 'border-chess-active/20' },
+    { label: 'Bullet', value: profile?.ratingBullet ?? t('profile.unrated'), icon: Swords, color: 'text-rose-400', bg: 'bg-rose-400/5', border: 'border-rose-400/20' },
   ];
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -207,7 +207,7 @@ export default function ProfileScreen() {
                 <MapPin size={12} className="text-chess-active" /> {profile?.countryCode || 'AZ'}
               </div>
               <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/5 rounded-full backdrop-blur-md">
-                <Calendar size={12} className="text-chess-gold" /> {t('profile.memberSince')} {(profile as any)?.created_at ? new Date((profile as any).created_at).getFullYear() : '2024'}
+                <Calendar size={12} className="text-chess-gold" /> {(profile as any)?.created_at ? `${t('profile.memberSince')} ${new Date((profile as any).created_at).getFullYear()}` : t('profile.newPlayer')}
               </div>
             </div>
             <button onClick={signOut} className="mt-4 mx-auto flex md:hidden items-center justify-center gap-2 w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl border border-red-500/20 transition-all font-black text-[0.6rem] uppercase tracking-widest">
@@ -226,12 +226,6 @@ export default function ProfileScreen() {
                   <s.icon size={12} /> {s.label}
                 </div>
                 <span className="text-2xl font-black text-white italic tracking-tighter tabular-nums group-hover/stat:translate-x-1 transition-transform">{s.value}</span>
-                <div className="mt-2 flex items-center gap-1.5">
-                  <div className="flex-1 h-0.5 bg-white/5 rounded-full overflow-hidden">
-                    <div className={cx("h-full w-2/3 group-hover/stat:w-3/4 transition-all duration-1000", s.color.replace('text-', 'bg-'))} />
-                  </div>
-                  <span className={cx("text-[0.45rem] font-black uppercase", s.color)}>{t('profile.topPercent')}</span>
-                </div>
               </div>
             ))}
           </div>
@@ -251,7 +245,7 @@ export default function ProfileScreen() {
                 </div>
                 {t('profile.performance')}
               </h2>
-              <div className="px-2.5 py-1 bg-white/5 rounded-full border border-white/5 text-[0.5rem] font-black text-neutral-500 tracking-widest uppercase">{t('profile.globalRank')}: #452</div>
+              <div className="px-2.5 py-1 bg-white/5 rounded-full border border-white/5 text-[0.5rem] font-black text-neutral-500 tracking-widest uppercase">{t('profile.globalRank')}: {t('profile.unranked')}</div>
             </div>
 
             {/* Extended Win/Loss/Draw Dashboard */}
@@ -281,39 +275,18 @@ export default function ProfileScreen() {
               </div>
             </div>
 
-            {/* Achievements/Trophies Showcase */}
-            <div className="pt-3 border-t border-white/[0.03]">
-              <h3 className="text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.3em] mb-3 flex items-center justify-between italic">
-                {t('profile.recentTrophies')}
-                <Award size={12} className="text-chess-gold" />
-              </h3>
-              <div className="flex gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-500/20 to-transparent text-amber-500 rounded-[1rem] flex items-center justify-center border border-amber-500/30 shadow-[0_20px_40px_-5px_rgba(245,158,11,0.25)] ring-1 ring-amber-500/10 group-hover/perform:rotate-3 transition-all duration-700 scale-105">
-                  <Trophy size={24} />
-                </div>
-                <div className="w-12 h-12 bg-white/5 text-neutral-500 rounded-[1rem] flex items-center justify-center border border-white/5 opacity-40 hover:opacity-100 transition-opacity">
-                  <span className="font-black text-sm">#1</span>
-                </div>
-                <div className="w-12 h-12 bg-white/5 text-neutral-500 rounded-[1rem] flex items-center justify-center border border-white/5 opacity-40 hover:opacity-100 transition-opacity">
-                  <span className="font-black text-sm">X10</span>
-                </div>
-              </div>
             </div>
-          </div>
         </div>
 
         {/* Right Column: Historical Overview */}
         <div className="lg:col-span-2 space-y-3 animate-fade-in-up delay-300">
           <div className="flex items-center justify-between px-2">
             <h2 className="text-lg font-black text-white italic tracking-tighter uppercase">{t('profile.recentGames')}</h2>
-            <button onClick={() => alert('Full match history not implemented yet')} className="text-[0.6rem] font-black text-chess-active uppercase tracking-widest hover:translate-x-1 transition-transform inline-flex items-center gap-2 group">
-              {t('profile.viewHistory')} <ChevronRight size={14} className="group-hover:scale-110" />
-            </button>
           </div>
 
           <div className="space-y-2.5">
             {recentGames.map((g, i) => (
-              <div key={i} onClick={() => alert('Game review not implemented yet')} className="bg-neutral-900/40 backdrop-blur-3xl border border-white/5 px-5 py-4 rounded-[1.75rem] flex items-center justify-between hover:bg-neutral-900/60 transition-all cursor-pointer group/game shadow-xl ring-1 ring-white/5">
+              <div key={i} className="bg-neutral-900/40 backdrop-blur-3xl border border-white/5 px-5 py-4 rounded-[1.75rem] flex items-center justify-between hover:bg-neutral-900/60 transition-all group/game shadow-xl ring-1 ring-white/5">
                 <div className="flex items-center gap-5">
                   <div className={cx(
                     "w-12 h-12 rounded-[1rem] flex items-center justify-center font-black text-lg shadow-2xl transition-all duration-500 group-hover/game:scale-110 group-hover/game:rotate-3 border border-current shrink-0",
@@ -327,7 +300,6 @@ export default function ProfileScreen() {
                       <div className="w-6 h-6 rounded-md bg-neutral-800 flex items-center justify-center text-sm border border-white/5 shadow-lg group-hover/game:translate-y-[-2px] transition-transform">{g.flag}</div>
                       <div className="font-black text-base text-white tracking-tight italic group-hover/game:text-chess-active transition-colors flex items-center gap-2 underline decoration-white/5 group-hover/game:decoration-chess-active/30">
                         vs {g.opp}
-                        <span className="text-[0.6rem] font-black text-neutral-500 bg-white/5 px-2 py-0.5 rounded-lg border border-white/5 normal-case tracking-normal italic">{g.r2} ELO</span>
                       </div>
                     </div>
                     <div className="text-[0.6rem] text-neutral-500 font-black uppercase tracking-widest ml-9 flex items-center gap-2">
@@ -336,12 +308,6 @@ export default function ProfileScreen() {
                       <span className="opacity-60">{g.date}</span>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-3 pr-2">
-                  <button onClick={(e) => { e.stopPropagation(); alert('Game review not implemented yet'); }} className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl text-[0.6rem] font-black text-neutral-500 uppercase tracking-widest border border-white/5 opacity-0 group-hover/game:opacity-100 transition-all hover:bg-chess-active/10 hover:text-chess-active hover:border-chess-active/20 group/rev">
-                    {t('profile.review')}
-                    <ChevronRight size={12} className="group-hover/rev:translate-x-1 transition-transform" />
-                  </button>
                 </div>
               </div>
             ))}
