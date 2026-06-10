@@ -24,37 +24,67 @@ from app.schemas import (
 
 REQUIRED_SECTIONS = ["hero", "about", "services", "contact"]
 
-# industry id -> (detection keywords, audience, default goal)
-_INDUSTRY_RULES: dict[str, tuple[list[str], str, str]] = {
+# industry id -> (detection keywords, audience, default goal, default name)
+_INDUSTRY_RULES: dict[str, tuple[list[str], str, str, str]] = {
+    "coffee_shop": (
+        ["coffee shop", "cafe", "coffee", "espresso", "barista"],
+        "local coffee lovers and daily commuters",
+        "create a welcoming daily ritual",
+        "Bean & Brew",
+    ),
     "restaurant": (
-        ["restaurant", "cafe", "coffee", "bakery", "bistro", "food", "menu"],
+        ["restaurant", "bakery", "bistro", "food", "menu"],
         "local diners and food lovers",
         "bring more guests through the door",
+        "Restaurant Co.",
     ),
     "saas": (
         ["saas", "software", "app", "platform", "startup", "api", "tool"],
         "teams evaluating modern software",
         "convert visitors into trial signups",
+        "SaaS Co.",
     ),
     "portfolio": (
         ["portfolio", "photographer", "designer", "artist", "freelance", "writer"],
         "potential clients and collaborators",
         "showcase work and win commissions",
+        "Creative Studio",
     ),
     "fitness": (
         ["gym", "fitness", "yoga", "trainer", "wellness", "studio"],
         "people committed to their health",
         "turn visitors into members",
+        "Fitness Club",
     ),
     "agency": (
         ["agency", "marketing", "consulting", "consultancy", "studio"],
         "businesses looking for expert partners",
         "generate qualified leads",
+        "Digital Agency",
     ),
     "ecommerce": (
         ["shop", "store", "ecommerce", "e-commerce", "boutique", "products"],
         "online shoppers",
         "drive product sales",
+        "Store Co.",
+    ),
+    "education": (
+        ["education", "school", "course", "learning", "tutor", "academy"],
+        "students and lifelong learners",
+        "inspire and educate",
+        "Academy Co.",
+    ),
+    "chess_school": (
+        ["chess school", "chess club", "chess"],
+        "aspiring chess players and enthusiasts",
+        "develop strategic thinking and mastery",
+        "Chess Academy",
+    ),
+    "migration_consulting": (
+        ["migration", "visa", "immigration", "relocation"],
+        "individuals and families seeking a new home",
+        "simplify the relocation journey",
+        "Migration Experts",
     ),
 }
 
@@ -63,6 +93,7 @@ _OPTIONAL_SECTION_TRIGGERS: dict[str, list[str]] = {
     "testimonials": ["testimonial", "reviews", "social proof", "clients say"],
     "faq": ["faq", "questions", "q&a"],
     "gallery": ["gallery", "portfolio", "photos", "showcase", "work"],
+    "hours": ["hours", "opening hours", "open"],
 }
 
 _TONE_TRIGGERS: dict[str, list[str]] = {
@@ -74,7 +105,7 @@ _TONE_TRIGGERS: dict[str, list[str]] = {
 
 def _detect_industry(prompt_lower: str) -> str:
     best, best_hits = "general", 0
-    for industry, (keywords, _, _) in _INDUSTRY_RULES.items():
+    for industry, (keywords, _, _, _) in _INDUSTRY_RULES.items():
         hits = sum(1 for kw in keywords if kw in prompt_lower)
         if hits > best_hits:
             best, best_hits = industry, hits
@@ -95,7 +126,9 @@ def _extract_site_name(prompt: str, industry: str) -> str:
         candidate = named.group(1).strip()
         if len(candidate) >= 3:
             return candidate
-    return f"{industry.capitalize()} Co." if industry != "general" else "Your Brand"
+    if industry in _INDUSTRY_RULES:
+        return _INDUSTRY_RULES[industry][3]
+    return "Your Brand"
 
 
 def planner_node(state: WorkflowState) -> WorkflowState:
@@ -104,9 +137,11 @@ def planner_node(state: WorkflowState) -> WorkflowState:
     prompt_lower = prompt.lower()
 
     industry = _detect_industry(prompt_lower)
-    _, audience, primary_goal = _INDUSTRY_RULES.get(
-        industry, ([], "visitors interested in your offering", "present a clear, credible online presence")
-    )
+    if industry in _INDUSTRY_RULES:
+        _, audience, primary_goal, _ = _INDUSTRY_RULES[industry]
+    else:
+        audience = "visitors interested in your offering"
+        primary_goal = "present a clear, credible online presence"
 
     sections = list(REQUIRED_SECTIONS)
     for section, triggers in _OPTIONAL_SECTION_TRIGGERS.items():
@@ -188,6 +223,34 @@ _SECTION_TEMPLATES: dict[str, tuple[str, str, str | None]] = {
         "within one business day.",
         "Contact us",
     ),
+    "hours": (
+        "Opening Hours",
+        "We are here to serve you. Check our daily schedule and visit us when it is most convenient for you.",
+        None,
+    ),
+}
+
+_INDUSTRY_TEMPLATES: dict[str, dict[str, tuple[str, str, str | None]]] = {
+    "coffee_shop": {
+        "hero": (
+            "{site_name}",
+            "Welcome to {site_name}. Enjoy our artisanal coffee, fresh pastries, and a warm atmosphere. "
+            "We help {audience} {goal}. Built for people who expect a {tone} experience from start to finish.",
+            "See our menu",
+        ),
+        "services": (
+            "Our Menu",
+            "From classic espresso drinks to seasonal specialties and fresh pastries, {site_name} provides "
+            "a carefully curated selection designed around {audience}. Every cup is shaped to {goal} "
+            "without unnecessary complexity.",
+            "View full menu",
+        ),
+        "hours": (
+            "Opening Hours",
+            "We are open early to start your day right. Mon-Fri: 7am-6pm. Sat-Sun: 8am-4pm. Join us for a cup of coffee.",
+            None,
+        ),
+    }
 }
 
 
@@ -201,12 +264,17 @@ def content_node(state: WorkflowState) -> WorkflowState:
         "tone": brief.tone,
     }
 
+    industry_templates = _INDUSTRY_TEMPLATES.get(brief.industry, {})
+
     sections: list[SectionContent] = []
     for section_id in brief.sections:
-        heading_tpl, body_tpl, cta = _SECTION_TEMPLATES.get(
-            section_id,
-            (section_id.title(), "More about {site_name} coming soon.", None),
-        )
+        if section_id in industry_templates:
+            heading_tpl, body_tpl, cta = industry_templates[section_id]
+        else:
+            heading_tpl, body_tpl, cta = _SECTION_TEMPLATES.get(
+                section_id,
+                (section_id.title(), "More about {site_name} coming soon.", None),
+            )
         sections.append(
             SectionContent(
                 id=section_id,
@@ -303,7 +371,14 @@ _DESIGN_PRESETS: dict[str, DesignTokens] = {
 def design_node(state: WorkflowState) -> WorkflowState:
     """Choose layout, colors and typography tokens for the brief."""
     brief = state["brief"]
-    preset = _DESIGN_PRESETS.get(brief.industry, _DESIGN_PRESETS["general"])
+    preset_mapping = {
+        "coffee_shop": "restaurant",
+        "education": "general",
+        "chess_school": "general",
+        "migration_consulting": "agency",
+    }
+    preset_key = preset_mapping.get(brief.industry, brief.industry)
+    preset = _DESIGN_PRESETS.get(preset_key, _DESIGN_PRESETS["general"])
     design = preset.model_copy(deep=True)
     if brief.tone == "luxury":
         design.border_radius = "0.25rem"

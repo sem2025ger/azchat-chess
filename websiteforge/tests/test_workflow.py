@@ -69,11 +69,30 @@ def test_reviewer_flags_missing_sections():
 
 def test_full_workflow_produces_consistent_state():
     state = run_workflow("Build a website for a coffee shop with customer reviews")
-    assert state["brief"].industry == "restaurant"
+    assert state["brief"].industry == "coffee_shop"
+    assert state["brief"].site_name == "Bean & Brew"
     assert "testimonials" in state["brief"].sections
     assert state["review"].passed is True
     for section in state["brief"].sections:
         assert f'id="{section}"' in state["files"]["index.html"]
+
+
+def test_coffee_shop_content_includes_tailored_copy():
+    state = run_workflow("I need a coffee shop site with opening hours")
+    assert state["brief"].industry == "coffee_shop"
+    assert "hours" in state["brief"].sections
+    
+    html_content = state["files"]["index.html"]
+    assert "artisanal coffee" in html_content
+    assert "classic espresso drinks" in html_content
+    assert "We are open early" in html_content
+
+
+def test_restaurant_fallback_works():
+    state = run_workflow("A website for a local Italian restaurant")
+    assert state["brief"].industry == "restaurant"
+    assert state["brief"].site_name == "Restaurant Co."
+    assert "artisanal coffee" not in state["files"]["index.html"]
 
 
 def test_workflow_is_deterministic():
