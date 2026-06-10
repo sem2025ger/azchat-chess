@@ -15,6 +15,7 @@ from app.schemas import (
     ColorPalette,
     ContentBundle,
     DesignTokens,
+    MenuItem,
     ReviewReport,
     SectionContent,
     SEOMetadata,
@@ -253,6 +254,24 @@ _INDUSTRY_TEMPLATES: dict[str, dict[str, tuple[str, str, str | None]]] = {
     }
 }
 
+# Real menu items shown on the coffee shop "Our Menu" (services) section.
+_COFFEE_MENU: list[MenuItem] = [
+    MenuItem(name="Espresso", description="A double shot of our house roast — rich, dark and intense.", price="€2.50"),
+    MenuItem(name="Cappuccino", description="Espresso with steamed milk under a deep cap of microfoam.", price="€3.50"),
+    MenuItem(name="Flat White", description="Velvety steamed milk poured over a double ristretto.", price="€3.80"),
+    MenuItem(name="Latte", description="Smooth and milky, finished with our signature latte art.", price="€3.90"),
+    MenuItem(name="Cold Brew", description="Steeped for 18 hours and served over ice — naturally sweet.", price="€4.20"),
+    MenuItem(name="Matcha Latte", description="Ceremonial-grade matcha whisked with silky steamed milk.", price="€4.50"),
+    MenuItem(name="Croissant", description="All-butter and flaky, baked fresh every morning.", price="€2.80"),
+    MenuItem(name="Cheesecake", description="Creamy baked cheesecake on a crisp biscuit base.", price="€4.90"),
+    MenuItem(name="Sandwich", description="Sourdough with seasonal fillings, made to order.", price="€6.50"),
+]
+
+# industry id -> section id that should display menu item cards
+_MENU_ITEM_SECTIONS: dict[str, tuple[str, list[MenuItem]]] = {
+    "coffee_shop": ("services", _COFFEE_MENU),
+}
+
 
 def content_node(state: WorkflowState) -> WorkflowState:
     """Create website copy and SEO metadata from the brief."""
@@ -265,6 +284,7 @@ def content_node(state: WorkflowState) -> WorkflowState:
     }
 
     industry_templates = _INDUSTRY_TEMPLATES.get(brief.industry, {})
+    menu_section_id, menu_items = _MENU_ITEM_SECTIONS.get(brief.industry, (None, []))
 
     sections: list[SectionContent] = []
     for section_id in brief.sections:
@@ -281,6 +301,7 @@ def content_node(state: WorkflowState) -> WorkflowState:
                 heading=heading_tpl.format(**ctx),
                 body=body_tpl.format(**ctx),
                 cta=cta,
+                items=list(menu_items) if section_id == menu_section_id else None,
             )
         )
 
@@ -392,6 +413,24 @@ def design_node(state: WorkflowState) -> WorkflowState:
 # ---------------------------------------------------------------------------
 
 
+def _render_items_grid(section: SectionContent) -> str:
+    e = html.escape
+    cards = "\n".join(
+        f"""          <div class="menu-card p-6 shadow-sm">
+            <div class="flex items-baseline justify-between gap-4">
+              <h3 class="heading-font text-lg font-semibold">{e(item.name)}</h3>
+              <span class="font-semibold whitespace-nowrap">{e(item.price)}</span>
+            </div>
+            <p class="mt-2 text-sm leading-relaxed opacity-80">{e(item.description)}</p>
+          </div>"""
+        for item in section.items or []
+    )
+    return f"""
+        <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+{cards}
+        </div>"""
+
+
 def _render_section(section: SectionContent, design: DesignTokens, is_hero: bool) -> str:
     e = html.escape
     cta_html = (
@@ -400,6 +439,7 @@ def _render_section(section: SectionContent, design: DesignTokens, is_hero: bool
         if section.cta
         else ""
     )
+    items_html = _render_items_grid(section) if section.items else ""
     if is_hero:
         return f"""    <section id="{e(section.id)}" class="hero py-24 text-center">
       <div class="{design.max_width_class} mx-auto px-6">
@@ -410,7 +450,7 @@ def _render_section(section: SectionContent, design: DesignTokens, is_hero: bool
     return f"""    <section id="{e(section.id)}" class="py-16">
       <div class="{design.max_width_class} mx-auto px-6">
         <h2 class="heading-font text-3xl font-bold">{e(section.heading)}</h2>
-        <p class="mt-4 max-w-3xl leading-relaxed opacity-80">{e(section.body)}</p>{cta_html}
+        <p class="mt-4 max-w-3xl leading-relaxed opacity-80">{e(section.body)}</p>{items_html}{cta_html}
       </div>
     </section>"""
 
@@ -498,6 +538,12 @@ def codegen_node(state: WorkflowState) -> WorkflowState:
 
 .cta-button:hover {{
   background-color: var(--color-secondary);
+}}
+
+.menu-card {{
+  background-color: var(--color-surface);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius);
 }}
 """
 
