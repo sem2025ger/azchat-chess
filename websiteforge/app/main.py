@@ -4,7 +4,7 @@ import io
 import logging
 import zipfile
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.graph.workflow import WorkflowError, run_workflow
@@ -56,6 +56,11 @@ async def generate(request: GenerateRequest) -> GenerateResponse:
     )
 
 
+def is_safe_filename(name: str) -> bool:
+    """Validate ZIP entry names. For this MVP, only allow expected files."""
+    return name in {"index.html", "styles.css"}
+
+
 @app.post("/api/export/zip")
 async def export_zip(request: ExportRequest) -> StreamingResponse:
     """Export a generated site as a zip archive.
@@ -72,6 +77,10 @@ async def export_zip(request: ExportRequest) -> StreamingResponse:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
         for name, contents in files.items():
+            if not is_safe_filename(name):
+                raise HTTPException(
+                    status_code=422, detail=f"Unsafe or unexpected file name: {name}"
+                )
             archive.writestr(name, contents)
     buffer.seek(0)
 

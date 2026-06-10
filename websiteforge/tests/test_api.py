@@ -98,3 +98,21 @@ def test_export_zip_rejects_both_inputs():
 def test_export_zip_rejects_files_without_index():
     response = client.post("/api/export/zip", json={"files": {"styles.css": "body {}"}})
     assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "unsafe_name",
+    [
+        "../outside.html",
+        "/outside.html",
+        "C:\\outside.html",
+        "folder/outside.html",
+        "",
+    ],
+)
+def test_export_zip_rejects_unsafe_names(unsafe_name):
+    response = client.post(
+        "/api/export/zip",
+        json={"files": {"index.html": "<html></html>", unsafe_name: "content"}},
+    )
+    assert response.status_code == 422
