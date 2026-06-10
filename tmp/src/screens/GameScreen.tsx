@@ -28,6 +28,7 @@ export default function GameScreen() {
   const [timeLeft, setTimeLeft] = useState({ black: 600, white: 600 });
   const [viewMoveIndex, setViewMoveIndex] = useState<number>(-1);
   const [positionHistory, setPositionHistory] = useState<string[]>(() => [new Chess().fen()]);
+  const [moveHistory, setMoveHistory] = useState<string[]>([]);
 
   // Chess Game State
   const [game, setGame] = useState(new Chess());
@@ -166,6 +167,7 @@ export default function GameScreen() {
         } else {
           setGame(g);
           setPositionHistory(prev => prev[prev.length - 1] === g.fen() ? prev : [...prev, g.fen()]);
+          setMoveHistory(prev => [...prev, move.san]);
           setViewMoveIndex(-1);
         }
         
@@ -236,13 +238,15 @@ export default function GameScreen() {
   ] as const;
 
   // Build Move Pairs
-  const historyMoves = game.history({ verbose: true }) as Move[];
+  const renderMoves = (!socket || !roomId) 
+    ? moveHistory 
+    : (game.history({ verbose: true }) as Move[]).map(m => m.san);
   const movePairs = [];
-  for (let i = 0; i < historyMoves.length; i += 2) {
+  for (let i = 0; i < renderMoves.length; i += 2) {
     movePairs.push({
       n: Math.floor(i / 2) + 1,
-      w: historyMoves[i].san,
-      b: historyMoves[i + 1]?.san || '',
+      w: renderMoves[i],
+      b: renderMoves[i + 1] || '',
       wTime: '--',
       bTime: '--',
     });
@@ -424,10 +428,22 @@ export default function GameScreen() {
                 </table>
               </div>
               <div className="h-11 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-6 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]">
-                <button onClick={() => alert('Review mode not implemented yet')} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group"><Rewind size={18} className="group-hover:scale-110 transition-transform" /></button>
-                <button onClick={() => alert('Review mode not implemented yet')} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group"><ChevronLeft size={24} className="group-hover:translate-x-1 transition-transform" /></button>
-                <button onClick={() => alert('Review mode not implemented yet')} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group"><ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" /></button>
-                <button onClick={() => alert('Review mode not implemented yet')} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group"><FastForward size={18} className="group-hover:scale-110 transition-transform" /></button>
+                <button disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group disabled:opacity-30 disabled:pointer-events-none"><Rewind size={18} className="group-hover:scale-110 transition-transform" /></button>
+                <button disabled={!hasHistory} onClick={() => { 
+                  if (!hasHistory) return;
+                  const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
+                  setViewMoveIndex(Math.max(0, currentIndex - 1));
+                }} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group disabled:opacity-30 disabled:pointer-events-none"><ChevronLeft size={24} className="group-hover:translate-x-1 transition-transform" /></button>
+                <button disabled={!hasHistory} onClick={() => {
+                  if (!hasHistory) return;
+                  if (viewMoveIndex === -1) return;
+                  if (viewMoveIndex >= positionHistory.length - 2) {
+                    setViewMoveIndex(-1);
+                  } else {
+                    setViewMoveIndex(viewMoveIndex + 1);
+                  }
+                }} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group disabled:opacity-30 disabled:pointer-events-none"><ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" /></button>
+                <button disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group disabled:opacity-30 disabled:pointer-events-none"><FastForward size={18} className="group-hover:scale-110 transition-transform" /></button>
               </div>
             </div>
           )}
@@ -480,7 +496,7 @@ export default function GameScreen() {
               mate={engineResult?.mate}
               loading={isAnalysing}
               candidates={engineResult?.continuation ? [engineResult.continuation] : undefined}
-              noMoves={historyMoves.length === 0}
+              noMoves={renderMoves.length === 0}
               error={engineRef.current?.hasFailed() || !engineRef.current?.isReady()}
             />
           )}
