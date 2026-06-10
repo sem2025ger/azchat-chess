@@ -28,11 +28,18 @@ class SEOMetadata(BaseModel):
     keywords: list[str] = Field(min_length=1)
 
 
+class MenuItem(BaseModel):
+    name: str
+    description: str
+    price: str
+
+
 class SectionContent(BaseModel):
     id: str
     heading: str
     body: str
     cta: str | None = None
+    items: list[MenuItem] | None = None
 
 
 class ContentBundle(BaseModel):
