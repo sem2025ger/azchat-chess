@@ -5,7 +5,7 @@ import logging
 import zipfile
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from app.graph.workflow import WorkflowError, run_workflow
 from app.schemas import (
@@ -36,6 +36,12 @@ async def workflow_error_handler(request: Request, exc: WorkflowError) -> JSONRe
         status_code=500,
         content={"detail": str(exc), "error": "workflow_error"},
     )
+
+
+@app.get("/", response_class=FileResponse)
+async def serve_ui() -> FileResponse:
+    """Serve the WebsiteForge UI."""
+    return FileResponse("app/static/index.html")
 
 
 @app.get("/health", response_model=HealthResponse)
