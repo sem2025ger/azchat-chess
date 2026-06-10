@@ -3,9 +3,10 @@
 import io
 import logging
 import zipfile
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 from app.graph.workflow import WorkflowError, run_workflow
 from app.schemas import (
@@ -18,6 +19,9 @@ from app.schemas import (
 __version__ = "0.1.0"
 
 logger = logging.getLogger("websiteforge")
+
+APP_DIR = Path(__file__).resolve().parent
+UI_INDEX_PATH = APP_DIR / "static" / "index.html"
 
 app = FastAPI(
     title="WebsiteForge Agent",
@@ -36,6 +40,12 @@ async def workflow_error_handler(request: Request, exc: WorkflowError) -> JSONRe
         status_code=500,
         content={"detail": str(exc), "error": "workflow_error"},
     )
+
+
+@app.get("/", response_class=FileResponse)
+async def serve_ui() -> FileResponse:
+    """Serve the WebsiteForge UI."""
+    return FileResponse(UI_INDEX_PATH)
 
 
 @app.get("/health", response_model=HealthResponse)

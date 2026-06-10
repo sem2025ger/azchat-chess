@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebsiteForge UI</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      height: 100vh;
+      background-color: #f3f4f6;
+      color: #111827;
+    }
+    .panel {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .left-panel {
+      width: 350px;
+      background: white;
+      border-right: 1px solid #e5e7eb;
+      box-shadow: 1px 0 5px rgba(0,0,0,0.05);
+      z-index: 10;
+    }
+    .right-panel {
+      flex: 1;
+      background: #f9fafb;
+    }
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.375rem;
+      font-family: inherit;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 0.75rem;
+      border-radius: 0.375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    button:disabled {
+      background-color: #93c5fd;
+      cursor: not-allowed;
+    }
+    #btn-download {
+      background-color: #10b981;
+      display: none;
+    }
+    #btn-download:hover {
+      background-color: #059669;
+    }
+    #status {
+      font-size: 0.875rem;
+      color: #4b5563;
+      margin-top: 0.5rem;
+      white-space: pre-wrap;
+    }
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 0.5rem;
+    }
+    .tab {
+      background: none;
+      border: none;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      font-weight: 500;
+      color: #6b7280;
+      border-radius: 0.375rem;
+    }
+    .tab.active {
+      color: #2563eb;
+      background-color: #eff6ff;
+    }
+    .tab-content {
+      display: none;
+      flex: 1;
+      height: calc(100vh - 5rem);
+      overflow: auto;
+      border: 1px solid #e5e7eb;
+      background: white;
+      border-radius: 0.375rem;
+      margin-top: 1rem;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    pre {
+      margin: 0;
+      padding: 1rem;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="panel left-panel">
+    <h1 style="font-size: 1.5rem; margin: 0 0 0.5rem 0;">WebsiteForge</h1>
+    <p style="margin: 0; font-size: 0.875rem; color: #4b5563;">Enter a prompt to generate a modern static site.</p>
+    
+    <textarea id="prompt-input" placeholder="E.g., Create a modern landing page for a coffee shop..."></textarea>
+    
+    <button id="btn-generate">Generate Website</button>
+    <button id="btn-download">Download ZIP</button>
+    
+    <div id="status"></div>
+  </div>
+
+  <div class="panel right-panel">
+    <div class="tabs">
+      <button class="tab active" data-target="preview-content">Live Preview</button>
+      <button class="tab" data-target="html-content">index.html</button>
+      <button class="tab" data-target="css-content">styles.css</button>
+    </div>
+    
+    <div id="preview-content" class="tab-content active">
+      <iframe id="preview-iframe"></iframe>
+    </div>
+    <div id="html-content" class="tab-content">
+      <pre><code id="html-viewer"></code></pre>
+    </div>
+    <div id="css-content" class="tab-content">
+      <pre><code id="css-viewer"></code></pre>
+    </div>
+  </div>
+
+  <script>
+    const btnGenerate = document.getElementById('btn-generate');
+    const btnDownload = document.getElementById('btn-download');
+    const promptInput = document.getElementById('prompt-input');
+    const statusDiv = document.getElementById('status');
+    const previewIframe = document.getElementById('preview-iframe');
+    const htmlViewer = document.getElementById('html-viewer');
+    const cssViewer = document.getElementById('css-viewer');
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    let generatedFiles = null;
+
+    // Tab switching
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.target).classList.add('active');
+      });
+    });
+
+    // Generate Site
+    btnGenerate.addEventListener('click', async () => {
+      const promptText = promptInput.value.trim();
+      if (!promptText || promptText.length < 10) {
+        statusDiv.textContent = 'Please enter a prompt (at least 10 characters).';
+        statusDiv.style.color = 'red';
+        return;
+      }
+
+      btnGenerate.disabled = true;
+      btnDownload.style.display = 'none';
+      statusDiv.textContent = 'Generating website... This may take a moment.';
+      statusDiv.style.color = '#4b5563';
+      generatedFiles = null;
+      
+      // Clear previous outputs
+      previewIframe.srcdoc = '';
+      htmlViewer.textContent = '';
+      cssViewer.textContent = '';
+
+      try {
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: promptText })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => null);
+          throw new Error(errData?.detail || `Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        generatedFiles = data.files;
+
+        // Display results
+        const html = generatedFiles['index.html'] || '';
+        const css = generatedFiles['styles.css'] || '';
+
+        // Inject CSS directly into HTML for preview
+        const previewHtml = html.replace(
+          '<link rel="stylesheet" href="styles.css" />',
+          `<style>${css}</style>`
+        ).replace(
+          '<link rel="stylesheet" href="styles.css">',
+          `<style>${css}</style>`
+        );
+
+        previewIframe.srcdoc = previewHtml;
+        htmlViewer.textContent = html;
+        cssViewer.textContent = css;
+
+        statusDiv.textContent = 'Generation successful!';
+        statusDiv.style.color = '#10b981';
+        btnDownload.style.display = 'block';
+
+      } catch (err) {
+        statusDiv.textContent = `Error: ${err.message}`;
+        statusDiv.style.color = 'red';
+      } finally {
+        btnGenerate.disabled = false;
+      }
+    });
+
+    // Download ZIP
+    btnDownload.addEventListener('click', async () => {
+      if (!generatedFiles) return;
+      
+      btnDownload.disabled = true;
+      statusDiv.textContent = 'Preparing ZIP...';
+      statusDiv.style.color = '#4b5563';
+
+      try {
+        const response = await fetch('/api/export/zip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: generatedFiles })
+        });
+
+        if (!response.ok) throw new Error(`Export failed: ${response.status}`);
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'website.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        
+        statusDiv.textContent = 'ZIP downloaded successfully!';
+        statusDiv.style.color = '#10b981';
+      } catch (err) {
+        statusDiv.textContent = `Error: ${err.message}`;
+        statusDiv.style.color = 'red';
+      } finally {
+        btnDownload.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
