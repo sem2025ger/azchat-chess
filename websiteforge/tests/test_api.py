@@ -13,7 +13,9 @@ client = TestClient(app)
 PROMPT = 'Build a website for "Bella\'s Bakery", a cozy local bakery with pricing info'
 
 
-def test_root_serves_ui():
+def test_root_serves_ui(monkeypatch):
+    # Change CWD to some other directory to ensure the path is correctly resolved
+    monkeypatch.chdir("..")
     response = client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
