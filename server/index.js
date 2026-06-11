@@ -220,7 +220,7 @@ io.on('connection', (socket) => {
       }
 
       // Valid move
-      io.to(roomId).emit('update_board', { fen: game.fen() });
+      io.to(roomId).emit('update_board', { fen: game.fen(), history: game.history() });
 
       if (game.isGameOver()) {
         let reason = "game_over";

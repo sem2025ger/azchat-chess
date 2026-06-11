@@ -13,7 +13,7 @@ import { translateMock } from '../utils/chatAssistantLogic';
 import EvaluationBar from '../components/EvaluationBar';
 import AnalysisPanel from '../components/AnalysisPanel';
 import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
-import { Chess, type Move } from 'chess.js';
+import { Chess } from 'chess.js';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -65,6 +65,9 @@ export default function GameScreen() {
       setViewMoveIndex(-1);
       if (data.whiteTime !== undefined) {
          setTimeLeft({ white: data.whiteTime, black: data.blackTime });
+      }
+      if (Array.isArray(data.history)) {
+        setMoveHistory(data.history);
       }
     };
     const onGameOver = (data: any) => {
@@ -235,9 +238,7 @@ export default function GameScreen() {
   ] as const;
 
   // Build Move Pairs
-  const renderMoves = (!socket || !roomId) 
-    ? moveHistory 
-    : (game.history({ verbose: true }) as Move[]).map(m => m.san);
+  const renderMoves = moveHistory;
   const movePairs = [];
   for (let i = 0; i < renderMoves.length; i += 2) {
     movePairs.push({
