@@ -272,7 +272,7 @@ export default function GameScreen() {
 
           <div className="flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10">
             <div className="flex items-center gap-2.5">
-              <div className="relative">
+              <div className="relative w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 ring-1 ring-black flex items-center justify-center">
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-[2px] border-[#161512] animate-pulse" />
               </div>
               <div className="hidden sm:block">
@@ -343,7 +343,7 @@ export default function GameScreen() {
               <div className="hidden sm:block">
                 <div className="flex items-center gap-1.5">
                   <span className="font-black text-white text-xs tracking-tight italic">{profile?.username || user?.user_metadata?.username || 'Guest'}</span>
-                  <span className="bg-chess-gold/20 text-chess-gold text-[0.45rem] px-1 py-0.5 rounded font-black uppercase ring-1 ring-chess-gold/40 shadow-[0_0_20px_rgba(223,176,98,0.35)] border border-chess-gold/20 tracking-widest">{profile?.role || 'PRO'}</span>
+                  {profile?.role && <span className="bg-chess-gold/20 text-chess-gold text-[0.45rem] px-1 py-0.5 rounded font-black uppercase ring-1 ring-chess-gold/40 shadow-[0_0_20px_rgba(223,176,98,0.35)] border border-chess-gold/20 tracking-widest">{profile?.role}</span>}
                 </div>
                 <div className="text-[0.55rem] text-neutral-500 font-bold uppercase tracking-[0.2em] mt-0.5 opacity-60 leading-none">UNRATED</div>
               </div>
