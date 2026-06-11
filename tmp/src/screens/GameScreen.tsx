@@ -109,10 +109,7 @@ export default function GameScreen() {
   const [showChatAssistant, setShowChatAssistant] = useState(false);
   const [translatedMessages, setTranslatedMessages] = useState<Record<number, string>>({});
 
-  const initialGameMsgs = [
-    { user: 'SiberianTiger', msg: 'gl hf!', time: '21:34', self: false },
-    { user: 'You', msg: 'u2', time: '21:35', self: true },
-  ];
+  const initialGameMsgs: { user: string; msg: string; time: string; self: boolean }[] = [];
   const [gameMsgs, setGameMsgs] = useState(initialGameMsgs);
 
   // Analysis States
@@ -276,17 +273,13 @@ export default function GameScreen() {
           <div className="flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10">
             <div className="flex items-center gap-2.5">
               <div className="relative">
-                <div className="w-8 h-8 bg-neutral-900 rounded-lg flex items-center justify-center overflow-hidden shadow-2xl border border-white/10 ring-1 ring-black">
-                  <span className="text-sm">🇷🇺</span>
-                </div>
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-[2px] border-[#161512] animate-pulse" />
               </div>
               <div className="hidden sm:block">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-black text-white text-xs tracking-tight italic">SiberianTiger</span>
-                  <span className="text-[0.45rem] font-black bg-white/10 text-neutral-400 px-1 py-0.5 rounded leading-none uppercase tracking-widest">GM</span>
+                  <span className="font-black text-white text-xs tracking-tight italic">Opponent</span>
                 </div>
-                <div className="text-[0.55rem] text-neutral-500 font-bold uppercase tracking-[0.2em] mt-0.5 opacity-60 leading-none">ELITE: 2952</div>
+                <div className="text-[0.55rem] text-neutral-500 font-bold uppercase tracking-[0.2em] mt-0.5 opacity-60 leading-none">UNRATED</div>
               </div>
             </div>
             <div className="bg-[#1a1a1a] px-3 py-1 rounded-lg border-b-[2px] border-neutral-800 font-mono text-lg font-black text-neutral-400 shadow-xl flex items-center justify-center min-w-[75px] ring-1 ring-white/5">
@@ -352,7 +345,7 @@ export default function GameScreen() {
                   <span className="font-black text-white text-xs tracking-tight italic">{profile?.username || user?.user_metadata?.username || 'Guest'}</span>
                   <span className="bg-chess-gold/20 text-chess-gold text-[0.45rem] px-1 py-0.5 rounded font-black uppercase ring-1 ring-chess-gold/40 shadow-[0_0_20px_rgba(223,176,98,0.35)] border border-chess-gold/20 tracking-widest">{profile?.role || 'PRO'}</span>
                 </div>
-                <div className="text-[0.55rem] text-neutral-500 font-bold uppercase tracking-[0.2em] mt-0.5 opacity-60 leading-none">RATING: 2850</div>
+                <div className="text-[0.55rem] text-neutral-500 font-bold uppercase tracking-[0.2em] mt-0.5 opacity-60 leading-none">UNRATED</div>
               </div>
             </div>
             <div className="bg-neutral-950 px-3 py-1 rounded-lg border-b-[2px] border-chess-active font-mono text-lg font-black text-white shadow-[0_15px_50px_-5px_rgba(0,206,209,0.5)] ring-1 ring-chess-active/40 flex items-center justify-center min-w-[75px] transition-all hover:translate-y-[-1px] active:translate-y-[1px]">
@@ -565,11 +558,11 @@ export default function GameScreen() {
 
         {/* Professional Game Control Center */}
         <div className="p-2 bg-transparent md:bg-black/60 border-0 md:border-t border-white/10 flex md:grid md:grid-cols-2 gap-2 shrink-0 shadow-none md:shadow-[0_-30px_60px_-15px_rgba(0,0,0,0.8)] relative z-30 ring-0 md:ring-1 ring-white/5 md:backdrop-blur-3xl">
-          <button onClick={() => alert('Resign not implemented yet')} className="flex-1 flex md:flex-col items-center justify-center gap-1 py-1.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-red-500/10 text-neutral-500 hover:text-red-400 font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 group shadow-2xl transition-all duration-150 active:scale-95 hover:border-red-500/20 ring-1 ring-white/5">
+          <button disabled className="opacity-50 pointer-events-none flex-1 flex md:flex-col items-center justify-center gap-1 py-1.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-red-500/10 text-neutral-500 hover:text-red-400 font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 group shadow-2xl transition-all duration-150 active:scale-95 hover:border-red-500/20 ring-1 ring-white/5">
             <Flag size={16} className="group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-200" />
             {t('game.resign')}
           </button>
-          <button onClick={() => alert('Draw offer not implemented yet')} className="flex-1 flex md:flex-col items-center justify-center gap-1 py-1.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 shadow-2xl transition-all duration-150 active:scale-95 group hover:border-white/20 ring-1 ring-white/5">
+          <button disabled className="opacity-50 pointer-events-none flex-1 flex md:flex-col items-center justify-center gap-1 py-1.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 shadow-2xl transition-all duration-150 active:scale-95 group hover:border-white/20 ring-1 ring-white/5">
             <Handshake size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-all duration-200" />
             {t('game.draw')}
           </button>
