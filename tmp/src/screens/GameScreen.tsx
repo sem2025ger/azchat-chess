@@ -263,9 +263,61 @@ export default function GameScreen() {
       }
     }
 
+    const lines = engineResult.lines?.map(line => {
+      const c = new Chess(analysisFen);
+      const tokens: string[] = [];
+      let first = true;
+      let sanCount = 0;
+      const maxVisibleSanMoves = 12;
+
+      for (const uci of line.pv) {
+        if (sanCount >= maxVisibleSanMoves) break;
+
+        const turn = c.turn();
+        const num =
+          typeof (c as any).moveNumber === 'function'
+            ? (c as any).moveNumber()
+            : Number(c.fen().split(' ')[5]);
+
+        let move;
+        try {
+          move = c.move({
+            from: uci.slice(0, 2),
+            to: uci.slice(2, 4),
+            promotion: uci[4],
+          });
+        } catch {
+          break;
+        }
+
+        if (!move) break;
+
+        if (turn === 'w') {
+          tokens.push(`${num}.`, move.san);
+        } else {
+          if (first) tokens.push(`${num}...`, move.san);
+          else tokens.push(move.san);
+        }
+
+        first = false;
+        sanCount += 1;
+      }
+
+      const hasMore = line.pv.length > sanCount;
+
+      return {
+        evaluation: line.evaluation,
+        mate: line.mate,
+        depth: line.depth,
+        moves: tokens,
+        hasMore
+      };
+    });
+
     return {
       bestMove: bestMoveSan,
-      continuation: continuationSan
+      continuation: continuationSan,
+      lines
     };
   }, [engineResult, analysisFen]);
 
@@ -457,6 +509,7 @@ export default function GameScreen() {
               mate={engineResult?.mate}
               loading={isAnalysing}
               candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
+              lines={analysisData?.lines}
               noMoves={renderMoves.length === 0}
               error={engineRef.current?.hasFailed() || !engineRef.current?.isReady()}
             />

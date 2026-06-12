@@ -1,12 +1,21 @@
 // Stockfish Engine – Real UCI integration via Web Worker
 // Loads Stockfish.js from CDN, communicates over standard UCI protocol.
 
+export interface EngineLine {
+  multipv: number;
+  evaluation: number;
+  mate?: number;
+  depth: number;
+  pv: string[];
+}
+
 export interface EngineResult {
   evaluation: number; // in pawns, + is white advantage
   bestMove: string;
   depth: number;
   mate?: number; // moves to mate if detected
   continuation?: string[]; // array of moves in the main line
+  lines?: EngineLine[];
 }
 
 export type MoveQuality = 'best' | 'excellent' | 'good' | 'inaccurate' | 'mistake' | 'blunder' | 'book';
@@ -29,6 +38,8 @@ export class StockfishEngine {
   private _mate: number | undefined = undefined;
   private _pv: string[] = [];
   private _lastGoodPv: string[] = [];
+  private _lines: Record<number, EngineLine> = {};
+  private _lastGoodLines: Record<number, EngineLine> = {};
 
   constructor() {
     this.initWorker();
@@ -80,7 +91,11 @@ export class StockfishEngine {
 
   private onUCI(line: string): void {
     // Handshake
-    if (line === 'uciok') { this.send('isready'); return; }
+    if (line === 'uciok') { 
+      this.send('setoption name MultiPV value 3');
+      this.send('isready'); 
+      return; 
+    }
     if (line === 'readyok') {
       this.ready = true;
       this._initFailed = false;
@@ -111,27 +126,51 @@ export class StockfishEngine {
         depth: this._depth,
         mate: this._mate,
         continuation: finalPv.length > 1 ? finalPv.slice(1) : undefined,
+        lines: this.getStableLines(),
       });
     }
   }
 
   private parseInfo(line: string): void {
-    if (line.includes(' string ') || /\bmultipv\s+[2-9]/.test(line)) return;
+    if (line.includes(' string ')) return;
+
+    const mpvM = line.match(/\bmultipv\s+(\d+)/);
+    const multipv = mpvM ? parseInt(mpvM[1], 10) : 1;
+    if (multipv > 3) return;
 
     const dM = line.match(/\bdepth\s+(\d+)/);
-    if (dM) this._depth = parseInt(dM[1], 10);
+    if (dM && multipv === 1) this._depth = parseInt(dM[1], 10);
+
+    let depth = dM ? parseInt(dM[1], 10) : (this._lines[multipv]?.depth || this._depth);
+
+    let evalCp = this._lines[multipv]?.evaluation || 0;
+    let mate: number | undefined = this._lines[multipv]?.mate;
 
     const cpM = line.match(/\bscore\s+cp\s+(-?\d+)/);
-    if (cpM) { this._eval = parseInt(cpM[1], 10) / 100; this._mate = undefined; }
+    if (cpM) { evalCp = parseInt(cpM[1], 10) / 100; mate = undefined; }
 
     const mtM = line.match(/\bscore\s+mate\s+(-?\d+)/);
-    if (mtM) { this._mate = parseInt(mtM[1], 10); this._eval = this._mate > 0 ? 100 : -100; }
+    if (mtM) { mate = parseInt(mtM[1], 10); evalCp = mate > 0 ? 100 : -100; }
 
     const pvM = line.match(/\bpv\s+(.+)$/);
+    let pv = this._lines[multipv]?.pv || [];
     if (pvM) {
-      this._pv = pvM[1].trim().split(/\s+/);
-      if (this._pv.length > 1) {
-        this._lastGoodPv = [...this._pv];
+      pv = pvM[1].trim().split(/\s+/);
+    }
+
+    this._lines[multipv] = { multipv, evaluation: evalCp, mate, depth, pv };
+    if (pv.length > 1) {
+      this._lastGoodLines[multipv] = { ...this._lines[multipv] };
+    }
+
+    if (multipv === 1) {
+      if (cpM) { this._eval = evalCp; this._mate = undefined; }
+      if (mtM) { this._mate = mate; this._eval = evalCp; }
+      if (pvM) {
+        this._pv = pv;
+        if (this._pv.length > 1) {
+          this._lastGoodPv = [...this._pv];
+        }
       }
     }
 
@@ -143,8 +182,23 @@ export class StockfishEngine {
         depth: this._depth,
         mate: this._mate,
         continuation: this._pv.length > 1 ? this._pv.slice(1) : undefined,
+        lines: this.getStableLines(),
       });
     }
+  }
+
+  private getStableLines(): EngineLine[] {
+    const out: EngineLine[] = [];
+    for (let i = 1; i <= 3; i++) {
+      const line = this._lines[i];
+      const goodLine = this._lastGoodLines[i];
+      if (line && line.pv.length > 1) {
+        out.push(line);
+      } else if (goodLine && goodLine.pv.length > 1) {
+        out.push(goodLine);
+      }
+    }
+    return out;
   }
 
   /* ------------------------------------------------------------------ */
@@ -169,6 +223,8 @@ export class StockfishEngine {
     this._mate = undefined;
     this._pv = [];
     this._lastGoodPv = [];
+    this._lines = {};
+    this._lastGoodLines = {};
 
     const pos = (!fen || fen === 'startpos') ? 'position startpos' : `position fen ${fen}`;
     this.send(pos);

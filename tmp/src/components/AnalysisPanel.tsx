@@ -13,12 +13,19 @@ interface AnalysisPanelProps {
   depth: number;
   mate?: number;
   candidates?: string[][];
+  lines?: {
+    evaluation: number;
+    mate?: number;
+    depth: number;
+    moves: string[];
+    hasMore?: boolean;
+  }[];
   loading?: boolean;
   error?: boolean;
   noMoves?: boolean;
 }
 
-export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, loading, error, noMoves }: AnalysisPanelProps) {
+export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves }: AnalysisPanelProps) {
   const { t } = useLanguage();
 
   if (noMoves) {
@@ -67,35 +74,62 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
 
       {/* Main evaluation row */}
       <section className="flex flex-col gap-3 shrink-0">
-         <div className="flex items-start gap-4">
-            <div className={cx(
-              "px-3 py-1.5 rounded-lg font-mono text-[1.1rem] font-black shadow-md min-w-[4rem] text-center shrink-0 border",
-              mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
-              score > 0 ? "bg-white text-black border-white" : 
-              score < 0 ? "bg-black text-white border-white/20" :
-              "bg-neutral-800 text-neutral-300 border-neutral-600"
-            )}>
-               {mate != null ? (mate < 0 ? `-M${Math.abs(mate)}` : `M${mate}`) : (score > 0 ? `+${score.toFixed(2)}` : score.toFixed(2))}
-            </div>
-            
-            <div className="flex-1 flex flex-col pt-0.5">
-               <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[0.65rem] font-bold text-neutral-500 uppercase tracking-wider">{t('game.analysis.bestMove')}:</span>
-                  {bestMove ? (
-                     <span className="text-[0.8rem] font-black text-chess-active">{bestMove}</span>
-                  ) : (
-                     <span className="text-[0.7rem] italic text-neutral-600">...</span>
-                  )}
-               </div>
-               <div className="text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
-                  {pv ? pv.map((move, i) => (
-                    <span key={i} className={i === 0 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
-                  )) : (
-                    <span className="text-[0.7rem] text-neutral-600 italic">{t('game.analysis.analyzing_position')}</span>
-                  )}
-               </div>
-            </div>
-         </div>
+         {lines && lines.length > 0 ? (
+           lines.map((line, idx) => (
+             <div key={idx} className="flex items-start gap-4">
+                <div className={cx(
+                  "px-3 py-1.5 rounded-lg font-mono text-[1.1rem] font-black shadow-md min-w-[4rem] text-center shrink-0 border",
+                  line.mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
+                  line.evaluation > 0 ? "bg-white text-black border-white" : 
+                  line.evaluation < 0 ? "bg-black text-white border-white/20" :
+                  "bg-neutral-800 text-neutral-300 border-neutral-600"
+                )}>
+                   {line.mate != null ? (line.mate < 0 ? `-M${Math.abs(line.mate)}` : `M${line.mate}`) : (line.evaluation > 0 ? `+${line.evaluation.toFixed(2)}` : line.evaluation.toFixed(2))}
+                </div>
+                
+                <div className="flex-1 flex flex-col pt-0.5">
+                   <div className="text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
+                      {line.moves.length > 0 ? line.moves.map((move, i) => (
+                        <span key={i} className={i <= 1 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
+                      )) : (
+                        <span className="text-[0.7rem] text-neutral-600 italic">{t('game.analysis.analyzing_position')}</span>
+                      )}
+                      {line.hasMore && <span className="text-[0.8rem] text-neutral-500 font-bold">…</span>}
+                   </div>
+                </div>
+             </div>
+           ))
+         ) : (
+           <div className="flex items-start gap-4">
+              <div className={cx(
+                "px-3 py-1.5 rounded-lg font-mono text-[1.1rem] font-black shadow-md min-w-[4rem] text-center shrink-0 border",
+                mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
+                score > 0 ? "bg-white text-black border-white" : 
+                score < 0 ? "bg-black text-white border-white/20" :
+                "bg-neutral-800 text-neutral-300 border-neutral-600"
+              )}>
+                 {mate != null ? (mate < 0 ? `-M${Math.abs(mate)}` : `M${mate}`) : (score > 0 ? `+${score.toFixed(2)}` : score.toFixed(2))}
+              </div>
+              
+              <div className="flex-1 flex flex-col pt-0.5">
+                 <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[0.65rem] font-bold text-neutral-500 uppercase tracking-wider">{t('game.analysis.bestMove')}:</span>
+                    {bestMove ? (
+                       <span className="text-[0.8rem] font-black text-chess-active">{bestMove}</span>
+                    ) : (
+                       <span className="text-[0.7rem] italic text-neutral-600">...</span>
+                    )}
+                 </div>
+                 <div className="text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
+                    {pv ? pv.map((move, i) => (
+                      <span key={i} className={i === 0 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
+                    )) : (
+                      <span className="text-[0.7rem] text-neutral-600 italic">{t('game.analysis.analyzing_position')}</span>
+                    )}
+                 </div>
+              </div>
+           </div>
+         )}
       </section>
     </div>
   );
