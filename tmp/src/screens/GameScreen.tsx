@@ -320,7 +320,7 @@ export default function GameScreen() {
       </div>
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-full lg:min-h-[610px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0">
+      <div className="w-full lg:w-[320px] xl:w-[360px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[70vh] lg:min-h-[520px] lg:max-h-[680px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0">
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden md:block p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
@@ -383,12 +383,12 @@ export default function GameScreen() {
                 </table>
               </div>
               <div className="h-14 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-8 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]">
-                <button disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-2 hover:bg-gradient-to-br hover:from-white/10 hover:to-white/5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none ring-1 ring-transparent hover:ring-white/10"><Rewind size={22} className="group-hover:scale-110 transition-transform" /></button>
+                <button disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><Rewind size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
                 <button disabled={!hasHistory} onClick={() => { 
                   if (!hasHistory) return;
                   const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
                   setViewMoveIndex(Math.max(0, currentIndex - 1));
-                }} className="text-neutral-500 hover:text-white p-2 hover:bg-gradient-to-br hover:from-white/10 hover:to-white/5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none ring-1 ring-transparent hover:ring-white/10"><ChevronLeft size={28} className="group-hover:-translate-x-1 transition-transform" /></button>
+                }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><ChevronLeft size={28} className="group-hover:-translate-x-1 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
                 <button disabled={!hasHistory} onClick={() => {
                   if (!hasHistory) return;
                   if (viewMoveIndex === -1) return;
@@ -397,8 +397,8 @@ export default function GameScreen() {
                   } else {
                     setViewMoveIndex(viewMoveIndex + 1);
                   }
-                }} className="text-neutral-500 hover:text-white p-2 hover:bg-gradient-to-br hover:from-white/10 hover:to-white/5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none ring-1 ring-transparent hover:ring-white/10"><ChevronRight size={28} className="group-hover:translate-x-1 transition-transform" /></button>
-                <button disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 hover:bg-gradient-to-br hover:from-white/10 hover:to-white/5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none ring-1 ring-transparent hover:ring-white/10"><FastForward size={22} className="group-hover:scale-110 transition-transform" /></button>
+                }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><ChevronRight size={28} className="group-hover:translate-x-1 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
+                <button disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
               </div>
             </div>
           )}
