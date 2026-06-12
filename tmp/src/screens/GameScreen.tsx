@@ -225,10 +225,9 @@ export default function GameScreen() {
 
   const hasHistory = positionHistory.length > 1;
 
-  const analysisFen = game.fen();
-
   const analysisData = useMemo(() => {
     if (!engineResult) return null;
+    const analysisFen = engineResult.analyzedFen || game.fen();
     const g = new Chess(analysisFen);
     let bestMoveSan = engineResult.bestMove;
     const continuationSan: string[] = [];
@@ -269,9 +268,13 @@ export default function GameScreen() {
       let first = true;
       let sanCount = 0;
       const maxVisibleSanMoves = 12;
+      let truncatedByLimit = false;
 
       for (const uci of line.pv) {
-        if (sanCount >= maxVisibleSanMoves) break;
+        if (sanCount >= maxVisibleSanMoves) {
+          truncatedByLimit = true;
+          break;
+        }
 
         const turn = c.turn();
         const num =
@@ -303,7 +306,7 @@ export default function GameScreen() {
         sanCount += 1;
       }
 
-      const hasMore = line.pv.length > sanCount;
+      const hasMore = truncatedByLimit;
 
       return {
         evaluation: line.evaluation,
@@ -312,14 +315,14 @@ export default function GameScreen() {
         moves: tokens,
         hasMore
       };
-    });
+    }).filter(line => line.moves.length > 0);
 
     return {
       bestMove: bestMoveSan,
       continuation: continuationSan,
       lines
     };
-  }, [engineResult, analysisFen]);
+  }, [engineResult, game.fen()]);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)]">

@@ -16,6 +16,7 @@ export interface EngineResult {
   mate?: number; // moves to mate if detected
   continuation?: string[]; // array of moves in the main line
   lines?: EngineLine[];
+  analyzedFen?: string;
 }
 
 export type MoveQuality = 'best' | 'excellent' | 'good' | 'inaccurate' | 'mistake' | 'blunder' | 'book';
@@ -41,6 +42,9 @@ export class StockfishEngine {
   private _lines: Record<number, EngineLine> = {};
   private _lastGoodLines: Record<number, EngineLine> = {};
   private _rootBlackToMove = false;
+  private _analyzedFen = '';
+  private _queuedAnalysis: { fen?: string; depth: number } | null = null;
+  private _stoppingForRestart = false;
 
   constructor() {
     this.initWorker();
@@ -112,11 +116,20 @@ export class StockfishEngine {
 
     // Search info lines
     if (line.startsWith('info') && line.includes('depth') && this._searching) {
+      if (this._stoppingForRestart) return;
       this.parseInfo(line);
     }
 
     // Final bestmove
     if (line.startsWith('bestmove') && this._searching) {
+      if (this._stoppingForRestart) {
+        this._searching = false;
+        this._stoppingForRestart = false;
+        const queued = this._queuedAnalysis;
+        this._queuedAnalysis = null;
+        if (queued) this.beginSearch(queued.fen, queued.depth);
+        return;
+      }
       const m = line.match(/^bestmove\s+(\S+)/);
       const best = m?.[1] || this._pv[0] || '';
       this._searching = false;
@@ -129,6 +142,7 @@ export class StockfishEngine {
         mate: this._mate,
         continuation: finalPv.length > 1 ? finalPv.slice(1) : undefined,
         lines: this.getStableLines(),
+        analyzedFen: this._analyzedFen,
       });
     }
   }
@@ -186,8 +200,8 @@ export class StockfishEngine {
       }
     }
 
-    // Emit intermediate results from depth 8+
-    if (this._depth >= 8 && this._pv.length > 0 && this._searching) {
+    // Emit intermediate results from depth 5+
+    if (this._depth >= 5 && this._pv.length > 0 && this._searching) {
       this.onResultCallback?.({
         evaluation: this._eval,
         bestMove: this._pv[0],
@@ -195,6 +209,7 @@ export class StockfishEngine {
         mate: this._mate,
         continuation: this._pv.length > 1 ? this._pv.slice(1) : undefined,
         lines: this.getStableLines(),
+        analyzedFen: this._analyzedFen,
       });
     }
   }
@@ -232,6 +247,17 @@ export class StockfishEngine {
     if (!this._worker) return;
     if (!this.ready) { this._pending = { fen, depth }; return; }
 
+    if (this._searching) {
+      this._queuedAnalysis = { fen, depth };
+      this._stoppingForRestart = true;
+      this.send('stop');
+      return;
+    }
+
+    this.beginSearch(fen, depth);
+  }
+
+  private beginSearch(fen?: string, depth = 18): void {
     this._searching = true;
     this._depth = 0;
     this._eval = 0;
@@ -240,7 +266,10 @@ export class StockfishEngine {
     this._lastGoodPv = [];
     this._lines = {};
     this._lastGoodLines = {};
-    this._rootBlackToMove = !!fen && fen !== 'startpos' && fen.split(' ')[1] === 'b';
+
+    const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    this._analyzedFen = (!fen || fen === 'startpos') ? START_FEN : fen;
+    this._rootBlackToMove = this._analyzedFen.split(' ')[1] === 'b';
 
     const pos = (!fen || fen === 'startpos') ? 'position startpos' : `position fen ${fen}`;
     this.send(pos);
@@ -248,6 +277,8 @@ export class StockfishEngine {
   }
 
   public stop(): void {
+    this._queuedAnalysis = null;
+    this._stoppingForRestart = false;
     if (this._searching) { this._searching = false; this.send('stop'); }
   }
 
