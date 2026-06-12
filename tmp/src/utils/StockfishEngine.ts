@@ -40,6 +40,7 @@ export class StockfishEngine {
   private _lastGoodPv: string[] = [];
   private _lines: Record<number, EngineLine> = {};
   private _lastGoodLines: Record<number, EngineLine> = {};
+  private _rootBlackToMove = false;
 
   constructor() {
     this.initWorker();
@@ -119,7 +120,8 @@ export class StockfishEngine {
       const m = line.match(/^bestmove\s+(\S+)/);
       const best = m?.[1] || this._pv[0] || '';
       this._searching = false;
-      const finalPv = this._pv.length > 1 ? this._pv : (this._lastGoodPv.length > 1 ? this._lastGoodPv : this._pv);
+      const isUsablePv = (pvArr: string[], mateScore: number | undefined) => pvArr.length > 1 || (mateScore != null && pvArr.length > 0);
+      const finalPv = isUsablePv(this._pv, this._mate) ? this._pv : (isUsablePv(this._lastGoodPv, this._mate) ? this._lastGoodPv : this._pv);
       this.onResultCallback?.({
         evaluation: this._eval,
         bestMove: best,
@@ -147,10 +149,18 @@ export class StockfishEngine {
     let mate: number | undefined = this._lines[multipv]?.mate;
 
     const cpM = line.match(/\bscore\s+cp\s+(-?\d+)/);
-    if (cpM) { evalCp = parseInt(cpM[1], 10) / 100; mate = undefined; }
+    if (cpM) {
+      let rawCp = parseInt(cpM[1], 10) / 100;
+      evalCp = this._rootBlackToMove ? -rawCp : rawCp;
+      mate = undefined;
+    }
 
     const mtM = line.match(/\bscore\s+mate\s+(-?\d+)/);
-    if (mtM) { mate = parseInt(mtM[1], 10); evalCp = mate > 0 ? 100 : -100; }
+    if (mtM) {
+      let rawMate = parseInt(mtM[1], 10);
+      mate = this._rootBlackToMove ? -rawMate : rawMate;
+      evalCp = mate > 0 ? 100 : -100;
+    }
 
     const pvM = line.match(/\bpv\s+(.+)$/);
     let pv = this._lines[multipv]?.pv || [];
@@ -158,8 +168,10 @@ export class StockfishEngine {
       pv = pvM[1].trim().split(/\s+/);
     }
 
+    const isUsablePv = (pvArr: string[], mateScore: number | undefined) => pvArr.length > 1 || (mateScore != null && pvArr.length > 0);
+
     this._lines[multipv] = { multipv, evaluation: evalCp, mate, depth, pv };
-    if (pv.length > 1) {
+    if (isUsablePv(pv, mate)) {
       this._lastGoodLines[multipv] = { ...this._lines[multipv] };
     }
 
@@ -168,7 +180,7 @@ export class StockfishEngine {
       if (mtM) { this._mate = mate; this._eval = evalCp; }
       if (pvM) {
         this._pv = pv;
-        if (this._pv.length > 1) {
+        if (isUsablePv(this._pv, this._mate)) {
           this._lastGoodPv = [...this._pv];
         }
       }
@@ -189,13 +201,16 @@ export class StockfishEngine {
 
   private getStableLines(): EngineLine[] {
     const out: EngineLine[] = [];
+    const isUsableLine = (line?: EngineLine) =>
+      !!line && (line.pv.length > 1 || (line.mate != null && line.pv.length > 0));
+
     for (let i = 1; i <= 3; i++) {
       const line = this._lines[i];
       const goodLine = this._lastGoodLines[i];
-      if (line && line.pv.length > 1) {
-        out.push(line);
-      } else if (goodLine && goodLine.pv.length > 1) {
-        out.push(goodLine);
+      if (isUsableLine(line)) {
+        out.push(line!);
+      } else if (isUsableLine(goodLine)) {
+        out.push(goodLine!);
       }
     }
     return out;
@@ -225,6 +240,7 @@ export class StockfishEngine {
     this._lastGoodPv = [];
     this._lines = {};
     this._lastGoodLines = {};
+    this._rootBlackToMove = !!fen && fen !== 'startpos' && fen.split(' ')[1] === 'b';
 
     const pos = (!fen || fen === 'startpos') ? 'position startpos' : `position fen ${fen}`;
     this.send(pos);
