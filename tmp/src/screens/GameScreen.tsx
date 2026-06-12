@@ -225,6 +225,51 @@ export default function GameScreen() {
 
   const hasHistory = positionHistory.length > 1;
 
+  const analysisFen = game.fen();
+
+  const analysisData = useMemo(() => {
+    if (!engineResult) return null;
+    const g = new Chess(analysisFen);
+    let bestMoveSan = engineResult.bestMove;
+    const continuationSan: string[] = [];
+    
+    if (bestMoveSan) {
+      try {
+        const testG = new Chess(g.fen());
+        const from = bestMoveSan.slice(0, 2);
+        const to = bestMoveSan.slice(2, 4);
+        const promotion = bestMoveSan[4];
+        const move = testG.move({ from, to, promotion });
+        if (move) bestMoveSan = move.san;
+      } catch (e) {
+        // fallback
+      }
+    }
+
+    if (engineResult.continuation && Array.isArray(engineResult.continuation)) {
+      for (const uci of engineResult.continuation) {
+        try {
+          const from = uci.slice(0, 2);
+          const to = uci.slice(2, 4);
+          const promotion = uci[4];
+          const move = g.move({ from, to, promotion });
+          if (move) {
+            continuationSan.push(move.san);
+          } else {
+            break;
+          }
+        } catch (e) {
+          break;
+        }
+      }
+    }
+
+    return {
+      bestMove: continuationSan[0] || bestMoveSan,
+      continuation: continuationSan
+    };
+  }, [engineResult, analysisFen]);
+
   return (
     <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)]">
 
@@ -408,11 +453,11 @@ export default function GameScreen() {
           {activeTab === 'analysis' && (
             <AnalysisPanel
               score={engineResult?.evaluation || 0.0}
-              bestMove={engineResult?.bestMove}
+              bestMove={analysisData?.bestMove}
               depth={engineResult?.depth || 0}
               mate={engineResult?.mate}
               loading={isAnalysing}
-              candidates={engineResult?.continuation ? [engineResult.continuation] : undefined}
+              candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
               noMoves={renderMoves.length === 0}
               error={engineRef.current?.hasFailed() || !engineRef.current?.isReady()}
             />

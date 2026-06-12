@@ -77,6 +77,9 @@ export const translations: TranslationDictionary = {
   'game.analysis.nomoves': { en: 'No moves yet', de: 'Noch keine Züge', ua: 'Ходів ще немає', ru: 'Ходов еще нет', az: 'Hələ gediş yoxdur', tr: 'Henüz hamle yok' },
   'game.analysis.unavailable': { en: 'Analysis unavailable', de: 'Analyse nicht verfügbar', ua: 'Аналіз недоступний', ru: 'Анализ недоступен', az: 'Analiz mümkün deyil', tr: 'Analiz kullanılamıyor' },
   'game.analysis.hint': { en: 'Use engine lines alongside coach tips.', de: 'Verwenden Sie Engine-Linien zusammen mit Trainer-Tipps.', ua: 'Використовуйте лінії рушія разом з порадами тренера.', ru: 'Используйте линии движка вместе с советами тренера.', az: 'Məşqçinin məsləhətləri ilə birlikdə mühərrik xətlərindən istifadə edin.', tr: 'Antrenör tavsiyeleriyle birlikte motor hatlarını kullanın.' },
+  'game.analysis.analyzing': { en: 'Analyzing', de: 'Analysiere…', ru: 'Анализ…', ua: 'Аналіз…', az: 'Analiz…', tr: 'Analiz…' },
+  'game.analysis.ready': { en: 'Ready', de: 'Bereit', ru: 'Готов', ua: 'Готовий', az: 'Hazır', tr: 'Hazır' },
+  'game.analysis.analyzing_position': { en: 'Analyzing position…', de: 'Position wird analysiert…', ru: 'Анализ позиции…', ua: 'Аналіз позиції…', az: 'Mövqe analiz edilir…', tr: 'Pozisyon analiz ediliyor…' },
 
   // AI Chat Assistant UI
   'chat.assistant.title': { en: 'AI Chat Assistant', de: 'KI-Chat-Assistent', ua: 'Чат-помічник ШІ', ru: 'Чат-помощник ИИ', az: 'Söhbət Köməkçisi', tr: 'Sohbet Yardımcısı' },
