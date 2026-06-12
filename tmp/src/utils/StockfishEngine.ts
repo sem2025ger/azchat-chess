@@ -28,6 +28,7 @@ export class StockfishEngine {
   private _eval = 0;
   private _mate: number | undefined = undefined;
   private _pv: string[] = [];
+  private _lastGoodPv: string[] = [];
 
   constructor() {
     this.initWorker();
@@ -103,12 +104,13 @@ export class StockfishEngine {
       const m = line.match(/^bestmove\s+(\S+)/);
       const best = m?.[1] || this._pv[0] || '';
       this._searching = false;
+      const finalPv = this._pv.length > 1 ? this._pv : (this._lastGoodPv.length > 1 ? this._lastGoodPv : this._pv);
       this.onResultCallback?.({
         evaluation: this._eval,
         bestMove: best,
         depth: this._depth,
         mate: this._mate,
-        continuation: this._pv.length > 1 ? this._pv.slice(1) : undefined,
+        continuation: finalPv.length > 1 ? finalPv.slice(1) : undefined,
       });
     }
   }
@@ -126,7 +128,12 @@ export class StockfishEngine {
     if (mtM) { this._mate = parseInt(mtM[1], 10); this._eval = this._mate > 0 ? 100 : -100; }
 
     const pvM = line.match(/\bpv\s+(.+)$/);
-    if (pvM) this._pv = pvM[1].trim().split(/\s+/);
+    if (pvM) {
+      this._pv = pvM[1].trim().split(/\s+/);
+      if (this._pv.length > 1) {
+        this._lastGoodPv = [...this._pv];
+      }
+    }
 
     // Emit intermediate results from depth 8+
     if (this._depth >= 8 && this._pv.length > 0 && this._searching) {
@@ -161,6 +168,7 @@ export class StockfishEngine {
     this._eval = 0;
     this._mate = undefined;
     this._pv = [];
+    this._lastGoodPv = [];
 
     const pos = (!fen || fen === 'startpos') ? 'position startpos' : `position fen ${fen}`;
     this.send(pos);

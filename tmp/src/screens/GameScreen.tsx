@@ -233,13 +233,12 @@ export default function GameScreen() {
     let bestMoveSan = engineResult.bestMove;
     const continuationSan: string[] = [];
     
-    if (bestMoveSan) {
+    if (engineResult.bestMove) {
       try {
-        const testG = new Chess(g.fen());
-        const from = bestMoveSan.slice(0, 2);
-        const to = bestMoveSan.slice(2, 4);
-        const promotion = bestMoveSan[4];
-        const move = testG.move({ from, to, promotion });
+        const from = engineResult.bestMove.slice(0, 2);
+        const to = engineResult.bestMove.slice(2, 4);
+        const promotion = engineResult.bestMove[4];
+        const move = g.move({ from, to, promotion });
         if (move) bestMoveSan = move.san;
       } catch (e) {
         // fallback
@@ -265,7 +264,7 @@ export default function GameScreen() {
     }
 
     return {
-      bestMove: continuationSan[0] || bestMoveSan,
+      bestMove: bestMoveSan,
       continuation: continuationSan
     };
   }, [engineResult, analysisFen]);
