@@ -2,14 +2,11 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
-import { Flag, Handshake, Send, ChevronLeft, ChevronRight, FastForward, Rewind, Sparkles, Languages, MessageSquare, History, Cpu } from 'lucide-react';
+import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-
-import AIChatAssistant from '../components/AIChatAssistant';
-import { translateMock } from '../utils/chatAssistantLogic';
 import EvaluationBar from '../components/EvaluationBar';
 import AnalysisPanel from '../components/AnalysisPanel';
 import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
@@ -24,7 +21,7 @@ export default function GameScreen() {
   const { user, profile } = useAuth();
 
   // User preferences applied automatically via ThemeContext
-  const [activeTab, setActiveTab] = useState<'moves' | 'chat' | 'analysis'>('moves');
+  const [activeTab, setActiveTab] = useState<'moves' | 'analysis'>('moves');
   const [timeLeft, setTimeLeft] = useState({ black: 600, white: 600 });
   const [viewMoveIndex, setViewMoveIndex] = useState<number>(-1);
   const [positionHistory, setPositionHistory] = useState<string[]>(() => [new Chess().fen()]);
@@ -107,13 +104,7 @@ export default function GameScreen() {
     };
   }, [socket, roomId]);
 
-  // Chat States
-  const [chatInput, setChatInput] = useState("");
-  const [showChatAssistant, setShowChatAssistant] = useState(false);
-  const [translatedMessages, setTranslatedMessages] = useState<Record<number, string>>({});
 
-  const initialGameMsgs: { user: string; msg: string; time: string; self: boolean }[] = [];
-  const [gameMsgs, setGameMsgs] = useState(initialGameMsgs);
 
   // Analysis States
   const engineRef = useRef<StockfishEngine | null>(null);
@@ -193,35 +184,7 @@ export default function GameScreen() {
 
 
 
-  const handleSendMessage = () => {
-    if (!chatInput.trim()) return;
-    const newMsg = {
-      user: 'You',
-      msg: chatInput,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      self: true
-    };
-    setGameMsgs([...gameMsgs, newMsg]);
-    setChatInput("");
-  };
 
-  const handleTranslateGameMsg = (index: number, text: string) => {
-    if (translatedMessages[index]) {
-      const newMap = { ...translatedMessages };
-      delete newMap[index];
-      setTranslatedMessages(newMap);
-    } else {
-      setTranslatedMessages({
-        ...translatedMessages,
-        [index]: translateMock(text, language)
-      });
-    }
-  };
-
-  const handleAssistantSelect = (text: string) => {
-    setChatInput(text);
-    setShowChatAssistant(false);
-  };
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -233,7 +196,6 @@ export default function GameScreen() {
 
   const tabs = [
     { id: 'moves', icon: History, label: t('game.tabs.moves') },
-    { id: 'chat', icon: MessageSquare, label: t('game.tabs.chat') },
     { id: 'analysis', icon: Cpu, label: t('game.tabs.analysis') },
   ] as const;
 
@@ -358,7 +320,7 @@ export default function GameScreen() {
       </div>
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-fit lg:min-h-[610px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all lg:flex-1 mx-2 md:mx-0">
+      <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-full lg:min-h-[610px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0">
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden md:block p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
@@ -366,9 +328,8 @@ export default function GameScreen() {
             <div
               className={cx(
                 "absolute top-1 bottom-1 bg-white/10 rounded-lg transition-all duration-500 ease-in-out shadow-lg ring-1 ring-white/10",
-                activeTab === 'moves' ? "left-1 w-[calc(33.33%-4px)]" :
-                  activeTab === 'chat' ? "left-[calc(33.33%+1px)] w-[calc(33.33%-4px)]" :
-                    "left-[calc(66.66%+1px)] w-[calc(33.33%-4px)]"
+                activeTab === 'moves' ? "left-1 w-[calc(50%-2px)]" :
+                  "left-[calc(50%+2px)] w-[calc(50%-4px)]"
               )}
             />
             {tabs.map((tab) => (
@@ -421,13 +382,13 @@ export default function GameScreen() {
                   </tbody>
                 </table>
               </div>
-              <div className="h-11 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-6 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]">
-                <button disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group disabled:opacity-30 disabled:pointer-events-none"><Rewind size={18} className="group-hover:scale-110 transition-transform" /></button>
+              <div className="h-14 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-8 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]">
+                <button disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-2 hover:bg-gradient-to-br hover:from-white/10 hover:to-white/5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none ring-1 ring-transparent hover:ring-white/10"><Rewind size={22} className="group-hover:scale-110 transition-transform" /></button>
                 <button disabled={!hasHistory} onClick={() => { 
                   if (!hasHistory) return;
                   const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
                   setViewMoveIndex(Math.max(0, currentIndex - 1));
-                }} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group disabled:opacity-30 disabled:pointer-events-none"><ChevronLeft size={24} className="group-hover:translate-x-1 transition-transform" /></button>
+                }} className="text-neutral-500 hover:text-white p-2 hover:bg-gradient-to-br hover:from-white/10 hover:to-white/5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none ring-1 ring-transparent hover:ring-white/10"><ChevronLeft size={28} className="group-hover:-translate-x-1 transition-transform" /></button>
                 <button disabled={!hasHistory} onClick={() => {
                   if (!hasHistory) return;
                   if (viewMoveIndex === -1) return;
@@ -436,51 +397,13 @@ export default function GameScreen() {
                   } else {
                     setViewMoveIndex(viewMoveIndex + 1);
                   }
-                }} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group disabled:opacity-30 disabled:pointer-events-none"><ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" /></button>
-                <button disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-1 hover:bg-white/5 rounded-2xl transition-all duration-150 shadow-xl active:scale-90 group disabled:opacity-30 disabled:pointer-events-none"><FastForward size={18} className="group-hover:scale-110 transition-transform" /></button>
+                }} className="text-neutral-500 hover:text-white p-2 hover:bg-gradient-to-br hover:from-white/10 hover:to-white/5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none ring-1 ring-transparent hover:ring-white/10"><ChevronRight size={28} className="group-hover:translate-x-1 transition-transform" /></button>
+                <button disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 hover:bg-gradient-to-br hover:from-white/10 hover:to-white/5 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none ring-1 ring-transparent hover:ring-white/10"><FastForward size={22} className="group-hover:scale-110 transition-transform" /></button>
               </div>
             </div>
           )}
 
-          {activeTab === 'chat' && (
-            <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden animate-fade-in relative bg-black/[0.15]">
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-3 space-y-8">
-                {gameMsgs.map((m, i) => (
-                  <div key={i} className={cx("flex flex-col gap-2 group animate-fade-in-up", m.self ? "items-end" : "items-start")}>
-                    <div className="flex items-center gap-4 px-3">
-                      {!m.self && (
-                        <button onClick={() => handleTranslateGameMsg(i, m.msg)} className="p-2.5 opacity-0 group-hover:opacity-100 transition-all text-neutral-600 hover:text-chess-active bg-white/5 rounded-2xl border border-white/5 backdrop-blur-2xl shadow-xl ring-1 ring-white/5">
-                          <Languages size={14} />
-                        </button>
-                      )}
-                      <span className="text-[0.7rem] font-black text-neutral-600 uppercase tracking-[0.3em] italic group-hover:text-neutral-500 transition-colors">{m.user}</span>
-                    </div>
-                    <div className={cx(
-                      "px-4 py-2 rounded-[1.5rem] text-sm font-black border max-w-[95%] shadow-[0_25px_60px_rgba(0,0,0,0.8)] transition-all relative overflow-hidden leading-relaxed",
-                      m.self ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30 rounded-tr-none ring-1 ring-chess-gold/20" : "bg-white/5 text-neutral-100 border-white/10 rounded-tl-none backdrop-blur-3xl ring-1 ring-white/5"
-                    )}>
-                      {translatedMessages[i] || m.msg}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="relative mt-auto pt-4 border-t border-white/10">
-                {showChatAssistant && <AIChatAssistant currentInput={chatInput} onSelect={handleAssistantSelect} onClose={() => setShowChatAssistant(false)} />}
-                <div className="relative group/input">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-chess-gold/20 to-chess-active/20 blur opacity-0 group-hover/input:opacity-100 transition-opacity rounded-[2rem] pointer-events-none" />
-                  <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSendMessage()} placeholder={t('game.chat.placeholder')} className="relative w-full bg-black/80 border border-white/10 rounded-[2rem] py-3 pl-4 pr-24 text-sm text-white placeholder-neutral-800 font-black focus:outline-none focus:border-chess-active transition-all shadow-[inset_0_5px_15px_rgba(0,0,0,0.6)] ring-1 ring-white/[0.03] tracking-tight" />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-3">
-                    <button onClick={() => setShowChatAssistant(!showChatAssistant)} className={cx("p-3 rounded-2xl transition-all shadow-2xl active:scale-95 group/sparkle", showChatAssistant ? "bg-chess-active text-white scale-110" : "text-neutral-600 hover:text-chess-active hover:bg-chess-active/10")}>
-                      <Sparkles size={24} className="group-hover/sparkle:rotate-12 transition-transform" />
-                    </button>
-                    <button onClick={handleSendMessage} className="p-3 text-neutral-600 hover:text-white bg-white/5 rounded-2xl hover:bg-white/10 shadow-2xl group/send active:scale-90 ring-1 ring-white/10">
-                      <Send size={24} className="group-hover/send:translate-x-1 group-hover/send:-translate-y-1 transition-transform" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              </div>
-            )}
+
 
           {activeTab === 'analysis' && (
             <AnalysisPanel
@@ -503,13 +426,13 @@ export default function GameScreen() {
           </div>
         )}
         {/* Mobile Move Controls Row */}
-        <div className="flex md:hidden items-center justify-between gap-2 py-2 px-1 mx-2 shrink-0 mt-auto mb-1 z-10">
+        <div className="flex md:hidden items-center justify-between gap-2 py-3 px-1 mx-2 shrink-0 mt-auto mb-1 z-10">
           <button 
             onClick={() => { if (hasHistory) setViewMoveIndex(0); }} 
             disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-2.5 rounded-xl transition-all duration-150 active:scale-90 disabled:opacity-30 disabled:pointer-events-none bg-white/5 border border-white/10 backdrop-blur-md shadow-xl hover:bg-white/10 ring-1 ring-white/5"
+            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
           >
-            <Rewind size={18} />
+            <Rewind size={22} />
           </button>
           
           <button 
@@ -519,17 +442,17 @@ export default function GameScreen() {
               setViewMoveIndex(Math.max(0, currentIndex - 1));
             }} 
             disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-2.5 rounded-xl transition-all duration-150 active:scale-90 disabled:opacity-30 disabled:pointer-events-none bg-white/5 border border-white/10 backdrop-blur-md shadow-xl hover:bg-white/10 ring-1 ring-white/5"
+            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
           >
-            <ChevronLeft size={22} />
+            <ChevronLeft size={26} />
           </button>
           
           <button 
             onClick={() => setViewMoveIndex(-1)} 
             disabled={!hasHistory} 
-            className="flex-[1.5] flex justify-center text-white hover:text-white p-2.5 rounded-xl transition-all duration-150 active:scale-90 disabled:opacity-30 disabled:pointer-events-none bg-chess-active/80 border border-chess-active/50 shadow-[0_5px_15px_rgba(0,206,209,0.3)] ring-1 ring-chess-active/40"
+            className="flex-[1.5] flex justify-center text-white hover:text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-chess-active/90 to-chess-active/70 border border-chess-active/50 shadow-[0_5px_20px_rgba(0,206,209,0.4)] hover:shadow-[0_8px_25px_rgba(0,206,209,0.6)] ring-1 ring-chess-active/40"
           >
-            <History size={20} className={viewMoveIndex !== -1 ? "animate-pulse" : ""} />
+            <History size={24} className={viewMoveIndex !== -1 ? "animate-pulse" : ""} />
           </button>
           
           <button 
@@ -543,17 +466,17 @@ export default function GameScreen() {
               }
             }} 
             disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-2.5 rounded-xl transition-all duration-150 active:scale-90 disabled:opacity-30 disabled:pointer-events-none bg-white/5 border border-white/10 backdrop-blur-md shadow-xl hover:bg-white/10 ring-1 ring-white/5"
+            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
           >
-            <ChevronRight size={22} />
+            <ChevronRight size={26} />
           </button>
           
           <button 
             onClick={() => setViewMoveIndex(-1)} 
             disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-2.5 rounded-xl transition-all duration-150 active:scale-90 disabled:opacity-30 disabled:pointer-events-none bg-white/5 border border-white/10 backdrop-blur-md shadow-xl hover:bg-white/10 ring-1 ring-white/5"
+            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
           >
-            <FastForward size={18} />
+            <FastForward size={22} />
           </button>
         </div>
 
