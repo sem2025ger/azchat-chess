@@ -21,7 +21,6 @@ export interface EngineResult {
 
 export type MoveQuality = 'best' | 'excellent' | 'good' | 'inaccurate' | 'mistake' | 'blunder' | 'book';
 
-const STOCKFISH_CDN = 'https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js';
 
 export class StockfishEngine {
   private _worker: Worker | null = null;
@@ -57,9 +56,7 @@ export class StockfishEngine {
   private initWorker(): void {
     try {
       console.log('Engine: Creating Stockfish worker…');
-      const script = `importScripts('${STOCKFISH_CDN}');`;
-      const blob = new Blob([script], { type: 'application/javascript' });
-      this._worker = new Worker(URL.createObjectURL(blob));
+      this._worker = new Worker('/stockfish-18-lite-single.js');
       this._worker.onmessage = (e: MessageEvent) => this.onUCI(String(e.data));
       this._worker.onerror = (err) => {
         console.error('Engine worker error:', err);
