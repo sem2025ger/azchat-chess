@@ -5,7 +5,7 @@
 -- 4. result and winner are authoritative for outcome;
 -- 5. termination records the ending reason.
 -- 6. matches.id is the durable game identifier;
--- 7. source_room_id records the originating Socket.IO room (nullable and unique).
+-- 7. source_room_id records the originating Socket.IO room (nullable and not unique; rooms may be reused across games).
 -- 8. PGN is the canonical source for reconstructing the review;
 -- 9. username and rating values are historical snapshots;
 -- 10. Phase 1 initially persists only games where both players are authenticated;
@@ -18,7 +18,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE public.matches (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    source_room_id text UNIQUE,
+    source_room_id text,
     white_id uuid NOT NULL REFERENCES public.profiles(id),
     black_id uuid NOT NULL REFERENCES public.profiles(id),
     winner_id uuid NULL REFERENCES public.profiles(id),
