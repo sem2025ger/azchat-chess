@@ -49,7 +49,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
   const pv = candidates && candidates[0] && candidates[0].length > 0 ? candidates[0] : null;
 
   return (
-    <div className="flex-1 flex flex-col p-4 gap-4 overflow-y-auto custom-scrollbar animate-fade-in">
+    <div className="h-auto flex flex-col p-4 gap-4 overflow-y-auto custom-scrollbar animate-fade-in">
       {/* Header */}
       <header className="flex items-center justify-between border-b border-white/[0.04] pb-3 shrink-0">
          <div className="flex items-center gap-2.5">

@@ -22,6 +22,26 @@ export default function GameScreen() {
 
   // User preferences applied automatically via ThemeContext
   const [activeTab, setActiveTab] = useState<'moves' | 'analysis'>('moves');
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(min-width: 768px)').matches
+      : false
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 768px)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsDesktop(event.matches);
+    };
+    setIsDesktop(media.matches);
+    media.addEventListener('change', handleChange);
+    return () => {
+      media.removeEventListener('change', handleChange);
+    };
+  }, []);
+
+  const analysisActive = isDesktop || activeTab === 'analysis';
+
   const [timeLeft, setTimeLeft] = useState({ black: 600, white: 600 });
   const [viewMoveIndex, setViewMoveIndex] = useState<number>(-1);
   const [positionHistory, setPositionHistory] = useState<string[]>(() => [new Chess().fen()]);
@@ -132,14 +152,32 @@ export default function GameScreen() {
   }, []);
 
   // Update analysis when tab changes to analysis or fen changes
+  const liveFen = game.fen();
+
   useEffect(() => {
-    if (activeTab === 'analysis' && engineRef.current) {
+    if (analysisActive && engineRef.current) {
       setIsAnalysing(true);
-      engineRef.current.analyze(game.fen());
+
+      const historyIndex = Math.max(
+        0,
+        Math.min(viewMoveIndex, positionHistory.length - 1)
+      );
+
+      const targetFen =
+        viewMoveIndex === -1
+          ? liveFen
+          : positionHistory[historyIndex] || liveFen;
+
+      engineRef.current.analyze(targetFen);
     } else if (engineRef.current) {
       engineRef.current.stop();
     }
-  }, [activeTab, game.fen()]);
+  }, [
+    analysisActive,
+    viewMoveIndex,
+    liveFen,
+    positionHistory
+  ]);
 
   const handleGameMove = (source: string, target: string, promotion: string = 'q') => {
     if (viewMoveIndex !== -1) {
@@ -163,7 +201,7 @@ export default function GameScreen() {
         }
         
         // Auto-analyze move if analysis pane is open
-        if (activeTab === 'analysis' && engineRef.current) {
+        if (analysisActive && engineRef.current) {
           engineRef.current.analyze(g.fen());
         }
         
@@ -353,7 +391,7 @@ export default function GameScreen() {
 
             <div className={cx(
               "hidden md:block transition-all duration-1000 ease-in-out self-stretch rounded-2xl overflow-hidden py-1",
-              activeTab === 'analysis' ? "w-6 md:w-8 opacity-100 translate-x-0" : "w-0 opacity-0 overflow-hidden -translate-x-8 pointer-events-none"
+              analysisActive ? "w-6 md:w-8 opacity-100 translate-x-0" : "w-0 opacity-0 overflow-hidden -translate-x-8 pointer-events-none"
             )}>
               <EvaluationBar
                 score={engineResult?.evaluation || 0.0}
@@ -422,7 +460,7 @@ export default function GameScreen() {
       <div className="w-full lg:w-[400px] xl:w-[430px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[74vh] lg:min-h-[560px] lg:max-h-[720px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0">
 
         {/* Premium Segmented Control Tab Navigation */}
-        <nav className="hidden md:block p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
+        <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">
             <div
               className={cx(
@@ -447,12 +485,25 @@ export default function GameScreen() {
           </div>
         </nav>
 
-        <div className="hidden md:flex flex-1 overflow-hidden flex-col bg-black/[0.05]">
+        <div className="hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]">
 
-          {activeTab === 'moves' && (
-            <div className="flex-1 flex flex-col overflow-hidden animate-fade-in bg-black/[0.1]">
-              <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <table className="w-full text-left border-collapse">
+          <div className="shrink-0 flex flex-col border-b border-white/[0.06]">
+            <AnalysisPanel
+              score={engineResult?.evaluation || 0.0}
+              bestMove={analysisData?.bestMove}
+              depth={engineResult?.depth || 0}
+              mate={engineResult?.mate}
+              loading={isAnalysing}
+              candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
+              lines={analysisData?.lines}
+              noMoves={renderMoves.length === 0}
+              error={engineRef.current?.hasFailed() || !engineRef.current?.isReady()}
+            />
+          </div>
+
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-black/[0.1]">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 bg-neutral-950/95 backdrop-blur-3xl z-20 border-b border-white/[0.03]">
                     <tr className="text-[0.6rem] font-black text-neutral-600 uppercase tracking-[0.2em]">
                       <th className="py-1.5 px-3 text-center w-12 border-r border-white/[0.03]">#</th>
@@ -461,23 +512,42 @@ export default function GameScreen() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.03]">
-                    {movePairs.map((move, i) => (
-                      <tr key={i} className="hover:bg-white/[0.04] transition-all group cursor-pointer text-xs font-black relative group/row">
-                        <td className="py-1.5 px-2 text-neutral-600 bg-black/30 text-center border-r border-white/[0.03] text-[0.7rem] font-mono tracking-tighter italic">{move.n}.</td>
-                        <td className="py-1.5 px-4 relative">
-                          <div className="flex justify-between items-center group-hover/row:text-chess-gold transition-colors">
-                            <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w}</span>
-                            <span className="text-[0.65rem] text-neutral-700 font-mono italic opacity-40 group-hover:opacity-80">{move.wTime}</span>
-                          </div>
-                        </td>
-                        <td className="py-1.5 px-4 relative">
-                          <div className="flex justify-between items-center group-hover/row:text-chess-active transition-colors">
-                            <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.b}</span>
-                            <span className="text-[0.65rem] text-neutral-700 font-mono italic opacity-40 group-hover:opacity-80">{move.bTime}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {movePairs.map((move, i) => {
+                      const whitePositionIndex = i * 2 + 1;
+                      const blackPositionIndex = i * 2 + 2;
+
+                      return (
+                        <tr key={i} className="hover:bg-white/[0.04] transition-all group text-xs font-black relative group/row">
+                          <td className="py-1.5 px-2 text-neutral-600 bg-black/30 text-center border-r border-white/[0.03] text-[0.7rem] font-mono tracking-tighter italic">{move.n}.</td>
+                          <td 
+                            className={cx("py-1.5 px-4 relative cursor-pointer", viewMoveIndex === whitePositionIndex && "bg-white/5")}
+                            onClick={() => {
+                              if (whitePositionIndex < positionHistory.length) {
+                                setViewMoveIndex(whitePositionIndex);
+                              }
+                            }}
+                          >
+                            <div className="flex justify-between items-center group-hover/row:text-chess-gold transition-colors">
+                              <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w}</span>
+                              <span className="text-[0.65rem] text-neutral-700 font-mono italic opacity-40 group-hover:opacity-80">{move.wTime}</span>
+                            </div>
+                          </td>
+                          <td 
+                            className={cx("py-1.5 px-4 relative", move.b ? "cursor-pointer" : "", viewMoveIndex === blackPositionIndex && "bg-white/5")}
+                            onClick={() => {
+                              if (move.b && blackPositionIndex < positionHistory.length) {
+                                setViewMoveIndex(blackPositionIndex);
+                              }
+                            }}
+                          >
+                            <div className="flex justify-between items-center group-hover/row:text-chess-active transition-colors">
+                              <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.b}</span>
+                              <span className="text-[0.65rem] text-neutral-700 font-mono italic opacity-40 group-hover:opacity-80">{move.bTime}</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -500,23 +570,6 @@ export default function GameScreen() {
                 <button disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
               </div>
             </div>
-          )}
-
-
-
-          {activeTab === 'analysis' && (
-            <AnalysisPanel
-              score={engineResult?.evaluation || 0.0}
-              bestMove={analysisData?.bestMove}
-              depth={engineResult?.depth || 0}
-              mate={engineResult?.mate}
-              loading={isAnalysing}
-              candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
-              lines={analysisData?.lines}
-              noMoves={renderMoves.length === 0}
-              error={engineRef.current?.hasFailed() || !engineRef.current?.isReady()}
-            />
-          )}
 
         </div>
 
