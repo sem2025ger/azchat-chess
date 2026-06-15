@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useThemeContext } from '../context/ThemeContext';
@@ -29,7 +29,7 @@ function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
 
-export default function ChessBoard({
+function ChessBoard({
   className,
   showCoordinates = true,
   game,
@@ -348,3 +348,5 @@ function PieceImage({
     </div>
   );
 }
+
+export default memo(ChessBoard);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
@@ -179,46 +179,44 @@ export default function GameScreen() {
     positionHistory
   ]);
 
-  const handleGameMove = (source: string, target: string, promotion: string = 'q') => {
-    if (viewMoveIndex !== -1) {
-      setViewMoveIndex(-1);
-      return false;
-    }
-    try {
-      const g = new Chess(game.fen());
-      const move = g.move({ from: source, to: target, promotion });
-      if (move) {
-        if (socket && roomId) {
-          socket.emit('make_move', { roomId, move: { from: source, to: target, promotion } });
-          setGame(g);
-          setPositionHistory(prev => prev[prev.length - 1] === g.fen() ? prev : [...prev, g.fen()]);
-          setViewMoveIndex(-1);
-        } else {
-          setGame(g);
-          setPositionHistory(prev => prev[prev.length - 1] === g.fen() ? prev : [...prev, g.fen()]);
-          setMoveHistory(prev => [...prev, move.san]);
-          setViewMoveIndex(-1);
-        }
-        
-        // Auto-analyze move if analysis pane is open
-        if (analysisActive && engineRef.current) {
-          engineRef.current.analyze(g.fen());
-        }
-        
-        // Ensure game over states are handled properly
-        if (g.isGameOver()) {
-          if (g.isCheckmate()) setGameOverMessage('Game over: checkmate.');
-          else if (g.isDraw()) setGameOverMessage('Game over: draw.');
-          else if (g.isStalemate()) setGameOverMessage('Game over: stalemate.');
-          else setGameOverMessage('Game over.');
-        }
-        return true;
+  const handleGameMove = useCallback(
+    (source: string, target: string, promotion: string = 'q') => {
+      if (viewMoveIndex !== -1) {
+        setViewMoveIndex(-1);
+        return false;
       }
-    } catch (e) {
+      try {
+        const g = new Chess(game.fen());
+        const move = g.move({ from: source, to: target, promotion });
+        if (move) {
+          if (socket && roomId) {
+            socket.emit('make_move', { roomId, move: { from: source, to: target, promotion } });
+            setGame(g);
+            setPositionHistory(prev => prev[prev.length - 1] === g.fen() ? prev : [...prev, g.fen()]);
+            setViewMoveIndex(-1);
+          } else {
+            setGame(g);
+            setPositionHistory(prev => prev[prev.length - 1] === g.fen() ? prev : [...prev, g.fen()]);
+            setMoveHistory(prev => [...prev, move.san]);
+            setViewMoveIndex(-1);
+          }
+          
+          // Ensure game over states are handled properly
+          if (g.isGameOver()) {
+            if (g.isCheckmate()) setGameOverMessage('Game over: checkmate.');
+            else if (g.isDraw()) setGameOverMessage('Game over: draw.');
+            else if (g.isStalemate()) setGameOverMessage('Game over: stalemate.');
+            else setGameOverMessage('Game over.');
+          }
+          return true;
+        }
+      } catch (e) {
+        return false;
+      }
       return false;
-    }
-    return false;
-  };
+    },
+    [viewMoveIndex, game, socket, roomId]
+  );
 
 
 
