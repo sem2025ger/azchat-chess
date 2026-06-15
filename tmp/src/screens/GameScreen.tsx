@@ -496,8 +496,7 @@ export default function GameScreen() {
               loading={isAnalysing}
               candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
               lines={analysisData?.lines}
-              noMoves={renderMoves.length === 0}
-              error={engineRef.current?.hasFailed() || !engineRef.current?.isReady()}
+              error={engineRef.current?.hasFailed() === true}
             />
           </div>
 
