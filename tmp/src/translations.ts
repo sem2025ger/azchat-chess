@@ -192,6 +192,46 @@ export const translations: TranslationDictionary = {
   'settings.appearance': { en: 'Appearance', de: 'Aussehen', ua: 'Зовнішній вигляд', ru: 'Внешний вид', az: 'Görünüş', tr: 'Görünüm' },
   'settings.preferences': { en: 'System Preferences', de: 'Systemeinstellungen', ua: 'Налаштування системи', ru: 'Настройки системы', az: 'Sistem Ayarları', tr: 'Sistem Ayarları' },
   'settings.activeTheme': { en: 'Active Theme', de: 'Aktives Theme', ua: 'Активна тема', ru: 'Активная тема', az: 'Aktiv Tema', tr: 'Aktif Tema' },
+  'settings.interfaceTheme': {
+    en: 'Interface Theme',
+    de: 'Oberflächendesign',
+    ua: 'Тема інтерфейсу',
+    ru: 'Тема интерфейса',
+    az: 'İnterfeys Teması',
+    tr: 'Arayüz Teması'
+  },
+  'settings.boardTheme': {
+    en: 'Board Theme',
+    de: 'Brettdesign',
+    ua: 'Тема дошки',
+    ru: 'Тема доски',
+    az: 'Taxta Teması',
+    tr: 'Tahta Teması'
+  },
+  'settings.appTheme': {
+    en: 'App Theme',
+    de: 'App-Design',
+    ua: 'Тема застосунку',
+    ru: 'Тема приложения',
+    az: 'Tətbiq Teması',
+    tr: 'Uygulama Teması'
+  },
+  'settings.restoreDefaults': {
+    en: 'Restore Defaults',
+    de: 'Standardeinstellungen wiederherstellen',
+    ua: 'Відновити стандартні налаштування',
+    ru: 'Восстановить настройки по умолчанию',
+    az: 'Standart Parametrləri Bərpa Et',
+    tr: 'Varsayılanları Geri Yükle'
+  },
+  'settings.saved': {
+    en: 'Saved',
+    de: 'Gespeichert',
+    ua: 'Збережено',
+    ru: 'Сохранено',
+    az: 'Yadda saxlanıldı',
+    tr: 'Kaydedildi'
+  },
 
   'home.stats.live.value': { en: 'Live', de: 'Live', ua: 'Онлайн', ru: 'Онлайн', az: 'Canlı', tr: 'Canlı' },
   'home.stats.live.label': { en: 'Online Play', de: 'Online-Spiel', ua: 'Гра', ru: 'Игра', az: 'Oyun', tr: 'Oyun' },

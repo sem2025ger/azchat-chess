@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useThemeContext, type BackgroundTheme } from '../context/ThemeContext';
 import { BOARD_THEMES, BOARD_THEME_DETAILS, PIECE_STYLES } from '../lib/chessThemes';
 import { useLanguage } from '../context/LanguageContext';
@@ -27,6 +27,47 @@ export default function SettingsScreen() {
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const [activeSubView, setActiveSubView] = useState<SubView>('main');
+
+  const [showSaved, setShowSaved] = useState(false);
+  const isFirstRender = useRef(true);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerSaved = () => {
+    if (savedTimerRef.current) {
+      clearTimeout(savedTimerRef.current);
+    }
+
+    setShowSaved(true);
+
+    savedTimerRef.current = setTimeout(() => {
+      setShowSaved(false);
+      savedTimerRef.current = null;
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    triggerSaved();
+  }, [boardTheme, pieceTheme, background, soundTheme]);
+
+  const handleRestoreDefaults = () => {
+    setBoardTheme('Classic Wood');
+    setPieceTheme('neo');
+    setSoundTheme('Default');
+    setBackground('Void Black');
+    triggerSaved();
+  };
 
   const boardThemes = BOARD_THEME_DETAILS;
   const pieceStyles = PIECE_STYLES;
@@ -108,7 +149,7 @@ export default function SettingsScreen() {
       case 'background':
         return (
           <div className="space-y-6 animate-fade-in">
-            <SubViewHeader title={t('settings.activeTheme')} onBack={() => setActiveSubView('main')} />
+            <SubViewHeader title={t('settings.interfaceTheme')} onBack={() => setActiveSubView('main')} />
             <div className="flex flex-col gap-2 px-2">
               {bgThemes.map((bg) => (
                 <button
@@ -219,7 +260,7 @@ export default function SettingsScreen() {
                   />
                   <HubLink 
                     icon={<LayoutIcon size={18} />} 
-                    title={t('settings.activeTheme')} 
+                    title={t('settings.interfaceTheme')} 
                     value={background} 
                     onClick={() => setActiveSubView('background')} 
                     preview={<div className={cx("w-6 h-6 rounded-md border border-white/10", bgThemes.find(t => t.id === background)?.class)} />}
@@ -241,10 +282,10 @@ export default function SettingsScreen() {
               </div>
 
             <button 
-              onClick={() => { setBoardTheme('Premium Gold'); setPieceTheme('classic'); setLanguage('az'); setSoundTheme('Default'); setBackground('Deep Space'); }}
+              onClick={handleRestoreDefaults}
               className="w-full py-5 rounded-3xl bg-white/5 text-neutral-500 font-black text-xs uppercase tracking-[0.3em] italic hover:text-white transition-all shadow-xl active:scale-95"
             >
-              {t('settings.reset')} Studio
+              {t('settings.restoreDefaults')}
             </button>
           </div>
         );
@@ -311,7 +352,7 @@ export default function SettingsScreen() {
             <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-xl">
               <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-5 relative h-full">
               <h2 className="text-xl font-black text-white mb-4 flex items-center gap-4 italic uppercase tracking-tighter">
-                <LayoutIcon size={20} className="text-purple-400" /> {t('settings.activeTheme')}
+                <LayoutIcon size={20} className="text-purple-400" /> {t('settings.interfaceTheme')}
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
                 {bgThemes.map((bg) => (
@@ -341,16 +382,27 @@ export default function SettingsScreen() {
               <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(3rem-1px)] p-8 flex flex-col items-center gap-8 h-full">
               <div className="flex items-center justify-between w-full">
                 <span className="text-[0.7rem] font-black text-neutral-400 uppercase tracking-[0.4em] italic">{t('settings.livePreview')}</span>
-                <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.5rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
+                <div className="flex items-center gap-2">
+                  <span className={cx("text-[0.6rem] font-black text-emerald-400 uppercase tracking-widest transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
+                    {t('settings.saved')} ✓
+                  </span>
+                  <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.5rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
+                </div>
               </div>
               <div className="w-full aspect-square max-w-[360px] rounded-2xl overflow-hidden shadow-2xl border-b-4 border-black/40">
                 <ChessBoard className="!p-0 !border-none !bg-transparent !shadow-none ring-0" />
               </div>
               <div className="w-full space-y-3">
-                <PreviewStat label={t('settings.boardEngine')} value={boardTheme} icon={<Palette size={16} />} />
+                <PreviewStat label={t('settings.boardTheme')} value={boardTheme} icon={<Palette size={16} />} />
                 <PreviewStat label={t('settings.pieceSet')} value={pieceTheme.toUpperCase()} icon={<Monitor size={16} />} />
-                <PreviewStat label="BG THEME" value={background} icon={<LayoutIcon size={16} />} />
+                <PreviewStat label={t('settings.appTheme')} value={background} icon={<LayoutIcon size={16} />} />
               </div>
+              <button 
+                onClick={handleRestoreDefaults}
+                className="w-full py-3 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.65rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
+              >
+                {t('settings.restoreDefaults')}
+              </button>
               </div>
             </div>
           </div>
