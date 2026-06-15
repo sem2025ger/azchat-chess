@@ -1,7 +1,7 @@
 import { useLanguage } from '../context/LanguageContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Ghost, Cpu, AlertCircle } from 'lucide-react';
+import { Ghost, Cpu, AlertCircle, ScanSearch } from 'lucide-react';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -50,6 +50,28 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
 
   return (
     <div className="h-auto flex flex-col p-4 gap-4 overflow-y-auto custom-scrollbar animate-fade-in">
+      {/* Decorative Title */}
+      <div className="panel-glow-cycle relative flex h-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-neutral-950/85 px-4">
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-amber-500/[0.04] via-cyan-500/[0.06] to-violet-500/[0.04]"
+          aria-hidden="true"
+        />
+
+        <div className="relative flex items-center gap-2.5">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-black/40 shadow-inner">
+            <ScanSearch
+              size={16}
+              className="text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.55)]"
+              aria-hidden="true"
+            />
+          </div>
+
+          <span className="text-glow-cycle text-[0.72rem] font-black uppercase tracking-[0.28em]">
+            {t('game.tabs.analysis')}
+          </span>
+        </div>
+      </div>
+
       {/* Header */}
       <header className="flex items-center justify-between border-b border-white/[0.04] pb-3 shrink-0">
          <div className="flex items-center gap-2.5">
