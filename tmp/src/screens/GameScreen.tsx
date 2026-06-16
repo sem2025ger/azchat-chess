@@ -11,6 +11,8 @@ import EvaluationBar from '../components/EvaluationBar';
 import AnalysisPanel from '../components/AnalysisPanel';
 import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { Chess } from 'chess.js';
+import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
+import { useThemeContext } from '../context/ThemeContext';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -40,6 +42,10 @@ export default function GameScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    preloadChessSounds();
+  }, []);
+
   const analysisActive = isDesktop || activeTab === 'analysis';
 
   const [timeLeft, setTimeLeft] = useState({ black: 600, white: 600 });
@@ -53,6 +59,14 @@ export default function GameScreen() {
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('roomId');
   const playerColor = (searchParams.get('color') as 'w' | 'b') || 'w';
+
+  const { sound } = useThemeContext();
+  const soundThemeRef = useRef(sound);
+  useEffect(() => {
+    soundThemeRef.current = sound;
+    setChessSoundMuted(sound === 'Muted / Off');
+  }, [sound]);
+  const locallyPlayedFenRef = useRef<string | null>(null);
 
   const lastConfirmedFenRef = useRef(new Chess().fen());
   const [moveRejectMessage, setMoveRejectMessage] = useState<string | null>(null);
@@ -75,6 +89,22 @@ export default function GameScreen() {
       setTimeLeft({ white: data.whiteTime, black: data.blackTime });
     };
     const onUpdate = (data: any) => {
+      const isLocalEcho = data.fen === locallyPlayedFenRef.current;
+      if (isLocalEcho) {
+        locallyPlayedFenRef.current = null;
+      } else {
+        const lastSan = Array.isArray(data.history) && data.history.length > 0
+          ? data.history[data.history.length - 1]
+          : '';
+        const soundType: ChessSoundType =
+          lastSan.includes('#') || lastSan.includes('+')
+            ? 'check'
+            : lastSan.includes('x')
+              ? 'capture'
+              : 'move';
+        void playChessSound(soundType, soundThemeRef.current);
+      }
+
       lastConfirmedFenRef.current = data.fen;
       setMoveRejectMessage(null);
       setGame(new Chess(data.fen));
@@ -92,6 +122,7 @@ export default function GameScreen() {
     };
 
     const onMoveRejected = (data: { reason?: string }) => {
+      locallyPlayedFenRef.current = null;
       const confirmedFen = lastConfirmedFenRef.current;
       const rollbackGame = new Chess(confirmedFen);
 
@@ -189,7 +220,11 @@ export default function GameScreen() {
         const g = new Chess(game.fen());
         const move = g.move({ from: source, to: target, promotion });
         if (move) {
+          const soundType: ChessSoundType = g.isCheck() ? 'check' : move.captured ? 'capture' : 'move';
+          void playChessSound(soundType, sound);
+
           if (socket && roomId) {
+            locallyPlayedFenRef.current = g.fen();
             socket.emit('make_move', { roomId, move: { from: source, to: target, promotion } });
             setGame(g);
             setPositionHistory(prev => prev[prev.length - 1] === g.fen() ? prev : [...prev, g.fen()]);
@@ -215,7 +250,7 @@ export default function GameScreen() {
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId]
+    [viewMoveIndex, game, socket, roomId, sound]
   );
 
 

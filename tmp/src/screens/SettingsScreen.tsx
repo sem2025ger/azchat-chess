@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useThemeContext, type BackgroundTheme } from '../context/ThemeContext';
+import { useThemeContext, type BackgroundTheme, type SoundTheme } from '../context/ThemeContext';
+import { playChessSound, preloadChessSounds, setChessSoundMuted } from '../utils/chessSounds';
 import { BOARD_THEMES, BOARD_THEME_DETAILS, PIECE_STYLES } from '../lib/chessThemes';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
@@ -61,12 +62,31 @@ export default function SettingsScreen() {
     triggerSaved();
   }, [boardTheme, pieceTheme, background, soundTheme]);
 
+  useEffect(() => {
+    preloadChessSounds();
+  }, []);
+
+  useEffect(() => {
+    setChessSoundMuted(soundTheme === 'Muted / Off');
+  }, [soundTheme]);
+
   const handleRestoreDefaults = () => {
     setBoardTheme('Classic Wood');
     setPieceTheme('neo');
     setSoundTheme('Default');
     setBackground('Void Black');
     triggerSaved();
+  };
+
+  const handleSoundThemeSelect = (theme: SoundTheme) => {
+    const muted = theme === 'Muted / Off';
+
+    setChessSoundMuted(muted);
+    setSoundTheme(theme);
+
+    if (!muted) {
+      void playChessSound('move', theme);
+    }
   };
 
   const boardThemes = BOARD_THEME_DETAILS;
@@ -175,7 +195,7 @@ export default function SettingsScreen() {
               {['Default', 'Soft', 'Classic', 'Muted / Off'].map((s) => (
                 <button
                   key={s}
-                  onClick={() => setSoundTheme(s as any)}
+                  onClick={() => handleSoundThemeSelect(s as any)}
                   className={cx(
                     "flex items-center justify-between p-5 rounded-2xl border transition-all",
                     soundTheme === s ? "bg-white/10 border-white/20 text-white" : "bg-white/[0.03] border-white/5 text-neutral-400"
@@ -370,7 +390,7 @@ export default function SettingsScreen() {
               <h3 className="text-sm font-black text-neutral-400 mb-3 uppercase tracking-widest">{t('settings.soundThemes')}</h3>
               <div className="flex flex-wrap gap-2">
                 {['Default', 'Soft', 'Classic', 'Muted / Off'].map(s => (
-                  <button key={s} onClick={() => setSoundTheme(s as any)} className={cx("px-4 py-2 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.15em] transition-all active:scale-95", soundTheme === s ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:border-white/15 hover:text-neutral-400")}>{s}</button>
+                  <button key={s} onClick={() => handleSoundThemeSelect(s as any)} className={cx("px-4 py-2 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.15em] transition-all active:scale-95", soundTheme === s ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:border-white/15 hover:text-neutral-400")}>{s}</button>
                 ))}
               </div>
               </section>
