@@ -60,7 +60,7 @@ export default function GameScreen() {
   const roomId = searchParams.get('roomId');
   const playerColor = (searchParams.get('color') as 'w' | 'b') || 'w';
 
-  const { sound } = useThemeContext();
+  const { sound, boardTheme } = useThemeContext();
   const soundThemeRef = useRef(sound);
   useEffect(() => {
     soundThemeRef.current = sound;
@@ -456,7 +456,7 @@ export default function GameScreen() {
               ) : null}
 
               <ChessBoard
-                overrideBoardTheme="Classic Green"
+                overrideBoardTheme={boardTheme}
                 game={displayedGame}
                 onMove={handleGameMove}
                 orientation={playerColor}
