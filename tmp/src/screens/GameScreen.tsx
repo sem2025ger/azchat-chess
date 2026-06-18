@@ -14,12 +14,27 @@ import { Chess } from 'chess.js';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
 
+function countryCodeToFlag(code: string): string | null {
+  const normalized = code.trim().toUpperCase();
+
+  if (!/^[A-Z]{2}$/.test(normalized)) {
+    return null;
+  }
+
+  return normalized
+    .split('')
+    .map(char =>
+      String.fromCodePoint(0x1F1E6 + char.charCodeAt(0) - 65)
+    )
+    .join('');
+}
+
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
 
 export default function GameScreen() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { user, profile } = useAuth();
 
   // User preferences applied automatically via ThemeContext
@@ -59,6 +74,11 @@ export default function GameScreen() {
   const [searchParams] = useSearchParams();
   const roomId = searchParams.get('roomId');
   const playerColor = (searchParams.get('color') as 'w' | 'b') || 'w';
+  const isMultiplayer = Boolean(roomId);
+
+  const playerFlag = profile?.countryCode
+    ? countryCodeToFlag(profile.countryCode)
+    : null;
 
   const { sound, boardTheme } = useThemeContext();
   const soundThemeRef = useRef(sound);
@@ -416,7 +436,7 @@ export default function GameScreen() {
               </div>
             </div>
             <div className="bg-[#1a1a1a] px-3 py-1 rounded-lg border-b-[2px] border-neutral-800 font-mono text-lg font-black text-neutral-400 shadow-xl flex items-center justify-center min-w-[75px] ring-1 ring-white/5">
-              {formatTime(timeLeft.black)}
+              {isMultiplayer ? formatTime(timeLeft.black) : '--:--'}
             </div>
           </div>
 
@@ -469,7 +489,18 @@ export default function GameScreen() {
             <div className="flex items-center gap-2.5">
               <div className="relative group/avatar">
                 <div className="w-8 h-8 bg-neutral-900 rounded-lg flex items-center justify-center overflow-hidden shadow-2xl border border-chess-gold/30 ring-1 ring-black group-hover/avatar:ring-chess-gold transition-all duration-500">
-                  <span className="text-sm">{language === 'az' ? '🇦🇿' : '🇹🇷'}</span>
+                  {playerFlag ? (
+                    <span className="text-sm" aria-label={profile?.countryCode}>
+                      {playerFlag}
+                    </span>
+                  ) : (
+                    <span
+                      className="text-sm text-neutral-500"
+                      aria-label="Country not specified"
+                    >
+                      ●
+                    </span>
+                  )}
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-[2px] border-[#161512] shadow-xl animate-pulse" />
               </div>
@@ -478,11 +509,10 @@ export default function GameScreen() {
                   <span className="font-black text-white text-xs tracking-tight italic">{profile?.username || user?.user_metadata?.username || 'Guest'}</span>
                   {profile?.role && <span className="bg-chess-gold/20 text-chess-gold text-[0.45rem] px-1 py-0.5 rounded font-black uppercase ring-1 ring-chess-gold/40 shadow-[0_0_20px_rgba(223,176,98,0.35)] border border-chess-gold/20 tracking-widest">{profile?.role}</span>}
                 </div>
-                <div className="text-[0.55rem] text-neutral-500 font-bold uppercase tracking-[0.2em] mt-0.5 opacity-60 leading-none">UNRATED</div>
               </div>
             </div>
             <div className="bg-neutral-950 px-3 py-1 rounded-lg border-b-[2px] border-chess-active font-mono text-lg font-black text-white shadow-[0_15px_50px_-5px_rgba(0,206,209,0.5)] ring-1 ring-chess-active/40 flex items-center justify-center min-w-[75px] transition-all hover:translate-y-[-1px] active:translate-y-[1px]">
-              {formatTime(timeLeft.white)}
+              {isMultiplayer ? formatTime(timeLeft.white) : '--:--'}
             </div>
           </div>
 
