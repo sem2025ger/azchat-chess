@@ -390,3 +390,34 @@
     background: linear-gradient(135deg, rgba(0, 206, 209, 0.5), rgba(168, 85, 247, 0.5));
   }
 }
+
+/* Home Board Premium Animated Frame */
+@media (min-width: 1280px) {
+  .home-board-frame {
+    box-shadow:
+      inset 0 0 0 1px rgba(212, 175, 55, 0.62),
+      0 0 12px rgba(212, 175, 55, 0.12);
+  }
+
+  .home-board-frame::after {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 20;
+    box-shadow: inset 0 0 0 1px rgba(18, 14, 8, 0.96);
+    animation: homeBoardFrameTone 12s linear infinite;
+  }
+}
+
+@keyframes homeBoardFrameTone {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 1px rgba(18, 14, 8, 0.96);
+  }
+
+  50% {
+    box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.96);
+  }
+}

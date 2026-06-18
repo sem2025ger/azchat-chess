@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import ChessBoard from '../components/ChessBoard';
-import { Play, Trophy, Users, Globe, Swords } from 'lucide-react';
+import { Play, Trophy } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
@@ -15,12 +15,6 @@ export default function HomeScreen() {
   useAuth();
 
   // User preferences applied automatically via ThemeContext
-
-  const stats = [
-    { label: t('home.stats.live.label'), value: t('home.stats.live.value'), icon: Swords, color: 'text-chess-active' },
-    { label: t('home.stats.friend.label'), value: t('home.stats.friend.value'), icon: Users, color: 'text-emerald-400' },
-    { label: t('home.stats.languages.label'), value: t('home.stats.languages.value'), icon: Globe, color: 'text-chess-gold' },
-  ];
 
   return (
     <div className="flex flex-col min-h-full xl:h-full w-full xl:overflow-hidden items-center justify-start xl:justify-center bg-transparent transition-all relative home-screen-root">
@@ -70,7 +64,7 @@ export default function HomeScreen() {
 
         {/* LEFT: Chessboard */}
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[57%] max-w-[320px] md:max-w-[660px] shrink-0 relative perspective-1000 board-container xl:-mt-12">
-          <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board">
+          <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board home-board-frame">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
             <ChessBoard overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3" />
           </div>
@@ -91,21 +85,10 @@ export default function HomeScreen() {
 
 
           {/* 1. Hero Brand Header */}
-          <div className="flex flex-col gap-2">
-            <div className="inline-flex items-center gap-2 self-start px-3 py-1 bg-chess-gold/[0.08] border border-chess-gold/[0.18] rounded-full">
-              <div className="w-1.5 h-1.5 rounded-full bg-chess-gold animate-pulse shadow-[0_0_6px_rgba(223,176,98,0.8)]" />
-              <span className="text-[0.5rem] font-black text-chess-gold uppercase tracking-[0.35em]">
-                {t('home.platformDemo')}
-              </span>
-            </div>
-
+          <div className="flex flex-col">
             <h1 className="text-[2.2rem] md:text-[2.5rem] xl:text-[2.9rem] font-black text-glow-cycle leading-[0.95] tracking-[-0.03em] italic">
               Chess<span className="text-chess-active"> Arena</span>
             </h1>
-
-            <p className="hidden md:block text-[0.68rem] text-neutral-500 font-semibold leading-relaxed max-w-[320px]">
-              {t('home.subtitle')}
-            </p>
           </div>
 
           {/* 2. Premium Play Now CTA */}
@@ -132,25 +115,7 @@ export default function HomeScreen() {
             </div>
           </Link>
 
-          {/* 3. Stat Blocks */}
-          <div className="hidden md:grid grid-cols-3 gap-2">
-            {stats.map((s, i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center gap-1 px-2 py-3 bg-white/[0.025] backdrop-blur-md rounded-2xl border border-white/[0.05] hover:bg-white/[0.04] hover:border-white/[0.08] transition-colors duration-300"
-              >
-                <div className={cx('flex items-center gap-1 font-black text-[0.85rem] tabular-nums leading-none', s.color)}>
-                  <s.icon size={11} strokeWidth={2.5} />
-                  {s.value}
-                </div>
-                <span className="text-[0.48rem] font-black text-neutral-600 uppercase tracking-[0.18em] text-center leading-tight">
-                  {s.label}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* 4. Rating / Profile Card */}
+          {/* 3. Rating / Profile Card */}
           <div className="hidden md:block">
             <FeatureCard
               to="/profile"

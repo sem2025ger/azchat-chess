@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, Play, Grid, MessageSquare, User, Settings, Globe, Circle } from 'lucide-react';
+import { Home, Play, Grid, MessageSquare, User, Settings, Circle } from 'lucide-react';
 import { useThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { type Language } from '../translations';
@@ -9,6 +9,15 @@ import { twMerge } from 'tailwind-merge';
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
+
+const languageActiveClass: Record<Language, string> = {
+  en: 'bg-slate-200/85 text-red-700 ring-1 ring-red-500/80 shadow-md shadow-red-500/20',
+  de: 'bg-neutral-950/95 text-amber-300 ring-1 ring-red-600/80 shadow-md shadow-amber-500/20',
+  az: 'bg-emerald-950/95 text-emerald-100 ring-1 ring-sky-500/80 shadow-md shadow-red-500/15',
+  tr: 'bg-red-700/95 text-white ring-1 ring-red-300/80 shadow-md shadow-red-600/25',
+  ua: 'bg-blue-700/95 text-yellow-200 ring-1 ring-yellow-400/80 shadow-md shadow-blue-500/25',
+  ru: 'bg-blue-950/95 text-white ring-1 ring-red-500/75 shadow-md shadow-blue-500/20',
+};
 
 export default function Layout() {
   const location = useLocation();
@@ -44,19 +53,20 @@ export default function Layout() {
       <aside className="hidden md:flex w-20 xl:w-72 bg-black/40 backdrop-blur-3xl border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
 
-          <div className="h-16 xl:h-20 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
+          <div className="h-16 xl:h-24 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden justify-center w-full items-center xl:items-start">
               <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.65rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500">
-                AZTRChess.De
+                Chessaz.De
               </span>
-              <span className="text-[0.55rem] font-black text-neutral-500 uppercase tracking-[0.25em] mt-1.5 italic opacity-60 hidden xl:block truncate">
-                PREMIUM CHESS PLATFORM
-              </span>
+              <div className="mt-3 hidden xl:inline-flex items-center rounded-full px-3 py-1 border border-white/10 bg-neutral-950/50 premium-cycle-container shadow-[0_0_14px_rgba(139,92,246,0.14)]">
+                <span className="text-[0.7rem] font-black uppercase tracking-[0.2em] italic text-glow-cycle opacity-90 whitespace-nowrap">
+                  PREMIUM CHESS PLATFORM
+                </span>
+              </div>
             </div>
           </div>
 
           <nav className="px-3 xl:px-5 py-4 space-y-0.5 flex-1">
-            <div className="hidden xl:block mb-3 px-2 text-[0.5rem] font-black text-neutral-600 uppercase tracking-[0.2em] italic leading-none">{t('sidebar.nav')}</div>
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" />
             <NavItem to="/play" icon={<Play size={20} />} label={t('nav.play')} themeColor="theme-cyan" />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
@@ -69,20 +79,14 @@ export default function Layout() {
 
           {/* Refined Language Selector - AZ / TR / RU ONLY */}
           <div className="flex flex-col gap-3">
-            <div className="hidden xl:block px-2 text-[0.5rem] font-black text-neutral-600 uppercase tracking-[0.2em] italic">{t('sidebar.system')}</div>
-            <div className="hidden xl:flex items-center gap-1.5 mb-0.5 opacity-30">
-              <Globe size={10} className="text-neutral-400" />
-              <span className="text-[0.5rem] font-black text-neutral-400 uppercase tracking-widest italic">{t('layout.localization')}</span>
-            </div>
-
-            <div className="hidden xl:flex bg-neutral-900/60 p-0.5 rounded-lg border border-white/5 shadow-inner premium-cycle-container transition-all">
+            <div className="hidden xl:flex bg-neutral-900/70 p-0.5 rounded-lg border border-white/10 shadow-[0_0_18px_rgba(34,211,238,0.14)] premium-cycle-container transition-all">
               {(['en', 'de', 'az', 'tr', 'ua', 'ru'] as Language[]).map(lang => (
                 <button
                   key={lang}
                   onClick={() => setLanguage(lang)}
                   className={cx(
-                    "flex-1 py-1 text-[0.6rem] font-black uppercase rounded-md transition-all duration-150 active:scale-95 sidebar-item",
-                    language === lang ? "premium-cycle-active" : "text-neutral-600 sidebar-item-hover"
+                    "flex-1 py-1 text-[0.6rem] font-black uppercase rounded-md transition-colors transition-shadow duration-300 active:scale-95 sidebar-item",
+                    language === lang ? languageActiveClass[lang] : "text-neutral-600 sidebar-item-hover"
                   )}
                 >
                   {lang}
