@@ -163,6 +163,7 @@ export const translations: TranslationDictionary = {
   'settings.experimentalVFX': { en: 'Experimental VFX & Shaders', de: 'Experimentelle VFX & Shaders', ua: 'Експериментальні VFX та шейдери', ru: 'Экспериментальные VFX и шейдеры', az: 'Eksperimental VFX və PBR Şeyderlər', tr: 'Deneysel VFX ve PBR Gölgelendiriciler' },
 
   // Play screen
+  'play.opponent': { en: 'Opponent', de: 'Gegner', ua: 'Суперник', ru: 'Соперник', az: 'Rəqib', tr: 'Rakip' },
   'play.eliteRating': { en: 'ELITE • 2850 RATING', de: 'ELITE • 2850 BEWERTUNG', ua: 'ЕЛІТА • 2850 РЕЙТИНГ', ru: 'ЭЛИТА • 2850 РЕЙТИНГ', az: 'ELİT • 2850 REYTİNQ', tr: 'ELİT • 2850 PUAN' },
   'play.waiting': { en: 'Waiting...', de: 'Warten...', ua: 'Очікування...', ru: 'Ожидание...', az: 'Gözlənilir...', tr: 'Bekleniyor...' },
   'play.directLink': { en: 'DIRECT LINK', de: 'DIREKTER LINK', ua: 'ПРЯМЕ ПОСИЛАННЯ', ru: 'ПРЯМАЯ ССЫЛКА', az: 'BİRBAŞA LİNK', tr: 'DOĞRUDAN BAĞLANTI' },
