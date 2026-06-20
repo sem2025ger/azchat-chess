@@ -407,7 +407,7 @@ export default function PlayScreen() {
             </div>
 
             {/* Footer Buttons */}
-            <div className="p-2 grid grid-cols-2 gap-1.5 bg-black/40 border-t border-white/5 shrink-0">
+            <div className="p-2 xl:min-h-[96px] xl:items-center grid grid-cols-2 gap-2 bg-black/40 border-t border-white/5 shrink-0">
               <FooterActionBtn 
                 icon={<Users size={14} />} 
                 label={t('play.friend')} 
@@ -447,16 +447,16 @@ function FooterActionBtn({ icon, label, sublabel, onClick, disabled }: { icon: R
       aria-disabled={disabled ? "true" : undefined}
       onClick={onClick}
       className={cx(
-        "flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/5 rounded-xl transition-all duration-150 group/fbtn shadow-2xl text-left relative overflow-hidden",
+        "flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/5 rounded-xl transition-all duration-150 group/fbtn shadow-2xl text-left relative overflow-hidden xl:min-h-[52px]",
         disabled
-          ? "opacity-50 cursor-not-allowed"
+          ? "cursor-not-allowed"
           : "hover:bg-white/[0.05] hover:border-white/10 active:scale-95"
       )}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
       <div
         className={cx(
-          "w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 shadow-xl relative z-10 shrink-0 transition-all duration-200",
+          "w-7 h-7 xl:w-9 xl:h-9 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 shadow-xl relative z-10 shrink-0 transition-all duration-200",
           disabled
             ? "text-neutral-600"
             : "text-neutral-500 group-hover/fbtn:scale-110 group-hover/fbtn:text-white group-hover/fbtn:bg-white/10"
@@ -465,8 +465,8 @@ function FooterActionBtn({ icon, label, sublabel, onClick, disabled }: { icon: R
         {icon}
       </div>
       <div className="flex flex-col overflow-hidden relative z-10">
-        <span className="text-[0.6rem] font-black text-white uppercase tracking-[0.05em] italic truncate">{label}</span>
-        <span className="text-[0.45rem] font-black text-neutral-700 uppercase tracking-[0.02em] mt-0.5 truncate">{sublabel}</span>
+        <span className="text-[0.6rem] xl:text-[0.68rem] font-black uppercase tracking-[0.05em] italic truncate text-chess-gold">{label}</span>
+        <span className="text-[0.45rem] xl:text-[0.5rem] font-black uppercase tracking-[0.02em] mt-0.5 truncate text-chess-gold opacity-75">{sublabel}</span>
       </div>
     </button>
   );
