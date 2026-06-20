@@ -20,7 +20,7 @@ export default function PlayScreen() {
   const [timeControl, setTimeControl] = useState('3 min.');
   const [isSearching, setIsSearching] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
-  const [accentTheme, setAccentTheme] = useState<AccentTheme>('gold');
+  const accentTheme: AccentTheme = 'gold';
   const [isTimeExpanded, setIsTimeExpanded] = useState(false);
 
   const [isPrivateCreating, setIsPrivateCreating] = useState(false);
@@ -265,29 +265,7 @@ export default function PlayScreen() {
         </div>
 
         {/* ── Right Side: Control Panel ────────────────────────── */}
-        <div className="w-full flex flex-col animate-fade-in-right">
-          {/* Theme Selector — sits neatly above the settings panel */}
-          <div className="hidden md:flex items-center justify-center gap-4 mb-0.5 md:mb-2 bg-black/40 backdrop-blur-3xl px-4 py-1.5 rounded-full border border-white/5 ring-1 ring-white/5 shrink-0 shadow-2xl self-center scale-90 md:scale-100">
-            {(['gold', 'cyan', 'violet'] as AccentTheme[]).map(theme => (
-              <button
-                key={theme}
-                onClick={() => setAccentTheme(theme)}
-                className="flex items-center gap-1.5 group transition-all"
-              >
-                <div className={cx(
-                  "w-1.5 h-1.5 rounded-full transition-all duration-300 ring-2",
-                  accentColors[theme].dot,
-                  accentTheme === theme ? "ring-white/10 scale-125 shadow-[0_0_8px_rgba(255,255,255,0.2)]" : "ring-transparent opacity-60 scale-100 hover:opacity-100"
-                )} />
-                <span className={cx(
-                  "text-[0.5rem] font-black uppercase tracking-[0.1em] transition-colors",
-                  accentTheme === theme ? "text-white" : "text-neutral-500 group-hover:text-neutral-300"
-                )}>
-                  {theme}
-                </span>
-              </button>
-            ))}
-          </div>
+        <div className="w-full flex flex-col animate-fade-in-right lg:h-full lg:justify-center lg:-ml-4">
           {/* Spacer: aligns panel top with board top */}
           <div className="h-0 md:h-[10px] shrink-0" />
           <div className="bg-[#121212] rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-transparent overflow-hidden flex flex-col relative group/panel border-b-[4px] border-black/40 panel-glow-cycle transition-all">
@@ -398,12 +376,6 @@ export default function PlayScreen() {
                     </div>
                   </div>
                </button>
-
-               <div className="flex items-center justify-center gap-2 opacity-60">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]" />
-                  <span className="text-glow-cycle font-black text-[0.65rem] tracking-widest italic">{t('play.liveStatus')}</span>
-                  <span className="text-neutral-600 font-black text-[0.55rem] uppercase tracking-[0.1em] italic">{t('play.matchmakingStatus')}</span>
-               </div>
             </div>
 
             {/* Footer Buttons */}
