@@ -144,6 +144,7 @@ export const translations: TranslationDictionary = {
   'chat.youBadge': { en: 'YOU', de: 'DU', ua: 'ВИ', ru: 'ВЫ', az: 'SİZ', tr: 'SİZ' },
   'chat.worldPlayers': { en: 'World Players', de: 'Weltspieler', ua: 'Гравці світу', ru: 'Мировые игроки', az: 'Dünya Oyunçuları', tr: 'Dünya Oyuncuları' },
   'chat.joinQueue': { en: 'Join Queue', de: 'Warteschlange beitreten', ua: 'Приєднатися до черги', ru: 'Присоединиться', az: 'Növbəyə qoşul', tr: 'Sıraya katıl' },
+  'chat.comingSoon': { en: 'Global chat is coming soon', de: 'Der globale Chat kommt bald', ua: 'Глобальний чат незабаром зʼявиться', ru: 'Глобальный чат скоро появится', az: 'Qlobal çat tezliklə istifadəyə veriləcək', tr: 'Global sohbet yakında kullanıma sunulacak' },
 
   // Profile screen
   'profile.topPercent': { en: 'TOP 1%', de: 'TOP 1%', ua: 'ТОП 1%', ru: 'ТОП 1%', az: 'TOP 1%', tr: 'TOP %1' },
