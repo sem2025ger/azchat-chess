@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import { useThemeContext } from '../context/ThemeContext';
 import ChessBoard from '../components/ChessBoard';
 
 import { Shield, Zap, Users, Trophy, X, Loader2, Sparkles, Swords, Clock, ChevronDown, Copy, Check } from 'lucide-react';
@@ -14,6 +15,15 @@ function cx(...inputs: (string | undefined | null | false)[]) {
 }
 
 type AccentTheme = 'gold' | 'cyan' | 'violet';
+
+function countryCodeToFlag(code: string): string | null {
+  const normalized = code.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(normalized)) return null;
+  return normalized
+    .split('')
+    .map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65))
+    .join('');
+}
 
 export default function PlayScreen() {
   const { t } = useLanguage();
@@ -36,6 +46,7 @@ export default function PlayScreen() {
   const navigate = useNavigate();
   const { socket, isConnected } = useSocket();
   const { user, profile } = useAuth();
+  const { boardTheme } = useThemeContext();
 
   // Primary colors based on theme
   const accentColors = {
@@ -157,16 +168,14 @@ export default function PlayScreen() {
         <div className="w-full flex flex-col gap-1 md:gap-1.5 animate-fade-in-up min-h-0">
           {/* Opponent Info */}
           <div className="flex items-center gap-2 px-1 shrink-0">
-            <div className="w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 flex items-center justify-center text-base shadow-2xl relative">
-               🇦🇿
-               <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border border-[#0a0a0a]" />
+            <div className="w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 flex items-center justify-center text-base shadow-2xl relative text-neutral-500">
+               ?
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2 leading-none">
                 <span className="font-black text-white text-xs italic tracking-tighter uppercase">{t('play.opponent')}</span>
-                <span className="bg-white/10 text-white/40 text-[0.4rem] px-1 py-0.5 rounded-sm font-black uppercase tracking-[0.15em] border border-white/5">GM</span>
               </div>
-              <span className="text-[0.45rem] text-neutral-600 font-bold uppercase tracking-[0.2em] italic mt-0.5">{t('play.eliteRating')}</span>
+              <span className="text-[0.45rem] text-neutral-600 font-bold uppercase tracking-[0.2em] italic mt-0.5">{t('play.waiting')}</span>
             </div>
           </div>
 
@@ -247,13 +256,19 @@ export default function PlayScreen() {
               className="w-full aspect-square bg-neutral-900 rounded-[2rem] border-[6px] border-neutral-800/50 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-white/10 relative transition-all duration-700 group-hover/board:border-neutral-800 self-center max-w-[94vw] sm:max-w-[560px] lg:max-w-[min(600px,calc(100vh-130px))]"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
-              <ChessBoard overrideBoardTheme="Classic Green" className="border-none p-0 bg-transparent shadow-none" />
+              <ChessBoard overrideBoardTheme={boardTheme} className="border-none p-0 bg-transparent shadow-none" />
             </div>
           </div>
 
           {/* User Info */}
           <div className="flex items-center gap-2 px-1 opacity-60 hover:opacity-100 transition-opacity shrink-0">
-            <div className="w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 flex items-center justify-center text-base shadow-2xl relative">🇹🇷</div>
+            <div className="w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 flex items-center justify-center text-base shadow-2xl relative">
+              {profile?.countryCode && countryCodeToFlag(profile.countryCode) ? (
+                <span aria-label={profile.countryCode}>{countryCodeToFlag(profile.countryCode)}</span>
+              ) : (
+                <span className="text-neutral-500" aria-label="Country not specified">●</span>
+              )}
+            </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2 leading-none">
                 <span className="font-black text-white text-xs italic tracking-tighter uppercase">{profile?.username || user?.user_metadata?.username || 'Guest'}</span>
