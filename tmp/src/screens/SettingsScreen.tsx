@@ -313,123 +313,127 @@ export default function SettingsScreen() {
   };
 
   return (
-    <div className="min-h-full w-full bg-transparent flex flex-col items-center relative transition-all overflow-x-hidden pt-0 px-2 pb-6 md:px-8 md:pb-8 md:pt-3">
+    <div className="min-h-full xl:h-[calc(100dvh-4rem)] w-full bg-transparent flex flex-col items-center relative transition-all overflow-x-hidden xl:overflow-hidden pt-0 px-2 pb-6 md:px-8 md:pb-8 md:pt-3">
       {/* Background Decor */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="w-full max-w-[85rem] z-10">
+      <div className="w-full max-w-[85rem] z-10 h-full flex flex-col xl:justify-center">
         {/* Desktop View: Unified Grid */}
-        <div className="hidden lg:grid grid-cols-12 gap-6">
-          <div className="col-span-7 space-y-4 pr-4">
-            {/* Board Appearance */}
-            <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-xl">
-              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-5 relative h-full">
-              <h2 className="text-xl font-black text-white mb-4 flex items-center gap-4 italic uppercase tracking-tighter">
-                <Palette size={20} className="text-chess-gold" /> {t('settings.boardAppearance')}
-              </h2>
-              <div className="flex flex-wrap gap-3">
-                {boardThemes.map((theme) => {
-                  const colors = BOARD_THEMES[theme.id as keyof typeof BOARD_THEMES];
-                  return (
-                    <button key={theme.id} onClick={() => setBoardTheme(theme.id as any)} className={cx("flex items-center gap-3 px-4 py-3 rounded-xl border transition-all active:scale-95", boardTheme === theme.id ? "bg-chess-gold/15 border-chess-gold/50 shadow-[0_0_18px_rgba(223,176,98,0.12)]" : "bg-black/20 border-white/5 hover:border-white/15")}>
-                      <div className="w-8 h-8 grid grid-cols-2 grid-rows-2 rounded border border-white/10 overflow-hidden shrink-0">
-                        <div className={colors?.light || 'bg-white'} />
-                        <div className={colors?.dark || 'bg-black'} />
-                        <div className={colors?.dark || 'bg-black'} />
-                        <div className={colors?.light || 'bg-white'} />
-                      </div>
-                      <span className={cx("text-[0.65rem] font-black uppercase tracking-[0.15em]", boardTheme === theme.id ? "text-chess-gold" : "text-neutral-500 hover:text-neutral-300")}>{theme.name}</span>
+        <div className="hidden lg:grid grid-cols-12 gap-4 xl:gap-8 items-stretch">
+          <div className="col-span-7 flex flex-col justify-between gap-3 xl:gap-4 pr-0 xl:pr-2 h-full">
+            {/* Row 1: Board Appearance */}
+            <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
+                <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
+                  <Palette size={16} className="text-chess-gold" /> {t('settings.boardAppearance')}
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
+                  {boardThemes.map((theme) => {
+                    const colors = BOARD_THEMES[theme.id as keyof typeof BOARD_THEMES];
+                    return (
+                      <button key={theme.id} onClick={() => setBoardTheme(theme.id as any)} className={cx("flex flex-col items-center gap-1.5 px-2 py-2 rounded-xl border transition-all active:scale-95", boardTheme === theme.id ? "bg-chess-gold/15 border-chess-gold/50 shadow-[0_0_18px_rgba(223,176,98,0.12)]" : "bg-black/20 border-white/5 hover:border-white/15")}>
+                        <div className="w-6 h-6 grid grid-cols-2 grid-rows-2 rounded border border-white/10 overflow-hidden shrink-0">
+                          <div className={colors?.light || 'bg-white'} />
+                          <div className={colors?.dark || 'bg-black'} />
+                          <div className={colors?.dark || 'bg-black'} />
+                          <div className={colors?.light || 'bg-white'} />
+                        </div>
+                        <span className={cx("text-[0.55rem] font-black uppercase tracking-[0.1em] text-center", boardTheme === theme.id ? "text-chess-gold" : "text-neutral-500 hover:text-neutral-300")}>{theme.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
+
+            {/* Row 2: Piece Styles and Sound Themes */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 xl:gap-4">
+              {/* Piece Styles */}
+              <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+                <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
+                  <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
+                    <Monitor size={16} className="text-chess-active" /> {t('settings.pieceStyles')}
+                  </h2>
+                  <div className="grid grid-cols-3 gap-2">
+                    {pieceStyles.map((style) => (
+                      <button key={style.id} onClick={() => setPieceTheme(style.id as any)} className={cx("flex flex-col items-center gap-1.5 p-1.5 rounded-xl border transition-all active:scale-95", pieceTheme === style.id ? "bg-chess-active/10 border-chess-active/40" : "bg-black/20 border-white/5 hover:border-white/20")}>
+                        <div className="flex gap-0.5 justify-center">
+                          <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wK.svg` : `/pieces/${style.id}/wK.svg`} alt={style.name} className="w-5 h-5 object-contain" />
+                          <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wN.svg` : `/pieces/${style.id}/wN.svg`} alt={style.name} className="w-5 h-5 object-contain" />
+                        </div>
+                        <span className="text-[0.45rem] font-black uppercase text-neutral-500 text-center leading-none">{style.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </div>
+
+              {/* Sound Themes */}
+              <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+                <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full flex flex-col">
+                  <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
+                    <Volume2 size={16} className="text-neutral-400" /> {t('settings.soundThemes')}
+                  </h2>
+                  <div className="grid grid-cols-2 gap-2 flex-1 content-start">
+                    {['Default', 'Soft', 'Classic', 'Muted / Off'].map(s => (
+                      <button key={s} onClick={() => handleSoundThemeSelect(s as any)} className={cx("px-2 py-2 rounded-xl border text-[0.55rem] font-black uppercase tracking-[0.1em] transition-all active:scale-95", soundTheme === s ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:border-white/15 hover:text-neutral-400")}>{s}</button>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            {/* Row 3: Background Theme */}
+            <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
+                <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
+                  <LayoutIcon size={16} className="text-purple-400" /> {t('settings.interfaceTheme')}
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
+                  {bgThemes.map((bg) => (
+                    <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("px-2 py-1.5 rounded-xl border text-[0.5rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
+                      {bg.name}
                     </button>
-                  );
-                })}
-              </div>
-              </section>
-            </div>
-
-            {/* Piece Styles */}
-            <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-xl">
-              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-5 relative h-full">
-              <h2 className="text-xl font-black text-white mb-4 flex items-center gap-4 italic uppercase tracking-tighter">
-                <Monitor size={20} className="text-chess-active" /> {t('settings.pieceStyles')}
-              </h2>
-              <div className="grid grid-cols-2 gap-3 max-w-sm">
-                {pieceStyles.map((style) => (
-                  <button key={style.id} onClick={() => setPieceTheme(style.id as any)} className={cx("flex flex-col items-center gap-2 p-2 rounded-2xl border transition-all active:scale-95", pieceTheme === style.id ? "bg-chess-active/10 border-chess-active/40" : "bg-black/20 border-white/5 hover:border-white/20")}>
-                    <div className="flex gap-0.5 justify-center">
-                      <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wK.svg` : `/pieces/${style.id}/wK.svg`} alt={style.name} className="w-8 h-8 object-contain" />
-                      <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wQ.svg` : `/pieces/${style.id}/wQ.svg`} alt={style.name} className="w-8 h-8 object-contain" />
-                      <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wN.svg` : `/pieces/${style.id}/wN.svg`} alt={style.name} className="w-8 h-8 object-contain" />
-                    </div>
-                    <span className="text-[0.5rem] font-black uppercase text-neutral-500">{style.name}</span>
-                  </button>
-                ))}
-              </div>
-              </section>
-            </div>
-
-            {/* Background Theme */}
-            <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-xl">
-              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-5 relative h-full">
-              <h2 className="text-xl font-black text-white mb-4 flex items-center gap-4 italic uppercase tracking-tighter">
-                <LayoutIcon size={20} className="text-purple-400" /> {t('settings.interfaceTheme')}
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
-                {bgThemes.map((bg) => (
-                  <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("px-2 py-2 rounded-xl border text-[0.6rem] font-black uppercase tracking-[0.1em] active:scale-95", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
-                    {bg.name}
-                  </button>
-                ))}
-              </div>
-              </section>
-            </div>
-
-            {/* Sound Themes */}
-            <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-xl">
-              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 relative h-full">
-              <h3 className="text-sm font-black text-neutral-400 mb-3 uppercase tracking-widest">{t('settings.soundThemes')}</h3>
-              <div className="flex flex-wrap gap-2">
-                {['Default', 'Soft', 'Classic', 'Muted / Off'].map(s => (
-                  <button key={s} onClick={() => handleSoundThemeSelect(s as any)} className={cx("px-4 py-2 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.15em] transition-all active:scale-95", soundTheme === s ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:border-white/15 hover:text-neutral-400")}>{s}</button>
-                ))}
-              </div>
+                  ))}
+                </div>
               </section>
             </div>
           </div>
 
-          <div className="col-span-5 relative">
-            <div className="sticky top-0 p-[1px] rounded-[3rem] settings-animated-border shadow-2xl">
-              <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(3rem-1px)] p-8 flex flex-col items-center gap-8 h-full">
-              <div className="flex items-center justify-between w-full">
-                <span className="text-[0.7rem] font-black text-neutral-400 uppercase tracking-[0.4em] italic">{t('settings.livePreview')}</span>
-                <div className="flex items-center gap-2">
-                  <span className={cx("text-[0.6rem] font-black text-emerald-400 uppercase tracking-widest transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
-                    {t('settings.saved')} ✓
-                  </span>
-                  <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.5rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
+          <div className="col-span-5 relative h-full">
+            <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl h-full">
+              <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 xl:p-5 flex flex-col items-center gap-3 xl:gap-4 h-full">
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-[0.6rem] xl:text-[0.7rem] font-black uppercase tracking-[0.4em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
+                  <div className="flex items-center gap-2">
+                    <span className={cx("text-[0.55rem] xl:text-[0.6rem] font-black text-emerald-400 uppercase tracking-widest transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
+                      {t('settings.saved')} ✓
+                    </span>
+                    <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.45rem] xl:text-[0.5rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
+                  </div>
                 </div>
-              </div>
-              <div className="w-full aspect-square max-w-[360px] rounded-2xl overflow-hidden shadow-2xl border-b-4 border-black/40">
-                <ChessBoard className="!p-0 !border-none !bg-transparent !shadow-none ring-0" />
-              </div>
-              <div className="w-full space-y-3">
-                <PreviewStat label={t('settings.boardTheme')} value={boardTheme} icon={<Palette size={16} />} />
-                <PreviewStat label={t('settings.pieceSet')} value={pieceTheme.toUpperCase()} icon={<Monitor size={16} />} />
-                <PreviewStat label={t('settings.appTheme')} value={background} icon={<LayoutIcon size={16} />} />
-              </div>
-              <button 
-                onClick={handleRestoreDefaults}
-                className="w-full py-3 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.65rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
-              >
-                {t('settings.restoreDefaults')}
-              </button>
+                <div className="w-full aspect-square max-w-[260px] xl:max-w-[280px] rounded-2xl overflow-hidden shadow-2xl border-b-4 border-black/40">
+                  <ChessBoard className="!p-0 !border-none !bg-transparent !shadow-none ring-0" />
+                </div>
+                <div className="w-full space-y-1.5">
+                  <PreviewStat label={t('settings.boardTheme')} value={boardTheme} icon={<Palette size={14} className="xl:w-4 xl:h-4" />} />
+                  <PreviewStat label={t('settings.pieceSet')} value={pieceTheme.toUpperCase()} icon={<Monitor size={14} className="xl:w-4 xl:h-4" />} />
+                  <PreviewStat label={t('settings.appTheme')} value={background} icon={<LayoutIcon size={14} className="xl:w-4 xl:h-4" />} />
+                </div>
+                <button 
+                  onClick={handleRestoreDefaults}
+                  className="w-full py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.6rem] xl:text-[0.65rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
+                >
+                  {t('settings.restoreDefaults')}
+                </button>
               </div>
             </div>
           </div>
         </div>
 
         {/* Mobile View: Hub and Spoke */}
-        <div className="lg:hidden w-full h-full min-h-0 flex flex-col">
+        <div className="lg:hidden w-full h-full min-h-0 flex flex-col mt-2">
           {renderMobileView()}
         </div>
       </div>
@@ -478,7 +482,7 @@ function SelectionCard({ active, onClick, title, preview }: { active: boolean; o
 
 function PreviewStat({ label, value, icon }: { label: string; value: string; icon: any }) {
   return (
-    <div className="flex items-center justify-between p-4 bg-white/[0.03] rounded-2xl border border-white/5 shadow-inner">
+    <div className="flex items-center justify-between p-2.5 xl:p-3 bg-white/[0.03] rounded-2xl border border-white/5 shadow-inner">
       <div className="flex flex-col">
         <span className="text-[0.5rem] font-black text-neutral-600 uppercase tracking-widest italic leading-none mb-1">{label}</span>
         <span className="text-[0.8rem] font-black text-white truncate max-w-[150px]">{value}</span>
