@@ -250,7 +250,7 @@ export default function SettingsScreen() {
                 >
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-black text-white uppercase tracking-widest">{p.name}</span>
-                    <span className="text-[0.6rem] text-neutral-500 font-bold uppercase">{p.board} + {p.pieces}</span>
+                    <span className="text-[0.75rem] text-neutral-500 font-bold uppercase">{p.board} + {p.pieces}</span>
                   </div>
                   <Sparkles size={18} className="text-neutral-700 group-hover:text-chess-gold transition-colors" />
                 </button>
@@ -291,7 +291,7 @@ export default function SettingsScreen() {
               </div>
 
               <div className="space-y-3">
-                <h2 className="text-[0.65rem] font-black text-neutral-500 uppercase tracking-[0.4em] italic px-2">Sound & Game</h2>
+                <h2 className="text-[0.8rem] font-black text-neutral-500 uppercase tracking-[0.4em] italic px-2">Sound & Game</h2>
                 <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl">
                   <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
                   <HubLink icon={<Volume2 size={18} />} title={t('settings.soundThemes')} value={soundTheme.toUpperCase()} onClick={() => setActiveSubView('sound')} />
@@ -339,7 +339,7 @@ export default function SettingsScreen() {
                           <div className={colors?.dark || 'bg-black'} />
                           <div className={colors?.light || 'bg-white'} />
                         </div>
-                        <span className={cx("text-[0.55rem] font-black uppercase tracking-[0.1em] text-center", boardTheme === theme.id ? "text-chess-gold" : "text-neutral-500 hover:text-neutral-300")}>{theme.name}</span>
+                        <span className={cx("text-[0.7rem] font-black uppercase tracking-[0.1em] text-center whitespace-nowrap leading-tight", boardTheme === theme.id ? "text-chess-gold" : "text-neutral-500 hover:text-neutral-300")}>{theme.name}</span>
                       </button>
                     );
                   })}
@@ -362,7 +362,7 @@ export default function SettingsScreen() {
                           <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wK.svg` : `/pieces/${style.id}/wK.svg`} alt={style.name} className="w-5 h-5 object-contain" />
                           <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wN.svg` : `/pieces/${style.id}/wN.svg`} alt={style.name} className="w-5 h-5 object-contain" />
                         </div>
-                        <span className="text-[0.45rem] font-black uppercase text-neutral-500 text-center leading-none">{style.name}</span>
+                        <span className="text-[0.6rem] font-black uppercase text-neutral-500 text-center leading-tight">{style.name}</span>
                       </button>
                     ))}
                   </div>
@@ -377,7 +377,7 @@ export default function SettingsScreen() {
                   </h2>
                   <div className="grid grid-cols-2 gap-2 flex-1 content-start">
                     {['Default', 'Soft', 'Classic', 'Muted / Off'].map(s => (
-                      <button key={s} onClick={() => handleSoundThemeSelect(s as any)} className={cx("px-2 py-2 rounded-xl border text-[0.55rem] font-black uppercase tracking-[0.1em] transition-all active:scale-95", soundTheme === s ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:border-white/15 hover:text-neutral-400")}>{s}</button>
+                      <button key={s} onClick={() => handleSoundThemeSelect(s as any)} className={cx("px-2 py-2 rounded-xl border text-[0.7rem] font-black uppercase tracking-[0.1em] transition-all active:scale-95", soundTheme === s ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:border-white/15 hover:text-neutral-400")}>{s}</button>
                     ))}
                   </div>
                 </section>
@@ -392,7 +392,7 @@ export default function SettingsScreen() {
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
                   {bgThemes.map((bg) => (
-                    <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("px-2 py-1.5 rounded-xl border text-[0.5rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
+                    <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("px-1.5 py-1.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight whitespace-nowrap", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
                       {bg.name}
                     </button>
                   ))}
@@ -405,12 +405,12 @@ export default function SettingsScreen() {
             <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl h-full">
               <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 xl:p-5 flex flex-col items-center gap-3 xl:gap-4 h-full">
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-[0.6rem] xl:text-[0.7rem] font-black uppercase tracking-[0.4em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
+                  <span className="text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.4em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
                   <div className="flex items-center gap-2">
-                    <span className={cx("text-[0.55rem] xl:text-[0.6rem] font-black text-emerald-400 uppercase tracking-widest transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
+                    <span className={cx("text-[0.7rem] xl:text-[0.75rem] font-black text-emerald-400 uppercase tracking-widest transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
                       {t('settings.saved')} ✓
                     </span>
-                    <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.45rem] xl:text-[0.5rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
+                    <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.6rem] xl:text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
                   </div>
                 </div>
                 <div className="w-full aspect-square max-w-[260px] xl:max-w-[280px] rounded-2xl overflow-hidden shadow-2xl border-b-4 border-black/40">
@@ -423,7 +423,7 @@ export default function SettingsScreen() {
                 </div>
                 <button 
                   onClick={handleRestoreDefaults}
-                  className="w-full py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.6rem] xl:text-[0.65rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
+                  className="w-full py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.75rem] xl:text-[0.8rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
                 >
                   {t('settings.restoreDefaults')}
                 </button>
@@ -449,7 +449,7 @@ function HubLink({ icon, title, value, onClick, preview }: { icon: any; title: s
       </div>
       <div className="flex-1 flex flex-col items-start overflow-hidden text-left">
         <span className="text-sm font-black text-white italic tracking-tight">{title}</span>
-        {value && <span className="text-[0.6rem] font-black text-chess-gold uppercase tracking-widest mt-0.5 opacity-60 truncate w-full">{value}</span>}
+        {value && <span className="text-[0.75rem] font-black text-chess-gold uppercase tracking-widest mt-0.5 opacity-60 truncate w-full">{value}</span>}
       </div>
       {preview && <div className="shrink-0">{preview}</div>}
       <ChevronRight size={16} className="text-neutral-700 group-hover:text-white transition-all transform group-hover:translate-x-1" />
@@ -474,7 +474,7 @@ function SelectionCard({ active, onClick, title, preview }: { active: boolean; o
       <div className="w-full aspect-video flex items-center justify-center bg-black/40 rounded-2xl p-2 relative overflow-hidden group-hover:scale-105 transition-transform">
         {preview}
       </div>
-      <span className={cx("text-[0.6rem] font-black uppercase tracking-widest italic text-center", active ? "text-white" : "text-neutral-500")}>{title}</span>
+      <span className={cx("text-[0.75rem] font-black uppercase tracking-widest italic text-center", active ? "text-white" : "text-neutral-500")}>{title}</span>
       {active && <div className="absolute top-4 right-4 text-chess-active"><Check size={16} strokeWidth={4} /></div>}
     </button>
   );
@@ -484,8 +484,8 @@ function PreviewStat({ label, value, icon }: { label: string; value: string; ico
   return (
     <div className="flex items-center justify-between p-2.5 xl:p-3 bg-white/[0.03] rounded-2xl border border-white/5 shadow-inner">
       <div className="flex flex-col">
-        <span className="text-[0.5rem] font-black text-neutral-600 uppercase tracking-widest italic leading-none mb-1">{label}</span>
-        <span className="text-[0.8rem] font-black text-white truncate max-w-[150px]">{value}</span>
+        <span className="text-[0.65rem] font-black text-neutral-600 uppercase tracking-widest italic leading-none mb-1">{label}</span>
+        <span className="text-[0.95rem] font-black text-white truncate max-w-[150px]">{value}</span>
       </div>
       <div className="text-neutral-700">{icon}</div>
     </div>
