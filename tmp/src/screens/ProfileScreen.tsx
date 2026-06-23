@@ -38,11 +38,8 @@ export default function ProfileScreen() {
              return { 
                result: res, 
                opp: oppName, 
-               r1: '?', 
-               r2: '?', 
                type: m.time_control || '10+0', 
-               date: new Date(m.created_at).toLocaleDateString(), 
-               flag: '🌐' 
+               date: new Date(m.created_at).toLocaleDateString()
              };
            });
            setRecentGames(fmt);
@@ -290,7 +287,9 @@ export default function ProfileScreen() {
 
         <div className="relative z-10 shrink-0">
           <div className="w-28 h-28 bg-neutral-800 rounded-[1.75rem] flex items-center justify-center overflow-hidden shadow-[0_30px_60px_-10px_rgba(0,0,0,0.8)] border-[3px] border-chess-gold/40 relative group/avatar transform hover:scale-105 transition-transform duration-700 ring-4 ring-black/50">
-            <span className="text-5xl group-hover/avatar:scale-110 transition-transform">{profile?.countryCode === 'TR' ? '🇹🇷' : '🇦🇿'}</span>
+            <span className="text-4xl font-black text-white group-hover/avatar:scale-110 transition-transform">
+              {(profile?.username || user?.user_metadata?.username || user?.email || 'G').charAt(0).toUpperCase()}
+            </span>
           </div>
           <div className="absolute -bottom-3 -right-3 bg-emerald-500 text-black p-2.5 rounded-xl shadow-2xl border-4 border-[#161512] animate-bounce z-20">
             <Zap size={14} fill="currentColor" />
@@ -310,7 +309,7 @@ export default function ProfileScreen() {
             </div>
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-neutral-500 font-black text-[0.65rem] uppercase tracking-[0.25em]">
               <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/5 rounded-full backdrop-blur-md">
-                <MapPin size={12} className="text-chess-active" /> {profile?.countryCode || 'AZ'}
+                <MapPin size={12} className="text-chess-active" /> {profile?.countryCode || t('profile.countryNotSet')}
               </div>
               <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/5 rounded-full backdrop-blur-md">
                 <Calendar size={12} className="text-chess-gold" /> {(profile as any)?.created_at ? `${t('profile.memberSince')} ${new Date((profile as any).created_at).getFullYear()}` : t('profile.newPlayer')}
@@ -351,7 +350,7 @@ export default function ProfileScreen() {
                 </div>
                 {t('profile.performance')}
               </h2>
-              <div className="px-2.5 py-1 bg-white/5 rounded-full border border-white/5 text-[0.5rem] font-black text-neutral-500 tracking-widest uppercase">{t('profile.globalRank')}: {t('profile.unranked')}</div>
+              <div className="px-2.5 py-1 bg-white/5 rounded-full border border-white/5 text-[0.5rem] font-black text-neutral-500 tracking-widest uppercase">{t('profile.rankingUnavailable')}</div>
             </div>
 
             {/* Extended Win/Loss/Draw Dashboard */}
@@ -403,7 +402,6 @@ export default function ProfileScreen() {
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-3">
-                      <div className="w-6 h-6 rounded-md bg-neutral-800 flex items-center justify-center text-sm border border-white/5 shadow-lg group-hover/game:translate-y-[-2px] transition-transform">{g.flag}</div>
                       <div className="font-black text-base text-white tracking-tight italic group-hover/game:text-chess-active transition-colors flex items-center gap-2 underline decoration-white/5 group-hover/game:decoration-chess-active/30">
                         vs {g.opp}
                       </div>

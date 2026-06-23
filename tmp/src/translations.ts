@@ -154,6 +154,9 @@ export const translations: TranslationDictionary = {
   'profile.unrated': { en: 'Unrated', de: 'Ohne Wertung', ua: 'Без рейтингу', ru: 'Без рейтинга', az: 'Reytinqsiz', tr: 'Reytingsiz' },
   'profile.newPlayer': { en: 'New player', de: 'Neuer Spieler', ua: 'Новий гравець', ru: 'Новый игрок', az: 'Yeni oyunçu', tr: 'Yeni oyuncu' },
   'profile.unranked': { en: 'Unranked', de: 'Ohne Rang', ua: 'Без рангу', ru: 'Без ранга', az: 'Rangsız', tr: 'Sıralamasız' },
+  'profile.countryNotSet': { en: 'Country not set', de: 'Land nicht festgelegt', ua: 'Країна не вказана', ru: 'Страна не указана', az: 'Ölkə qeyd edilməyib', tr: 'Ülke belirtilmemiş' },
+  'profile.rankingUnavailable': { en: 'Global ranking is not available yet.', de: 'Globale Rangliste noch nicht verfügbar.', ua: 'Глобальний рейтинг ще недоступний.', ru: 'Глобальный рейтинг пока недоступен.', az: 'Qlobal reytinq hələ mövcud deyil.', tr: 'Küresel sıralama henüz mevcut değil.' },
+  'profile.ratingUnavailable': { en: 'Rating unavailable', de: 'Bewertung nicht verfügbar', ua: 'Рейтинг недоступний', ru: 'Рейтинг недоступен', az: 'Reytinq mövcud deyil', tr: 'Puan kullanılamıyor' },
 
   // Settings screen
   'settings.subtitle': { en: 'Configuration & Appearance', de: 'Konfiguration & Aussehen', ua: 'Конфігурація та зовнішній вигляд', ru: 'Конфигурация и внешний вид', az: 'Konfiqurasiya və Görünüş', tr: 'Yapılandırma ve Görünüm' },
