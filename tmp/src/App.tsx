@@ -13,6 +13,7 @@ import GameScreen from './screens/GameScreen';
 import ChatScreen from './screens/ChatScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import UpdatePasswordScreen from './screens/UpdatePasswordScreen';
 
 function App() {
   if (import.meta.env.VITE_MAINTENANCE_MODE === 'true') {
@@ -34,6 +35,7 @@ function App() {
               <Route path="chat" element={<ChatScreen />} />
               <Route path="profile" element={<ProfileScreen />} />
               <Route path="settings" element={<SettingsScreen />} />
+              <Route path="update-password" element={<UpdatePasswordScreen />} />
             </Route>
           </Routes>
         </BrowserRouter>

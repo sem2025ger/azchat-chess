@@ -58,6 +58,7 @@ export default function ProfileScreen() {
   const [username, setUsername] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [authMessage, setAuthMessage] = useState('');
 
   const stats = [
     { label: 'Blitz', value: profile?.ratingBlitz ?? t('profile.unrated'), icon: Zap, color: 'text-amber-400', bg: 'bg-amber-400/5', border: 'border-amber-400/20' },
@@ -69,6 +70,7 @@ export default function ProfileScreen() {
     e.preventDefault();
     setAuthLoading(true);
     setErrorMsg('');
+    setAuthMessage('');
 
     // Pre-flight check for missing environment keys causing fetch crashes
     if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('mock-url') || import.meta.env.VITE_SUPABASE_URL.includes('YOUR_PROJECT_REF')) {
@@ -97,6 +99,49 @@ export default function ProfileScreen() {
       } else {
          setErrorMsg(err.message || 'Authentication error');
       }
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setErrorMsg('');
+    setAuthMessage('');
+    if (!email) {
+      setErrorMsg(t('auth.emailRequired'));
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/update-password`
+      });
+      if (error) throw error;
+      setAuthMessage(t('auth.resetEmailSent'));
+    } catch (err: any) {
+      setErrorMsg(err.message || t('auth.recoveryError'));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleMagicLink = async () => {
+    setErrorMsg('');
+    setAuthMessage('');
+    if (!email) {
+      setErrorMsg(t('auth.emailRequired'));
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/profile` }
+      });
+      if (error) throw error;
+      setAuthMessage(t('auth.magicLinkSent'));
+    } catch (err: any) {
+      setErrorMsg(err.message || t('auth.recoveryError'));
     } finally {
       setAuthLoading(false);
     }
@@ -177,9 +222,16 @@ export default function ProfileScreen() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-base font-semibold text-neutral-200 block mb-1">
-                  {t('auth.passwordLabel')}
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-base font-semibold text-neutral-200 block">
+                    {t('auth.passwordLabel')}
+                  </label>
+                  {isLoginMode && (
+                    <button type="button" onClick={handleForgotPassword} className="text-sm text-chess-gold hover:text-white transition-colors focus:outline-none">
+                      {t('auth.forgotPassword')}
+                    </button>
+                  )}
+                </div>
                 <input 
                   required 
                   value={password} 
@@ -195,10 +247,30 @@ export default function ProfileScreen() {
                 </div>
               )}
 
+              {authMessage && (
+                <div className="text-center p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-lg mt-4">
+                  {authMessage}
+                </div>
+              )}
+
               <button disabled={authLoading} type="submit" className="w-full py-4 md:py-5 mt-4 bg-chess-gold/90 hover:bg-chess-gold disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-bold text-lg shadow-lg shadow-chess-gold/10 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
                 {authLoading ? <Loader2 size={18} className="animate-spin" /> : null}
                 {isLoginMode ? t('auth.submitLogin') : t('auth.submitRegister')}
               </button>
+
+              {isLoginMode && (
+                <>
+                  <div className="flex items-center gap-3 my-4">
+                    <div className="flex-1 h-px bg-white/10"></div>
+                    <span className="text-sm text-neutral-500 uppercase tracking-widest">{t('auth.or')}</span>
+                    <div className="flex-1 h-px bg-white/10"></div>
+                  </div>
+                  <button type="button" onClick={handleMagicLink} disabled={authLoading} className="w-full py-4 md:py-5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg border border-white/5 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
+                    {authLoading ? <Loader2 size={18} className="animate-spin" /> : null}
+                    {t('auth.emailLinkLogin')}
+                  </button>
+                </>
+              )}
             </form>
           </div>
         </div>
