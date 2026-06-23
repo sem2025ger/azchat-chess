@@ -248,4 +248,12 @@ export const translations: TranslationDictionary = {
   'play.liveStatus': { en: 'LIVE', de: 'LIVE', ua: 'ОНЛАЙН', ru: 'ОНЛАЙН', az: 'CANLI', tr: 'CANLI' },
   'play.playerMode': { en: 'Player Mode', de: 'Spielermodus', ua: 'Режим гравця', ru: 'Режим игрока', az: 'Oyunçu rejimi', tr: 'Oyuncu modu' },
   'play.guestMode': { en: 'Guest Mode', de: 'Gastmodus', ua: 'Гостьовий режим', ru: 'Гостевой режим', az: 'Qonaq rejimi', tr: 'Misafir modu' },
+
+  'auth.signIn': { en: 'Sign In', ru: 'Войти', az: 'Daxil ol', tr: 'Giriş Yap', ua: 'Увійти', de: 'Anmelden' },
+  'auth.register': { en: 'Register', ru: 'Регистрация', az: 'Qeydiyyat', tr: 'Kayıt Ol', ua: 'Реєстрація', de: 'Registrieren' },
+  'auth.emailLabel': { en: 'Email Address', ru: 'Электронная почта', az: 'Elektron poçt', tr: 'E-posta Adresi', ua: 'Електронна пошта', de: 'E-Mail-Adresse' },
+  'auth.passwordLabel': { en: 'Password', ru: 'Пароль', az: 'Şifrə', tr: 'Şifre', ua: 'Пароль', de: 'Passwort' },
+  'auth.usernameLabel': { en: 'Username', ru: 'Имя пользователя', az: 'İstifadəçi adı', tr: 'Kullanıcı Adı', ua: 'Ім\'я користувача', de: 'Benutzername' },
+  'auth.submitLogin': { en: 'Sign In', ru: 'Войти', az: 'Daxil ol', tr: 'Giriş Yap', ua: 'Увійти', de: 'Anmelden' },
+  'auth.submitRegister': { en: 'Create Account', ru: 'Создать аккаунт', az: 'Hesab yarat', tr: 'Hesap Oluştur', ua: 'Створити акаунт', de: 'Konto erstellen' },
 };

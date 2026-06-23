@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Target, Swords, Zap, Activity, Calendar, MapPin, LogOut, Loader2, KeyRound, Mail, User as UserIcon } from 'lucide-react';
+import { Target, Swords, Zap, Activity, Calendar, MapPin, LogOut, Loader2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
@@ -115,57 +115,91 @@ export default function ProfileScreen() {
       <div className="max-w-6xl mx-auto px-4 py-8 md:px-8 overflow-y-auto lg:overflow-hidden bg-transparent h-full min-h-0 touch-pan-y pb-28 lg:pb-0 lg:h-full flex flex-col items-center justify-center relative">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-overlay"></div>
         
-        <div className="w-full max-w-md bg-neutral-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] animate-fade-in-up relative overflow-hidden ring-1 ring-white/5">
+        <div className="w-full md:w-[700px] lg:w-[740px] max-w-[calc(100vw-2rem)] bg-neutral-900/85 backdrop-blur-2xl border-[2px] border-transparent rounded-[1.75rem] p-7 md:p-10 lg:p-11 shadow-[0_30px_90px_-35px_rgba(0,0,0,0.95)] animate-fade-in-up relative overflow-hidden panel-glow-cycle transition-all">
           <div className="absolute -left-20 -top-20 w-[400px] h-[400px] bg-chess-gold/10 blur-[120px] pointer-events-none" />
           
-          <h2 className="text-3xl font-black text-white italic tracking-tighter text-center mb-8 relative z-10 uppercase transform-gpu skew-x-[-2deg]">
-            {isLoginMode ? 'Sign In' : 'Create Account'}
-          </h2>
+          <div className="w-full max-w-[560px] mx-auto relative z-10">
+            <div className="flex border-b border-white/10 -mt-2 mb-7">
+              <button
+                type="button"
+                onClick={() => setIsLoginMode(true)}
+                className={`flex-1 py-4 text-lg font-semibold transition-colors relative focus:outline-none ${
+                  isLoginMode ? 'text-chess-gold' : 'text-neutral-500 hover:text-neutral-300'
+                }`}
+              >
+                {t('auth.signIn')}
+                {isLoginMode && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-chess-gold" />
+                )}
+              </button>
 
-          <form onSubmit={handleAuth} className="space-y-5 relative z-10">
-            {!isLoginMode && (
-              <div className="space-y-1">
-                <label className="text-[0.6rem] font-black text-neutral-500 uppercase tracking-widest pl-2">Username</label>
-                <div className="relative group">
-                  <UserIcon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-chess-gold transition-colors" />
-                  <input required value={username} onChange={e => setUsername(e.target.value)} type="text" placeholder="QaraQaplan_99" className="w-full bg-black/50 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder-neutral-700 font-bold focus:outline-none focus:border-chess-gold transition-all shadow-inner" />
+              <button
+                type="button"
+                onClick={() => setIsLoginMode(false)}
+                className={`flex-1 py-4 text-lg font-semibold transition-colors relative focus:outline-none ${
+                  !isLoginMode ? 'text-chess-gold' : 'text-neutral-500 hover:text-neutral-300'
+                }`}
+              >
+                {t('auth.register')}
+                {!isLoginMode && (
+                  <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-chess-gold" />
+                )}
+              </button>
+            </div>
+
+            <form onSubmit={handleAuth} className="space-y-5 md:space-y-6">
+              {!isLoginMode && (
+                <div className="space-y-1">
+                  <label className="text-base font-semibold text-neutral-200 block mb-1">
+                    {t('auth.usernameLabel')}
+                  </label>
+                  <input 
+                    required 
+                    value={username} 
+                    onChange={e => setUsername(e.target.value)} 
+                    type="text" 
+                    className="w-full px-5 py-4 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
+                  />
                 </div>
+              )}
+              
+              <div className="space-y-1">
+                <label className="text-base font-semibold text-neutral-200 block mb-1">
+                  {t('auth.emailLabel')}
+                </label>
+                <input 
+                  required 
+                  value={email} 
+                  onChange={e => setEmail(e.target.value)} 
+                  type="email" 
+                  className="w-full px-5 py-4 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
+                />
               </div>
-            )}
-            
-            <div className="space-y-1">
-              <label className="text-[0.6rem] font-black text-neutral-500 uppercase tracking-widest pl-2">Email Address</label>
-              <div className="relative group">
-                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-chess-gold transition-colors" />
-                <input required value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="player@aztr.com" className="w-full bg-black/50 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder-neutral-700 font-bold focus:outline-none focus:border-chess-gold transition-all shadow-inner" />
+
+              <div className="space-y-1">
+                <label className="text-base font-semibold text-neutral-200 block mb-1">
+                  {t('auth.passwordLabel')}
+                </label>
+                <input 
+                  required 
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  type="password" 
+                  className="w-full px-5 py-4 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
+                />
               </div>
-            </div>
 
-            <div className="space-y-1">
-              <label className="text-[0.6rem] font-black text-neutral-500 uppercase tracking-widest pl-2">Password</label>
-              <div className="relative group">
-                <KeyRound size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-chess-gold transition-colors" />
-                <input required value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full bg-black/50 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white placeholder-neutral-700 font-bold focus:outline-none focus:border-chess-gold transition-all shadow-inner" />
-              </div>
-            </div>
+              {errorMsg && (
+                <div className="text-center p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-lg mt-4">
+                  {errorMsg}
+                </div>
+              )}
 
-            {errorMsg && (
-              <div className="text-center p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-black uppercase tracking-widest rounded-xl">
-                {errorMsg}
-              </div>
-            )}
-
-            <button disabled={authLoading} type="submit" className="w-full py-4 mt-2 bg-gradient-to-r from-chess-gold via-amber-400 to-amber-500 hover:from-amber-400 hover:to-yellow-400 disabled:opacity-50 text-black rounded-2xl font-black text-lg shadow-[0_10px_30px_-5px_rgba(223,176,98,0.4)] transition-all flex items-center justify-center gap-3 active:scale-95">
-              {authLoading ? <Loader2 size={20} className="animate-spin" /> : null}
-              {isLoginMode ? 'AUTHENTICATE' : 'SECURE REGISTRATION'}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center text-[0.65rem] font-black tracking-widest uppercase relative z-10">
-            <span className="text-neutral-600">{isLoginMode ? "Don't have an account? " : "Already registered? "}</span>
-            <button onClick={() => setIsLoginMode(!isLoginMode)} className="text-chess-gold hover:text-white transition-colors underline decoration-chess-gold/30 underline-offset-4">
-              {isLoginMode ? 'Create one now' : 'Sign in here'}
-            </button>
+              <button disabled={authLoading} type="submit" className="w-full py-4 md:py-5 mt-4 bg-chess-gold/90 hover:bg-chess-gold disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-bold text-lg shadow-lg shadow-chess-gold/10 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
+                {authLoading ? <Loader2 size={18} className="animate-spin" /> : null}
+                {isLoginMode ? t('auth.submitLogin') : t('auth.submitRegister')}
+              </button>
+            </form>
           </div>
         </div>
       </div>
