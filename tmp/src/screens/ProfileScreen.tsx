@@ -276,134 +276,140 @@ export default function ProfileScreen() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-2 md:px-8 md:py-3 overflow-y-auto lg:overflow-hidden bg-transparent h-full min-h-0 overscroll-y-contain touch-pan-y pb-28 lg:pb-0 lg:h-full">
+    <div className="max-w-[1400px] mx-auto px-4 py-2 md:px-6 md:py-4 overflow-y-auto lg:overflow-hidden bg-transparent h-full min-h-0 overscroll-y-contain touch-pan-y pb-28 lg:pb-0 lg:h-full">
 
-      {/* Profile Identity - High Fidelity */}
-      <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-6 md:p-8 shadow-[0_0_100px_-20px_rgba(0,0,0,1)] animate-fade-in-up flex flex-col md:flex-row items-center gap-8 mb-6 relative overflow-hidden ring-1 ring-white/10 group">
+      {/* Profile Identity - Compact Professional Header */}
+      <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-5 md:p-6 shadow-[0_0_80px_-20px_rgba(0,0,0,1)] animate-fade-in-up flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-8 mb-5 relative overflow-hidden ring-1 ring-white/10 group">
 
         {/* Glow behind profile */}
         <div className="absolute -left-20 -top-20 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] pointer-events-none group-hover:bg-chess-gold/15 transition-colors duration-1000" />
         <div className="absolute right-0 bottom-0 w-[500px] h-[500px] bg-chess-active/5 blur-[120px] pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
 
-        <div className="relative z-10 shrink-0">
-          <div className="w-32 h-32 bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-[2rem] flex items-center justify-center overflow-hidden shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] border border-white/10 relative group/avatar transform hover:scale-105 transition-transform duration-700 ring-4 ring-black/50">
-            <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-neutral-500 group-hover/avatar:scale-110 transition-transform">
-              {(profile?.username || user?.user_metadata?.username || user?.email || 'G').charAt(0).toUpperCase()}
-            </span>
+        <div className="flex items-center gap-6 z-10 w-full md:w-auto md:border-r border-white/10 md:pr-8">
+          <div className="relative shrink-0">
+            <div className="w-24 h-24 bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-[1.5rem] flex items-center justify-center overflow-hidden shadow-[0_15px_40px_-10px_rgba(0,0,0,1)] border border-white/10 relative group/avatar transform hover:scale-105 transition-transform duration-700 ring-4 ring-black/50">
+              <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-neutral-500 group-hover/avatar:scale-110 transition-transform">
+                {(profile?.username || user?.user_metadata?.username || user?.email || 'G').charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="absolute -bottom-3 -right-3 bg-gradient-to-br from-emerald-400 to-emerald-600 text-black p-2.5 rounded-[0.85rem] shadow-2xl border-[3px] border-[#161512] animate-bounce z-20">
+              <Zap size={14} fill="currentColor" />
+            </div>
           </div>
-          <div className="absolute -bottom-4 -right-4 bg-gradient-to-br from-emerald-400 to-emerald-600 text-black p-3 rounded-2xl shadow-2xl border-[3px] border-[#161512] animate-bounce z-20">
-            <Zap size={16} fill="currentColor" />
-          </div>
-        </div>
 
-        <div className="flex-1 text-center md:text-left relative z-10 space-y-5">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col md:items-start items-center gap-1">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter drop-shadow-2xl">
-                    {profile?.username || user?.user_metadata?.username || 'Guest'}
-                  </h1>
-                  {profile?.role && (
-                    <span className="bg-chess-gold/20 border border-chess-gold/30 text-chess-gold font-black text-[0.65rem] px-3 py-1 rounded-xl uppercase tracking-widest shadow-lg shadow-chess-gold/10">
-                      {profile.role}
-                    </span>
-                  )}
-                </div>
-                {user?.email && (
-                  <div className="text-sm font-semibold text-neutral-500 tracking-wide">
-                    {user.email}
-                  </div>
+          <div className="flex-1 space-y-2">
+            <div className="flex flex-col md:items-start items-start gap-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl md:text-3xl font-black text-white italic tracking-tighter drop-shadow-xl line-clamp-1">
+                  {profile?.username || user?.user_metadata?.username || 'Guest'}
+                </h1>
+                {profile?.role && (
+                  <span className="bg-chess-gold/20 border border-chess-gold/30 text-chess-gold font-black text-[0.6rem] px-2.5 py-0.5 rounded-lg uppercase tracking-widest shadow-md">
+                    {profile.role}
+                  </span>
                 )}
               </div>
-              <button onClick={signOut} className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-all font-black text-[0.65rem] uppercase tracking-widest hidden md:flex active:scale-95 shadow-lg shadow-red-500/5">
-                <LogOut size={16} /> SIGN OUT
-              </button>
+              {user?.email && (
+                <div className="text-xs font-semibold text-neutral-500 tracking-wide line-clamp-1">
+                  {user.email}
+                </div>
+              )}
             </div>
             
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-neutral-400 font-black text-[0.65rem] uppercase tracking-[0.2em]">
+            <div className="flex flex-wrap items-center gap-2.5 text-neutral-400 font-black text-[0.6rem] uppercase tracking-[0.15em] pt-1">
               {profile?.countryCode && (
-                <div className="flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/5 rounded-full backdrop-blur-md shadow-inner ring-1 ring-white/5">
-                  <MapPin size={14} className="text-chess-active" /> {profile.countryCode}
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full backdrop-blur-md shadow-inner ring-1 ring-white/5">
+                  <MapPin size={12} className="text-chess-active" /> {profile.countryCode}
                 </div>
               )}
               {!profile?.countryCode && (
-                <div className="flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/5 rounded-full backdrop-blur-md shadow-inner ring-1 ring-white/5 opacity-60">
-                  <MapPin size={14} className="text-neutral-500" /> {t('profile.countryNotSet')}
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full backdrop-blur-md shadow-inner ring-1 ring-white/5 opacity-60">
+                  <MapPin size={12} className="text-neutral-500" /> {t('profile.countryNotSet')}
                 </div>
               )}
-              <div className="flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/5 rounded-full backdrop-blur-md shadow-inner ring-1 ring-white/5">
-                <Calendar size={14} className="text-chess-gold" /> {(profile as any)?.created_at ? `${t('profile.memberSince')} ${new Date((profile as any).created_at).getFullYear()}` : t('profile.newPlayer')}
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/5 rounded-full backdrop-blur-md shadow-inner ring-1 ring-white/5">
+                <Calendar size={12} className="text-chess-gold" /> {(profile as any)?.created_at ? `${t('profile.memberSince')} ${new Date((profile as any).created_at).getFullYear()}` : t('profile.newPlayer')}
               </div>
             </div>
-            <button onClick={signOut} className="mt-4 mx-auto flex md:hidden items-center justify-center gap-2 w-full py-3.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl border border-red-500/20 transition-all font-black text-[0.65rem] uppercase tracking-widest shadow-lg shadow-red-500/5">
-              <LogOut size={16} /> Sign Out
-            </button>
           </div>
+        </div>
 
-          {/* Rating Dashboard Section */}
-          <div className="grid grid-cols-3 gap-3 md:gap-4 max-w-2xl mx-auto md:mx-0">
+        {/* Rating Dashboard Section */}
+        <div className="flex-1 flex flex-col justify-center z-10">
+          <div className="grid grid-cols-3 gap-3">
             {stats.map((s, i) => (
               <div key={i} className={cx(
-                "flex flex-col p-4 md:p-5 rounded-[1.75rem] border transition-all duration-500 hover:scale-[1.03] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] group/stat ring-1 backdrop-blur-md relative overflow-hidden",
+                "flex flex-col p-3 md:p-4 rounded-[1.25rem] border transition-all duration-500 hover:scale-[1.03] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] group/stat ring-1 backdrop-blur-md relative overflow-hidden",
                 s.bg, s.border, s.border.replace('border-', 'ring-')
               )}>
                 <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-                <div className={cx("flex items-center gap-2 text-[0.6rem] md:text-xs font-black uppercase tracking-[0.2em] mb-2 z-10", s.color)}>
-                  <s.icon size={14} /> {s.label}
+                <div className={cx("flex items-center gap-1.5 text-[0.55rem] md:text-[0.65rem] font-black uppercase tracking-[0.2em] mb-1 z-10", s.color)}>
+                  <s.icon size={12} /> {s.label}
                 </div>
-                <span className="text-2xl md:text-3xl font-black text-white italic tracking-tighter tabular-nums group-hover/stat:translate-x-1 transition-transform z-10">
+                <span className="text-xl md:text-2xl font-black text-white italic tracking-tighter tabular-nums group-hover/stat:translate-x-1 transition-transform z-10">
                   {s.value}
                 </span>
               </div>
             ))}
           </div>
         </div>
+        
+        <div className="hidden md:flex items-center z-10 border-l border-white/10 pl-6 shrink-0">
+          <button onClick={signOut} aria-label="Sign out" title="Sign out" className="flex items-center gap-2 px-4 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-all font-black text-[0.65rem] uppercase tracking-widest active:scale-95 shadow-lg shadow-red-500/5">
+            <LogOut size={16} />
+            <span className="hidden xl:inline">SIGN OUT</span>
+          </button>
+        </div>
+        
+        <button onClick={signOut} className="flex md:hidden items-center justify-center gap-2 w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-all font-black text-[0.65rem] uppercase tracking-widest shadow-lg shadow-red-500/5 z-10">
+          <LogOut size={14} /> SIGN OUT
+        </button>
       </div>
 
-      {/* Main Content Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Main Content Layout - Two Columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-5 lg:gap-6">
 
-        {/* Left Column: Stats & Performance */}
-        <div className="space-y-4 animate-fade-in-up delay-200">
-          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-6 group/perform relative overflow-hidden">
+        {/* Left/Main Column: Stats & Recent Games */}
+        <div className="lg:col-span-2 xl:col-span-3 space-y-5 lg:space-y-6 animate-fade-in-up delay-200">
+          
+          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-5 md:p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-5 group/perform relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
             
             <div className="flex items-center justify-between relative z-10">
-              <h2 className="text-lg font-black text-white italic tracking-tighter uppercase flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-chess-active/20 to-chess-active/5 rounded-xl text-chess-active group-hover/perform:scale-110 transition-transform shadow-lg shadow-chess-active/10 border border-chess-active/20">
-                  <Activity size={20} />
+              <h2 className="text-base md:text-lg font-black text-white italic tracking-tighter uppercase flex items-center gap-3">
+                <div className="p-2 md:p-2.5 bg-gradient-to-br from-chess-active/20 to-chess-active/5 rounded-xl text-chess-active group-hover/perform:scale-110 transition-transform shadow-lg shadow-chess-active/10 border border-chess-active/20">
+                  <Activity size={18} />
                 </div>
                 {t('profile.performance')}
               </h2>
-              <div className="px-3 py-1.5 bg-white/5 rounded-full border border-white/5 text-[0.55rem] font-black text-neutral-500 tracking-widest uppercase shadow-inner ring-1 ring-white/5">{t('profile.rankingUnavailable')}</div>
+              <div className="px-3 py-1.5 bg-white/5 rounded-full border border-white/5 text-[0.5rem] md:text-[0.55rem] font-black text-neutral-500 tracking-widest uppercase shadow-inner ring-1 ring-white/5">{t('profile.rankingUnavailable')}</div>
             </div>
 
             {/* Extended Win/Loss/Draw Dashboard */}
             <div className="space-y-4 relative z-10">
-              <div className="flex justify-between text-[0.65rem] font-black uppercase tracking-widest text-neutral-500 bg-black/20 p-4 rounded-2xl border border-white/5">
+              <div className="flex justify-between text-[0.6rem] md:text-[0.65rem] font-black uppercase tracking-widest text-neutral-500 bg-black/20 p-3.5 md:p-4 rounded-2xl border border-white/5">
                 <div className="flex flex-col gap-1">
                   <span className="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]">{t('profile.wins')}</span>
-                  <span className="text-2xl text-white font-black">{dbStats.wins}</span>
+                  <span className="text-xl md:text-2xl text-white font-black">{dbStats.wins}</span>
                 </div>
                 <div className="flex flex-col gap-1 items-center">
                   <span className="text-neutral-400">{t('profile.draws')}</span>
-                  <span className="text-2xl text-white font-black">{dbStats.draws}</span>
+                  <span className="text-xl md:text-2xl text-white font-black">{dbStats.draws}</span>
                 </div>
                 <div className="flex flex-col gap-1 items-end">
                   <span className="text-rose-400 drop-shadow-[0_0_5px_rgba(251,113,133,0.5)]">{t('profile.losses')}</span>
-                  <span className="text-2xl text-white font-black">{dbStats.losses}</span>
+                  <span className="text-xl md:text-2xl text-white font-black">{dbStats.losses}</span>
                 </div>
               </div>
-              <div className="relative h-5 w-full bg-black/60 rounded-full overflow-hidden flex shadow-[inset_0_4px_10px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-white/5">
+              <div className="relative h-4 md:h-5 w-full bg-black/60 rounded-full overflow-hidden flex shadow-[inset_0_4px_10px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-white/5">
                 <div style={{ width: `${Math.max(1, (dbStats.wins/(dbStats.wins+dbStats.losses+dbStats.draws||1))*100)}%` }} className="bg-gradient-to-r from-emerald-600 to-emerald-400 relative group/win transition-all duration-700 hover:opacity-80"></div>
                 <div style={{ width: `${Math.max(1, (dbStats.draws/(dbStats.wins+dbStats.losses+dbStats.draws||1))*100)}%` }} className="bg-gradient-to-r from-neutral-600 to-neutral-400 relative group/draw transition-all duration-700 hover:opacity-80"></div>
                 <div style={{ width: `${Math.max(1, (dbStats.losses/(dbStats.wins+dbStats.losses+dbStats.draws||1))*100)}%` }} className="bg-gradient-to-r from-rose-600 to-rose-400 relative group/loss transition-all duration-700 hover:opacity-80"></div>
                 <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
               </div>
               <div className="flex justify-center pt-1">
-                <span className="text-[0.6rem] font-black text-neutral-400 uppercase tracking-widest italic flex items-center gap-2">
+                <span className="text-[0.55rem] md:text-[0.6rem] font-black text-neutral-400 uppercase tracking-widest italic flex items-center gap-2">
                   {t('profile.winRate')}: <span className="text-white drop-shadow-md">{dbStats.rate}%</span> 
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
                 </span>
@@ -411,69 +417,73 @@ export default function ProfileScreen() {
             </div>
           </div>
 
-          {/* Achievements Placeholder */}
-          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-4 relative overflow-hidden flex flex-col items-center justify-center min-h-[160px] group/achievements text-center">
+          <div className="flex flex-col space-y-3 md:space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-lg md:text-xl font-black text-white italic tracking-tighter uppercase drop-shadow-md">{t('profile.recentGames')}</h2>
+            </div>
+
+            {recentGames.length === 0 ? (
+              <div className="w-full bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 flex flex-col items-center justify-center py-10 md:py-16 text-center relative overflow-hidden group/empty">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-black/40 border border-white/5 flex items-center justify-center shadow-inner mb-4 md:mb-6 group-hover/empty:scale-110 transition-transform duration-700">
+                  <Activity size={28} className="text-neutral-600" />
+                </div>
+                <h3 className="text-base md:text-lg font-black text-neutral-300 italic tracking-widest uppercase mb-2">{t('profile.noRecentGames')}</h3>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentGames.map((g, i) => (
+                  <div key={i} className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 px-5 py-4 md:px-6 md:py-5 rounded-[1.75rem] md:rounded-[2rem] flex items-center justify-between hover:bg-neutral-900/90 transition-all duration-500 group/game shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/10 relative overflow-hidden cursor-default hover:scale-[1.01]">
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none opacity-0 group-hover/game:opacity-100 transition-opacity" />
+                    
+                    <div className="flex items-center gap-4 md:gap-6 relative z-10 w-full">
+                      <div className={cx(
+                        "w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-[1.25rem] flex items-center justify-center font-black text-lg md:text-xl shadow-2xl transition-all duration-500 group-hover/game:scale-110 group-hover/game:rotate-[5deg] border border-current shrink-0",
+                        g.result === 'win' ? "bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/30 shadow-emerald-500/20" :
+                          g.result === 'loss' ? "bg-gradient-to-br from-rose-500/20 to-rose-500/5 text-rose-400 border-rose-500/30 shadow-rose-500/20" : "bg-gradient-to-br from-neutral-500/20 to-neutral-500/5 text-neutral-400 border-neutral-500/30 shadow-neutral-500/20"
+                      )}>
+                        {g.result === 'win' ? '1-0' : g.result === 'loss' ? '0-1' : '½-½'}
+                      </div>
+                      
+                      <div className="space-y-1 md:space-y-1.5 flex-1">
+                        <div className="flex items-center justify-between w-full">
+                          <div className="font-black text-base md:text-lg text-white tracking-tight italic group-hover/game:text-chess-active transition-colors flex items-center gap-1.5 md:gap-2 drop-shadow-md">
+                            <span className="text-neutral-500 text-xs md:text-sm font-bold no-italic">vs</span> {g.opp || t('profile.unknownOpponent')}
+                          </div>
+                          <div className="text-[0.6rem] md:text-[0.65rem] text-neutral-400 font-black uppercase tracking-widest bg-black/40 px-2.5 py-1 md:px-3 md:py-1.5 rounded-xl border border-white/5 ring-1 ring-white/5">
+                            {g.type}
+                          </div>
+                        </div>
+                        
+                        <div className="text-[0.55rem] md:text-[0.6rem] text-neutral-500 font-bold uppercase tracking-widest flex items-center gap-2 md:gap-3">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar size={10} className="opacity-70" /> {g.date}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Sidebar */}
+        <div className="space-y-5 lg:space-y-6 animate-fade-in-up delay-300">
+          
+          {/* Achievements Locked */}
+          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-4 relative overflow-hidden flex flex-col items-center justify-center py-12 lg:min-h-[220px] group/achievements text-center">
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
             <div className="w-14 h-14 rounded-full bg-black/40 border border-white/5 flex items-center justify-center shadow-inner mb-2 group-hover/achievements:scale-110 transition-transform">
               <Zap size={24} className="text-neutral-600" />
             </div>
-            <h3 className="text-sm font-black text-neutral-400 italic tracking-widest uppercase">{t('profile.achievements')}</h3>
-            <p className="text-[0.65rem] font-bold text-neutral-600 uppercase tracking-widest max-w-[200px] leading-relaxed">
+            <h3 className="text-sm md:text-base font-black text-neutral-400 italic tracking-widest uppercase">{t('profile.achievements')}</h3>
+            <p className="text-[0.6rem] md:text-[0.65rem] font-bold text-neutral-600 uppercase tracking-widest max-w-[200px] leading-relaxed">
               {t('profile.achievementsLocked')}
             </p>
           </div>
-        </div>
 
-        {/* Right Column: Historical Overview */}
-        <div className="lg:col-span-2 space-y-4 animate-fade-in-up delay-300 flex flex-col">
-          <div className="flex items-center justify-between px-2 pt-1">
-            <h2 className="text-xl font-black text-white italic tracking-tighter uppercase drop-shadow-md">{t('profile.recentGames')}</h2>
-          </div>
-
-          {recentGames.length === 0 ? (
-            <div className="flex-1 bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 flex flex-col items-center justify-center p-12 text-center relative overflow-hidden group/empty min-h-[300px]">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
-              <div className="w-20 h-20 rounded-full bg-black/40 border border-white/5 flex items-center justify-center shadow-inner mb-6 group-hover/empty:scale-110 transition-transform duration-700">
-                <Activity size={32} className="text-neutral-600" />
-              </div>
-              <h3 className="text-lg font-black text-neutral-300 italic tracking-widest uppercase mb-3">{t('profile.noRecentGames')}</h3>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {recentGames.map((g, i) => (
-                <div key={i} className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 px-6 py-5 rounded-[2rem] flex items-center justify-between hover:bg-neutral-900/90 transition-all duration-500 group/game shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/10 relative overflow-hidden cursor-default hover:scale-[1.01]">
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none opacity-0 group-hover/game:opacity-100 transition-opacity" />
-                  
-                  <div className="flex items-center gap-6 relative z-10 w-full">
-                    <div className={cx(
-                      "w-14 h-14 rounded-[1.25rem] flex items-center justify-center font-black text-xl shadow-2xl transition-all duration-500 group-hover/game:scale-110 group-hover/game:rotate-[5deg] border border-current shrink-0",
-                      g.result === 'win' ? "bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/30 shadow-emerald-500/20" :
-                        g.result === 'loss' ? "bg-gradient-to-br from-rose-500/20 to-rose-500/5 text-rose-400 border-rose-500/30 shadow-rose-500/20" : "bg-gradient-to-br from-neutral-500/20 to-neutral-500/5 text-neutral-400 border-neutral-500/30 shadow-neutral-500/20"
-                    )}>
-                      {g.result === 'win' ? '1-0' : g.result === 'loss' ? '0-1' : '½-½'}
-                    </div>
-                    
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex items-center justify-between w-full">
-                        <div className="font-black text-lg text-white tracking-tight italic group-hover/game:text-chess-active transition-colors flex items-center gap-2 drop-shadow-md">
-                          <span className="text-neutral-500 text-sm font-bold no-italic">vs</span> {g.opp || t('profile.unknownOpponent')}
-                        </div>
-                        <div className="text-[0.65rem] text-neutral-400 font-black uppercase tracking-widest bg-black/40 px-3 py-1.5 rounded-xl border border-white/5 ring-1 ring-white/5">
-                          {g.type}
-                        </div>
-                      </div>
-                      
-                      <div className="text-[0.6rem] text-neutral-500 font-bold uppercase tracking-widest flex items-center gap-3">
-                        <span className="flex items-center gap-1.5">
-                          <Calendar size={10} className="opacity-70" /> {g.date}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
       </div>
