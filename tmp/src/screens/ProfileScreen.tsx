@@ -279,58 +279,83 @@ export default function ProfileScreen() {
     <div className="max-w-6xl mx-auto px-4 py-2 md:px-8 md:py-3 overflow-y-auto lg:overflow-hidden bg-transparent h-full min-h-0 overscroll-y-contain touch-pan-y pb-28 lg:pb-0 lg:h-full">
 
       {/* Profile Identity - High Fidelity */}
-      <div className="bg-neutral-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-5 md:p-7 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] animate-fade-in-up flex flex-col md:flex-row items-center gap-6 mb-4 relative overflow-hidden ring-1 ring-white/5 group">
+      <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] p-6 md:p-8 shadow-[0_0_100px_-20px_rgba(0,0,0,1)] animate-fade-in-up flex flex-col md:flex-row items-center gap-8 mb-6 relative overflow-hidden ring-1 ring-white/10 group">
 
         {/* Glow behind profile */}
-        <div className="absolute -left-20 -top-20 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] pointer-events-none group-hover:bg-chess-gold/10 transition-colors duration-1000" />
-        <div className="absolute right-0 bottom-0 w-96 h-96 bg-chess-active/5 blur-[120px] pointer-events-none" />
+        <div className="absolute -left-20 -top-20 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] pointer-events-none group-hover:bg-chess-gold/15 transition-colors duration-1000" />
+        <div className="absolute right-0 bottom-0 w-[500px] h-[500px] bg-chess-active/5 blur-[120px] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
 
         <div className="relative z-10 shrink-0">
-          <div className="w-28 h-28 bg-neutral-800 rounded-[1.75rem] flex items-center justify-center overflow-hidden shadow-[0_30px_60px_-10px_rgba(0,0,0,0.8)] border-[3px] border-chess-gold/40 relative group/avatar transform hover:scale-105 transition-transform duration-700 ring-4 ring-black/50">
-            <span className="text-4xl font-black text-white group-hover/avatar:scale-110 transition-transform">
+          <div className="w-32 h-32 bg-gradient-to-br from-neutral-800 to-neutral-900 rounded-[2rem] flex items-center justify-center overflow-hidden shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] border border-white/10 relative group/avatar transform hover:scale-105 transition-transform duration-700 ring-4 ring-black/50">
+            <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-neutral-500 group-hover/avatar:scale-110 transition-transform">
               {(profile?.username || user?.user_metadata?.username || user?.email || 'G').charAt(0).toUpperCase()}
             </span>
           </div>
-          <div className="absolute -bottom-3 -right-3 bg-emerald-500 text-black p-2.5 rounded-xl shadow-2xl border-4 border-[#161512] animate-bounce z-20">
-            <Zap size={14} fill="currentColor" />
+          <div className="absolute -bottom-4 -right-4 bg-gradient-to-br from-emerald-400 to-emerald-600 text-black p-3 rounded-2xl shadow-2xl border-[3px] border-[#161512] animate-bounce z-20">
+            <Zap size={16} fill="currentColor" />
           </div>
         </div>
 
-        <div className="flex-1 text-center md:text-left relative z-10 space-y-3">
-          <div>
+        <div className="flex-1 text-center md:text-left relative z-10 space-y-5">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                <h1 className="text-3xl md:text-4xl font-black text-white italic tracking-tighter transform-gpu skew-x-[-1deg]">{profile?.username || user?.user_metadata?.username || 'Guest'}</h1>
-                <span className="bg-chess-gold font-black text-black text-[0.6rem] px-3 py-1 rounded-xl uppercase tracking-widest shadow-lg shadow-chess-gold/20 animate-pulse">{profile?.role?.toUpperCase() || 'PLAYER'}</span>
+              <div className="flex flex-col md:items-start items-center gap-1">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter drop-shadow-2xl">
+                    {profile?.username || user?.user_metadata?.username || 'Guest'}
+                  </h1>
+                  {profile?.role && (
+                    <span className="bg-chess-gold/20 border border-chess-gold/30 text-chess-gold font-black text-[0.65rem] px-3 py-1 rounded-xl uppercase tracking-widest shadow-lg shadow-chess-gold/10">
+                      {profile.role}
+                    </span>
+                  )}
+                </div>
+                {user?.email && (
+                  <div className="text-sm font-semibold text-neutral-500 tracking-wide">
+                    {user.email}
+                  </div>
+                )}
               </div>
-              <button onClick={signOut} className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-all font-black text-[0.6rem] uppercase tracking-widest hidden md:flex active:scale-95">
-                <LogOut size={14} /> SIGN OUT
+              <button onClick={signOut} className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl border border-red-500/20 transition-all font-black text-[0.65rem] uppercase tracking-widest hidden md:flex active:scale-95 shadow-lg shadow-red-500/5">
+                <LogOut size={16} /> SIGN OUT
               </button>
             </div>
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-neutral-500 font-black text-[0.65rem] uppercase tracking-[0.25em]">
-              <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/5 rounded-full backdrop-blur-md">
-                <MapPin size={12} className="text-chess-active" /> {profile?.countryCode || t('profile.countryNotSet')}
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/5 rounded-full backdrop-blur-md">
-                <Calendar size={12} className="text-chess-gold" /> {(profile as any)?.created_at ? `${t('profile.memberSince')} ${new Date((profile as any).created_at).getFullYear()}` : t('profile.newPlayer')}
+            
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-neutral-400 font-black text-[0.65rem] uppercase tracking-[0.2em]">
+              {profile?.countryCode && (
+                <div className="flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/5 rounded-full backdrop-blur-md shadow-inner ring-1 ring-white/5">
+                  <MapPin size={14} className="text-chess-active" /> {profile.countryCode}
+                </div>
+              )}
+              {!profile?.countryCode && (
+                <div className="flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/5 rounded-full backdrop-blur-md shadow-inner ring-1 ring-white/5 opacity-60">
+                  <MapPin size={14} className="text-neutral-500" /> {t('profile.countryNotSet')}
+                </div>
+              )}
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-white/5 border border-white/5 rounded-full backdrop-blur-md shadow-inner ring-1 ring-white/5">
+                <Calendar size={14} className="text-chess-gold" /> {(profile as any)?.created_at ? `${t('profile.memberSince')} ${new Date((profile as any).created_at).getFullYear()}` : t('profile.newPlayer')}
               </div>
             </div>
-            <button onClick={signOut} className="mt-4 mx-auto flex md:hidden items-center justify-center gap-2 w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl border border-red-500/20 transition-all font-black text-[0.6rem] uppercase tracking-widest">
+            <button onClick={signOut} className="mt-4 mx-auto flex md:hidden items-center justify-center gap-2 w-full py-3.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl border border-red-500/20 transition-all font-black text-[0.65rem] uppercase tracking-widest shadow-lg shadow-red-500/5">
               <LogOut size={16} /> Sign Out
             </button>
           </div>
 
           {/* Rating Dashboard Section */}
-          <div className="grid grid-cols-3 gap-3 max-w-xl mx-auto md:mx-0">
+          <div className="grid grid-cols-3 gap-3 md:gap-4 max-w-2xl mx-auto md:mx-0">
             {stats.map((s, i) => (
               <div key={i} className={cx(
-                "flex flex-col p-3 rounded-[1.5rem] border transition-all duration-500 hover:scale-[1.05] shadow-2xl group/stat ring-1",
+                "flex flex-col p-4 md:p-5 rounded-[1.75rem] border transition-all duration-500 hover:scale-[1.03] shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] group/stat ring-1 backdrop-blur-md relative overflow-hidden",
                 s.bg, s.border, s.border.replace('border-', 'ring-')
               )}>
-                <div className={cx("flex items-center gap-1.5 text-[0.55rem] font-black uppercase tracking-[0.2em] mb-1.5", s.color)}>
-                  <s.icon size={12} /> {s.label}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+                <div className={cx("flex items-center gap-2 text-[0.6rem] md:text-xs font-black uppercase tracking-[0.2em] mb-2 z-10", s.color)}>
+                  <s.icon size={14} /> {s.label}
                 </div>
-                <span className="text-2xl font-black text-white italic tracking-tighter tabular-nums group-hover/stat:translate-x-1 transition-transform">{s.value}</span>
+                <span className="text-2xl md:text-3xl font-black text-white italic tracking-tighter tabular-nums group-hover/stat:translate-x-1 transition-transform z-10">
+                  {s.value}
+                </span>
               </div>
             ))}
           </div>
