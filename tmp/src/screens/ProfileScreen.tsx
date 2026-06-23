@@ -367,80 +367,113 @@ export default function ProfileScreen() {
 
         {/* Left Column: Stats & Performance */}
         <div className="space-y-4 animate-fade-in-up delay-200">
-          <div className="bg-neutral-900/40 backdrop-blur-3xl border border-white/5 p-5 rounded-[2rem] shadow-[0_30px_60px_-10px_rgba(0,0,0,0.8)] ring-1 ring-white/5 space-y-4 group/perform">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-black text-white italic tracking-tighter uppercase flex items-center gap-3">
-                <div className="p-2 bg-chess-active/10 rounded-xl text-chess-active group-hover/perform:scale-110 transition-transform">
-                  <Activity size={18} />
+          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-6 group/perform relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+            
+            <div className="flex items-center justify-between relative z-10">
+              <h2 className="text-lg font-black text-white italic tracking-tighter uppercase flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-chess-active/20 to-chess-active/5 rounded-xl text-chess-active group-hover/perform:scale-110 transition-transform shadow-lg shadow-chess-active/10 border border-chess-active/20">
+                  <Activity size={20} />
                 </div>
                 {t('profile.performance')}
               </h2>
-              <div className="px-2.5 py-1 bg-white/5 rounded-full border border-white/5 text-[0.5rem] font-black text-neutral-500 tracking-widest uppercase">{t('profile.rankingUnavailable')}</div>
+              <div className="px-3 py-1.5 bg-white/5 rounded-full border border-white/5 text-[0.55rem] font-black text-neutral-500 tracking-widest uppercase shadow-inner ring-1 ring-white/5">{t('profile.rankingUnavailable')}</div>
             </div>
 
             {/* Extended Win/Loss/Draw Dashboard */}
-            <div className="space-y-3">
-              <div className="flex justify-between text-[0.6rem] font-black uppercase tracking-widest text-neutral-500">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-emerald-400">{t('profile.wins')}</span>
-                  <span className="text-xl text-white">{dbStats.wins}</span>
+            <div className="space-y-4 relative z-10">
+              <div className="flex justify-between text-[0.65rem] font-black uppercase tracking-widest text-neutral-500 bg-black/20 p-4 rounded-2xl border border-white/5">
+                <div className="flex flex-col gap-1">
+                  <span className="text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]">{t('profile.wins')}</span>
+                  <span className="text-2xl text-white font-black">{dbStats.wins}</span>
                 </div>
-                <div className="flex flex-col gap-0.5 items-center">
-                  <span className="text-neutral-500">{t('profile.draws')}</span>
-                  <span className="text-xl text-white text-center">{dbStats.draws}</span>
+                <div className="flex flex-col gap-1 items-center">
+                  <span className="text-neutral-400">{t('profile.draws')}</span>
+                  <span className="text-2xl text-white font-black">{dbStats.draws}</span>
                 </div>
-                <div className="flex flex-col gap-0.5 items-end">
-                  <span className="text-rose-400">{t('profile.losses')}</span>
-                  <span className="text-xl text-white">{dbStats.losses}</span>
+                <div className="flex flex-col gap-1 items-end">
+                  <span className="text-rose-400 drop-shadow-[0_0_5px_rgba(251,113,133,0.5)]">{t('profile.losses')}</span>
+                  <span className="text-2xl text-white font-black">{dbStats.losses}</span>
                 </div>
               </div>
-              <div className="relative h-4 w-full bg-black/40 rounded-full overflow-hidden flex shadow-[inset_0_4px_10px_rgba(0,0,0,0.5)] border border-white/5 ring-1 ring-white/5">
-                <div style={{ width: `${Math.max(1, (dbStats.wins/(dbStats.wins+dbStats.losses+dbStats.draws||1))*100)}%` }} className="bg-emerald-500 relative group/win transition-all duration-700 hover:opacity-80"></div>
-                <div style={{ width: `${Math.max(1, (dbStats.draws/(dbStats.wins+dbStats.losses+dbStats.draws||1))*100)}%` }} className="bg-neutral-500 relative group/draw transition-all duration-700 hover:opacity-80"></div>
-                <div style={{ width: `${Math.max(1, (dbStats.losses/(dbStats.wins+dbStats.losses+dbStats.draws||1))*100)}%` }} className="bg-rose-500 relative group/loss transition-all duration-700 hover:opacity-80"></div>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent pointer-events-none" />
+              <div className="relative h-5 w-full bg-black/60 rounded-full overflow-hidden flex shadow-[inset_0_4px_10px_rgba(0,0,0,0.8)] border border-white/10 ring-1 ring-white/5">
+                <div style={{ width: `${Math.max(1, (dbStats.wins/(dbStats.wins+dbStats.losses+dbStats.draws||1))*100)}%` }} className="bg-gradient-to-r from-emerald-600 to-emerald-400 relative group/win transition-all duration-700 hover:opacity-80"></div>
+                <div style={{ width: `${Math.max(1, (dbStats.draws/(dbStats.wins+dbStats.losses+dbStats.draws||1))*100)}%` }} className="bg-gradient-to-r from-neutral-600 to-neutral-400 relative group/draw transition-all duration-700 hover:opacity-80"></div>
+                <div style={{ width: `${Math.max(1, (dbStats.losses/(dbStats.wins+dbStats.losses+dbStats.draws||1))*100)}%` }} className="bg-gradient-to-r from-rose-600 to-rose-400 relative group/loss transition-all duration-700 hover:opacity-80"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
               </div>
-              <div className="flex justify-center">
-                <span className="text-[0.55rem] font-black text-neutral-600 uppercase tracking-widest italic flex items-center gap-2">{t('profile.winRate')}: {dbStats.rate}% <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_5px_#10b981]" /></span>
+              <div className="flex justify-center pt-1">
+                <span className="text-[0.6rem] font-black text-neutral-400 uppercase tracking-widest italic flex items-center gap-2">
+                  {t('profile.winRate')}: <span className="text-white drop-shadow-md">{dbStats.rate}%</span> 
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                </span>
               </div>
             </div>
+          </div>
 
+          {/* Achievements Placeholder */}
+          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-4 relative overflow-hidden flex flex-col items-center justify-center min-h-[160px] group/achievements text-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+            <div className="w-14 h-14 rounded-full bg-black/40 border border-white/5 flex items-center justify-center shadow-inner mb-2 group-hover/achievements:scale-110 transition-transform">
+              <Zap size={24} className="text-neutral-600" />
             </div>
+            <h3 className="text-sm font-black text-neutral-400 italic tracking-widest uppercase">{t('profile.achievements')}</h3>
+            <p className="text-[0.65rem] font-bold text-neutral-600 uppercase tracking-widest max-w-[200px] leading-relaxed">
+              {t('profile.achievementsLocked')}
+            </p>
+          </div>
         </div>
 
         {/* Right Column: Historical Overview */}
-        <div className="lg:col-span-2 space-y-3 animate-fade-in-up delay-300">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-lg font-black text-white italic tracking-tighter uppercase">{t('profile.recentGames')}</h2>
+        <div className="lg:col-span-2 space-y-4 animate-fade-in-up delay-300 flex flex-col">
+          <div className="flex items-center justify-between px-2 pt-1">
+            <h2 className="text-xl font-black text-white italic tracking-tighter uppercase drop-shadow-md">{t('profile.recentGames')}</h2>
           </div>
 
-          <div className="space-y-2.5">
-            {recentGames.map((g, i) => (
-              <div key={i} className="bg-neutral-900/40 backdrop-blur-3xl border border-white/5 px-5 py-4 rounded-[1.75rem] flex items-center justify-between hover:bg-neutral-900/60 transition-all group/game shadow-xl ring-1 ring-white/5">
-                <div className="flex items-center gap-5">
-                  <div className={cx(
-                    "w-12 h-12 rounded-[1rem] flex items-center justify-center font-black text-lg shadow-2xl transition-all duration-500 group-hover/game:scale-110 group-hover/game:rotate-3 border border-current shrink-0",
-                    g.result === 'win' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10" :
-                      g.result === 'loss' ? "bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-rose-500/10" : "bg-neutral-500/10 text-neutral-400 border-neutral-500/20"
-                  )}>
-                    {g.result === 'win' ? '1-0' : g.result === 'loss' ? '0-1' : '½-½'}
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                      <div className="font-black text-base text-white tracking-tight italic group-hover/game:text-chess-active transition-colors flex items-center gap-2 underline decoration-white/5 group-hover/game:decoration-chess-active/30">
-                        vs {g.opp}
-                      </div>
+          {recentGames.length === 0 ? (
+            <div className="flex-1 bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 flex flex-col items-center justify-center p-12 text-center relative overflow-hidden group/empty min-h-[300px]">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+              <div className="w-20 h-20 rounded-full bg-black/40 border border-white/5 flex items-center justify-center shadow-inner mb-6 group-hover/empty:scale-110 transition-transform duration-700">
+                <Activity size={32} className="text-neutral-600" />
+              </div>
+              <h3 className="text-lg font-black text-neutral-300 italic tracking-widest uppercase mb-3">{t('profile.noRecentGames')}</h3>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentGames.map((g, i) => (
+                <div key={i} className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 px-6 py-5 rounded-[2rem] flex items-center justify-between hover:bg-neutral-900/90 transition-all duration-500 group/game shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/10 relative overflow-hidden cursor-default hover:scale-[1.01]">
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none opacity-0 group-hover/game:opacity-100 transition-opacity" />
+                  
+                  <div className="flex items-center gap-6 relative z-10 w-full">
+                    <div className={cx(
+                      "w-14 h-14 rounded-[1.25rem] flex items-center justify-center font-black text-xl shadow-2xl transition-all duration-500 group-hover/game:scale-110 group-hover/game:rotate-[5deg] border border-current shrink-0",
+                      g.result === 'win' ? "bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 text-emerald-400 border-emerald-500/30 shadow-emerald-500/20" :
+                        g.result === 'loss' ? "bg-gradient-to-br from-rose-500/20 to-rose-500/5 text-rose-400 border-rose-500/30 shadow-rose-500/20" : "bg-gradient-to-br from-neutral-500/20 to-neutral-500/5 text-neutral-400 border-neutral-500/30 shadow-neutral-500/20"
+                    )}>
+                      {g.result === 'win' ? '1-0' : g.result === 'loss' ? '0-1' : '½-½'}
                     </div>
-                    <div className="text-[0.6rem] text-neutral-500 font-black uppercase tracking-widest ml-9 flex items-center gap-2">
-                      <span className="text-neutral-400">{g.type}</span>
-                      <div className="w-1 h-1 rounded-full bg-neutral-800" />
-                      <span className="opacity-60">{g.date}</span>
+                    
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center justify-between w-full">
+                        <div className="font-black text-lg text-white tracking-tight italic group-hover/game:text-chess-active transition-colors flex items-center gap-2 drop-shadow-md">
+                          <span className="text-neutral-500 text-sm font-bold no-italic">vs</span> {g.opp || t('profile.unknownOpponent')}
+                        </div>
+                        <div className="text-[0.65rem] text-neutral-400 font-black uppercase tracking-widest bg-black/40 px-3 py-1.5 rounded-xl border border-white/5 ring-1 ring-white/5">
+                          {g.type}
+                        </div>
+                      </div>
+                      
+                      <div className="text-[0.6rem] text-neutral-500 font-bold uppercase tracking-widest flex items-center gap-3">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar size={10} className="opacity-70" /> {g.date}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>

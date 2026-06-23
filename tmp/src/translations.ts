@@ -157,6 +157,10 @@ export const translations: TranslationDictionary = {
   'profile.countryNotSet': { en: 'Country not set', de: 'Land nicht festgelegt', ua: 'Країна не вказана', ru: 'Страна не указана', az: 'Ölkə qeyd edilməyib', tr: 'Ülke belirtilmemiş' },
   'profile.rankingUnavailable': { en: 'Global ranking is not available yet.', de: 'Globale Rangliste noch nicht verfügbar.', ua: 'Глобальний рейтинг ще недоступний.', ru: 'Глобальный рейтинг пока недоступен.', az: 'Qlobal reytinq hələ mövcud deyil.', tr: 'Küresel sıralama henüz mevcut değil.' },
   'profile.ratingUnavailable': { en: 'Rating unavailable', de: 'Bewertung nicht verfügbar', ua: 'Рейтинг недоступний', ru: 'Рейтинг недоступен', az: 'Reytinq mövcud deyil', tr: 'Puan kullanılamıyor' },
+  'profile.unknownOpponent': { en: 'Unknown opponent', de: 'Unbekannter Gegner', ua: 'Невідомий суперник', ru: 'Неизвестный противник', az: 'Naməlum rəqib', tr: 'Bilinmeyen rakip' },
+  'profile.noRecentGames': { en: 'No games played yet. Your journey begins here.', de: 'Noch keine Spiele gespielt. Deine Reise beginnt hier.', ua: 'Ще немає зіграних партій. Твоя подорож починається тут.', ru: 'Еще нет сыгранных партий. Твое путешествие начинается здесь.', az: 'Hələ oyun oynanmayıb. Səyahətiniz buradan başlayır.', tr: 'Henüz oyun oynanmadı. Yolculuğunuz burada başlıyor.' },
+  'profile.achievementsLocked': { en: 'Play rated games to unlock achievements', de: 'Spiele gewertete Partien, um Erfolge freizuschalten', ua: 'Грай рейтингові ігри, щоб розблокувати досягнення', ru: 'Играй рейтинговые игры, чтобы разблокировать достижения', az: 'Nailiyyətləri açmaq üçün reytinqli oyunlar oynayın', tr: 'Başarıları açmak için dereceli oyunlar oynayın' },
+  'profile.achievements': { en: 'Achievements', de: 'Erfolge', ua: 'Досягнення', ru: 'Достижения', az: 'Nailiyyətlər', tr: 'Başarılar' },
 
   // Settings screen
   'settings.subtitle': { en: 'Configuration & Appearance', de: 'Konfiguration & Aussehen', ua: 'Конфігурація та зовнішній вигляд', ru: 'Конфигурация и внешний вид', az: 'Konfiqurasiya və Görünüş', tr: 'Yapılandırma ve Görünüm' },
