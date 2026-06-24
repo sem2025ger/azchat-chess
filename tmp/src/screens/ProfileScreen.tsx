@@ -279,7 +279,7 @@ export default function ProfileScreen() {
     <div className="max-w-[1400px] mx-auto px-4 py-2 md:px-6 md:py-4 overflow-y-auto lg:overflow-hidden bg-transparent h-full min-h-0 overscroll-y-contain touch-pan-y pb-28 lg:pb-0 lg:h-full">
 
       {/* Profile Identity - Compact Professional Header */}
-      <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-5 md:p-6 shadow-[0_0_80px_-20px_rgba(0,0,0,1)] animate-fade-in-up flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-8 mb-5 relative overflow-hidden ring-1 ring-white/10 group">
+      <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-5 md:p-6 shadow-[0_0_80px_-20px_rgba(0,0,0,1)] animate-fade-in-up flex flex-col md:flex-row items-center md:items-stretch gap-6 md:gap-8 mb-5 relative overflow-hidden ring-1 ring-white/10 group panel-glow-cycle">
 
         {/* Glow behind profile */}
         <div className="absolute -left-20 -top-20 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] pointer-events-none group-hover:bg-chess-gold/15 transition-colors duration-1000" />
@@ -373,7 +373,7 @@ export default function ProfileScreen() {
         {/* Left/Main Column: Stats & Recent Games */}
         <div className="lg:col-span-2 xl:col-span-3 space-y-4 animate-fade-in-up delay-200">
           
-          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-5 md:p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-5 group/perform relative overflow-hidden">
+          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-5 md:p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-5 group/perform relative overflow-hidden panel-glow-cycle">
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
             
             <div className="flex items-center justify-between relative z-10">
@@ -423,7 +423,7 @@ export default function ProfileScreen() {
             </div>
 
             {recentGames.length === 0 ? (
-              <div className="w-full bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] ring-1 ring-white/10 flex items-center gap-4 px-5 py-4 relative overflow-hidden">
+              <div className="w-full bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] ring-1 ring-white/10 flex items-center gap-4 px-5 py-4 relative overflow-hidden panel-glow-cycle">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
                 <div className="w-10 h-10 rounded-full bg-black/40 border border-white/5 flex items-center justify-center shadow-inner shrink-0">
                   <Activity size={16} className="text-neutral-600" />
@@ -435,7 +435,7 @@ export default function ProfileScreen() {
             ) : (
               <div className="space-y-3">
                 {recentGames.map((g, i) => (
-                  <div key={i} className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 px-5 py-4 md:px-6 md:py-5 rounded-[1.75rem] md:rounded-[2rem] flex items-center justify-between hover:bg-neutral-900/90 transition-all duration-500 group/game shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/10 relative overflow-hidden cursor-default hover:scale-[1.01]">
+                  <div key={i} className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 px-5 py-4 md:px-6 md:py-5 rounded-[1.75rem] md:rounded-[2rem] flex items-center justify-between hover:bg-neutral-900/90 transition-all duration-500 group/game shadow-[0_10px_30px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/10 relative overflow-hidden cursor-default hover:scale-[1.01] panel-glow-cycle">
                     <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none opacity-0 group-hover/game:opacity-100 transition-opacity" />
                     
                     <div className="flex items-center gap-4 md:gap-6 relative z-10 w-full">
@@ -475,7 +475,7 @@ export default function ProfileScreen() {
         <div className="space-y-5 lg:space-y-6 animate-fade-in-up delay-300">
           
           {/* Achievements Locked */}
-          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-4 relative overflow-hidden flex flex-col items-center justify-center py-12 lg:min-h-[160px] group/achievements text-center">
+          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-4 relative overflow-hidden flex flex-col items-center justify-center py-12 lg:min-h-[160px] group/achievements text-center panel-glow-cycle">
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
             <div className="w-14 h-14 rounded-full bg-black/40 border border-white/5 flex items-center justify-center shadow-inner mb-2 group-hover/achievements:scale-110 transition-transform">
               <Zap size={24} className="text-neutral-600" />
