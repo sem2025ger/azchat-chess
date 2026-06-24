@@ -371,7 +371,7 @@ export default function ProfileScreen() {
       <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-5 lg:gap-6">
 
         {/* Left/Main Column: Stats & Recent Games */}
-        <div className="lg:col-span-2 xl:col-span-3 space-y-5 lg:space-y-6 animate-fade-in-up delay-200">
+        <div className="lg:col-span-2 xl:col-span-3 space-y-4 animate-fade-in-up delay-200">
           
           <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-5 md:p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-5 group/perform relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
@@ -423,12 +423,14 @@ export default function ProfileScreen() {
             </div>
 
             {recentGames.length === 0 ? (
-              <div className="w-full bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 flex flex-col items-center justify-center py-10 md:py-16 text-center relative overflow-hidden group/empty">
+              <div className="w-full bg-neutral-950/80 backdrop-blur-3xl border border-white/10 rounded-[1.5rem] ring-1 ring-white/10 flex items-center gap-4 px-5 py-4 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-black/40 border border-white/5 flex items-center justify-center shadow-inner mb-4 md:mb-6 group-hover/empty:scale-110 transition-transform duration-700">
-                  <Activity size={28} className="text-neutral-600" />
+                <div className="w-10 h-10 rounded-full bg-black/40 border border-white/5 flex items-center justify-center shadow-inner shrink-0">
+                  <Activity size={16} className="text-neutral-600" />
                 </div>
-                <h3 className="text-base md:text-lg font-black text-neutral-300 italic tracking-widest uppercase mb-2">{t('profile.noRecentGames')}</h3>
+                <p className="text-[0.7rem] md:text-xs font-black text-neutral-400 italic tracking-widest uppercase leading-tight">
+                  {t('profile.noRecentGames')}
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -473,7 +475,7 @@ export default function ProfileScreen() {
         <div className="space-y-5 lg:space-y-6 animate-fade-in-up delay-300">
           
           {/* Achievements Locked */}
-          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-4 relative overflow-hidden flex flex-col items-center justify-center py-12 lg:min-h-[220px] group/achievements text-center">
+          <div className="bg-neutral-950/80 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_20px_50px_-10px_rgba(0,0,0,1)] ring-1 ring-white/10 space-y-4 relative overflow-hidden flex flex-col items-center justify-center py-12 lg:min-h-[160px] group/achievements text-center">
             <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
             <div className="w-14 h-14 rounded-full bg-black/40 border border-white/5 flex items-center justify-center shadow-inner mb-2 group-hover/achievements:scale-110 transition-transform">
               <Zap size={24} className="text-neutral-600" />
