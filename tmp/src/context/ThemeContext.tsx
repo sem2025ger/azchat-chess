@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
+import { PIECE_STYLES } from '../lib/chessThemes';
 import type { BoardTheme, PieceTheme } from '../lib/chessThemes';
 
 // Defines the options
@@ -18,6 +19,9 @@ interface ThemeContextType {
   sound: SoundTheme;
   setSound: (val: SoundTheme) => void;
 }
+
+const DEFAULT_PIECE_THEME: PieceTheme = 'classic';
+const VALID_PIECE_THEMES = new Set<string>(PIECE_STYLES.map((style) => style.id));
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -38,7 +42,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
   
   const [pieceTheme, setPieceTheme] = useState<PieceTheme>(() => {
-    return (localStorage.getItem('chess_pieceTheme') as PieceTheme) || 'neo';
+    const saved = localStorage.getItem('chess_pieceTheme');
+    if (saved && VALID_PIECE_THEMES.has(saved)) {
+      return saved as PieceTheme;
+    }
+    return DEFAULT_PIECE_THEME;
   });
   
   const [boardTheme, setBoardTheme] = useState<BoardTheme>(() => {
