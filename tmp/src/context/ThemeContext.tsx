@@ -50,7 +50,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
   
   const [boardTheme, setBoardTheme] = useState<BoardTheme>(() => {
-    return (localStorage.getItem('chess_boardTheme') as BoardTheme) || 'Classic Wood';
+    return (localStorage.getItem('chess_boardTheme') as BoardTheme) || 'Dark Green';
   });
   
   const [sound, setSound] = useState<SoundTheme>(() => {
