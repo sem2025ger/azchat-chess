@@ -67,7 +67,7 @@ export default function Layout() {
           </div>
 
           <nav className="px-3 xl:px-5 py-4 space-y-0.5 flex-1">
-            <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" />
+            <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow />
             <NavItem to="/play" icon={<Play size={20} />} label={t('nav.play')} themeColor="theme-cyan" />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} themeColor="theme-violet" />
@@ -111,7 +111,7 @@ export default function Layout() {
           </div>
 
           <div className="space-y-3">
-            <NavItem to="/settings" icon={<Settings size={24} />} label={t('nav.settings')} themeColor="theme-gold" />
+            <NavItem to="/settings" icon={<Settings size={24} />} label={t('nav.settings')} themeColor="theme-gold" alwaysGlow />
           </div>
         </div>
       </aside>
@@ -147,7 +147,7 @@ export default function Layout() {
   );
 }
 
-function NavItem({ to, icon, label, themeColor = 'theme-cyan' }: { to: string, icon: React.ReactNode, label: string, themeColor?: string }) {
+function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean }) {
   return (
     <NavLink
       to={to}
@@ -156,7 +156,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan' }: { to: string, i
           "flex items-center px-4 py-[1.125rem] rounded-2xl transition-all duration-200 font-black text-[0.85rem] uppercase tracking-wider relative group active:scale-95 sidebar-item",
           isActive
             ? `sidebar-item-active ${themeColor}`
-            : "text-neutral-500 sidebar-item-hover"
+            : cx("text-neutral-500 sidebar-item-hover", alwaysGlow && themeColor)
         )
       }
     >

@@ -421,3 +421,29 @@
     box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.96);
   }
 }
+
+/* Subtle constant glow on inactive HOME (theme-premium) */
+.sidebar-item.theme-premium:not(.sidebar-item-active) {
+  background: linear-gradient(135deg, rgba(0, 206, 209, 0.04), transparent 60%);
+  box-shadow: inset 0 0 0 1px rgba(0, 206, 209, 0.08);
+  color: rgba(220, 220, 220, 0.9);
+  transition: background 600ms ease, box-shadow 600ms ease, color 600ms ease;
+}
+.sidebar-item.theme-premium:not(.sidebar-item-active):hover {
+  background: linear-gradient(135deg, rgba(0, 206, 209, 0.08), transparent 60%);
+  box-shadow: inset 0 0 0 1px rgba(0, 206, 209, 0.15);
+  color: #fff;
+}
+
+/* Subtle constant glow on inactive SETTINGS (theme-gold) */
+.sidebar-item.theme-gold:not(.sidebar-item-active) {
+  background: linear-gradient(135deg, rgba(223, 176, 98, 0.04), transparent 60%);
+  box-shadow: inset 0 0 0 1px rgba(223, 176, 98, 0.08);
+  color: rgba(220, 220, 220, 0.9);
+  transition: background 600ms ease, box-shadow 600ms ease, color 600ms ease;
+}
+.sidebar-item.theme-gold:not(.sidebar-item-active):hover {
+  background: linear-gradient(135deg, rgba(223, 176, 98, 0.08), transparent 60%);
+  box-shadow: inset 0 0 0 1px rgba(223, 176, 98, 0.15);
+  color: #fff;
+}

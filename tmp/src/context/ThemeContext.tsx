@@ -20,7 +20,7 @@ interface ThemeContextType {
   setSound: (val: SoundTheme) => void;
 }
 
-const DEFAULT_PIECE_THEME: PieceTheme = 'classic';
+const DEFAULT_PIECE_THEME: PieceTheme = 'cburnett-classic';
 const VALID_PIECE_THEMES = new Set<string>(PIECE_STYLES.map((style) => style.id));
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
