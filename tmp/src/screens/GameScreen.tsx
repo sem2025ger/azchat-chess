@@ -61,8 +61,6 @@ export default function GameScreen() {
     preloadChessSounds();
   }, []);
 
-  const analysisActive = isDesktop || activeTab === 'analysis';
-
   const [timeLeft, setTimeLeft] = useState({ black: 600, white: 600 });
   const [viewMoveIndex, setViewMoveIndex] = useState<number>(-1);
   const [positionHistory, setPositionHistory] = useState<string[]>(() => [new Chess().fen()]);
@@ -91,6 +89,8 @@ export default function GameScreen() {
   const lastConfirmedFenRef = useRef(new Chess().fen());
   const [moveRejectMessage, setMoveRejectMessage] = useState<string | null>(null);
   const [gameOverMessage, setGameOverMessage] = useState<string | null>(null);
+  const isLiveMultiplayer = isMultiplayer && !gameOverMessage;
+  const analysisActive = !isLiveMultiplayer && (isDesktop || activeTab === 'analysis');
 
   const mapGameOverReason = (reason?: string) => {
     switch (reason) {
@@ -230,6 +230,12 @@ export default function GameScreen() {
     positionHistory
   ]);
 
+  useEffect(() => {
+    if (isLiveMultiplayer && activeTab === 'analysis') {
+      setActiveTab('moves');
+    }
+  }, [isLiveMultiplayer, activeTab]);
+
   const handleGameMove = useCallback(
     (source: string, target: string, promotion: string = 'q') => {
       if (viewMoveIndex !== -1) {
@@ -287,7 +293,7 @@ export default function GameScreen() {
 
   const tabs = [
     { id: 'moves', icon: History, label: t('game.tabs.moves') },
-    { id: 'analysis', icon: Cpu, label: t('game.tabs.analysis') },
+    ...(isLiveMultiplayer ? [] : [{ id: 'analysis', icon: Cpu, label: t('game.tabs.analysis') }]),
   ] as const;
 
   // Build Move Pairs
@@ -551,16 +557,18 @@ export default function GameScreen() {
         <div className="hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]">
 
           <div className="shrink-0 flex flex-col border-b border-white/[0.06]">
-            <AnalysisPanel
-              score={engineResult?.evaluation || 0.0}
-              bestMove={analysisData?.bestMove}
-              depth={engineResult?.depth || 0}
-              mate={engineResult?.mate}
-              loading={isAnalysing}
-              candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
-              lines={analysisData?.lines}
-              error={engineRef.current?.hasFailed() === true}
-            />
+            {!isLiveMultiplayer && (
+              <AnalysisPanel
+                score={engineResult?.evaluation || 0.0}
+                bestMove={analysisData?.bestMove}
+                depth={engineResult?.depth || 0}
+                mate={engineResult?.mate}
+                loading={isAnalysing}
+                candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
+                lines={analysisData?.lines}
+                error={engineRef.current?.hasFailed() === true}
+              />
+            )}
           </div>
 
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-black/[0.1]">
