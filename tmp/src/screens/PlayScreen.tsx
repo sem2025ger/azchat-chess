@@ -87,7 +87,7 @@ export default function PlayScreen() {
       setIsSearching(false);
       setIsPrivateCreating(false);
       setIsJoiningPrivate(false);
-      navigate(`/game?roomId=${data.roomId}&color=${data.color}`);
+      navigate(`/play?roomId=${data.roomId}&color=${data.color}`);
     };
     
     const onPrivateRoomCreated = (data: { roomId: string }) => {

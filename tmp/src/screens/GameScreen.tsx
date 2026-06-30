@@ -33,7 +33,11 @@ function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
 }
 
-export default function GameScreen() {
+interface GameScreenProps {
+  mode: 'live' | 'review';
+}
+
+export default function GameScreen({ mode }: GameScreenProps) {
   const { t } = useLanguage();
   const { user, profile } = useAuth();
 
@@ -70,9 +74,10 @@ export default function GameScreen() {
   const [game, setGame] = useState(new Chess());
   const { socket } = useSocket();
   const [searchParams] = useSearchParams();
-  const roomId = searchParams.get('roomId');
-  const playerColor = (searchParams.get('color') as 'w' | 'b') || 'w';
-  const isMultiplayer = Boolean(roomId);
+  const roomId = mode === 'live' ? searchParams.get('roomId') : null;
+  const requestedColor = searchParams.get('color');
+  const playerColor: 'w' | 'b' = mode === 'live' && requestedColor === 'b' ? 'b' : 'w';
+  const isMultiplayer = mode === 'live' && Boolean(roomId);
 
   const playerFlag = profile?.countryCode
     ? countryCodeToFlag(profile.countryCode)
@@ -186,6 +191,12 @@ export default function GameScreen() {
 
   // Engine Initialization
   useEffect(() => {
+    if (isLiveMultiplayer) {
+      engineRef.current?.destroy();
+      engineRef.current = null;
+      return;
+    }
+
     if (!engineRef.current) {
       engineRef.current = new StockfishEngine();
       engineRef.current.onResult((res) => {
@@ -200,7 +211,7 @@ export default function GameScreen() {
       engineRef.current?.destroy();
       engineRef.current = null;
     };
-  }, []);
+  }, [isLiveMultiplayer]);
 
   // Update analysis when tab changes to analysis or fen changes
   const liveFen = game.fen();
