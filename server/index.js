@@ -12,17 +12,39 @@ const server = http.createServer(app);
 const PORT = process.env.PORT || 4000;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
-app.use(cors({ origin: FRONTEND_URL }));
+const EXACT_ALLOWED_ORIGINS = new Set([
+  'https://chessaz.de',
+  'https://www.chessaz.de',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  FRONTEND_URL,
+]);
+
+const VERCEL_PREVIEW_PATTERN = /^https:\/\/azchat-chess-[a-z0-9-]+\.vercel\.app$/i;
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  if (EXACT_ALLOWED_ORIGINS.has(origin)) return true;
+  if (VERCEL_PREVIEW_PATTERN.test(origin)) return true;
+  return false;
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  methods: ["GET", "POST"],
+};
+
+app.use(cors(corsOptions));
 
 app.get('/health', (req, res) => {
   res.json({ ok: true, service: "aztr-chess-server" });
 });
 
 const io = new Server(server, {
-  cors: {
-    origin: FRONTEND_URL,
-    methods: ["GET", "POST"]
-  }
+  cors: corsOptions,
 });
 
 // State
