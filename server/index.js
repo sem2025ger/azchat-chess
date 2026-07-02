@@ -29,24 +29,11 @@ const supabaseAuthClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 async function verifySupabaseToken(accessToken) {
   try {
     const { data, error } = await supabaseAuthClient.auth.getUser(accessToken);
-    if (error) {
-      console.warn('[socket-auth] Supabase getUser failed', {
-        status: error.status,
-        name: error.name,
-        message: error.message,
-      });
-      return null;
-    }
-    if (!data || !data.user || !data.user.id) {
-      console.warn('[socket-auth] Supabase getUser returned no user');
+    if (error || !data || !data.user || !data.user.id) {
       return null;
     }
     return { id: data.user.id, email: data.user.email };
-  } catch (error) {
-    console.warn('[socket-auth] Supabase getUser threw', {
-      name: error?.name,
-      message: error?.message,
-    });
+  } catch {
     return null;
   }
 }
