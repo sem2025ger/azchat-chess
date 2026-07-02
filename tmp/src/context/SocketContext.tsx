@@ -47,6 +47,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
     const newSocket = io(serverUrl, {
       autoConnect: false,
+      transports: ['websocket'],
       auth: (cb) => {
         cb({ accessToken: sessionRef.current?.access_token ?? '' });
       },
