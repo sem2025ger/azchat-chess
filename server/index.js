@@ -5,6 +5,38 @@ const { Server } = require('socket.io');
 const { Chess } = require('chess.js');
 const crypto = require('crypto');
 const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
+const { createSocketAuthMiddleware } = require('./socketAuth');
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error(
+    '[boot] Missing required env: SUPABASE_URL and/or SUPABASE_ANON_KEY. Refusing to start.'
+  );
+  process.exit(1);
+}
+
+const supabaseAuthClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  },
+});
+
+async function verifySupabaseToken(accessToken) {
+  try {
+    const { data, error } = await supabaseAuthClient.auth.getUser(accessToken);
+    if (error || !data || !data.user || !data.user.id) {
+      return null;
+    }
+    return { id: data.user.id, email: data.user.email };
+  } catch {
+    return null;
+  }
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -46,6 +78,7 @@ app.get('/health', (req, res) => {
 const io = new Server(server, {
   cors: corsOptions,
 });
+io.use(createSocketAuthMiddleware(verifySupabaseToken));
 
 // State
 let waitingQueue = []; // Array of socket objects
