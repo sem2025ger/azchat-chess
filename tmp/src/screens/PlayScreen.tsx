@@ -44,8 +44,8 @@ export default function PlayScreen() {
   const roomParam = searchParams.get('room');
 
   const navigate = useNavigate();
-  const { socket, isConnected } = useSocket();
-  const { user, profile } = useAuth();
+  const { socket, isConnected, authError } = useSocket();
+  const { user, profile, session } = useAuth();
   const { boardTheme } = useThemeContext();
 
   // Primary colors based on theme
@@ -116,12 +116,30 @@ export default function PlayScreen() {
   }, [socket, navigate]);
 
   useEffect(() => {
-    if (roomParam && socket && isConnected && !hasAutoJoinedRef.current) {
+    if (!roomParam || hasAutoJoinedRef.current) return;
+    if (!session) {
+      hasAutoJoinedRef.current = true;
+      setJoinError('Sign in required to join a private room.');
+      setTimeout(() => setJoinError(null), 5000);
+      return;
+    }
+    if (socket && isConnected) {
       hasAutoJoinedRef.current = true;
       setIsJoiningPrivate(true);
       socket.emit('join_private_room', { roomId: roomParam });
     }
-  }, [roomParam, socket, isConnected]);
+  }, [roomParam, socket, isConnected, session]);
+
+  useEffect(() => {
+    if (authError === 'unauthorized') {
+      setJoinError('Session expired. Please sign in again.');
+      setIsSearching(false);
+      setIsPrivateCreating(false);
+      setIsJoiningPrivate(false);
+      const timer = setTimeout(() => setJoinError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [authError]);
 
   useEffect(() => {
     let interval: any;
@@ -374,8 +392,18 @@ export default function PlayScreen() {
             <div className="p-2 bg-black/60 border-t border-white/10 space-y-1.5 relative z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
                <button
                   onClick={() => {
+                    if (!session) {
+                      setJoinError('Sign in required to play online.');
+                      setTimeout(() => setJoinError(null), 5000);
+                      return;
+                    }
+                    if (!socket || !isConnected) {
+                      setJoinError('Connection not ready. Please try again.');
+                      setTimeout(() => setJoinError(null), 5000);
+                      return;
+                    }
                     setIsSearching(true);
-                    if (socket) socket.emit('join_queue');
+                    socket.emit('join_queue');
                   }}
                   className={cx(
                     "w-full py-2.5 rounded-[2rem] relative overflow-hidden transition-all duration-[150ms] group/cta active:scale-[0.97] border border-white/20 btn-glow-cycle"
@@ -400,6 +428,11 @@ export default function PlayScreen() {
                 label={t('play.friend')} 
                 sublabel={t('play.directLink')} 
                 onClick={() => {
+                  if (!session) {
+                    setJoinError('Sign in required to play online.');
+                    setTimeout(() => setJoinError(null), 5000);
+                    return;
+                  }
                   if (socket && isConnected) {
                     setIsPrivateCreating(true);
                     setPrivateRoomId(null);
