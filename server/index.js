@@ -85,6 +85,86 @@ let waitingQueue = []; // Array of socket objects
 const activeRooms = new Map(); // roomId -> { game, players: [{ socket, color }] }
 const socketToRoom = new Map(); // socket.id -> roomId
 
+function getPlayerColor(room, socketId) {
+  if (!room || !room.players) return null;
+  if (room.players.w === socketId) return 'w';
+  if (room.players.b === socketId) return 'b';
+  return null;
+}
+
+function oppositeColor(color) {
+  return color === 'w' ? 'b' : color === 'b' ? 'w' : null;
+}
+
+function cleanupRoom(roomId, room) {
+  if (!room) return;
+
+  for (const socketId of Object.values(room.players || {})) {
+    if (!socketId) continue;
+    socketToRoom.delete(socketId);
+    const memberSocket = io.sockets.sockets.get(socketId);
+    if (memberSocket) {
+      memberSocket.leave(roomId);
+    }
+  }
+
+  activeRooms.delete(roomId);
+}
+
+function finalizeGame(roomId, payload) {
+  const room = activeRooms.get(roomId);
+  if (!room || room.status === 'ended') {
+    return false;
+  }
+
+  room.status = 'ended';
+
+  const gameOverPayload = {
+    roomId,
+    reason: payload.reason,
+    result: payload.result,
+    winnerColor: payload.winnerColor ?? null,
+    endedBy: payload.endedBy ?? null,
+  };
+
+  io.to(roomId).emit('game_over', gameOverPayload);
+  cleanupRoom(roomId, room);
+  return true;
+}
+
+function getNaturalGameOverPayload(game) {
+  if (game.isCheckmate()) {
+    const loserColor = game.turn();
+    const winnerColor = oppositeColor(loserColor);
+    return {
+      reason: 'checkmate',
+      result: winnerColor === 'w' ? '1-0' : '0-1',
+      winnerColor,
+      endedBy: null,
+    };
+  }
+
+  if (game.isStalemate()) {
+    return {
+      reason: 'stalemate',
+      result: '1/2-1/2',
+      winnerColor: null,
+      endedBy: null,
+    };
+  }
+
+  if (game.isDraw()) {
+    return {
+      reason: 'draw',
+      result: '1/2-1/2',
+      winnerColor: null,
+      endedBy: null,
+    };
+  }
+
+  return null;
+}
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
@@ -109,6 +189,7 @@ io.on('connection', (socket) => {
       const roomData = {
         roomId,
         game: new Chess(),
+        status: 'active',
         players: {
           w: colors[0] === 'w' ? player1.id : player2.id,
           b: colors[0] === 'b' ? player1.id : player2.id
@@ -277,13 +358,9 @@ io.on('connection', (socket) => {
       // Valid move
       io.to(roomId).emit('update_board', { fen: game.fen(), history: game.history() });
 
-      if (game.isGameOver()) {
-        let reason = "game_over";
-        if (game.isCheckmate()) reason = "checkmate";
-        else if (game.isDraw()) reason = "draw";
-        else if (game.isStalemate()) reason = "stalemate";
-        
-        io.to(roomId).emit('game_over', { reason });
+      const gameOverPayload = getNaturalGameOverPayload(game);
+      if (gameOverPayload) {
+        finalizeGame(roomId, gameOverPayload);
       }
     } catch (e) {
       console.error("Error processing move:", e);
@@ -300,18 +377,34 @@ io.on('connection', (socket) => {
 
     // Handle room disconnect
     const roomId = socketToRoom.get(socket.id);
-    if (roomId) {
-      const roomData = activeRooms.get(roomId);
-      if (roomData) {
-        if (roomData.players.w && roomData.players.b) {
-          io.to(roomId).emit('game_over', { reason: "opponent_disconnected" });
-        }
-        
-        // Cleanup
-        if (roomData.players.w) socketToRoom.delete(roomData.players.w);
-        if (roomData.players.b) socketToRoom.delete(roomData.players.b);
-        activeRooms.delete(roomId);
-      }
+    if (!roomId) return;
+
+    const roomData = activeRooms.get(roomId);
+    if (!roomData) {
+      socketToRoom.delete(socket.id);
+      return;
+    }
+
+    if (roomData.status === 'ended') {
+      socketToRoom.delete(socket.id);
+      return;
+    }
+
+    const disconnectedColor = getPlayerColor(roomData, socket.id);
+    const winnerColor = oppositeColor(disconnectedColor);
+
+    if (roomData.status === 'active' && winnerColor) {
+      finalizeGame(roomId, {
+        reason: 'opponent_disconnected',
+        result: winnerColor === 'w' ? '1-0' : '0-1',
+        winnerColor,
+        endedBy: disconnectedColor,
+      });
+      return;
+    }
+
+    if (roomData.status === 'pending') {
+      cleanupRoom(roomId, roomData);
     }
   });
 });
