@@ -165,6 +165,41 @@ function getNaturalGameOverPayload(game) {
   return null;
 }
 
+function rejectGameAction(socket, action, reason) {
+  socket.emit('game_action_rejected', { action, reason });
+}
+
+function getActivePlayerActionContext(socket, roomId, action) {
+  if (typeof roomId !== 'string' || roomId.trim().length === 0) {
+    rejectGameAction(socket, action, 'invalid_payload');
+    return null;
+  }
+
+  const room = activeRooms.get(roomId);
+  if (!room) {
+    rejectGameAction(socket, action, 'room_not_found');
+    return null;
+  }
+
+  if (room.status === 'ended') {
+    rejectGameAction(socket, action, 'already_ended');
+    return null;
+  }
+
+  const playerColor = getPlayerColor(room, socket.id);
+  if (socketToRoom.get(socket.id) !== roomId || !playerColor) {
+    rejectGameAction(socket, action, 'not_in_room');
+    return null;
+  }
+
+  if (room.status !== 'active') {
+    rejectGameAction(socket, action, 'not_active');
+    return null;
+  }
+
+  return { room, playerColor };
+}
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
@@ -190,6 +225,7 @@ io.on('connection', (socket) => {
         roomId,
         game: new Chess(),
         status: 'active',
+        drawOfferBy: null,
         players: {
           w: colors[0] === 'w' ? player1.id : player2.id,
           b: colors[0] === 'b' ? player1.id : player2.id
@@ -252,6 +288,7 @@ io.on('connection', (socket) => {
       game: new Chess(),
       isPrivate: true,
       status: 'pending',
+      drawOfferBy: null,
       players: {
         w: isWhite ? socket.id : null,
         b: isWhite ? null : socket.id
@@ -298,6 +335,7 @@ io.on('connection', (socket) => {
       
       roomData.players[emptyColor] = socket.id;
       roomData.status = 'active';
+      roomData.drawOfferBy = null;
       
       socketToRoom.set(socket.id, roomId);
       socket.join(roomId);
@@ -312,6 +350,86 @@ io.on('connection', (socket) => {
       console.error("Error joining private room:", e);
       socket.emit('join_failed', { reason: "room_not_found" });
     }
+  });
+
+  socket.on('resign_game', (payload) => {
+    const roomId = payload?.roomId;
+    const context = getActivePlayerActionContext(socket, roomId, 'resign_game');
+    if (!context) return;
+
+    const resigningColor = context.playerColor;
+    const winnerColor = oppositeColor(resigningColor);
+
+    finalizeGame(roomId, {
+      reason: 'resignation',
+      result: winnerColor === 'w' ? '1-0' : '0-1',
+      winnerColor,
+      endedBy: resigningColor,
+    });
+  });
+
+  socket.on('draw_offer', (payload) => {
+    const roomId = payload?.roomId;
+    const context = getActivePlayerActionContext(socket, roomId, 'draw_offer');
+    if (!context) return;
+
+    const { room, playerColor } = context;
+    if (room.drawOfferBy === playerColor) {
+      rejectGameAction(socket, 'draw_offer', 'duplicate_draw_offer');
+      return;
+    }
+
+    if (room.drawOfferBy === oppositeColor(playerColor)) {
+      rejectGameAction(socket, 'draw_offer', 'existing_draw_offer');
+      return;
+    }
+
+    room.drawOfferBy = playerColor;
+    io.to(roomId).emit('draw_offer_received', { roomId, offeredBy: playerColor });
+  });
+
+  socket.on('draw_accept', (payload) => {
+    const roomId = payload?.roomId;
+    const context = getActivePlayerActionContext(socket, roomId, 'draw_accept');
+    if (!context) return;
+
+    const { room, playerColor } = context;
+    if (!room.drawOfferBy) {
+      rejectGameAction(socket, 'draw_accept', 'no_draw_offer');
+      return;
+    }
+
+    if (room.drawOfferBy === playerColor) {
+      rejectGameAction(socket, 'draw_accept', 'own_draw_offer');
+      return;
+    }
+
+    finalizeGame(roomId, {
+      reason: 'draw_agreement',
+      result: '1/2-1/2',
+      winnerColor: null,
+      endedBy: playerColor,
+    });
+  });
+
+  socket.on('draw_decline', (payload) => {
+    const roomId = payload?.roomId;
+    const context = getActivePlayerActionContext(socket, roomId, 'draw_decline');
+    if (!context) return;
+
+    const { room, playerColor } = context;
+    if (!room.drawOfferBy) {
+      rejectGameAction(socket, 'draw_decline', 'no_draw_offer');
+      return;
+    }
+
+    if (room.drawOfferBy === playerColor) {
+      rejectGameAction(socket, 'draw_decline', 'own_draw_offer');
+      return;
+    }
+
+    room.drawOfferBy = null;
+    io.to(roomId).emit('draw_offer_declined', { roomId, declinedBy: playerColor });
   });
 
   socket.on('make_move', (payload) => {
@@ -348,11 +466,17 @@ io.on('connection', (socket) => {
         return;
       }
 
+      const moverColor = getPlayerColor(roomData, socket.id);
       const result = game.move(move);
       if (!result) {
         socket.emit('move_rejected', { reason: "illegal_move" });
         console.log(`[reject] illegal_move from ${socket.id} roomId=${roomId}`);
         return;
+      }
+
+      if (roomData.drawOfferBy && roomData.drawOfferBy !== moverColor) {
+        roomData.drawOfferBy = null;
+        io.to(roomId).emit('draw_offer_declined', { roomId, declinedBy: moverColor });
       }
 
       // Valid move
