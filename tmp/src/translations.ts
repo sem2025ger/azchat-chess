@@ -59,6 +59,16 @@ export const translations: TranslationDictionary = {
   'game.draw': { en: 'Offer Draw', de: 'Remis anbieten', ua: 'Запропонувати нічию', ru: 'Предложить ничью', az: 'Heç-heçə təklif et', tr: 'Beraberlik Teklif Et' },
   'game.white': { en: 'White', de: 'Weiß', ua: 'Білі', ru: 'Белые', az: 'Ağ', tr: 'Beyaz' },
   'game.black': { en: 'Black', de: 'Schwarz', ua: 'Чорні', ru: 'Черные', az: 'Qara', tr: 'Siyah' },
+  'game.resign.confirm': { en: 'Are you sure you want to resign?', de: 'Bist du sicher, dass du aufgeben möchtest?', ua: 'Ви впевнені, що хочете здатися?', ru: 'Вы уверены, что хотите сдаться?', az: 'Təslim olmaq istədiyinizə əminsiniz?', tr: 'Teslim olmak istediğinizden emin misiniz?' },
+  'game.draw.pending': { en: 'Draw offered. Waiting for opponent.', de: 'Remis angeboten. Warte auf Gegner.', ua: 'Нічия запропонована. Чекаємо відповіді.', ru: 'Ничья предложена. Ждём ответа.', az: 'Heç-heçə təklif olundu. Rəqib gözlənilir.', tr: 'Beraberlik teklif edildi. Rakip bekleniyor.' },
+  'game.draw.received': { en: 'Opponent offers a draw.', de: 'Gegner bietet Remis an.', ua: 'Суперник пропонує нічию.', ru: 'Соперник предлагает ничью.', az: 'Rəqib heç-heçə təklif edir.', tr: 'Rakip beraberlik teklif ediyor.' },
+  'game.draw.accept': { en: 'Accept', de: 'Annehmen', ua: 'Прийняти', ru: 'Принять', az: 'Qəbul et', tr: 'Kabul et' },
+  'game.draw.decline': { en: 'Decline', de: 'Ablehnen', ua: 'Відхилити', ru: 'Отклонить', az: 'İmtina et', tr: 'Reddet' },
+  'game.draw.declined': { en: 'Draw offer declined.', de: 'Remisangebot abgelehnt.', ua: 'Пропозицію нічиєї відхилено.', ru: 'Предложение ничьей отклонено.', az: 'Heç-heçə təklifi rədd edildi.', tr: 'Beraberlik teklifi reddedildi.' },
+  'game.result.resignation.self': { en: 'You resigned.', de: 'Du hast aufgegeben.', ua: 'Ви здалися.', ru: 'Вы сдались.', az: 'Siz təslim oldunuz.', tr: 'Teslim oldunuz.' },
+  'game.result.resignation.opponent': { en: 'Opponent resigned.', de: 'Gegner hat aufgegeben.', ua: 'Суперник здався.', ru: 'Соперник сдался.', az: 'Rəqib təslim oldu.', tr: 'Rakip teslim oldu.' },
+  'game.result.drawAgreement': { en: 'Draw by agreement.', de: 'Remis durch Vereinbarung.', ua: 'Нічия за згодою.', ru: 'Ничья по соглашению.', az: 'Razılıqla heç-heçə.', tr: 'Anlaşma ile beraberlik.' },
+  'game.action.rejected': { en: 'Action not allowed.', de: 'Aktion nicht erlaubt.', ua: 'Дію не дозволено.', ru: 'Действие не разрешено.', az: 'Əməliyyata icazə verilmir.', tr: 'İşleme izin verilmiyor.' },
 
   // Stockfish Analysis UI
   'game.tabs.analysis': { en: 'Analysis', de: 'Analyse', ua: 'Аналіз', ru: 'Анализ', az: 'Analiz', tr: 'Analiz' },
