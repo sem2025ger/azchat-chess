@@ -360,7 +360,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
     if (drawOfferBy !== null) return;
 
     setDrawOfferBy(playerColor);
-    setGameActionMessage(t('game.draw.pending'));
     socket.emit('draw_offer', { roomId });
   };
 
