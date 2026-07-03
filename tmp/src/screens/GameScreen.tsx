@@ -72,7 +72,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   // Chess Game State
   const [game, setGame] = useState(new Chess());
-  const { socket } = useSocket();
+  const { socket, isConnected } = useSocket();
   const [searchParams] = useSearchParams();
   const roomId = mode === 'live' ? searchParams.get('roomId') : null;
   const requestedColor = searchParams.get('color');
@@ -94,15 +94,25 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const lastConfirmedFenRef = useRef(new Chess().fen());
   const [moveRejectMessage, setMoveRejectMessage] = useState<string | null>(null);
   const [gameOverMessage, setGameOverMessage] = useState<string | null>(null);
+  const [drawOfferBy, setDrawOfferBy] = useState<'w' | 'b' | null>(null);
+  const [gameActionMessage, setGameActionMessage] = useState<string | null>(null);
   const isLiveMultiplayer = isMultiplayer && !gameOverMessage;
   const analysisActive = !isLiveMultiplayer && (isDesktop || activeTab === 'analysis');
+  const canSendGameAction =
+    isMultiplayer && isConnected && Boolean(socket) && Boolean(roomId) && !gameOverMessage;
 
-  const mapGameOverReason = (reason?: string) => {
+  const mapGameOverReason = (data?: { reason?: string; endedBy?: 'w' | 'b' | null }) => {
+    const reason = data?.reason;
     switch (reason) {
       case 'opponent_disconnected': return "Opponent disconnected. Game over.";
       case 'checkmate': return "Game over: checkmate.";
       case 'draw': return "Game over: draw.";
       case 'stalemate': return "Game over: stalemate.";
+      case 'resignation':
+        return data?.endedBy === playerColor
+          ? t('game.result.resignation.self')
+          : t('game.result.resignation.opponent');
+      case 'draw_agreement': return t('game.result.drawAgreement');
       case 'game_over': return "Game over.";
       default: return "Game over.";
     }
@@ -143,7 +153,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
     };
     const onGameOver = (data: any) => {
-      setGameOverMessage(mapGameOverReason(data?.reason));
+      setDrawOfferBy(null);
+      setGameActionMessage(null);
+      setGameOverMessage(mapGameOverReason(data));
     };
 
     const onMoveRejected = (data: { reason?: string }) => {
@@ -166,19 +178,61 @@ export default function GameScreen({ mode }: GameScreenProps) {
       
       setMoveRejectMessage(msg);
     };
+
+    const isCurrentRoomEvent = (data: any) => !data?.roomId || data.roomId === roomId;
+
+    const onDrawOfferReceived = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+
+      const offeredBy = data?.offeredBy;
+      if (offeredBy !== 'w' && offeredBy !== 'b') return;
+
+      setDrawOfferBy(offeredBy);
+      setGameActionMessage(null);
+    };
+
+    const onDrawOfferDeclined = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+
+      setDrawOfferBy(null);
+
+      if (!data?.declinedBy || data.declinedBy !== playerColor) {
+        setGameActionMessage(t('game.draw.declined'));
+        setTimeout(() => setGameActionMessage(null), 4000);
+      }
+    };
+
+    const onGameActionRejected = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+
+      setDrawOfferBy(null);
+      setGameActionMessage(t('game.action.rejected'));
+      setTimeout(() => setGameActionMessage(null), 4000);
+    };
     
     socket.on('game_start', onStart);
     socket.on('update_board', onUpdate);
     socket.on('game_over', onGameOver);
     socket.on('move_rejected', onMoveRejected);
+    socket.on('draw_offer_received', onDrawOfferReceived);
+    socket.on('draw_offer_declined', onDrawOfferDeclined);
+    socket.on('game_action_rejected', onGameActionRejected);
     
     return () => { 
       socket.off('game_start', onStart);
       socket.off('update_board', onUpdate); 
       socket.off('game_over', onGameOver);
       socket.off('move_rejected', onMoveRejected);
+      socket.off('draw_offer_received', onDrawOfferReceived);
+      socket.off('draw_offer_declined', onDrawOfferDeclined);
+      socket.off('game_action_rejected', onGameActionRejected);
     };
   }, [socket, roomId]);
+
+  useEffect(() => {
+    setDrawOfferBy(null);
+    setGameActionMessage(null);
+  }, [roomId]);
 
 
 
@@ -274,7 +328,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           }
           
           // Ensure game over states are handled properly
-          if (g.isGameOver()) {
+          if (!isMultiplayer && g.isGameOver()) {
             if (g.isCheckmate()) setGameOverMessage('Game over: checkmate.');
             else if (g.isDraw()) setGameOverMessage('Game over: draw.');
             else if (g.isStalemate()) setGameOverMessage('Game over: stalemate.');
@@ -287,12 +341,43 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId, sound]
+    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer]
   );
 
 
 
 
+
+  const handleResign = () => {
+    if (!canSendGameAction || !socket || !roomId) return;
+    if (!window.confirm(t('game.resign.confirm'))) return;
+
+    socket.emit('resign_game', { roomId });
+  };
+
+  const handleOfferDraw = () => {
+    if (!canSendGameAction || !socket || !roomId) return;
+    if (drawOfferBy !== null) return;
+
+    setDrawOfferBy(playerColor);
+    setGameActionMessage(t('game.draw.pending'));
+    socket.emit('draw_offer', { roomId });
+  };
+
+  const handleAcceptDraw = () => {
+    if (!canSendGameAction || !socket || !roomId) return;
+
+    setGameActionMessage(null);
+    socket.emit('draw_accept', { roomId });
+  };
+
+  const handleDeclineDraw = () => {
+    if (!canSendGameAction || !socket || !roomId) return;
+
+    setDrawOfferBy(null);
+    setGameActionMessage(null);
+    socket.emit('draw_decline', { roomId });
+  };
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -714,13 +799,61 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </button>
         </div>
 
+        {drawOfferBy && drawOfferBy !== playerColor && !gameOverMessage && (
+          <div className="p-2 mb-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col gap-1.5">
+            <span className="font-semibold">{t('game.draw.received')}</span>
+            <div className="flex gap-1.5">
+              <button
+                onClick={handleAcceptDraw}
+                disabled={!canSendGameAction}
+                className="flex-1 py-1 rounded bg-green-500/20 hover:bg-green-500/30 text-green-100 border border-green-500/40 uppercase font-bold text-[0.6rem] tracking-wide transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {t('game.draw.accept')}
+              </button>
+              <button
+                onClick={handleDeclineDraw}
+                disabled={!canSendGameAction}
+                className="flex-1 py-1 rounded bg-white/10 hover:bg-white/20 text-white border border-white/20 uppercase font-bold text-[0.6rem] tracking-wide transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {t('game.draw.decline')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {drawOfferBy === playerColor && !gameOverMessage && (
+          <div className="p-2 mb-1 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-200 text-xs">
+            {t('game.draw.pending')}
+          </div>
+        )}
+
+        {gameActionMessage && !gameOverMessage && (
+          <div className="p-2 mb-1 rounded-lg bg-red-500/10 border border-red-500/30 text-red-200 text-xs">
+            {gameActionMessage}
+          </div>
+        )}
+
         {/* Professional Game Control Center */}
         <div className="p-2 bg-transparent md:bg-black/60 border-0 md:border-t border-white/10 flex md:grid md:grid-cols-2 gap-2 shrink-0 shadow-none md:shadow-[0_-30px_60px_-15px_rgba(0,0,0,0.8)] relative z-30 ring-0 md:ring-1 ring-white/5 md:backdrop-blur-3xl">
-          <button disabled className="opacity-50 pointer-events-none flex-1 flex md:flex-col items-center justify-center gap-1 py-1.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-red-500/10 text-neutral-500 hover:text-red-400 font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 group shadow-2xl transition-all duration-150 active:scale-95 hover:border-red-500/20 ring-1 ring-white/5">
+          <button
+            disabled={!canSendGameAction}
+            onClick={handleResign}
+            className={cx(
+              "flex-1 flex md:flex-col items-center justify-center gap-1 py-1.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-red-500/10 text-neutral-500 hover:text-red-400 font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 group shadow-2xl transition-all duration-150 active:scale-95 hover:border-red-500/20 ring-1 ring-white/5",
+              !canSendGameAction && "opacity-50 pointer-events-none"
+            )}
+          >
             <Flag size={16} className="group-hover:rotate-[15deg] group-hover:scale-110 transition-all duration-200" />
             {t('game.resign')}
           </button>
-          <button disabled className="opacity-50 pointer-events-none flex-1 flex md:flex-col items-center justify-center gap-1 py-1.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 shadow-2xl transition-all duration-150 active:scale-95 group hover:border-white/20 ring-1 ring-white/5">
+          <button
+            disabled={!canSendGameAction || drawOfferBy !== null}
+            onClick={handleOfferDraw}
+            className={cx(
+              "flex-1 flex md:flex-col items-center justify-center gap-1 py-1.5 rounded-lg md:rounded-xl bg-white/5 hover:bg-white/10 text-neutral-500 hover:text-white font-black text-[0.6rem] uppercase tracking-[0.1em] border border-white/5 shadow-2xl transition-all duration-150 active:scale-95 group hover:border-white/20 ring-1 ring-white/5",
+              (!canSendGameAction || drawOfferBy !== null) && "opacity-50 pointer-events-none"
+            )}
+          >
             <Handshake size={18} strokeWidth={2.5} className="group-hover:scale-110 transition-all duration-200" />
             {t('game.draw')}
           </button>
