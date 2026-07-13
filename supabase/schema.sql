@@ -141,9 +141,25 @@ CREATE TABLE public.moves (
   created_at timestamp with time zone DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS moves_match_id_idx
+  ON public.moves (match_id);
+
 ALTER TABLE public.moves ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Moves are viewable by everyone." ON public.moves FOR SELECT USING (true);
-CREATE POLICY "Moves can be inserted by authenticated users (temp)" ON public.moves FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Participants can view moves for their matches"
+ON public.moves
+FOR SELECT
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.matches AS match_row
+    WHERE match_row.id = public.moves.match_id
+      AND (
+        auth.uid() = match_row.white_id
+        OR auth.uid() = match_row.black_id
+      )
+  )
+);
 
 -- MATCHMAKING QUEUE
 CREATE TABLE public.matchmaking_queue (

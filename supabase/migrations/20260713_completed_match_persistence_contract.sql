@@ -106,3 +106,33 @@ USING (
   auth.uid() = white_id
   OR auth.uid() = black_id
 );
+
+CREATE INDEX IF NOT EXISTS moves_match_id_idx
+  ON public.moves (match_id);
+
+ALTER TABLE public.moves ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Moves are viewable by everyone."
+  ON public.moves;
+
+DROP POLICY IF EXISTS "Moves can be inserted by authenticated users (temp)"
+  ON public.moves;
+
+DROP POLICY IF EXISTS "Participants can view moves for their matches"
+  ON public.moves;
+
+CREATE POLICY "Participants can view moves for their matches"
+ON public.moves
+FOR SELECT
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.matches AS match_row
+    WHERE match_row.id = public.moves.match_id
+      AND (
+        auth.uid() = match_row.white_id
+        OR auth.uid() = match_row.black_id
+      )
+  )
+);
