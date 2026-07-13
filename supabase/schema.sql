@@ -22,24 +22,112 @@ CREATE POLICY "Users can update own profile." ON public.profiles FOR UPDATE USIN
 -- MATCHES
 CREATE TABLE public.matches (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  source_room_id text,
   white_id uuid REFERENCES public.profiles(id),
   black_id uuid REFERENCES public.profiles(id),
   winner_id uuid REFERENCES public.profiles(id),
+  winner_color text,
   status text NOT NULL DEFAULT 'active', -- 'active', 'completed', 'abandoned', 'draw'
+  result text,
+  termination_reason text,
   time_control text NOT NULL,
   initial_time integer NOT NULL,
   increment integer DEFAULT 0,
   fen text NOT NULL DEFAULT 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+  initial_fen text,
+  final_fen text,
   pgn text,
   created_at timestamp with time zone DEFAULT now(),
   completed_at timestamp with time zone
 );
 
+ALTER TABLE public.matches
+  ADD CONSTRAINT matches_result_allowed_check
+    CHECK (
+      result IS NULL
+      OR result IN ('1-0', '0-1', '1/2-1/2')
+    ) NOT VALID,
+  ADD CONSTRAINT matches_winner_color_allowed_check
+    CHECK (
+      winner_color IS NULL
+      OR winner_color IN ('w', 'b')
+    ) NOT VALID,
+  ADD CONSTRAINT matches_termination_reason_allowed_check
+    CHECK (
+      termination_reason IS NULL
+      OR termination_reason IN (
+        'checkmate',
+        'stalemate',
+        'draw',
+        'resignation',
+        'draw_agreement',
+        'opponent_disconnected'
+      )
+    ) NOT VALID,
+  ADD CONSTRAINT matches_completed_result_consistency_check
+    CHECK (
+      status <> 'completed'
+      OR (
+        (
+          result = '1-0'
+          AND winner_color IS NOT NULL
+          AND winner_color = 'w'
+          AND white_id IS NOT NULL
+          AND winner_id IS NOT NULL
+          AND winner_id = white_id
+        )
+        OR (
+          result = '0-1'
+          AND winner_color IS NOT NULL
+          AND winner_color = 'b'
+          AND black_id IS NOT NULL
+          AND winner_id IS NOT NULL
+          AND winner_id = black_id
+        )
+        OR (
+          result = '1/2-1/2'
+          AND winner_color IS NULL
+          AND winner_id IS NULL
+        )
+      )
+    ) NOT VALID,
+  ADD CONSTRAINT matches_completed_required_fields_check
+    CHECK (
+      status <> 'completed'
+      OR (
+        result IS NOT NULL
+        AND termination_reason IS NOT NULL
+        AND completed_at IS NOT NULL
+      )
+    ) NOT VALID,
+  ADD CONSTRAINT matches_completed_at_consistency_check
+    CHECK (
+      completed_at IS NULL
+      OR created_at IS NULL
+      OR completed_at >= created_at
+    ) NOT VALID;
+
+CREATE INDEX IF NOT EXISTS matches_white_id_idx
+  ON public.matches (white_id);
+
+CREATE INDEX IF NOT EXISTS matches_black_id_idx
+  ON public.matches (black_id);
+
+CREATE INDEX IF NOT EXISTS matches_completed_at_idx
+  ON public.matches (completed_at);
+
+CREATE INDEX IF NOT EXISTS matches_source_room_id_idx
+  ON public.matches (source_room_id);
+
 ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Matches are viewable by everyone." ON public.matches FOR SELECT USING (true);
--- In production, insertion/updates to matches should only be done securely by the backend SERVER role.
-CREATE POLICY "Matches can be inserted by authenticated users (temp)" ON public.matches FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Matches can be updated by authenticated users (temp)" ON public.matches FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Participants can view their matches"
+ON public.matches
+FOR SELECT
+TO authenticated
+USING (
+  auth.uid() = white_id
+  OR auth.uid() = black_id
+);
 
 -- MOVES
 CREATE TABLE public.moves (
