@@ -226,6 +226,10 @@ io.on('connection', (socket) => {
         game: new Chess(),
         status: 'active',
         drawOfferBy: null,
+        userIds: {
+          w: colors[0] === 'w' ? player1.data.userId : player2.data.userId,
+          b: colors[0] === 'b' ? player1.data.userId : player2.data.userId
+        },
         players: {
           w: colors[0] === 'w' ? player1.id : player2.id,
           b: colors[0] === 'b' ? player1.id : player2.id
@@ -289,6 +293,10 @@ io.on('connection', (socket) => {
       isPrivate: true,
       status: 'pending',
       drawOfferBy: null,
+      userIds: {
+        w: isWhite ? socket.data.userId : null,
+        b: isWhite ? null : socket.data.userId
+      },
       players: {
         w: isWhite ? socket.id : null,
         b: isWhite ? null : socket.id
@@ -334,6 +342,7 @@ io.on('connection', (socket) => {
       const creatorSocketId = roomData.players[creatorColor];
       
       roomData.players[emptyColor] = socket.id;
+      roomData.userIds[emptyColor] = socket.data.userId;
       roomData.status = 'active';
       roomData.drawOfferBy = null;
       
