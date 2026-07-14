@@ -227,6 +227,9 @@ io.on('connection', (socket) => {
         status: 'active',
         drawOfferBy: null,
         startedAt: new Date().toISOString(),
+        timeControl: '10+0',
+        initialTime: 600,
+        increment: 0,
         userIds: {
           w: colors[0] === 'w' ? player1.data.userId : player2.data.userId,
           b: colors[0] === 'b' ? player1.data.userId : player2.data.userId
@@ -246,7 +249,7 @@ io.on('connection', (socket) => {
       player1.emit('match_found', { roomId, color: colors[0] });
       player2.emit('match_found', { roomId, color: colors[1] });
 
-      io.to(roomId).emit('game_start', { whiteTime: 600, blackTime: 600 });
+      io.to(roomId).emit('game_start', { whiteTime: roomData.initialTime, blackTime: roomData.initialTime });
     }
   });
 
@@ -295,6 +298,9 @@ io.on('connection', (socket) => {
       status: 'pending',
       drawOfferBy: null,
       startedAt: null,
+      timeControl: '10+0',
+      initialTime: 600,
+      increment: 0,
       userIds: {
         w: isWhite ? socket.data.userId : null,
         b: isWhite ? null : socket.data.userId
@@ -357,7 +363,7 @@ io.on('connection', (socket) => {
       io.to(creatorSocketId).emit('match_found', { roomId, color: creatorColor });
       socket.emit('match_found', { roomId, color: emptyColor });
       
-      io.to(roomId).emit('game_start', { whiteTime: 600, blackTime: 600 });
+      io.to(roomId).emit('game_start', { whiteTime: roomData.initialTime, blackTime: roomData.initialTime });
     } catch (e) {
       console.error("Error joining private room:", e);
       socket.emit('join_failed', { reason: "room_not_found" });
