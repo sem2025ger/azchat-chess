@@ -169,7 +169,6 @@ ALTER TABLE public.matches
 CREATE INDEX IF NOT EXISTS matches_white_id_idx ON public.matches (white_id);
 CREATE INDEX IF NOT EXISTS matches_black_id_idx ON public.matches (black_id);
 CREATE INDEX IF NOT EXISTS matches_completed_at_idx ON public.matches (completed_at);
-CREATE INDEX IF NOT EXISTS matches_source_room_id_idx ON public.matches (source_room_id);
 CREATE UNIQUE INDEX IF NOT EXISTS matches_source_room_id_unique_idx ON public.matches (source_room_id) WHERE source_room_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS moves_match_id_idx ON public.moves (match_id);
 
@@ -245,8 +244,8 @@ BEGIN
     clean_uname := 'user';
   END IF;
 
-  clean_uname := substring(clean_uname from 1 for 20);
-  final_uname := clean_uname || '_' || substring(replace(new.id::text, '-', '') from 1 for 8);
+  clean_uname := left(clean_uname, 30);
+  final_uname := clean_uname || '_' || replace(new.id::text, '-', '');
 
   INSERT INTO public.profiles (id, username)
   VALUES (new.id, final_uname)
@@ -266,13 +265,13 @@ CREATE TRIGGER on_auth_user_created
 INSERT INTO public.profiles (id, username)
 SELECT
   u.id,
-  substring(
+  left(
     COALESCE(
       NULLIF(regexp_replace(u.raw_user_meta_data->>'username', '[^a-zA-Z0-9_]', '', 'g'), ''),
       NULLIF(regexp_replace(split_part(u.email, '@', 1), '[^a-zA-Z0-9_]', '', 'g'), ''),
       'user'
-    ) from 1 for 20
-  ) || '_' || substring(replace(u.id::text, '-', '') from 1 for 8) AS username
+    ), 30
+  ) || '_' || replace(u.id::text, '-', '') AS username
 FROM auth.users u
 ON CONFLICT (id) DO NOTHING;
 
