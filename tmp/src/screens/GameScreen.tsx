@@ -103,7 +103,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const canSendGameAction =
     isMultiplayer && isConnected && Boolean(socket) && Boolean(roomId) && !gameOverMessage;
 
-  const mapGameOverReason = (data?: { reason?: string; endedBy?: 'w' | 'b' | null }) => {
+  const mapGameOverReason = useCallback((data?: { reason?: string; endedBy?: 'w' | 'b' | null }) => {
     const reason = data?.reason;
     switch (reason) {
       case 'opponent_disconnected': return "Opponent disconnected. Game over.";
@@ -118,7 +118,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       case 'game_over': return "Game over.";
       default: return "Game over.";
     }
-  };
+  }, [playerColor, t]);
 
   useEffect(() => {
     if (!socket || !roomId) return;
@@ -270,7 +270,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       socket.off('player_reconnected', onPlayerReconnected);
       socket.off('reconnect_success', onReconnectSuccess);
     };
-  }, [socket, roomId, playerColor, t]);
+  }, [socket, roomId, playerColor, t, mapGameOverReason]);
 
   useEffect(() => {
     setDrawOfferBy(null);
@@ -283,6 +283,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const engineRef = useRef<StockfishEngine | null>(null);
   const [engineResult, setEngineResult] = useState<EngineResult | null>(null);
   const [isAnalysing, setIsAnalysing] = useState(false);
+  const [engineFailed, setEngineFailed] = useState(false);
 
   // Authoritative server clock countdown
   useEffect(() => {
@@ -310,9 +311,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
       engineRef.current.onResult((res) => {
         setEngineResult(res);
         setIsAnalysing(false);
+        setEngineFailed(false);
       });
       engineRef.current.onError(() => {
         setIsAnalysing(false);
+        setEngineFailed(true);
       });
     }
     return () => {
@@ -393,7 +396,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           }
           return true;
         }
-      } catch (e) {
+      } catch {
         return false;
       }
       return false;
@@ -476,7 +479,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const analysisData = useMemo(() => {
     if (!engineResult) return null;
-    const analysisFen = engineResult.analyzedFen || game.fen();
+    const analysisFen = engineResult.analyzedFen || liveFen;
     const g = new Chess(analysisFen);
     let bestMoveSan = engineResult.bestMove;
     const continuationSan: string[] = [];
@@ -488,7 +491,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
         const promotion = engineResult.bestMove[4];
         const move = g.move({ from, to, promotion });
         if (move) bestMoveSan = move.san;
-      } catch (e) {
+      } catch {
         // fallback
       }
     }
@@ -505,7 +508,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           } else {
             break;
           }
-        } catch (e) {
+        } catch {
           break;
         }
       }
@@ -571,7 +574,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       continuation: continuationSan,
       lines
     };
-  }, [engineResult, game.fen()]);
+  }, [engineResult, liveFen]);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)]">
@@ -722,7 +725,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 loading={isAnalysing}
                 candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
                 lines={analysisData?.lines}
-                error={engineRef.current?.hasFailed() === true}
+                error={engineFailed}
               />
             )}
           </div>

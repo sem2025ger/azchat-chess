@@ -172,7 +172,7 @@ export async function playChessSound(
 
     source.start(0);
 
-  } catch (e) {
+  } catch {
     // Ignore audio failures to prevent breaking gameplay
   }
 }
