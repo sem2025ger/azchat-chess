@@ -4,7 +4,6 @@ import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import Layout from './components/Layout';
-import MaintenancePage from './components/MaintenancePage';
 
 // Screens
 import HomeScreen from './screens/HomeScreen';
@@ -16,10 +15,6 @@ import SettingsScreen from './screens/SettingsScreen';
 import UpdatePasswordScreen from './screens/UpdatePasswordScreen';
 
 function App() {
-  if (import.meta.env.VITE_MAINTENANCE_MODE === 'true') {
-    return <MaintenancePage />;
-  }
-
   return (
     <ThemeProvider>
       <LanguageProvider>
