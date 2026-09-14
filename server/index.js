@@ -7,26 +7,33 @@ const crypto = require('crypto');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const { createSocketAuthMiddleware } = require('./socketAuth');
+const { createMatchPersistenceFromEnv } = require('./matchPersistence');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error(
-    '[boot] Missing required env: SUPABASE_URL and/or SUPABASE_ANON_KEY. Refusing to start.'
-  );
-  process.exit(1);
+  if (process.env.NODE_ENV !== 'test') {
+    console.error(
+      '[boot] Missing required env: SUPABASE_URL and/or SUPABASE_ANON_KEY. Refusing to start.'
+    );
+    process.exit(1);
+  }
 }
 
-const supabaseAuthClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false,
-  },
-});
+const supabaseAuthClient = SUPABASE_URL && SUPABASE_ANON_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    })
+  : null;
 
 async function verifySupabaseToken(accessToken) {
+  if (!supabaseAuthClient) return null;
   try {
     const { data, error } = await supabaseAuthClient.auth.getUser(accessToken);
     if (error || !data || !data.user || !data.user.id) {
@@ -36,6 +43,22 @@ async function verifySupabaseToken(accessToken) {
   } catch {
     return null;
   }
+}
+
+let matchPersistence = null;
+if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+  try {
+    matchPersistence = createMatchPersistenceFromEnv();
+    console.log('[boot] Match persistence adapter initialized.');
+  } catch (err) {
+    console.warn('[boot] Failed to initialize match persistence adapter:', err.message);
+  }
+} else {
+  console.warn('[boot] SUPABASE_SERVICE_KEY not set; match persistence disabled.');
+}
+
+function setMatchPersistenceAdapter(adapter) {
+  matchPersistence = adapter;
 }
 
 const app = express();
@@ -99,6 +122,11 @@ function oppositeColor(color) {
 function cleanupRoom(roomId, room) {
   if (!room) return;
 
+  if (room.disconnectTimer) {
+    clearTimeout(room.disconnectTimer);
+    room.disconnectTimer = null;
+  }
+
   for (const socketId of Object.values(room.players || {})) {
     if (!socketId) continue;
     socketToRoom.delete(socketId);
@@ -119,6 +147,11 @@ function finalizeGame(roomId, payload) {
 
   room.status = 'ended';
 
+  if (room.disconnectTimer) {
+    clearTimeout(room.disconnectTimer);
+    room.disconnectTimer = null;
+  }
+
   const gameOverPayload = {
     roomId,
     reason: payload.reason,
@@ -128,8 +161,93 @@ function finalizeGame(roomId, payload) {
   };
 
   io.to(roomId).emit('game_over', gameOverPayload);
-  cleanupRoom(roomId, room);
+
+  // Authoritative match persistence (idempotent, safe)
+  if (matchPersistence && !room.persisted) {
+    const whiteId = room.userIds?.w;
+    const blackId = room.userIds?.b;
+
+    if (!whiteId || !blackId) {
+      console.warn(`[persistence] Skipping persistence for room ${roomId}: missing player user ID`);
+    } else if (whiteId === blackId) {
+      // Explicit handling for self-match
+      console.warn(`[persistence] Skipping persistence for room ${roomId}: self-match detected (${whiteId})`);
+    } else {
+      room.persisted = true;
+      let winnerId = null;
+      if (payload.winnerColor === 'w') winnerId = whiteId;
+      else if (payload.winnerColor === 'b') winnerId = blackId;
+
+      // Ensure termination reason conforms to Supabase DB constraint:
+      // Current DB check constraint allows: checkmate, stalemate, draw, resignation, draw_agreement, opponent_disconnected
+      // If timeout occurred, map to resignation for database compatibility
+      const dbTerminationReason = payload.reason === 'timeout' ? 'resignation' : payload.reason;
+
+      const completedRecord = {
+        id: crypto.randomUUID(),
+        sourceRoomId: roomId,
+        whiteId,
+        blackId,
+        winnerId,
+        winnerColor: payload.winnerColor ?? null,
+        result: payload.result,
+        terminationReason: dbTerminationReason,
+        timeControl: room.timeControl || '10+0',
+        initialTime: room.initialTime || 600,
+        increment: room.increment || 0,
+        initialFen: room.initialFen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+        finalFen: room.game.fen(),
+        pgn: room.game.pgn() || '',
+        createdAt: room.startedAt || new Date().toISOString(),
+        completedAt: new Date().toISOString(),
+      };
+
+      matchPersistence.persistCompletedMatch(completedRecord).catch((err) => {
+        // Safe error logging without sensitive credentials
+        console.error(`[persistence] Error persisting match ${roomId}:`, err.message || 'unknown error');
+      });
+    }
+  }
+
+  // Defer cleanup by 30 seconds so connected clients receive events and can view the board
+  const cleanupTimer = setTimeout(() => {
+    cleanupRoom(roomId, room);
+  }, 30000);
+  if (cleanupTimer.unref) {
+    cleanupTimer.unref();
+  }
+
   return true;
+}
+
+// Watchdog timer: checks for clock timeouts on active games every 1 second
+function checkRoomTimeouts() {
+  const now = Date.now();
+  for (const [roomId, room] of activeRooms.entries()) {
+    if (room.status !== 'active' || !room.lastMoveTimestamp) continue;
+
+    const currentTurn = room.game.turn();
+    const elapsedMs = Math.max(0, now - room.lastMoveTimestamp);
+    const remainingMs = (currentTurn === 'w' ? room.whiteTimeMs : room.blackTimeMs) - elapsedMs;
+
+    if (remainingMs <= 0) {
+      if (currentTurn === 'w') room.whiteTimeMs = 0;
+      else room.blackTimeMs = 0;
+
+      const winnerColor = oppositeColor(currentTurn);
+      finalizeGame(roomId, {
+        reason: 'timeout',
+        result: winnerColor === 'w' ? '1-0' : '0-1',
+        winnerColor,
+        endedBy: currentTurn,
+      });
+    }
+  }
+}
+
+const timeoutWatchdog = setInterval(checkRoomTimeouts, 1000);
+if (timeoutWatchdog.unref) {
+  timeoutWatchdog.unref();
 }
 
 function getNaturalGameOverPayload(game) {
@@ -204,52 +322,75 @@ io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
 
   socket.on('join_queue', () => {
-    // Prevent duplicate entries
-    if (waitingQueue.find(s => s.id === socket.id)) return;
+    const userId = socket.data?.userId;
+
+    // Prevent duplicate entries by socket.id or authenticated userId
+    if (waitingQueue.some(s => s.id === socket.id || (userId && s.data?.userId === userId))) {
+      return;
+    }
     if (socketToRoom.has(socket.id)) return;
 
-    console.log('Socket joined queue:', socket.id);
     waitingQueue.push(socket);
 
+    // Pair players when at least 2 are waiting with distinct user IDs
     if (waitingQueue.length >= 2) {
-      const player1 = waitingQueue.shift();
-      const player2 = waitingQueue.shift();
+      const p1 = waitingQueue[0];
+      const p2Index = waitingQueue.findIndex(
+        (s, idx) => idx > 0 && (!p1.data?.userId || !s.data?.userId || s.data.userId !== p1.data.userId)
+      );
 
-      const roomId = crypto.randomUUID();
-      const colors = Math.random() > 0.5 ? ['w', 'b'] : ['b', 'w'];
+      if (p2Index !== -1) {
+        const player1 = waitingQueue.splice(0, 1)[0];
+        const player2 = waitingQueue.splice(p2Index - 1, 1)[0];
 
-      player1.join(roomId);
-      player2.join(roomId);
+        const roomId = crypto.randomUUID();
+        const colors = Math.random() > 0.5 ? ['w', 'b'] : ['b', 'w'];
 
-      const roomData = {
-        roomId,
-        game: new Chess(),
-        status: 'active',
-        drawOfferBy: null,
-        startedAt: new Date().toISOString(),
-        timeControl: '10+0',
-        initialTime: 600,
-        increment: 0,
-        userIds: {
-          w: colors[0] === 'w' ? player1.data.userId : player2.data.userId,
-          b: colors[0] === 'b' ? player1.data.userId : player2.data.userId
-        },
-        players: {
-          w: colors[0] === 'w' ? player1.id : player2.id,
-          b: colors[0] === 'b' ? player1.id : player2.id
-        }
-      };
-      
-      activeRooms.set(roomId, roomData);
-      socketToRoom.set(player1.id, roomId);
-      socketToRoom.set(player2.id, roomId);
+        player1.join(roomId);
+        player2.join(roomId);
 
-      console.log(`Match created: ${roomId} [${player1.id}=${colors[0]}, ${player2.id}=${colors[1]}]`);
+        const initialTime = 600;
+        const roomData = {
+          roomId,
+          game: new Chess(),
+          status: 'active',
+          drawOfferBy: null,
+          startedAt: new Date().toISOString(),
+          timeControl: '10+0',
+          initialTime,
+          increment: 0,
+          initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+          whiteTimeMs: initialTime * 1000,
+          blackTimeMs: initialTime * 1000,
+          lastMoveTimestamp: Date.now(),
+          persisted: false,
+          disconnectTimer: null,
+          disconnectedColor: null,
+          disconnectedAt: null,
+          userIds: {
+            w: colors[0] === 'w' ? player1.data.userId : player2.data.userId,
+            b: colors[0] === 'b' ? player1.data.userId : player2.data.userId,
+          },
+          players: {
+            w: colors[0] === 'w' ? player1.id : player2.id,
+            b: colors[0] === 'b' ? player1.id : player2.id,
+          },
+        };
 
-      player1.emit('match_found', { roomId, color: colors[0] });
-      player2.emit('match_found', { roomId, color: colors[1] });
+        activeRooms.set(roomId, roomData);
+        socketToRoom.set(player1.id, roomId);
+        socketToRoom.set(player2.id, roomId);
 
-      io.to(roomId).emit('game_start', { whiteTime: roomData.initialTime, blackTime: roomData.initialTime });
+        console.log(`Match created: ${roomId} [${player1.id}=${colors[0]}, ${player2.id}=${colors[1]}]`);
+
+        player1.emit('match_found', { roomId, color: colors[0] });
+        player2.emit('match_found', { roomId, color: colors[1] });
+
+        io.to(roomId).emit('game_start', {
+          whiteTime: roomData.initialTime,
+          blackTime: roomData.initialTime,
+        });
+      }
     }
   });
 
@@ -290,7 +431,8 @@ io.on('connection', (socket) => {
 
     const roomId = crypto.randomUUID();
     const isWhite = Math.random() > 0.5;
-    
+    const initialTime = 600;
+
     const roomData = {
       roomId,
       game: new Chess(),
@@ -299,22 +441,30 @@ io.on('connection', (socket) => {
       drawOfferBy: null,
       startedAt: null,
       timeControl: '10+0',
-      initialTime: 600,
+      initialTime,
       increment: 0,
+      initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      whiteTimeMs: initialTime * 1000,
+      blackTimeMs: initialTime * 1000,
+      lastMoveTimestamp: null,
+      persisted: false,
+      disconnectTimer: null,
+      disconnectedColor: null,
+      disconnectedAt: null,
       userIds: {
         w: isWhite ? socket.data.userId : null,
-        b: isWhite ? null : socket.data.userId
+        b: isWhite ? null : socket.data.userId,
       },
       players: {
         w: isWhite ? socket.id : null,
-        b: isWhite ? null : socket.id
-      }
+        b: isWhite ? null : socket.id,
+      },
     };
-    
+
     activeRooms.set(roomId, roomData);
     socketToRoom.set(socket.id, roomId);
     socket.join(roomId);
-    
+
     console.log(`Private match created: ${roomId} by ${socket.id}`);
     socket.emit('private_room_created', { roomId });
   });
@@ -325,45 +475,56 @@ io.on('connection', (socket) => {
         socket.emit('join_failed', { reason: "room_not_found" });
         return;
       }
-      
+
       const roomId = payload.roomId;
       const roomData = activeRooms.get(roomId);
-      
+
       if (!roomData || !roomData.isPrivate) {
         socket.emit('join_failed', { reason: "room_not_found" });
         return;
       }
-      
+
       if (roomData.status === 'active' || (roomData.players.w && roomData.players.b)) {
         socket.emit('join_failed', { reason: "room_full" });
         return;
       }
-      
+
       if (roomData.players.w === socket.id || roomData.players.b === socket.id) {
         socket.emit('join_failed', { reason: "already_in_room" });
         return;
       }
-      
-      // Join behavior
+
+      // Prevent same user from playing against themselves in private room
+      const creatorColor = roomData.players.w ? 'w' : 'b';
+      if (roomData.userIds[creatorColor] && roomData.userIds[creatorColor] === socket.data?.userId) {
+        socket.emit('join_failed', { reason: "already_in_room" });
+        return;
+      }
+
       const emptyColor = roomData.players.w === null ? 'w' : 'b';
-      const creatorColor = emptyColor === 'w' ? 'b' : 'w';
       const creatorSocketId = roomData.players[creatorColor];
-      
+
       roomData.players[emptyColor] = socket.id;
       roomData.userIds[emptyColor] = socket.data.userId;
       roomData.startedAt = new Date().toISOString();
       roomData.status = 'active';
       roomData.drawOfferBy = null;
-      
+      roomData.whiteTimeMs = roomData.initialTime * 1000;
+      roomData.blackTimeMs = roomData.initialTime * 1000;
+      roomData.lastMoveTimestamp = Date.now();
+
       socketToRoom.set(socket.id, roomId);
       socket.join(roomId);
-      
+
       console.log(`Private match joined: ${roomId} [${creatorSocketId}=${creatorColor}, ${socket.id}=${emptyColor}]`);
-      
+
       io.to(creatorSocketId).emit('match_found', { roomId, color: creatorColor });
       socket.emit('match_found', { roomId, color: emptyColor });
-      
-      io.to(roomId).emit('game_start', { whiteTime: roomData.initialTime, blackTime: roomData.initialTime });
+
+      io.to(roomId).emit('game_start', {
+        whiteTime: roomData.initialTime,
+        blackTime: roomData.initialTime,
+      });
     } catch (e) {
       console.error("Error joining private room:", e);
       socket.emit('join_failed', { reason: "room_not_found" });
@@ -454,41 +615,60 @@ io.on('connection', (socket) => {
     try {
       if (!payload || typeof payload !== 'object') {
         socket.emit('move_rejected', { reason: "invalid_payload" });
-        console.log(`[reject] invalid_payload from ${socket.id} roomId=undefined`);
         return;
       }
       const { roomId, move } = payload;
       if (!roomId || !move) {
         socket.emit('move_rejected', { reason: "invalid_payload" });
-        console.log(`[reject] invalid_payload from ${socket.id} roomId=${roomId}`);
         return;
       }
 
       const roomData = activeRooms.get(roomId);
       if (!roomData) {
         socket.emit('move_rejected', { reason: "room_not_found" });
-        console.log(`[reject] room_not_found from ${socket.id} roomId=${roomId}`);
         return;
       }
 
       if (!roomData.players.w || !roomData.players.b) {
         socket.emit('move_rejected', { reason: "game_not_started" });
-        console.log(`[reject] game_not_started from ${socket.id} roomId=${roomId}`);
         return;
       }
 
       const game = roomData.game;
       if (roomData.players[game.turn()] !== socket.id) {
         socket.emit('move_rejected', { reason: "not_your_turn" });
-        console.log(`[reject] not_your_turn from ${socket.id} roomId=${roomId}`);
         return;
       }
 
       const moverColor = getPlayerColor(roomData, socket.id);
+
+      // Authoritative Clock calculation
+      const now = Date.now();
+      if (roomData.lastMoveTimestamp) {
+        const elapsedMs = Math.max(0, now - roomData.lastMoveTimestamp);
+        if (moverColor === 'w') {
+          roomData.whiteTimeMs = Math.max(0, roomData.whiteTimeMs - elapsedMs + (roomData.increment * 1000));
+        } else {
+          roomData.blackTimeMs = Math.max(0, roomData.blackTimeMs - elapsedMs + (roomData.increment * 1000));
+        }
+      }
+      roomData.lastMoveTimestamp = now;
+
+      // Check timeout
+      if ((moverColor === 'w' && roomData.whiteTimeMs <= 0) || (moverColor === 'b' && roomData.blackTimeMs <= 0)) {
+        const winnerColor = oppositeColor(moverColor);
+        finalizeGame(roomId, {
+          reason: 'timeout',
+          result: winnerColor === 'w' ? '1-0' : '0-1',
+          winnerColor,
+          endedBy: moverColor,
+        });
+        return;
+      }
+
       const result = game.move(move);
       if (!result) {
         socket.emit('move_rejected', { reason: "illegal_move" });
-        console.log(`[reject] illegal_move from ${socket.id} roomId=${roomId}`);
         return;
       }
 
@@ -497,8 +677,13 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('draw_offer_declined', { roomId, declinedBy: moverColor });
       }
 
-      // Valid move
-      io.to(roomId).emit('update_board', { fen: game.fen(), history: game.history() });
+      // Valid move broadcast with authoritative clocks
+      io.to(roomId).emit('update_board', {
+        fen: game.fen(),
+        history: game.history(),
+        whiteTime: Math.ceil(roomData.whiteTimeMs / 1000),
+        blackTime: Math.ceil(roomData.blackTimeMs / 1000),
+      });
 
       const gameOverPayload = getNaturalGameOverPayload(game);
       if (gameOverPayload) {
@@ -507,15 +692,73 @@ io.on('connection', (socket) => {
     } catch (e) {
       console.error("Error processing move:", e);
       socket.emit('move_rejected', { reason: "invalid_payload" });
-      console.log(`[reject] invalid_payload from ${socket.id} roomId=${payload?.roomId}`);
     }
+  });
+
+  socket.on('reconnect_game', (payload) => {
+    const roomId = payload?.roomId;
+    if (!roomId || typeof roomId !== 'string') {
+      socket.emit('reconnect_failed', { reason: 'invalid_payload' });
+      return;
+    }
+
+    const room = activeRooms.get(roomId);
+    if (!room || room.status !== 'active') {
+      socket.emit('reconnect_failed', { reason: 'game_not_active' });
+      return;
+    }
+
+    const userId = socket.data?.userId;
+    let playerColor = null;
+    if (room.userIds?.w && room.userIds.w === userId) playerColor = 'w';
+    else if (room.userIds?.b && room.userIds.b === userId) playerColor = 'b';
+
+    if (!playerColor) {
+      socket.emit('reconnect_failed', { reason: 'not_a_player' });
+      return;
+    }
+
+    // Rebind socket
+    room.players[playerColor] = socket.id;
+    socketToRoom.set(socket.id, roomId);
+    socket.join(roomId);
+
+    // Cancel disconnect grace period if applicable
+    if (room.disconnectedColor === playerColor) {
+      room.disconnectedColor = null;
+      room.disconnectedAt = null;
+      if (room.disconnectTimer) {
+        clearTimeout(room.disconnectTimer);
+        room.disconnectTimer = null;
+      }
+      io.to(roomId).emit('player_reconnected', { roomId, color: playerColor });
+    }
+
+    let whiteTime = Math.ceil(room.whiteTimeMs / 1000);
+    let blackTime = Math.ceil(room.blackTimeMs / 1000);
+    if (room.lastMoveTimestamp) {
+      const elapsed = Math.floor((Date.now() - room.lastMoveTimestamp) / 1000);
+      if (room.game.turn() === 'w') whiteTime = Math.max(0, whiteTime - elapsed);
+      else blackTime = Math.max(0, blackTime - elapsed);
+    }
+
+    socket.emit('reconnect_success', {
+      roomId,
+      color: playerColor,
+      fen: room.game.fen(),
+      history: room.game.history(),
+      whiteTime,
+      blackTime,
+      turn: room.game.turn(),
+      drawOfferBy: room.drawOfferBy,
+    });
   });
 
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
-    
-    // Remove from queue
-    waitingQueue = waitingQueue.filter(s => s.id !== socket.id);
+
+    // Remove from waiting queue
+    waitingQueue = waitingQueue.filter((s) => s.id !== socket.id);
 
     // Handle room disconnect
     const roomId = socketToRoom.get(socket.id);
@@ -532,25 +775,64 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const disconnectedColor = getPlayerColor(roomData, socket.id);
-    const winnerColor = oppositeColor(disconnectedColor);
-
-    if (roomData.status === 'active' && winnerColor) {
-      finalizeGame(roomId, {
-        reason: 'opponent_disconnected',
-        result: winnerColor === 'w' ? '1-0' : '0-1',
-        winnerColor,
-        endedBy: disconnectedColor,
-      });
+    if (roomData.status === 'pending') {
+      cleanupRoom(roomId, roomData);
       return;
     }
 
-    if (roomData.status === 'pending') {
-      cleanupRoom(roomId, roomData);
+    const disconnectedColor = getPlayerColor(roomData, socket.id);
+    if (!disconnectedColor) {
+      socketToRoom.delete(socket.id);
+      return;
+    }
+
+    // Grace period for active games: 30 seconds before declaring forfeit
+    const graceSeconds = 30;
+    roomData.disconnectedColor = disconnectedColor;
+    roomData.disconnectedAt = Date.now();
+
+    io.to(roomId).emit('player_disconnected', {
+      roomId,
+      color: disconnectedColor,
+      graceSeconds,
+    });
+
+    if (roomData.disconnectTimer) {
+      clearTimeout(roomData.disconnectTimer);
+    }
+
+    roomData.disconnectTimer = setTimeout(() => {
+      if (roomData.status === 'active' && roomData.disconnectedColor === disconnectedColor) {
+        const winnerColor = oppositeColor(disconnectedColor);
+        finalizeGame(roomId, {
+          reason: 'opponent_disconnected',
+          result: winnerColor === 'w' ? '1-0' : '0-1',
+          winnerColor,
+          endedBy: disconnectedColor,
+        });
+      }
+    }, graceSeconds * 1000);
+    if (roomData.disconnectTimer.unref) {
+      roomData.disconnectTimer.unref();
     }
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = {
+  app,
+  server,
+  io,
+  activeRooms,
+  waitingQueue,
+  socketToRoom,
+  finalizeGame,
+  cleanupRoom,
+  setMatchPersistenceAdapter,
+  timeoutWatchdog,
+};
