@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
 import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu } from 'lucide-react';
@@ -38,6 +38,7 @@ interface GameScreenProps {
 }
 
 export default function GameScreen({ mode }: GameScreenProps) {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { user, profile } = useAuth();
 
@@ -93,6 +94,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const lastConfirmedFenRef = useRef(new Chess().fen());
   const [moveRejectMessage, setMoveRejectMessage] = useState<string | null>(null);
+  const [disconnectNotice, setDisconnectNotice] = useState<string | null>(null);
   const [gameOverMessage, setGameOverMessage] = useState<string | null>(null);
   const [drawOfferBy, setDrawOfferBy] = useState<'w' | 'b' | null>(null);
   const [gameActionMessage, setGameActionMessage] = useState<string | null>(null);
@@ -155,6 +157,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     const onGameOver = (data: any) => {
       setDrawOfferBy(null);
       setGameActionMessage(null);
+      setDisconnectNotice(null);
       setGameOverMessage(mapGameOverReason(data));
     };
 
@@ -209,6 +212,37 @@ export default function GameScreen({ mode }: GameScreenProps) {
       setGameActionMessage(t('game.action.rejected'));
       setTimeout(() => setGameActionMessage(null), 4000);
     };
+
+    const onPlayerDisconnected = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+      if (data?.color !== playerColor) {
+        setDisconnectNotice(data?.gracePeriod ? `Opponent disconnected. Waiting ${data.gracePeriod}s...` : "Opponent disconnected.");
+      }
+    };
+
+    const onPlayerReconnected = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+      if (data?.color !== playerColor) {
+        setDisconnectNotice("Opponent reconnected!");
+        setTimeout(() => setDisconnectNotice(null), 3000);
+      }
+    };
+
+    const onReconnectSuccess = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+      setDisconnectNotice(null);
+      if (data?.fen) {
+        lastConfirmedFenRef.current = data.fen;
+        setGame(new Chess(data.fen));
+        setPositionHistory(prev => prev[prev.length - 1] === data.fen ? prev : [...prev, data.fen]);
+      }
+      if (data?.whiteTime !== undefined) {
+        setTimeLeft({ white: data.whiteTime, black: data.blackTime });
+      }
+      if (Array.isArray(data?.history)) {
+        setMoveHistory(data.history);
+      }
+    };
     
     socket.on('game_start', onStart);
     socket.on('update_board', onUpdate);
@@ -217,6 +251,12 @@ export default function GameScreen({ mode }: GameScreenProps) {
     socket.on('draw_offer_received', onDrawOfferReceived);
     socket.on('draw_offer_declined', onDrawOfferDeclined);
     socket.on('game_action_rejected', onGameActionRejected);
+    socket.on('player_disconnected', onPlayerDisconnected);
+    socket.on('player_reconnected', onPlayerReconnected);
+    socket.on('reconnect_success', onReconnectSuccess);
+
+    // Request reconnection data if returning to an active game room
+    socket.emit('reconnect_game', { roomId });
     
     return () => { 
       socket.off('game_start', onStart);
@@ -226,8 +266,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
       socket.off('draw_offer_received', onDrawOfferReceived);
       socket.off('draw_offer_declined', onDrawOfferDeclined);
       socket.off('game_action_rejected', onGameActionRejected);
+      socket.off('player_disconnected', onPlayerDisconnected);
+      socket.off('player_reconnected', onPlayerReconnected);
+      socket.off('reconnect_success', onReconnectSuccess);
     };
-  }, [socket, roomId]);
+  }, [socket, roomId, playerColor, t]);
 
   useEffect(() => {
     setDrawOfferBy(null);
@@ -241,7 +284,18 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [engineResult, setEngineResult] = useState<EngineResult | null>(null);
   const [isAnalysing, setIsAnalysing] = useState(false);
 
-  // Ticking timer effect removed (Phase 2C-A) to prevent desync until real server clocks are implemented.
+  // Authoritative server clock countdown
+  useEffect(() => {
+    if (!isLiveMultiplayer) return;
+    const timer = setInterval(() => {
+      const activeColor = game.turn() === 'w' ? 'white' : 'black';
+      setTimeLeft((prev) => ({
+        ...prev,
+        [activeColor]: Math.max(0, prev[activeColor] - 1),
+      }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isLiveMultiplayer, game]);
 
   // Engine Initialization
   useEffect(() => {
@@ -307,6 +361,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
         setViewMoveIndex(-1);
         return false;
       }
+      if (isMultiplayer && playerColor !== game.turn()) {
+        return false;
+      }
       try {
         const g = new Chess(game.fen());
         const move = g.move({ from: source, to: target, promotion });
@@ -341,7 +398,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer]
+    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer, playerColor]
   );
 
 
@@ -563,12 +620,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   <div className="bg-neutral-900 border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 text-center">
                     <span className="text-white font-black text-xl tracking-wide">{gameOverMessage}</span>
                     <button 
-                      onClick={() => window.location.href = '/play'} 
+                      onClick={() => navigate('/play')} 
                       className="bg-chess-active hover:bg-chess-active/80 text-white px-6 py-2 rounded-xl font-bold transition-all active:scale-95 shadow-lg"
                     >
                       New Game
                     </button>
                   </div>
+                </div>
+              ) : disconnectNotice ? (
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-amber-600/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl backdrop-blur-md animate-fade-in text-center pointer-events-none">
+                  {disconnectNotice}
                 </div>
               ) : moveRejectMessage ? (
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-red-500/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl backdrop-blur-md animate-fade-in text-center pointer-events-none">
@@ -581,7 +642,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 game={displayedGame}
                 onMove={handleGameMove}
                 orientation={playerColor}
-                readOnly={viewMoveIndex !== -1 || !!gameOverMessage}
+                readOnly={viewMoveIndex !== -1 || !!gameOverMessage || (isMultiplayer && playerColor !== game.turn())}
               />
             </div>
           </div>

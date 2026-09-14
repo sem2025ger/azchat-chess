@@ -58,9 +58,12 @@ function ChessBoard({
 
   const [visualPieces, setVisualPieces] = useState<PieceData[]>([]);
 
+  const [pendingPromotion, setPendingPromotion] = useState<{ source: string; target: string; color: Color } | null>(null);
+
   useEffect(() => {
     setSelectedSquare(null);
     setLegalMoves([]);
+    setPendingPromotion(null);
   }, [activeGame.fen(), orientation, readOnly]);
 
   useEffect(() => {
@@ -92,20 +95,25 @@ function ChessBoard({
       ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
       : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
 
-  const handleMove = (source: string, target: string) => {
-    let promotion = 'q';
+  const handleMove = (source: string, target: string, chosenPromotion?: string) => {
     const piece = activeGame.get(source as Square);
-    if (piece?.type === 'p' && (target[1] === '8' || target[1] === '1')) {
-      const p = prompt('Promote to? (q, r, b, n)', 'q');
-      promotion = p && ['q','r','b','n'].includes(p.toLowerCase()) ? p.toLowerCase() : 'q';
+    const isPawnPromotion =
+      piece?.type === 'p' &&
+      ((piece.color === 'w' && target[1] === '8') || (piece.color === 'b' && target[1] === '1'));
+
+    if (isPawnPromotion && !chosenPromotion) {
+      setPendingPromotion({ source, target, color: piece.color });
+      return false;
     }
 
+    const promotion = chosenPromotion || 'q';
     const moveObj = { from: source, to: target, promotion };
 
     if (onMove) {
       if (onMove(source, target, promotion)) {
         setSelectedSquare(null);
         setLegalMoves([]);
+        setPendingPromotion(null);
         return true;
       }
     } else {
@@ -117,13 +125,7 @@ function ChessBoard({
           setTrigger((t) => t + 1);
           setSelectedSquare(null);
           setLegalMoves([]);
-          if (nextGame.isGameOver()) {
-            setTimeout(() => {
-              if (nextGame.isCheckmate()) alert('Checkmate! Game Over.');
-              else if (nextGame.isDraw()) alert('Draw! Game Over.');
-              else alert('Game Over!');
-            }, 300);
-          }
+          setPendingPromotion(null);
           return true;
         }
       } catch {
@@ -315,6 +317,40 @@ function ChessBoard({
               );
             })}
           </div>
+
+          {pendingPromotion && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4 pointer-events-auto">
+              <div className="bg-neutral-900/95 border border-white/20 rounded-2xl p-4 shadow-2xl flex flex-col items-center gap-3">
+                <span className="text-white font-black text-xs uppercase tracking-widest">
+                  Promote Pawn
+                </span>
+                <div className="flex gap-2">
+                  {(['q', 'r', 'b', 'n'] as const).map((pieceType) => (
+                    <button
+                      key={pieceType}
+                      type="button"
+                      onClick={() => {
+                        handleMove(pendingPromotion.source, pendingPromotion.target, pieceType);
+                      }}
+                      className="w-14 h-14 bg-white/10 hover:bg-white/20 active:scale-95 border border-white/10 rounded-xl flex items-center justify-center transition-all p-1.5 shadow-lg cursor-pointer"
+                    >
+                      <PieceImage
+                        piece={{ type: pieceType, color: pendingPromotion.color }}
+                        theme={pieceTheme}
+                      />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPendingPromotion(null)}
+                  className="text-neutral-500 hover:text-white text-xs font-bold uppercase tracking-wider mt-1 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
