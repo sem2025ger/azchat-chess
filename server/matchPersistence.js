@@ -10,6 +10,7 @@ const VALID_TERMINATION_REASONS = new Set([
   'resignation',
   'draw_agreement',
   'opponent_disconnected',
+  'timeout',
 ]);
 const DRAW_TERMINATION_REASONS = new Set([
   'stalemate',
@@ -20,6 +21,7 @@ const DECISIVE_TERMINATION_REASONS = new Set([
   'checkmate',
   'resignation',
   'opponent_disconnected',
+  'timeout',
 ]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;

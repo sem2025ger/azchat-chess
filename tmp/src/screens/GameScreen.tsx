@@ -114,11 +114,27 @@ export default function GameScreen({ mode }: GameScreenProps) {
         return data?.endedBy === playerColor
           ? t('game.result.resignation.self')
           : t('game.result.resignation.opponent');
+      case 'timeout':
+        return data?.endedBy === playerColor
+          ? "You lost on time."
+          : "Opponent lost on time. You won!";
       case 'draw_agreement': return t('game.result.drawAgreement');
       case 'game_over': return "Game over.";
       default: return "Game over.";
     }
   }, [playerColor, t]);
+
+  const playerColorRef = useRef(playerColor);
+  const tRef = useRef(t);
+  const mapGameOverReasonRef = useRef(mapGameOverReason);
+  const navigateRef = useRef(navigate);
+
+  useEffect(() => {
+    playerColorRef.current = playerColor;
+    tRef.current = t;
+    mapGameOverReasonRef.current = mapGameOverReason;
+    navigateRef.current = navigate;
+  }, [playerColor, t, mapGameOverReason, navigate]);
 
   useEffect(() => {
     if (!socket || !roomId) return;
@@ -158,7 +174,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       setDrawOfferBy(null);
       setGameActionMessage(null);
       setDisconnectNotice(null);
-      setGameOverMessage(mapGameOverReason(data));
+      setGameOverMessage(mapGameOverReasonRef.current(data));
     };
 
     const onMoveRejected = (data: { reason?: string }) => {
@@ -199,8 +215,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
       setDrawOfferBy(null);
 
-      if (!data?.declinedBy || data.declinedBy !== playerColor) {
-        setGameActionMessage(t('game.draw.declined'));
+      if (!data?.declinedBy || data.declinedBy !== playerColorRef.current) {
+        setGameActionMessage(tRef.current('game.draw.declined'));
         setTimeout(() => setGameActionMessage(null), 4000);
       }
     };
@@ -209,20 +225,20 @@ export default function GameScreen({ mode }: GameScreenProps) {
       if (!isCurrentRoomEvent(data)) return;
 
       setDrawOfferBy(null);
-      setGameActionMessage(t('game.action.rejected'));
+      setGameActionMessage(tRef.current('game.action.rejected'));
       setTimeout(() => setGameActionMessage(null), 4000);
     };
 
     const onPlayerDisconnected = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
-      if (data?.color !== playerColor) {
-        setDisconnectNotice(data?.gracePeriod ? `Opponent disconnected. Waiting ${data.gracePeriod}s...` : "Opponent disconnected.");
+      if (data?.color !== playerColorRef.current) {
+        setDisconnectNotice(data?.graceSeconds ? `Opponent disconnected. Waiting ${data.graceSeconds}s...` : "Opponent disconnected.");
       }
     };
 
     const onPlayerReconnected = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
-      if (data?.color !== playerColor) {
+      if (data?.color !== playerColorRef.current) {
         setDisconnectNotice("Opponent reconnected!");
         setTimeout(() => setDisconnectNotice(null), 3000);
       }
@@ -243,6 +259,15 @@ export default function GameScreen({ mode }: GameScreenProps) {
         setMoveHistory(data.history);
       }
     };
+
+    const onReconnectFailed = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+      setDisconnectNotice(null);
+      setGameOverMessage("Session expired or game is no longer active.");
+      setTimeout(() => {
+        navigateRef.current('/play');
+      }, 2500);
+    };
     
     socket.on('game_start', onStart);
     socket.on('update_board', onUpdate);
@@ -254,6 +279,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     socket.on('player_disconnected', onPlayerDisconnected);
     socket.on('player_reconnected', onPlayerReconnected);
     socket.on('reconnect_success', onReconnectSuccess);
+    socket.on('reconnect_failed', onReconnectFailed);
 
     // Request reconnection data if returning to an active game room
     socket.emit('reconnect_game', { roomId });
@@ -269,8 +295,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
       socket.off('player_disconnected', onPlayerDisconnected);
       socket.off('player_reconnected', onPlayerReconnected);
       socket.off('reconnect_success', onReconnectSuccess);
+      socket.off('reconnect_failed', onReconnectFailed);
     };
-  }, [socket, roomId, playerColor, t, mapGameOverReason]);
+  }, [socket, roomId]);
 
   useEffect(() => {
     setDrawOfferBy(null);
