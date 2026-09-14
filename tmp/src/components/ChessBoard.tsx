@@ -60,11 +60,13 @@ function ChessBoard({
 
   const [pendingPromotion, setPendingPromotion] = useState<{ source: string; target: string; color: Color } | null>(null);
 
+  const activeFen = activeGame.fen();
+
   useEffect(() => {
     setSelectedSquare(null);
     setLegalMoves([]);
     setPendingPromotion(null);
-  }, [activeGame.fen(), orientation, readOnly]);
+  }, [activeFen, orientation, readOnly]);
 
   useEffect(() => {
     const history = activeGame.history({ verbose: true }) as Move[];
@@ -82,7 +84,7 @@ function ChessBoard({
         id: `${p.color}${p.type}-${p.square}`,
       }))
     );
-  }, [activeGame, activeGame.fen(), trigger]);
+  }, [activeGame, activeFen, trigger]);
 
   const activeBoardThemeName: BoardTheme = overrideBoardTheme || boardTheme || 'Classic Green';
   const activeBoardTheme = specialThemesEnabled

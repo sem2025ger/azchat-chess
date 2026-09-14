@@ -392,7 +392,10 @@ export default function ProfileScreen() {
                 <div className="p-2 md:p-2.5 bg-gradient-to-br from-chess-active/20 to-chess-active/5 rounded-xl text-chess-active group-hover/perform:scale-110 transition-transform shadow-lg shadow-chess-active/10 border border-chess-active/20">
                   <Activity size={18} />
                 </div>
-                {t('profile.performance')}
+                <span>
+                  {t('profile.performance')}
+                  <span className="ml-2 text-[0.65rem] text-neutral-400 font-bold uppercase tracking-wider not-italic">(Last 10 games)</span>
+                </span>
               </h2>
               <div className="px-3 py-1.5 bg-white/5 rounded-full border border-white/5 text-[0.5rem] md:text-[0.55rem] font-black text-neutral-500 tracking-widest uppercase shadow-inner ring-1 ring-white/5">{t('profile.rankingUnavailable')}</div>
             </div>
