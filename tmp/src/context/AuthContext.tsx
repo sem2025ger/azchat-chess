@@ -66,7 +66,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .single();
       
       if (!error && data) {
-        setProfile(data as UserProfile);
+        setProfile({
+          id: data.id,
+          username: data.username,
+          ratingBlitz: data.rating_blitz ?? 1200,
+          ratingRapid: data.rating_rapid ?? 1200,
+          ratingBullet: data.rating_bullet ?? 1200,
+          countryCode: data.country_code ?? 'AZ',
+          role: data.role ?? 'player',
+          createdAt: data.created_at,
+          rating_blitz: data.rating_blitz ?? 1200,
+          rating_rapid: data.rating_rapid ?? 1200,
+          rating_bullet: data.rating_bullet ?? 1200,
+          country_code: data.country_code ?? 'AZ',
+          created_at: data.created_at,
+        });
       }
     } catch (e) {
       console.error(e);

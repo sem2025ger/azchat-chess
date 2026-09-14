@@ -19,21 +19,32 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from('matches').select('*, profiles!white_id(username, countryCode), black_profile:profiles!black_id(username, countryCode)')
+    supabase.from('matches').select('*, white_profile:profiles!white_id(username, country_code), black_profile:profiles!black_id(username, country_code)')
       .or(`white_id.eq.${user.id},black_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
       .limit(10)
       .then(({ data }) => {
-        if(data) {
-           let w=0, l=0, d=0;
-           const fmt = data.map(m => {
+        if (data) {
+           let w = 0, l = 0, d = 0;
+           const fmt = data.map((m: any) => {
              const isWhite = m.white_id === user.id;
-             let res = 'draw';
-             if (m.winner_id === user.id) { res='win'; w++; }
-             else if (m.winner_id && m.winner_id !== user.id) { res='loss'; l++; }
-             else if (m.status === 'draw') { res='draw'; d++; }
+             let res: 'win' | 'loss' | 'draw' = 'draw';
+             if (m.result === '1/2-1/2' || m.status === 'draw' || m.termination_reason === 'stalemate' || m.termination_reason === 'draw' || m.termination_reason === 'draw_agreement') {
+               res = 'draw';
+               d++;
+             } else if (m.winner_id === user.id || (m.result === '1-0' && isWhite) || (m.result === '0-1' && !isWhite)) {
+               res = 'win';
+               w++;
+             } else if (m.winner_id || m.result === '1-0' || m.result === '0-1') {
+               res = 'loss';
+               l++;
+             } else {
+               res = 'draw';
+               d++;
+             }
              
-             const oppName = isWhite ? m.black_id?.slice(0,6) || 'Guest' : m.white_id?.slice(0,6) || 'Guest';
+             const oppProfile = isWhite ? m.black_profile : m.white_profile;
+             const oppName = oppProfile?.username || (isWhite ? m.black_id?.slice(0, 6) || 'Guest' : m.white_id?.slice(0, 6) || 'Guest');
              
              return { 
                result: res, 
@@ -43,8 +54,8 @@ export default function ProfileScreen() {
              };
            });
            setRecentGames(fmt);
-           const total = w+l+d;
-           setDbStats({ wins: w, losses: l, draws: d, rate: total > 0 ? Number(((w/total)*100).toFixed(1)) : 0 });
+           const total = w + l + d;
+           setDbStats({ wins: w, losses: l, draws: d, rate: total > 0 ? Number(((w / total) * 100).toFixed(1)) : 0 });
         }
       });
   }, [user]);
