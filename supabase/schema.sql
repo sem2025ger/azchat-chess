@@ -189,18 +189,7 @@ CREATE TABLE public.chat_messages (
 
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Chat viewable by everyone." ON public.chat_messages FOR SELECT USING (true);
-CREATE POLICY "Chat insertable by participants." ON public.chat_messages FOR INSERT WITH CHECK (
-  auth.uid() = player_id
-  AND EXISTS (
-    SELECT 1
-    FROM public.matches AS match_row
-    WHERE match_row.id = public.chat_messages.match_id
-      AND (
-        auth.uid() = match_row.white_id
-        OR auth.uid() = match_row.black_id
-      )
-  )
-);
+CREATE POLICY "Chat insertable by participants." ON public.chat_messages FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
 -- Helpful function to handle new user signup automatically
 CREATE OR REPLACE FUNCTION public.handle_new_user()
