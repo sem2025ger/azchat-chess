@@ -39,12 +39,11 @@ The following environment variables MUST be configured in the Render Dashboard u
 | `SUPABASE_ANON_KEY` | **Yes** | Public/anon API key for Supabase client operations. |
 | `SUPABASE_SERVICE_KEY` | **Yes** | Service role key for trusted backend operations (persisting match results, updating player ratings). **Never expose to frontend.** |
 
-> [!CAUTION]
-> **Render Blueprint (`render.yaml`) vs. Manual Service Ownership**
-> - The live production service `chessaz-api` is managed **manually** in the Render dashboard.
-> - `render.yaml` exists for Infrastructure-as-Code reference.
-> - **Do NOT** trigger "New Blueprint Instance" on Render for this repo unless you intend to spin up a completely separate infrastructure stack. Doing so will create a duplicate service that lacks environment variables (since `sync: false` variables are not stored in Git), leading to runtime startup or authentication failures.
-> - If migrating to Blueprint management in the future, the environment variables above must be explicitly transferred in the Render dashboard before redirecting DNS / frontend traffic.
+> [!IMPORTANT]
+> **Production Service Management & Blueprint Disposition**
+> - The live production backend service `chessaz-api` is managed **manually** in the Render Dashboard.
+> - No Render Blueprint is currently authoritative. The legacy `render.yaml` specification has been removed from the repository to prevent deployment ambiguity and eliminate the risk of accidentally provisioning unconfigured duplicate services.
+> - All service settings (Root Directory: `server`, Build Command: `npm install`, Start Command: `node index.js`) and environment variables listed above are configured directly within the Render Web Service dashboard settings.
 
 ## 8. DNS Configuration
 - **Domain registrar/provider:** IONOS
