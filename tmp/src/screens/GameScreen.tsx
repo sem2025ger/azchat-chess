@@ -13,6 +13,7 @@ import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { Chess } from 'chess.js';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
+import { createTimeoutManager } from '../utils/timeoutManager';
 
 function countryCodeToFlag(code: string): string | null {
   const normalized = code.trim().toUpperCase();
@@ -128,6 +129,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const tRef = useRef(t);
   const mapGameOverReasonRef = useRef(mapGameOverReason);
   const navigateRef = useRef(navigate);
+  const timeoutManagerRef = useRef(createTimeoutManager());
 
   useEffect(() => {
     playerColorRef.current = playerColor;
@@ -135,6 +137,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
     mapGameOverReasonRef.current = mapGameOverReason;
     navigateRef.current = navigate;
   }, [playerColor, t, mapGameOverReason, navigate]);
+
+  useEffect(() => {
+    const tm = timeoutManagerRef.current;
+    return () => {
+      tm.clearAll();
+    };
+  }, []);
 
   useEffect(() => {
     if (!socket || !roomId) return;
@@ -171,6 +180,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
     };
     const onGameOver = (data: any) => {
+      timeoutManagerRef.current.clear('gameActionMessage');
+      timeoutManagerRef.current.clear('disconnectNotice');
       setDrawOfferBy(null);
       setGameActionMessage(null);
       setDisconnectNotice(null);
@@ -217,7 +228,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
       if (!data?.declinedBy || data.declinedBy !== playerColorRef.current) {
         setGameActionMessage(tRef.current('game.draw.declined'));
-        setTimeout(() => setGameActionMessage(null), 4000);
+        timeoutManagerRef.current.set('gameActionMessage', () => setGameActionMessage(null), 4000);
       }
     };
 
@@ -226,12 +237,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
       setDrawOfferBy(null);
       setGameActionMessage(tRef.current('game.action.rejected'));
-      setTimeout(() => setGameActionMessage(null), 4000);
+      timeoutManagerRef.current.set('gameActionMessage', () => setGameActionMessage(null), 4000);
     };
 
     const onPlayerDisconnected = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
       if (data?.color !== playerColorRef.current) {
+        timeoutManagerRef.current.clear('disconnectNotice');
         setDisconnectNotice(data?.graceSeconds ? `Opponent disconnected. Waiting ${data.graceSeconds}s...` : "Opponent disconnected.");
       }
     };
@@ -240,12 +252,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
       if (!isCurrentRoomEvent(data)) return;
       if (data?.color !== playerColorRef.current) {
         setDisconnectNotice("Opponent reconnected!");
-        setTimeout(() => setDisconnectNotice(null), 3000);
+        timeoutManagerRef.current.set('disconnectNotice', () => setDisconnectNotice(null), 3000);
       }
     };
 
     const onReconnectSuccess = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
+      timeoutManagerRef.current.clear('disconnectNotice');
       setDisconnectNotice(null);
       if (data?.fen) {
         lastConfirmedFenRef.current = data.fen;
@@ -262,9 +275,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
     const onReconnectFailed = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
+      timeoutManagerRef.current.clear('disconnectNotice');
       setDisconnectNotice(null);
       setGameOverMessage("Session expired or game is no longer active.");
-      setTimeout(() => {
+      timeoutManagerRef.current.set('reconnectRedirect', () => {
         navigateRef.current('/play');
       }, 2500);
     };
@@ -285,6 +299,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     socket.emit('reconnect_game', { roomId });
     
     return () => { 
+      timeoutManagerRef.current.clearAll();
       socket.off('game_start', onStart);
       socket.off('update_board', onUpdate); 
       socket.off('game_over', onGameOver);
