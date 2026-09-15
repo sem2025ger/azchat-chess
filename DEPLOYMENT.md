@@ -10,7 +10,13 @@ azchat-chess
 `VITE_SERVER_URL=https://chessaz-api.onrender.com`
 
 ## 4. Render Backend Service
-chessaz-api
+- **Service Name:** `chessaz-api`
+- **Management Mode:** Manually created & managed Web Service via the Render Dashboard.
+- **Repository Link:** Connected directly to GitHub repository `sem2025ger/azchat-chess` on branch `feat/full-production-hardening` (or `main` upon release).
+- **Runtime:** Node.js
+- **Root Directory:** `server`
+- **Build Command:** `npm install`
+- **Start Command:** `node index.js`
 
 ## 5. Render Backend URL
 https://chessaz-api.onrender.com
@@ -23,7 +29,22 @@ Expected response:
 ```
 
 ## 7. Render Backend Environment Variables
-`FRONTEND_URL=https://chessaz.de`
+The following environment variables MUST be configured in the Render Dashboard under **Environment**:
+
+| Variable | Required | Description / Example |
+| :--- | :--- | :--- |
+| `PORT` | Auto / 4000 | Port for HTTP/WebSocket server (Render automatically sets `PORT`, defaults to `4000` locally). |
+| `FRONTEND_URL` | **Yes** | Origin allowed for CORS and Socket.IO handshake: `https://chessaz.de` |
+| `SUPABASE_URL` | **Yes** | Supabase project URL (e.g., `https://xyzcompany.supabase.co`). |
+| `SUPABASE_ANON_KEY` | **Yes** | Public/anon API key for Supabase client operations. |
+| `SUPABASE_SERVICE_KEY` | **Yes** | Service role key for trusted backend operations (persisting match results, updating player ratings). **Never expose to frontend.** |
+
+> [!CAUTION]
+> **Render Blueprint (`render.yaml`) vs. Manual Service Ownership**
+> - The live production service `chessaz-api` is managed **manually** in the Render dashboard.
+> - `render.yaml` exists for Infrastructure-as-Code reference.
+> - **Do NOT** trigger "New Blueprint Instance" on Render for this repo unless you intend to spin up a completely separate infrastructure stack. Doing so will create a duplicate service that lacks environment variables (since `sync: false` variables are not stored in Git), leading to runtime startup or authentication failures.
+> - If migrating to Blueprint management in the future, the environment variables above must be explicitly transferred in the Render dashboard before redirecting DNS / frontend traffic.
 
 ## 8. DNS Configuration
 - **Domain registrar/provider:** IONOS

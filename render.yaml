@@ -1,3 +1,11 @@
+# NOTE: The production backend Web Service 'chessaz-api' (https://chessaz-api.onrender.com)
+# is managed manually via the Render Dashboard.
+# CAUTION: If this repository is synced as a Render Blueprint (render.yaml), Render may
+# create a separate/duplicate service rather than linking to the existing manual service.
+# For any Blueprint-provisioned instance, all un-synced secrets/envVars (FRONTEND_URL,
+# SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY) must be manually populated in the
+# Render dashboard before traffic is routed to it. See DEPLOYMENT.md for details.
+
 services:
   - type: web
     name: chessaz-api
