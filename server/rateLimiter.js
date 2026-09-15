@@ -34,7 +34,7 @@ function createSocketRateLimiter() {
     move: new TokenBucket(10, 5),
     // Lobby events: join_queue, create/join private room: capacity 5, refill rate 1 per sec
     lobby: new TokenBucket(5, 1),
-    // In-game actions: draw offer/accept/decline, resign, reconnect: capacity 5, refill rate 1 per sec
+    // In-game actions: draw offer/accept/decline, resign: capacity 5, refill rate 1 per sec
     game_action: new TokenBucket(5, 1),
   };
 

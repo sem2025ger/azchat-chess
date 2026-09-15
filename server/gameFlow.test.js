@@ -18,6 +18,7 @@ const {
   checkRoomTimeouts,
   markPlayerDisconnected,
   reconnectPlayerToRoom,
+  io,
 } = require('./index');
 
 test('GF-1: finalizeGame calls match persistence adapter with exact completed contract', async () => {
@@ -551,6 +552,121 @@ test('GF-9: make_move rejected when room status is ended (game_not_active guard)
   assert.equal(rejectedReason, 'game_not_active');
   assert.equal(room.game.fen(), fenAfterGameEnd, 'FEN must not change after game end');
   assert.equal(room.blackTimeMs, blackTimeAfterEnd, 'Clock must not change after game end');
+
+  cleanupRoom(roomId, room);
+});
+
+test('GF-10: reconnect_game is excluded from game_action rate limit and maintains security validation', async () => {
+  const { EventEmitter } = require('node:events');
+
+  const roomId = 'room-test-reconnect-rl-10';
+  const whiteId = 'white-rl-user-10';
+  const blackId = 'black-rl-user-10';
+
+  const room = {
+    roomId,
+    game: new Chess(),
+    status: 'active',
+    startedAt: '2026-07-15T12:00:00.000Z',
+    timeControl: '10+0',
+    initialTime: 600,
+    increment: 0,
+    initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    whiteTimeMs: 500000,
+    blackTimeMs: 500000,
+    lastMoveTimestamp: Date.now(),
+    persisted: false,
+    userIds: { w: whiteId, b: blackId },
+    players: { w: 'sock-w10-old', b: 'sock-b10' },
+    socketIds: new Set(['sock-w10-old', 'sock-b10']),
+    disconnects: {
+      w: { timer: null, disconnectedAt: null },
+      b: { timer: null, disconnectedAt: null },
+    },
+  };
+
+  activeRooms.set(roomId, room);
+  socketToRoom.set('sock-w10-old', roomId);
+  socketToRoom.set('sock-b10', roomId);
+
+  // Player W disconnects
+  markPlayerDisconnected(roomId, 'w', 30);
+  assert.ok(room.disconnects.w.timer !== null);
+
+  // Create real connected socket for White
+  const socketWhite = new EventEmitter();
+  socketWhite.id = 'sock-w10-new';
+  socketWhite.data = { userId: whiteId };
+  EventEmitter.prototype.emit.call(io.sockets, 'connection', socketWhite);
+
+  // 1. Repeated legitimate reconnect attempts are NOT blocked by game_action rate limit
+  // Exhaust game_action bucket completely
+  for (let i = 0; i < 10; i++) {
+    socketWhite.data.limiter.allow('game_action');
+  }
+  assert.equal(socketWhite.data.limiter.allow('game_action'), false, 'game_action bucket must be empty');
+
+  let reconnectSuccessPayload = null;
+  let reconnectFailedPayload = null;
+  socketWhite.on('reconnect_success', (data) => { reconnectSuccessPayload = data; });
+  socketWhite.on('reconnect_failed', (data) => { reconnectFailedPayload = data; });
+
+  // Multiple repeated reconnect attempts succeed despite game_action exhaustion
+  for (let attempt = 1; attempt <= 10; attempt++) {
+    reconnectSuccessPayload = null;
+    reconnectFailedPayload = null;
+    socketWhite.emit('reconnect_game', { roomId });
+    assert.equal(reconnectFailedPayload, null, `Attempt ${attempt} must not fail rate limit`);
+    assert.ok(reconnectSuccessPayload, `Attempt ${attempt} must succeed`);
+    assert.equal(reconnectSuccessPayload.color, 'w');
+  }
+
+  // 2. Unauthorized reconnect remains rejected
+  const unauthorizedSocket = new EventEmitter();
+  unauthorizedSocket.id = 'sock-intruder';
+  unauthorizedSocket.data = { userId: 'intruder-id' };
+  EventEmitter.prototype.emit.call(io.sockets, 'connection', unauthorizedSocket);
+
+  let unauthFailure = null;
+  unauthorizedSocket.on('reconnect_failed', (data) => { unauthFailure = data.reason; });
+
+  // Case 2a: invalid payload
+  unauthFailure = null;
+  unauthorizedSocket.emit('reconnect_game', {});
+  assert.equal(unauthFailure, 'invalid_payload');
+
+  // Case 2b: non-existent room
+  unauthFailure = null;
+  unauthorizedSocket.emit('reconnect_game', { roomId: 'non-existent-room' });
+  assert.equal(unauthFailure, 'game_not_active');
+
+  // Case 2c: not a player in the room
+  unauthFailure = null;
+  unauthorizedSocket.emit('reconnect_game', { roomId });
+  assert.equal(unauthFailure, 'not_a_player');
+
+  // 3. Game action flooding remains rate-limited
+  let gameActionRejected = null;
+  socketWhite.on('game_action_rejected', (data) => { gameActionRejected = data; });
+
+  // socketWhite game_action bucket was already exhausted above
+  socketWhite.emit('resign_game', { roomId });
+  assert.ok(gameActionRejected);
+  assert.equal(gameActionRejected.reason, 'rate_limit_exceeded');
+
+  // 4. Move flooding remains rate-limited
+  let moveRejected = null;
+  socketWhite.on('move_rejected', (data) => { moveRejected = data; });
+
+  // Consume full move capacity (10)
+  for (let i = 0; i < 10; i++) {
+    socketWhite.data.limiter.allow('move');
+  }
+  assert.equal(socketWhite.data.limiter.allow('move'), false, 'move bucket must be empty');
+
+  socketWhite.emit('make_move', { roomId, move: { from: 'e2', to: 'e4' } });
+  assert.ok(moveRejected);
+  assert.equal(moveRejected.reason, 'rate_limit_exceeded');
 
   cleanupRoom(roomId, room);
 });

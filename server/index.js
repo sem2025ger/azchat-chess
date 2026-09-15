@@ -901,11 +901,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('reconnect_game', (payload) => {
-    if (!socket.data?.limiter?.allow('game_action')) {
-      socket.emit('reconnect_failed', { reason: 'rate_limit_exceeded' });
-      return;
-    }
-
     const roomId = payload?.roomId;
     if (!roomId || typeof roomId !== 'string') {
       socket.emit('reconnect_failed', { reason: 'invalid_payload' });
