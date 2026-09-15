@@ -3,6 +3,7 @@ import { Target, Swords, Zap, Activity, Calendar, MapPin, LogOut, Loader2 } from
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
+import { calculateMatchStats, getMatchResultForPlayer } from '../utils/profileContract';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -25,37 +26,22 @@ export default function ProfileScreen() {
       .limit(10)
       .then(({ data }) => {
         if (data) {
-           let w = 0, l = 0, d = 0;
-           const fmt = data.map((m: any) => {
-             const isWhite = m.white_id === user.id;
-             let res: 'win' | 'loss' | 'draw' = 'draw';
-             if (m.result === '1/2-1/2' || m.status === 'draw' || m.termination_reason === 'stalemate' || m.termination_reason === 'draw' || m.termination_reason === 'draw_agreement') {
-               res = 'draw';
-               d++;
-             } else if (m.winner_id === user.id || (m.result === '1-0' && isWhite) || (m.result === '0-1' && !isWhite)) {
-               res = 'win';
-               w++;
-             } else if (m.winner_id || m.result === '1-0' || m.result === '0-1') {
-               res = 'loss';
-               l++;
-             } else {
-               res = 'draw';
-               d++;
-             }
-             
-             const oppProfile = isWhite ? m.black_profile : m.white_profile;
-             const oppName = oppProfile?.username || (isWhite ? m.black_id?.slice(0, 6) || 'Guest' : m.white_id?.slice(0, 6) || 'Guest');
-             
-             return { 
-               result: res, 
-               opp: oppName, 
-               type: m.time_control || '10+0', 
-               date: new Date(m.created_at).toLocaleDateString()
-             };
-           });
-           setRecentGames(fmt);
-           const total = w + l + d;
-           setDbStats({ wins: w, losses: l, draws: d, rate: total > 0 ? Number(((w / total) * 100).toFixed(1)) : 0 });
+          const stats = calculateMatchStats(data, user.id);
+          setDbStats(stats);
+          const fmt = data.map((m: any) => {
+            const isWhite = m.white_id === user.id;
+            const res = getMatchResultForPlayer(m, user.id);
+            const oppProfile = isWhite ? m.black_profile : m.white_profile;
+            const oppName = oppProfile?.username || (isWhite ? m.black_id?.slice(0, 6) || 'Guest' : m.white_id?.slice(0, 6) || 'Guest');
+            
+            return { 
+              result: res, 
+              opp: oppName, 
+              type: m.time_control || '10+0', 
+              date: new Date(m.created_at).toLocaleDateString()
+            };
+          });
+          setRecentGames(fmt);
         }
       });
   }, [user]);
