@@ -8,6 +8,7 @@ const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const { createSocketAuthMiddleware } = require('./socketAuth');
 const { createMatchPersistenceFromEnv } = require('./matchPersistence');
+const { createSocketRateLimiter } = require('./rateLimiter');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -458,8 +459,15 @@ function getActivePlayerActionContext(socket, roomId, action) {
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
+  socket.data = socket.data || {};
+  socket.data.limiter = createSocketRateLimiter();
 
   socket.on('join_queue', () => {
+    if (!socket.data.limiter.allow('lobby')) {
+      socket.emit('rate_limit_exceeded', { action: 'join_queue' });
+      return;
+    }
+
     const userId = socket.data?.userId;
 
     // Prevent duplicate entries by socket.id or authenticated userId
@@ -553,6 +561,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('create_private_room', () => {
+    if (!socket.data?.limiter?.allow('lobby')) {
+      socket.emit('rate_limit_exceeded', { action: 'create_private_room' });
+      return;
+    }
+
     const existingRoomId = socketToRoom.get(socket.id);
     if (existingRoomId) {
       const existingRoom = activeRooms.get(existingRoomId);
@@ -613,6 +626,11 @@ io.on('connection', (socket) => {
 
   socket.on('join_private_room', (payload) => {
     try {
+      if (!socket.data?.limiter?.allow('lobby')) {
+        socket.emit('rate_limit_exceeded', { action: 'join_private_room' });
+        return;
+      }
+
       if (!payload || typeof payload !== 'object' || !payload.roomId || typeof payload.roomId !== 'string') {
         socket.emit('join_failed', { reason: "room_not_found" });
         return;
@@ -676,6 +694,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('resign_game', (payload) => {
+    if (!socket.data?.limiter?.allow('game_action')) {
+      socket.emit('game_action_rejected', { action: 'resign_game', reason: 'rate_limit_exceeded' });
+      return;
+    }
+
     const roomId = payload?.roomId;
     const context = getActivePlayerActionContext(socket, roomId, 'resign_game');
     if (!context) return;
@@ -692,6 +715,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('draw_offer', (payload) => {
+    if (!socket.data?.limiter?.allow('game_action')) {
+      socket.emit('game_action_rejected', { action: 'draw_offer', reason: 'rate_limit_exceeded' });
+      return;
+    }
+
     const roomId = payload?.roomId;
     const context = getActivePlayerActionContext(socket, roomId, 'draw_offer');
     if (!context) return;
@@ -712,6 +740,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('draw_accept', (payload) => {
+    if (!socket.data?.limiter?.allow('game_action')) {
+      socket.emit('game_action_rejected', { action: 'draw_accept', reason: 'rate_limit_exceeded' });
+      return;
+    }
+
     const roomId = payload?.roomId;
     const context = getActivePlayerActionContext(socket, roomId, 'draw_accept');
     if (!context) return;
@@ -736,6 +769,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('draw_decline', (payload) => {
+    if (!socket.data?.limiter?.allow('game_action')) {
+      socket.emit('game_action_rejected', { action: 'draw_decline', reason: 'rate_limit_exceeded' });
+      return;
+    }
+
     const roomId = payload?.roomId;
     const context = getActivePlayerActionContext(socket, roomId, 'draw_decline');
     if (!context) return;
@@ -757,6 +795,11 @@ io.on('connection', (socket) => {
 
   socket.on('make_move', (payload) => {
     try {
+      if (!socket.data?.limiter?.allow('move')) {
+        socket.emit('move_rejected', { reason: "rate_limit_exceeded" });
+        return;
+      }
+
       if (!payload || typeof payload !== 'object') {
         socket.emit('move_rejected', { reason: "invalid_payload" });
         return;
@@ -858,6 +901,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('reconnect_game', (payload) => {
+    if (!socket.data?.limiter?.allow('game_action')) {
+      socket.emit('reconnect_failed', { reason: 'rate_limit_exceeded' });
+      return;
+    }
+
     const roomId = payload?.roomId;
     if (!roomId || typeof roomId !== 'string') {
       socket.emit('reconnect_failed', { reason: 'invalid_payload' });
@@ -885,6 +933,9 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
+    if (socket.data) {
+      socket.data.limiter = null;
+    }
 
     // Remove from waiting queue
     waitingQueue = waitingQueue.filter((s) => s.id !== socket.id);
