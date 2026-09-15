@@ -248,6 +248,116 @@ function finalizeGame(roomId, payload) {
   return true;
 }
 
+function markPlayerDisconnected(roomId, disconnectedColor, graceSeconds = 30) {
+  const roomData = activeRooms.get(roomId);
+  if (!roomData || roomData.status !== 'active') return null;
+
+  if (!roomData.disconnects) {
+    roomData.disconnects = {
+      w: { timer: null, disconnectedAt: null },
+      b: { timer: null, disconnectedAt: null },
+    };
+  }
+
+  const playerDisconnect = roomData.disconnects[disconnectedColor];
+  if (!playerDisconnect) return null;
+
+  playerDisconnect.disconnectedAt = Date.now();
+
+  io.to(roomId).emit('player_disconnected', {
+    roomId,
+    color: disconnectedColor,
+    graceSeconds,
+  });
+
+  if (playerDisconnect.timer) {
+    clearTimeout(playerDisconnect.timer);
+    playerDisconnect.timer = null;
+  }
+
+  playerDisconnect.timer = setTimeout(() => {
+    const currentRoom = activeRooms.get(roomId);
+    if (
+      currentRoom &&
+      currentRoom.status === 'active' &&
+      currentRoom.disconnects?.[disconnectedColor]?.disconnectedAt !== null
+    ) {
+      const winnerColor = oppositeColor(disconnectedColor);
+      finalizeGame(roomId, {
+        reason: 'opponent_disconnected',
+        result: winnerColor === 'w' ? '1-0' : '0-1',
+        winnerColor,
+        endedBy: disconnectedColor,
+      });
+    }
+  }, graceSeconds * 1000);
+
+  if (playerDisconnect.timer.unref) {
+    playerDisconnect.timer.unref();
+  }
+
+  return playerDisconnect;
+}
+
+function reconnectPlayerToRoom(roomId, playerColor, newSocket) {
+  const room = activeRooms.get(roomId);
+  if (!room || room.status !== 'active') return null;
+
+  const newSocketId = typeof newSocket === 'string' ? newSocket : newSocket?.id;
+
+  if (newSocketId) {
+    const oldSocketId = room.players[playerColor];
+    if (oldSocketId && oldSocketId !== newSocketId) {
+      socketToRoom.delete(oldSocketId);
+      if (room.socketIds) room.socketIds.delete(oldSocketId);
+    }
+    room.players[playerColor] = newSocketId;
+    if (!room.socketIds) room.socketIds = new Set();
+    room.socketIds.add(newSocketId);
+    socketToRoom.set(newSocketId, roomId);
+
+    if (newSocket && typeof newSocket.join === 'function') {
+      newSocket.join(roomId);
+    }
+  }
+
+  // Cancel disconnect grace period for this color only
+  const playerDisconnect = room.disconnects?.[playerColor];
+  if (playerDisconnect && playerDisconnect.disconnectedAt !== null) {
+    if (playerDisconnect.timer) {
+      clearTimeout(playerDisconnect.timer);
+      playerDisconnect.timer = null;
+    }
+    playerDisconnect.disconnectedAt = null;
+    io.to(roomId).emit('player_reconnected', { roomId, color: playerColor });
+  }
+
+  let whiteTime = Math.ceil(room.whiteTimeMs / 1000);
+  let blackTime = Math.ceil(room.blackTimeMs / 1000);
+  if (room.lastMoveTimestamp) {
+    const elapsed = Math.floor((Date.now() - room.lastMoveTimestamp) / 1000);
+    if (room.game.turn() === 'w') whiteTime = Math.max(0, whiteTime - elapsed);
+    else blackTime = Math.max(0, blackTime - elapsed);
+  }
+
+  const payload = {
+    roomId,
+    color: playerColor,
+    fen: room.game.fen(),
+    history: room.game.history(),
+    whiteTime,
+    blackTime,
+    turn: room.game.turn(),
+    drawOfferBy: room.drawOfferBy,
+  };
+
+  if (newSocket && typeof newSocket.emit === 'function') {
+    newSocket.emit('reconnect_success', payload);
+  }
+
+  return payload;
+}
+
 // Watchdog timer: checks for clock timeouts on active games every 1 second
 function checkRoomTimeouts() {
   const now = Date.now();
@@ -765,47 +875,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Rebind socket & clean up old socket mapping (Fix 6)
-    const oldSocketId = room.players[playerColor];
-    if (oldSocketId && oldSocketId !== socket.id) {
-      socketToRoom.delete(oldSocketId);
-      if (room.socketIds) room.socketIds.delete(oldSocketId);
-    }
-    room.players[playerColor] = socket.id;
-    if (!room.socketIds) room.socketIds = new Set();
-    room.socketIds.add(socket.id);
-    socketToRoom.set(socket.id, roomId);
-    socket.join(roomId);
-
-    // Cancel disconnect grace period for this color only (Fix 3)
-    const playerDisconnect = room.disconnects?.[playerColor];
-    if (playerDisconnect && playerDisconnect.disconnectedAt !== null) {
-      if (playerDisconnect.timer) {
-        clearTimeout(playerDisconnect.timer);
-        playerDisconnect.timer = null;
-      }
-      playerDisconnect.disconnectedAt = null;
-      io.to(roomId).emit('player_reconnected', { roomId, color: playerColor });
-    }
-
-    let whiteTime = Math.ceil(room.whiteTimeMs / 1000);
-    let blackTime = Math.ceil(room.blackTimeMs / 1000);
-    if (room.lastMoveTimestamp) {
-      const elapsed = Math.floor((Date.now() - room.lastMoveTimestamp) / 1000);
-      if (room.game.turn() === 'w') whiteTime = Math.max(0, whiteTime - elapsed);
-      else blackTime = Math.max(0, blackTime - elapsed);
-    }
-
-    socket.emit('reconnect_success', {
-      roomId,
-      color: playerColor,
-      fen: room.game.fen(),
-      history: room.game.history(),
-      whiteTime,
-      blackTime,
-      turn: room.game.turn(),
-      drawOfferBy: room.drawOfferBy,
-    });
+    reconnectPlayerToRoom(roomId, playerColor, socket);
   });
 
   socket.on('disconnect', () => {
@@ -840,48 +910,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Grace period for active games: 30 seconds before declaring forfeit
-    const graceSeconds = 30;
-    if (!roomData.disconnects) {
-      roomData.disconnects = {
-        w: { timer: null, disconnectedAt: null },
-        b: { timer: null, disconnectedAt: null },
-      };
-    }
-
-    const playerDisconnect = roomData.disconnects[disconnectedColor];
-    playerDisconnect.disconnectedAt = Date.now();
-
-    io.to(roomId).emit('player_disconnected', {
-      roomId,
-      color: disconnectedColor,
-      graceSeconds,
-    });
-
-    if (playerDisconnect.timer) {
-      clearTimeout(playerDisconnect.timer);
-      playerDisconnect.timer = null;
-    }
-
-    playerDisconnect.timer = setTimeout(() => {
-      const currentRoom = activeRooms.get(roomId);
-      if (
-        currentRoom &&
-        currentRoom.status === 'active' &&
-        currentRoom.disconnects?.[disconnectedColor]?.disconnectedAt !== null
-      ) {
-        const winnerColor = oppositeColor(disconnectedColor);
-        finalizeGame(roomId, {
-          reason: 'opponent_disconnected',
-          result: winnerColor === 'w' ? '1-0' : '0-1',
-          winnerColor,
-          endedBy: disconnectedColor,
-        });
-      }
-    }, graceSeconds * 1000);
-    if (playerDisconnect.timer.unref) {
-      playerDisconnect.timer.unref();
-    }
+    markPlayerDisconnected(roomId, disconnectedColor);
   });
 });
 
@@ -904,8 +933,11 @@ module.exports = {
   setTokenVerifier,
   timeoutWatchdog,
   checkRoomTimeouts,
+  markPlayerDisconnected,
+  reconnectPlayerToRoom,
   getPlayerColor,
   oppositeColor,
   getNaturalGameOverPayload,
+  rejectGameAction,
   getActivePlayerActionContext,
 };

@@ -16,6 +16,8 @@ const {
   cleanupRoom,
   setMatchPersistenceAdapter,
   checkRoomTimeouts,
+  markPlayerDisconnected,
+  reconnectPlayerToRoom,
 } = require('./index');
 
 test('GF-1: finalizeGame calls match persistence adapter with exact completed contract', async () => {
@@ -359,20 +361,10 @@ test('GF-6: checkRoomTimeouts detects expired clock and finalizes game authorita
   cleanupRoom(roomId, room);
 });
 
-test('GF-7: Per-color disconnect timers are independent and do not cancel each other', () => {
+test('GF-7: Per-color disconnect timers are independent and executed through production functions', () => {
   const roomId = 'room-test-disconnect-indep-07';
   const whiteId = '77777777-7777-4777-8777-777777777777';
   const blackId = '88888888-8888-4888-8888-888888888888';
-
-  let whiteTimerCleared = false;
-  let blackTimerCleared = false;
-
-  const mockWhiteTimer = {
-    unref() {},
-  };
-  const mockBlackTimer = {
-    unref() {},
-  };
 
   const room = {
     roomId,
@@ -391,28 +383,48 @@ test('GF-7: Per-color disconnect timers are independent and do not cancel each o
     players: { w: 'sock-w7', b: 'sock-b7' },
     socketIds: new Set(['sock-w7', 'sock-b7']),
     disconnects: {
-      w: { timer: mockWhiteTimer, disconnectedAt: Date.now() - 1000 },
-      b: { timer: mockBlackTimer, disconnectedAt: Date.now() },
+      w: { timer: null, disconnectedAt: null },
+      b: { timer: null, disconnectedAt: null },
     },
   };
 
   activeRooms.set(roomId, room);
+  socketToRoom.set('sock-w7', roomId);
+  socketToRoom.set('sock-b7', roomId);
 
-  // Reconnecting White must clear only White's timer
-  assert.ok(room.disconnects.w.timer);
-  assert.ok(room.disconnects.b.timer);
+  // 1. Disconnect White through real production function
+  markPlayerDisconnected(roomId, 'w', 30);
+  assert.ok(room.disconnects.w.timer !== null, 'White timer must be created');
+  assert.ok(room.disconnects.w.disconnectedAt !== null);
 
-  // Simulate White reconnect logic
-  if (room.disconnects.w.disconnectedAt !== null) {
-    room.disconnects.w.timer = null;
-    room.disconnects.w.disconnectedAt = null;
-  }
+  // 2. Disconnect Black through real production function
+  markPlayerDisconnected(roomId, 'b', 30);
+  assert.ok(room.disconnects.b.timer !== null, 'Black timer must be created');
+  assert.ok(room.disconnects.b.disconnectedAt !== null);
 
-  assert.equal(room.disconnects.w.timer, null);
+  // Both timers exist simultaneously
+  const blackTimerBefore = room.disconnects.b.timer;
+  const blackDisconnectedAtBefore = room.disconnects.b.disconnectedAt;
+
+  // 3. Reconnect White through real production function
+  const reconnectWhiteResult = reconnectPlayerToRoom(roomId, 'w', 'sock-w7-new');
+  assert.equal(reconnectWhiteResult.color, 'w');
+  assert.equal(room.players.w, 'sock-w7-new');
+  assert.equal(socketToRoom.get('sock-w7-new'), roomId);
+  assert.equal(socketToRoom.has('sock-w7'), false, 'Old socket removed');
+
+  // Assert White timer was cleared and Black timer remains intact
+  assert.equal(room.disconnects.w.timer, null, 'White timer must be cleared');
   assert.equal(room.disconnects.w.disconnectedAt, null);
-  // Black timer remains intact
-  assert.equal(room.disconnects.b.timer, mockBlackTimer);
-  assert.ok(room.disconnects.b.disconnectedAt > 0);
+  assert.equal(room.disconnects.b.timer, blackTimerBefore, 'Black timer must NOT be touched by White reconnect');
+  assert.equal(room.disconnects.b.disconnectedAt, blackDisconnectedAtBefore);
+
+  // 4. Reconnect Black through real production function
+  const reconnectBlackResult = reconnectPlayerToRoom(roomId, 'b', 'sock-b7-new');
+  assert.equal(reconnectBlackResult.color, 'b');
+  assert.equal(room.players.b, 'sock-b7-new');
+  assert.equal(room.disconnects.b.timer, null, 'Black timer cleared on Black reconnect');
+  assert.equal(room.disconnects.b.disconnectedAt, null);
 
   cleanupRoom(roomId, room);
 });
