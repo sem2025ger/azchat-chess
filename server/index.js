@@ -773,6 +773,11 @@ io.on('connection', (socket) => {
         return;
       }
 
+      if (roomData.status !== 'active') {
+        socket.emit('move_rejected', { reason: "game_not_active" });
+        return;
+      }
+
       if (!roomData.players.w || !roomData.players.b) {
         socket.emit('move_rejected', { reason: "game_not_started" });
         return;

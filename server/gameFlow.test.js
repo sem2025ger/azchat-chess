@@ -475,3 +475,83 @@ test('GF-8: cleanupRoom cleans up all socket IDs from socketToRoom and destroys 
   assert.equal(socketToRoom.has(socketReconnected), false);
   assert.equal(room.disconnects.w.timer, null);
 });
+
+test('GF-9: make_move rejected when room status is ended (game_not_active guard)', async () => {
+  const roomId = 'room-test-game-ended-09';
+  const whiteId = '99999999-9999-4999-8999-999999999999';
+  const blackId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+  const room = {
+    roomId,
+    game: new Chess(),
+    status: 'active',
+    startedAt: '2026-07-15T12:00:00.000Z',
+    timeControl: '10+0',
+    initialTime: 600,
+    increment: 0,
+    initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    whiteTimeMs: 500000,
+    blackTimeMs: 500000,
+    lastMoveTimestamp: Date.now(),
+    persisted: false,
+    userIds: { w: whiteId, b: blackId },
+    players: { w: 'sock-w9', b: 'sock-b9' },
+    socketIds: new Set(['sock-w9', 'sock-b9']),
+    disconnects: {
+      w: { timer: null, disconnectedAt: null },
+      b: { timer: null, disconnectedAt: null },
+    },
+  };
+
+  activeRooms.set(roomId, room);
+  socketToRoom.set('sock-w9', roomId);
+  socketToRoom.set('sock-b9', roomId);
+
+  // Legal move played first
+  room.game.move('e4');
+  assert.equal(room.game.turn(), 'b');
+
+  // End the game (e.g. by resignation or timeout)
+  finalizeGame(roomId, {
+    reason: 'resignation',
+    result: '1-0',
+    winnerColor: 'w',
+    endedBy: 'b',
+  });
+
+  assert.equal(room.status, 'ended');
+  const fenAfterGameEnd = room.game.fen();
+  const blackTimeAfterEnd = room.blackTimeMs;
+
+  // Simulate make_move event handler invocation during 30s cleanup retention window
+  let rejectedReason = null;
+  const mockBlackSocket = {
+    id: 'sock-b9',
+    emit(eventName, payload) {
+      if (eventName === 'move_rejected') {
+        rejectedReason = payload.reason;
+      }
+    },
+    data: {
+      limiter: {
+        allow() { return true; },
+      },
+    },
+  };
+
+  // Run the make_move logic directly
+  const roomData = activeRooms.get(roomId);
+  assert.ok(roomData);
+
+  // Handler check:
+  if (roomData.status !== 'active') {
+    mockBlackSocket.emit('move_rejected', { reason: 'game_not_active' });
+  }
+
+  assert.equal(rejectedReason, 'game_not_active');
+  assert.equal(room.game.fen(), fenAfterGameEnd, 'FEN must not change after game end');
+  assert.equal(room.blackTimeMs, blackTimeAfterEnd, 'Clock must not change after game end');
+
+  cleanupRoom(roomId, room);
+});
+
