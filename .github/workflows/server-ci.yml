@@ -34,6 +34,9 @@ jobs:
       - name: Refresh lockfile
         run: npm install --package-lock-only --ignore-scripts
 
+      - name: Apply non-breaking security fixes
+        run: npm audit fix --package-lock-only --ignore-scripts
+
       - name: Install exactly from refreshed lockfile
         run: npm ci --ignore-scripts
 
