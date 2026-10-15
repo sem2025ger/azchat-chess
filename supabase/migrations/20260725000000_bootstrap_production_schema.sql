@@ -117,7 +117,8 @@ ALTER TABLE public.matches
         'draw',
         'resignation',
         'draw_agreement',
-        'opponent_disconnected'
+        'opponent_disconnected',
+        'timeout'
       )
     ),
   ADD CONSTRAINT matches_completed_result_consistency_check
@@ -181,44 +182,45 @@ ALTER TABLE public.moves ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.matchmaking_queue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
--- PROFILES POLICIES
+-- Explicit Data API privileges: browser clients only receive access used by the current app.
+REVOKE ALL ON TABLE public.profiles, public.matches, public.moves, public.matchmaking_queue, public.chat_messages
+  FROM anon, authenticated;
+GRANT SELECT ON TABLE public.profiles TO anon, authenticated;
+GRANT SELECT ON TABLE public.matches, public.moves TO authenticated;
+
+-- PROFILES: public read only. Profile creation is handled by the auth trigger.
 CREATE POLICY "Public profiles are viewable by everyone."
-  ON public.profiles FOR SELECT USING (true);
-CREATE POLICY "Users can insert their own profile."
-  ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "Users can update own profile."
-  ON public.profiles FOR UPDATE USING (auth.uid() = id);
+  ON public.profiles FOR SELECT
+  TO anon, authenticated
+  USING (true);
 
--- MATCHES POLICIES (Read-only for participants; service-role key bypasses RLS for server writes)
+-- MATCHES: participants can read their own matches; server writes with service_role.
 CREATE POLICY "Participants can view their matches"
-  ON public.matches FOR SELECT TO authenticated
-  USING (auth.uid() = white_id OR auth.uid() = black_id);
+  ON public.matches FOR SELECT
+  TO authenticated
+  USING (
+    (SELECT auth.uid()) = white_id
+    OR (SELECT auth.uid()) = black_id
+  );
 
--- MOVES POLICIES (Read-only for participants; service-role key bypasses RLS for server writes)
+-- MOVES: participants can read moves belonging to their own matches; server writes with service_role.
 CREATE POLICY "Participants can view moves for their matches"
-  ON public.moves FOR SELECT TO authenticated
+  ON public.moves FOR SELECT
+  TO authenticated
   USING (
     EXISTS (
       SELECT 1
       FROM public.matches AS match_row
       WHERE match_row.id = public.moves.match_id
-        AND (auth.uid() = match_row.white_id OR auth.uid() = match_row.black_id)
+        AND (
+          (SELECT auth.uid()) = match_row.white_id
+          OR (SELECT auth.uid()) = match_row.black_id
+        )
     )
   );
 
--- MATCHMAKING QUEUE POLICIES
-CREATE POLICY "Queue viewable by authenticated users"
-  ON public.matchmaking_queue FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Users can insert themselves"
-  ON public.matchmaking_queue FOR INSERT WITH CHECK (auth.uid() = player_id);
-CREATE POLICY "Users can update their queue status"
-  ON public.matchmaking_queue FOR UPDATE USING (auth.uid() = player_id);
-
--- CHAT MESSAGES POLICIES
-CREATE POLICY "Chat viewable by everyone."
-  ON public.chat_messages FOR SELECT USING (true);
-CREATE POLICY "Chat insertable by participants."
-  ON public.chat_messages FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+-- MATCHMAKING QUEUE and CHAT MESSAGES:
+-- RLS remains enabled with no client policies because the current app does not use direct browser access.
 
 --------------------------------------------------------------------------------
 -- 7. TRIGGER FUNCTION FOR NEW USER SIGNUP
@@ -227,8 +229,8 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
-AS $$
+SET search_path = ''
+AS $
 DECLARE
   raw_uname text;
   clean_uname text;
@@ -253,7 +255,9 @@ BEGIN
 
   RETURN new;
 END;
-$$;
+$;
+
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
@@ -287,6 +291,8 @@ DECLARE
   v_missing_constraints integer;
   v_missing_policies integer;
   v_client_write_policies integer;
+  v_timeout_constraint_ok boolean;
+  v_signup_function_exposed boolean;
 BEGIN
   -- Assert required tables exist
   SELECT count(*) INTO v_missing_tables
@@ -352,18 +358,42 @@ BEGIN
     RAISE EXCEPTION 'Postflight assertion failed: % required SELECT policy/policies missing.', v_missing_policies;
   END IF;
 
-  -- Assert NO client-write policies exist on matches or moves
+  -- Assert NO client-write policies exist on application tables.
   SELECT count(*) INTO v_client_write_policies
   FROM pg_policies
   WHERE schemaname = 'public'
-    AND tablename IN ('matches', 'moves')
+    AND tablename IN ('profiles', 'matches', 'moves', 'matchmaking_queue', 'chat_messages')
     AND cmd IN ('INSERT', 'UPDATE', 'DELETE', 'ALL');
 
   IF v_client_write_policies > 0 THEN
-    RAISE EXCEPTION 'Postflight assertion failed: % unexpected client-write policy/policies found on matches/moves.', v_client_write_policies;
+    RAISE EXCEPTION 'Postflight assertion failed: % unexpected client-write policy/policies found.', v_client_write_policies;
   END IF;
 
-END $$;
+  -- Assert timeout is part of the termination_reason contract.
+  SELECT position('timeout' in pg_get_constraintdef(c.oid)) > 0
+    INTO v_timeout_constraint_ok
+  FROM pg_constraint c
+  JOIN pg_class t ON t.oid = c.conrelid
+  JOIN pg_namespace n ON n.oid = t.relnamespace
+  WHERE n.nspname = 'public'
+    AND t.relname = 'matches'
+    AND c.conname = 'matches_termination_reason_allowed_check';
+
+  IF COALESCE(v_timeout_constraint_ok, false) IS NOT TRUE THEN
+    RAISE EXCEPTION 'Postflight assertion failed: timeout is missing from matches_termination_reason_allowed_check.';
+  END IF;
+
+  -- SECURITY DEFINER trigger must not be directly callable from browser roles.
+  SELECT
+    has_function_privilege('anon', 'public.handle_new_user()', 'EXECUTE')
+    OR has_function_privilege('authenticated', 'public.handle_new_user()', 'EXECUTE')
+    INTO v_signup_function_exposed;
+
+  IF v_signup_function_exposed THEN
+    RAISE EXCEPTION 'Postflight assertion failed: public.handle_new_user() is executable by a browser role.';
+  END IF;
+
+END $;
 
 --------------------------------------------------------------------------------
 -- 10. READ-ONLY SUMMARY REPORT
