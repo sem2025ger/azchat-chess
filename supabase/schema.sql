@@ -61,7 +61,8 @@ ALTER TABLE public.matches
         'draw',
         'resignation',
         'draw_agreement',
-        'opponent_disconnected'
+        'opponent_disconnected',
+        'timeout'
       )
     ) NOT VALID,
   ADD CONSTRAINT matches_completed_result_consistency_check

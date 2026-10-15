@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, type UserProfile } from '../services/supabase';
 import { type Session, type User } from '@supabase/supabase-js';
+import { mapProfileRow } from '../utils/profileContract';
 
 interface AuthContextType {
   session: Session | null;
@@ -66,7 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .single();
       
       if (!error && data) {
-        setProfile(data as UserProfile);
+        setProfile(mapProfileRow(data));
       }
     } catch (e) {
       console.error(e);

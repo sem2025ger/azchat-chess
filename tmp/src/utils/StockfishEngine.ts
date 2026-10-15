@@ -154,21 +154,21 @@ export class StockfishEngine {
     const dM = line.match(/\bdepth\s+(\d+)/);
     if (dM && multipv === 1) this._depth = parseInt(dM[1], 10);
 
-    let depth = dM ? parseInt(dM[1], 10) : (this._lines[multipv]?.depth || this._depth);
+    const depth = dM ? parseInt(dM[1], 10) : (this._lines[multipv]?.depth || this._depth);
 
     let evalCp = this._lines[multipv]?.evaluation || 0;
     let mate: number | undefined = this._lines[multipv]?.mate;
 
     const cpM = line.match(/\bscore\s+cp\s+(-?\d+)/);
     if (cpM) {
-      let rawCp = parseInt(cpM[1], 10) / 100;
+      const rawCp = parseInt(cpM[1], 10) / 100;
       evalCp = this._rootBlackToMove ? -rawCp : rawCp;
       mate = undefined;
     }
 
     const mtM = line.match(/\bscore\s+mate\s+(-?\d+)/);
     if (mtM) {
-      let rawMate = parseInt(mtM[1], 10);
+      const rawMate = parseInt(mtM[1], 10);
       mate = this._rootBlackToMove ? -rawMate : rawMate;
       evalCp = mate > 0 ? 100 : -100;
     }

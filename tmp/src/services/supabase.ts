@@ -17,6 +17,12 @@ export interface UserProfile {
   ratingBullet: number;
   countryCode: string;
   role: string;
+  createdAt?: string;
+  rating_blitz?: number;
+  rating_rapid?: number;
+  rating_bullet?: number;
+  country_code?: string;
+  created_at?: string;
 }
 
 export interface GamePersistence {

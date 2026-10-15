@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
 import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu } from 'lucide-react';
@@ -13,6 +13,7 @@ import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { Chess } from 'chess.js';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
+import { createTimeoutManager } from '../utils/timeoutManager';
 
 function countryCodeToFlag(code: string): string | null {
   const normalized = code.trim().toUpperCase();
@@ -38,6 +39,7 @@ interface GameScreenProps {
 }
 
 export default function GameScreen({ mode }: GameScreenProps) {
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { user, profile } = useAuth();
 
@@ -93,6 +95,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const lastConfirmedFenRef = useRef(new Chess().fen());
   const [moveRejectMessage, setMoveRejectMessage] = useState<string | null>(null);
+  const [disconnectNotice, setDisconnectNotice] = useState<string | null>(null);
   const [gameOverMessage, setGameOverMessage] = useState<string | null>(null);
   const [drawOfferBy, setDrawOfferBy] = useState<'w' | 'b' | null>(null);
   const [gameActionMessage, setGameActionMessage] = useState<string | null>(null);
@@ -101,7 +104,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const canSendGameAction =
     isMultiplayer && isConnected && Boolean(socket) && Boolean(roomId) && !gameOverMessage;
 
-  const mapGameOverReason = (data?: { reason?: string; endedBy?: 'w' | 'b' | null }) => {
+  const mapGameOverReason = useCallback((data?: { reason?: string; endedBy?: 'w' | 'b' | null }) => {
     const reason = data?.reason;
     switch (reason) {
       case 'opponent_disconnected': return "Opponent disconnected. Game over.";
@@ -112,11 +115,35 @@ export default function GameScreen({ mode }: GameScreenProps) {
         return data?.endedBy === playerColor
           ? t('game.result.resignation.self')
           : t('game.result.resignation.opponent');
+      case 'timeout':
+        return data?.endedBy === playerColor
+          ? "You lost on time."
+          : "Opponent lost on time. You won!";
       case 'draw_agreement': return t('game.result.drawAgreement');
       case 'game_over': return "Game over.";
       default: return "Game over.";
     }
-  };
+  }, [playerColor, t]);
+
+  const playerColorRef = useRef(playerColor);
+  const tRef = useRef(t);
+  const mapGameOverReasonRef = useRef(mapGameOverReason);
+  const navigateRef = useRef(navigate);
+  const timeoutManagerRef = useRef(createTimeoutManager());
+
+  useEffect(() => {
+    playerColorRef.current = playerColor;
+    tRef.current = t;
+    mapGameOverReasonRef.current = mapGameOverReason;
+    navigateRef.current = navigate;
+  }, [playerColor, t, mapGameOverReason, navigate]);
+
+  useEffect(() => {
+    const tm = timeoutManagerRef.current;
+    return () => {
+      tm.clearAll();
+    };
+  }, []);
 
   useEffect(() => {
     if (!socket || !roomId) return;
@@ -153,9 +180,12 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
     };
     const onGameOver = (data: any) => {
+      timeoutManagerRef.current.clear('gameActionMessage');
+      timeoutManagerRef.current.clear('disconnectNotice');
       setDrawOfferBy(null);
       setGameActionMessage(null);
-      setGameOverMessage(mapGameOverReason(data));
+      setDisconnectNotice(null);
+      setGameOverMessage(mapGameOverReasonRef.current(data));
     };
 
     const onMoveRejected = (data: { reason?: string }) => {
@@ -196,9 +226,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
       setDrawOfferBy(null);
 
-      if (!data?.declinedBy || data.declinedBy !== playerColor) {
-        setGameActionMessage(t('game.draw.declined'));
-        setTimeout(() => setGameActionMessage(null), 4000);
+      if (!data?.declinedBy || data.declinedBy !== playerColorRef.current) {
+        setGameActionMessage(tRef.current('game.draw.declined'));
+        timeoutManagerRef.current.set('gameActionMessage', () => setGameActionMessage(null), 4000);
       }
     };
 
@@ -206,8 +236,51 @@ export default function GameScreen({ mode }: GameScreenProps) {
       if (!isCurrentRoomEvent(data)) return;
 
       setDrawOfferBy(null);
-      setGameActionMessage(t('game.action.rejected'));
-      setTimeout(() => setGameActionMessage(null), 4000);
+      setGameActionMessage(tRef.current('game.action.rejected'));
+      timeoutManagerRef.current.set('gameActionMessage', () => setGameActionMessage(null), 4000);
+    };
+
+    const onPlayerDisconnected = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+      if (data?.color !== playerColorRef.current) {
+        timeoutManagerRef.current.clear('disconnectNotice');
+        setDisconnectNotice(data?.graceSeconds ? `Opponent disconnected. Waiting ${data.graceSeconds}s...` : "Opponent disconnected.");
+      }
+    };
+
+    const onPlayerReconnected = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+      if (data?.color !== playerColorRef.current) {
+        setDisconnectNotice("Opponent reconnected!");
+        timeoutManagerRef.current.set('disconnectNotice', () => setDisconnectNotice(null), 3000);
+      }
+    };
+
+    const onReconnectSuccess = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+      timeoutManagerRef.current.clear('disconnectNotice');
+      setDisconnectNotice(null);
+      if (data?.fen) {
+        lastConfirmedFenRef.current = data.fen;
+        setGame(new Chess(data.fen));
+        setPositionHistory(prev => prev[prev.length - 1] === data.fen ? prev : [...prev, data.fen]);
+      }
+      if (data?.whiteTime !== undefined) {
+        setTimeLeft({ white: data.whiteTime, black: data.blackTime });
+      }
+      if (Array.isArray(data?.history)) {
+        setMoveHistory(data.history);
+      }
+    };
+
+    const onReconnectFailed = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
+      timeoutManagerRef.current.clear('disconnectNotice');
+      setDisconnectNotice(null);
+      setGameOverMessage("Session expired or game is no longer active.");
+      timeoutManagerRef.current.set('reconnectRedirect', () => {
+        navigateRef.current('/play');
+      }, 2500);
     };
     
     socket.on('game_start', onStart);
@@ -217,8 +290,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
     socket.on('draw_offer_received', onDrawOfferReceived);
     socket.on('draw_offer_declined', onDrawOfferDeclined);
     socket.on('game_action_rejected', onGameActionRejected);
+    socket.on('player_disconnected', onPlayerDisconnected);
+    socket.on('player_reconnected', onPlayerReconnected);
+    socket.on('reconnect_success', onReconnectSuccess);
+    socket.on('reconnect_failed', onReconnectFailed);
+
+    // Request reconnection data if returning to an active game room
+    socket.emit('reconnect_game', { roomId });
     
     return () => { 
+      timeoutManagerRef.current.clearAll();
       socket.off('game_start', onStart);
       socket.off('update_board', onUpdate); 
       socket.off('game_over', onGameOver);
@@ -226,6 +307,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
       socket.off('draw_offer_received', onDrawOfferReceived);
       socket.off('draw_offer_declined', onDrawOfferDeclined);
       socket.off('game_action_rejected', onGameActionRejected);
+      socket.off('player_disconnected', onPlayerDisconnected);
+      socket.off('player_reconnected', onPlayerReconnected);
+      socket.off('reconnect_success', onReconnectSuccess);
+      socket.off('reconnect_failed', onReconnectFailed);
     };
   }, [socket, roomId]);
 
@@ -240,8 +325,20 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const engineRef = useRef<StockfishEngine | null>(null);
   const [engineResult, setEngineResult] = useState<EngineResult | null>(null);
   const [isAnalysing, setIsAnalysing] = useState(false);
+  const [engineFailed, setEngineFailed] = useState(false);
 
-  // Ticking timer effect removed (Phase 2C-A) to prevent desync until real server clocks are implemented.
+  // Authoritative server clock countdown
+  useEffect(() => {
+    if (!isLiveMultiplayer) return;
+    const timer = setInterval(() => {
+      const activeColor = game.turn() === 'w' ? 'white' : 'black';
+      setTimeLeft((prev) => ({
+        ...prev,
+        [activeColor]: Math.max(0, prev[activeColor] - 1),
+      }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isLiveMultiplayer, game]);
 
   // Engine Initialization
   useEffect(() => {
@@ -256,9 +353,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
       engineRef.current.onResult((res) => {
         setEngineResult(res);
         setIsAnalysing(false);
+        setEngineFailed(false);
       });
       engineRef.current.onError(() => {
         setIsAnalysing(false);
+        setEngineFailed(true);
       });
     }
     return () => {
@@ -307,6 +406,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
         setViewMoveIndex(-1);
         return false;
       }
+      if (isMultiplayer && playerColor !== game.turn()) {
+        return false;
+      }
       try {
         const g = new Chess(game.fen());
         const move = g.move({ from: source, to: target, promotion });
@@ -336,12 +438,12 @@ export default function GameScreen({ mode }: GameScreenProps) {
           }
           return true;
         }
-      } catch (e) {
+      } catch {
         return false;
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer]
+    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer, playerColor]
   );
 
 
@@ -419,7 +521,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const analysisData = useMemo(() => {
     if (!engineResult) return null;
-    const analysisFen = engineResult.analyzedFen || game.fen();
+    const analysisFen = engineResult.analyzedFen || liveFen;
     const g = new Chess(analysisFen);
     let bestMoveSan = engineResult.bestMove;
     const continuationSan: string[] = [];
@@ -431,7 +533,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
         const promotion = engineResult.bestMove[4];
         const move = g.move({ from, to, promotion });
         if (move) bestMoveSan = move.san;
-      } catch (e) {
+      } catch {
         // fallback
       }
     }
@@ -448,7 +550,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           } else {
             break;
           }
-        } catch (e) {
+        } catch {
           break;
         }
       }
@@ -514,7 +616,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       continuation: continuationSan,
       lines
     };
-  }, [engineResult, game.fen()]);
+  }, [engineResult, liveFen]);
 
   return (
     <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)]">
@@ -563,12 +665,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   <div className="bg-neutral-900 border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 text-center">
                     <span className="text-white font-black text-xl tracking-wide">{gameOverMessage}</span>
                     <button 
-                      onClick={() => window.location.href = '/play'} 
+                      onClick={() => navigate('/play')} 
                       className="bg-chess-active hover:bg-chess-active/80 text-white px-6 py-2 rounded-xl font-bold transition-all active:scale-95 shadow-lg"
                     >
                       New Game
                     </button>
                   </div>
+                </div>
+              ) : disconnectNotice ? (
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-amber-600/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl backdrop-blur-md animate-fade-in text-center pointer-events-none">
+                  {disconnectNotice}
                 </div>
               ) : moveRejectMessage ? (
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-red-500/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl backdrop-blur-md animate-fade-in text-center pointer-events-none">
@@ -581,7 +687,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 game={displayedGame}
                 onMove={handleGameMove}
                 orientation={playerColor}
-                readOnly={viewMoveIndex !== -1 || !!gameOverMessage}
+                readOnly={viewMoveIndex !== -1 || !!gameOverMessage || (isMultiplayer && playerColor !== game.turn())}
               />
             </div>
           </div>
@@ -661,7 +767,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 loading={isAnalysing}
                 candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
                 lines={analysisData?.lines}
-                error={engineRef.current?.hasFailed() === true}
+                error={engineFailed}
               />
             )}
           </div>

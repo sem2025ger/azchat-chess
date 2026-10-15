@@ -3,6 +3,7 @@ import { Target, Swords, Zap, Activity, Calendar, MapPin, LogOut, Loader2 } from
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
+import { calculateMatchStats, getMatchResultForPlayer } from '../utils/profileContract';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -19,32 +20,28 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from('matches').select('*, profiles!white_id(username, countryCode), black_profile:profiles!black_id(username, countryCode)')
+    supabase.from('matches').select('*, white_profile:profiles!white_id(username, country_code), black_profile:profiles!black_id(username, country_code)')
       .or(`white_id.eq.${user.id},black_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
       .limit(10)
       .then(({ data }) => {
-        if(data) {
-           let w=0, l=0, d=0;
-           const fmt = data.map(m => {
-             const isWhite = m.white_id === user.id;
-             let res = 'draw';
-             if (m.winner_id === user.id) { res='win'; w++; }
-             else if (m.winner_id && m.winner_id !== user.id) { res='loss'; l++; }
-             else if (m.status === 'draw') { res='draw'; d++; }
-             
-             const oppName = isWhite ? m.black_id?.slice(0,6) || 'Guest' : m.white_id?.slice(0,6) || 'Guest';
-             
-             return { 
-               result: res, 
-               opp: oppName, 
-               type: m.time_control || '10+0', 
-               date: new Date(m.created_at).toLocaleDateString()
-             };
-           });
-           setRecentGames(fmt);
-           const total = w+l+d;
-           setDbStats({ wins: w, losses: l, draws: d, rate: total > 0 ? Number(((w/total)*100).toFixed(1)) : 0 });
+        if (data) {
+          const stats = calculateMatchStats(data, user.id);
+          setDbStats(stats);
+          const fmt = data.map((m: any) => {
+            const isWhite = m.white_id === user.id;
+            const res = getMatchResultForPlayer(m, user.id);
+            const oppProfile = isWhite ? m.black_profile : m.white_profile;
+            const oppName = oppProfile?.username || (isWhite ? m.black_id?.slice(0, 6) || 'Guest' : m.white_id?.slice(0, 6) || 'Guest');
+            
+            return { 
+              result: res, 
+              opp: oppName, 
+              type: m.time_control || '10+0', 
+              date: new Date(m.created_at).toLocaleDateString()
+            };
+          });
+          setRecentGames(fmt);
         }
       });
   }, [user]);
@@ -381,7 +378,10 @@ export default function ProfileScreen() {
                 <div className="p-2 md:p-2.5 bg-gradient-to-br from-chess-active/20 to-chess-active/5 rounded-xl text-chess-active group-hover/perform:scale-110 transition-transform shadow-lg shadow-chess-active/10 border border-chess-active/20">
                   <Activity size={18} />
                 </div>
-                {t('profile.performance')}
+                <span>
+                  {t('profile.performance')}
+                  <span className="ml-2 text-[0.65rem] text-neutral-400 font-bold uppercase tracking-wider not-italic">(Last 10 games)</span>
+                </span>
               </h2>
               <div className="px-3 py-1.5 bg-white/5 rounded-full border border-white/5 text-[0.5rem] md:text-[0.55rem] font-black text-neutral-500 tracking-widest uppercase shadow-inner ring-1 ring-white/5">{t('profile.rankingUnavailable')}</div>
             </div>
