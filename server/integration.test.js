@@ -2,14 +2,13 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const path = require('node:path');
 
 // Ensure test environment before loading server
 process.env.NODE_ENV = 'test';
 process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://fake-test.supabase.co';
 process.env.SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'fake-anon-key';
 
-const ioClient = require(path.resolve(__dirname, '../tmp/node_modules/socket.io-client'));
+const { io: ioClient } = require('socket.io-client');
 const {
   server,
   activeRooms,
