@@ -1,0 +1,51 @@
+name: Server CI
+
+on:
+  push:
+    branches:
+      - main
+      - fix/server-dependency-security-20261016
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Refresh lockfile
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Install exactly from refreshed lockfile
+        run: npm ci --ignore-scripts
+
+      - name: Run server tests
+        run: npm test
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Upload refreshed lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-package-lock
+          path: server/package-lock.json
+          if-no-files-found: error
