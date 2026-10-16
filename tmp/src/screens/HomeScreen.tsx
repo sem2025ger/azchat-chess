@@ -54,17 +54,12 @@ export default function HomeScreen() {
         }
       `}</style>
 
-      {/* Ambient background glows */}
-      <div className="absolute top-[-10%] left-[-8%] w-[600px] h-[600px] bg-chess-active/[0.03] blur-[180px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-8%] w-[600px] h-[600px] bg-chess-gold/[0.03] blur-[180px] rounded-full pointer-events-none" />
-      <div className="absolute top-[40%] left-[30%] w-[800px] h-[800px] bg-white/[0.006] blur-[200px] rounded-full pointer-events-none" />
-
       {/* 2-Column Layout */}
       <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-12 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-16 py-2 xl:py-0 overflow-y-auto xl:overflow-visible">
 
         {/* LEFT: Chessboard */}
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[57%] max-w-[320px] md:max-w-[600px] shrink-0 relative perspective-1000 board-container xl:-mt-12">
-          <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_40px_100px_-20px_rgba(0,0,0,1)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board home-board-frame">
+          <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board home-board-frame">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
             <ChessBoard overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3" />
           </div>
@@ -74,14 +69,14 @@ export default function HomeScreen() {
         <div className="flex-1 w-full flex flex-col justify-center items-center xl:items-stretch max-w-2xl xl:max-w-[420px] z-20 gap-2 md:gap-4 mb-4 xl:mb-0 -mt-6 md:-mt-0 xl:-mt-10 xl:ml-8">
           
           {/* Premium Flags Block */}
-          <div className="flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[#121212]/90 backdrop-blur-3xl border-[2px] border-transparent panel-glow-cycle transition-all shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100">
+          <div className="flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[linear-gradient(135deg,rgba(6,182,212,0.10),rgba(7,15,17,0.98)_42%,rgba(7,15,17,0.98))] border-[2px] border-cyan-500/[0.34] transition-colors shadow-[0_0_12px_rgba(6,182,212,0.08)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100">
              <GermanyFlag />
              <AzerbaijanFlag />
              <TurkeyFlag />
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/80 backdrop-blur-2xl p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-transparent border-b-[4px] border-b-black/40 panel-glow-cycle transition-all relative">
+          <div className="w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
 
 
           {/* 1. Hero Brand Header */}
@@ -125,7 +120,6 @@ export default function HomeScreen() {
               color="text-chess-gold"
               bg="bg-chess-gold/[0.08]"
               border="border-chess-gold/[0.18]"
-              accent="bg-chess-gold/30"
             />
           </div>
         </div>
@@ -136,21 +130,19 @@ export default function HomeScreen() {
 }
 
 function FeatureCard({
-  to, icon, title, desc, color, bg, border, accent,
+  to, icon, title, desc, color, bg, border,
 }: {
   to: string; icon: React.ReactNode; title: string; desc: string;
-  color: string; bg: string; border: string; accent: string;
+  color: string; bg: string; border: string;
 }) {
   return (
     <Link
       to={to}
       className={cx(
-        'group relative flex items-center gap-3 bg-white/[0.015] backdrop-blur-2xl rounded-2xl p-3.5 border hover:bg-white/[0.04] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_36px_-10px_rgba(0,0,0,0.7)] active:scale-95 overflow-hidden',
+        'group relative flex items-center gap-3 bg-white/[0.025] rounded-2xl p-3.5 border hover:bg-white/[0.05] transition-colors duration-150 active:scale-95 overflow-hidden',
         border,
       )}
     >
-      <div className={cx('absolute -top-5 -right-5 w-14 h-14 blur-2xl rounded-full opacity-10 group-hover:opacity-25 transition-opacity duration-700', accent)} />
-
       <div
         className={cx(
           'w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ring-1 transition-all duration-500 group-hover:scale-110',

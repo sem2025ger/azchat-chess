@@ -78,14 +78,32 @@ export default function ProfileScreen() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { username }
+            data: { username },
+            emailRedirectTo: `${window.location.origin}/profile`
           }
         });
         if (error) throw error;
+
+        // Supabase can intentionally return a user without identities when the
+        // email is already registered. Treat that as an existing account.
+        if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          setIsLoginMode(true);
+          setPassword('');
+          setAuthMessage(t('auth.accountAlreadyExists'));
+          return;
+        }
+
+        // When email confirmation is required there is no session yet.
+        // Switch to the sign-in tab and clearly tell the user what to do next.
+        if (!data.session) {
+          setIsLoginMode(true);
+          setPassword('');
+          setAuthMessage(t('auth.registrationSuccess'));
+        }
       }
     } catch (err: any) {
       if (err.message === 'Failed to fetch') {
@@ -113,7 +131,11 @@ export default function ProfileScreen() {
       if (error) throw error;
       setAuthMessage(t('auth.resetEmailSent'));
     } catch (err: any) {
-      setErrorMsg(err.message || t('auth.recoveryError'));
+      if (err?.code === 'over_email_send_rate_limit' || err?.status === 429 || String(err?.message || '').includes('rate limit')) {
+        setErrorMsg(t('auth.emailRateLimit'));
+      } else {
+        setErrorMsg(err.message || t('auth.recoveryError'));
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -221,7 +243,12 @@ export default function ProfileScreen() {
                     {t('auth.passwordLabel')}
                   </label>
                   {isLoginMode && (
-                    <button type="button" onClick={handleForgotPassword} className="text-sm text-chess-gold hover:text-white transition-colors focus:outline-none">
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={authLoading}
+                      className="text-sm text-chess-gold hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none"
+                    >
                       {t('auth.forgotPassword')}
                     </button>
                   )}

@@ -192,7 +192,7 @@ export default function SettingsScreen() {
           <div className="space-y-6 animate-fade-in">
             <SubViewHeader title={t('settings.soundThemes')} onBack={() => setActiveSubView('main')} />
             <div className="flex flex-col gap-2 px-2">
-              {['Default', 'Soft', 'Classic', 'Muted / Off'].map((s) => (
+              {['Default', 'Soft', 'Classic', 'Wood', 'Crystal', 'Muted / Off'].map((s) => (
                 <button
                   key={s}
                   onClick={() => handleSoundThemeSelect(s as any)}
@@ -376,7 +376,7 @@ export default function SettingsScreen() {
                     <Volume2 size={16} className="text-neutral-400" /> {t('settings.soundThemes')}
                   </h2>
                   <div className="grid grid-cols-2 gap-2 flex-1 content-start">
-                    {['Default', 'Soft', 'Classic', 'Muted / Off'].map(s => (
+                    {['Default', 'Soft', 'Classic', 'Wood', 'Crystal', 'Muted / Off'].map(s => (
                       <button key={s} onClick={() => handleSoundThemeSelect(s as any)} className={cx("px-2 py-2 rounded-xl border text-[0.7rem] font-black uppercase tracking-[0.1em] transition-all active:scale-95", soundTheme === s ? "bg-white/10 border-white/20 text-white" : "bg-black/20 border-white/5 text-neutral-600 hover:border-white/15 hover:text-neutral-400")}>{s}</button>
                     ))}
                   </div>

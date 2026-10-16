@@ -219,12 +219,10 @@ function ChessBoard({
     <div
       className={cx(
         'w-full rounded-lg relative overflow-hidden transition-all duration-500 touch-manipulation',
-        'p-2 md:p-3 bg-[#262421] border-[6px] border-[#312e2b] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.4)]',
+        'p-2 md:p-3 bg-[#262421] border-[6px] border-[#312e2b] shadow-[0_16px_38px_-18px_rgba(0,0,0,0.72),inset_0_0_10px_rgba(0,0,0,0.28)]',
         className
       )}
     >
-      <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
-
       <div className="aspect-square w-full rounded-sm overflow-hidden relative shadow-2xl border border-black/40">
         <div className="grid grid-cols-8 grid-rows-8 w-full h-full relative z-0">
           {ranks.map((rank, rIndex) =>
@@ -249,8 +247,6 @@ function ChessBoard({
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, squareRef)}
                 >
-                  <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-
                   {isLastMove && <div className="absolute inset-0 bg-yellow-400/30 pointer-events-none" />}
                   {isSelected && (
                     <div className="absolute inset-0 bg-white/20 border-2 border-white/50 pointer-events-none" />
@@ -261,7 +257,7 @@ function ChessBoard({
                       {activeGame.get(squareRef as Square) ? (
                         <div className="w-full h-full border-[5px] border-black/20 rounded-full scale-[0.85]" />
                       ) : (
-                        <div className="w-[30%] h-[30%] rounded-full bg-black/20 backdrop-blur-[2px]" />
+                        <div className="w-[30%] h-[30%] rounded-full bg-black/25" />
                       )}
                     </div>
                   )}
@@ -310,7 +306,7 @@ function ChessBoard({
                   onClick={() => onSquareClick(p.square)}
                   className={cx(
                     'absolute w-[12.5%] h-[12.5%] transition-all duration-[150ms] ease-out pointer-events-none md:pointer-events-auto cursor-grab active:cursor-grabbing hover:scale-[1.05]',
-                    isSelected ? 'scale-[1.1] drop-shadow-2xl z-40' : 'z-30'
+                    isSelected ? 'scale-[1.1] z-40' : 'z-30'
                   )}
                   style={{ left: `${fileIdx * 12.5}%`, top: `${rankIdx * 12.5}%` }}
                 >
@@ -321,7 +317,7 @@ function ChessBoard({
           </div>
 
           {pendingPromotion && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4 pointer-events-auto">
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/88 animate-fade-in p-4 pointer-events-auto">
               <div className="bg-neutral-900/95 border border-white/20 rounded-2xl p-4 shadow-2xl flex flex-col items-center gap-3">
                 <span className="text-white font-black text-xs uppercase tracking-widest">
                   Promote Pawn
@@ -377,7 +373,7 @@ function PieceImage({
       <img
         src={src}
         alt={pieceCode}
-        className="w-full h-full object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] transform-gpu"
+        className="w-full h-full object-contain transform-gpu"
         onError={(e) => {
           // Fallback if asset is missing (though we shouldn't have missing assets)
           (e.target as HTMLImageElement).style.display = 'none';
