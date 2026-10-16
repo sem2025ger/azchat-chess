@@ -175,9 +175,12 @@ function NavItemActiveDot() {
 }
 
 function MobileNavItem({ to, icon, label }: { to: string, icon: React.ReactNode, label: string }) {
+  const { pathname } = useLocation();
+  const destination = to === '/home' && pathname === '/' ? '/' : to;
+
   return (
     <NavLink
-      to={to}
+      to={destination}
       className={({ isActive }) =>
         cx(
           "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all duration-300",
