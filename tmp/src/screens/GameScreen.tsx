@@ -44,7 +44,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const { user, profile } = useAuth();
 
   // User preferences applied automatically via ThemeContext
-  const [activeTab, setActiveTab] = useState<'moves' | 'analysis'>('moves');
+  const [activeTab, setActiveTab] = useState<'moves' | 'analysis'>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+      ? 'analysis'
+      : 'moves'
+  );
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(min-width: 768px)').matches
@@ -903,6 +907,106 @@ export default function GameScreen({ mode }: GameScreenProps) {
             <FastForward size={22} />
           </button>
         </div>
+
+
+        {/* Mobile Review / Analysis Panel */}
+        {!isLiveMultiplayer && (
+          <section className="md:hidden mx-2 mb-3 overflow-hidden rounded-2xl border border-cyan-500/20 bg-[#101211]/95 shadow-[0_16px_40px_-24px_rgba(0,206,209,0.45)] ring-1 ring-white/[0.04]">
+            <nav className="grid grid-cols-2 gap-1 p-1.5 border-b border-white/[0.05] bg-black/30">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cx(
+                    "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-[0.68rem] font-black uppercase tracking-[0.12em] transition-all active:scale-[0.98]",
+                    activeTab === tab.id
+                      ? "bg-cyan-500/12 text-cyan-200 ring-1 ring-cyan-400/30 shadow-[0_0_18px_rgba(34,211,238,0.10)]"
+                      : "text-neutral-500 hover:text-neutral-300"
+                  )}
+                >
+                  <tab.icon size={15} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+
+            {activeTab === 'analysis' ? (
+              <div className="max-h-[46dvh] overflow-y-auto overscroll-contain">
+                <AnalysisPanel
+                  score={engineResult?.evaluation || 0.0}
+                  bestMove={analysisData?.bestMove}
+                  depth={engineResult?.depth || 0}
+                  mate={engineResult?.mate}
+                  loading={isAnalysing}
+                  candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
+                  lines={analysisData?.lines}
+                  error={engineFailed}
+                  noMoves={moveHistory.length === 0}
+                />
+              </div>
+            ) : (
+              <div className="max-h-[38dvh] overflow-y-auto overscroll-contain bg-black/[0.08]">
+                {movePairs.length === 0 ? (
+                  <div className="flex min-h-28 items-center justify-center px-4 text-[0.7rem] font-bold uppercase tracking-widest text-neutral-600">
+                    {t('game.analysis.nomoves')}
+                  </div>
+                ) : (
+                  <table className="w-full border-collapse text-left">
+                    <thead className="sticky top-0 z-10 bg-neutral-950/95 backdrop-blur-xl">
+                      <tr className="text-[0.58rem] font-black uppercase tracking-[0.16em] text-neutral-600">
+                        <th className="w-10 border-r border-white/[0.04] px-2 py-2 text-center">#</th>
+                        <th className="px-3 py-2">{t('game.white')}</th>
+                        <th className="px-3 py-2">{t('game.black')}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {movePairs.map((move, i) => {
+                        const whitePositionIndex = i * 2 + 1;
+                        const blackPositionIndex = i * 2 + 2;
+                        return (
+                          <tr key={i} className="text-[0.76rem] font-bold text-neutral-300">
+                            <td className="border-r border-white/[0.04] bg-black/20 px-2 py-2 text-center font-mono text-neutral-600">
+                              {move.n}.
+                            </td>
+                            <td
+                              className={cx(
+                                "px-3 py-2",
+                                whitePositionIndex < positionHistory.length && "cursor-pointer",
+                                viewMoveIndex === whitePositionIndex && "bg-cyan-500/[0.08] text-cyan-100"
+                              )}
+                              onClick={() => {
+                                if (whitePositionIndex < positionHistory.length) {
+                                  setViewMoveIndex(whitePositionIndex);
+                                }
+                              }}
+                            >
+                              {move.w}
+                            </td>
+                            <td
+                              className={cx(
+                                "px-3 py-2",
+                                move.b && blackPositionIndex < positionHistory.length && "cursor-pointer",
+                                viewMoveIndex === blackPositionIndex && "bg-cyan-500/[0.08] text-cyan-100"
+                              )}
+                              onClick={() => {
+                                if (move.b && blackPositionIndex < positionHistory.length) {
+                                  setViewMoveIndex(blackPositionIndex);
+                                }
+                              }}
+                            >
+                              {move.b}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+          </section>
+        )}
 
         {drawOfferBy && drawOfferBy !== playerColor && !gameOverMessage && (
           <div className="p-2 mb-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col gap-1.5">
