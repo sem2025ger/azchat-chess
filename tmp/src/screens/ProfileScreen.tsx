@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Target, Swords, Zap, Activity, Calendar, MapPin, LogOut, Loader2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +15,18 @@ function cx(...inputs: (string | undefined | null | false)[]) {
 export default function ProfileScreen() {
   const { t } = useLanguage();
   const { session, profile, isLoading, signOut, user } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedReturn = searchParams.get('returnTo');
+  const mobileReturnTo = requestedReturn === '/play' || requestedReturn?.startsWith('/play?room=')
+    ? requestedReturn
+    : null;
+
+  useEffect(() => {
+    if (session && !isLoading && mobileReturnTo && window.matchMedia('(max-width: 767px)').matches) {
+      navigate(mobileReturnTo, { replace: true });
+    }
+  }, [session, isLoading, mobileReturnTo, navigate]);
 
   const [recentGames, setRecentGames] = useState<any[]>([]);
   const [dbStats, setDbStats] = useState({ wins: 0, losses: 0, draws: 0, rate: 0 });
@@ -173,18 +186,18 @@ export default function ProfileScreen() {
 
   if (!session) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-8 md:px-8 overflow-y-auto lg:overflow-hidden bg-transparent h-full min-h-0 touch-pan-y pb-28 lg:pb-0 lg:h-full flex flex-col items-center justify-center relative">
+      <div className="max-w-6xl mx-auto px-4 py-8 md:px-8 overflow-y-auto lg:overflow-hidden bg-transparent h-full min-h-0 touch-pan-y pb-28 lg:pb-0 lg:h-full flex flex-col items-center justify-center relative max-md:w-full max-md:px-3 max-md:py-2 max-md:pb-2 max-md:justify-start">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-overlay"></div>
         
-        <div className="w-full md:w-[700px] lg:w-[740px] max-w-[calc(100vw-2rem)] bg-neutral-900/85 backdrop-blur-2xl border-[2px] border-transparent rounded-[1.75rem] p-7 md:p-10 lg:p-11 shadow-[0_30px_90px_-35px_rgba(0,0,0,0.95)] animate-fade-in-up relative overflow-hidden panel-glow-cycle transition-all">
+        <div className="w-full md:w-[700px] lg:w-[740px] max-w-[calc(100vw-2rem)] bg-neutral-900/85 backdrop-blur-2xl border-[2px] border-transparent rounded-[1.75rem] p-7 md:p-10 lg:p-11 shadow-[0_30px_90px_-35px_rgba(0,0,0,0.95)] animate-fade-in-up relative overflow-hidden panel-glow-cycle transition-all max-md:shrink-0 max-md:p-4 max-md:rounded-2xl max-md:backdrop-blur-none">
           <div className="absolute -left-20 -top-20 w-[400px] h-[400px] bg-chess-gold/10 blur-[120px] pointer-events-none" />
           
           <div className="w-full max-w-[560px] mx-auto relative z-10">
-            <div className="flex border-b border-white/10 -mt-2 mb-7">
+            <div className="flex border-b border-white/10 -mt-2 mb-7 max-md:mt-0 max-md:mb-3">
               <button
                 type="button"
                 onClick={() => setIsLoginMode(true)}
-                className={`flex-1 py-4 text-lg font-semibold transition-colors relative focus:outline-none ${
+                className={`flex-1 py-4 text-lg max-md:py-2.5 max-md:text-base font-semibold transition-colors relative focus:outline-none ${
                   isLoginMode ? 'text-chess-gold' : 'text-neutral-500 hover:text-neutral-300'
                 }`}
               >
@@ -197,7 +210,7 @@ export default function ProfileScreen() {
               <button
                 type="button"
                 onClick={() => setIsLoginMode(false)}
-                className={`flex-1 py-4 text-lg font-semibold transition-colors relative focus:outline-none ${
+                className={`flex-1 py-4 text-lg max-md:py-2.5 max-md:text-base font-semibold transition-colors relative focus:outline-none ${
                   !isLoginMode ? 'text-chess-gold' : 'text-neutral-500 hover:text-neutral-300'
                 }`}
               >
@@ -208,10 +221,10 @@ export default function ProfileScreen() {
               </button>
             </div>
 
-            <form onSubmit={handleAuth} className="space-y-5 md:space-y-6">
+            <form onSubmit={handleAuth} className="space-y-5 md:space-y-6 max-md:space-y-2.5">
               {!isLoginMode && (
                 <div className="space-y-1">
-                  <label className="text-base font-semibold text-neutral-200 block mb-1">
+                  <label className="text-base max-md:text-sm font-semibold text-neutral-200 block mb-1">
                     {t('auth.usernameLabel')}
                   </label>
                   <input 
@@ -219,13 +232,13 @@ export default function ProfileScreen() {
                     value={username} 
                     onChange={e => setUsername(e.target.value)} 
                     type="text" 
-                    className="w-full px-5 py-4 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
+                    className="w-full px-5 py-4 max-md:px-3 max-md:py-2.5 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
                   />
                 </div>
               )}
               
               <div className="space-y-1">
-                <label className="text-base font-semibold text-neutral-200 block mb-1">
+                <label className="text-base max-md:text-sm font-semibold text-neutral-200 block mb-1">
                   {t('auth.emailLabel')}
                 </label>
                 <input 
@@ -233,13 +246,13 @@ export default function ProfileScreen() {
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
                   type="email" 
-                  className="w-full px-5 py-4 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
+                  className="w-full px-5 py-4 max-md:px-3 max-md:py-2.5 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
                 />
               </div>
 
               <div className="space-y-1">
                 <div className="flex justify-between items-center mb-1">
-                  <label className="text-base font-semibold text-neutral-200 block">
+                  <label className="text-base max-md:text-sm font-semibold text-neutral-200 block">
                     {t('auth.passwordLabel')}
                   </label>
                   {isLoginMode && (
@@ -247,7 +260,7 @@ export default function ProfileScreen() {
                       type="button"
                       onClick={handleForgotPassword}
                       disabled={authLoading}
-                      className="text-sm text-chess-gold hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none"
+                      className="text-sm max-md:text-xs text-chess-gold hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none"
                     >
                       {t('auth.forgotPassword')}
                     </button>
@@ -258,35 +271,35 @@ export default function ProfileScreen() {
                   value={password} 
                   onChange={e => setPassword(e.target.value)} 
                   type="password" 
-                  className="w-full px-5 py-4 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
+                  className="w-full px-5 py-4 max-md:px-3 max-md:py-2.5 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
                 />
               </div>
 
               {errorMsg && (
-                <div className="text-center p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-lg mt-4">
+                <div className="text-center p-3 max-md:p-2 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-lg mt-4">
                   {errorMsg}
                 </div>
               )}
 
               {authMessage && (
-                <div className="text-center p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-lg mt-4">
+                <div className="text-center p-3 max-md:p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-lg mt-4">
                   {authMessage}
                 </div>
               )}
 
-              <button disabled={authLoading} type="submit" className="w-full py-4 md:py-5 mt-4 bg-chess-gold/90 hover:bg-chess-gold disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-bold text-lg shadow-lg shadow-chess-gold/10 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
+              <button disabled={authLoading} type="submit" className="w-full py-4 md:py-5 mt-4 max-md:py-2.5 max-md:mt-2 bg-chess-gold/90 hover:bg-chess-gold disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-bold text-lg max-md:text-base shadow-lg shadow-chess-gold/10 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
                 {authLoading ? <Loader2 size={18} className="animate-spin" /> : null}
                 {isLoginMode ? t('auth.submitLogin') : t('auth.submitRegister')}
               </button>
 
               {isLoginMode && (
                 <>
-                  <div className="flex items-center gap-3 my-4">
+                  <div className="flex items-center gap-3 my-4 max-md:my-2">
                     <div className="flex-1 h-px bg-white/10"></div>
                     <span className="text-sm text-neutral-500 uppercase tracking-widest">{t('auth.or')}</span>
                     <div className="flex-1 h-px bg-white/10"></div>
                   </div>
-                  <button type="button" onClick={handleMagicLink} disabled={authLoading} className="w-full py-4 md:py-5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg shadow-lg border border-white/5 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
+                  <button type="button" onClick={handleMagicLink} disabled={authLoading} className="w-full py-4 md:py-5 max-md:py-2.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg max-md:text-base shadow-lg border border-white/5 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
                     {authLoading ? <Loader2 size={18} className="animate-spin" /> : null}
                     {t('auth.emailLinkLogin')}
                   </button>
@@ -520,3 +533,4 @@ export default function ProfileScreen() {
     </div>
   );
 }
+
