@@ -45,8 +45,16 @@ export default function PlayScreen() {
 
   const navigate = useNavigate();
   const { socket, isConnected, authError } = useSocket();
-  const { user, profile, session } = useAuth();
+  const { user, profile, session, isLoading: authIsLoading } = useAuth();
   const { boardTheme } = useThemeContext();
+
+  const openMobileSignIn = () => {
+    if (!window.matchMedia('(max-width: 767px)').matches) return false;
+    if (authIsLoading) return true;
+    const returnTo = roomParam ? `/play?room=${encodeURIComponent(roomParam)}` : '/play';
+    navigate(`/profile?returnTo=${encodeURIComponent(returnTo)}`);
+    return true;
+  };
 
   // Primary colors based on theme
   const accentColors = {
@@ -117,8 +125,13 @@ export default function PlayScreen() {
 
   useEffect(() => {
     if (!roomParam || hasAutoJoinedRef.current) return;
+    if (authIsLoading && window.matchMedia('(max-width: 767px)').matches) return;
     if (!session) {
       hasAutoJoinedRef.current = true;
+      if (window.matchMedia('(max-width: 767px)').matches) {
+        navigate(`/profile?returnTo=${encodeURIComponent(`/play?room=${encodeURIComponent(roomParam)}`)}`);
+        return;
+      }
       setJoinError('Sign in required to join a private room.');
       setTimeout(() => setJoinError(null), 5000);
       return;
@@ -128,7 +141,7 @@ export default function PlayScreen() {
       setIsJoiningPrivate(true);
       socket.emit('join_private_room', { roomId: roomParam });
     }
-  }, [roomParam, socket, isConnected, session]);
+  }, [roomParam, socket, isConnected, session, authIsLoading, navigate]);
 
   useEffect(() => {
     if (authError === 'unauthorized') {
@@ -393,6 +406,7 @@ export default function PlayScreen() {
                <button
                   onClick={() => {
                     if (!session) {
+                      if (openMobileSignIn()) return;
                       setJoinError('Sign in required to play online.');
                       setTimeout(() => setJoinError(null), 5000);
                       return;
@@ -429,6 +443,7 @@ export default function PlayScreen() {
                 sublabel={t('play.directLink')} 
                 onClick={() => {
                   if (!session) {
+                    if (openMobileSignIn()) return;
                     setJoinError('Sign in required to play online.');
                     setTimeout(() => setJoinError(null), 5000);
                     return;
@@ -491,3 +506,4 @@ function FooterActionBtn({ icon, label, sublabel, onClick, disabled }: { icon: R
     </button>
   );
 }
+
