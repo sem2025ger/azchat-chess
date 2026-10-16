@@ -58,7 +58,7 @@ export default function Layout() {
 
           <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
-              <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.8rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
+              <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.875rem] xl:leading-[1.8rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
                 Chessaz.De
               </span>
               <div className="mt-3 hidden xl:inline-flex items-center justify-center w-full rounded-full px-3 py-[5px] border border-[#D8CCB2]/30 bg-[linear-gradient(135deg,#20242D_0%,#11151C_48%,#0B0F14_100%)] shadow-[0_4px_10px_-6px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(245,238,222,0.07)]">
