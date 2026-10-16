@@ -1,3 +1,6 @@
+import { useSyncExternalStore } from 'react';
+import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
+import nightEarthStill from '../assets/night-earth-still.webp';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Home, Grid, MessageSquare, User, Settings, Circle } from 'lucide-react';
 import { useThemeContext } from '../context/ThemeContext';
@@ -70,29 +73,7 @@ export default function Layout() {
                 className="mt-3 hidden xl:flex items-center justify-between w-full px-3.5 py-[7px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
               >
                 <SidebarGermanyFlag />
-                <span
-                  aria-hidden="true"
-                  className="flex h-7 w-8 shrink-0 items-center justify-center overflow-visible"
-                >
-                  <svg
-                    width="42"
-                    height="42"
-                    viewBox="0 0 32 32"
-                    className="shrink-0 overflow-visible motion-safe:animate-[spin_15s_linear_infinite] motion-reduce:animate-none"
-                  >
-                    <defs>
-                      {/* Warm metallic gold, with static facets for depth. */}
-                      <linearGradient id="sidebar-diamond-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#D4A547" />
-                        <stop offset="48%" stopColor="#F5D780" />
-                        <stop offset="100%" stopColor="#E8BD58" />
-                      </linearGradient>
-                    </defs>
-                    <path d="M16 0 32 16 16 32 0 16Z" fill="url(#sidebar-diamond-gradient)" />
-                    <path d="M16 0 16 16 0 16Z" fill="white" fillOpacity="0.18" />
-                    <path d="M16 16 32 16 16 32Z" fill="black" fillOpacity="0.14" />
-                  </svg>
-                </span>
+                <NightEarthGlobe />
                 <SidebarAzerbaijanFlag />
               </div>
             </div>
@@ -267,5 +248,44 @@ function SidebarAzerbaijanFlag() {
         d="M660,260 L665,285 L690,280 L675,300 L690,320 L665,315 L660,340 L650,315 L625,320 L640,300 L625,280 L650,285 Z"
       />
     </svg>
+  );
+}
+
+const globeMotionQuery = '(min-width: 1280px) and (prefers-reduced-motion: no-preference)';
+
+function subscribeToGlobeVisibility(update: () => void) {
+  const media = window.matchMedia(globeMotionQuery);
+  media.addEventListener('change', update);
+  document.addEventListener('visibilitychange', update);
+  return () => {
+    media.removeEventListener('change', update);
+    document.removeEventListener('visibilitychange', update);
+  };
+}
+
+function NightEarthGlobe() {
+  const animate = useSyncExternalStore(
+    subscribeToGlobeVisibility,
+    () => window.matchMedia(globeMotionQuery).matches && !document.hidden,
+    () => false
+  );
+  // NASA Earth Observatory / NOAA, Black Marble 2016:
+  // https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/
+  // Usage: https://www.nasa.gov/nasa-brand-center/images-and-media/
+  // 30s axial sphere reprojection; lighting/atmosphere stay fixed. No CSS image rotation.
+  return (
+    <span aria-hidden="true" className="flex h-7 w-8 shrink-0 items-center justify-center overflow-visible">
+      {animate ? (
+        <video
+          src={nightEarthAnimation}
+          poster={nightEarthStill}
+          autoPlay muted loop playsInline
+          width="40" height="40"
+          className="h-10 w-10 max-w-none shrink-0 rounded-full"
+        />
+      ) : (
+        <img src={nightEarthStill} alt="" width="40" height="40" className="h-10 w-10 max-w-none shrink-0" />
+      )}
+    </span>
   );
 }
