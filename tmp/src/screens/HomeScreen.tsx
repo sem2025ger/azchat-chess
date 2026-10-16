@@ -120,7 +120,6 @@ export default function HomeScreen() {
               color="text-chess-gold"
               bg="bg-chess-gold/[0.08]"
               border="border-chess-gold/[0.18]"
-              accent="bg-chess-gold/30"
             />
           </div>
         </div>
@@ -131,10 +130,10 @@ export default function HomeScreen() {
 }
 
 function FeatureCard({
-  to, icon, title, desc, color, bg, border, accent,
+  to, icon, title, desc, color, bg, border,
 }: {
   to: string; icon: React.ReactNode; title: string; desc: string;
-  color: string; bg: string; border: string; accent: string;
+  color: string; bg: string; border: string;
 }) {
   return (
     <Link
