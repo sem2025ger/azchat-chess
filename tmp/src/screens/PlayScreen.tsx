@@ -7,6 +7,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { useThemeContext } from '../context/ThemeContext';
 import ChessBoard from '../components/ChessBoard';
+import MobileFriendTimeControl from '../components/MobileFriendTimeControl';
 
 import { Shield, Zap, Users, Trophy, X, Loader2, Sparkles, Swords, Clock, ChevronDown, Copy, Check } from 'lucide-react';
 
@@ -41,6 +42,7 @@ export default function PlayScreen() {
   
   const [searchParams] = useSearchParams();
   const hasAutoJoinedRef = useRef(false);
+  const mobileInviteReset = useRef<(() => void) | null>(null);
   const roomParam = searchParams.get('room');
 
   const navigate = useNavigate();
@@ -163,18 +165,6 @@ export default function PlayScreen() {
     }
     return () => clearInterval(interval);
   }, [isSearching]);
-
-  useEffect(() => {
-    if (!isTimeExpanded || typeof window === 'undefined') return;
-    if (!window.matchMedia('(max-width: 767px)').matches) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isTimeExpanded]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -336,6 +326,13 @@ export default function PlayScreen() {
               {/* ── Collapsible Time Control Accordion ─────────────── */}
               <div className="space-y-2">
 
+                <MobileFriendTimeControl
+                  timeControl={timeControl}
+                  onTimeChange={setTimeControl}
+                  presets={timePresets}
+                  resetRef={mobileInviteReset}
+                />
+
                 {/* Summary / Toggle Button */}
                 <button
                   type="button"
@@ -343,7 +340,7 @@ export default function PlayScreen() {
                   aria-label="Choose time control"
                   onClick={() => setIsTimeExpanded(v => !v)}
                   className={cx(
-                    "w-full flex items-center justify-center gap-3 md:gap-4 px-3 py-3 md:px-4 md:py-4 rounded-xl md:rounded-2xl border transition-all duration-200 group/tc active:scale-[0.98]",
+                    "max-md:hidden w-full flex items-center justify-center gap-3 md:gap-4 px-3 py-3 md:px-4 md:py-4 rounded-xl md:rounded-2xl border transition-all duration-200 group/tc active:scale-[0.98]",
                     isTimeExpanded
                       ? cx("bg-white/[0.04] border-white/10", accentColors[accentTheme].border)
                       : "bg-[#181818] border-white/5 hover:border-white/10 hover:bg-[#1e1e1e]"
@@ -420,6 +417,7 @@ export default function PlayScreen() {
             <div className="p-2 bg-black/60 border-t border-white/10 space-y-1.5 relative z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
                <button
                   onClick={() => {
+                    mobileInviteReset.current?.();
                     if (!session) {
                       if (openMobileSignIn()) return;
                       setJoinError('Sign in required to play online.');
@@ -487,90 +485,6 @@ export default function PlayScreen() {
         </div>
       </div>
 
-      {/* Mobile-only time picker. Desktop time-control layout remains unchanged. */}
-      {isTimeExpanded && (
-        <div
-          className="fixed inset-0 z-[999] md:hidden bg-black/90 backdrop-blur-md pointer-events-auto"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Choose time control"
-          onClick={() => setIsTimeExpanded(false)}
-        >
-          <div className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] bottom-[calc(6.25rem+env(safe-area-inset-bottom))] flex items-center justify-center">
-            <div
-              className="w-full max-w-md max-h-full overflow-y-auto overscroll-contain touch-pan-y rounded-[1.75rem] border border-white/10 bg-[#121212] shadow-[0_28px_90px_rgba(0,0,0,0.9)] ring-1 ring-chess-gold/25 p-3"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/[0.07]">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
-                    {categoryIcons[getCategory(timeControl)]}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-neutral-500">
-                      Time control
-                    </div>
-                    <div className="mt-1 text-xl font-black italic uppercase tracking-tight text-glow-cycle truncate">
-                      {timeControl} · {getCategory(timeControl)}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsTimeExpanded(false)}
-                  className="w-11 h-11 rounded-xl bg-white/[0.05] border border-white/[0.1] text-neutral-300 flex items-center justify-center active:scale-95 touch-manipulation"
-                  aria-label="Close time control picker"
-                >
-                  <X size={21} />
-                </button>
-              </div>
-
-              <div className="pt-3 space-y-4">
-                {Object.entries(timePresets).map(([category, items]) => (
-                  <section key={category} className="space-y-2">
-                    <div className="flex items-center gap-2 px-1">
-                      <div className="w-7 h-7 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center">
-                        {category === 'Bullet' && <Zap size={14} className="text-orange-400" />}
-                        {category === 'Blitz' && <Sparkles size={14} className="text-yellow-400" />}
-                        {category === 'Rapid' && <Shield size={14} className="text-emerald-400" />}
-                      </div>
-                      <span className="text-[0.72rem] font-black uppercase tracking-[0.16em] text-neutral-300">
-                        {category}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2.5">
-                      {items.map((item) => {
-                        const selected = timeControl === item;
-                        return (
-                          <button
-                            key={item}
-                            type="button"
-                            onClick={() => {
-                              setTimeControl(item);
-                              setIsTimeExpanded(false);
-                            }}
-                            className={cx(
-                              "min-h-[60px] rounded-xl border px-2 py-2 flex items-center justify-center text-center font-black italic uppercase tracking-tight transition-all duration-150 active:scale-[0.96] touch-manipulation select-none",
-                              selected
-                                ? "bg-chess-gold/15 text-white border-chess-gold/60 ring-1 ring-chess-gold/30 shadow-[0_0_24px_rgba(223,176,98,0.16)]"
-                                : "bg-[#1b1b1b] text-neutral-200 border-white/[0.09]"
-                            )}
-                          >
-                            <span className={cx("text-[0.92rem]", selected && "text-glow-cycle")}>
-                              {item}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -606,4 +520,5 @@ function FooterActionBtn({ icon, label, sublabel, onClick, disabled }: { icon: R
     </button>
   );
 }
+
 
