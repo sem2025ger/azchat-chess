@@ -52,62 +52,135 @@ export default function HomeScreen() {
             font-weight: 800 !important;
           }
         }
-        /* Desktop-only Arena refresh: cyan flag glow + refined violet depth. */
-        @media (min-width: 768px) {
-          .home-screen-root .desktop-home-arena {
-            min-height: 242px;
-            padding: 30px 28px;
-            gap: 24px;
-            border-color: rgba(34, 211, 238, 0.43);
-            background:
-              radial-gradient(ellipse at 6% 0%, rgba(6, 182, 212, 0.18), transparent 58%),
-              radial-gradient(ellipse at 100% 100%, rgba(139, 92, 246, 0.17), transparent 60%),
-              linear-gradient(135deg, #10262b 0%, #131d27 52%, #1c1729 100%);
-            box-shadow:
-              0 22px 42px -24px rgba(0, 0, 0, 0.85),
-              0 0 20px rgba(6, 182, 212, 0.12),
-              inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            transition: border-color 280ms ease, box-shadow 280ms ease;
-          }
-          .home-screen-root .desktop-home-arena::before {
-            border-color: rgba(34, 211, 238, 0.55);
-            box-shadow: inset 0 0 16px rgba(6, 182, 212, 0.07), 0 0 14px rgba(6, 182, 212, 0.15);
-          }
-          .home-screen-root .desktop-home-arena::after {
-            border-color: rgba(167, 139, 250, 0.42);
-            box-shadow: inset 0 0 18px rgba(167, 139, 250, 0.05), 0 0 16px rgba(167, 139, 250, 0.14);
-          }
-          .home-screen-root .desktop-home-arena h1 {
-            font-size: clamp(2.65rem, 3.3vw, 3.15rem);
-            line-height: 1.08;
-            background-image: linear-gradient(110deg, #f8d98d 4%, #a5ece6 55%, #c4b5fd 100%);
-          }
-          .home-screen-root .desktop-home-play {
-            width: 100%;
-            min-height: 64px;
-            border-color: rgba(213, 255, 249, 0.7);
-            background: linear-gradient(105deg, #a2f1db 0%, #78dcd9 52%, #a4c1fd 100%);
-            box-shadow: 0 12px 27px -14px rgba(34, 211, 238, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.55);
-            transition: transform 220ms ease, box-shadow 220ms ease;
-          }
-          .home-screen-root .desktop-home-play:hover {
-            box-shadow: 0 17px 32px -16px rgba(34, 211, 238, 0.65), 0 0 18px rgba(139, 92, 246, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.55);
-          }
-          .home-screen-root .desktop-home-play:focus-visible {
-            outline: 2px solid #a5f3fc;
-            outline-offset: 3px;
-          }
-        }
+        /* Desktop-only Arena redesign: Dark Luxury graphite + Premium Gold. */
         @media (min-width: 1280px) {
           .home-screen-root .desktop-home-arena {
             width: calc(100% + 12px);
             margin-inline: -6px;
+            min-height: 242px;
+            padding: 30px 28px;
+            gap: 24px;
+            border: 1px solid rgba(217, 182, 110, 0.36);
+            background:
+              radial-gradient(ellipse at 18% 0%, rgba(217, 182, 110, 0.09), transparent 58%),
+              radial-gradient(ellipse at 92% 100%, rgba(139, 92, 246, 0.07), transparent 62%),
+              linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);
+            box-shadow:
+              0 24px 48px -22px rgba(0, 0, 0, 0.88),
+              0 0 18px rgba(184, 138, 67, 0.08),
+              inset 0 1px 0 rgba(244, 220, 156, 0.14),
+              inset 0 0 24px rgba(184, 138, 67, 0.04);
+            transition: border-color 280ms ease, box-shadow 280ms ease;
+          }
+          .home-screen-root .desktop-home-arena::before {
+            border-color: rgba(217, 182, 110, 0.32);
+            box-shadow: inset 0 0 14px rgba(217, 182, 110, 0.05), 0 0 10px rgba(184, 138, 67, 0.08);
+          }
+          .home-screen-root .desktop-home-arena::after {
+            border-color: rgba(184, 138, 67, 0.2);
+            box-shadow: inset 0 0 16px rgba(139, 92, 246, 0.04);
+          }
+          .home-screen-root .desktop-home-arena h1 {
+            font-size: clamp(2.65rem, 3.3vw, 3.15rem);
+            line-height: 1.08;
+            background-image: linear-gradient(
+              110deg,
+              #B8863B 0%,
+              #D4A552 22%,
+              #F5DFA7 48%,
+              #D4A552 74%,
+              #F0D18C 90%,
+              #B8863B 100%
+            );
+            background-size: 220% 100%;
+            background-position: 0% 50%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            text-shadow: none;
+          }
+          .home-screen-root .desktop-home-arena h1 .text-chess-active {
+            color: inherit;
+            -webkit-text-fill-color: transparent;
+          }
+          .home-screen-root .desktop-home-play {
+            width: 100%;
+            min-height: 62px;
+            border: 1px solid rgba(217, 182, 110, 0.4);
+            background: linear-gradient(135deg, #171B22 0%, #1D1D26 52%, #23202A 100%);
+            color: #F1D9A1;
+            box-shadow:
+              0 12px 26px -14px rgba(0, 0, 0, 0.85),
+              0 0 14px rgba(184, 138, 67, 0.08),
+              inset 0 1px 0 rgba(244, 220, 156, 0.16),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+            transition:
+              transform 200ms ease,
+              border-color 220ms ease,
+              background 220ms ease,
+              box-shadow 220ms ease;
+          }
+          .home-screen-root .desktop-home-play::before,
+          .home-screen-root .desktop-home-play::after {
+            content: none;
+            animation: none;
+            opacity: 0;
+          }
+          .home-screen-root .desktop-home-play .text-shadow-cycle {
+            color: #F1D9A1;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+            transition: color 220ms ease, text-shadow 220ms ease;
+          }
+          .home-screen-root .desktop-home-play:hover {
+            transform: translateY(-2px);
+            border-color: rgba(244, 220, 156, 0.62);
+            background: linear-gradient(135deg, #1D222B 0%, #24232E 52%, #2B2733 100%);
+            box-shadow:
+              0 16px 32px -14px rgba(0, 0, 0, 0.9),
+              0 0 20px rgba(217, 182, 110, 0.18),
+              inset 0 1px 0 rgba(244, 220, 156, 0.24),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+          }
+          .home-screen-root .desktop-home-play:hover .text-shadow-cycle {
+            color: #F7E5B7;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75), 0 0 12px rgba(217, 182, 110, 0.22);
+          }
+          .home-screen-root .desktop-home-play:active {
+            transform: translateY(0) scale(0.99);
+            border-color: rgba(217, 182, 110, 0.48);
+            box-shadow:
+              0 8px 18px -12px rgba(0, 0, 0, 0.85),
+              0 0 12px rgba(217, 182, 110, 0.12),
+              inset 0 2px 4px rgba(0, 0, 0, 0.45);
+          }
+          .home-screen-root .desktop-home-play:focus-visible {
+            outline: 2px solid #D9B66E;
+            outline-offset: 3px;
           }
         }
-        @media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+        @media (min-width: 1280px) and (prefers-reduced-motion: no-preference) {
+          .home-screen-root .desktop-home-arena h1 {
+            animation: desktopArenaGoldShimmer 8.5s ease-in-out infinite alternate;
+          }
+          @keyframes desktopArenaGoldShimmer {
+            0% {
+              background-position: 0% 50%;
+            }
+            100% {
+              background-position: 100% 50%;
+            }
+          }
+        }
+        @media (min-width: 1280px) and (prefers-reduced-motion: reduce) {
           .home-screen-root .desktop-home-arena,
-          .home-screen-root .desktop-home-play {
+          .home-screen-root .desktop-home-play,
+          .home-screen-root .desktop-home-play .text-shadow-cycle {
             transition: none;
+          }
+          .home-screen-root .desktop-home-arena h1 {
+            animation: none;
+            background-position: 35% 50%;
           }
         }
         @media (max-width: 767px) {
