@@ -370,6 +370,11 @@ function PieceImage({
       ? `/pieces/mobile/${pieceSetName}/${pieceCode}.svg`
       : `/pieces/${pieceSetName}/${pieceCode}.svg`;
 
+  // Trial Neo pawns only in the default desktop set; keep original assets below 1280px.
+  const desktopPawnSrc = pieceSetName === 'cburnett-classic' && piece.type === 'p'
+    ? `/pieces/desktop/neo-pawns/${pieceCode}.png`
+    : null;
+
   // Use Merida SVGs (/pieces/mobile/neo and /pieces/mobile/tournament) on both desktop and mobile.
   const mobileSrc = pieceSetName === 'neo' || pieceSetName === 'tournament'
     ? `/pieces/mobile/${pieceSetName}/${pieceCode}.svg`
@@ -386,9 +391,10 @@ function PieceImage({
   );
   return (
     <div className="w-full h-full flex items-center justify-center p-[3%] md:p-[8%] pointer-events-none select-none">
-      {mobileSrc ? (
+      {desktopPawnSrc || mobileSrc ? (
         <picture className="block w-full h-full">
-          <source media="(max-width: 767px)" srcSet={mobileSrc} type="image/svg+xml" />
+          {desktopPawnSrc && <source media="(min-width: 1280px)" srcSet={desktopPawnSrc} type="image/png" />}
+          {mobileSrc && <source media="(max-width: 767px)" srcSet={mobileSrc} type="image/svg+xml" />}
           {image}
         </picture>
       ) : image}
