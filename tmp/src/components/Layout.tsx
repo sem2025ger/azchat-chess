@@ -53,8 +53,8 @@ export default function Layout() {
       <aside className="hidden md:flex w-20 xl:w-72 bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
 
-          <div className="h-16 xl:h-24 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
-            <div className="flex flex-col overflow-hidden justify-center w-full items-center xl:items-start">
+          <div className="h-16 xl:h-auto xl:pt-[15px] xl:pb-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
+            <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
               <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.65rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500">
                 Chessaz.De
               </span>
@@ -63,10 +63,18 @@ export default function Layout() {
                   PREMIUM CHESS PLATFORM
                 </span>
               </div>
+              <div
+                role="img"
+                aria-label="Germany and Azerbaijan"
+                className="mt-2.5 hidden xl:inline-flex items-center justify-center gap-2.5 px-3 py-[5px] rounded-full border border-[#D9B66E]/[0.28] bg-[linear-gradient(145deg,#0b0d11_0%,#11141b_55%,#161922_100%)] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.9),0_0_10px_rgba(184,138,67,0.06),inset_0_1px_0_rgba(244,220,156,0.12),inset_0_-1px_0_rgba(0,0,0,0.55)] select-none pointer-events-none shrink-0"
+              >
+                <SidebarGermanyFlag />
+                <SidebarAzerbaijanFlag />
+              </div>
             </div>
           </div>
 
-          <nav className="px-3 xl:px-5 pt-10 pb-4 space-y-0.5 flex-1">
+          <nav className="px-3 xl:px-5 pt-10 xl:pt-2 pb-4 space-y-0.5 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} themeColor="theme-violet" />
@@ -194,5 +202,46 @@ function MobileNavItem({ to, icon, label }: { to: string, icon: React.ReactNode,
       </div>
       <span className="text-[0.5rem] font-black uppercase tracking-widest">{label}</span>
     </NavLink>
+  );
+}
+
+function SidebarGermanyFlag() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="16"
+      viewBox="0 0 5 3"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      className="w-6 h-4 rounded-[3.5px] shrink-0 ring-1 ring-white/[0.16] shadow-[0_1px_3px_rgba(0,0,0,0.75)]"
+    >
+      <rect width="5" height="3" y="0" x="0" fill="#0A0A0D" />
+      <rect width="5" height="2" y="1" x="0" fill="#D00" />
+      <rect width="5" height="1" y="2" x="0" fill="#FFCE00" />
+    </svg>
+  );
+}
+
+function SidebarAzerbaijanFlag() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="16"
+      viewBox="150 0 900 600"
+      aria-hidden="true"
+      className="w-6 h-4 rounded-[3.5px] shrink-0 ring-1 ring-white/[0.16] shadow-[0_1px_3px_rgba(0,0,0,0.75)]"
+    >
+      <rect width="1200" height="200" fill="#00b5e2" />
+      <rect width="1200" height="200" y="200" fill="#ef3340" />
+      <rect width="1200" height="200" y="400" fill="#509e2f" />
+      <circle cx="560" cy="300" r="75" fill="#fff" />
+      <circle cx="585" cy="300" r="60" fill="#ef3340" />
+      <path
+        fill="#fff"
+        d="M660,260 L665,285 L690,280 L675,300 L690,320 L665,315 L660,340 L650,315 L625,320 L640,300 L625,280 L650,285 Z"
+      />
+    </svg>
   );
 }
