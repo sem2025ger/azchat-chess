@@ -50,7 +50,7 @@ export default function Layout() {
     )}>
 
       {/* Premium Sidebar Navigation - Hidden on Mobile */}
-      <aside className="hidden md:flex w-20 xl:w-72 bg-black/40 backdrop-blur-3xl border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
+      <aside className="hidden md:flex w-20 xl:w-72 bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
 
           <div className="h-16 xl:h-24 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
@@ -117,7 +117,7 @@ export default function Layout() {
       </aside>
 
       {/* Mobile Bottom Navigation - Visible only on Small Screens */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-2xl border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} />
         <MobileNavItem to="/play" icon={<Play size={20} />} label={t('nav.play')} />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} />
@@ -131,10 +131,6 @@ export default function Layout() {
         "flex-1 flex flex-col relative overflow-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0",
         needsConstrainedScroll && "min-h-0"
       )}>
-        {/* Dynamic decorative glows */}
-        <div className="absolute top-[-25%] right-[-15%] w-[60%] h-[60%] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none animate-pulse-slow" />
-        <div className="absolute bottom-[-25%] left-[-15%] w-[60%] h-[60%] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none animate-pulse-slow active-animation-delay" />
-
         <div className={cx(
           "flex-1 overflow-y-auto relative z-10 custom-scrollbar flex flex-col",
           needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : "overscroll-none"
