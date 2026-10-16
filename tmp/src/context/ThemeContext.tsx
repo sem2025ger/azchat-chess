@@ -5,7 +5,7 @@ import type { BoardTheme, PieceTheme } from '../lib/chessThemes';
 
 // Defines the options
 export type BackgroundTheme = 'Void Black' | 'Deep Space' | 'Velvet Gold' | 'Champagne Light' | 'Coffee Brown' | 'Walnut Dark' | 'Emerald Night' | 'Royal Blue' | 'Royal Violet' | 'Obsidian Gold';
-export type SoundTheme = 'Default' | 'Soft' | 'Classic' | 'Muted / Off';
+export type SoundTheme = 'Default' | 'Soft' | 'Classic' | 'Wood' | 'Crystal' | 'Muted / Off';
 
 interface ThemeContextType {
   specialThemesEnabled: boolean;
