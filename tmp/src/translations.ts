@@ -22,6 +22,7 @@ export const translations: TranslationDictionary = {
     tr: 'Azerbaycan, Türkiye ve Rusya için premium çevrimiçi satranç adresi. Bağlan, rekabet et ve deneyimini özelleştir.'
   },
   'home.playNow': { en: 'Play Now', de: 'Jetzt spielen', ua: 'Грати зараз', ru: 'Играть сейчас', az: 'İndi Oyna', tr: 'Şimdi Oyna' },
+  'home.playChessNow': { en: 'Play Chess Now', de: 'Jetzt Schach spielen', ua: 'Грати в шахи зараз', ru: 'Играть в шахматы сейчас', az: 'İndi şahmat oyna', tr: 'Şimdi satranç oyna' },
   'home.cards.play.title': { en: 'Play Match', de: 'Match spielen', ua: 'Почати матч', ru: 'Начать матч', az: 'Matç Oyna', tr: 'Maç Oyna' },
   'home.cards.play.desc': { en: 'Find an opponent in Bullet, Blitz or Rapid.', de: 'Gegner finden in Bullet, Blitz oder Rapid.', ua: 'Знайдіть супротивника у Bullet, Blitz або Rapid.', ru: 'Найдите противника в Bullet, Blitz или Rapid.', az: 'Bullet, Blitz və ya Rapid rejimində rəqib tap.', tr: 'Bullet, Blitz veya Rapid modunda rakip bul.' },
   'home.cards.game.title': { en: 'Active Game', de: 'Aktives Spiel', ua: 'Активна гра', ru: 'Активная игра', az: 'Aktiv Oyun', tr: 'Aktif Oyun' },
