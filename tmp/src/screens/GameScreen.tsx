@@ -667,7 +667,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
             <div className={cx(
               "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300",
-              analysisActive ? "w-[min(96vw,56dvh)] md:w-full" : "w-[min(96vw,56dvh)] md:w-full"
+              isMultiplayer
+                ? "w-[min(96vw,56dvh)] md:w-full"
+                : "w-[min(100%,calc(100dvh-13rem-env(safe-area-inset-bottom,0px)))] border-b-0 md:w-full md:border-b-[8px]"
             )}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               
@@ -694,6 +696,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               ) : null}
 
               <ChessBoard
+                className={!isMultiplayer ? 'p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg' : undefined}
                 overrideBoardTheme={boardTheme}
                 game={displayedGame}
                 onMove={handleGameMove}
@@ -897,7 +900,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
             {activeTab === 'analysis' ? (
               <div className="px-2 py-1.5 space-y-1">
-                {(analysisData?.lines?.length ? analysisData.lines.slice(0, 2) : [null, null]).map((line, index) => {
+                {Array.from({ length: 2 }, (_, index) => {
+                  const line = analysisData?.lines?.[index];
                   const score = line
                     ? (line.mate != null
                         ? (line.mate < 0 ? `-M${Math.abs(line.mate)}` : `M${line.mate}`)
@@ -915,7 +919,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                       : (isAnalysing ? 'Analyzing…' : '—');
 
                   return (
-                    <div key={index} className="min-h-9 grid grid-cols-[3.5rem_1fr] items-center gap-2">
+                    <div key={index} aria-label={`Engine line ${index + 1}`} className="min-h-10 grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2 border-b border-white/[0.06] last:border-b-0">
                       <div className={cx(
                         "h-8 rounded-lg flex items-center justify-center font-mono text-[0.82rem] font-black border",
                         score.startsWith('+')
@@ -926,7 +930,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                       )}>
                         {score}
                       </div>
-                      <div className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-[0.78rem] leading-none font-bold text-neutral-200 tracking-tight">
+                      <div tabIndex={0} aria-label={`Moves for engine line ${index + 1}`} className="min-w-0 whitespace-nowrap overflow-x-auto overscroll-x-contain touch-pan-x py-2 text-[0.8125rem] leading-5 font-semibold text-neutral-100 tracking-tight">
                         {moves}
                       </div>
                     </div>
@@ -1112,3 +1116,4 @@ export default function GameScreen({ mode }: GameScreenProps) {
     </div>
   );
 }
+
