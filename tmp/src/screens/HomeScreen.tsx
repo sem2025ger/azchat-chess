@@ -2,15 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import ChessBoard from '../components/ChessBoard';
-import { Play, Trophy, Rewind, FastForward, ChevronLeft, ChevronRight as NextMove } from 'lucide-react';
+import { Rewind, FastForward, ChevronLeft, ChevronRight as NextMove } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
-
-function cx(...inputs: (string | undefined | null | false)[]) {
-  return twMerge(clsx(inputs));
-}
 
 export default function HomeScreen() {
   const { t } = useLanguage();
@@ -108,44 +102,14 @@ export default function HomeScreen() {
             </h1>
           </div>
 
-          {/* 2. Premium Play Now CTA */}
+          {/* Text-only play action, shared with the mobile Arena. */}
           <Link
             to="/play"
-            className="mobile-home-play group relative flex items-center justify-between gap-4 px-5 py-3.5 btn-glow-cycle border border-white/20 text-black rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-full max-md:justify-center max-md:gap-0 max-md:min-h-[52px] max-md:w-[94%] max-md:self-center max-md:px-4 max-md:py-2.5 max-md:rounded-[0.875rem]"
+            className="mobile-home-play group relative flex items-center justify-center gap-0 px-4 py-2.5 md:py-3 min-h-[52px] md:min-h-[56px] btn-glow-cycle border border-white/20 text-black rounded-[0.875rem] md:rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-[94%] self-center"
           >
-            {/* Shimmer sweep on hover */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
-
-            <div className="flex items-center gap-3 relative z-10 max-md:hidden">
-              <div className="w-9 h-9 bg-black/[0.14] rounded-xl flex items-center justify-center shadow-inner flex-shrink-0">
-                <Play fill="currentColor" size={15} className="group-hover:scale-110 transition-transform duration-200 ml-0.5" />
-              </div>
-              <div className="flex flex-col items-start leading-none">
-                <span className="font-black text-[0.95rem] tracking-tight uppercase italic text-shadow-cycle">{t('home.playNow')}</span>
-                <span className="text-[0.5rem] font-black opacity-50 tracking-[0.22em] uppercase mt-0.5">{t('home.playNow.subtitle')}</span>
-              </div>
-            </div>
-
-            <span className="md:hidden relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
-
-            <div className="flex items-center gap-2 relative z-10 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-300 max-md:hidden">
-              <div className="h-5 w-px bg-black/20" />
-              <ChevronRight size={17} />
-            </div>
+            <span className="relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
           </Link>
-
-          {/* 3. Rating / Profile Card */}
-          <div className="hidden md:block">
-            <FeatureCard
-              to="/profile"
-              icon={<Trophy size={16} />}
-              title={t('home.cards.profile.title')}
-              desc={t('home.cards.profile.desc')}
-              color="text-chess-gold"
-              bg="bg-chess-gold/[0.08]"
-              border="border-chess-gold/[0.18]"
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -206,55 +170,6 @@ function MobileHomeBoard() {
   );
 }
 
-function FeatureCard({
-  to, icon, title, desc, color, bg, border,
-}: {
-  to: string; icon: React.ReactNode; title: string; desc: string;
-  color: string; bg: string; border: string;
-}) {
-  return (
-    <Link
-      to={to}
-      className={cx(
-        'group relative flex items-center gap-3 bg-white/[0.025] rounded-2xl p-3.5 border hover:bg-white/[0.05] transition-colors duration-150 active:scale-95 overflow-hidden',
-        border,
-      )}
-    >
-      <div
-        className={cx(
-          'w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ring-1 transition-all duration-500 group-hover:scale-110',
-          bg, color, border.replace('border-', 'ring-'),
-        )}
-      >
-        {icon}
-      </div>
-
-      <div className="flex-1 flex flex-col justify-center min-w-0 z-10 relative pr-4">
-        <h3 className="text-[0.8rem] font-black text-white tracking-tight truncate">{title}</h3>
-        <p className="text-[0.6rem] text-neutral-600 font-semibold leading-tight truncate group-hover:text-neutral-400 transition-colors duration-300">
-          {desc}
-        </p>
-      </div>
-
-      <div className="opacity-0 group-hover:opacity-60 group-hover:translate-x-0 -translate-x-1.5 transition-all duration-500 absolute right-3 text-white z-20">
-        <ChevronRight size={12} />
-      </div>
-    </Link>
-  );
-}
-
-function ChevronRight({ size, className }: { size: number; className?: string }) {
-  return (
-    <svg
-      width={size} height={size} viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-      className={className}
-    >
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-
 function GermanyFlag() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="62" height="44" viewBox="0 0 5 3" className="rounded-md shrink-0 ring-1 ring-white/10 shadow-lg premium-flag-glow premium-flag-1 transition-all duration-500">
@@ -288,5 +203,6 @@ function AzerbaijanFlag() {
     </svg>
   );
 }
+
 
 
