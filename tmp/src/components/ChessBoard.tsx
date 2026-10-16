@@ -383,7 +383,7 @@ function PieceImage({
     />
   );
   return (
-    <div className="w-full h-full flex items-center justify-center p-[8%] pointer-events-none select-none">
+    <div className="w-full h-full flex items-center justify-center p-[3%] md:p-[8%] pointer-events-none select-none">
       {mobileSrc ? (
         <picture className="block w-full h-full">
           <source media="(max-width: 767px)" srcSet={mobileSrc} type="image/svg+xml" />

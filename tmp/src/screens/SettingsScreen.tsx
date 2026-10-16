@@ -159,7 +159,7 @@ export default function SettingsScreen() {
                   key={style.id}
                   active={pieceTheme === style.id}
                   onClick={() => setPieceTheme(style.id as any)}
-                  title={style.name}
+                  title={style.id === 'neo' ? 'Merida Flat' : style.id === 'tournament' ? 'Merida Classic' : style.name}
                   preview={
                     <div className="flex justify-center gap-1">
                       <img src={mobilePiecePreviewSrc(style.id, 'wK')} alt={style.name} className="w-8 h-8 object-contain" />

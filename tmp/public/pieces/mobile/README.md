@@ -1,5 +1,13 @@
-# Mobile-only Staunton sets
+# Mobile Merida piece styles
 
-`neo/` and `tournament/` are visually adapted versions of the Cburnett Staunton SVG set by Colin M. L. Burnett (GPLv2+), originally from lichess-org/lila. The SVG source of these derivatives is included here under GPLv2+; the source art is in `/public/chess-assets/pieces/cburnett/`. See `tmp/ASSET_LICENSES.md`.
+**Mobile only** (viewport under 768px). Two sets of twelve SVGs for all six white and six black chess pieces:
 
-No artwork was taken from Chess.com or Schach.de. The existing desktop piece assets, styles, layouts and stored theme identifiers are unchanged. A `<picture>` source media query selects these variants below 768px; the mobile Settings previews use the same files.
+- `neo/` = **Merida Flat**, high-contrast variant with flat highlights, intended to match the clean classic style shown in the user's Chess.com reference without copying Chess.com assets.
+- `tournament/` = **Merida Classic**, original Lichess Merida artwork with its subtle gradient highlights, intended to match the traditional chess-software look shown in the Schach.de reference.
+
+**Author:** Armando Hernandez Marroquin.  
+**Source:** https://github.com/lichess-org/lila/tree/1c94e9e8d4615147df5da8a9d3b65f54991c7169/public/piece/merida  
+**License:** GNU GPL version 2 or later (GPLv2+); see `LICENSE-GPL-2.0-or-later.txt` and `tmp/ASSET_LICENSES.md`.  
+The original and modified SVG sources are the SVG files themselves.
+
+No Chess.com or Schach.de files were copied or downloaded. Desktop rendering and the existing desktop SVG files remain unchanged. React `<picture><source media="(max-width: 767px)">` in `ChessBoard.tsx` selects mobile assets, while mobile-only Settings previews use the same paths. Existing persisted theme IDs `neo` and `tournament` are retained.
