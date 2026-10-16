@@ -368,17 +368,28 @@ function PieceImage({
     ? `/chess-assets/pieces/cburnett/${pieceCode}.svg`
     : `/pieces/${pieceSetName}/${pieceCode}.svg`;
 
+  // Preserve the current desktop artwork; load optimized Staunton variants only on mobile.
+  const mobileSrc = pieceSetName === 'neo' || pieceSetName === 'tournament'
+    ? `/pieces/mobile/${pieceSetName}/${pieceCode}.svg`
+    : null;
+  const image = (
+    <img
+      src={src}
+      alt={pieceCode}
+      className="w-full h-full object-contain transform-gpu"
+      onError={(e) => {
+        (e.target as HTMLImageElement).style.display = 'none';
+      }}
+    />
+  );
   return (
     <div className="w-full h-full flex items-center justify-center p-[8%] pointer-events-none select-none">
-      <img
-        src={src}
-        alt={pieceCode}
-        className="w-full h-full object-contain transform-gpu"
-        onError={(e) => {
-          // Fallback if asset is missing (though we shouldn't have missing assets)
-          (e.target as HTMLImageElement).style.display = 'none';
-        }}
-      />
+      {mobileSrc ? (
+        <picture className="block w-full h-full">
+          <source media="(max-width: 767px)" srcSet={mobileSrc} type="image/svg+xml" />
+          {image}
+        </picture>
+      ) : image}
     </div>
   );
 }
