@@ -524,8 +524,7 @@
   }
 }
 
-/* Mobile Home accents: fixed gradients/shadows, opacity-only crossfades. */
-@media (max-width: 767px) {
+/* Home Arena accents shared by mobile and desktop: opacity-only crossfades. */
   .mobile-home-arena {
     isolation: isolate;
     border-color: rgba(223, 176, 98, 0.28);
@@ -577,9 +576,8 @@
     background: linear-gradient(120deg, #c4a4f1, #b39bed);
     opacity: 0;
   }
-}
 
-@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+@media (prefers-reduced-motion: no-preference) {
   .mobile-home-arena::before {
     animation: mobileHomeFrameFade 8s ease-in-out infinite alternate;
   }
@@ -606,4 +604,5 @@
     65% { opacity: 1; }
   }
 }
+
 
