@@ -44,7 +44,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const { user, profile } = useAuth();
 
   // User preferences applied automatically via ThemeContext
-  const [activeTab, setActiveTab] = useState<'moves' | 'analysis'>('moves');
+  const [activeTab, setActiveTab] = useState<'moves' | 'analysis'>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
+      ? 'analysis'
+      : 'moves'
+  );
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== 'undefined'
       ? window.matchMedia('(min-width: 768px)').matches
@@ -645,6 +649,22 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
           <div className="relative flex gap-0 md:gap-6 w-full justify-center group/board items-center py-0 md:py-1 lg:h-full lg:min-h-0 lg:flex-1">
 
+            {/* Mobile-only evaluation bar. Desktop markup below is intentionally unchanged. */}
+            <div className={cx(
+              "md:hidden transition-all duration-300 ease-out self-stretch overflow-hidden py-1",
+              analysisActive
+                ? "w-5 opacity-100 translate-x-0 rounded-lg ml-1"
+                : "w-0 opacity-0 overflow-hidden -translate-x-4 pointer-events-none"
+            )}>
+              <EvaluationBar
+                score={engineResult?.evaluation || 0.0}
+                isMate={!!engineResult?.mate}
+                mateIn={engineResult?.mate}
+                className="h-full rounded-lg ring-1 ring-white/10"
+              />
+            </div>
+
+            {/* Desktop evaluation bar — preserved from production. */}
             <div className={cx(
               "hidden md:block transition-all duration-1000 ease-in-out self-stretch rounded-2xl overflow-hidden py-1",
               analysisActive ? "w-6 md:w-8 opacity-100 translate-x-0" : "w-0 opacity-0 overflow-hidden -translate-x-8 pointer-events-none"
@@ -657,7 +677,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
               />
             </div>
 
-            <div className="w-full max-w-none shrink-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full">
+            <div className={cx(
+              "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300",
+              analysisActive ? "w-[calc(100%-1.5rem)] md:w-full" : "w-full"
+            )}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               
               {gameOverMessage ? (
@@ -844,6 +867,157 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         </div>
 
+        {/* Mobile Review / Analysis Panel */}
+        {!isLiveMultiplayer && (
+          <section className="md:hidden mx-2 mt-2 mb-2 overflow-hidden rounded-2xl border border-cyan-400/25 bg-[#101211]/95 shadow-[0_16px_40px_-24px_rgba(0,206,209,0.5)] ring-1 ring-white/[0.05]">
+            <nav className="grid grid-cols-2 gap-1 p-1.5 border-b border-white/[0.05] bg-black/30">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as 'moves' | 'analysis')}
+                  className={cx(
+                    "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-[0.68rem] font-black uppercase tracking-[0.12em] transition-all active:scale-[0.98]",
+                    activeTab === tab.id
+                      ? "bg-cyan-500/12 text-cyan-200 ring-1 ring-cyan-400/30 shadow-[0_0_18px_rgba(34,211,238,0.10)]"
+                      : "text-neutral-500 hover:text-neutral-300"
+                  )}
+                >
+                  <tab.icon size={15} />
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </nav>
+
+            {activeTab === 'analysis' ? (
+              <div className="max-h-[42dvh] overflow-y-auto overscroll-contain touch-pan-y p-3">
+                <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center shrink-0">
+                      <Cpu size={18} className={cx("text-cyan-300", isAnalysing && "animate-pulse")} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[0.72rem] font-black uppercase tracking-[0.16em] text-white">Stockfish</div>
+                      <div className="text-[0.58rem] font-bold uppercase tracking-[0.12em] text-neutral-500">
+                        {engineFailed ? t('game.analysis.unavailable') : isAnalysing ? t('game.analysis.analyzing') : t('game.analysis.ready')}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {engineResult?.depth ? (
+                      <span className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-[0.58rem] font-bold text-neutral-400">
+                        d{engineResult.depth}
+                      </span>
+                    ) : null}
+                    <div className={cx(
+                      "min-w-[4.4rem] px-3 py-2 rounded-xl text-center font-mono text-lg font-black border shadow-inner",
+                      engineResult?.mate != null
+                        ? "bg-amber-400/10 text-amber-300 border-amber-400/25"
+                        : (engineResult?.evaluation || 0) > 0
+                          ? "bg-white text-black border-white"
+                          : (engineResult?.evaluation || 0) < 0
+                            ? "bg-black text-white border-white/20"
+                            : "bg-neutral-800 text-neutral-200 border-neutral-700"
+                    )}>
+                      {engineResult?.mate != null
+                        ? (engineResult.mate < 0 ? `-M${Math.abs(engineResult.mate)}` : `M${engineResult.mate}`)
+                        : ((engineResult?.evaluation || 0) > 0
+                            ? `+${(engineResult?.evaluation || 0).toFixed(2)}`
+                            : (engineResult?.evaluation || 0).toFixed(2))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 pt-3">
+                  <span className="text-[0.58rem] font-black uppercase tracking-[0.14em] text-neutral-600">
+                    {t('game.analysis.bestMove')}
+                  </span>
+                  <span className="text-sm font-black text-cyan-200">
+                    {analysisData?.bestMove || (isAnalysing ? '…' : '—')}
+                  </span>
+
+                  <span className="text-[0.58rem] font-black uppercase tracking-[0.14em] text-neutral-600">
+                    Line
+                  </span>
+                  <div className="text-[0.78rem] font-semibold leading-6 text-neutral-300 break-words">
+                    {analysisData?.lines?.[0]?.moves?.length
+                      ? analysisData.lines[0].moves.slice(0, 12).join(' ')
+                      : analysisData?.continuation?.length
+                        ? analysisData.continuation.slice(0, 10).join(' ')
+                        : (isAnalysing ? t('game.analysis.analyzing_position') : '—')}
+                  </div>
+                </div>
+
+                {engineFailed && (
+                  <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-[0.68rem] font-bold text-red-300">
+                    {t('game.analysis.unavailable')}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="max-h-[38dvh] overflow-y-auto overscroll-contain bg-black/[0.08]">
+                {movePairs.length === 0 ? (
+                  <div className="flex min-h-28 items-center justify-center px-4 text-[0.7rem] font-bold uppercase tracking-widest text-neutral-600">
+                    {t('game.analysis.nomoves')}
+                  </div>
+                ) : (
+                  <table className="w-full border-collapse text-left">
+                    <thead className="sticky top-0 z-10 bg-neutral-950/95 backdrop-blur-xl">
+                      <tr className="text-[0.58rem] font-black uppercase tracking-[0.16em] text-neutral-600">
+                        <th className="w-10 border-r border-white/[0.04] px-2 py-2 text-center">#</th>
+                        <th className="px-3 py-2">{t('game.white')}</th>
+                        <th className="px-3 py-2">{t('game.black')}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {movePairs.map((move, i) => {
+                        const whitePositionIndex = i * 2 + 1;
+                        const blackPositionIndex = i * 2 + 2;
+                        return (
+                          <tr key={i} className="text-[0.76rem] font-bold text-neutral-300">
+                            <td className="border-r border-white/[0.04] bg-black/20 px-2 py-2 text-center font-mono text-neutral-600">
+                              {move.n}.
+                            </td>
+                            <td
+                              className={cx(
+                                "px-3 py-2",
+                                whitePositionIndex < positionHistory.length && "cursor-pointer",
+                                viewMoveIndex === whitePositionIndex && "bg-cyan-500/[0.08] text-cyan-100"
+                              )}
+                              onClick={() => {
+                                if (whitePositionIndex < positionHistory.length) {
+                                  setViewMoveIndex(whitePositionIndex);
+                                }
+                              }}
+                            >
+                              {move.w}
+                            </td>
+                            <td
+                              className={cx(
+                                "px-3 py-2",
+                                move.b && blackPositionIndex < positionHistory.length && "cursor-pointer",
+                                viewMoveIndex === blackPositionIndex && "bg-cyan-500/[0.08] text-cyan-100"
+                              )}
+                              onClick={() => {
+                                if (move.b && blackPositionIndex < positionHistory.length) {
+                                  setViewMoveIndex(blackPositionIndex);
+                                }
+                              }}
+                            >
+                              {move.b}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
+
         {viewMoveIndex !== -1 && (
           <div className="md:hidden text-center text-chess-gold text-xs font-bold animate-pulse mt-2 -mb-1">
             Replay mode — press Live to move
@@ -903,6 +1077,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             <FastForward size={22} />
           </button>
         </div>
+
 
         {drawOfferBy && drawOfferBy !== playerColor && !gameOverMessage && (
           <div className="p-2 mb-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col gap-1.5">
