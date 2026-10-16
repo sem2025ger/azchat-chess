@@ -47,8 +47,8 @@ export default function MobilePlayerPassport({ username, role, countryCode, join
   ];
 
   return (
-    <div className="md:hidden w-full max-w-[620px] shrink-0 mx-auto px-3 pt-4 pb-10 text-white">
-      <header className="flex items-center justify-between gap-3 mb-4 px-1">
+    <div className="md:hidden w-full max-w-[620px] shrink-0 mx-auto px-3 pt-3 pb-8 text-white">
+      <header className="flex items-center justify-between gap-3 mb-3 px-1">
         <div className="min-w-0 flex items-center gap-3">
           <div className="w-10 h-10 rounded-[14px] bg-[#16352f] border border-[#72ccb5]/30 flex items-center justify-center text-[#88dcc5]"><Crown size={22}/></div>
           <div className="min-w-0">
@@ -68,7 +68,7 @@ export default function MobilePlayerPassport({ username, role, countryCode, join
       </header>
       <section className="relative rounded-[23px] bg-[#141e1a] border border-[#78c3ac]/25 overflow-hidden mb-3 shadow-[0_14px_38px_-24px_rgba(0,0,0,.95)]">
         <div className="absolute inset-0 pointer-events-none" style={{backgroundImage:'radial-gradient(ellipse at 100% 0%,rgba(44,142,120,.25),transparent 62%)'}}/>
-        <div className="relative p-4">
+        <div className="relative p-3.5">
           <div className="flex items-center gap-3 min-w-0">
             <div className="relative shrink-0">
               <div className="w-[66px] h-[66px] rounded-[19px] flex items-center justify-center bg-gradient-to-br from-[#364b42] via-[#25322d] to-[#171e1b] border border-white/15 text-[29px] font-black text-[#eadbbd]">{name.charAt(0).toLocaleUpperCase()}</div>
@@ -79,59 +79,59 @@ export default function MobilePlayerPassport({ username, role, countryCode, join
               <span className="mt-2 max-w-full inline-flex items-center truncate px-2.5 py-1 rounded-md bg-[#c6a46a]/10 border border-[#c6a46a]/25 text-[#e4c78a] text-[10px] font-extrabold tracking-[0.09em] uppercase">{role && role.toLowerCase() !== 'player' ? role : words.player}</span>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2 mt-4">
+          <div className="flex flex-wrap items-center gap-2 mt-3">
             {countryCode && <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#c1d4c9] bg-white/[0.045] border border-white/10 rounded-full px-2.5 py-1.5"><MapPin size={12} className="text-teal-300"/>{countryCode.toUpperCase()}</span>}
             {joinedYear && <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#c1d4c9] bg-white/[0.045] border border-white/10 rounded-full px-2.5 py-1.5"><Calendar size={12} className="text-amber-300"/>{words.member} {joinedYear}</span>}
           </div>
         </div>
         <div className="h-[2px] bg-gradient-to-r from-[#d4b56c] via-[#67ccb1] to-transparent"/>
       </section>
-      <section aria-label={words.rating} className="rounded-[22px] p-4 bg-[#111a17] border border-white/[0.09] mb-3">
-        <h2 className="flex items-center gap-2 text-[12px] font-extrabold tracking-[0.1em] text-[#e6eee8] mb-3"><Activity size={16} className="text-[#75d3b4]"/>{words.rating}</h2>
+      <section aria-label={words.rating} className="rounded-[22px] p-3.5 bg-[#111a17] border border-white/[0.09] mb-3">
+        <h2 className="flex items-center gap-2 text-[12px] font-extrabold tracking-[0.1em] text-[#e6eee8] mb-2.5"><Activity size={16} className="text-[#75d3b4]"/>{words.rating}</h2>
         <div className="grid grid-cols-3 gap-1.5 p-1.5 rounded-xl bg-[#0c1210] border border-white/[0.06]" role="group" aria-label={words.rating}>
           {modes.map(({id,text,Icon}) => (
             <button key={id} type="button" aria-pressed={mode===id} onClick={() => setMode(id)} className={'min-w-0 min-h-11 rounded-[10px] flex items-center justify-center gap-1 font-bold text-[11px] transition-colors focus-visible:ring-2 focus-visible:ring-cyan-300 ' + (mode===id ? 'border border-[#68c5a9]/35 bg-[#25463a] text-[#b4f6d9]' : 'border border-transparent text-[#91a69b] hover:text-white')}><Icon size={14}/>{text}</button>
           ))}
         </div>
-        <div className="flex items-end justify-between mt-3">
+        <div className="flex items-end justify-between mt-2.5">
           <div><p className="text-[11px] text-[#a7b9ad]">{words.current}</p><div className="text-[42px] font-extrabold tracking-[-0.06em] tabular-nums leading-tight">{ratings[mode]}</div></div>
           <div className="mb-2 flex items-center gap-1.5"><selected.Icon size={15} className={selected.color}/><span className="text-[11px] text-[#c1d4c9] font-extrabold">{selected.text}</span></div>
         </div>
-        <div className="text-[11px] text-[#7f968a] mt-3 pt-2.5 border-t border-white/[0.06]">{words.history}</div>
+        <div className="text-[11px] text-[#7f968a] mt-2.5 pt-2 border-t border-white/[0.06]">{words.history}</div>
       </section>
-      <section className="rounded-[22px] border border-[#75c1ad]/20 bg-[#14211c] p-4 mb-3">
+      <section className="rounded-[22px] border border-[#75c1ad]/20 bg-[#14211c] p-3.5 mb-3">
         <div className="flex items-start justify-between gap-2">
-          <div><h2 className="flex gap-2 items-center text-[12px] font-extrabold tracking-[0.1em]"><Sparkles size={16} className="text-[#dfbd7d]"/>{words.signature}</h2><p className="text-[12px] text-[#9fb6a8] mt-1">{words.signatureSub}</p></div>
+          <div><h2 className="flex gap-2 items-center text-[12px] font-extrabold tracking-[0.1em]"><Sparkles size={16} className="text-[#dfbd7d]"/>{words.signature}</h2><p className="text-[12px] text-[#9fb6a8] mt-0.5">{words.signatureSub}</p></div>
           <span className="shrink-0 rounded-full bg-[#c7a96a]/10 border border-[#c7a96a]/20 px-2 py-1 text-[#dfc591] font-bold text-[10px]">{words.soon}</span>
         </div>
-        <div className="grid grid-cols-2 gap-2 mt-3">
+        <div className="grid grid-cols-2 gap-1.5 mt-2.5">
           {metrics.map(({title,Icon}) => (
-            <div key={title} className="flex items-center justify-between gap-2 min-w-0 px-3 min-h-[48px] rounded-xl bg-[#101813] border border-white/[0.065]">
+            <div key={title} className="flex items-center justify-between gap-2 min-w-0 px-2.5 min-h-[42px] rounded-xl bg-[#101813] border border-white/[0.065]">
               <span className="flex items-center gap-2 min-w-0"><Icon size={14} className="shrink-0 text-[#77a496]"/><span className="truncate text-[12px] font-semibold text-[#c3d8cb]">{title}</span></span><Lock size={12} className="shrink-0 text-[#6e877a]"/>
             </div>
           ))}
         </div>
-        <p className="mt-3 text-[11px] leading-[1.6] text-[#97afa1]">{words.signatureInfo}</p>
+        <p className="mt-2 text-[11px] leading-[1.5] text-[#97afa1]">{words.signatureInfo}</p>
       </section>
-      <section className="rounded-[22px] bg-gradient-to-br from-[#1e4336] via-[#164131] to-[#12352b] border border-[#86d6b6]/30 p-4 mb-4">
+      <section className="rounded-[22px] bg-gradient-to-br from-[#1e4336] via-[#164131] to-[#12352b] border border-[#86d6b6]/30 p-3.5 mb-3">
         <h2 className="flex items-center gap-2 text-[12px] font-extrabold tracking-[0.1em] text-[#c1f2db]"><Crown size={15}/>{words.next}</h2>
-        <p className="mt-2 mb-3 text-[15px] font-bold leading-snug">{recentGames.length===0 ? words.first : words.again}</p>
+        <p className="mt-1.5 mb-2.5 text-[15px] font-bold leading-snug">{recentGames.length===0 ? words.first : words.again}</p>
         <button type="button" onClick={onPlay} className="min-h-12 w-full rounded-xl bg-[#c8eedc] text-[#102a20] font-extrabold text-[13px] flex items-center justify-center gap-2 transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-white"><Play size={16} fill="currentColor"/>{recentGames.length===0 ? words.playFirst : words.playAgain}<ArrowRight size={16}/></button>
       </section>
-      <section className="rounded-[22px] p-4 bg-[#111a17] border border-white/[0.09] mb-3">
+      <section className="rounded-[22px] p-3.5 bg-[#111a17] border border-white/[0.09] mb-3">
         <div className="flex justify-between items-center gap-2 mb-3">
           <div><h2 className="text-[12px] font-extrabold tracking-[0.1em] flex items-center gap-2"><Activity size={16} className="text-teal-300"/>{words.performance}</h2><p className="text-[11px] text-[#98aea2] mt-1">{words.last}</p></div>
           <div className="rounded-full border border-white/10 bg-white/[0.05] px-2 py-1 text-[11px] text-[#c5d9cb] font-bold tabular-nums">{total} {words.games}</div>
         </div>
         <div className="grid grid-cols-3 gap-2">
           {results.map((item) => (
-            <div key={item.label} className="text-center min-w-0 rounded-xl bg-[#0b120e] border border-white/[0.06] p-2.5">
+            <div key={item.label} className="text-center min-w-0 rounded-xl bg-[#0b120e] border border-white/[0.06] p-2">
               <div className={'truncate text-[11px] font-semibold ' + item.color}>{item.label}</div>
               <div className="text-[23px] text-white font-extrabold tabular-nums mt-1">{item.amount}</div>
             </div>
           ))}
         </div>
-        <div className="h-2 w-full rounded-full overflow-hidden bg-[#29322d] mt-4 flex" aria-label={words.performance}>
+        <div className="h-2 w-full rounded-full overflow-hidden bg-[#29322d] mt-3 flex" aria-label={words.performance}>
           {total>0 && <>
             <div style={{width:String((performance.wins/total)*100)+'%'}} className="bg-[#66ca99]"/>
             <div style={{width:String((performance.draws/total)*100)+'%'}} className="bg-[#acbab1]"/>
@@ -146,7 +146,7 @@ export default function MobilePlayerPassport({ username, role, countryCode, join
           {recentGames.length>3 && <button type="button" aria-expanded={expanded} onClick={() => setExpanded(value=>!value)} className="min-h-11 flex items-center gap-1 text-[12px] font-bold text-[#84dbbc]">{expanded?words.less:words.all}<ChevronDown size={15} className={expanded?'rotate-180':''}/></button>}
         </div>
         {recentGames.length===0 ? (
-          <div className="flex gap-3 items-center p-4 rounded-[18px] border border-dashed border-white/15 bg-[#131b17]">
+          <div className="flex gap-3 items-center p-3.5 rounded-[18px] border border-dashed border-white/15 bg-[#131b17]">
             <div className="w-10 h-10 shrink-0 rounded-xl bg-white/[0.04] flex items-center justify-center"><Swords size={18} className="text-[#8aa398]"/></div>
             <div><p className="font-bold text-[13px]">{words.empty}</p><p className="text-[11px] text-[#9aada0] mt-1">{words.emptyInfo}</p></div>
           </div>
@@ -162,7 +162,7 @@ export default function MobilePlayerPassport({ username, role, countryCode, join
           </div>
         )}
       </section>
-      <section className="flex items-center gap-3 p-4 bg-[#111916] border border-white/[0.085] rounded-[18px] mb-4">
+      <section className="flex items-center gap-3 p-3.5 bg-[#111916] border border-white/[0.085] rounded-[18px] mb-4">
         <div className="shrink-0 w-10 h-10 rounded-xl bg-[#8e6d33]/15 border border-[#d4b36a]/20 flex items-center justify-center"><Trophy size={20} className="text-[#dec482]"/></div>
         <div className="flex-1 min-w-0"><h2 className="text-[12px] font-extrabold tracking-[0.09em]">{words.achievements}</h2><p className="mt-1 text-[11px] leading-5 text-[#9fb0a6]">{words.achievementsInfo}</p></div><Lock size={15} className="shrink-0 text-[#7c9788]"/>
       </section>
