@@ -365,8 +365,8 @@ export default function SettingsScreen() {
                     {pieceStyles.map((style) => (
                       <button key={style.id} onClick={() => setPieceTheme(style.id as any)} className={cx("flex flex-col items-center gap-1.5 p-1.5 rounded-xl border transition-all active:scale-95", pieceTheme === style.id ? "bg-chess-active/10 border-chess-active/40" : "bg-black/20 border-white/5 hover:border-white/20")}>
                         <div className="flex gap-0.5 justify-center">
-                          <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wK.svg` : `/pieces/${style.id}/wK.svg`} alt={style.name} className="w-5 h-5 object-contain" />
-                          <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wN.svg` : `/pieces/${style.id}/wN.svg`} alt={style.name} className="w-5 h-5 object-contain" />
+                          <img src={mobilePiecePreviewSrc(style.id, 'wK')} alt={style.name} className="w-5 h-5 object-contain" />
+                          <img src={mobilePiecePreviewSrc(style.id, 'wN')} alt={style.name} className="w-5 h-5 object-contain" />
                         </div>
                         <span className="text-[0.6rem] font-black uppercase text-neutral-500 text-center leading-tight">{style.name}</span>
                       </button>

@@ -366,9 +366,11 @@ function PieceImage({
   const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
   const src = pieceSetName === 'cburnett-classic'
     ? `/chess-assets/pieces/cburnett/${pieceCode}.svg`
-    : `/pieces/${pieceSetName}/${pieceCode}.svg`;
+    : pieceSetName === 'neo' || pieceSetName === 'tournament'
+      ? `/pieces/mobile/${pieceSetName}/${pieceCode}.svg`
+      : `/pieces/${pieceSetName}/${pieceCode}.svg`;
 
-  // Preserve the current desktop artwork; load optimized Staunton variants only on mobile.
+  // Use Merida SVGs (/pieces/mobile/neo and /pieces/mobile/tournament) on both desktop and mobile.
   const mobileSrc = pieceSetName === 'neo' || pieceSetName === 'tournament'
     ? `/pieces/mobile/${pieceSetName}/${pieceCode}.svg`
     : null;
