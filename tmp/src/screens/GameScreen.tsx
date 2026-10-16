@@ -623,7 +623,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   }, [engineResult, liveFen]);
 
   return (
-    <div className="flex-1 h-full max-h-full min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-1 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-0 md:gap-4 lg:gap-3 overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 lg:h-[calc(100vh-85px)]">
+    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden">
 
       {/* Mobile Analysis Drawer Header */}
       <div className="flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-4 lg:flex-1">
@@ -744,7 +744,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       </div>
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className="w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] flex-1 lg:flex-none shrink min-h-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-0 md:mx-0">
+      <div className="w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0">
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
