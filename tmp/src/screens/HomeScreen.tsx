@@ -52,7 +52,7 @@ export default function HomeScreen() {
             font-weight: 800 !important;
           }
         }
-        /* Desktop-only Arena redesign: Dark Luxury graphite + Premium Gold. */
+        /* Desktop-only Arena: reference navy/gold with the existing block geometry. */
         @media (min-width: 1280px) {
           .home-screen-root .desktop-home-slogan {
             width: min(100%, 388px);
@@ -61,9 +61,9 @@ export default function HomeScreen() {
             border-radius: 9999px;
             border: 1px solid rgba(217, 182, 110, 0.38);
             background:
-              radial-gradient(ellipse at 50% 0%, rgba(217, 182, 110, 0.1), transparent 65%),
-              radial-gradient(ellipse at 85% 100%, rgba(139, 92, 246, 0.06), transparent 65%),
-              linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);
+              radial-gradient(ellipse at 18% 10%, rgba(52, 83, 134, 0.24), transparent 65%),
+              radial-gradient(ellipse at 85% 100%, rgba(27, 57, 101, 0.25), transparent 65%),
+              linear-gradient(145deg, #070E1C 0%, #0D1B32 54%, #091326 100%);
             box-shadow:
               0 18px 36px -18px rgba(0, 0, 0, 0.85),
               0 0 16px rgba(184, 138, 67, 0.08),
@@ -80,11 +80,13 @@ export default function HomeScreen() {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-size: clamp(1.02rem, 1.15vw, 1.15rem);
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: clamp(1.15rem, 1.3vw, 1.3rem);
             font-weight: 600;
-            letter-spacing: 0.045em;
+            font-style: normal;
+            letter-spacing: 0.03em;
             line-height: 1.2;
-            color: #EAD29A;
+            color: #F0D398;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
           }
           .home-screen-root .desktop-home-arena {
@@ -95,9 +97,9 @@ export default function HomeScreen() {
             gap: 24px;
             border: 1px solid rgba(217, 182, 110, 0.36);
             background:
-              radial-gradient(ellipse at 18% 0%, rgba(217, 182, 110, 0.09), transparent 58%),
-              radial-gradient(ellipse at 92% 100%, rgba(139, 92, 246, 0.07), transparent 62%),
-              linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);
+              radial-gradient(ellipse at 18% 0%, rgba(52, 83, 134, 0.24), transparent 58%),
+              radial-gradient(ellipse at 92% 100%, rgba(27, 57, 101, 0.25), transparent 62%),
+              linear-gradient(145deg, #070E1C 0%, #0D1B32 54%, #091326 100%);
             box-shadow:
               0 24px 48px -22px rgba(0, 0, 0, 0.88),
               0 0 18px rgba(184, 138, 67, 0.08),
@@ -114,6 +116,10 @@ export default function HomeScreen() {
             box-shadow: inset 0 0 16px rgba(139, 92, 246, 0.04);
           }
           .home-screen-root .desktop-home-arena h1 {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-style: normal;
+            font-weight: 700;
+            letter-spacing: -0.025em;
             font-size: clamp(2.65rem, 3.3vw, 3.15rem);
             line-height: 1.08;
             background-image: linear-gradient(
