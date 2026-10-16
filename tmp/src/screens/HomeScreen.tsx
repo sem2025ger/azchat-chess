@@ -52,6 +52,64 @@ export default function HomeScreen() {
             font-weight: 800 !important;
           }
         }
+        /* Desktop-only Arena refresh: cyan flag glow + refined violet depth. */
+        @media (min-width: 768px) {
+          .home-screen-root .desktop-home-arena {
+            min-height: 242px;
+            padding: 30px 28px;
+            gap: 24px;
+            border-color: rgba(34, 211, 238, 0.43);
+            background:
+              radial-gradient(ellipse at 6% 0%, rgba(6, 182, 212, 0.18), transparent 58%),
+              radial-gradient(ellipse at 100% 100%, rgba(139, 92, 246, 0.17), transparent 60%),
+              linear-gradient(135deg, #10262b 0%, #131d27 52%, #1c1729 100%);
+            box-shadow:
+              0 22px 42px -24px rgba(0, 0, 0, 0.85),
+              0 0 20px rgba(6, 182, 212, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transition: border-color 280ms ease, box-shadow 280ms ease;
+          }
+          .home-screen-root .desktop-home-arena::before {
+            border-color: rgba(34, 211, 238, 0.55);
+            box-shadow: inset 0 0 16px rgba(6, 182, 212, 0.07), 0 0 14px rgba(6, 182, 212, 0.15);
+          }
+          .home-screen-root .desktop-home-arena::after {
+            border-color: rgba(167, 139, 250, 0.42);
+            box-shadow: inset 0 0 18px rgba(167, 139, 250, 0.05), 0 0 16px rgba(167, 139, 250, 0.14);
+          }
+          .home-screen-root .desktop-home-arena h1 {
+            font-size: clamp(2.65rem, 3.3vw, 3.15rem);
+            line-height: 1.08;
+            background-image: linear-gradient(110deg, #f8d98d 4%, #a5ece6 55%, #c4b5fd 100%);
+          }
+          .home-screen-root .desktop-home-play {
+            width: 100%;
+            min-height: 64px;
+            border-color: rgba(213, 255, 249, 0.7);
+            background: linear-gradient(105deg, #a2f1db 0%, #78dcd9 52%, #a4c1fd 100%);
+            box-shadow: 0 12px 27px -14px rgba(34, 211, 238, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+            transition: transform 220ms ease, box-shadow 220ms ease;
+          }
+          .home-screen-root .desktop-home-play:hover {
+            box-shadow: 0 17px 32px -16px rgba(34, 211, 238, 0.65), 0 0 18px rgba(139, 92, 246, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+          }
+          .home-screen-root .desktop-home-play:focus-visible {
+            outline: 2px solid #a5f3fc;
+            outline-offset: 3px;
+          }
+        }
+        @media (min-width: 1280px) {
+          .home-screen-root .desktop-home-arena {
+            width: calc(100% + 12px);
+            margin-inline: -6px;
+          }
+        }
+        @media (min-width: 768px) and (prefers-reduced-motion: reduce) {
+          .home-screen-root .desktop-home-arena,
+          .home-screen-root .desktop-home-play {
+            transition: none;
+          }
+        }
         @media (max-width: 767px) {
           .home-screen-root .board-container {
             max-width: calc(100vw - 8px) !important;
@@ -92,7 +150,7 @@ export default function HomeScreen() {
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="mobile-home-arena w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
+          <div className="mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
 
 
           {/* 1. Hero Brand Header */}
@@ -105,7 +163,7 @@ export default function HomeScreen() {
           {/* Text-only play action, shared with the mobile Arena. */}
           <Link
             to="/play"
-            className="mobile-home-play group relative flex items-center justify-center gap-0 px-4 py-2.5 md:py-3 min-h-[52px] md:min-h-[56px] btn-glow-cycle border border-white/20 text-black rounded-[0.875rem] md:rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-[94%] self-center"
+            className="mobile-home-play desktop-home-play group relative flex items-center justify-center gap-0 px-4 py-2.5 md:py-3 min-h-[52px] md:min-h-[56px] btn-glow-cycle border border-white/20 text-black rounded-[0.875rem] md:rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-[94%] self-center"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
             <span className="relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
