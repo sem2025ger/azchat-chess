@@ -75,16 +75,17 @@ export default function Layout() {
                   className="flex h-7 w-8 shrink-0 items-center justify-center overflow-visible"
                 >
                   <svg
-                    width="30"
-                    height="30"
+                    width="42"
+                    height="42"
                     viewBox="0 0 32 32"
-                    className="shrink-0 overflow-visible drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)] motion-safe:animate-[spin_15s_linear_infinite] motion-reduce:animate-none"
+                    className="shrink-0 overflow-visible motion-safe:animate-[spin_15s_linear_infinite] motion-reduce:animate-none"
                   >
                     <defs>
-                      {/* Same gradient stops and direction as text-glow-cycle. */}
+                      {/* Warm metallic gold, with static facets for depth. */}
                       <linearGradient id="sidebar-diamond-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#fbbf24" />
-                        <stop offset="100%" stopColor="#06b6d4" />
+                        <stop offset="0%" stopColor="#D4A547" />
+                        <stop offset="48%" stopColor="#F5D780" />
+                        <stop offset="100%" stopColor="#E8BD58" />
                       </linearGradient>
                     </defs>
                     <path d="M16 0 32 16 16 32 0 16Z" fill="url(#sidebar-diamond-gradient)" />
@@ -97,7 +98,7 @@ export default function Layout() {
             </div>
           </div>
 
-          <nav className="px-3 xl:px-5 pt-10 xl:pt-[26px] pb-4 space-y-0.5 flex-1">
+          <nav className="px-3 xl:px-5 pt-10 xl:pt-[46px] pb-4 space-y-0.5 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} themeColor="theme-violet" />

@@ -138,9 +138,9 @@ export default function HomeScreen() {
             -webkit-text-fill-color: transparent;
           }
           .home-screen-root .desktop-home-play {
-            width: 90%;
+            width: 65%;
             min-height: 55px;
-            padding: 10px 16px;
+            padding: 10px 8px;
             border: 1px solid #C9A45F;
             background: linear-gradient(115deg, #B88A45 0%, #E4C782 42%, #DABC78 58%, #C9A45F 100%);
             color: #15171C;
@@ -166,8 +166,9 @@ export default function HomeScreen() {
           }
           .home-screen-root .desktop-home-play .text-shadow-cycle {
             color: #15171C;
-            font-size: clamp(0.875rem, 1.1vw, 1rem);
-            letter-spacing: 0.04em;
+            font-size: clamp(0.75rem, 0.9vw, 0.875rem);
+            letter-spacing: 0.025em;
+            white-space: nowrap;
             text-shadow: none;
           }
           .home-screen-root .desktop-home-play:hover {
