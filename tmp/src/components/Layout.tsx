@@ -53,28 +53,43 @@ export default function Layout() {
       <aside className="hidden md:flex w-20 xl:w-72 bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
 
-          <div className="h-16 xl:h-auto xl:pt-[15px] xl:pb-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
+          <div className="h-16 xl:h-auto xl:pt-4 xl:pb-3.5 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
               <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.65rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500">
                 Chessaz.De
               </span>
-              <div className="mt-3 hidden xl:inline-flex items-center rounded-full px-3 py-1 border border-white/10 bg-neutral-950/50 premium-cycle-container shadow-[0_0_14px_rgba(139,92,246,0.14)]">
+              <div className="mt-3 hidden xl:inline-flex items-center justify-center w-full rounded-full px-3 py-1 border border-white/10 bg-neutral-950/50 premium-cycle-container shadow-[0_0_14px_rgba(139,92,246,0.14)]">
                 <span className="text-[0.7rem] font-black uppercase tracking-[0.2em] italic text-glow-cycle opacity-90 whitespace-nowrap">
                   PREMIUM CHESS PLATFORM
                 </span>
               </div>
               <div
                 role="img"
-                aria-label="Germany and Azerbaijan"
-                className="mt-2.5 hidden xl:inline-flex items-center justify-center gap-2.5 px-3 py-[5px] rounded-full border border-[#D9B66E]/[0.28] bg-[linear-gradient(145deg,#0b0d11_0%,#11141b_55%,#161922_100%)] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.9),0_0_10px_rgba(184,138,67,0.06),inset_0_1px_0_rgba(244,220,156,0.12),inset_0_-1px_0_rgba(0,0,0,0.55)] select-none pointer-events-none shrink-0"
+                aria-label="Germany • Azerbaijan"
+                title="Germany • Azerbaijan"
+                className="mt-3 hidden xl:flex items-center justify-between w-full px-3.5 py-[7px] rounded-full border border-[#D9B66E]/[0.42] bg-[radial-gradient(ellipse_at_18%_50%,rgba(217,182,110,0.14),transparent_62%),radial-gradient(ellipse_at_82%_50%,rgba(6,182,212,0.14),transparent_62%),linear-gradient(135deg,#0b101b_0%,#111827_50%,#0d1320_100%)] shadow-[0_10px_24px_-10px_rgba(0,0,0,0.92),0_0_16px_rgba(217,182,110,0.12),0_0_22px_rgba(6,182,212,0.08),inset_0_1px_0_rgba(244,220,156,0.22),inset_0_-1px_0_rgba(6,182,212,0.14)] select-none pointer-events-none shrink-0"
               >
                 <SidebarGermanyFlag />
+                <div className="flex items-center justify-center gap-2 px-1">
+                  <span className="text-[0.75rem] font-extrabold uppercase tracking-[0.18em] text-[#F3E3BE] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                    DE
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="text-[0.75rem] leading-none text-[#DFB062] drop-shadow-[0_0_6px_rgba(223,176,98,0.65)]"
+                  >
+                    •
+                  </span>
+                  <span className="text-[0.75rem] font-extrabold uppercase tracking-[0.18em] text-[#F3E3BE] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                    AZ
+                  </span>
+                </div>
                 <SidebarAzerbaijanFlag />
               </div>
             </div>
           </div>
 
-          <nav className="px-3 xl:px-5 pt-10 xl:pt-2 pb-4 space-y-0.5 flex-1">
+          <nav className="px-3 xl:px-5 pt-10 xl:pt-3 pb-4 space-y-0.5 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} themeColor="theme-violet" />
@@ -209,14 +224,14 @@ function SidebarGermanyFlag() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="16"
+      width="42"
+      height="28"
       viewBox="0 0 5 3"
       preserveAspectRatio="none"
       aria-hidden="true"
-      className="w-6 h-4 rounded-[3.5px] shrink-0 ring-1 ring-white/[0.16] shadow-[0_1px_3px_rgba(0,0,0,0.75)]"
+      className="w-[42px] h-7 rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
     >
-      <rect width="5" height="3" y="0" x="0" fill="#0A0A0D" />
+      <rect width="5" height="3" y="0" x="0" fill="#0B0C10" />
       <rect width="5" height="2" y="1" x="0" fill="#D00" />
       <rect width="5" height="1" y="2" x="0" fill="#FFCE00" />
     </svg>
@@ -227,11 +242,11 @@ function SidebarAzerbaijanFlag() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="16"
+      width="42"
+      height="28"
       viewBox="150 0 900 600"
       aria-hidden="true"
-      className="w-6 h-4 rounded-[3.5px] shrink-0 ring-1 ring-white/[0.16] shadow-[0_1px_3px_rgba(0,0,0,0.75)]"
+      className="w-[42px] h-7 rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
     >
       <rect width="1200" height="200" fill="#00b5e2" />
       <rect width="1200" height="200" y="200" fill="#ef3340" />
