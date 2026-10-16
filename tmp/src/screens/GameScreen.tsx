@@ -649,17 +649,31 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
           <div className="relative flex gap-0 md:gap-6 w-full justify-center group/board items-center py-0 md:py-1 lg:h-full lg:min-h-0 lg:flex-1">
 
+            {/* Mobile-only evaluation bar. Desktop markup below is intentionally unchanged. */}
             <div className={cx(
-              "transition-all duration-500 ease-out self-stretch overflow-hidden py-1",
+              "md:hidden transition-all duration-300 ease-out self-stretch overflow-hidden py-1",
               analysisActive
-                ? "w-5 md:w-8 opacity-100 translate-x-0 rounded-lg md:rounded-2xl ml-1 md:ml-0"
+                ? "w-5 opacity-100 translate-x-0 rounded-lg ml-1"
                 : "w-0 opacity-0 overflow-hidden -translate-x-4 pointer-events-none"
             )}>
               <EvaluationBar
                 score={engineResult?.evaluation || 0.0}
                 isMate={!!engineResult?.mate}
                 mateIn={engineResult?.mate}
-                className="h-full rounded-lg md:rounded-xl ring-1 ring-white/10"
+                className="h-full rounded-lg ring-1 ring-white/10"
+              />
+            </div>
+
+            {/* Desktop evaluation bar — preserved from production. */}
+            <div className={cx(
+              "hidden md:block transition-all duration-1000 ease-in-out self-stretch rounded-2xl overflow-hidden py-1",
+              analysisActive ? "w-6 md:w-8 opacity-100 translate-x-0" : "w-0 opacity-0 overflow-hidden -translate-x-8 pointer-events-none"
+            )}>
+              <EvaluationBar
+                score={engineResult?.evaluation || 0.0}
+                isMate={!!engineResult?.mate}
+                mateIn={engineResult?.mate}
+                className="h-full rounded-xl ring-1 ring-white/10"
               />
             </div>
 
