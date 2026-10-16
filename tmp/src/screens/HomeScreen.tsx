@@ -107,7 +107,7 @@ export default function HomeScreen() {
           {/* 2. Premium Play Now CTA */}
           <Link
             to="/play"
-            className="mobile-home-play group relative flex items-center justify-between gap-4 px-5 py-3.5 btn-glow-cycle border border-white/20 text-black rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-full max-md:justify-center max-md:gap-0 max-md:min-h-16"
+            className="mobile-home-play group relative flex items-center justify-between gap-4 px-5 py-3.5 btn-glow-cycle border border-white/20 text-black rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-full max-md:justify-center max-md:gap-0 max-md:min-h-[52px] max-md:w-[94%] max-md:self-center max-md:px-4 max-md:py-2.5 max-md:rounded-[0.875rem]"
           >
             {/* Shimmer sweep on hover */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
@@ -122,7 +122,7 @@ export default function HomeScreen() {
               </div>
             </div>
 
-            <span className="md:hidden relative z-10 w-full text-center font-extrabold text-[clamp(1.125rem,5.5vw,1.5rem)] tracking-[0.06em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
+            <span className="md:hidden relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
 
             <div className="flex items-center gap-2 relative z-10 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-300 max-md:hidden">
               <div className="h-5 w-px bg-black/20" />
