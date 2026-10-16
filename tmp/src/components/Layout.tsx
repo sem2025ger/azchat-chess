@@ -72,16 +72,32 @@ export default function Layout() {
                 <SidebarGermanyFlag />
                 <span
                   aria-hidden="true"
-                  className="flex h-7 w-5 shrink-0 items-center justify-center text-[14px] leading-none bg-[linear-gradient(135deg,#D8BC88_0%,#F4EDDE_48%,#BFC5CE_100%)] bg-clip-text text-transparent drop-shadow-[0_0_3px_rgba(228,216,190,0.16)]"
+                  className="flex h-7 w-8 shrink-0 items-center justify-center overflow-visible"
                 >
-                  ◆
+                  <svg
+                    width="30"
+                    height="30"
+                    viewBox="0 0 32 32"
+                    className="shrink-0 overflow-visible drop-shadow-[0_1px_2px_rgba(0,0,0,0.35)] motion-safe:animate-[spin_15s_linear_infinite] motion-reduce:animate-none"
+                  >
+                    <defs>
+                      {/* Same gradient stops and direction as text-glow-cycle. */}
+                      <linearGradient id="sidebar-diamond-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#fbbf24" />
+                        <stop offset="100%" stopColor="#06b6d4" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M16 0 32 16 16 32 0 16Z" fill="url(#sidebar-diamond-gradient)" />
+                    <path d="M16 0 16 16 0 16Z" fill="white" fillOpacity="0.18" />
+                    <path d="M16 16 32 16 16 32Z" fill="black" fillOpacity="0.14" />
+                  </svg>
                 </span>
                 <SidebarAzerbaijanFlag />
               </div>
             </div>
           </div>
 
-          <nav className="px-3 xl:px-5 pt-10 xl:pt-3 pb-4 space-y-0.5 flex-1">
+          <nav className="px-3 xl:px-5 pt-10 xl:pt-[26px] pb-4 space-y-0.5 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} themeColor="theme-violet" />
