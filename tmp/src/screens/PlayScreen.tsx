@@ -190,7 +190,7 @@ export default function PlayScreen() {
   };
 
   return (
-    <div className="min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto lg:overflow-hidden relative pb-6 lg:pb-3">
+    <div className="min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto lg:overflow-hidden relative pb-6 lg:pb-3 max-md:px-1">
       
 
       <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px] gap-2 lg:gap-4 items-start justify-center flex-1 min-h-0 pt-0 lg:pt-0">
@@ -284,10 +284,10 @@ export default function PlayScreen() {
             )}
 
             <div 
-              className="w-full aspect-square bg-neutral-900 rounded-[2rem] border-[6px] border-neutral-800/50 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-white/10 relative transition-all duration-700 group-hover/board:border-neutral-800 self-center max-w-[94vw] sm:max-w-[560px] lg:max-w-[min(600px,calc(100vh-130px))]"
+              className="w-full aspect-square bg-neutral-900 rounded-[2rem] border-[6px] border-neutral-800/50 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-white/10 relative transition-all duration-700 group-hover/board:border-neutral-800 self-center max-w-[94vw] sm:max-w-[560px] lg:max-w-[min(600px,calc(100vh-130px))] max-md:max-w-none max-md:border-2 max-md:rounded-xl"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
-              <ChessBoard overrideBoardTheme={boardTheme} className="border-none p-0 bg-transparent shadow-none" />
+              <ChessBoard overrideBoardTheme={boardTheme} className="border-none p-0 bg-transparent shadow-none max-md:[&_[draggable]_img]:scale-110" />
             </div>
           </div>
 
@@ -436,7 +436,7 @@ export default function PlayScreen() {
             </div>
 
             {/* Footer Buttons */}
-            <div className="p-2 xl:min-h-[96px] xl:items-center grid grid-cols-2 gap-2 bg-black/40 border-t border-white/5 shrink-0">
+            <div className="p-2 xl:min-h-[96px] xl:items-center grid grid-cols-2 gap-2 bg-black/40 border-t border-white/5 shrink-0 max-md:hidden">
               <FooterActionBtn 
                 icon={<Users size={14} />} 
                 label={t('play.friend')} 
