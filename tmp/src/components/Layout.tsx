@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, Play, Grid, MessageSquare, User, Settings, Circle } from 'lucide-react';
+import { Home, Grid, MessageSquare, User, Settings, Circle } from 'lucide-react';
 import { useThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { type Language } from '../translations';
@@ -68,7 +68,6 @@ export default function Layout() {
 
           <nav className="px-3 xl:px-5 py-4 space-y-0.5 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow />
-            <NavItem to="/play" icon={<Play size={20} />} label={t('nav.play')} themeColor="theme-cyan" />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} themeColor="theme-violet" />
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
@@ -119,7 +118,6 @@ export default function Layout() {
       {/* Mobile Bottom Navigation - Visible only on Small Screens */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} />
-        <MobileNavItem to="/play" icon={<Play size={20} />} label={t('nav.play')} />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} />
         <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} />
         <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} />
