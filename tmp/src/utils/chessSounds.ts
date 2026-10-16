@@ -21,8 +21,16 @@ const THEME_PLAYBACK: Record<
     playbackRate: 0.97,
   },
   Classic: {
-    volume: 0.80,
-    playbackRate: 0.88,
+    volume: 0.72,
+    playbackRate: 0.82,
+  },
+  Wood: {
+    volume: 0.20,
+    playbackRate: 1.0,
+  },
+  Crystal: {
+    volume: 0.11,
+    playbackRate: 1.0,
   },
 };
 
@@ -98,6 +106,64 @@ function loadBuffer(type: ChessSoundType): Promise<AudioBuffer | null> {
   return promise;
 }
 
+
+function playWoodTone(ctx: AudioContext, type: ChessSoundType): void {
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+
+  const freq = type === 'move' ? 190 : type === 'capture' ? 145 : 235;
+  const duration = type === 'check' ? 0.14 : 0.11;
+
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq, now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(80, freq * 0.58), now + duration);
+
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(1200, now);
+  filter.Q.setValueAtTime(0.65, now);
+
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.20, now + 0.006);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start(now);
+  osc.stop(now + duration + 0.01);
+}
+
+function playCrystalTone(ctx: AudioContext, type: ChessSoundType): void {
+  const now = ctx.currentTime;
+  const gain = ctx.createGain();
+  const primary = ctx.createOscillator();
+  const shimmer = ctx.createOscillator();
+
+  const base = type === 'move' ? 760 : type === 'capture' ? 610 : 980;
+  const duration = type === 'check' ? 0.19 : 0.15;
+
+  primary.type = 'sine';
+  shimmer.type = 'sine';
+  primary.frequency.setValueAtTime(base, now);
+  shimmer.frequency.setValueAtTime(base * 1.5, now);
+
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.095, now + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+  primary.connect(gain);
+  shimmer.connect(gain);
+  gain.connect(ctx.destination);
+
+  primary.start(now);
+  shimmer.start(now);
+  primary.stop(now + duration + 0.01);
+  shimmer.stop(now + duration + 0.01);
+}
+
 export function preloadChessSounds(): void {
   if (typeof window === 'undefined') return;
   loadBuffer('move');
@@ -137,6 +203,16 @@ export async function playChessSound(
       return;
     }
 
+    if (theme === 'Wood') {
+      playWoodTone(ctx, type);
+      return;
+    }
+
+    if (theme === 'Crystal') {
+      playCrystalTone(ctx, type);
+      return;
+    }
+
     const buffer = await loadBuffer(type);
     if (!buffer) return;
 
@@ -155,7 +231,16 @@ export async function playChessSound(
     source.playbackRate.value = settings.playbackRate;
     gain.gain.value = settings.volume;
 
-    source.connect(gain);
+    if (theme === 'Classic') {
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 1800;
+      filter.Q.value = 0.7;
+      source.connect(filter);
+      filter.connect(gain);
+    } else {
+      source.connect(gain);
+    }
     gain.connect(ctx.destination);
 
     activeSources.add(source);
