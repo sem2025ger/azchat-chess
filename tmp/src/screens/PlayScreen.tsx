@@ -313,6 +313,9 @@ export default function PlayScreen() {
 
                 {/* Summary / Toggle Button */}
                 <button
+                  type="button"
+                  aria-expanded={isTimeExpanded}
+                  aria-label="Choose time control"
                   onClick={() => setIsTimeExpanded(v => !v)}
                   className={cx(
                     "w-full flex items-center justify-center gap-3 md:gap-4 px-3 py-3 md:px-4 md:py-4 rounded-xl md:rounded-2xl border transition-all duration-200 group/tc active:scale-[0.98]",
@@ -348,7 +351,7 @@ export default function PlayScreen() {
 
                 {/* Expanded Grid */}
                 {isTimeExpanded && (
-                  <div className="space-y-2 pt-1">
+                  <div className="hidden md:block space-y-2 pt-1">
                     {Object.entries(timePresets).map(([category, items]) => (
                       <div key={category} className="space-y-1.5">
                         <div className="flex items-center gap-1.5 px-0.5 opacity-50">
@@ -456,6 +459,83 @@ export default function PlayScreen() {
           <div className="h-0 md:h-[38px] shrink-0" />
         </div>
       </div>
+
+      {/* Mobile time-control picker: modal so every preset stays visible and tappable. */}
+      {isTimeExpanded && (
+        <div
+          className="fixed inset-0 z-[120] md:hidden bg-black/65 backdrop-blur-sm flex items-end p-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Choose time control"
+          onClick={() => setIsTimeExpanded(false)}
+        >
+          <div
+            className="w-full max-h-[calc(100dvh-5.5rem)] overflow-y-auto overscroll-contain rounded-[1.75rem] border border-white/10 bg-[#121212]/98 shadow-[0_-24px_70px_rgba(0,0,0,0.8)] ring-1 ring-chess-gold/20 p-3"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center shrink-0">
+                  {categoryIcons[getCategory(timeControl)]}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-neutral-500">Time control</div>
+                  <div className="mt-0.5 text-xl font-black italic uppercase tracking-tight text-glow-cycle truncate">
+                    {timeControl} · {getCategory(timeControl)}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTimeExpanded(false)}
+                className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] text-neutral-400 flex items-center justify-center active:scale-95"
+                aria-label="Close time control picker"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="pt-3 space-y-3">
+              {Object.entries(timePresets).map(([category, items]) => (
+                <section key={category} className="space-y-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <div className="w-6 h-6 rounded-lg bg-white/[0.035] border border-white/[0.06] flex items-center justify-center">
+                      {category === 'Bullet' && <Zap size={13} className="text-orange-400" />}
+                      {category === 'Blitz' && <Sparkles size={13} className="text-yellow-400" />}
+                      {category === 'Rapid' && <Shield size={13} className="text-emerald-400" />}
+                    </div>
+                    <span className="text-[0.68rem] font-black uppercase tracking-[0.16em] text-neutral-400">{category}</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {items.map((item) => {
+                      const selected = timeControl === item;
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => {
+                            setTimeControl(item);
+                            setIsTimeExpanded(false);
+                          }}
+                          className={cx(
+                            "min-h-[54px] rounded-xl border px-2 py-2 flex items-center justify-center text-center font-black italic uppercase tracking-tight transition-all duration-150 active:scale-[0.96] touch-manipulation",
+                            selected
+                              ? cx("bg-chess-gold/12 text-white border-chess-gold/55 ring-1 ring-chess-gold/25 shadow-[0_0_22px_rgba(223,176,98,0.12)]")
+                              : "bg-[#1a1a1a] text-neutral-300 border-white/[0.07]"
+                          )}
+                        >
+                          <span className={cx("text-sm", selected && "text-glow-cycle")}>{item}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
