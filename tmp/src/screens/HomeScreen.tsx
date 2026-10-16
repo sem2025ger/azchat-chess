@@ -34,6 +34,10 @@ export default function HomeScreen() {
         .home-board img[src$="bP.svg"] {
           filter: brightness(3.0) drop-shadow(0 2px 4px rgba(0,0,0,0.4));
         }
+        .home-board img[src^="/pieces/mobile/neo/"],
+        .home-board img[src^="/pieces/mobile/tournament/"] {
+          filter: none;
+        }
         @media (max-width: 1024px) {
           .board-container {
             max-width: 95vw !important;
