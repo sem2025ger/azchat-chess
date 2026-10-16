@@ -27,7 +27,7 @@ export default function ProfileScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedReturn = searchParams.get('returnTo');
-  const mobileReturnTo = requestedReturn === '/play' || requestedReturn?.startsWith('/play?room=')
+  const mobileReturnTo = requestedReturn === '/play' || requestedReturn?.startsWith('/play?room=') || requestedReturn?.startsWith('/play?invite=1&tc=')
     ? requestedReturn
     : null;
 

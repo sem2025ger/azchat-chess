@@ -11,6 +11,27 @@ export const translations: TranslationDictionary = {
   'nav.profile': { en: 'Profile', de: 'Profil', ua: 'Профіль', ru: 'Профиль', az: 'Profil', tr: 'Profil' },
   'nav.settings': { en: 'Settings', de: 'Einstellungen', ua: 'Налаштування', ru: 'Настройки', az: 'Ayarlar', tr: 'Ayarlar' },
 
+  // Mobile time-control invitation
+  "invite.withFriend": {"en": "With friend", "de": "Mit Freund", "az": "Dostla", "tr": "Arkadaşla", "ua": "З другом", "ru": "С другом"},
+  "invite.chooseTime": {"en": "Time control", "de": "Bedenkzeit", "az": "Vaxt nəzarəti", "tr": "Süre kontrolü", "ua": "Контроль часу", "ru": "Контроль времени"},
+  "invite.title": {"en": "Play with a friend", "de": "Mit Freund spielen", "az": "Dostla oyna", "tr": "Arkadaşınla oyna", "ua": "Партія з другом", "ru": "Партия с другом"},
+  "invite.ready": {"en": "Invitation ready", "de": "Einladung bereit", "az": "Dəvət hazırdır", "tr": "Davet hazır", "ua": "Запрошення готове", "ru": "Приглашение готово"},
+  "invite.close": {"en": "Close", "de": "Schließen", "az": "Bağla", "tr": "Kapat", "ua": "Закрити", "ru": "Закрыть"},
+  "invite.sendLink": {"en": "Send the link to your friend. Keep this page open while you wait.", "de": "Sende den Link und lasse diese Seite beim Warten geöffnet.", "az": "Linki dostuna göndər. Gözləyərkən bu səhifəni açıq saxla.", "tr": "Bağlantıyı arkadaşına gönder. Beklerken bu sayfayı açık tut.", "ua": "Надішліть посилання другу. Залишайте сторінку відкритою.", "ru": "Отправьте ссылку другу. Оставьте эту страницу открытой."},
+  "invite.link": {"en": "Game invitation link", "de": "Einladungslink", "az": "Oyun dəvəti linki", "tr": "Oyun daveti bağlantısı", "ua": "Посилання на партію", "ru": "Ссылка на партию"},
+  "invite.copy": {"en": "Copy", "de": "Kopieren", "az": "Kopyala", "tr": "Kopyala", "ua": "Копіювати", "ru": "Копировать"},
+  "invite.copied": {"en": "Copied", "de": "Kopiert", "az": "Kopyalandı", "tr": "Kopyalandı", "ua": "Скопійовано", "ru": "Скопировано"},
+  "invite.share": {"en": "Share", "de": "Teilen", "az": "Paylaş", "tr": "Paylaş", "ua": "Поділитися", "ru": "Поделиться"},
+  "invite.waiting": {"en": "Waiting for your friend…", "de": "Warte auf deinen Freund…", "az": "Dostun gözlənilir…", "tr": "Arkadaşın bekleniyor…", "ua": "Очікуємо друга…", "ru": "Ожидаем друга…"},
+  "invite.cancel": {"en": "Cancel invitation", "de": "Einladung abbrechen", "az": "Dəvəti ləğv et", "tr": "Daveti iptal et", "ua": "Скасувати запрошення", "ru": "Отменить приглашение"},
+  "invite.creating": {"en": "Creating…", "de": "Wird erstellt…", "az": "Yaradılır…", "tr": "Oluşturuluyor…", "ua": "Створення…", "ru": "Создание…"},
+  "invite.create": {"en": "Create invitation", "de": "Einladung erstellen", "az": "Dəvət yarat", "tr": "Davet oluştur", "ua": "Створити запрошення", "ru": "Создать приглашение"},
+  "invite.failed": {"en": "Could not create the invitation. Please try again.", "de": "Einladung fehlgeschlagen. Bitte erneut versuchen.", "az": "Dəvət yaradıla bilmədi. Yenidən cəhd et.", "tr": "Davet oluşturulamadı. Tekrar dene.", "ua": "Не вдалося створити запрошення. Спробуйте ще раз.", "ru": "Не удалось создать приглашение. Попробуйте ещё раз."},
+  "invite.disconnected": {"en": "Connection interrupted. Reconnect and create a new invitation.", "de": "Verbindung unterbrochen. Neu verbinden und erneut einladen.", "az": "Bağlantı kəsildi. Yenidən qoşul və yeni dəvət yarat.", "tr": "Bağlantı kesildi. Yeniden bağlanıp yeni bir davet oluştur.", "ua": "Зв’язок перервано. Підключіться й створіть нове запрошення.", "ru": "Связь прервана. Подключитесь и создайте новое приглашение."},
+  "invite.unavailable": {"en": "Invitations are being updated. Please try again shortly.", "de": "Einladungen werden aktualisiert. Bitte gleich erneut versuchen.", "az": "Dəvətlər yenilənir. Bir az sonra yenidən cəhd et.", "tr": "Davetler güncelleniyor. Biraz sonra tekrar dene.", "ua": "Запрошення оновлюються. Спробуйте трохи пізніше.", "ru": "Приглашения обновляются. Попробуйте немного позже."},
+  "invite.copyFailed": {"en": "Select and copy the link above.", "de": "Link oben markieren und kopieren.", "az": "Yuxarıdakı linki seç və kopyala.", "tr": "Yukarıdaki bağlantıyı seçip kopyala.", "ua": "Виділіть і скопіюйте посилання вище.", "ru": "Выделите и скопируйте ссылку выше."},
+  "invite.shareText": {"en": "Play chess with me on Chessaz.De", "de": "Spiele mit mir auf Chessaz.De", "az": "Chessaz.De-də mənimlə şahmat oyna", "tr": "Chessaz.De’de benimle satranç oyna", "ua": "Зіграйте зі мною на Chessaz.De", "ru": "Сыграйте со мной на Chessaz.De"},
+
   // Home Screen
   'home.title': { en: 'AZTR Chess Platform', de: 'AZTR Schachplattform', ua: 'Шахова платформа AZTR', ru: 'Шахматная Платформа AZTR', az: 'AZTR Şahmat Platforması', tr: 'AZTR Satranç Platformu' },
   'home.subtitle': {
@@ -292,3 +313,4 @@ export const translations: TranslationDictionary = {
   'auth.passwordUpdated': { en: 'Password updated successfully.', ru: 'Пароль успешно обновлён.', az: 'Şifrə uğurla yeniləndi.', tr: 'Şifre başarıyla güncellendi.', ua: 'Пароль успішно оновлено.', de: 'Passwort erfolgreich aktualisiert.' },
   'auth.backToSignIn': { en: 'Back to sign in', ru: 'Вернуться ко входу', az: 'Girişə qayıt', tr: 'Girişe dön', ua: 'Повернутися до входу', de: 'Zur Anmeldung zurück' },
 };
+

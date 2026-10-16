@@ -195,3 +195,91 @@ test('INT-1 to INT-10: Socket.IO Integration Harness with 2 Authenticated Client
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('Private invitations preserve all selected clocks, increments and legacy defaults', async () => {
+  setTokenVerifier(async token => token ? { id: token } : null);
+  setMatchPersistenceAdapter({ async persistCompletedMatch(record) { return { id: record.id }; } });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const port = server.address().port;
+  const clients = [];
+  const rooms = [];
+  const connect = async id => {
+    const client = await connectClient(port, id);
+    clients.push(client);
+    return client;
+  };
+  try {
+    const cases = [
+      ['1+0', 60, 0], ['1+1', 60, 1], ['2+1', 120, 1],
+      ['3+0', 180, 0], ['3+2', 180, 2], ['5+0', 300, 0],
+      ['10+0', 600, 0], ['15+10', 900, 10], ['30+0', 1800, 0],
+      [undefined, 600, 0],
+    ];
+    for (const [timeControl, initialTime, increment] of cases) {
+      const host = await connect(`host-${timeControl}`);
+      const guest = await connect(`guest-${timeControl}`);
+      const created = waitForEvent(host, 'private_room_created');
+      if (timeControl === undefined) host.emit('create_private_room');
+      else host.emit('create_private_room', { timeControl });
+      const invitation = await created;
+      rooms.push(invitation.roomId);
+      const room = activeRooms.get(invitation.roomId);
+      assert.equal(room.status, 'pending');
+      assert.equal(room.timeControl, timeControl ?? '10+0');
+      assert.equal(invitation.timeControl, room.timeControl);
+      assert.equal(room.initialTime, initialTime);
+      assert.equal(room.increment, increment);
+      assert.equal(room.whiteTimeMs, initialTime * 1000);
+      assert.equal(room.blackTimeMs, initialTime * 1000);
+      assert.equal(room.lastMoveTimestamp, null, 'clock does not run while waiting');
+
+      const duplicate = waitForEvent(host, 'private_room_created');
+      host.emit('create_private_room', { timeControl: '1+0' });
+      assert.deepEqual(await duplicate, invitation, 'retry cannot change a shared room');
+
+      const hostMatch = waitForEvent(host, 'match_found');
+      const guestMatch = waitForEvent(guest, 'match_found');
+      const starts = Promise.all([waitForEvent(host, 'game_start'), waitForEvent(guest, 'game_start')]);
+      guest.emit('join_private_room', { roomId: invitation.roomId });
+      const [hostData, guestData] = await Promise.all([hostMatch, guestMatch]);
+      assert.notEqual(hostData.color, guestData.color);
+      assert.equal(hostData.roomId, guestData.roomId);
+      for (const start of await starts) assert.deepEqual(start, { whiteTime: initialTime, blackTime: initialTime });
+      const white = hostData.color === 'w' ? host : guest;
+      const update = waitForEvent(guest, 'update_board');
+      white.emit('make_move', { roomId: invitation.roomId, move: { from: 'e2', to: 'e4' } });
+      await update;
+      assert.equal(room.game.turn(), 'b');
+      assert.ok(room.whiteTimeMs <= (initialTime + increment) * 1000);
+      assert.ok(room.whiteTimeMs >= (initialTime + increment - 1) * 1000, 'legal move receives the chosen increment');
+      cleanupRoom(invitation.roomId, room);
+      host.disconnect(); guest.disconnect();
+    }
+    for (const value of ['3+999', '-1+0', 180, null, {}, 'not-a-clock']) {
+      const host = await connect(`invalid-${JSON.stringify(value)}`);
+      const failure = waitForEvent(host, 'join_failed');
+      host.emit('create_private_room', { timeControl: value });
+      assert.equal((await failure).reason, 'invalid_time_control');
+      assert.equal(socketToRoom.has(host.id), false);
+      host.disconnect();
+    }
+    const host = await connect('cancel-host');
+    const created = waitForEvent(host, 'private_room_created');
+    host.emit('create_private_room', { timeControl: '3+2' });
+    const invitation = await created;
+    rooms.push(invitation.roomId);
+    host.emit('cancel_matchmaking');
+    const guest = await connect('cancel-guest');
+    const failure = waitForEvent(guest, 'join_failed');
+    guest.emit('join_private_room', { roomId: invitation.roomId });
+    assert.equal((await failure).reason, 'room_not_found');
+  } finally {
+    for (const roomId of rooms) {
+      const room = activeRooms.get(roomId);
+      if (room) cleanupRoom(roomId, room);
+    }
+    for (const client of clients) client.disconnect();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
+
