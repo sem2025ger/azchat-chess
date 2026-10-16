@@ -94,7 +94,7 @@ export default function HomeScreen() {
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
+          <div className="mobile-home-arena w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
 
 
           {/* 1. Hero Brand Header */}
@@ -107,7 +107,7 @@ export default function HomeScreen() {
           {/* 2. Premium Play Now CTA */}
           <Link
             to="/play"
-            className="group relative flex items-center justify-between gap-4 px-5 py-3.5 btn-glow-cycle border border-white/20 text-black rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-full"
+            className="mobile-home-play group relative flex items-center justify-between gap-4 px-5 py-3.5 btn-glow-cycle border border-white/20 text-black rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-full"
           >
             {/* Shimmer sweep on hover */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
