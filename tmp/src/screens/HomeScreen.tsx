@@ -54,6 +54,39 @@ export default function HomeScreen() {
         }
         /* Desktop-only Arena redesign: Dark Luxury graphite + Premium Gold. */
         @media (min-width: 1280px) {
+          .home-screen-root .desktop-home-slogan {
+            width: min(100%, 388px);
+            min-height: 98px;
+            padding: 24px 32px;
+            border-radius: 9999px;
+            border: 1px solid rgba(217, 182, 110, 0.38);
+            background:
+              radial-gradient(ellipse at 50% 0%, rgba(217, 182, 110, 0.1), transparent 65%),
+              radial-gradient(ellipse at 85% 100%, rgba(139, 92, 246, 0.06), transparent 65%),
+              linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);
+            box-shadow:
+              0 18px 36px -18px rgba(0, 0, 0, 0.85),
+              0 0 16px rgba(184, 138, 67, 0.08),
+              inset 0 1px 0 rgba(244, 220, 156, 0.14),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+          }
+          .home-screen-root .desktop-home-slogan > svg {
+            display: none;
+          }
+          .home-screen-root .desktop-home-slogan-text {
+            display: block;
+            width: 100%;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: clamp(1.02rem, 1.15vw, 1.15rem);
+            font-weight: 600;
+            letter-spacing: 0.045em;
+            line-height: 1.2;
+            color: #EAD29A;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+          }
           .home-screen-root .desktop-home-arena {
             width: calc(100% + 12px);
             margin-inline: -6px;
@@ -215,11 +248,12 @@ export default function HomeScreen() {
         {/* RIGHT: Premium Dashboard Container */}
         <div className="flex-1 w-full flex flex-col justify-center items-center xl:items-stretch max-w-2xl xl:max-w-[420px] z-20 gap-2 md:gap-4 mb-4 xl:mb-0 -mt-6 md:-mt-0 xl:-mt-10 xl:ml-8 max-md:order-first max-md:flex-none max-md:mt-0 max-md:mb-0 max-md:px-1">
           
-          {/* Premium Flags Block */}
-          <div className="flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[linear-gradient(135deg,rgba(6,182,212,0.10),rgba(7,15,17,0.98)_42%,rgba(7,15,17,0.98))] border-[2px] border-cyan-500/[0.34] transition-colors shadow-[0_0_12px_rgba(6,182,212,0.08)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100 max-md:hidden">
+          {/* Premium Flags / Desktop Slogan Block */}
+          <div className="desktop-home-slogan flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[linear-gradient(135deg,rgba(6,182,212,0.10),rgba(7,15,17,0.98)_42%,rgba(7,15,17,0.98))] border-[2px] border-cyan-500/[0.34] transition-colors shadow-[0_0_12px_rgba(6,182,212,0.08)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100 max-md:hidden">
              <GermanyFlag />
              <AzerbaijanFlag />
              <TurkeyFlag />
+             <span className="desktop-home-slogan-text hidden">{t('home.slogan')}</span>
           </div>
 
           {/* Premium Dashboard Card */}
