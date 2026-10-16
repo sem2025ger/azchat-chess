@@ -131,7 +131,11 @@ export default function ProfileScreen() {
       if (error) throw error;
       setAuthMessage(t('auth.resetEmailSent'));
     } catch (err: any) {
-      setErrorMsg(err.message || t('auth.recoveryError'));
+      if (err?.code === 'over_email_send_rate_limit' || err?.status === 429 || String(err?.message || '').includes('rate limit')) {
+        setErrorMsg(t('auth.emailRateLimit'));
+      } else {
+        setErrorMsg(err.message || t('auth.recoveryError'));
+      }
     } finally {
       setAuthLoading(false);
     }
