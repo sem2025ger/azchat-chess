@@ -820,7 +820,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               ) : null}
 
               <ChessBoard
-                className={!isMultiplayer ? 'p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg' : undefined}
+                className={!isMultiplayer ? 'p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110' : undefined}
                 overrideBoardTheme={boardTheme}
                 game={displayedGame}
                 onMove={handleGameMove}
