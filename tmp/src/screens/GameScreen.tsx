@@ -669,7 +669,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300",
               isMultiplayer
                 ? "w-[min(96vw,56dvh)] md:w-full"
-                : "w-[min(100%,calc(100dvh-13rem-env(safe-area-inset-bottom,0px)))] border-b-0 md:w-full md:border-b-[8px]"
+                : "w-[min(100%,calc(100dvh-14.5rem-env(safe-area-inset-bottom,0px)))] border-b-0 md:w-full md:border-b-[8px]"
             )}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               
@@ -864,16 +864,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
         {/* Mobile Review / Analysis Panel */}
         {!isLiveMultiplayer && (
           <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
-            <div className="h-8 flex items-center justify-between gap-2 px-2 border-b border-white/[0.05] bg-black/25">
+            <div className="min-h-14 flex flex-wrap items-center justify-between gap-2 px-2 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setActiveTab('analysis')}
                   className={cx(
-                    "h-6 px-2 rounded-md text-[0.58rem] font-black uppercase tracking-[0.08em] transition-all",
+                    "min-h-11 px-2.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.06em] transition-colors duration-150",
                     activeTab === 'analysis'
-                      ? "bg-cyan-500/12 text-cyan-200 ring-1 ring-cyan-400/25"
-                      : "text-neutral-600"
+                      ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                      : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
                   )}
                 >
                   Analysis
@@ -882,19 +882,19 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   type="button"
                   onClick={() => setActiveTab('moves')}
                   className={cx(
-                    "h-6 px-2 rounded-md text-[0.58rem] font-black uppercase tracking-[0.08em] transition-all",
+                    "min-h-11 px-2.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.06em] transition-colors duration-150",
                     activeTab === 'moves'
-                      ? "bg-cyan-500/12 text-cyan-200 ring-1 ring-cyan-400/25"
-                      : "text-neutral-600"
+                      ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                      : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
                   )}
                 >
                   Moves
                 </button>
               </div>
-              <div className="flex items-center gap-1.5 text-[0.56rem] font-bold text-neutral-500">
-                <Cpu size={13} className={cx("text-cyan-300", isAnalysing && "animate-pulse")} />
-                <span>Stockfish</span>
-                {engineResult?.depth ? <span className="text-neutral-600">d{engineResult.depth}</span> : null}
+              <div className="ml-auto min-h-11 flex items-center gap-1.5 rounded-lg px-2 text-[0.6875rem] font-bold text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.06] whitespace-nowrap">
+                <Cpu size={16} className={cx("shrink-0 text-cyan-300", isAnalysing && "animate-pulse")} />
+                <span>Stockfish 18</span>
+                {engineResult?.depth ? <span className="rounded bg-black/30 px-1.5 py-1 font-mono text-[0.625rem] text-cyan-200">d{engineResult.depth}</span> : null}
               </div>
             </div>
 
