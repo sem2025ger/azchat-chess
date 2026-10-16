@@ -848,70 +848,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         </div>
 
-        {viewMoveIndex !== -1 && (
-          <div className="md:hidden text-center text-chess-gold text-xs font-bold animate-pulse mt-2 -mb-1">
-            Replay mode — press Live to move
-          </div>
-        )}
-        {/* Mobile Move Controls Row */}
-        <div className="flex md:hidden items-center justify-between gap-2 py-3 px-1 mx-2 shrink-0 mt-auto mb-1 z-10">
-          <button 
-            onClick={() => { if (hasHistory) setViewMoveIndex(0); }} 
-            disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
-          >
-            <Rewind size={22} />
-          </button>
-          
-          <button 
-            onClick={() => { 
-              if (!hasHistory) return;
-              const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
-              setViewMoveIndex(Math.max(0, currentIndex - 1));
-            }} 
-            disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
-          >
-            <ChevronLeft size={26} />
-          </button>
-          
-          <button 
-            onClick={() => setViewMoveIndex(-1)} 
-            disabled={!hasHistory} 
-            className="flex-[1.5] flex justify-center text-white hover:text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-chess-active/90 to-chess-active/70 border border-chess-active/50 shadow-[0_5px_20px_rgba(0,206,209,0.4)] hover:shadow-[0_8px_25px_rgba(0,206,209,0.6)] ring-1 ring-chess-active/40"
-          >
-            <History size={24} className={viewMoveIndex !== -1 ? "animate-pulse" : ""} />
-          </button>
-          
-          <button 
-            onClick={() => {
-              if (!hasHistory) return;
-              if (viewMoveIndex === -1) return;
-              if (viewMoveIndex >= positionHistory.length - 2) {
-                setViewMoveIndex(-1);
-              } else {
-                setViewMoveIndex(viewMoveIndex + 1);
-              }
-            }} 
-            disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
-          >
-            <ChevronRight size={26} />
-          </button>
-          
-          <button 
-            onClick={() => setViewMoveIndex(-1)} 
-            disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
-          >
-            <FastForward size={22} />
-          </button>
-        </div>
-
-
         {/* Mobile Review / Analysis Panel */}
         {!isLiveMultiplayer && (
-          <section className="md:hidden mx-2 mb-3 overflow-hidden rounded-2xl border border-cyan-500/20 bg-[#101211]/95 shadow-[0_16px_40px_-24px_rgba(0,206,209,0.45)] ring-1 ring-white/[0.04]">
+          <section className="md:hidden mx-2 mt-2 mb-2 overflow-hidden rounded-2xl border border-cyan-400/25 bg-[#101211]/95 shadow-[0_16px_40px_-24px_rgba(0,206,209,0.5)] ring-1 ring-white/[0.05]">
             <nav className="grid grid-cols-2 gap-1 p-1.5 border-b border-white/[0.05] bg-black/30">
               {tabs.map((tab) => (
                 <button
@@ -932,7 +871,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </nav>
 
             {activeTab === 'analysis' ? (
-              <div className="max-h-[46dvh] overflow-y-auto overscroll-contain">
+              <div className="max-h-[42dvh] overflow-y-auto overscroll-contain touch-pan-y">
                 <AnalysisPanel
                   score={engineResult?.evaluation || 0.0}
                   bestMove={analysisData?.bestMove}
@@ -942,7 +881,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
                   lines={analysisData?.lines}
                   error={engineFailed}
-                  noMoves={moveHistory.length === 0}
                 />
               </div>
             ) : (
@@ -1007,6 +945,68 @@ export default function GameScreen({ mode }: GameScreenProps) {
             )}
           </section>
         )}
+
+
+        {viewMoveIndex !== -1 && (
+          <div className="md:hidden text-center text-chess-gold text-xs font-bold animate-pulse mt-2 -mb-1">
+            Replay mode — press Live to move
+          </div>
+        )}
+        {/* Mobile Move Controls Row */}
+        <div className="flex md:hidden items-center justify-between gap-2 py-3 px-1 mx-2 shrink-0 mt-auto mb-1 z-10">
+          <button 
+            onClick={() => { if (hasHistory) setViewMoveIndex(0); }} 
+            disabled={!hasHistory} 
+            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
+          >
+            <Rewind size={22} />
+          </button>
+          
+          <button 
+            onClick={() => { 
+              if (!hasHistory) return;
+              const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
+              setViewMoveIndex(Math.max(0, currentIndex - 1));
+            }} 
+            disabled={!hasHistory} 
+            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
+          >
+            <ChevronLeft size={26} />
+          </button>
+          
+          <button 
+            onClick={() => setViewMoveIndex(-1)} 
+            disabled={!hasHistory} 
+            className="flex-[1.5] flex justify-center text-white hover:text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-chess-active/90 to-chess-active/70 border border-chess-active/50 shadow-[0_5px_20px_rgba(0,206,209,0.4)] hover:shadow-[0_8px_25px_rgba(0,206,209,0.6)] ring-1 ring-chess-active/40"
+          >
+            <History size={24} className={viewMoveIndex !== -1 ? "animate-pulse" : ""} />
+          </button>
+          
+          <button 
+            onClick={() => {
+              if (!hasHistory) return;
+              if (viewMoveIndex === -1) return;
+              if (viewMoveIndex >= positionHistory.length - 2) {
+                setViewMoveIndex(-1);
+              } else {
+                setViewMoveIndex(viewMoveIndex + 1);
+              }
+            }} 
+            disabled={!hasHistory} 
+            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
+          >
+            <ChevronRight size={26} />
+          </button>
+          
+          <button 
+            onClick={() => setViewMoveIndex(-1)} 
+            disabled={!hasHistory} 
+            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
+          >
+            <FastForward size={22} />
+          </button>
+        </div>
+
 
         {drawOfferBy && drawOfferBy !== playerColor && !gameOverMessage && (
           <div className="p-2 mb-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex flex-col gap-1.5">
