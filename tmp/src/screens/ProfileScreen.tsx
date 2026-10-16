@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import MobilePlayerPassport from '../components/profile/MobilePlayerPassport';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Target, Swords, Zap, Activity, Calendar, MapPin, LogOut, Loader2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -14,6 +15,14 @@ function cx(...inputs: (string | undefined | null | false)[]) {
 
 export default function ProfileScreen() {
   const { t } = useLanguage();
+  // Mobile-only redesign; the existing desktop profile JSX is left intact.
+  const [showMobilePassport, setShowMobilePassport] = useState(() => window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)');
+    const update = () => setShowMobilePassport(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
   const { session, profile, isLoading, signOut, user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -309,6 +318,30 @@ export default function ProfileScreen() {
           </div>
         </div>
       </div>
+    );
+  }
+
+
+  // Render this separate mobile component for signed-in players only.
+  // The original authenticated desktop JSX below is preserved verbatim.
+  if (showMobilePassport) {
+    return (
+      <MobilePlayerPassport
+        username={profile?.username || user?.user_metadata?.username || 'Guest'}
+        role={profile?.role}
+        countryCode={profile?.countryCode}
+        joinedAt={profile?.createdAt ?? profile?.created_at}
+        ratings={{
+          blitz: profile?.ratingBlitz ?? 1200,
+          rapid: profile?.ratingRapid ?? 1200,
+          bullet: profile?.ratingBullet ?? 1200,
+        }}
+        performance={dbStats}
+        recentGames={recentGames}
+        onPlay={() => navigate('/play')}
+        onSettings={() => navigate('/settings')}
+        onSignOut={signOut}
+      />
     );
   }
 
