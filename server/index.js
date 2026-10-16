@@ -560,7 +560,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('create_private_room', () => {
+  socket.on('create_private_room', (payload) => {
     if (!socket.data?.limiter?.allow('lobby')) {
       socket.emit('rate_limit_exceeded', { action: 'create_private_room' });
       return;
@@ -571,7 +571,7 @@ io.on('connection', (socket) => {
       const existingRoom = activeRooms.get(existingRoomId);
       if (existingRoom) {
         if (existingRoom.isPrivate === true && existingRoom.status === 'pending' && (existingRoom.players.w === socket.id || existingRoom.players.b === socket.id)) {
-          socket.emit('private_room_created', { roomId: existingRoomId });
+          socket.emit('private_room_created', { roomId: existingRoomId, timeControl: existingRoom.timeControl });
           return;
         } else {
           socket.emit('join_failed', { reason: "already_in_room" });
@@ -582,9 +582,18 @@ io.on('connection', (socket) => {
       }
     }
 
+    // Only the new mobile invitation sends a time control. Legacy callers retain 10+0.
+    const requestedTime = payload?.timeControl;
+    const allowedTimes = new Set(['1+0', '1+1', '2+1', '3+0', '3+2', '5+0', '10+0', '15+10', '30+0']);
+    if (requestedTime !== undefined && !allowedTimes.has(requestedTime)) {
+      socket.emit('join_failed', { reason: 'invalid_time_control' });
+      return;
+    }
+    const selectedTime = requestedTime ?? '10+0';
+    const [minutes, increment] = selectedTime.split('+').map(Number);
     const roomId = crypto.randomUUID();
     const isWhite = Math.random() > 0.5;
-    const initialTime = 600;
+    const initialTime = minutes * 60;
 
     const roomData = {
       roomId,
@@ -593,9 +602,9 @@ io.on('connection', (socket) => {
       status: 'pending',
       drawOfferBy: null,
       startedAt: null,
-      timeControl: '10+0',
+      timeControl: selectedTime,
       initialTime,
-      increment: 0,
+      increment,
       initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
       whiteTimeMs: initialTime * 1000,
       blackTimeMs: initialTime * 1000,
@@ -621,7 +630,7 @@ io.on('connection', (socket) => {
     socket.join(roomId);
 
     console.log(`Private match created: ${roomId} by ${socket.id}`);
-    socket.emit('private_room_created', { roomId });
+    socket.emit('private_room_created', { roomId, timeControl: selectedTime });
   });
 
   socket.on('join_private_room', (payload) => {
@@ -992,3 +1001,4 @@ module.exports = {
   rejectGameAction,
   getActivePlayerActionContext,
 };
+
