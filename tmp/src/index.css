@@ -606,3 +606,10 @@
 }
 
 
+/* Desktop pawn assets carry their set's palette; bypass Home's legacy brightness(3).
+   The media query preserves the original SVGs and styling on mobile/tablet. */
+@media (min-width: 1280px) {
+  img[data-desktop-pawn] {
+    filter: none !important;
+  }
+}

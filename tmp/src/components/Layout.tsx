@@ -1,3 +1,6 @@
+import { useSyncExternalStore } from 'react';
+import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
+import nightEarthStill from '../assets/night-earth-still.webp';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Home, Grid, MessageSquare, User, Settings, Circle } from 'lucide-react';
 import { useThemeContext } from '../context/ThemeContext';
@@ -53,20 +56,30 @@ export default function Layout() {
       <aside className="hidden md:flex w-20 xl:w-72 bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
 
-          <div className="h-16 xl:h-24 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
-            <div className="flex flex-col overflow-hidden justify-center w-full items-center xl:items-start">
-              <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.65rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500">
+          <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
+            <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
+              <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.875rem] xl:leading-[1.8rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
                 Chessaz.De
               </span>
-              <div className="mt-3 hidden xl:inline-flex items-center rounded-full px-3 py-1 border border-white/10 bg-neutral-950/50 premium-cycle-container shadow-[0_0_14px_rgba(139,92,246,0.14)]">
-                <span className="text-[0.7rem] font-black uppercase tracking-[0.2em] italic text-glow-cycle opacity-90 whitespace-nowrap">
+              <div className="mt-3 hidden xl:inline-flex items-center justify-center w-full rounded-full px-3 py-[5px] border border-[#D8CCB2]/30 bg-[linear-gradient(135deg,#20242D_0%,#11151C_48%,#0B0F14_100%)] shadow-[0_4px_10px_-6px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(245,238,222,0.07)]">
+                <span className="text-[0.75rem] font-black uppercase tracking-[0.15em] italic text-glow-cycle opacity-90 whitespace-nowrap">
                   PREMIUM CHESS PLATFORM
                 </span>
+              </div>
+              <div
+                role="img"
+                aria-label="Germany • Azerbaijan"
+                title="Germany • Azerbaijan"
+                className="mt-3 hidden xl:flex items-center justify-between w-full px-3.5 py-[7px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
+              >
+                <SidebarGermanyFlag />
+                <NightEarthGlobe />
+                <SidebarAzerbaijanFlag />
               </div>
             </div>
           </div>
 
-          <nav className="px-3 xl:px-5 pt-10 pb-4 space-y-0.5 flex-1">
+          <nav className="px-3 xl:px-5 pt-10 xl:pt-[46px] pb-4 space-y-0.5 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} themeColor="theme-violet" />
@@ -194,5 +207,85 @@ function MobileNavItem({ to, icon, label }: { to: string, icon: React.ReactNode,
       </div>
       <span className="text-[0.5rem] font-black uppercase tracking-widest">{label}</span>
     </NavLink>
+  );
+}
+
+function SidebarGermanyFlag() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="42"
+      height="28"
+      viewBox="0 0 5 3"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      className="w-[42px] h-7 rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
+    >
+      <rect width="5" height="3" y="0" x="0" fill="#0B0C10" />
+      <rect width="5" height="2" y="1" x="0" fill="#D00" />
+      <rect width="5" height="1" y="2" x="0" fill="#FFCE00" />
+    </svg>
+  );
+}
+
+function SidebarAzerbaijanFlag() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="42"
+      height="28"
+      viewBox="150 0 900 600"
+      aria-hidden="true"
+      className="w-[42px] h-7 rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
+    >
+      <rect width="1200" height="200" fill="#00b5e2" />
+      <rect width="1200" height="200" y="200" fill="#ef3340" />
+      <rect width="1200" height="200" y="400" fill="#509e2f" />
+      <circle cx="560" cy="300" r="75" fill="#fff" />
+      <circle cx="585" cy="300" r="60" fill="#ef3340" />
+      <path
+        fill="#fff"
+        d="M660,260 L665,285 L690,280 L675,300 L690,320 L665,315 L660,340 L650,315 L625,320 L640,300 L625,280 L650,285 Z"
+      />
+    </svg>
+  );
+}
+
+const globeMotionQuery = '(min-width: 1280px) and (prefers-reduced-motion: no-preference)';
+
+function subscribeToGlobeVisibility(update: () => void) {
+  const media = window.matchMedia(globeMotionQuery);
+  media.addEventListener('change', update);
+  document.addEventListener('visibilitychange', update);
+  return () => {
+    media.removeEventListener('change', update);
+    document.removeEventListener('visibilitychange', update);
+  };
+}
+
+function NightEarthGlobe() {
+  const animate = useSyncExternalStore(
+    subscribeToGlobeVisibility,
+    () => window.matchMedia(globeMotionQuery).matches && !document.hidden,
+    () => false
+  );
+  // NASA Earth Observatory / NOAA, Black Marble 2016:
+  // https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/
+  // Usage: https://www.nasa.gov/nasa-brand-center/images-and-media/
+  // 30s axial sphere reprojection; lighting/atmosphere stay fixed. No CSS image rotation.
+  return (
+    <span aria-hidden="true" className="flex h-7 w-8 shrink-0 items-center justify-center overflow-visible">
+      {animate ? (
+        <video
+          src={nightEarthAnimation}
+          poster={nightEarthStill}
+          autoPlay muted loop playsInline
+          width="40" height="40"
+          className="h-10 w-10 max-w-none shrink-0 rounded-full"
+        />
+      ) : (
+        <img src={nightEarthStill} alt="" width="40" height="40" className="h-10 w-10 max-w-none shrink-0" />
+      )}
+    </span>
   );
 }

@@ -138,21 +138,20 @@ export default function HomeScreen() {
             -webkit-text-fill-color: transparent;
           }
           .home-screen-root .desktop-home-play {
-            width: 100%;
-            min-height: 62px;
-            border: 1px solid rgba(217, 182, 110, 0.4);
-            background: linear-gradient(135deg, #171B22 0%, #1D1D26 52%, #23202A 100%);
-            color: #F1D9A1;
+            width: 65%;
+            min-height: 55px;
+            padding: 10px 8px;
+            border: 1px solid #C9A45F;
+            background: linear-gradient(115deg, #B88A45 0%, #E4C782 42%, #DABC78 58%, #C9A45F 100%);
+            color: #15171C;
             box-shadow:
-              0 12px 26px -14px rgba(0, 0, 0, 0.85),
-              0 0 14px rgba(184, 138, 67, 0.08),
-              inset 0 1px 0 rgba(244, 220, 156, 0.16),
-              inset 0 -1px 0 rgba(0, 0, 0, 0.45);
-            transition:
-              transform 200ms ease,
-              border-color 220ms ease,
-              background 220ms ease,
-              box-shadow 220ms ease;
+              0 9px 20px -12px rgba(0, 0, 0, 0.75),
+              inset 0 1px 0 rgba(255, 244, 211, 0.5),
+              inset 0 -1px 0 rgba(103, 73, 30, 0.22);
+            transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+          }
+          .home-screen-root .desktop-home-play > div {
+            display: none;
           }
           .home-screen-root .desktop-home-play::before,
           .home-screen-root .desktop-home-play::after {
@@ -160,36 +159,37 @@ export default function HomeScreen() {
             animation: none;
             opacity: 0;
           }
+          .home-screen-root .desktop-home-play::after {
+            content: '';
+            background: linear-gradient(115deg, transparent, rgba(255, 248, 225, 0.22) 45%, transparent);
+            transition: opacity 200ms ease;
+          }
           .home-screen-root .desktop-home-play .text-shadow-cycle {
-            color: #F1D9A1;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
-            transition: color 220ms ease, text-shadow 220ms ease;
+            color: #15171C;
+            font-size: clamp(0.75rem, 0.9vw, 0.875rem);
+            letter-spacing: 0.025em;
+            white-space: nowrap;
+            text-shadow: none;
           }
           .home-screen-root .desktop-home-play:hover {
-            transform: translateY(-2px);
-            border-color: rgba(244, 220, 156, 0.62);
-            background: linear-gradient(135deg, #1D222B 0%, #24232E 52%, #2B2733 100%);
+            transform: translateY(-1px);
+            border-color: #E4C782;
             box-shadow:
-              0 16px 32px -14px rgba(0, 0, 0, 0.9),
-              0 0 20px rgba(217, 182, 110, 0.18),
-              inset 0 1px 0 rgba(244, 220, 156, 0.24),
-              inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+              0 12px 24px -12px rgba(0, 0, 0, 0.8),
+              inset 0 1px 0 rgba(255, 244, 211, 0.65),
+              inset 0 -1px 0 rgba(103, 73, 30, 0.22);
           }
-          .home-screen-root .desktop-home-play:hover .text-shadow-cycle {
-            color: #F7E5B7;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75), 0 0 12px rgba(217, 182, 110, 0.22);
+          .home-screen-root .desktop-home-play:hover::after {
+            opacity: 1;
           }
           .home-screen-root .desktop-home-play:active {
             transform: translateY(0) scale(0.99);
-            border-color: rgba(217, 182, 110, 0.48);
-            box-shadow:
-              0 8px 18px -12px rgba(0, 0, 0, 0.85),
-              0 0 12px rgba(217, 182, 110, 0.12),
-              inset 0 2px 4px rgba(0, 0, 0, 0.45);
+            border-color: #B88A45;
+            box-shadow: 0 4px 10px -8px rgba(0, 0, 0, 0.75), inset 0 2px 4px rgba(103, 73, 30, 0.2);
           }
           .home-screen-root .desktop-home-play:focus-visible {
-            outline: 2px solid #D9B66E;
-            outline-offset: 3px;
+            outline: 2px solid #E4C782;
+            outline-offset: 4px;
           }
         }
         @media (min-width: 1280px) and (prefers-reduced-motion: no-preference) {
@@ -208,8 +208,13 @@ export default function HomeScreen() {
         @media (min-width: 1280px) and (prefers-reduced-motion: reduce) {
           .home-screen-root .desktop-home-arena,
           .home-screen-root .desktop-home-play,
-          .home-screen-root .desktop-home-play .text-shadow-cycle {
+          .home-screen-root .desktop-home-play .text-shadow-cycle,
+          .home-screen-root .desktop-home-play::after {
             transition: none;
+          }
+          .home-screen-root .desktop-home-play:hover,
+          .home-screen-root .desktop-home-play:active {
+            transform: none;
           }
           .home-screen-root .desktop-home-arena h1 {
             animation: none;
