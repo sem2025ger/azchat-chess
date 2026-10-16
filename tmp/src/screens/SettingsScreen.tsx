@@ -120,6 +120,12 @@ export default function SettingsScreen() {
     { id: 'ru', name: 'Русский', flag: '🇷🇺' },
   ];
 
+  const mobilePiecePreviewSrc = (styleId: string, code: string) => {
+    if (styleId === 'cburnett-classic') return `/chess-assets/pieces/cburnett/${code}.svg`;
+    if (styleId === 'neo' || styleId === 'tournament') return `/pieces/mobile/${styleId}/${code}.svg`;
+    return `/pieces/${styleId}/${code}.svg`;
+  };
+
   const renderMobileView = () => {
     switch (activeSubView) {
       case 'board':
@@ -153,12 +159,12 @@ export default function SettingsScreen() {
                   key={style.id}
                   active={pieceTheme === style.id}
                   onClick={() => setPieceTheme(style.id as any)}
-                  title={style.name}
+                  title={style.id === 'neo' ? 'Merida Flat' : style.id === 'tournament' ? 'Merida Classic' : style.name}
                   preview={
                     <div className="flex justify-center gap-1">
-                      <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wK.svg` : `/pieces/${style.id}/wK.svg`} alt={style.name} className="w-8 h-8 object-contain" />
-                      <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wQ.svg` : `/pieces/${style.id}/wQ.svg`} alt={style.name} className="w-8 h-8 object-contain" />
-                      <img src={style.id === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wN.svg` : `/pieces/${style.id}/wN.svg`} alt={style.name} className="w-8 h-8 object-contain" />
+                      <img src={mobilePiecePreviewSrc(style.id, 'wK')} alt={style.name} className="w-8 h-8 object-contain" />
+                      <img src={mobilePiecePreviewSrc(style.id, 'wQ')} alt={style.name} className="w-8 h-8 object-contain" />
+                      <img src={mobilePiecePreviewSrc(style.id, 'wN')} alt={style.name} className="w-8 h-8 object-contain" />
                     </div>
                   }
                 />
