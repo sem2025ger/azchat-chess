@@ -58,6 +58,16 @@ export default function HomeScreen() {
           .home-screen-root .board-container {
             max-width: calc(100vw - 8px) !important;
           }
+          /* On mobile Home, render black pieces with their original SVG colors,
+             exactly as on Analysis. Preserve the existing desktop filter. */
+          .home-screen-root .home-board img[src$="bK.svg"],
+          .home-screen-root .home-board img[src$="bQ.svg"],
+          .home-screen-root .home-board img[src$="bR.svg"],
+          .home-screen-root .home-board img[src$="bB.svg"],
+          .home-screen-root .home-board img[src$="bN.svg"],
+          .home-screen-root .home-board img[src$="bP.svg"] {
+            filter: none;
+          }
         }
       `}</style>
 
