@@ -107,26 +107,24 @@ export default function HomeScreen() {
           {/* 2. Premium Play Now CTA */}
           <Link
             to="/play"
-            className="mobile-home-play group relative flex items-center justify-between gap-4 px-5 py-3.5 btn-glow-cycle border border-white/20 text-black rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-full"
+            className="mobile-home-play group relative flex items-center justify-between gap-4 px-5 py-3.5 btn-glow-cycle border border-white/20 text-black rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-full max-md:justify-center max-md:gap-0 max-md:min-h-16"
           >
             {/* Shimmer sweep on hover */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
 
-            <div className="flex items-center gap-3 relative z-10 max-md:min-w-0">
+            <div className="flex items-center gap-3 relative z-10 max-md:hidden">
               <div className="w-9 h-9 bg-black/[0.14] rounded-xl flex items-center justify-center shadow-inner flex-shrink-0">
-                <Play fill="currentColor" size={15} className="group-hover:scale-110 transition-transform duration-200 ml-0.5 hidden md:block" />
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false" className="md:hidden shrink-0">
-                  <path fillRule="evenodd" d="M9 3 8 7l-4 5 2 3 4-2 2 2-4 4h12v-3c0-6-3-10-8-11l-1-3-2 1ZM10 8a1 1 0 1 0 2 0 1 1 0 0 0-2 0ZM6 20h15v2H6Z" clipRule="evenodd" />
-                </svg>
+                <Play fill="currentColor" size={15} className="group-hover:scale-110 transition-transform duration-200 ml-0.5" />
               </div>
-              <div className="flex flex-col items-start leading-none max-md:min-w-0">
-                <span className="font-black text-[0.95rem] tracking-tight uppercase italic text-shadow-cycle hidden md:inline">{t('home.playNow')}</span>
-                <span className="md:hidden font-extrabold text-[0.95rem] tracking-[0.04em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
+              <div className="flex flex-col items-start leading-none">
+                <span className="font-black text-[0.95rem] tracking-tight uppercase italic text-shadow-cycle">{t('home.playNow')}</span>
                 <span className="text-[0.5rem] font-black opacity-50 tracking-[0.22em] uppercase mt-0.5">{t('home.playNow.subtitle')}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 relative z-10 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-300">
+            <span className="md:hidden relative z-10 w-full text-center font-extrabold text-[clamp(1.125rem,5.5vw,1.5rem)] tracking-[0.06em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
+
+            <div className="flex items-center gap-2 relative z-10 opacity-70 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-300 max-md:hidden">
               <div className="h-5 w-px bg-black/20" />
               <ChevronRight size={17} />
             </div>
