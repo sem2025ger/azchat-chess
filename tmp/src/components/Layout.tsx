@@ -53,13 +53,13 @@ export default function Layout() {
       <aside className="hidden md:flex w-20 xl:w-72 bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
 
-          <div className="h-16 xl:h-auto xl:pt-4 xl:pb-3.5 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
+          <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
-              <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.65rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500">
+              <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.8rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
                 Chessaz.De
               </span>
-              <div className="mt-3 hidden xl:inline-flex items-center justify-center w-full rounded-full px-3 py-1 border border-white/10 bg-neutral-950/50 premium-cycle-container shadow-[0_0_14px_rgba(139,92,246,0.14)]">
-                <span className="text-[0.7rem] font-black uppercase tracking-[0.2em] italic text-glow-cycle opacity-90 whitespace-nowrap">
+              <div className="mt-3 hidden xl:inline-flex items-center justify-center w-full rounded-full px-3 py-[5px] border border-[#D8CCB2]/30 bg-[linear-gradient(135deg,#20242D_0%,#11151C_48%,#0B0F14_100%)] shadow-[0_4px_10px_-6px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(245,238,222,0.07)]">
+                <span className="text-[0.75rem] font-black uppercase tracking-[0.15em] italic text-glow-cycle opacity-90 whitespace-nowrap">
                   PREMIUM CHESS PLATFORM
                 </span>
               </div>
@@ -67,23 +67,15 @@ export default function Layout() {
                 role="img"
                 aria-label="Germany • Azerbaijan"
                 title="Germany • Azerbaijan"
-                className="mt-3 hidden xl:flex items-center justify-between w-full px-3.5 py-[7px] rounded-full border border-[#D9B66E]/[0.42] bg-[radial-gradient(ellipse_at_18%_50%,rgba(217,182,110,0.14),transparent_62%),radial-gradient(ellipse_at_82%_50%,rgba(6,182,212,0.14),transparent_62%),linear-gradient(135deg,#0b101b_0%,#111827_50%,#0d1320_100%)] shadow-[0_10px_24px_-10px_rgba(0,0,0,0.92),0_0_16px_rgba(217,182,110,0.12),0_0_22px_rgba(6,182,212,0.08),inset_0_1px_0_rgba(244,220,156,0.22),inset_0_-1px_0_rgba(6,182,212,0.14)] select-none pointer-events-none shrink-0"
+                className="mt-3 hidden xl:flex items-center justify-between w-full px-3.5 py-[7px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
               >
                 <SidebarGermanyFlag />
-                <div className="flex items-center justify-center gap-2 px-1">
-                  <span className="text-[0.75rem] font-extrabold uppercase tracking-[0.18em] text-[#F3E3BE] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
-                    DE
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className="text-[0.75rem] leading-none text-[#DFB062] drop-shadow-[0_0_6px_rgba(223,176,98,0.65)]"
-                  >
-                    •
-                  </span>
-                  <span className="text-[0.75rem] font-extrabold uppercase tracking-[0.18em] text-[#F3E3BE] leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
-                    AZ
-                  </span>
-                </div>
+                <span
+                  aria-hidden="true"
+                  className="flex h-7 w-5 shrink-0 items-center justify-center text-[14px] leading-none bg-[linear-gradient(135deg,#D8BC88_0%,#F4EDDE_48%,#BFC5CE_100%)] bg-clip-text text-transparent drop-shadow-[0_0_3px_rgba(228,216,190,0.16)]"
+                >
+                  ◆
+                </span>
                 <SidebarAzerbaijanFlag />
               </div>
             </div>
