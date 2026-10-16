@@ -66,7 +66,7 @@ export default function Layout() {
             </div>
           </div>
 
-          <nav className="px-3 xl:px-5 py-4 space-y-0.5 flex-1">
+          <nav className="px-3 xl:px-5 pt-10 pb-4 space-y-0.5 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} themeColor="theme-violet" />
