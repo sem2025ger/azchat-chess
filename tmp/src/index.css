@@ -7,7 +7,7 @@
     @apply bg-[#161512] text-white font-sans antialiased;
     margin: 0;
     min-height: 100vh;
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     overflow-x: hidden;
   }
 
@@ -19,11 +19,11 @@
 
 @layer utilities {
   .glass-morphism {
-    @apply bg-white/5 backdrop-blur-3xl border border-white/10 shadow-2xl;
+    @apply bg-white/5 border border-white/10 shadow-xl;
   }
   
   .glass-dark {
-    @apply bg-black/40 backdrop-blur-2xl border border-white/5 shadow-2xl;
+    @apply bg-black/60 border border-white/5 shadow-xl;
   }
 
   .pb-safe {
@@ -47,7 +47,7 @@
   }
 
   .animate-pulse-slow {
-    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    animation: none;
   }
 
   @keyframes spin {
@@ -100,9 +100,10 @@
 
 /* Start Game Button Animation */
 .btn-glow-cycle {
-  background: linear-gradient(135deg, #fbbf24, #06b6d4, #a855f7, #fbbf24);
-  background-size: 300% 300%;
-  animation: glowCycle 8s ease-in-out infinite;
+  background: linear-gradient(135deg, #fbbf24, #06b6d4);
+  background-size: 100% 100%;
+  animation: none;
+  box-shadow: 0 12px 26px -12px rgba(6, 182, 212, 0.42);
 }
 
 @keyframes glowCycle {
@@ -134,7 +135,9 @@
 
 /* Right Panel Animation */
 .panel-glow-cycle {
-  animation: panelGlowCycle 8s ease-in-out infinite;
+  animation: none;
+  box-shadow: 0 14px 32px -18px rgba(6, 182, 212, 0.28);
+  border-color: rgba(255, 255, 255, 0.10);
 }
 
 @keyframes panelGlowCycle {
@@ -158,8 +161,9 @@
 
 /* Premium Flag Flow Cycle */
 .premium-flag-glow {
-  animation: premiumFlagFlow 9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  border: 1px solid transparent;
+  animation: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 6px 14px -10px rgba(0,0,0,0.75);
 }
 .premium-flag-1 { animation-delay: 0s; }
 .premium-flag-2 { animation-delay: 0.3s; }
@@ -183,9 +187,9 @@
 
 /* Text Gradient Cycle */
 .text-glow-cycle {
-  background: linear-gradient(135deg, #fbbf24, #06b6d4, #a855f7, #fbbf24);
-  background-size: 300% 300%;
-  animation: textGlowCycle 8s ease-in-out infinite;
+  background: linear-gradient(135deg, #fbbf24, #06b6d4);
+  background-size: 100% 100%;
+  animation: none;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -217,8 +221,9 @@
 
 /* Text Shadow Cycle for Start Game button */
 .text-shadow-cycle {
-  animation: textShadowCycle 8s ease-in-out infinite;
+  animation: none;
   color: #1a1a1a;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.32);
 }
 
 @keyframes textShadowCycle {
@@ -256,8 +261,11 @@
 }
 
 .sidebar-item-active.theme-premium {
-  background: rgba(255, 255, 255, 0.05);
-  animation: sidebarGlowCycle 8s ease-in-out infinite;
+  background: rgba(6, 182, 212, 0.12);
+  animation: none;
+  color: #06b6d4;
+  box-shadow: inset 4px 0 0 0 #06b6d4, 0 0 14px rgba(6, 182, 212, 0.10);
+  border-color: rgba(6, 182, 212, 0.28);
 }
 
 @keyframes sidebarGlowCycle {
@@ -323,7 +331,9 @@
 }
 
 .premium-cycle-container {
-  animation: premiumBorderGlow 9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: none;
+  border-color: rgba(6, 182, 212, 0.24);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.10);
 }
 
 @keyframes premiumBorderGlow {
@@ -333,8 +343,11 @@
 }
 
 .premium-cycle-active {
-  animation: premiumBgCycle 9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: none;
   transform: translateY(-1px);
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  color: #000;
+  box-shadow: 0 4px 12px -6px rgba(6, 182, 212, 0.38);
 }
 
 @keyframes premiumBgCycle {
@@ -359,7 +372,7 @@
 .text-premium-animate {
   background: linear-gradient(to right, #00ced1, #3b82f6, #8b5cf6, #dfb062, #00ced1);
   background-size: 200% auto;
-  animation: premiumTextGlow 10s linear infinite;
+  animation: none;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -375,7 +388,7 @@
 .settings-animated-border {
   background: linear-gradient(135deg, rgba(0, 206, 209, 0.5), rgba(168, 85, 247, 0.5), rgba(59, 130, 246, 0.5), rgba(223, 176, 98, 0.5), rgba(0, 206, 209, 0.5));
   background-size: 300% 300%;
-  animation: settingsBorderGlow 10s ease-in-out infinite;
+  animation: none;
 }
 
 @keyframes settingsBorderGlow {
@@ -407,7 +420,7 @@
     pointer-events: none;
     z-index: 20;
     box-shadow: inset 0 0 0 1px rgba(18, 14, 8, 0.96);
-    animation: homeBoardFrameTone 12s linear infinite;
+    animation: none;
   }
 }
 
@@ -454,4 +467,13 @@
     inset 0 0 0 1px rgba(223, 176, 98, 0.28),
     0 0 24px rgba(223, 176, 98, 0.16);
   color: #fff;
+}
+
+
+/* Performance mode: keep the premium dark-glass look without continuous GPU blur. */
+[class*="backdrop-blur-"],
+.glass-morphism,
+.glass-dark {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
 }
