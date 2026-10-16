@@ -6,7 +6,7 @@ export const translations: TranslationDictionary = {
   // Navigation & Layout
   'nav.home': { en: 'Home', de: 'Startseite', ua: 'Головна', ru: 'Главная', az: 'Ana Səhifə', tr: 'Ana Sayfa' },
   'nav.play': { en: 'Play', de: 'Spielen', ua: 'Грати', ru: 'Играть', az: 'Oyna', tr: 'Oyna' },
-  'nav.game': { en: 'Game', de: 'Spiel', ua: 'Гра', ru: 'Игра', az: 'Oyun', tr: 'Oyun' },
+  'nav.game': { en: 'Analysis', de: 'Analyse', ua: 'Аналіз', ru: 'Анализ', az: 'Analiz', tr: 'Analiz' },
   'nav.chat': { en: 'Chat', de: 'Chat', ua: 'Чат', ru: 'Чат', az: 'Söhbət', tr: 'Sohbet' },
   'nav.profile': { en: 'Profile', de: 'Profil', ua: 'Профіль', ru: 'Профиль', az: 'Profil', tr: 'Profil' },
   'nav.settings': { en: 'Settings', de: 'Einstellungen', ua: 'Налаштування', ru: 'Настройки', az: 'Ayarlar', tr: 'Ayarlar' },
