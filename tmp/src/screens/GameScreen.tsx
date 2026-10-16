@@ -652,21 +652,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
           <div className="relative flex gap-0 md:gap-6 w-full justify-center group/board items-center py-0 md:py-1 lg:h-full lg:min-h-0 lg:flex-1">
 
-            {/* Mobile-only evaluation bar. Desktop markup below is intentionally unchanged. */}
-            <div className={cx(
-              "md:hidden transition-all duration-300 ease-out self-stretch overflow-hidden py-1",
-              analysisActive
-                ? "w-5 opacity-100 translate-x-0 rounded-lg ml-1"
-                : "w-0 opacity-0 overflow-hidden -translate-x-4 pointer-events-none"
-            )}>
-              <EvaluationBar
-                score={engineResult?.evaluation || 0.0}
-                isMate={!!engineResult?.mate}
-                mateIn={engineResult?.mate}
-                className="h-full rounded-lg ring-1 ring-white/10"
-              />
-            </div>
-
             {/* Desktop evaluation bar — preserved from production. */}
             <div className={cx(
               "hidden md:block transition-all duration-1000 ease-in-out self-stretch rounded-2xl overflow-hidden py-1",
@@ -682,7 +667,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
             <div className={cx(
               "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300",
-              analysisActive ? "w-[min(88vw,42dvh)] md:w-full" : "w-[min(94vw,44dvh)] md:w-full"
+              analysisActive ? "w-[min(96vw,56dvh)] md:w-full" : "w-[min(96vw,56dvh)] md:w-full"
             )}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               
@@ -875,139 +860,111 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         {/* Mobile Review / Analysis Panel */}
         {!isLiveMultiplayer && (
-          <section className="md:hidden mx-2 mt-1 mb-1 overflow-hidden rounded-[1.25rem] border border-cyan-400/25 bg-[#101211]/95 shadow-[0_12px_28px_-20px_rgba(0,206,209,0.5)] ring-1 ring-white/[0.05] shrink-0">
-            <nav className="grid grid-cols-2 gap-1 p-1 border-b border-white/[0.05] bg-black/30">
-              {tabs.map((tab) => (
+          <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
+            <div className="h-8 flex items-center justify-between gap-2 px-2 border-b border-white/[0.05] bg-black/25">
+              <div className="flex items-center gap-1">
                 <button
-                  key={tab.id}
                   type="button"
-                  onClick={() => setActiveTab(tab.id as 'moves' | 'analysis')}
+                  onClick={() => setActiveTab('analysis')}
                   className={cx(
-                    "flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[0.62rem] font-black uppercase tracking-[0.1em] transition-all active:scale-[0.98]",
-                    activeTab === tab.id
-                      ? "bg-cyan-500/12 text-cyan-200 ring-1 ring-cyan-400/30 shadow-[0_0_18px_rgba(34,211,238,0.10)]"
-                      : "text-neutral-500 hover:text-neutral-300"
+                    "h-6 px-2 rounded-md text-[0.58rem] font-black uppercase tracking-[0.08em] transition-all",
+                    activeTab === 'analysis'
+                      ? "bg-cyan-500/12 text-cyan-200 ring-1 ring-cyan-400/25"
+                      : "text-neutral-600"
                   )}
                 >
-                  <tab.icon size={15} />
-                  <span>{tab.label}</span>
+                  Analysis
                 </button>
-              ))}
-            </nav>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('moves')}
+                  className={cx(
+                    "h-6 px-2 rounded-md text-[0.58rem] font-black uppercase tracking-[0.08em] transition-all",
+                    activeTab === 'moves'
+                      ? "bg-cyan-500/12 text-cyan-200 ring-1 ring-cyan-400/25"
+                      : "text-neutral-600"
+                  )}
+                >
+                  Moves
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5 text-[0.56rem] font-bold text-neutral-500">
+                <Cpu size={13} className={cx("text-cyan-300", isAnalysing && "animate-pulse")} />
+                <span>Stockfish</span>
+                {engineResult?.depth ? <span className="text-neutral-600">d{engineResult.depth}</span> : null}
+              </div>
+            </div>
 
             {activeTab === 'analysis' ? (
-              <div className="max-h-[23dvh] overflow-y-auto overscroll-contain touch-pan-y p-2.5">
-                <div className="flex items-center justify-between gap-2 border-b border-white/[0.06] pb-2">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center shrink-0">
-                      <Cpu size={16} className={cx("text-cyan-300", isAnalysing && "animate-pulse")} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[0.72rem] font-black uppercase tracking-[0.16em] text-white">Stockfish</div>
-                      <div className="text-[0.58rem] font-bold uppercase tracking-[0.12em] text-neutral-500">
-                        {engineFailed ? t('game.analysis.unavailable') : isAnalysing ? t('game.analysis.analyzing') : t('game.analysis.ready')}
+              <div className="px-2 py-1.5 space-y-1">
+                {(analysisData?.lines?.length ? analysisData.lines.slice(0, 2) : [null, null]).map((line, index) => {
+                  const score = line
+                    ? (line.mate != null
+                        ? (line.mate < 0 ? `-M${Math.abs(line.mate)}` : `M${line.mate}`)
+                        : (line.evaluation > 0 ? `+${line.evaluation.toFixed(2)}` : line.evaluation.toFixed(2)))
+                    : index === 0 && engineResult
+                      ? (engineResult.mate != null
+                          ? (engineResult.mate < 0 ? `-M${Math.abs(engineResult.mate)}` : `M${engineResult.mate}`)
+                          : (engineResult.evaluation > 0 ? `+${engineResult.evaluation.toFixed(2)}` : engineResult.evaluation.toFixed(2)))
+                      : '—';
+
+                  const moves = line?.moves?.length
+                    ? line.moves.slice(0, 10).join(' ')
+                    : index === 0 && analysisData?.continuation?.length
+                      ? [analysisData.bestMove, ...analysisData.continuation.slice(0, 8)].filter(Boolean).join(' ')
+                      : (isAnalysing ? 'Analyzing…' : '—');
+
+                  return (
+                    <div key={index} className="min-h-9 grid grid-cols-[3.5rem_1fr] items-center gap-2">
+                      <div className={cx(
+                        "h-8 rounded-lg flex items-center justify-center font-mono text-[0.82rem] font-black border",
+                        score.startsWith('+')
+                          ? "bg-white text-black border-white"
+                          : score.startsWith('-')
+                            ? "bg-black text-white border-white/15"
+                            : "bg-neutral-800 text-neutral-200 border-neutral-700"
+                      )}>
+                        {score}
+                      </div>
+                      <div className="min-w-0 whitespace-nowrap overflow-hidden text-ellipsis text-[0.78rem] leading-none font-bold text-neutral-200 tracking-tight">
+                        {moves}
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {engineResult?.depth ? (
-                      <span className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-[0.58rem] font-bold text-neutral-400">
-                        d{engineResult.depth}
-                      </span>
-                    ) : null}
-                    <div className={cx(
-                      "min-w-[3.8rem] px-2.5 py-1.5 rounded-lg text-center font-mono text-base font-black border shadow-inner",
-                      engineResult?.mate != null
-                        ? "bg-amber-400/10 text-amber-300 border-amber-400/25"
-                        : (engineResult?.evaluation || 0) > 0
-                          ? "bg-white text-black border-white"
-                          : (engineResult?.evaluation || 0) < 0
-                            ? "bg-black text-white border-white/20"
-                            : "bg-neutral-800 text-neutral-200 border-neutral-700"
-                    )}>
-                      {engineResult?.mate != null
-                        ? (engineResult.mate < 0 ? `-M${Math.abs(engineResult.mate)}` : `M${engineResult.mate}`)
-                        : ((engineResult?.evaluation || 0) > 0
-                            ? `+${(engineResult?.evaluation || 0).toFixed(2)}`
-                            : (engineResult?.evaluation || 0).toFixed(2))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 pt-2">
-                  <span className="text-[0.58rem] font-black uppercase tracking-[0.14em] text-neutral-600">
-                    {t('game.analysis.bestMove')}
-                  </span>
-                  <span className="text-sm font-black text-cyan-200">
-                    {analysisData?.bestMove || (isAnalysing ? '…' : '—')}
-                  </span>
-
-                  <span className="text-[0.58rem] font-black uppercase tracking-[0.14em] text-neutral-600">
-                    Line
-                  </span>
-                  <div className="text-[0.72rem] font-semibold leading-4 text-neutral-300 break-words line-clamp-2">
-                    {analysisData?.lines?.[0]?.moves?.length
-                      ? analysisData.lines[0].moves.slice(0, 12).join(' ')
-                      : analysisData?.continuation?.length
-                        ? analysisData.continuation.slice(0, 10).join(' ')
-                        : (isAnalysing ? t('game.analysis.analyzing_position') : '—')}
-                  </div>
-                </div>
-
+                  );
+                })}
                 {engineFailed && (
-                  <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-[0.68rem] font-bold text-red-300">
+                  <div className="px-1 py-1 text-[0.62rem] font-bold text-red-300">
                     {t('game.analysis.unavailable')}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="max-h-[23dvh] overflow-y-auto overscroll-contain touch-pan-y bg-black/[0.08]">
+              <div className="max-h-[12dvh] overflow-y-auto overscroll-contain touch-pan-y bg-black/[0.08]">
                 {movePairs.length === 0 ? (
-                  <div className="flex min-h-28 items-center justify-center px-4 text-[0.7rem] font-bold uppercase tracking-widest text-neutral-600">
+                  <div className="flex min-h-16 items-center justify-center px-3 text-[0.62rem] font-bold uppercase tracking-widest text-neutral-600">
                     {t('game.analysis.nomoves')}
                   </div>
                 ) : (
                   <table className="w-full border-collapse text-left">
-                    <thead className="sticky top-0 z-10 bg-neutral-950/95 backdrop-blur-xl">
-                      <tr className="text-[0.58rem] font-black uppercase tracking-[0.16em] text-neutral-600">
-                        <th className="w-10 border-r border-white/[0.04] px-2 py-2 text-center">#</th>
-                        <th className="px-3 py-2">{t('game.white')}</th>
-                        <th className="px-3 py-2">{t('game.black')}</th>
-                      </tr>
-                    </thead>
                     <tbody className="divide-y divide-white/[0.04]">
                       {movePairs.map((move, i) => {
                         const whitePositionIndex = i * 2 + 1;
                         const blackPositionIndex = i * 2 + 2;
                         return (
-                          <tr key={i} className="text-[0.76rem] font-bold text-neutral-300">
-                            <td className="border-r border-white/[0.04] bg-black/20 px-2 py-2 text-center font-mono text-neutral-600">
-                              {move.n}.
-                            </td>
+                          <tr key={i} className="text-[0.7rem] font-bold text-neutral-300">
+                            <td className="w-8 px-2 py-1.5 text-center font-mono text-neutral-600">{move.n}.</td>
                             <td
-                              className={cx(
-                                "px-3 py-2",
-                                whitePositionIndex < positionHistory.length && "cursor-pointer",
-                                viewMoveIndex === whitePositionIndex && "bg-cyan-500/[0.08] text-cyan-100"
-                              )}
+                              className="px-2 py-1.5"
                               onClick={() => {
-                                if (whitePositionIndex < positionHistory.length) {
-                                  setViewMoveIndex(whitePositionIndex);
-                                }
+                                if (whitePositionIndex < positionHistory.length) setViewMoveIndex(whitePositionIndex);
                               }}
                             >
                               {move.w}
                             </td>
                             <td
-                              className={cx(
-                                "px-3 py-2",
-                                move.b && blackPositionIndex < positionHistory.length && "cursor-pointer",
-                                viewMoveIndex === blackPositionIndex && "bg-cyan-500/[0.08] text-cyan-100"
-                              )}
+                              className="px-2 py-1.5"
                               onClick={() => {
-                                if (move.b && blackPositionIndex < positionHistory.length) {
-                                  setViewMoveIndex(blackPositionIndex);
-                                }
+                                if (move.b && blackPositionIndex < positionHistory.length) setViewMoveIndex(blackPositionIndex);
                               }}
                             >
                               {move.b}
@@ -1024,13 +981,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
         )}
 
 
-        {viewMoveIndex !== -1 && (
+        {viewMoveIndex !== -1 && isMultiplayer && (
           <div className="md:hidden text-center text-chess-gold text-[0.58rem] font-bold animate-pulse mt-0.5 -mb-0.5 leading-none">
             Replay mode — press Live to move
           </div>
         )}
         {/* Mobile Move Controls Row */}
-        <div className="flex md:hidden items-center justify-between gap-1.5 py-1 px-1 mx-2 shrink-0 mt-0 mb-1 z-10">
+        <div className={cx(
+          "md:hidden items-center justify-between gap-1.5 py-1 px-1 mx-2 shrink-0 mt-0 mb-1 z-10",
+          isMultiplayer ? "flex" : "hidden"
+        )}>
           <button 
             onClick={() => { if (hasHistory) setViewMoveIndex(0); }} 
             disabled={!hasHistory} 
