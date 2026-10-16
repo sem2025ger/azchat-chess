@@ -370,8 +370,8 @@ function PieceImage({
       ? `/pieces/mobile/${pieceSetName}/${pieceCode}.svg`
       : `/pieces/${pieceSetName}/${pieceCode}.svg`;
 
-  // Trial Neo pawns only in the default desktop set; keep original assets below 1280px.
-  const desktopPawnSrc = pieceSetName === 'cburnett-classic' && piece.type === 'p'
+  // Share the Neo pawn silhouette across the four desktop sets; preserve smaller screens.
+  const desktopPawnSrc = ['classic', 'cburnett-classic', 'neo', 'tournament'].includes(pieceSetName) && piece.type === 'p'
     ? `/pieces/desktop/neo-pawns/${pieceCode}.png`
     : null;
 
@@ -383,6 +383,8 @@ function PieceImage({
     <img
       src={src}
       alt={pieceCode}
+      data-desktop-pawn={desktopPawnSrc ? piece.color : undefined}
+      data-piece-theme={desktopPawnSrc ? pieceSetName : undefined}
       className="w-full h-full object-contain transform-gpu"
       onError={(e) => {
         (e.target as HTMLImageElement).style.display = 'none';

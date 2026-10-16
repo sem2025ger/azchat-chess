@@ -606,3 +606,18 @@
 }
 
 
+/* Neo pawn palette matching. Override Home's legacy brightness(3) only on desktop pawns. */
+@media (min-width: 1280px) {
+  img[data-desktop-pawn="w"] {
+    filter: contrast(1.35) brightness(0.92) !important;
+  }
+  img[data-desktop-pawn="b"] {
+    filter: brightness(0.3) contrast(1.08) !important;
+  }
+  img[data-desktop-pawn="b"][data-piece-theme="neo"] {
+    filter: brightness(0.5) contrast(1.08) !important;
+  }
+  img[data-desktop-pawn="w"][data-piece-theme="tournament"] {
+    filter: contrast(1.2) brightness(0.86) !important;
+  }
+}
