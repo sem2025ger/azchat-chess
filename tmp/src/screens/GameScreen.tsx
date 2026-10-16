@@ -522,6 +522,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   }, [game, viewMoveIndex, positionHistory]);
 
   const hasHistory = positionHistory.length > 1;
+  const mobileReviewControlClass = 'min-h-11 flex items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] text-neutral-200 shadow-sm transition-[color,background-color,transform] duration-150 hover:bg-cyan-500/10 hover:text-cyan-100 active:scale-95 disabled:opacity-30 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60';
 
   const analysisData = useMemo(() => {
     if (!engineResult) return null;
@@ -792,7 +793,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300",
               isMultiplayer
                 ? "w-[min(96vw,56dvh)] md:w-full"
-                : "w-[min(100%,calc(100dvh-14.5rem-env(safe-area-inset-bottom,0px)))] border-b-0 md:w-full md:border-b-[8px]"
+                : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] border-b-0 md:w-full md:border-b-[8px]"
             )}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               
@@ -865,6 +866,55 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         </div>
       </div>
+
+      {/* Mobile review navigation stays visible in both Analysis and Moves. */}
+      {!isMultiplayer && (
+        <nav aria-label="Move navigation" className="md:hidden grid grid-cols-4 gap-2 mx-2 mt-1 mb-1 p-1 shrink-0 rounded-2xl border border-white/[0.06] bg-black/20">
+          <button
+            type="button"
+            aria-label="First position"
+            title="First position"
+            className={mobileReviewControlClass}
+            disabled={!hasHistory || viewMoveIndex === 0}
+            onClick={() => setViewMoveIndex(0)}
+          >
+            <Rewind size={22} />
+          </button>
+          <button
+            type="button"
+            aria-label="Previous move"
+            title="Previous move"
+            className={mobileReviewControlClass}
+            disabled={!hasHistory || viewMoveIndex === 0}
+            onClick={() => {
+              const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
+              setViewMoveIndex(Math.max(0, currentIndex - 1));
+            }}
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button
+            type="button"
+            aria-label="Next move"
+            title="Next move"
+            className={mobileReviewControlClass}
+            disabled={!hasHistory || viewMoveIndex === -1 || viewMoveIndex >= positionHistory.length - 1}
+            onClick={() => setViewMoveIndex(viewMoveIndex >= positionHistory.length - 2 ? -1 : viewMoveIndex + 1)}
+          >
+            <ChevronRight size={24} />
+          </button>
+          <button
+            type="button"
+            aria-label="Last position"
+            title="Last position"
+            className={mobileReviewControlClass}
+            disabled={!hasHistory || viewMoveIndex === -1 || viewMoveIndex >= positionHistory.length - 1}
+            onClick={() => setViewMoveIndex(-1)}
+          >
+            <FastForward size={22} />
+          </button>
+        </nav>
+      )}
 
       {/* Professional Sidebar Sidebar Tabs */}
       <div className="w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0">
