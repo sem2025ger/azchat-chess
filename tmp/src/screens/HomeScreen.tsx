@@ -76,7 +76,7 @@ export default function HomeScreen() {
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-white/10 border-b-[4px] border-b-black/40 transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
+          <div className="w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.26] border-b-[4px] border-b-cyan-500/[0.16] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
 
 
           {/* 1. Hero Brand Header */}
