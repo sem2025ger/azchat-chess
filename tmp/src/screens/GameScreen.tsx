@@ -623,14 +623,17 @@ export default function GameScreen({ mode }: GameScreenProps) {
   }, [engineResult, liveFen]);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)]">
+    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden">
 
       {/* Mobile Analysis Drawer Header */}
       <div className="flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-4 lg:flex-1">
 
         <div className="w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full">
 
-          <div className="flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10">
+          <div className={cx(
+            "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
+            !isMultiplayer && "hidden md:flex"
+          )}>
             <div className="flex items-center gap-2.5">
               <div className="relative w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 ring-1 ring-black flex items-center justify-center">
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-[2px] border-[#161512] animate-pulse" />
@@ -649,21 +652,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
           <div className="relative flex gap-0 md:gap-6 w-full justify-center group/board items-center py-0 md:py-1 lg:h-full lg:min-h-0 lg:flex-1">
 
-            {/* Mobile-only evaluation bar. Desktop markup below is intentionally unchanged. */}
-            <div className={cx(
-              "md:hidden transition-all duration-300 ease-out self-stretch overflow-hidden py-1",
-              analysisActive
-                ? "w-5 opacity-100 translate-x-0 rounded-lg ml-1"
-                : "w-0 opacity-0 overflow-hidden -translate-x-4 pointer-events-none"
-            )}>
-              <EvaluationBar
-                score={engineResult?.evaluation || 0.0}
-                isMate={!!engineResult?.mate}
-                mateIn={engineResult?.mate}
-                className="h-full rounded-lg ring-1 ring-white/10"
-              />
-            </div>
-
             {/* Desktop evaluation bar — preserved from production. */}
             <div className={cx(
               "hidden md:block transition-all duration-1000 ease-in-out self-stretch rounded-2xl overflow-hidden py-1",
@@ -679,7 +667,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
             <div className={cx(
               "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300",
-              analysisActive ? "w-[calc(100%-1.5rem)] md:w-full" : "w-full"
+              isMultiplayer
+                ? "w-[min(96vw,56dvh)] md:w-full"
+                : "w-[min(100%,calc(100dvh-14.5rem-env(safe-area-inset-bottom,0px)))] border-b-0 md:w-full md:border-b-[8px]"
             )}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               
@@ -706,6 +696,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               ) : null}
 
               <ChessBoard
+                className={!isMultiplayer ? 'p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg' : undefined}
                 overrideBoardTheme={boardTheme}
                 game={displayedGame}
                 onMove={handleGameMove}
@@ -715,7 +706,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
           </div>
 
-          <div className="flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10">
+          <div className={cx(
+            "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
+            !isMultiplayer && "hidden md:flex"
+          )}>
             <div className="flex items-center gap-2.5">
               <div className="relative group/avatar">
                 <div className="w-8 h-8 bg-neutral-900 rounded-lg flex items-center justify-center overflow-hidden shadow-2xl border border-chess-gold/30 ring-1 ring-black group-hover/avatar:ring-chess-gold transition-all duration-500">
@@ -750,7 +744,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       </div>
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className="w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0">
+      <div className="w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0">
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
@@ -869,139 +863,112 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         {/* Mobile Review / Analysis Panel */}
         {!isLiveMultiplayer && (
-          <section className="md:hidden mx-2 mt-2 mb-2 overflow-hidden rounded-2xl border border-cyan-400/25 bg-[#101211]/95 shadow-[0_16px_40px_-24px_rgba(0,206,209,0.5)] ring-1 ring-white/[0.05]">
-            <nav className="grid grid-cols-2 gap-1 p-1.5 border-b border-white/[0.05] bg-black/30">
-              {tabs.map((tab) => (
+          <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
+            <div className="min-h-14 flex flex-wrap items-center justify-between gap-2 px-2 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
+              <div className="flex items-center gap-1">
                 <button
-                  key={tab.id}
                   type="button"
-                  onClick={() => setActiveTab(tab.id as 'moves' | 'analysis')}
+                  onClick={() => setActiveTab('analysis')}
                   className={cx(
-                    "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-[0.68rem] font-black uppercase tracking-[0.12em] transition-all active:scale-[0.98]",
-                    activeTab === tab.id
-                      ? "bg-cyan-500/12 text-cyan-200 ring-1 ring-cyan-400/30 shadow-[0_0_18px_rgba(34,211,238,0.10)]"
-                      : "text-neutral-500 hover:text-neutral-300"
+                    "min-h-11 px-2.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.06em] transition-colors duration-150",
+                    activeTab === 'analysis'
+                      ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                      : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
                   )}
                 >
-                  <tab.icon size={15} />
-                  <span>{tab.label}</span>
+                  Analysis
                 </button>
-              ))}
-            </nav>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('moves')}
+                  className={cx(
+                    "min-h-11 px-2.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.06em] transition-colors duration-150",
+                    activeTab === 'moves'
+                      ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                      : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
+                  )}
+                >
+                  Moves
+                </button>
+              </div>
+              <div className="ml-auto min-h-11 flex items-center gap-1.5 rounded-lg px-2 text-[0.6875rem] font-bold text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.06] whitespace-nowrap">
+                <Cpu size={16} className={cx("shrink-0 text-cyan-300", isAnalysing && "animate-pulse")} />
+                <span>Stockfish 18</span>
+                {engineResult?.depth ? <span className="rounded bg-black/30 px-1.5 py-1 font-mono text-[0.625rem] text-cyan-200">d{engineResult.depth}</span> : null}
+              </div>
+            </div>
 
             {activeTab === 'analysis' ? (
-              <div className="max-h-[42dvh] overflow-y-auto overscroll-contain touch-pan-y p-3">
-                <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center shrink-0">
-                      <Cpu size={18} className={cx("text-cyan-300", isAnalysing && "animate-pulse")} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[0.72rem] font-black uppercase tracking-[0.16em] text-white">Stockfish</div>
-                      <div className="text-[0.58rem] font-bold uppercase tracking-[0.12em] text-neutral-500">
-                        {engineFailed ? t('game.analysis.unavailable') : isAnalysing ? t('game.analysis.analyzing') : t('game.analysis.ready')}
+              <div className="px-2 py-1.5 space-y-1">
+                {Array.from({ length: 2 }, (_, index) => {
+                  const line = analysisData?.lines?.[index];
+                  const score = line
+                    ? (line.mate != null
+                        ? (line.mate < 0 ? `-M${Math.abs(line.mate)}` : `M${line.mate}`)
+                        : (line.evaluation > 0 ? `+${line.evaluation.toFixed(2)}` : line.evaluation.toFixed(2)))
+                    : index === 0 && engineResult
+                      ? (engineResult.mate != null
+                          ? (engineResult.mate < 0 ? `-M${Math.abs(engineResult.mate)}` : `M${engineResult.mate}`)
+                          : (engineResult.evaluation > 0 ? `+${engineResult.evaluation.toFixed(2)}` : engineResult.evaluation.toFixed(2)))
+                      : '—';
+
+                  const moves = line?.moves?.length
+                    ? line.moves.slice(0, 10).join(' ')
+                    : index === 0 && analysisData?.continuation?.length
+                      ? [analysisData.bestMove, ...analysisData.continuation.slice(0, 8)].filter(Boolean).join(' ')
+                      : (isAnalysing ? 'Analyzing…' : '—');
+
+                  return (
+                    <div key={index} aria-label={`Engine line ${index + 1}`} className="min-h-10 grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2 border-b border-white/[0.06] last:border-b-0">
+                      <div className={cx(
+                        "h-8 rounded-lg flex items-center justify-center font-mono text-[0.82rem] font-black border",
+                        score.startsWith('+')
+                          ? "bg-white text-black border-white"
+                          : score.startsWith('-')
+                            ? "bg-black text-white border-white/15"
+                            : "bg-neutral-800 text-neutral-200 border-neutral-700"
+                      )}>
+                        {score}
+                      </div>
+                      <div tabIndex={0} aria-label={`Moves for engine line ${index + 1}`} className="min-w-0 whitespace-nowrap overflow-x-auto overscroll-x-contain touch-pan-x py-2 text-[0.8125rem] leading-5 font-semibold text-neutral-100 tracking-tight">
+                        {moves}
                       </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {engineResult?.depth ? (
-                      <span className="px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-[0.58rem] font-bold text-neutral-400">
-                        d{engineResult.depth}
-                      </span>
-                    ) : null}
-                    <div className={cx(
-                      "min-w-[4.4rem] px-3 py-2 rounded-xl text-center font-mono text-lg font-black border shadow-inner",
-                      engineResult?.mate != null
-                        ? "bg-amber-400/10 text-amber-300 border-amber-400/25"
-                        : (engineResult?.evaluation || 0) > 0
-                          ? "bg-white text-black border-white"
-                          : (engineResult?.evaluation || 0) < 0
-                            ? "bg-black text-white border-white/20"
-                            : "bg-neutral-800 text-neutral-200 border-neutral-700"
-                    )}>
-                      {engineResult?.mate != null
-                        ? (engineResult.mate < 0 ? `-M${Math.abs(engineResult.mate)}` : `M${engineResult.mate}`)
-                        : ((engineResult?.evaluation || 0) > 0
-                            ? `+${(engineResult?.evaluation || 0).toFixed(2)}`
-                            : (engineResult?.evaluation || 0).toFixed(2))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 pt-3">
-                  <span className="text-[0.58rem] font-black uppercase tracking-[0.14em] text-neutral-600">
-                    {t('game.analysis.bestMove')}
-                  </span>
-                  <span className="text-sm font-black text-cyan-200">
-                    {analysisData?.bestMove || (isAnalysing ? '…' : '—')}
-                  </span>
-
-                  <span className="text-[0.58rem] font-black uppercase tracking-[0.14em] text-neutral-600">
-                    Line
-                  </span>
-                  <div className="text-[0.78rem] font-semibold leading-6 text-neutral-300 break-words">
-                    {analysisData?.lines?.[0]?.moves?.length
-                      ? analysisData.lines[0].moves.slice(0, 12).join(' ')
-                      : analysisData?.continuation?.length
-                        ? analysisData.continuation.slice(0, 10).join(' ')
-                        : (isAnalysing ? t('game.analysis.analyzing_position') : '—')}
-                  </div>
-                </div>
-
+                  );
+                })}
                 {engineFailed && (
-                  <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-[0.68rem] font-bold text-red-300">
+                  <div className="px-1 py-1 text-[0.62rem] font-bold text-red-300">
                     {t('game.analysis.unavailable')}
                   </div>
                 )}
               </div>
             ) : (
-              <div className="max-h-[38dvh] overflow-y-auto overscroll-contain bg-black/[0.08]">
+              <div className="max-h-[12dvh] overflow-y-auto overscroll-contain touch-pan-y bg-black/[0.08]">
                 {movePairs.length === 0 ? (
-                  <div className="flex min-h-28 items-center justify-center px-4 text-[0.7rem] font-bold uppercase tracking-widest text-neutral-600">
+                  <div className="flex min-h-16 items-center justify-center px-3 text-[0.62rem] font-bold uppercase tracking-widest text-neutral-600">
                     {t('game.analysis.nomoves')}
                   </div>
                 ) : (
                   <table className="w-full border-collapse text-left">
-                    <thead className="sticky top-0 z-10 bg-neutral-950/95 backdrop-blur-xl">
-                      <tr className="text-[0.58rem] font-black uppercase tracking-[0.16em] text-neutral-600">
-                        <th className="w-10 border-r border-white/[0.04] px-2 py-2 text-center">#</th>
-                        <th className="px-3 py-2">{t('game.white')}</th>
-                        <th className="px-3 py-2">{t('game.black')}</th>
-                      </tr>
-                    </thead>
                     <tbody className="divide-y divide-white/[0.04]">
                       {movePairs.map((move, i) => {
                         const whitePositionIndex = i * 2 + 1;
                         const blackPositionIndex = i * 2 + 2;
                         return (
-                          <tr key={i} className="text-[0.76rem] font-bold text-neutral-300">
-                            <td className="border-r border-white/[0.04] bg-black/20 px-2 py-2 text-center font-mono text-neutral-600">
-                              {move.n}.
-                            </td>
+                          <tr key={i} className="text-[0.7rem] font-bold text-neutral-300">
+                            <td className="w-8 px-2 py-1.5 text-center font-mono text-neutral-600">{move.n}.</td>
                             <td
-                              className={cx(
-                                "px-3 py-2",
-                                whitePositionIndex < positionHistory.length && "cursor-pointer",
-                                viewMoveIndex === whitePositionIndex && "bg-cyan-500/[0.08] text-cyan-100"
-                              )}
+                              className="px-2 py-1.5"
                               onClick={() => {
-                                if (whitePositionIndex < positionHistory.length) {
-                                  setViewMoveIndex(whitePositionIndex);
-                                }
+                                if (whitePositionIndex < positionHistory.length) setViewMoveIndex(whitePositionIndex);
                               }}
                             >
                               {move.w}
                             </td>
                             <td
-                              className={cx(
-                                "px-3 py-2",
-                                move.b && blackPositionIndex < positionHistory.length && "cursor-pointer",
-                                viewMoveIndex === blackPositionIndex && "bg-cyan-500/[0.08] text-cyan-100"
-                              )}
+                              className="px-2 py-1.5"
                               onClick={() => {
-                                if (move.b && blackPositionIndex < positionHistory.length) {
-                                  setViewMoveIndex(blackPositionIndex);
-                                }
+                                if (move.b && blackPositionIndex < positionHistory.length) setViewMoveIndex(blackPositionIndex);
                               }}
                             >
                               {move.b}
@@ -1018,19 +985,22 @@ export default function GameScreen({ mode }: GameScreenProps) {
         )}
 
 
-        {viewMoveIndex !== -1 && (
-          <div className="md:hidden text-center text-chess-gold text-xs font-bold animate-pulse mt-2 -mb-1">
+        {viewMoveIndex !== -1 && isMultiplayer && (
+          <div className="md:hidden text-center text-chess-gold text-[0.58rem] font-bold animate-pulse mt-0.5 -mb-0.5 leading-none">
             Replay mode — press Live to move
           </div>
         )}
         {/* Mobile Move Controls Row */}
-        <div className="flex md:hidden items-center justify-between gap-2 py-3 px-1 mx-2 shrink-0 mt-auto mb-1 z-10">
+        <div className={cx(
+          "md:hidden items-center justify-between gap-1.5 py-1 px-1 mx-2 shrink-0 mt-0 mb-1 z-10",
+          isMultiplayer ? "flex" : "hidden"
+        )}>
           <button 
             onClick={() => { if (hasHistory) setViewMoveIndex(0); }} 
             disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
+            className="flex-1 flex justify-center text-white p-2 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
           >
-            <Rewind size={22} />
+            <Rewind size={18} />
           </button>
           
           <button 
@@ -1040,17 +1010,17 @@ export default function GameScreen({ mode }: GameScreenProps) {
               setViewMoveIndex(Math.max(0, currentIndex - 1));
             }} 
             disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
+            className="flex-1 flex justify-center text-white p-2 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
           >
-            <ChevronLeft size={26} />
+            <ChevronLeft size={20} />
           </button>
           
           <button 
             onClick={() => setViewMoveIndex(-1)} 
             disabled={!hasHistory} 
-            className="flex-[1.5] flex justify-center text-white hover:text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-chess-active/90 to-chess-active/70 border border-chess-active/50 shadow-[0_5px_20px_rgba(0,206,209,0.4)] hover:shadow-[0_8px_25px_rgba(0,206,209,0.6)] ring-1 ring-chess-active/40"
+            className="flex-[1.35] flex justify-center text-white hover:text-white p-2 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-chess-active/90 to-chess-active/70 border border-chess-active/50 shadow-[0_5px_20px_rgba(0,206,209,0.4)] hover:shadow-[0_8px_25px_rgba(0,206,209,0.6)] ring-1 ring-chess-active/40"
           >
-            <History size={24} className={viewMoveIndex !== -1 ? "animate-pulse" : ""} />
+            <History size={20} className={viewMoveIndex !== -1 ? "animate-pulse" : ""} />
           </button>
           
           <button 
@@ -1064,17 +1034,17 @@ export default function GameScreen({ mode }: GameScreenProps) {
               }
             }} 
             disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
+            className="flex-1 flex justify-center text-white p-2 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
           >
-            <ChevronRight size={26} />
+            <ChevronRight size={20} />
           </button>
           
           <button 
             onClick={() => setViewMoveIndex(-1)} 
             disabled={!hasHistory} 
-            className="flex-1 flex justify-center text-white p-3 rounded-xl transition-all duration-300 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
+            className="flex-1 flex justify-center text-white p-2 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
           >
-            <FastForward size={22} />
+            <FastForward size={18} />
           </button>
         </div>
 
@@ -1114,7 +1084,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
         )}
 
         {/* Professional Game Control Center */}
-        <div className="p-2 bg-transparent md:bg-black/60 border-0 md:border-t border-white/10 flex md:grid md:grid-cols-2 gap-2 shrink-0 shadow-none md:shadow-[0_-30px_60px_-15px_rgba(0,0,0,0.8)] relative z-30 ring-0 md:ring-1 ring-white/5 md:backdrop-blur-3xl">
+        <div className={cx(
+          "p-2 bg-transparent md:bg-black/60 border-0 md:border-t border-white/10 flex md:grid md:grid-cols-2 gap-2 shrink-0 shadow-none md:shadow-[0_-30px_60px_-15px_rgba(0,0,0,0.8)] relative z-30 ring-0 md:ring-1 ring-white/5 md:backdrop-blur-3xl",
+          !isMultiplayer && "hidden md:grid"
+        )}>
           <button
             disabled={!canSendGameAction}
             onClick={handleResign}
@@ -1143,3 +1116,4 @@ export default function GameScreen({ mode }: GameScreenProps) {
     </div>
   );
 }
+
