@@ -17,6 +17,8 @@ export const BOARD_THEMES: Record<BoardTheme, { light: string; dark: string }> =
 export const PIECE_STYLES: { id: PieceTheme; name: string; preview: string }[] = [
   { id: 'classic', name: 'Classic Staunton', preview: 'wK' },
   { id: 'cburnett-classic', name: 'CBURNETT Classic', preview: 'wK' },
+  { id: 'neo', name: 'Neo Pro', preview: 'wK' },
+  { id: 'tournament', name: 'Tournament Outline', preview: 'wK' },
 ];
 
 export const BOARD_THEME_DETAILS: { id: BoardTheme; name: string; color: string }[] = [
