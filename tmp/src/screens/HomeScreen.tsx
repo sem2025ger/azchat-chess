@@ -52,6 +52,170 @@ export default function HomeScreen() {
             font-weight: 800 !important;
           }
         }
+        /* Desktop-only Arena redesign: Dark Luxury graphite + Premium Gold. */
+        @media (min-width: 1280px) {
+          .home-screen-root .desktop-home-slogan {
+            width: min(100%, 388px);
+            min-height: 98px;
+            padding: 24px 32px;
+            border-radius: 9999px;
+            border: 1px solid rgba(217, 182, 110, 0.38);
+            background:
+              radial-gradient(ellipse at 50% 0%, rgba(217, 182, 110, 0.1), transparent 65%),
+              radial-gradient(ellipse at 85% 100%, rgba(139, 92, 246, 0.06), transparent 65%),
+              linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);
+            box-shadow:
+              0 18px 36px -18px rgba(0, 0, 0, 0.85),
+              0 0 16px rgba(184, 138, 67, 0.08),
+              inset 0 1px 0 rgba(244, 220, 156, 0.14),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+          }
+          .home-screen-root .desktop-home-slogan > svg {
+            display: none;
+          }
+          .home-screen-root .desktop-home-slogan-text {
+            display: block;
+            width: 100%;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: clamp(1.02rem, 1.15vw, 1.15rem);
+            font-weight: 600;
+            letter-spacing: 0.045em;
+            line-height: 1.2;
+            color: #EAD29A;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+          }
+          .home-screen-root .desktop-home-arena {
+            width: calc(100% + 12px);
+            margin-inline: -6px;
+            min-height: 242px;
+            padding: 30px 28px;
+            gap: 24px;
+            border: 1px solid rgba(217, 182, 110, 0.36);
+            background:
+              radial-gradient(ellipse at 18% 0%, rgba(217, 182, 110, 0.09), transparent 58%),
+              radial-gradient(ellipse at 92% 100%, rgba(139, 92, 246, 0.07), transparent 62%),
+              linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);
+            box-shadow:
+              0 24px 48px -22px rgba(0, 0, 0, 0.88),
+              0 0 18px rgba(184, 138, 67, 0.08),
+              inset 0 1px 0 rgba(244, 220, 156, 0.14),
+              inset 0 0 24px rgba(184, 138, 67, 0.04);
+            transition: border-color 280ms ease, box-shadow 280ms ease;
+          }
+          .home-screen-root .desktop-home-arena::before {
+            border-color: rgba(217, 182, 110, 0.32);
+            box-shadow: inset 0 0 14px rgba(217, 182, 110, 0.05), 0 0 10px rgba(184, 138, 67, 0.08);
+          }
+          .home-screen-root .desktop-home-arena::after {
+            border-color: rgba(184, 138, 67, 0.2);
+            box-shadow: inset 0 0 16px rgba(139, 92, 246, 0.04);
+          }
+          .home-screen-root .desktop-home-arena h1 {
+            font-size: clamp(2.65rem, 3.3vw, 3.15rem);
+            line-height: 1.08;
+            background-image: linear-gradient(
+              110deg,
+              #B8863B 0%,
+              #D4A552 22%,
+              #F5DFA7 48%,
+              #D4A552 74%,
+              #F0D18C 90%,
+              #B8863B 100%
+            );
+            background-size: 220% 100%;
+            background-position: 0% 50%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            text-shadow: none;
+          }
+          .home-screen-root .desktop-home-arena h1 .text-chess-active {
+            color: inherit;
+            -webkit-text-fill-color: transparent;
+          }
+          .home-screen-root .desktop-home-play {
+            width: 100%;
+            min-height: 62px;
+            border: 1px solid rgba(217, 182, 110, 0.4);
+            background: linear-gradient(135deg, #171B22 0%, #1D1D26 52%, #23202A 100%);
+            color: #F1D9A1;
+            box-shadow:
+              0 12px 26px -14px rgba(0, 0, 0, 0.85),
+              0 0 14px rgba(184, 138, 67, 0.08),
+              inset 0 1px 0 rgba(244, 220, 156, 0.16),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+            transition:
+              transform 200ms ease,
+              border-color 220ms ease,
+              background 220ms ease,
+              box-shadow 220ms ease;
+          }
+          .home-screen-root .desktop-home-play::before,
+          .home-screen-root .desktop-home-play::after {
+            content: none;
+            animation: none;
+            opacity: 0;
+          }
+          .home-screen-root .desktop-home-play .text-shadow-cycle {
+            color: #F1D9A1;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+            transition: color 220ms ease, text-shadow 220ms ease;
+          }
+          .home-screen-root .desktop-home-play:hover {
+            transform: translateY(-2px);
+            border-color: rgba(244, 220, 156, 0.62);
+            background: linear-gradient(135deg, #1D222B 0%, #24232E 52%, #2B2733 100%);
+            box-shadow:
+              0 16px 32px -14px rgba(0, 0, 0, 0.9),
+              0 0 20px rgba(217, 182, 110, 0.18),
+              inset 0 1px 0 rgba(244, 220, 156, 0.24),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+          }
+          .home-screen-root .desktop-home-play:hover .text-shadow-cycle {
+            color: #F7E5B7;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75), 0 0 12px rgba(217, 182, 110, 0.22);
+          }
+          .home-screen-root .desktop-home-play:active {
+            transform: translateY(0) scale(0.99);
+            border-color: rgba(217, 182, 110, 0.48);
+            box-shadow:
+              0 8px 18px -12px rgba(0, 0, 0, 0.85),
+              0 0 12px rgba(217, 182, 110, 0.12),
+              inset 0 2px 4px rgba(0, 0, 0, 0.45);
+          }
+          .home-screen-root .desktop-home-play:focus-visible {
+            outline: 2px solid #D9B66E;
+            outline-offset: 3px;
+          }
+        }
+        @media (min-width: 1280px) and (prefers-reduced-motion: no-preference) {
+          .home-screen-root .desktop-home-arena h1 {
+            animation: desktopArenaGoldShimmer 8.5s ease-in-out infinite alternate;
+          }
+          @keyframes desktopArenaGoldShimmer {
+            0% {
+              background-position: 0% 50%;
+            }
+            100% {
+              background-position: 100% 50%;
+            }
+          }
+        }
+        @media (min-width: 1280px) and (prefers-reduced-motion: reduce) {
+          .home-screen-root .desktop-home-arena,
+          .home-screen-root .desktop-home-play,
+          .home-screen-root .desktop-home-play .text-shadow-cycle {
+            transition: none;
+          }
+          .home-screen-root .desktop-home-arena h1 {
+            animation: none;
+            background-position: 35% 50%;
+          }
+        }
         @media (max-width: 767px) {
           .home-screen-root .board-container {
             max-width: calc(100vw - 8px) !important;
@@ -84,15 +248,16 @@ export default function HomeScreen() {
         {/* RIGHT: Premium Dashboard Container */}
         <div className="flex-1 w-full flex flex-col justify-center items-center xl:items-stretch max-w-2xl xl:max-w-[420px] z-20 gap-2 md:gap-4 mb-4 xl:mb-0 -mt-6 md:-mt-0 xl:-mt-10 xl:ml-8 max-md:order-first max-md:flex-none max-md:mt-0 max-md:mb-0 max-md:px-1">
           
-          {/* Premium Flags Block */}
-          <div className="flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[linear-gradient(135deg,rgba(6,182,212,0.10),rgba(7,15,17,0.98)_42%,rgba(7,15,17,0.98))] border-[2px] border-cyan-500/[0.34] transition-colors shadow-[0_0_12px_rgba(6,182,212,0.08)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100 max-md:hidden">
+          {/* Premium Flags / Desktop Slogan Block */}
+          <div className="desktop-home-slogan flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[linear-gradient(135deg,rgba(6,182,212,0.10),rgba(7,15,17,0.98)_42%,rgba(7,15,17,0.98))] border-[2px] border-cyan-500/[0.34] transition-colors shadow-[0_0_12px_rgba(6,182,212,0.08)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100 max-md:hidden">
              <GermanyFlag />
              <AzerbaijanFlag />
              <TurkeyFlag />
+             <span className="desktop-home-slogan-text hidden">{t('home.slogan')}</span>
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="mobile-home-arena w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
+          <div className="mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
 
 
           {/* 1. Hero Brand Header */}
@@ -105,7 +270,7 @@ export default function HomeScreen() {
           {/* Text-only play action, shared with the mobile Arena. */}
           <Link
             to="/play"
-            className="mobile-home-play group relative flex items-center justify-center gap-0 px-4 py-2.5 md:py-3 min-h-[52px] md:min-h-[56px] btn-glow-cycle border border-white/20 text-black rounded-[0.875rem] md:rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-[94%] self-center"
+            className="mobile-home-play desktop-home-play group relative flex items-center justify-center gap-0 px-4 py-2.5 md:py-3 min-h-[52px] md:min-h-[56px] btn-glow-cycle border border-white/20 text-black rounded-[0.875rem] md:rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-[94%] self-center"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
             <span className="relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
