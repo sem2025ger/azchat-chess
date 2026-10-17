@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
@@ -84,6 +84,32 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const requestedColor = searchParams.get('color');
   const playerColor: 'w' | 'b' = mode === 'live' && requestedColor === 'b' ? 'b' : 'w';
   const isMultiplayer = mode === 'live' && Boolean(roomId);
+
+  // Match the desktop analysis panel's outer height to the actual chessboard frame.
+  // ResizeObserver keeps this accurate when viewport dimensions or board sizing change.
+  const analysisBoardRef = useRef<HTMLDivElement>(null);
+  const [analysisBoardHeight, setAnalysisBoardHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isMultiplayer || typeof ResizeObserver === 'undefined') return;
+    const board = analysisBoardRef.current;
+    if (!board) return;
+
+    const measure = () => {
+      if (!window.matchMedia('(min-width: 1280px)').matches) return;
+      const height = Math.round(board.offsetHeight);
+      if (height > 0) setAnalysisBoardHeight(prev => prev === height ? prev : height);
+    };
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(board);
+    window.addEventListener('resize', measure);
+    measure();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [isMultiplayer]);
 
   const playerFlag = profile?.countryCode
     ? countryCodeToFlag(profile.countryCode)
@@ -789,7 +815,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               />
             </div>
 
-            <div className={cx(
+            <div ref={analysisBoardRef} className={cx(
               "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300",
               isMultiplayer
                 ? "w-[min(96vw,56dvh)] md:w-full"
@@ -917,7 +943,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       )}
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)]")}>
+      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
