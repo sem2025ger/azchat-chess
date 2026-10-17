@@ -195,7 +195,7 @@ export default function PlayScreen() {
     <div className="min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto lg:overflow-hidden relative pb-6 lg:pb-3 max-md:px-1">
       
 
-      <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_420px] gap-2 lg:gap-4 items-start justify-center flex-1 min-h-0 pt-0 lg:pt-0">
+      <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_470px] gap-2 lg:gap-4 items-start justify-center flex-1 min-h-0 pt-0 lg:pt-0">
 
         {/* ── Left Side: Chess Board ────────────────────────────── */}
         <div className="w-full flex flex-col gap-1 md:gap-1.5 animate-fade-in-up min-h-0">
@@ -321,7 +321,7 @@ export default function PlayScreen() {
             {/* Dynamic Background Glow removed since panel-glow-cycle handles it */}
 
 
-            <div className="p-2 space-y-2 overflow-y-auto custom-scrollbar relative z-10">
+            <div className="p-2 lg:p-3 space-y-2 overflow-y-auto custom-scrollbar relative z-10">
 
               {/* ── Collapsible Time Control Accordion ─────────────── */}
               <div className="space-y-2">
@@ -340,7 +340,7 @@ export default function PlayScreen() {
                   aria-label="Choose time control"
                   onClick={() => setIsTimeExpanded(v => !v)}
                   className={cx(
-                    "max-md:hidden w-full flex items-center justify-center gap-3 md:gap-4 px-3 py-3 md:px-4 md:py-4 rounded-xl md:rounded-2xl border transition-all duration-200 group/tc active:scale-[0.98]",
+                    "max-md:hidden w-full flex items-center justify-center gap-3 md:gap-4 px-3 py-3 md:px-4 md:py-4 lg:py-[19px] rounded-xl md:rounded-2xl border transition-all duration-200 group/tc active:scale-[0.98]",
                     isTimeExpanded
                       ? cx("bg-white/[0.04] border-white/10", accentColors[accentTheme].border)
                       : "bg-[#181818] border-white/5 hover:border-white/10 hover:bg-[#1e1e1e]"
@@ -355,7 +355,7 @@ export default function PlayScreen() {
                   </div>
                   {/* Selected time + category label — centered */}
                   <div className="flex flex-col items-center leading-none gap-1">
-                    <span className="text-xl font-black italic uppercase tracking-tight text-glow-cycle">
+                    <span className="text-xl lg:text-[1.4rem] font-black italic uppercase tracking-tight text-glow-cycle">
                       {timeControl}
                     </span>
                     <span className="text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.2em]">
@@ -414,7 +414,7 @@ export default function PlayScreen() {
             </div>
 
             {/* CTA Area */}
-            <div className="p-2 bg-black/60 border-t border-white/10 space-y-1.5 relative z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
+            <div className="p-2 lg:p-3 bg-black/60 border-t border-white/10 space-y-1.5 relative z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
                <button
                   onClick={() => {
                     mobileInviteReset.current?.();
@@ -433,23 +433,19 @@ export default function PlayScreen() {
                     socket.emit('join_queue');
                   }}
                   className={cx(
-                    "w-full py-2.5 rounded-[2rem] relative overflow-hidden transition-all duration-[150ms] group/cta active:scale-[0.97] border border-white/20 btn-glow-cycle"
+                    "w-full py-2.5 lg:py-3.5 rounded-[2rem] relative overflow-hidden transition-all duration-[150ms] group/cta active:scale-[0.97] border border-white/20 btn-glow-cycle"
                   )}
                >
                   <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/cta:opacity-100 transition-opacity duration-[150ms]" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-                  <div className="relative z-10 flex items-center justify-center gap-3">
-                    <span className="text-shadow-cycle font-black text-base italic tracking-tighter uppercase leading-none transform group-hover:scale-105 transition-transform duration-500">{t('play.startGame')}</span>
-                    <div className="px-2 py-0.5 bg-black/90 backdrop-blur-xl rounded-lg text-white font-black text-[0.65rem] shadow-2xl border border-white/10 flex items-center gap-1.5">
-                      <Clock size={11} className="text-neutral-500" />
-                      {timeControl}
-                    </div>
+                  <div className="relative z-10 flex items-center justify-center">
+                    <span className="text-shadow-cycle font-black text-base lg:text-lg italic tracking-tighter uppercase leading-none transform group-hover:scale-105 transition-transform duration-500">{t('play.startGame')}</span>
                   </div>
                </button>
             </div>
 
             {/* Footer Buttons */}
-            <div className="p-2 xl:min-h-[96px] xl:items-center grid grid-cols-2 gap-2 bg-black/40 border-t border-white/5 shrink-0 max-md:hidden">
+            <div className="p-2 lg:p-3 xl:min-h-[108px] xl:items-center grid grid-cols-2 gap-2 bg-black/40 border-t border-white/5 shrink-0 max-md:hidden">
               <FooterActionBtn 
                 icon={<Users size={14} />} 
                 label={t('play.friend')} 
@@ -496,7 +492,7 @@ function FooterActionBtn({ icon, label, sublabel, onClick, disabled }: { icon: R
       aria-disabled={disabled ? "true" : undefined}
       onClick={onClick}
       className={cx(
-        "flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/5 rounded-xl transition-all duration-150 group/fbtn shadow-2xl text-left relative overflow-hidden xl:min-h-[52px]",
+        "flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/5 rounded-xl transition-all duration-150 group/fbtn shadow-2xl text-left relative overflow-hidden xl:min-h-[58px]",
         disabled
           ? "cursor-not-allowed"
           : "hover:bg-white/[0.05] hover:border-white/10 active:scale-95"
@@ -505,7 +501,7 @@ function FooterActionBtn({ icon, label, sublabel, onClick, disabled }: { icon: R
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
       <div
         className={cx(
-          "w-7 h-7 xl:w-9 xl:h-9 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 shadow-xl relative z-10 shrink-0 transition-all duration-200",
+          "w-7 h-7 xl:w-10 xl:h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 shadow-xl relative z-10 shrink-0 transition-all duration-200",
           disabled
             ? "text-neutral-600"
             : "text-neutral-500 group-hover/fbtn:scale-110 group-hover/fbtn:text-white group-hover/fbtn:bg-white/10"
