@@ -97,8 +97,10 @@ export default function HomeScreen() {
             padding: 30px 28px;
             gap: 24px;
             border: 1px solid rgba(200, 157, 89, 0.58);
-            /* Warm obsidian black with a restrained bronze reflection; no blue cast. */
+            /* Fine, translucent mineral grain over the approved obsidian palette.
+               Keep the underlying colors and shape unchanged; desktop only. */
             background:
+              url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.73' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.72 0 0 0 0 0.61 0 0 0 0 0.47 0.18 0 0 0 -0.055'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23grain)'/%3E%3C/svg%3E") center / 180px 180px repeat,
               radial-gradient(ellipse at 22% 6%, rgba(119, 78, 31, 0.14), transparent 63%),
               radial-gradient(ellipse at 86% 90%, rgba(92, 56, 24, 0.09), transparent 60%),
               repeating-linear-gradient(132deg, rgba(220, 180, 113, 0.009) 0px, transparent 2px, transparent 7px),
