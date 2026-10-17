@@ -15,13 +15,23 @@ function cx(...inputs: (string | undefined | null | false)[]) {
 
 export default function ProfileScreen() {
   const { t } = useLanguage();
-  // Mobile-only redesign; the existing desktop profile JSX is left intact.
+  // Reuse the approved Player Passport on phones and large desktop screens.
+  // The existing tablet profile below stays unchanged.
   const [showMobilePassport, setShowMobilePassport] = useState(() => window.matchMedia('(max-width: 767px)').matches);
+  const [showDesktopPassport, setShowDesktopPassport] = useState(() => window.matchMedia('(min-width: 1280px)').matches);
   useEffect(() => {
     const query = window.matchMedia('(max-width: 767px)');
-    const update = () => setShowMobilePassport(query.matches);
+    const desktopQuery = window.matchMedia('(min-width: 1280px)');
+    const update = () => {
+      setShowMobilePassport(query.matches);
+      setShowDesktopPassport(desktopQuery.matches);
+    };
     query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
+    desktopQuery.addEventListener('change', update);
+    return () => {
+      query.removeEventListener('change', update);
+      desktopQuery.removeEventListener('change', update);
+    };
   }, []);
   const { session, profile, isLoading, signOut, user } = useAuth();
   const navigate = useNavigate();
@@ -322,11 +332,11 @@ export default function ProfileScreen() {
   }
 
 
-  // Render this separate mobile component for signed-in players only.
-  // The original authenticated desktop JSX below is preserved verbatim.
-  if (showMobilePassport) {
+  // Authentication and the same real profile data serve both Passport layouts.
+  if (showMobilePassport || showDesktopPassport) {
     return (
       <MobilePlayerPassport
+        desktop={showDesktopPassport}
         username={profile?.username || user?.user_metadata?.username || 'Guest'}
         role={profile?.role}
         countryCode={profile?.countryCode}
