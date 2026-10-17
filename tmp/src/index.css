@@ -613,3 +613,49 @@
     filter: none !important;
   }
 }
+
+
+/* HOME — premium obsidian gold (full-size desktop sidebar only).
+   Preserve the existing compact navigation and mobile bottom bar. */
+@media (min-width: 1280px) {
+  .sidebar-item.theme-premium:not(.sidebar-item-active) {
+    background: linear-gradient(128deg, #252017 0%, #171411 52%, #0c0c0b 100%);
+    color: #d9b879;
+    box-shadow:
+      inset 0 1px 0 rgba(248, 215, 151, 0.09),
+      inset 0 0 0 1px rgba(203, 164, 99, 0.34),
+      0 7px 17px rgba(0, 0, 0, 0.24);
+    transition: background 300ms ease, box-shadow 300ms ease, color 300ms ease;
+  }
+
+  .sidebar-item.theme-premium:not(.sidebar-item-active):hover {
+    background: linear-gradient(128deg, #30271b 0%, #1c1813 52%, #0f0e0c 100%);
+    color: #efd398;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 223, 158, 0.14),
+      inset 0 0 0 1px rgba(225, 185, 116, 0.56),
+      0 9px 21px rgba(0, 0, 0, 0.3),
+      0 0 16px rgba(196, 151, 74, 0.09);
+  }
+
+  .sidebar-item-active.theme-premium {
+    background: linear-gradient(128deg, #2b2419 0%, #181511 54%, #0e0d0b 100%);
+    color: #efd095;
+    border-color: rgba(217, 180, 112, 0.53);
+    box-shadow:
+      inset 4px 0 0 #cfa96a,
+      inset 0 1px 0 rgba(255, 224, 167, 0.12),
+      0 0 20px rgba(184, 137, 63, 0.15),
+      0 9px 22px rgba(0, 0, 0, 0.28);
+  }
+
+  .sidebar-item-active.theme-premium:hover {
+    color: #f3dcad;
+    border-color: rgba(238, 201, 139, 0.68);
+  }
+
+  .sidebar-item.theme-premium > .absolute.right-4 {
+    background: #d9b879;
+    box-shadow: 0 0 8px rgba(217, 184, 121, 0.6);
+  }
+}
