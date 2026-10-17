@@ -55,9 +55,9 @@ export default function HomeScreen() {
         /* Desktop-only Arena redesign: Dark Luxury graphite + Premium Gold. */
         @media (min-width: 1280px) {
           .home-screen-root .desktop-home-slogan {
-            width: min(100%, 388px);
+            width: min(100%, 420px);
             min-height: 98px;
-            padding: 24px 32px;
+            padding: 24px 22px;
             border-radius: 9999px;
             border: 1px solid rgba(217, 182, 110, 0.38);
             background:
@@ -80,12 +80,15 @@ export default function HomeScreen() {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-size: clamp(1.02rem, 1.15vw, 1.15rem);
-            font-weight: 600;
-            letter-spacing: 0.045em;
+            /* Larger single-line Roman serif, inspired by the owner's golden reference. */
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: clamp(1.36rem, 1.7vw, 1.57rem);
+            font-style: normal;
+            font-weight: 500;
+            letter-spacing: -0.014em;
             line-height: 1.2;
-            color: #EAD29A;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+            color: #E7C47F;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.95), 0 0 8px rgba(173, 118, 46, 0.14);
           }
           .home-screen-root .desktop-home-arena {
             width: calc(100% + 12px);
@@ -93,37 +96,54 @@ export default function HomeScreen() {
             min-height: 242px;
             padding: 30px 28px;
             gap: 24px;
-            border: 1px solid rgba(217, 182, 110, 0.36);
+            border: 1px solid rgba(200, 157, 89, 0.58);
+            /* Fine, translucent mineral grain over the approved obsidian palette.
+               Keep the underlying colors and shape unchanged; desktop only. */
             background:
-              radial-gradient(ellipse at 18% 0%, rgba(217, 182, 110, 0.09), transparent 58%),
-              radial-gradient(ellipse at 92% 100%, rgba(139, 92, 246, 0.07), transparent 62%),
-              linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);
+              url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.73' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.72 0 0 0 0 0.61 0 0 0 0 0.47 0.18 0 0 0 -0.055'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23grain)'/%3E%3C/svg%3E") center / 180px 180px repeat,
+              radial-gradient(ellipse at 22% 6%, rgba(119, 78, 31, 0.14), transparent 63%),
+              radial-gradient(ellipse at 86% 90%, rgba(92, 56, 24, 0.09), transparent 60%),
+              repeating-linear-gradient(132deg, rgba(220, 180, 113, 0.009) 0px, transparent 2px, transparent 7px),
+              linear-gradient(138deg, #080807 0%, #14110E 38%, #110F0D 68%, #070706 100%);
             box-shadow:
               0 24px 48px -22px rgba(0, 0, 0, 0.88),
-              0 0 18px rgba(184, 138, 67, 0.08),
-              inset 0 1px 0 rgba(244, 220, 156, 0.14),
-              inset 0 0 24px rgba(184, 138, 67, 0.04);
+              0 0 14px rgba(168, 113, 49, 0.11),
+              inset 0 1px 0 rgba(222, 186, 117, 0.14),
+              inset 0 -18px 38px rgba(0, 0, 0, 0.42);
             transition: border-color 280ms ease, box-shadow 280ms ease;
           }
           .home-screen-root .desktop-home-arena::before {
-            border-color: rgba(217, 182, 110, 0.32);
-            box-shadow: inset 0 0 14px rgba(217, 182, 110, 0.05), 0 0 10px rgba(184, 138, 67, 0.08);
+            border-color: rgba(209, 168, 96, 0.34);
+            box-shadow: inset 0 0 14px rgba(193, 144, 65, 0.035), 0 0 10px rgba(160, 108, 46, 0.07);
           }
           .home-screen-root .desktop-home-arena::after {
-            border-color: rgba(184, 138, 67, 0.2);
-            box-shadow: inset 0 0 16px rgba(139, 92, 246, 0.04);
+            border-color: rgba(194, 147, 72, 0.2);
+            box-shadow: inset 0 0 18px rgba(168, 109, 42, 0.04);
           }
           .home-screen-root .desktop-home-arena h1 {
+            /* Center the wordmark within the rounded Arena card and optically lift it. */
+            width: 100%;
+            margin: 0;
+            text-align: center;
+            white-space: nowrap;
+            position: relative;
+            top: -3px;
             font-size: clamp(2.65rem, 3.3vw, 3.15rem);
             line-height: 1.08;
+            /* Reference-inspired classical upright Roman serif lettering. */
+            font-family: Georgia, 'Times New Roman', serif;
+            font-style: normal;
+            font-weight: 700;
+            letter-spacing: -0.045em;
+            -webkit-text-stroke: 0.35px rgba(116, 68, 21, 0.46);
+            filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.85)) drop-shadow(0 -1px 0 rgba(255, 222, 146, 0.13));
             background-image: linear-gradient(
-              110deg,
-              #B8863B 0%,
-              #D4A552 22%,
-              #F5DFA7 48%,
-              #D4A552 74%,
-              #F0D18C 90%,
-              #B8863B 100%
+              180deg,
+              #FFF1BA 0%,
+              #F0D38E 26%,
+              #CD923D 57%,
+              #F3CE79 77%,
+              #A46A29 100%
             );
             background-size: 220% 100%;
             background-position: 0% 50%;
@@ -134,6 +154,10 @@ export default function HomeScreen() {
             text-shadow: none;
           }
           .home-screen-root .desktop-home-arena h1 .text-chess-active {
+            font-family: inherit;
+            font-style: inherit;
+            font-weight: inherit;
+            letter-spacing: inherit;
             color: inherit;
             -webkit-text-fill-color: transparent;
           }
@@ -160,9 +184,14 @@ export default function HomeScreen() {
             opacity: 0;
           }
           .home-screen-root .desktop-home-play::after {
+            /* Full-surface color crossfade; no moving streak, scale or positional animation. */
             content: '';
-            background: linear-gradient(115deg, transparent, rgba(255, 248, 225, 0.22) 45%, transparent);
-            transition: opacity 200ms ease;
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            background: linear-gradient(145deg, #1B1713 0%, #332618 32%, #67461F 61%, #211911 100%);
+            opacity: 0;
           }
           .home-screen-root .desktop-home-play .text-shadow-cycle {
             color: #15171C;
@@ -172,15 +201,12 @@ export default function HomeScreen() {
             text-shadow: none;
           }
           .home-screen-root .desktop-home-play:hover {
-            transform: translateY(-1px);
+            transform: translateY(-2px);
             border-color: #E4C782;
             box-shadow:
               0 12px 24px -12px rgba(0, 0, 0, 0.8),
               inset 0 1px 0 rgba(255, 244, 211, 0.65),
               inset 0 -1px 0 rgba(103, 73, 30, 0.22);
-          }
-          .home-screen-root .desktop-home-play:hover::after {
-            opacity: 1;
           }
           .home-screen-root .desktop-home-play:active {
             transform: translateY(0) scale(0.99);
@@ -204,6 +230,26 @@ export default function HomeScreen() {
               background-position: 100% 50%;
             }
           }
+          .home-screen-root .desktop-home-play::after {
+            animation: desktopArenaMetalColorBlend 9s ease-in-out infinite;
+          }
+          .home-screen-root .desktop-home-play .text-shadow-cycle {
+            animation: desktopArenaMetalLabelBlend 9s ease-in-out infinite;
+          }
+          @keyframes desktopArenaMetalColorBlend {
+            0%, 100% { opacity: 0; }
+            45%, 55% { opacity: 0.97; }
+          }
+          @keyframes desktopArenaMetalLabelBlend {
+            0%, 100% {
+              color: #15171C;
+              text-shadow: none;
+            }
+            45%, 55% {
+              color: #F8DEAB;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+            }
+          }
         }
         @media (min-width: 1280px) and (prefers-reduced-motion: reduce) {
           .home-screen-root .desktop-home-arena,
@@ -211,6 +257,13 @@ export default function HomeScreen() {
           .home-screen-root .desktop-home-play .text-shadow-cycle,
           .home-screen-root .desktop-home-play::after {
             transition: none;
+          }
+          .home-screen-root .desktop-home-play::after,
+          .home-screen-root .desktop-home-play .text-shadow-cycle {
+            animation: none;
+          }
+          .home-screen-root .desktop-home-play::after {
+            opacity: 0;
           }
           .home-screen-root .desktop-home-play:hover,
           .home-screen-root .desktop-home-play:active {
