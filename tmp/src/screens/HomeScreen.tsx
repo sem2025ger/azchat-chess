@@ -184,15 +184,13 @@ export default function HomeScreen() {
             opacity: 0;
           }
           .home-screen-root .desktop-home-play::after {
-            /* Desktop-only soft copper-amber metallic sweep: 4.2s travel, then a quiet pause. */
+            /* Full-surface color crossfade; no moving streak, scale or positional animation. */
             content: '';
             position: absolute;
-            inset: 0 auto 0 0;
-            width: 48%;
+            inset: 0;
             pointer-events: none;
             z-index: 1;
-            background: linear-gradient(90deg, transparent 0%, rgba(106, 53, 15, 0.07) 20%, rgba(112, 57, 16, 0.32) 36%, rgba(149, 74, 18, 0.52) 47%, rgba(245, 175, 73, 0.37) 55%, rgba(123, 61, 17, 0.22) 68%, transparent 100%);
-            transform: translate3d(-110%, 0, 0);
+            background: linear-gradient(145deg, #1B1713 0%, #332618 32%, #67461F 61%, #211911 100%);
             opacity: 0;
           }
           .home-screen-root .desktop-home-play .text-shadow-cycle {
@@ -209,9 +207,6 @@ export default function HomeScreen() {
               0 12px 24px -12px rgba(0, 0, 0, 0.8),
               inset 0 1px 0 rgba(255, 244, 211, 0.65),
               inset 0 -1px 0 rgba(103, 73, 30, 0.22);
-          }
-          .home-screen-root .desktop-home-play:hover::after {
-            background: linear-gradient(90deg, transparent 0%, rgba(106, 53, 15, 0.09) 20%, rgba(112, 57, 16, 0.42) 36%, rgba(149, 74, 18, 0.64) 47%, rgba(255, 193, 89, 0.49) 55%, rgba(123, 61, 17, 0.30) 68%, transparent 100%);
           }
           .home-screen-root .desktop-home-play:active {
             transform: translateY(0) scale(0.99);
@@ -236,29 +231,23 @@ export default function HomeScreen() {
             }
           }
           .home-screen-root .desktop-home-play::after {
-            animation: desktopArenaButtonSweep 6.5s linear infinite;
+            animation: desktopArenaMetalColorBlend 9s ease-in-out infinite;
           }
-          @keyframes desktopArenaButtonSweep {
-            0% {
-              transform: translate3d(-110%, 0, 0);
-              opacity: 0;
+          .home-screen-root .desktop-home-play .text-shadow-cycle {
+            animation: desktopArenaMetalLabelBlend 9s ease-in-out infinite;
+          }
+          @keyframes desktopArenaMetalColorBlend {
+            0%, 100% { opacity: 0; }
+            45%, 55% { opacity: 0.97; }
+          }
+          @keyframes desktopArenaMetalLabelBlend {
+            0%, 100% {
+              color: #15171C;
+              text-shadow: none;
             }
-            9% {
-              opacity: 0;
-            }
-            17% {
-              opacity: 0.42;
-            }
-            49% {
-              opacity: 0.42;
-            }
-            65% {
-              transform: translate3d(220%, 0, 0);
-              opacity: 0;
-            }
-            100% {
-              transform: translate3d(220%, 0, 0);
-              opacity: 0;
+            45%, 55% {
+              color: #F8DEAB;
+              text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
             }
           }
         }
@@ -269,8 +258,11 @@ export default function HomeScreen() {
           .home-screen-root .desktop-home-play::after {
             transition: none;
           }
-          .home-screen-root .desktop-home-play::after {
+          .home-screen-root .desktop-home-play::after,
+          .home-screen-root .desktop-home-play .text-shadow-cycle {
             animation: none;
+          }
+          .home-screen-root .desktop-home-play::after {
             opacity: 0;
           }
           .home-screen-root .desktop-home-play:hover,
