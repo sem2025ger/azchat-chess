@@ -184,14 +184,14 @@ export default function HomeScreen() {
             opacity: 0;
           }
           .home-screen-root .desktop-home-play::after {
-            /* Compositor-friendly sweep: one soft gold wave every 3.5 seconds. */
+            /* Desktop-only soft copper-amber metallic sweep, once every 3.5 seconds. */
             content: '';
             position: absolute;
             inset: 0 auto 0 0;
             width: 48%;
             pointer-events: none;
             z-index: 1;
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 248, 224, 0.04) 26%, rgba(255, 251, 228, 0.38) 50%, rgba(255, 248, 224, 0.04) 74%, transparent 100%);
+            background: linear-gradient(90deg, transparent 0%, rgba(106, 53, 15, 0.07) 20%, rgba(112, 57, 16, 0.32) 36%, rgba(149, 74, 18, 0.52) 47%, rgba(245, 175, 73, 0.37) 55%, rgba(123, 61, 17, 0.22) 68%, transparent 100%);
             transform: translate3d(-110%, 0, 0);
             opacity: 0;
           }
@@ -211,7 +211,7 @@ export default function HomeScreen() {
               inset 0 -1px 0 rgba(103, 73, 30, 0.22);
           }
           .home-screen-root .desktop-home-play:hover::after {
-            background: linear-gradient(90deg, transparent 0%, rgba(255, 248, 224, 0.06) 26%, rgba(255, 253, 237, 0.57) 50%, rgba(255, 248, 224, 0.06) 74%, transparent 100%);
+            background: linear-gradient(90deg, transparent 0%, rgba(106, 53, 15, 0.09) 20%, rgba(112, 57, 16, 0.42) 36%, rgba(149, 74, 18, 0.64) 47%, rgba(255, 193, 89, 0.49) 55%, rgba(123, 61, 17, 0.30) 68%, transparent 100%);
           }
           .home-screen-root .desktop-home-play:active {
             transform: translateY(0) scale(0.99);
