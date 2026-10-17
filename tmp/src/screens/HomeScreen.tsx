@@ -94,11 +94,12 @@ export default function HomeScreen() {
             padding: 30px 28px;
             gap: 24px;
             border: 1px solid rgba(224, 183, 112, 0.66);
+            /* Reference-matched, near-black midnight navy: highlights remain very subtle. */
             background:
-              radial-gradient(ellipse at 20% 5%, rgba(132, 159, 208, 0.32), transparent 58%),
-              radial-gradient(ellipse at 88% 94%, rgba(99, 108, 192, 0.38), transparent 60%),
-              radial-gradient(ellipse at 45% 112%, rgba(66, 119, 193, 0.28), transparent 66%),
-              linear-gradient(136deg, #17253A 0%, #283C60 42%, #263357 74%, #151D35 100%);
+              radial-gradient(ellipse at 26% 16%, rgba(40, 64, 99, 0.17), transparent 62%),
+              radial-gradient(ellipse at 83% 88%, rgba(24, 42, 78, 0.14), transparent 58%),
+              repeating-linear-gradient(132deg, rgba(185, 200, 230, 0.009) 0px, transparent 2px, transparent 7px),
+              linear-gradient(138deg, #080E1B 0%, #0B1525 39%, #0B1423 70%, #060B15 100%);
             box-shadow:
               0 24px 48px -22px rgba(0, 0, 0, 0.88),
               0 0 16px rgba(208, 162, 84, 0.16),
@@ -117,20 +118,20 @@ export default function HomeScreen() {
           .home-screen-root .desktop-home-arena h1 {
             font-size: clamp(2.65rem, 3.3vw, 3.15rem);
             line-height: 1.08;
-            /* Brand's italic display face, with the airier premium proportions of the reference. */
+            /* Keep Chessaz's italic wordmark and blend in the reference's classic serif on Arena. */
             font-family: inherit;
             font-style: italic;
-            font-weight: 850;
-            letter-spacing: -0.018em;
-            filter: drop-shadow(0 2px 3px rgba(8, 15, 32, 0.34));
+            font-weight: 800;
+            letter-spacing: -0.026em;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.58));
             background-image: linear-gradient(
               110deg,
-              #D6AA63 0%,
-              #F3DBA1 22%,
-              #FFF8DC 48%,
-              #E9C17B 74%,
-              #FFE8AC 90%,
-              #D6AA63 100%
+              #B88A45 0%,
+              #E3BC70 22%,
+              #F5DBA1 48%,
+              #D4A45A 74%,
+              #EDCE8C 90%,
+              #B88A45 100%
             );
             background-size: 220% 100%;
             background-position: 0% 50%;
@@ -141,6 +142,10 @@ export default function HomeScreen() {
             text-shadow: none;
           }
           .home-screen-root .desktop-home-arena h1 .text-chess-active {
+            font-family: Georgia, 'Times New Roman', serif;
+            font-style: normal;
+            font-weight: 700;
+            letter-spacing: -0.044em;
             color: inherit;
             -webkit-text-fill-color: transparent;
           }
