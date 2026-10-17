@@ -101,6 +101,20 @@ test('stop discards a scheduled update and late bestmove', t => {
   assert.equal(results.length, 0);
 });
 
+test('stop followed immediately by analyze waits for the old bestmove acknowledgement', t => {
+  const { engine, worker, results } = setup();
+  info(worker);
+  engine.stop();
+  engine.analyze(nextFen);
+  worker.emit('bestmove e2e4');
+  assert.equal(results.length, 0, 'old bestmove must not be labelled as the new position');
+  worker.emit('info depth 9 multipv 1 score cp 12 pv e7e5 g1f3');
+  t.mock.timers.tick(80);
+  assert.equal(results.length, 1);
+  assert.equal(results[0].bestMove, 'e7e5');
+  assert.equal(results[0].analyzedFen, nextFen);
+});
+
 test('destroy cancels callbacks and terminates its worker', t => {
   const { engine, worker, results } = setup();
   info(worker);

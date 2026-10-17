@@ -290,8 +290,12 @@ export class StockfishEngine {
   public stop(): void {
     this.clearResultTimer();
     this._queuedAnalysis = null;
-    this._stoppingForRestart = false;
-    if (this._searching) { this._searching = false; this.send('stop'); }
+    // UCI stop is asynchronous. Consume the old bestmove before starting another
+    // position, otherwise it can be misreported as the new position's result.
+    if (this._searching && !this._stoppingForRestart) {
+      this._stoppingForRestart = true;
+      this.send('stop');
+    }
   }
 
   public destroy(): void {
@@ -300,6 +304,8 @@ export class StockfishEngine {
     this._worker?.terminate();
     this._worker = null;
     this.ready = false;
+    this._searching = false;
+    this._stoppingForRestart = false;
   }
 
   public isReady(): boolean {
