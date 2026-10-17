@@ -184,7 +184,7 @@ export default function HomeScreen() {
             opacity: 0;
           }
           .home-screen-root .desktop-home-play::after {
-            /* Desktop-only soft copper-amber metallic sweep, once every 3.5 seconds. */
+            /* Desktop-only soft copper-amber metallic sweep: 4.2s travel, then a quiet pause. */
             content: '';
             position: absolute;
             inset: 0 auto 0 0;
@@ -236,21 +236,23 @@ export default function HomeScreen() {
             }
           }
           .home-screen-root .desktop-home-play::after {
-            animation: desktopArenaButtonSweep 3.5s linear infinite;
+            animation: desktopArenaButtonSweep 6.5s linear infinite;
           }
           @keyframes desktopArenaButtonSweep {
             0% {
               transform: translate3d(-110%, 0, 0);
               opacity: 0;
             }
-            7% {
-              opacity: 0.62;
+            9% {
+              opacity: 0;
             }
-            34% {
-              transform: translate3d(220%, 0, 0);
-              opacity: 0.62;
+            17% {
+              opacity: 0.42;
             }
-            43% {
+            49% {
+              opacity: 0.42;
+            }
+            65% {
               transform: translate3d(220%, 0, 0);
               opacity: 0;
             }
