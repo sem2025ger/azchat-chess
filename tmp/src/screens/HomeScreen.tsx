@@ -55,9 +55,9 @@ export default function HomeScreen() {
         /* Desktop-only Arena redesign: Dark Luxury graphite + Premium Gold. */
         @media (min-width: 1280px) {
           .home-screen-root .desktop-home-slogan {
-            width: min(100%, 388px);
+            width: min(100%, 420px);
             min-height: 98px;
-            padding: 24px 32px;
+            padding: 24px 22px;
             border-radius: 9999px;
             border: 1px solid rgba(217, 182, 110, 0.38);
             background:
@@ -80,12 +80,15 @@ export default function HomeScreen() {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            font-size: clamp(1.02rem, 1.15vw, 1.15rem);
-            font-weight: 600;
-            letter-spacing: 0.045em;
+            /* Larger single-line Roman serif, inspired by the owner's golden reference. */
+            font-family: Georgia, 'Times New Roman', serif;
+            font-size: clamp(1.36rem, 1.7vw, 1.57rem);
+            font-style: normal;
+            font-weight: 500;
+            letter-spacing: -0.014em;
             line-height: 1.2;
-            color: #EAD29A;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+            color: #E7C47F;
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.95), 0 0 8px rgba(173, 118, 46, 0.14);
           }
           .home-screen-root .desktop-home-arena {
             width: calc(100% + 12px);
@@ -93,45 +96,45 @@ export default function HomeScreen() {
             min-height: 242px;
             padding: 30px 28px;
             gap: 24px;
-            border: 1px solid rgba(224, 183, 112, 0.66);
-            /* Reference-matched, near-black midnight navy: highlights remain very subtle. */
+            border: 1px solid rgba(200, 157, 89, 0.58);
+            /* Warm obsidian black with a restrained bronze reflection; no blue cast. */
             background:
-              radial-gradient(ellipse at 26% 16%, rgba(40, 64, 99, 0.17), transparent 62%),
-              radial-gradient(ellipse at 83% 88%, rgba(24, 42, 78, 0.14), transparent 58%),
-              repeating-linear-gradient(132deg, rgba(185, 200, 230, 0.009) 0px, transparent 2px, transparent 7px),
-              linear-gradient(138deg, #080E1B 0%, #0B1525 39%, #0B1423 70%, #060B15 100%);
+              radial-gradient(ellipse at 22% 6%, rgba(119, 78, 31, 0.14), transparent 63%),
+              radial-gradient(ellipse at 86% 90%, rgba(92, 56, 24, 0.09), transparent 60%),
+              repeating-linear-gradient(132deg, rgba(220, 180, 113, 0.009) 0px, transparent 2px, transparent 7px),
+              linear-gradient(138deg, #080807 0%, #14110E 38%, #110F0D 68%, #070706 100%);
             box-shadow:
               0 24px 48px -22px rgba(0, 0, 0, 0.88),
-              0 0 16px rgba(208, 162, 84, 0.16),
-              inset 0 1px 0 rgba(255, 235, 189, 0.23),
-              inset 0 -18px 38px rgba(8, 15, 32, 0.24);
+              0 0 14px rgba(168, 113, 49, 0.11),
+              inset 0 1px 0 rgba(222, 186, 117, 0.14),
+              inset 0 -18px 38px rgba(0, 0, 0, 0.42);
             transition: border-color 280ms ease, box-shadow 280ms ease;
           }
           .home-screen-root .desktop-home-arena::before {
-            border-color: rgba(235, 196, 126, 0.4);
-            box-shadow: inset 0 0 14px rgba(255, 226, 159, 0.07), 0 0 10px rgba(196, 150, 72, 0.1);
+            border-color: rgba(209, 168, 96, 0.34);
+            box-shadow: inset 0 0 14px rgba(193, 144, 65, 0.035), 0 0 10px rgba(160, 108, 46, 0.07);
           }
           .home-screen-root .desktop-home-arena::after {
-            border-color: rgba(216, 178, 110, 0.24);
-            box-shadow: inset 0 0 18px rgba(121, 151, 222, 0.1);
+            border-color: rgba(194, 147, 72, 0.2);
+            box-shadow: inset 0 0 18px rgba(168, 109, 42, 0.04);
           }
           .home-screen-root .desktop-home-arena h1 {
             font-size: clamp(2.65rem, 3.3vw, 3.15rem);
             line-height: 1.08;
-            /* Keep Chessaz's italic wordmark and blend in the reference's classic serif on Arena. */
-            font-family: inherit;
-            font-style: italic;
-            font-weight: 800;
-            letter-spacing: -0.026em;
-            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.58));
+            /* Reference-inspired classical upright Roman serif lettering. */
+            font-family: Georgia, 'Times New Roman', serif;
+            font-style: normal;
+            font-weight: 700;
+            letter-spacing: -0.045em;
+            -webkit-text-stroke: 0.35px rgba(116, 68, 21, 0.46);
+            filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.85)) drop-shadow(0 -1px 0 rgba(255, 222, 146, 0.13));
             background-image: linear-gradient(
-              110deg,
-              #B88A45 0%,
-              #E3BC70 22%,
-              #F5DBA1 48%,
-              #D4A45A 74%,
-              #EDCE8C 90%,
-              #B88A45 100%
+              180deg,
+              #FFF1BA 0%,
+              #F0D38E 26%,
+              #CD923D 57%,
+              #F3CE79 77%,
+              #A46A29 100%
             );
             background-size: 220% 100%;
             background-position: 0% 50%;
@@ -142,10 +145,10 @@ export default function HomeScreen() {
             text-shadow: none;
           }
           .home-screen-root .desktop-home-arena h1 .text-chess-active {
-            font-family: Georgia, 'Times New Roman', serif;
-            font-style: normal;
-            font-weight: 700;
-            letter-spacing: -0.044em;
+            font-family: inherit;
+            font-style: inherit;
+            font-weight: inherit;
+            letter-spacing: inherit;
             color: inherit;
             -webkit-text-fill-color: transparent;
           }
