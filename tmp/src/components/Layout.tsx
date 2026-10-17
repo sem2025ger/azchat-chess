@@ -61,16 +61,11 @@ export default function Layout() {
               <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.875rem] xl:leading-[1.8rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
                 Chessaz.De
               </span>
-              <div className="mt-3 hidden xl:inline-flex items-center justify-center w-full rounded-full px-3 py-[5px] border border-[#D8CCB2]/30 bg-[linear-gradient(135deg,#20242D_0%,#11151C_48%,#0B0F14_100%)] shadow-[0_4px_10px_-6px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(245,238,222,0.07)]">
-                <span className="text-[0.75rem] font-black uppercase tracking-[0.15em] italic text-glow-cycle opacity-90 whitespace-nowrap">
-                  PREMIUM CHESS PLATFORM
-                </span>
-              </div>
               <div
                 role="img"
                 aria-label="Germany • Azerbaijan"
                 title="Germany • Azerbaijan"
-                className="mt-3 hidden xl:flex items-center justify-between w-full px-3.5 py-[7px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
+                className="mt-6 hidden xl:flex items-center justify-center gap-2 w-fit xl:ml-[4px] min-h-[52px] xl:-translate-x-[2px] px-2 py-[6px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
               >
                 <SidebarGermanyFlag />
                 <NightEarthGlobe />
@@ -79,7 +74,7 @@ export default function Layout() {
             </div>
           </div>
 
-          <nav className="px-3 xl:px-5 pt-10 xl:pt-[46px] pb-4 space-y-0.5 flex-1">
+          <nav className="px-3 xl:px-5 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} themeColor="theme-violet" />
@@ -269,23 +264,52 @@ function NightEarthGlobe() {
     () => window.matchMedia(globeMotionQuery).matches && !document.hidden,
     () => false
   );
-  // NASA Earth Observatory / NOAA, Black Marble 2016:
-  // https://science.nasa.gov/earth/earth-observatory/earth-at-night/maps/
-  // Usage: https://www.nasa.gov/nasa-brand-center/images-and-media/
-  // 30s axial sphere reprojection; lighting/atmosphere stay fixed. No CSS image rotation.
+  // NASA/NOAA Black Marble night-time imagery; the existing rotating video remains unchanged.
+  // Tiny, staggered amber glints suggest city lights without obscuring the globe.
+  const cityLights = [
+    { left: '29%', top: '39%', size: 2.3, delay: '-0.4s', duration: '4.4s' },
+    { left: '39%', top: '34%', size: 1.6, delay: '-2.2s', duration: '5.1s' },
+    { left: '52%', top: '44%', size: 2.1, delay: '-1.5s', duration: '4.7s' },
+    { left: '66%', top: '39%', size: 1.6, delay: '-3.1s', duration: '5.6s' },
+    { left: '36%', top: '58%', size: 1.7, delay: '-2.7s', duration: '5.3s' },
+    { left: '58%', top: '61%', size: 2.2, delay: '-0.9s', duration: '4.9s' },
+    { left: '47%', top: '70%', size: 1.6, delay: '-3.4s', duration: '5.8s' },
+  ] as const;
+
   return (
-    <span aria-hidden="true" className="flex h-7 w-8 shrink-0 items-center justify-center overflow-visible">
-      {animate ? (
-        <video
-          src={nightEarthAnimation}
-          poster={nightEarthStill}
-          autoPlay muted loop playsInline
-          width="40" height="40"
-          className="h-10 w-10 max-w-none shrink-0 rounded-full"
-        />
-      ) : (
-        <img src={nightEarthStill} alt="" width="40" height="40" className="h-10 w-10 max-w-none shrink-0" />
-      )}
+    <span aria-hidden="true" className="relative flex h-[50px] w-[50px] shrink-0 translate-y-[2px] items-center justify-center">
+      <span className="pointer-events-none absolute -inset-[5px] rounded-full bg-[radial-gradient(circle,rgba(158,141,108,0.10)_12%,rgba(71,100,118,0.035)_60%,transparent_76%)] blur-[3px]" />
+      <span className="relative block h-[50px] w-[50px] overflow-hidden rounded-full ring-1 ring-[#B9A98C]/20 shadow-[0_0_11px_rgba(124,116,108,0.18)]">
+        {animate ? (
+          <video
+            src={nightEarthAnimation}
+            poster={nightEarthStill}
+            autoPlay muted loop playsInline
+            width="50" height="50"
+            className="h-full w-full object-cover [filter:brightness(1.27)_contrast(1.15)_saturate(1.05)]"
+          />
+        ) : (
+          <img
+            src={nightEarthStill}
+            alt=""
+            width="50" height="50"
+            className="h-full w-full object-cover [filter:brightness(1.27)_contrast(1.15)_saturate(1.05)]"
+          />
+        )}
+        <span className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_35%_34%,rgba(191,174,141,0.045),transparent_65%)]" />
+        {animate && cityLights.map((light, index) => (
+          <span
+            key={index}
+            className="pointer-events-none absolute z-10 rounded-full bg-[#DCA959]/50 shadow-[0_0_4px_1px_rgba(245,183,86,0.5)]"
+            style={{ left: light.left, top: light.top, width: light.size, height: light.size }}
+          >
+            <span
+              className="absolute inset-0 rounded-full bg-[#FFE5AD] shadow-[0_0_5px_1px_rgba(255,202,116,0.7)] animate-ping"
+              style={{ animationDelay: light.delay, animationDuration: light.duration }}
+            />
+          </span>
+        ))}
+      </span>
     </span>
   );
 }
