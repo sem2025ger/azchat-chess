@@ -1,9 +1,28 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useThemeContext } from '../context/ThemeContext';
 import { BOARD_THEMES, type BoardTheme } from '../lib/chessThemes';
 import { Chess, type Square, type Move, type PieceSymbol, type Color } from 'chess.js';
+import { squareAtPoint, type BoardRect } from '../utils/boardCoordinates';
+
+interface PointerDrag {
+  pointerId: number;
+  source: Square;
+  fen: string;
+  orientation: 'w' | 'b';
+  bounds: BoardRect;
+  board: HTMLDivElement;
+  element: HTMLElement;
+  startX: number;
+  startY: number;
+  x: number;
+  y: number;
+  scaleX: number;
+  scaleY: number;
+  moved: boolean;
+  wasSelected: boolean;
+}
 
 interface PieceData {
   id: string;
@@ -47,44 +66,52 @@ function ChessBoard({
   readOnly?: boolean;
 }) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
-  const [localGame, setLocalGame] = useState(new Chess());
+  const [localGame, setLocalGame] = useState(() => new Chess());
 
   const activeGame = game || localGame;
-  const [trigger, setTrigger] = useState(0);
 
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [legalMoves, setLegalMoves] = useState<string[]>([]);
-  const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
-
-  const [visualPieces, setVisualPieces] = useState<PieceData[]>([]);
+  const pointerDrag = useRef<PointerDrag | null>(null);
+  const dragFrame = useRef<number | null>(null);
 
   const [pendingPromotion, setPendingPromotion] = useState<{ source: string; target: string; color: Color } | null>(null);
 
   const activeFen = activeGame.fen();
 
+  const cancelDrag = useCallback(() => {
+    if (dragFrame.current !== null) cancelAnimationFrame(dragFrame.current);
+    dragFrame.current = null;
+    const drag = pointerDrag.current;
+    pointerDrag.current = null;
+    if (!drag) return;
+    drag.element.style.removeProperty('transform');
+    drag.element.style.removeProperty('transition');
+    drag.element.style.removeProperty('z-index');
+    if (drag.board.hasPointerCapture(drag.pointerId)) {
+      drag.board.releasePointerCapture(drag.pointerId);
+    }
+  }, []);
+
   useEffect(() => {
     setSelectedSquare(null);
     setLegalMoves([]);
     setPendingPromotion(null);
-  }, [activeFen, orientation, readOnly]);
+    cancelDrag();
+    return cancelDrag;
+  }, [activeFen, orientation, readOnly, cancelDrag]);
 
-  useEffect(() => {
+  // The new position is rendered in the same commit, without an effect/state round trip.
+  const visualPieces = useMemo(() => getBoardPieces(activeGame).map(p => ({
+    ...p,
+    id: `${p.color}${p.type}-${p.square}`,
+  })), [activeGame]);
+
+  const lastMove = useMemo(() => {
     const history = activeGame.history({ verbose: true }) as Move[];
-    if (history.length > 0) {
-      const last = history[history.length - 1];
-      setLastMove({ from: last.from, to: last.to });
-    } else {
-      setLastMove(null);
-    }
-
-    const current = getBoardPieces(activeGame);
-    setVisualPieces(
-      current.map((p) => ({
-        ...p,
-        id: `${p.color}${p.type}-${p.square}`,
-      }))
-    );
-  }, [activeGame, activeFen, trigger]);
+    const last = history.at(-1);
+    return last ? { from: last.from, to: last.to } : null;
+  }, [activeGame]);
 
   const activeBoardThemeName: BoardTheme = overrideBoardTheme || boardTheme || 'Classic Green';
   const activeBoardTheme = specialThemesEnabled
@@ -120,11 +147,10 @@ function ChessBoard({
       }
     } else {
       try {
-        const move = activeGame.move(moveObj);
+        const nextGame = new Chess(activeFen);
+        const move = nextGame.move(moveObj);
         if (move) {
-          const nextGame = new Chess(activeGame.fen());
           setLocalGame(nextGame);
-          setTrigger((t) => t + 1);
           setSelectedSquare(null);
           setLegalMoves([]);
           setPendingPromotion(null);
@@ -156,8 +182,7 @@ function ChessBoard({
         setSelectedSquare(null);
         setLegalMoves([]);
       } else {
-        const validMoves = activeGame.moves({ square: selectedSquare as Square, verbose: true }) as Move[];
-        const isLegal = validMoves.some(m => m.to === square);
+        const isLegal = legalMoves.includes(square);
 
         if (isLegal) {
           setSelectedSquare(null);
@@ -190,7 +215,7 @@ function ChessBoard({
   };
 
   const handleDragStart = (e: React.DragEvent, square: string) => {
-    if (readOnly) {
+    if (readOnly || window.matchMedia('(min-width: 1280px)').matches) {
       e.preventDefault();
       return;
     }
@@ -215,6 +240,69 @@ function ChessBoard({
     e.preventDefault();
   };
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!window.matchMedia('(min-width: 1280px)').matches ||
+        e.button !== 0 || !e.isPrimary || readOnly || pendingPromotion) return;
+    const bounds = e.currentTarget.getBoundingClientRect();
+    const square = squareAtPoint(e.clientX, e.clientY, bounds, orientation);
+    if (!square) return;
+    e.preventDefault();
+    const piece = activeGame.get(square);
+    if (piece?.color === activeGame.turn()) {
+      const element = e.currentTarget.querySelector<HTMLElement>(`[data-piece-square="${square}"]`);
+      if (!element) return;
+      pointerDrag.current = {
+        pointerId: e.pointerId, source: square, fen: activeFen, orientation, bounds,
+        board: e.currentTarget, element, startX: e.clientX, startY: e.clientY,
+        x: e.clientX, y: e.clientY,
+        scaleX: bounds.width / e.currentTarget.offsetWidth,
+        scaleY: bounds.height / e.currentTarget.offsetHeight,
+        moved: false, wasSelected: selectedSquare === square,
+      };
+      e.currentTarget.setPointerCapture(e.pointerId);
+      if (selectedSquare !== square) onSquareClick(square);
+    } else {
+      onSquareClick(square);
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = pointerDrag.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    drag.x = e.clientX;
+    drag.y = e.clientY;
+    if (!drag.moved && Math.hypot(drag.x - drag.startX, drag.y - drag.startY) < 4) return;
+    drag.moved = true;
+    if (dragFrame.current !== null) return;
+    dragFrame.current = requestAnimationFrame(() => {
+      dragFrame.current = null;
+      if (pointerDrag.current !== drag) return;
+      drag.element.style.transition = 'none';
+      drag.element.style.zIndex = '50';
+      drag.element.style.transform = `translate3d(${(drag.x - drag.startX) / drag.scaleX}px, ${(drag.y - drag.startY) / drag.scaleY}px, 0) scale(1.1)`;
+    });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const drag = pointerDrag.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const target = squareAtPoint(e.clientX, e.clientY, drag.bounds, orientation);
+    cancelDrag();
+    if (readOnly || drag.fen !== activeFen || drag.orientation !== orientation) return;
+    if (drag.moved && target && target !== drag.source && legalMoves.includes(target)) {
+      handleMove(drag.source, target);
+    } else if (!drag.moved && drag.wasSelected) {
+      onSquareClick(drag.source);
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // pointerdown already handled desktop input; keep click/tap behaviour below 1280px.
+    if (window.matchMedia('(min-width: 1280px)').matches && e.detail !== 0) return;
+    const square = (e.target as Element).closest<HTMLElement>('[data-square]')?.dataset.square;
+    if (square) onSquareClick(square);
+  };
+
   return (
     <div
       className={cx(
@@ -224,7 +312,15 @@ function ChessBoard({
       )}
     >
       <div className="aspect-square w-full rounded-sm overflow-hidden relative shadow-2xl border border-black/40">
-        <div className="grid grid-cols-8 grid-rows-8 w-full h-full relative z-0">
+        <div
+          className="grid grid-cols-8 grid-rows-8 w-full h-full relative z-0 xl:touch-none"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={cancelDrag}
+          onLostPointerCapture={cancelDrag}
+          onClick={handleClick}
+        >
           {ranks.map((rank, rIndex) =>
             files.map((file, fIndex) => {
               const squareRef = `${file}${rank}`;
@@ -243,7 +339,7 @@ function ChessBoard({
                     'w-full h-full relative group transition-colors duration-150 flex items-center justify-center',
                     tileBg
                   )}
-                  onClick={() => onSquareClick(squareRef)}
+                  data-square={squareRef}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, squareRef)}
                 >
@@ -301,11 +397,12 @@ function ChessBoard({
               return (
                 <div
                   key={p.id}
+                  data-square={p.square}
+                  data-piece-square={p.square}
                   draggable
                   onDragStart={(e) => handleDragStart(e, p.square)}
-                  onClick={() => onSquareClick(p.square)}
                   className={cx(
-                    'absolute w-[12.5%] h-[12.5%] transition-all duration-[150ms] ease-out pointer-events-none md:pointer-events-auto cursor-grab active:cursor-grabbing hover:scale-[1.05]',
+                    'absolute w-[12.5%] h-[12.5%] transition-all duration-[150ms] xl:transition-transform xl:duration-[90ms] motion-reduce:xl:transition-none ease-out pointer-events-none md:pointer-events-auto cursor-grab active:cursor-grabbing hover:scale-[1.05]',
                     isSelected ? 'scale-[1.1] z-40' : 'z-30'
                   )}
                   style={{ left: `${fileIdx * 12.5}%`, top: `${rankIdx * 12.5}%` }}
