@@ -65,7 +65,7 @@ export default function Layout() {
                 role="img"
                 aria-label="Germany • Azerbaijan"
                 title="Germany • Azerbaijan"
-                className="mt-6 hidden xl:flex items-center justify-center gap-2 w-fit xl:ml-[4px] min-h-[58px] xl:-translate-x-[2px] px-2 py-[9px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
+                className="mt-6 hidden xl:flex items-center justify-center gap-2 w-fit xl:ml-[4px] min-h-[52px] xl:-translate-x-[2px] px-2 py-[6px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
               >
                 <SidebarGermanyFlag />
                 <NightEarthGlobe />
@@ -277,22 +277,22 @@ function NightEarthGlobe() {
   ] as const;
 
   return (
-    <span aria-hidden="true" className="relative flex h-[54px] w-[54px] shrink-0 translate-y-[2px] items-center justify-center">
+    <span aria-hidden="true" className="relative flex h-[50px] w-[50px] shrink-0 translate-y-[2px] items-center justify-center">
       <span className="pointer-events-none absolute -inset-[5px] rounded-full bg-[radial-gradient(circle,rgba(158,141,108,0.10)_12%,rgba(71,100,118,0.035)_60%,transparent_76%)] blur-[3px]" />
-      <span className="relative block h-[54px] w-[54px] overflow-hidden rounded-full ring-1 ring-[#B9A98C]/20 shadow-[0_0_11px_rgba(124,116,108,0.18)]">
+      <span className="relative block h-[50px] w-[50px] overflow-hidden rounded-full ring-1 ring-[#B9A98C]/20 shadow-[0_0_11px_rgba(124,116,108,0.18)]">
         {animate ? (
           <video
             src={nightEarthAnimation}
             poster={nightEarthStill}
             autoPlay muted loop playsInline
-            width="54" height="54"
+            width="50" height="50"
             className="h-full w-full object-cover [filter:brightness(1.27)_contrast(1.15)_saturate(1.05)]"
           />
         ) : (
           <img
             src={nightEarthStill}
             alt=""
-            width="54" height="54"
+            width="50" height="50"
             className="h-full w-full object-cover [filter:brightness(1.27)_contrast(1.15)_saturate(1.05)]"
           />
         )}
