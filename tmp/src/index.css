@@ -242,7 +242,7 @@
 
 /* Sidebar Interaction Design */
 .sidebar-item {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease, transform 90ms ease;
   position: relative;
 }
 
@@ -442,7 +442,7 @@
     inset 0 0 0 1px rgba(0, 206, 209, 0.18),
     0 0 18px rgba(0, 206, 209, 0.10);
   color: rgba(220, 220, 220, 0.9);
-  transition: background 600ms ease, box-shadow 600ms ease, color 600ms ease;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease, transform 90ms ease;
 }
 .sidebar-item.theme-premium:not(.sidebar-item-active):hover {
   background: linear-gradient(135deg, rgba(0, 206, 209, 0.12), transparent 60%);
@@ -459,7 +459,7 @@
     inset 0 0 0 1px rgba(223, 176, 98, 0.18),
     0 0 18px rgba(223, 176, 98, 0.10);
   color: rgba(220, 220, 220, 0.9);
-  transition: background 600ms ease, box-shadow 600ms ease, color 600ms ease;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease, transform 90ms ease;
 }
 .sidebar-item.theme-gold:not(.sidebar-item-active):hover {
   background: linear-gradient(135deg, rgba(223, 176, 98, 0.12), transparent 60%);
@@ -469,6 +469,18 @@
   color: #fff;
 }
 
+
+.site-nav-link {
+  touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-item,
+  .sidebar-item.theme-premium:not(.sidebar-item-active),
+  .sidebar-item.theme-gold:not(.sidebar-item-active) {
+    transition: none;
+  }
+}
 
 /* Performance mode: keep the premium dark-glass look without continuous GPU blur. */
 [class*="backdrop-blur-"],

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { Suspense, useEffect, useSyncExternalStore } from 'react';
 import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
 import nightEarthStill from '../assets/night-earth-still.webp';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
@@ -8,6 +8,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { type Language } from '../translations';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import RouteLoadingFallback from './RouteLoadingFallback';
+import { prefetchRoute, scheduleNavigationPreload } from '../routeLoaders';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -24,6 +26,7 @@ const languageActiveClass: Record<Language, string> = {
 
 export default function Layout() {
   const location = useLocation();
+  useEffect(() => scheduleNavigationPreload(location.pathname), [location.pathname]);
   const needsConstrainedScroll =
     location.pathname.startsWith('/profile') ||
     location.pathname.startsWith('/settings');
@@ -146,7 +149,9 @@ export default function Layout() {
           "flex-1 overflow-y-auto relative z-10 custom-scrollbar flex flex-col",
           needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : "overscroll-none"
         )}>
-          <Outlet />
+          <Suspense key={location.pathname} fallback={<RouteLoadingFallback />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 
@@ -155,19 +160,24 @@ export default function Layout() {
 }
 
 function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean }) {
+  const { pathname } = useLocation();
+  const destination = to === '/home' && pathname === '/' ? '/' : to;
   return (
     <NavLink
-      to={to}
+      to={destination}
+      onPointerEnter={() => prefetchRoute(to)}
+      onFocus={() => prefetchRoute(to)}
+      onPointerDown={() => prefetchRoute(to)}
       className={({ isActive }) =>
         cx(
-          "flex items-center px-4 py-[1.125rem] rounded-2xl transition-all duration-200 font-black text-[0.85rem] uppercase tracking-wider relative group active:scale-95 sidebar-item",
+          "site-nav-link flex items-center px-4 py-[1.125rem] border border-transparent rounded-2xl font-black text-[0.85rem] uppercase tracking-wider relative group active:scale-95 sidebar-item",
           isActive
             ? `sidebar-item-active ${themeColor}`
             : cx("text-neutral-500 sidebar-item-hover", alwaysGlow && themeColor)
         )
       }
     >
-      <div className="w-8 flex justify-center shrink-0 group-hover:scale-110 transition-transform duration-500">{icon}</div>
+      <div className="w-8 flex justify-center shrink-0 group-hover:scale-110 transition-transform duration-150 motion-reduce:transition-none">{icon}</div>
       <span className="ml-4 hidden xl:block italic truncate">{label}</span>
 
       {/* Active Indicator Dot */}
@@ -194,9 +204,12 @@ function MobileNavItem({ to, icon, label }: { to: string, icon: React.ReactNode,
   return (
     <NavLink
       to={destination}
+      onPointerEnter={() => prefetchRoute(to)}
+      onFocus={() => prefetchRoute(to)}
+      onPointerDown={() => prefetchRoute(to)}
       className={({ isActive }) =>
         cx(
-          "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all duration-300",
+          "site-nav-link flex flex-col items-center justify-center flex-1 h-full gap-1 transition-[color,transform,opacity] duration-150 active:opacity-80 motion-reduce:transition-none",
           isActive ? "text-chess-active scale-110" : "text-neutral-500 hover:text-neutral-300"
         )
       }
