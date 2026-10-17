@@ -119,6 +119,13 @@ export default function HomeScreen() {
             box-shadow: inset 0 0 18px rgba(168, 109, 42, 0.04);
           }
           .home-screen-root .desktop-home-arena h1 {
+            /* Center the wordmark within the rounded Arena card and optically lift it. */
+            width: 100%;
+            margin: 0;
+            text-align: center;
+            white-space: nowrap;
+            position: relative;
+            top: -3px;
             font-size: clamp(2.65rem, 3.3vw, 3.15rem);
             line-height: 1.08;
             /* Reference-inspired classical upright Roman serif lettering. */
