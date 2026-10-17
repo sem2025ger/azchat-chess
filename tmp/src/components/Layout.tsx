@@ -61,16 +61,11 @@ export default function Layout() {
               <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.875rem] xl:leading-[1.8rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
                 Chessaz.De
               </span>
-              <div className="mt-3 hidden xl:inline-flex items-center justify-center w-full rounded-full px-3 py-[5px] border border-[#D8CCB2]/30 bg-[linear-gradient(135deg,#20242D_0%,#11151C_48%,#0B0F14_100%)] shadow-[0_4px_10px_-6px_rgba(0,0,0,0.8),inset_0_1px_0_rgba(245,238,222,0.07)]">
-                <span className="text-[0.75rem] font-black uppercase tracking-[0.15em] italic text-glow-cycle opacity-90 whitespace-nowrap">
-                  PREMIUM CHESS PLATFORM
-                </span>
-              </div>
               <div
                 role="img"
                 aria-label="Germany • Azerbaijan"
                 title="Germany • Azerbaijan"
-                className="mt-3 hidden xl:flex items-center justify-between w-full min-h-[58px] px-3.5 py-[9px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
+                className="mt-2 hidden xl:flex items-center justify-between w-full min-h-[58px] xl:-translate-x-[2px] px-3.5 py-[9px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
               >
                 <SidebarGermanyFlag />
                 <NightEarthGlobe />
