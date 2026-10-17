@@ -283,25 +283,25 @@ function NightEarthGlobe() {
 
   return (
     <span aria-hidden="true" className="relative flex h-[54px] w-[54px] shrink-0 translate-y-[2px] items-center justify-center">
-      <span className="pointer-events-none absolute -inset-[5px] rounded-full bg-[radial-gradient(circle,rgba(76,148,205,0.26)_12%,rgba(46,109,178,0.08)_60%,transparent_76%)] blur-[3px]" />
-      <span className="relative block h-[54px] w-[54px] overflow-hidden rounded-full ring-1 ring-[#8BB6DB]/30 shadow-[0_0_14px_rgba(66,128,186,0.28)]">
+      <span className="pointer-events-none absolute -inset-[5px] rounded-full bg-[radial-gradient(circle,rgba(158,141,108,0.10)_12%,rgba(71,100,118,0.035)_60%,transparent_76%)] blur-[3px]" />
+      <span className="relative block h-[54px] w-[54px] overflow-hidden rounded-full ring-1 ring-[#B9A98C]/20 shadow-[0_0_11px_rgba(124,116,108,0.18)]">
         {animate ? (
           <video
             src={nightEarthAnimation}
             poster={nightEarthStill}
             autoPlay muted loop playsInline
             width="54" height="54"
-            className="h-full w-full object-cover [filter:brightness(1.48)_contrast(1.12)_saturate(1.22)]"
+            className="h-full w-full object-cover [filter:brightness(1.27)_contrast(1.15)_saturate(1.05)]"
           />
         ) : (
           <img
             src={nightEarthStill}
             alt=""
             width="54" height="54"
-            className="h-full w-full object-cover [filter:brightness(1.48)_contrast(1.12)_saturate(1.22)]"
+            className="h-full w-full object-cover [filter:brightness(1.27)_contrast(1.15)_saturate(1.05)]"
           />
         )}
-        <span className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_35%_34%,rgba(114,178,216,0.1),transparent_65%)]" />
+        <span className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_35%_34%,rgba(191,174,141,0.045),transparent_65%)]" />
         {animate && cityLights.map((light, index) => (
           <span
             key={index}
