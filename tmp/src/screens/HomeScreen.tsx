@@ -93,37 +93,44 @@ export default function HomeScreen() {
             min-height: 242px;
             padding: 30px 28px;
             gap: 24px;
-            border: 1px solid rgba(217, 182, 110, 0.36);
+            border: 1px solid rgba(224, 183, 112, 0.66);
             background:
-              radial-gradient(ellipse at 18% 0%, rgba(217, 182, 110, 0.09), transparent 58%),
-              radial-gradient(ellipse at 92% 100%, rgba(139, 92, 246, 0.07), transparent 62%),
-              linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);
+              radial-gradient(ellipse at 20% 5%, rgba(132, 159, 208, 0.32), transparent 58%),
+              radial-gradient(ellipse at 88% 94%, rgba(99, 108, 192, 0.38), transparent 60%),
+              radial-gradient(ellipse at 45% 112%, rgba(66, 119, 193, 0.28), transparent 66%),
+              linear-gradient(136deg, #17253A 0%, #283C60 42%, #263357 74%, #151D35 100%);
             box-shadow:
               0 24px 48px -22px rgba(0, 0, 0, 0.88),
-              0 0 18px rgba(184, 138, 67, 0.08),
-              inset 0 1px 0 rgba(244, 220, 156, 0.14),
-              inset 0 0 24px rgba(184, 138, 67, 0.04);
+              0 0 16px rgba(208, 162, 84, 0.16),
+              inset 0 1px 0 rgba(255, 235, 189, 0.23),
+              inset 0 -18px 38px rgba(8, 15, 32, 0.24);
             transition: border-color 280ms ease, box-shadow 280ms ease;
           }
           .home-screen-root .desktop-home-arena::before {
-            border-color: rgba(217, 182, 110, 0.32);
-            box-shadow: inset 0 0 14px rgba(217, 182, 110, 0.05), 0 0 10px rgba(184, 138, 67, 0.08);
+            border-color: rgba(235, 196, 126, 0.4);
+            box-shadow: inset 0 0 14px rgba(255, 226, 159, 0.07), 0 0 10px rgba(196, 150, 72, 0.1);
           }
           .home-screen-root .desktop-home-arena::after {
-            border-color: rgba(184, 138, 67, 0.2);
-            box-shadow: inset 0 0 16px rgba(139, 92, 246, 0.04);
+            border-color: rgba(216, 178, 110, 0.24);
+            box-shadow: inset 0 0 18px rgba(121, 151, 222, 0.1);
           }
           .home-screen-root .desktop-home-arena h1 {
             font-size: clamp(2.65rem, 3.3vw, 3.15rem);
             line-height: 1.08;
+            /* Brand's italic display face, with the airier premium proportions of the reference. */
+            font-family: inherit;
+            font-style: italic;
+            font-weight: 850;
+            letter-spacing: -0.018em;
+            filter: drop-shadow(0 2px 3px rgba(8, 15, 32, 0.34));
             background-image: linear-gradient(
               110deg,
-              #B8863B 0%,
-              #D4A552 22%,
-              #F5DFA7 48%,
-              #D4A552 74%,
-              #F0D18C 90%,
-              #B8863B 100%
+              #D6AA63 0%,
+              #F3DBA1 22%,
+              #FFF8DC 48%,
+              #E9C17B 74%,
+              #FFE8AC 90%,
+              #D6AA63 100%
             );
             background-size: 220% 100%;
             background-position: 0% 50%;
