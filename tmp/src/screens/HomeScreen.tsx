@@ -322,7 +322,7 @@ export default function HomeScreen() {
       `}</style>
 
       {/* 2-Column Layout */}
-      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-5 max-md:justify-start">
+      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-8 max-md:justify-start">
 
         {/* LEFT: Chessboard */}
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container xl:-mt-12">
@@ -413,7 +413,7 @@ function HomeMoveControls({
           to="/play"
           className="mobile-home-play group relative flex min-h-[50px] min-w-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 btn-glow-cycle px-2 py-2 text-black shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)] transition-[transform,box-shadow] duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80"
         >
-          <span className="relative z-10 w-full text-center font-extrabold text-[clamp(0.78rem,3.5vw,0.94rem)] leading-tight tracking-[0.01em] uppercase text-shadow-cycle">
+          <span className="relative z-10 w-full text-center font-extrabold text-[clamp(0.85rem,3.75vw,1.01rem)] leading-tight tracking-[0.005em] uppercase text-shadow-cycle">
             {t('home.playChessNow')}
           </span>
         </Link>
