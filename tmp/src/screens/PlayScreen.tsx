@@ -438,12 +438,8 @@ export default function PlayScreen() {
                >
                   <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/cta:opacity-100 transition-opacity duration-[150ms]" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-                  <div className="relative z-10 flex items-center justify-center max-md:gap-3">
+                  <div className="relative z-10 flex items-center justify-center">
                     <span className="text-shadow-cycle font-black text-base xl:text-lg italic tracking-tighter uppercase leading-none transform group-hover:scale-105 transition-transform duration-500">{t('play.startGame')}</span>
-                    <div className="md:hidden px-2 py-0.5 bg-black/90 backdrop-blur-xl rounded-lg text-white font-black text-[0.65rem] shadow-2xl border border-white/10 flex items-center gap-1.5">
-                      <Clock size={11} className="text-neutral-500" />
-                      {timeControl}
-                    </div>
                   </div>
                </button>
             </div>
