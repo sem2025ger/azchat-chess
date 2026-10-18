@@ -710,7 +710,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 <RotateCcw size={19} aria-hidden="true" />
               </button>
             )}
-            <div className="min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.06] whitespace-nowrap">
+            <div className="min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-cyan-100 bg-cyan-500/15 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] whitespace-nowrap">
               <span>Stockfish 18</span>
             </div>
           </div>
