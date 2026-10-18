@@ -100,7 +100,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
            lines.map((line, idx) => (
              <div key={idx} className="flex items-start gap-4">
                 <div className={cx(
-                  "px-3 py-1.5 rounded-lg font-mono text-[1.1rem] font-black shadow-md min-w-[4rem] text-center shrink-0 border",
+                  "px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
                   line.mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
                   line.evaluation > 0 ? "bg-white text-black border-white" : 
                   line.evaluation < 0 ? "bg-black text-white border-white/20" :
@@ -124,7 +124,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
          ) : (
            <div className="flex items-start gap-4">
               <div className={cx(
-                "px-3 py-1.5 rounded-lg font-mono text-[1.1rem] font-black shadow-md min-w-[4rem] text-center shrink-0 border",
+                "px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
                 mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
                 score > 0 ? "bg-white text-black border-white" : 
                 score < 0 ? "bg-black text-white border-white/20" :
