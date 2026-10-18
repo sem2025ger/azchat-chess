@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useSyncExternalStore } from 'react';
+import { Suspense, useEffect, useRef, useSyncExternalStore } from 'react';
 import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
 import nightEarthStill from '../assets/night-earth-still.webp';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
@@ -26,7 +26,16 @@ const languageActiveClass: Record<Language, string> = {
 
 export default function Layout() {
   const location = useLocation();
+  const routeScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => scheduleNavigationPreload(location.pathname), [location.pathname]);
+  // The scroll container stays mounted across routes. Do not preserve the Analysis
+  // scroll offset when the user returns to the mobile Home screen.
+  useEffect(() => {
+    if ((location.pathname === '/home' || location.pathname === '/') &&
+        window.matchMedia('(max-width: 767px)').matches) {
+      if (routeScrollRef.current) routeScrollRef.current.scrollTop = 0;
+    }
+  }, [location.pathname]);
   const needsConstrainedScroll =
     location.pathname.startsWith('/profile') ||
     location.pathname.startsWith('/settings');
@@ -140,7 +149,7 @@ export default function Layout() {
         "flex-1 flex flex-col relative overflow-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0",
         needsConstrainedScroll && "min-h-0"
       )}>
-        <div className={cx(
+        <div ref={routeScrollRef} className={cx(
           "flex-1 overflow-y-auto relative z-10 custom-scrollbar flex flex-col",
           needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : "overscroll-none"
         )}>
