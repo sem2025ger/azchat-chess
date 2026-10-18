@@ -137,7 +137,7 @@ export default function Layout() {
 
       {/* Mobile Bottom Navigation - Visible only on Small Screens */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
-        <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} />
+        <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} premiumHome />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} />
         <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} />
         <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} />
@@ -201,7 +201,7 @@ function NavItemActiveDot() {
   );
 }
 
-function MobileNavItem({ to, icon, label }: { to: string, icon: React.ReactNode, label: string }) {
+function MobileNavItem({ to, icon, label, premiumHome = false }: { to: string, icon: React.ReactNode, label: string, premiumHome?: boolean }) {
   const { pathname } = useLocation();
   const destination = to === '/home' && pathname === '/' ? '/' : to;
 
@@ -214,7 +214,11 @@ function MobileNavItem({ to, icon, label }: { to: string, icon: React.ReactNode,
       className={({ isActive }) =>
         cx(
           "site-nav-link flex flex-col items-center justify-center flex-1 h-full gap-1 transition-[color,transform,opacity] duration-150 active:opacity-80 motion-reduce:transition-none",
-          isActive ? "text-chess-active scale-110" : "text-neutral-500 hover:text-neutral-300"
+          premiumHome
+            ? (isActive
+                ? "text-[#F6DCAC] scale-110 rounded-xl bg-[linear-gradient(145deg,rgba(223,176,98,0.15),rgba(25,22,24,0.88)_60%,rgba(167,139,250,0.09))] ring-1 ring-[#CDA35A]/40 shadow-[inset_0_1px_0_rgba(255,235,183,0.1),0_0_12px_rgba(223,176,98,0.12)]"
+                : "text-[#DEBF85] hover:text-[#F6DCAC] rounded-xl bg-[linear-gradient(145deg,rgba(223,176,98,0.09),rgba(25,22,24,0.88)_60%,rgba(167,139,250,0.06))] ring-1 ring-[#CDA35A]/25")
+            : (isActive ? "text-chess-active scale-110" : "text-neutral-500 hover:text-neutral-300")
         )
       }
     >
