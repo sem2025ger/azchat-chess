@@ -679,6 +679,12 @@
 /* Keep the mobile analysis controls and site menu in separate layout rows.
    The menu's existing height includes the phone's bottom safe area. */
 @media (max-width: 767px) {
+  body:has(.mobile-analysis-layout) {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .mobile-analysis-layout {
     height: 100vh;
     height: 100dvh;
@@ -701,14 +707,40 @@
 
   .mobile-analysis-layout > main > div {
     min-height: 0;
-    overscroll-behavior-y: contain;
+    overflow: hidden;
   }
 
   .mobile-analysis-layout .mobile-analysis-screen {
-    flex: none;
-    height: auto;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    flex: 1 1 0%;
+    height: 100%;
     min-height: 0;
-    max-height: none;
-    overflow: visible;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-board-column,
+  .mobile-analysis-layout .mobile-analysis-board-stack {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-board-stage {
+    container-type: size;
+    flex: 1 1 0%;
+    min-height: 0;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-board {
+    width: min(100cqw, 100cqh);
+    height: auto;
+    max-height: 100%;
+    flex: none;
+    transition: none;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-desktop-panel {
+    display: none;
   }
 }
