@@ -54,6 +54,15 @@ export default function HomeScreen() {
             font-weight: 800 !important;
           }
         }
+        /* Approved desktop Home board only: fuller white and black pawns, unchanged squares. */
+        @media (min-width: 1280px) {
+          .home-screen-root .home-board img[alt="wP"],
+          .home-screen-root .home-board img[alt="bP"] {
+            transform: scale(1.055);
+            transform-origin: center;
+            filter: contrast(1.06) !important;
+          }
+        }
         /* Desktop-only Arena redesign: Dark Luxury graphite + Premium Gold. */
         @media (min-width: 1280px) {
           .home-screen-root .desktop-home-slogan {
@@ -297,7 +306,7 @@ export default function HomeScreen() {
       <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-8 max-md:justify-start">
 
         {/* LEFT: Chessboard */}
-        <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container xl:-mt-12">
+        <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container xl:-mt-10">
           <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board home-board-frame max-md:hidden">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
             <ChessBoard overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3" />
