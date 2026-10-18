@@ -322,7 +322,7 @@ export default function HomeScreen() {
       `}</style>
 
       {/* 2-Column Layout */}
-      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-3 max-md:justify-start">
+      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-5 max-md:justify-start">
 
         {/* LEFT: Chessboard */}
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container xl:-mt-12">
@@ -399,35 +399,35 @@ function HomeMoveControls({
     <nav aria-label={t('home.board.moveNavigation')} className={`w-full px-1 ${compactMobile ? 'grid-cols-[minmax(0,0.8fr)_minmax(0,2fr)_minmax(0,0.8fr)] gap-2' : 'grid-cols-2 gap-2.5'} ${className}`}>
       <button
         type="button"
-        className={compactMobile ? `${premiumButtonClass} !min-h-11 !px-1 !gap-0` : premiumButtonClass}
+        className={compactMobile ? `${premiumButtonClass} !min-h-[50px] !px-1 !gap-0` : premiumButtonClass}
         aria-label={t('home.board.previousMove')}
         title={t('home.board.previousMove')}
         onClick={() => goTo(review.index - 1)}
         disabled={review.index === 0}
       >
-        <ChevronLeft size={21} strokeWidth={2.5} aria-hidden="true" />
+        <ChevronLeft size={compactMobile ? 24 : 21} strokeWidth={2.5} aria-hidden="true" />
         <span className={compactMobile ? 'sr-only' : undefined}>{t('home.board.previousMove')}</span>
       </button>
       {compactMobile && (
         <Link
           to="/play"
-          className="mobile-home-play group relative flex min-h-11 min-w-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 btn-glow-cycle px-2 py-2 text-black shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)] transition-[transform,box-shadow] duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80"
+          className="mobile-home-play group relative flex min-h-[50px] min-w-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 btn-glow-cycle px-2 py-2 text-black shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)] transition-[transform,box-shadow] duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80"
         >
-          <span className="relative z-10 w-full text-center font-extrabold text-[clamp(0.64rem,2.7vw,0.79rem)] leading-tight tracking-[0.01em] uppercase text-shadow-cycle">
+          <span className="relative z-10 w-full text-center font-extrabold text-[clamp(0.71rem,2.95vw,0.85rem)] leading-tight tracking-[0.01em] uppercase text-shadow-cycle">
             {t('home.playChessNow')}
           </span>
         </Link>
       )}
       <button
         type="button"
-        className={compactMobile ? `${premiumButtonClass} !min-h-11 !px-1 !gap-0` : premiumButtonClass}
+        className={compactMobile ? `${premiumButtonClass} !min-h-[50px] !px-1 !gap-0` : premiumButtonClass}
         aria-label={t('home.board.nextMove')}
         title={t('home.board.nextMove')}
         onClick={() => goTo(review.index + 1)}
         disabled={review.index === review.moves.length}
       >
         <span className={compactMobile ? 'sr-only' : undefined}>{t('home.board.nextMove')}</span>
-        <ChevronRight size={21} strokeWidth={2.5} aria-hidden="true" />
+        <ChevronRight size={compactMobile ? 24 : 21} strokeWidth={2.5} aria-hidden="true" />
       </button>
     </nav>
   );
