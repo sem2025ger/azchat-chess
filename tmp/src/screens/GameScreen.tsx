@@ -672,13 +672,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Mobile analysis panel above the board */}
       {!isLiveMultiplayer && (
         <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
-          <div className="min-h-14 flex flex-wrap items-center justify-between gap-2 px-2 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
-            <div className="flex items-center gap-1">
+          <div className="min-h-14 flex flex-nowrap items-center justify-between gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
+            <div className="flex min-w-0 shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab('analysis')}
                 className={cx(
-                  "min-h-11 px-2.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.06em] transition-colors duration-150",
+                  "min-h-11 px-2 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.06em] whitespace-nowrap transition-colors duration-150",
                   activeTab === 'analysis'
                     ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                     : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
@@ -690,7 +690,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 type="button"
                 onClick={() => setActiveTab('moves')}
                 className={cx(
-                  "min-h-11 px-2.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.06em] transition-colors duration-150",
+                  "min-h-11 px-2 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.06em] whitespace-nowrap transition-colors duration-150",
                   activeTab === 'moves'
                     ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                     : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
@@ -699,27 +699,24 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 Moves
               </button>
             </div>
-            <div className="ml-auto min-h-11 flex items-center gap-1.5 rounded-lg px-2 text-[0.6875rem] font-bold text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.06] whitespace-nowrap">
-              <Cpu size={16} className={cx("shrink-0 text-cyan-300", isAnalysing && "animate-pulse")} />
-              <span>Stockfish 18</span>
-              {engineResult?.depth ? <span className="rounded bg-black/30 px-1.5 py-1 font-mono text-[0.625rem] text-cyan-200">d{engineResult.depth}</span> : null}
-            </div>
             {mode === 'review' && (
-              <button type="button" onClick={startNewAnalysis} className="min-h-11 flex items-center gap-1.5 rounded-lg border border-white/10 px-2 text-[0.6875rem] font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
-                <RotateCcw size={14} aria-hidden="true" />
-                {t('game.analysis.new')}
+              <button
+                type="button"
+                onClick={startNewAnalysis}
+                aria-label={t('game.analysis.new')}
+                title={t('game.analysis.new')}
+                className="min-h-11 min-w-11 shrink-0 flex items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-neutral-200 transition-colors duration-150 hover:border-amber-300/40 hover:bg-amber-500/10 hover:text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70"
+              >
+                <RotateCcw size={19} aria-hidden="true" />
               </button>
             )}
+            <div className="ml-auto min-h-11 shrink-0 flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.06] whitespace-nowrap">
+              <span>Stockfish 18</span>
+            </div>
           </div>
 
-          {mode === 'review' && viewMoveIndex !== -1 && (
-            <div className="flex flex-wrap items-center justify-between gap-2 px-2 py-1 text-xs text-neutral-400">
-              <span>{t('game.analysis.reviewing')}</span>
-              <button type="button" onClick={() => setViewMoveIndex(-1)} className="min-h-9 rounded-lg px-2 font-bold text-cyan-200 hover:bg-cyan-500/10">
-                {t('game.analysis.resume')}
-              </button>
-            </div>
-          )}
+          {/* Keep the mobile analysis header height stable while stepping through moves;
+              the move navigation below the board already provides return to latest. */}
 
           {activeTab === 'analysis' ? (
             <div className="px-2 py-1.5 space-y-1">
