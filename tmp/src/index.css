@@ -668,7 +668,7 @@
   /* Gentle transform pulse: no layout shift, original waves stay unchanged. */
   .mobile-home-play {
     transform-origin: center;
-    animation: mobilePlayGentlePulse 4.8s ease-in-out infinite;
+    animation: mobilePlayGentlePulse 3.8s ease-in-out infinite;
   }
   .mobile-home-play:active {
     animation: none;
@@ -691,8 +691,8 @@
     box-shadow: 0 8px 19px -9px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,232,174,.2), 0 0 14px rgba(184,149,97,.12);
   }
   50% {
-    transform: scale(1.014);
-    box-shadow: 0 9px 21px -9px rgba(0,0,0,.73), inset 0 1px 0 rgba(255,232,174,.25), 0 0 19px rgba(211,174,108,.24);
+    transform: scale(1.026);
+    box-shadow: 0 9px 22px -9px rgba(0,0,0,.73), inset 0 1px 0 rgba(255,232,174,.3), 0 0 24px rgba(211,174,108,.32);
   }
 }
 
