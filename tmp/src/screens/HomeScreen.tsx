@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import ChessBoard from '../components/ChessBoard';
-import { Rewind, FastForward, ChevronLeft, ChevronRight as NextMove } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -294,7 +294,7 @@ export default function HomeScreen() {
       `}</style>
 
       {/* 2-Column Layout */}
-      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-3 max-md:justify-start">
+      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-8 max-md:justify-start">
 
         {/* LEFT: Chessboard */}
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container xl:-mt-12">
@@ -317,20 +317,23 @@ export default function HomeScreen() {
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
+          <div className="mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 max-md:gap-0 md:gap-4 bg-[#121212]/98 p-3 max-md:py-5 max-md:px-4 md:p-6 rounded-[2rem] max-md:rounded-[1.75rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
 
 
           {/* 1. Hero Brand Header */}
           <div className="flex flex-col">
-            <h1 className="text-[2.2rem] md:text-[2.5rem] xl:text-[2.9rem] font-black text-glow-cycle leading-[0.95] tracking-[-0.03em] italic">
+            <h1 className="hidden md:block text-[2.2rem] md:text-[2.5rem] xl:text-[2.9rem] font-black text-glow-cycle leading-[0.95] tracking-[-0.03em] italic">
               Chess<span className="text-chess-active"> Arena</span>
+            </h1>
+            <h1 className="chess-arena-reference-title md:hidden text-[2.2rem] text-center leading-[0.95] tracking-[-0.03em]">
+              Chess Arena
             </h1>
           </div>
 
           {/* Text-only play action, shared with the mobile Arena. */}
           <Link
             to="/play"
-            className="mobile-home-play desktop-home-play group relative flex items-center justify-center gap-0 px-4 py-2.5 md:py-3 min-h-[52px] md:min-h-[56px] btn-glow-cycle border border-white/20 text-black rounded-[0.875rem] md:rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-[94%] self-center"
+            className="hidden md:flex mobile-home-play desktop-home-play group relative items-center justify-center gap-0 px-4 py-2.5 md:py-3 min-h-[52px] md:min-h-[56px] btn-glow-cycle border border-white/20 text-black rounded-[0.875rem] md:rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-[94%] self-center"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
             <span className="relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
@@ -342,10 +345,71 @@ export default function HomeScreen() {
   );
 }
 
-// The desktop board keeps its existing independent behaviour.
+type HomeBoardReview = { moves: string[]; index: number };
+
+function HomeMoveControls({
+  review,
+  goTo,
+  className,
+  compactMobile = false,
+}: {
+  review: HomeBoardReview;
+  goTo: (index: number) => void;
+  className: string;
+  compactMobile?: boolean;
+}) {
+  const { t } = useLanguage();
+  const premiumButtonClass =
+    'group flex min-h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-[#CDA35A]/60 ' +
+    'bg-[linear-gradient(135deg,#42321E_0%,#201B15_48%,#352818_100%)] px-3 py-2 ' +
+    'text-[0.8125rem] font-extrabold tracking-[0.055em] text-[#F4D69A] ' +
+    'shadow-[inset_0_1px_0_rgba(255,227,161,0.23),0_6px_18px_rgba(0,0,0,0.37)] ' +
+    'transition-[border-color,box-shadow,color,filter] duration-150 ' +
+    'hover:border-[#F8D791] hover:text-[#FFF2D5] hover:shadow-[inset_0_1px_0_rgba(255,227,161,0.3),0_0_18px_rgba(205,163,90,0.24)] ' +
+    'active:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-none ' +
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F8D791]';
+
+  return (
+    <nav aria-label={t('home.board.moveNavigation')} className={`w-full px-1 ${compactMobile ? 'grid-cols-[minmax(0,0.8fr)_minmax(0,2fr)_minmax(0,0.8fr)] gap-2' : 'grid-cols-2 gap-2.5'} ${className}`}>
+      <button
+        type="button"
+        className={compactMobile ? `${premiumButtonClass} !min-h-[50px] !px-1 !gap-0` : premiumButtonClass}
+        aria-label={t('home.board.previousMove')}
+        title={t('home.board.previousMove')}
+        onClick={() => goTo(review.index - 1)}
+        disabled={review.index === 0}
+      >
+        <ChevronLeft size={compactMobile ? 24 : 21} strokeWidth={2.5} aria-hidden="true" />
+        <span className={compactMobile ? 'sr-only' : undefined}>{t('home.board.previousMove')}</span>
+      </button>
+      {compactMobile && (
+        <Link
+          to="/play"
+          className="mobile-home-play group relative flex min-h-[50px] min-w-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 btn-glow-cycle px-2 py-2 text-black shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)] transition-[transform,box-shadow] duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80"
+        >
+          <span className="relative z-10 w-full text-center font-extrabold text-[clamp(0.85rem,3.75vw,1.01rem)] leading-tight tracking-[0.005em] uppercase text-shadow-cycle">
+            {t('home.playChessNow')}
+          </span>
+        </Link>
+      )}
+      <button
+        type="button"
+        className={compactMobile ? `${premiumButtonClass} !min-h-[50px] !px-1 !gap-0` : premiumButtonClass}
+        aria-label={t('home.board.nextMove')}
+        title={t('home.board.nextMove')}
+        onClick={() => goTo(review.index + 1)}
+        disabled={review.index === review.moves.length}
+      >
+        <span className={compactMobile ? 'sr-only' : undefined}>{t('home.board.nextMove')}</span>
+        <ChevronRight size={compactMobile ? 24 : 21} strokeWidth={2.5} aria-hidden="true" />
+      </button>
+    </nav>
+  );
+}
+
 function MobileHomeBoard() {
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches);
-  const [review, setReview] = useState<{ moves: string[]; index: number }>({ moves: [], index: 0 });
+  const [review, setReview] = useState<HomeBoardReview>({ moves: [], index: 0 });
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)');
@@ -366,31 +430,23 @@ function MobileHomeBoard() {
     for (const move of moves) next.move(move);
     try {
       const move = next.move({ from, to, promotion });
+      if (!move) return false;
       setReview({ moves: [...moves, move.san], index: moves.length + 1 });
       return true;
-    } catch {
-      return false;
-    }
+    } catch { return false; }
   };
 
-  if (!isMobile) return null;
+  const goTo = (index: number) =>
+    setReview(current => ({ ...current, index: Math.max(0, Math.min(current.moves.length, index)) }));
 
-  const controlClass = 'min-h-11 flex items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] text-neutral-200 shadow-sm transition-[color,background-color,transform] duration-150 hover:bg-cyan-500/10 hover:text-cyan-100 active:scale-95 disabled:opacity-30 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60';
-  const atStart = review.index === 0;
-  const atEnd = review.index === review.moves.length;
-  const goTo = (index: number) => setReview(current => ({ ...current, index }));
+  if (!isMobile) return null;
 
   return (
     <div className="md:hidden w-full min-w-0 space-y-2">
       <div className="home-board w-full aspect-square overflow-hidden rounded-lg ring-1 ring-white/10 shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]">
         <ChessBoard game={game} onMove={onMove} overrideBoardTheme="Classic Wood" className="!border-none !p-0" />
       </div>
-      <nav aria-label="Move navigation" className="grid grid-cols-4 gap-2 p-1 rounded-2xl border border-white/[0.06] bg-black/20">
-        <button type="button" aria-label="First position" title="First position" className={controlClass} disabled={atStart} onClick={() => goTo(0)}><Rewind size={22} /></button>
-        <button type="button" aria-label="Previous move" title="Previous move" className={controlClass} disabled={atStart} onClick={() => goTo(review.index - 1)}><ChevronLeft size={24} /></button>
-        <button type="button" aria-label="Next move" title="Next move" className={controlClass} disabled={atEnd} onClick={() => goTo(review.index + 1)}><NextMove size={24} /></button>
-        <button type="button" aria-label="Last position" title="Last position" className={controlClass} disabled={atEnd} onClick={() => goTo(review.moves.length)}><FastForward size={22} /></button>
-      </nav>
+      <HomeMoveControls review={review} goTo={goTo} className="grid" compactMobile />
     </div>
   );
 }
