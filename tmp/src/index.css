@@ -720,6 +720,108 @@
     overflow: hidden;
   }
 
+  /* Keep this row identical for Analysis, Moves and historical positions. */
+  .mobile-analysis-layout .mobile-analysis-panel {
+    display: grid;
+    grid-template-rows: 3.25rem minmax(0, 1fr);
+    height: 8.5rem;
+    min-height: 0;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 2.75rem minmax(0, 1fr);
+    gap: 0.375rem;
+    min-height: 0;
+    padding: 0.1875rem 0.5rem;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-tabs {
+    min-width: 0;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-tabs > button {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 0.375rem;
+    font-size: 0.625rem;
+    letter-spacing: 0.025em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-reset {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-engine {
+    min-width: 0;
+    max-width: 100%;
+    gap: 0.25rem;
+    padding-inline: 0.25rem;
+    font-size: 0.625rem;
+    overflow: hidden;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-engine > span:first-of-type {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-engine > svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-engine > span:last-child:not(:first-of-type) {
+    padding: 0.25rem;
+    font-size: 0.5625rem;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-body {
+    min-height: 0;
+    max-height: none;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-review-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-results {
+    position: relative;
+    display: grid;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    overflow: hidden;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-engine-line {
+    min-height: 0;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-engine-moves {
+    padding-block: 0.25rem;
+  }
+
+  .mobile-analysis-layout .mobile-analysis-engine-error {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #111310;
+  }
+
   .mobile-analysis-layout .mobile-analysis-board-column,
   .mobile-analysis-layout .mobile-analysis-board-stack {
     height: 100%;

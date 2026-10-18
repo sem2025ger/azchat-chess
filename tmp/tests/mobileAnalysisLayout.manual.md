@@ -16,8 +16,10 @@ existing desktop/tablet breakpoint is unchanged.
    be a clear gap above the menu; the board fits the remaining height.
 3. Tap the centre and lower edge of each control. First/previous/next/last
    must change the reviewed position and must keep the route at `/game`.
-4. Repeat in Moves, with a long move list, and while reviewing an older move
-   (the resume banner adds height above the board).
+4. Repeat in Moves, with a long move list, and while reviewing an older move.
+   Panel and board dimensions must stay identical between both tabs, first/
+   previous/next/last and the current position. Historical review must not
+   insert a visible banner or shrink the board; Last position resumes play.
 5. Repeat with browser text scaling at 125% and 150%, browser address bar
    expanded/collapsed, and after rotating the phone. Oversized content must
    fit within the viewport, with the square board adapting to the remaining
@@ -31,6 +33,10 @@ existing desktop/tablet breakpoint is unchanged.
    desktop/tablet board, panel, sidebar and scrolling must remain unchanged.
 9. Check `/home`, `/play`, `/profile`, and `/settings` on mobile: their
    existing layout must remain unchanged.
+10. Confirm the header order is Analysis, Moves, icon-only New analysis,
+    Stockfish/depth. The two engine lines sit immediately beneath it. In all
+    six languages the reset has a translated accessible name and tooltip;
+    clicking it clears history without changing panel/board dimensions.
 
 The current Node test suite has no browser layout/hit-testing infrastructure.
 Its passing result does not verify these geometry and touch-target checks.
