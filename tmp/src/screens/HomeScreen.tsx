@@ -2,13 +2,41 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import ChessBoard from '../components/ChessBoard';
-import { Rewind, FastForward, ChevronLeft, ChevronRight as NextMove } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function HomeScreen() {
   const { t } = useLanguage();
   useAuth();
+
+  // Use the same replay state for desktop and mobile Home boards.
+  const [review, setReview] = useState<HomeBoardReview>({ moves: [], index: 0 });
+  const homeGame = useMemo(() => {
+    const position = new Chess();
+    for (const move of review.moves.slice(0, review.index)) position.move(move);
+    return position;
+  }, [review]);
+
+  const handleHomeMove = (from: string, to: string, promotion = 'q') => {
+    const next = new Chess();
+    const moves = review.moves.slice(0, review.index);
+    for (const move of moves) next.move(move);
+    try {
+      const move = next.move({ from, to, promotion });
+      if (!move) return false;
+      setReview({ moves: [...moves, move.san], index: moves.length + 1 });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const goToHomeMove = (index: number) =>
+    setReview(current => ({
+      ...current,
+      index: Math.min(current.moves.length, Math.max(0, index)),
+    }));
 
   // User preferences applied automatically via ThemeContext
 
@@ -300,9 +328,10 @@ export default function HomeScreen() {
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container xl:-mt-12">
           <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board home-board-frame max-md:hidden">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
-            <ChessBoard overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3" />
+            <ChessBoard game={homeGame} onMove={handleHomeMove} overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3" />
           </div>
-          <MobileHomeBoard />
+          <HomeMoveControls review={review} goTo={goToHomeMove} className="hidden md:grid mt-3" />
+          <MobileHomeBoard game={homeGame} onMove={handleHomeMove} review={review} goTo={goToHomeMove} />
         </div>
 
         {/* RIGHT: Premium Dashboard Container */}
@@ -342,10 +371,68 @@ export default function HomeScreen() {
   );
 }
 
-// The desktop board keeps its existing independent behaviour.
-function MobileHomeBoard() {
+type HomeBoardReview = { moves: string[]; index: number };
+
+function HomeMoveControls({
+  review,
+  goTo,
+  className,
+}: {
+  review: HomeBoardReview;
+  goTo: (index: number) => void;
+  className: string;
+}) {
+  const { t } = useLanguage();
+  const premiumButtonClass =
+    'group flex min-h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-[#CDA35A]/60 ' +
+    'bg-[linear-gradient(135deg,#42321E_0%,#201B15_48%,#352818_100%)] px-3 py-2 ' +
+    'text-[0.8125rem] font-extrabold tracking-[0.055em] text-[#F4D69A] ' +
+    'shadow-[inset_0_1px_0_rgba(255,227,161,0.23),0_6px_18px_rgba(0,0,0,0.37)] ' +
+    'transition-[border-color,box-shadow,color,filter] duration-150 ' +
+    'hover:border-[#F8D791] hover:text-[#FFF2D5] hover:shadow-[inset_0_1px_0_rgba(255,227,161,0.3),0_0_18px_rgba(205,163,90,0.24)] ' +
+    'active:brightness-110 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:shadow-none ' +
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F8D791]';
+
+  return (
+    <nav aria-label={t('home.board.moveNavigation')} className={`w-full grid-cols-2 gap-2.5 px-1 ${className}`}>
+      <button
+        type="button"
+        className={premiumButtonClass}
+        aria-label={t('home.board.previousMove')}
+        title={t('home.board.previousMove')}
+        onClick={() => goTo(review.index - 1)}
+        disabled={review.index === 0}
+      >
+        <ChevronLeft size={21} strokeWidth={2.5} aria-hidden="true" />
+        <span>{t('home.board.previousMove')}</span>
+      </button>
+      <button
+        type="button"
+        className={premiumButtonClass}
+        aria-label={t('home.board.nextMove')}
+        title={t('home.board.nextMove')}
+        onClick={() => goTo(review.index + 1)}
+        disabled={review.index === review.moves.length}
+      >
+        <span>{t('home.board.nextMove')}</span>
+        <ChevronRight size={21} strokeWidth={2.5} aria-hidden="true" />
+      </button>
+    </nav>
+  );
+}
+
+function MobileHomeBoard({
+  game,
+  onMove,
+  review,
+  goTo,
+}: {
+  game: Chess;
+  onMove: (from: string, to: string, promotion?: string) => boolean;
+  review: HomeBoardReview;
+  goTo: (index: number) => void;
+}) {
   const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches);
-  const [review, setReview] = useState<{ moves: string[]; index: number }>({ moves: [], index: 0 });
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 767px)');
@@ -354,43 +441,14 @@ function MobileHomeBoard() {
     return () => media.removeEventListener('change', update);
   }, []);
 
-  const game = useMemo(() => {
-    const position = new Chess();
-    for (const move of review.moves.slice(0, review.index)) position.move(move);
-    return position;
-  }, [review]);
-
-  const onMove = (from: string, to: string, promotion = 'q') => {
-    const next = new Chess();
-    const moves = review.moves.slice(0, review.index);
-    for (const move of moves) next.move(move);
-    try {
-      const move = next.move({ from, to, promotion });
-      setReview({ moves: [...moves, move.san], index: moves.length + 1 });
-      return true;
-    } catch {
-      return false;
-    }
-  };
-
   if (!isMobile) return null;
-
-  const controlClass = 'min-h-11 flex items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] text-neutral-200 shadow-sm transition-[color,background-color,transform] duration-150 hover:bg-cyan-500/10 hover:text-cyan-100 active:scale-95 disabled:opacity-30 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60';
-  const atStart = review.index === 0;
-  const atEnd = review.index === review.moves.length;
-  const goTo = (index: number) => setReview(current => ({ ...current, index }));
 
   return (
     <div className="md:hidden w-full min-w-0 space-y-2">
       <div className="home-board w-full aspect-square overflow-hidden rounded-lg ring-1 ring-white/10 shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]">
         <ChessBoard game={game} onMove={onMove} overrideBoardTheme="Classic Wood" className="!border-none !p-0" />
       </div>
-      <nav aria-label="Move navigation" className="grid grid-cols-4 gap-2 p-1 rounded-2xl border border-white/[0.06] bg-black/20">
-        <button type="button" aria-label="First position" title="First position" className={controlClass} disabled={atStart} onClick={() => goTo(0)}><Rewind size={22} /></button>
-        <button type="button" aria-label="Previous move" title="Previous move" className={controlClass} disabled={atStart} onClick={() => goTo(review.index - 1)}><ChevronLeft size={24} /></button>
-        <button type="button" aria-label="Next move" title="Next move" className={controlClass} disabled={atEnd} onClick={() => goTo(review.index + 1)}><NextMove size={24} /></button>
-        <button type="button" aria-label="Last position" title="Last position" className={controlClass} disabled={atEnd} onClick={() => goTo(review.moves.length)}><FastForward size={22} /></button>
-      </nav>
+      <HomeMoveControls review={review} goTo={goTo} className="grid" />
     </div>
   );
 }

@@ -98,6 +98,9 @@ authorize mobile changes. Preserve the other layouts unless explicitly included.
 # 6. Approved decisions
 
 - YYYY-MM-DD — <decision> — <files> — approved by owner
+- 2026-10-18 — Analysis panel ~15% lighter, +16 px width — `tmp/src/screens/GameScreen.tsx` — approved by owner
+- 2026-10-18 — Gold Back/Forward buttons under HOME board — `tmp/src/screens/HomeScreen.tsx`, `tmp/src/translations.ts` — approved by owner
+- 2026-10-18 — Stockfish eval indicators 64 → 56 px — `tmp/src/components/AnalysisPanel.tsx` — approved by owner
 
 # 7. Lessons learned
 
