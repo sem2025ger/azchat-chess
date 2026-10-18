@@ -561,8 +561,18 @@
     box-shadow: inset 0 0 20px rgba(167, 139, 250, 0.07), 0 0 12px rgba(167, 139, 250, 0.12);
   }
 
-  .mobile-home-arena h1 {
-    background-image: linear-gradient(110deg, #f5d58e, #f3dfbc 45%, #cbb5f6);
+  /* Reference typography: classic gold serif, restrained metallic embossing.
+     Scoped only to the Chess Arena heading, on mobile and desktop. */
+  .mobile-home-arena .chess-arena-reference-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    font-style: normal;
+    background: linear-gradient(180deg, #fff3d0 0%, #f6df9d 22%, #d9a64f 53%, #ffe6a9 76%, #bd8739 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: #edc879;
+    filter: drop-shadow(0 2px 1px rgba(0,0,0,.63)) drop-shadow(0 0 5px rgba(214,158,67,.14));
   }
 
   .mobile-home-play {
