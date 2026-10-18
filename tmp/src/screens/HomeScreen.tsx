@@ -351,8 +351,8 @@ export default function HomeScreen() {
 
           {/* 1. Hero Brand Header */}
           <div className="flex flex-col">
-            <h1 className="text-[2.2rem] max-md:text-center md:text-[2.5rem] xl:text-[2.9rem] font-black text-glow-cycle leading-[0.95] tracking-[-0.03em] italic">
-              Chess<span className="text-chess-active"> Arena</span>
+            <h1 className="chess-arena-reference-title text-[2.2rem] max-md:text-center md:text-[2.5rem] xl:text-[2.9rem] leading-[0.95] tracking-[-0.03em]">
+              Chess Arena
             </h1>
           </div>
 
