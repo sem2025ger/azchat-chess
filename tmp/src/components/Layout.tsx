@@ -26,6 +26,7 @@ const languageActiveClass: Record<Language, string> = {
 
 export default function Layout() {
   const location = useLocation();
+  const isAnalysisRoute = /^\/game\/?$/.test(location.pathname);
   useEffect(() => scheduleNavigationPreload(location.pathname), [location.pathname]);
   const needsConstrainedScroll =
     location.pathname.startsWith('/profile') ||
@@ -51,6 +52,7 @@ export default function Layout() {
   return (
     <div className={cx(
       needsConstrainedScroll ? "h-[100dvh] overflow-hidden" : "min-h-screen",
+      isAnalysisRoute && "mobile-analysis-layout",
       "w-full flex selection:bg-chess-gold/30 selection:text-white",
       currentBgClass
     )}>

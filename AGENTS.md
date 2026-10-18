@@ -101,6 +101,7 @@ authorize mobile changes. Preserve the other layouts unless explicitly included.
 - 2026-10-18 — Analysis panel ~15% lighter, +16 px width — `tmp/src/screens/GameScreen.tsx` — approved by owner
 - 2026-10-18 — Gold Back/Forward buttons under HOME board — `tmp/src/screens/HomeScreen.tsx`, `tmp/src/translations.ts` — approved by owner
 - 2026-10-18 — Stockfish eval indicators 64 → 56 px — `tmp/src/components/AnalysisPanel.tsx` — approved by owner
+- 2026-10-18 — Mobile Analysis baseline `bf511341f2fe65041b9baf54c8bd94c19f4264d0`: one-screen layout, stable square board during history review, no page scrolling, move controls clear of the site menu, reset in the top row — `tmp/src/components/Layout.tsx`, `tmp/src/screens/GameScreen.tsx`, `tmp/src/index.css` — approved by owner
 
 # 7. Lessons learned
 
