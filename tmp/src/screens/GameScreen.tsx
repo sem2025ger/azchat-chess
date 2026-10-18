@@ -699,10 +699,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 Moves
               </button>
             </div>
-            <div className="ml-auto min-h-11 flex items-center gap-1.5 rounded-lg px-2 text-[0.6875rem] font-bold text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.06] whitespace-nowrap">
-              <Cpu size={16} className={cx("shrink-0 text-cyan-300", isAnalysing && "animate-pulse")} />
+            <div className="ml-auto min-h-11 flex items-center rounded-lg px-2.5 text-[0.875rem] font-bold text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.06] whitespace-nowrap">
               <span>Stockfish 18</span>
-              {engineResult?.depth ? <span className="rounded bg-black/30 px-1.5 py-1 font-mono text-[0.625rem] text-cyan-200">d{engineResult.depth}</span> : null}
             </div>
             {mode === 'review' && (
               <button type="button" onClick={startNewAnalysis} className="min-h-11 flex items-center gap-1.5 rounded-lg border border-white/10 px-2 text-[0.6875rem] font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
