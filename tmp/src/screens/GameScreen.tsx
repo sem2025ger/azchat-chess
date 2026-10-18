@@ -363,7 +363,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [engineFailed, setEngineFailed] = useState(false);
 
   const startNewAnalysis = () => {
-    if (moveHistory.length && !window.confirm(t('game.analysis.newConfirm'))) return;
     const empty = emptyAnalysisSession();
     saveAnalysisSession([], -1);
     setGame(empty.game);
