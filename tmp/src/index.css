@@ -675,3 +675,40 @@
 @media (min-width: 1280px) and (prefers-reduced-motion: reduce) {
   .sidebar-item.theme-premium { transition: none; }
 }
+
+/* Keep the mobile analysis controls and site menu in separate layout rows.
+   The menu's existing height includes the phone's bottom safe area. */
+@media (max-width: 767px) {
+  .mobile-analysis-layout {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    flex-direction: column;
+  }
+
+  .mobile-analysis-layout > nav {
+    position: relative;
+    order: 2;
+    flex-shrink: 0;
+  }
+
+  .mobile-analysis-layout > main {
+    order: 1;
+    min-height: 0;
+    padding-bottom: 0.75rem;
+  }
+
+  .mobile-analysis-layout > main > div {
+    min-height: 0;
+    overscroll-behavior-y: contain;
+  }
+
+  .mobile-analysis-screen {
+    flex: none;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+}
