@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties }
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
-import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu } from 'lucide-react';
+import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
@@ -14,6 +14,7 @@ import { Chess } from 'chess.js';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
+import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
 
 function countryCodeToFlag(code: string): string | null {
   const normalized = code.trim().toUpperCase();
@@ -42,6 +43,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { user, profile } = useAuth();
+  const [initialAnalysis] = useState(() => mode === 'review' ? loadAnalysisSession() : emptyAnalysisSession());
 
   // User preferences applied automatically via ThemeContext
   const [activeTab, setActiveTab] = useState<'moves' | 'analysis'>(() =>
@@ -72,12 +74,15 @@ export default function GameScreen({ mode }: GameScreenProps) {
   }, []);
 
   const [timeLeft, setTimeLeft] = useState({ black: 600, white: 600 });
-  const [viewMoveIndex, setViewMoveIndex] = useState<number>(-1);
-  const [positionHistory, setPositionHistory] = useState<string[]>(() => [new Chess().fen()]);
-  const [moveHistory, setMoveHistory] = useState<string[]>([]);
+  const [viewMoveIndex, setViewMoveIndex] = useState(initialAnalysis.viewMoveIndex);
+  const [positionHistory, setPositionHistory] = useState(initialAnalysis.positionHistory);
+  const [moveHistory, setMoveHistory] = useState(initialAnalysis.moveHistory);
 
   // Chess Game State
-  const [game, setGame] = useState(new Chess());
+  const [game, setGame] = useState(initialAnalysis.game);
+  useEffect(() => {
+    if (mode === 'review') saveAnalysisSession(moveHistory, viewMoveIndex);
+  }, [mode, moveHistory, viewMoveIndex]);
   const { socket, isConnected } = useSocket();
   const [searchParams] = useSearchParams();
   const roomId = mode === 'live' ? searchParams.get('roomId') : null;
@@ -356,6 +361,19 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [engineResult, setEngineResult] = useState<EngineResult | null>(null);
   const [isAnalysing, setIsAnalysing] = useState(false);
   const [engineFailed, setEngineFailed] = useState(false);
+
+  const startNewAnalysis = () => {
+    if (moveHistory.length && !window.confirm(t('game.analysis.newConfirm'))) return;
+    const empty = emptyAnalysisSession();
+    saveAnalysisSession([], -1);
+    setGame(empty.game);
+    setPositionHistory(empty.positionHistory);
+    setMoveHistory([]);
+    setViewMoveIndex(-1);
+    setGameOverMessage(null);
+    setEngineResult(null);
+    setEngineFailed(false);
+  };
 
   // Authoritative server clock countdown
   useEffect(() => {
@@ -687,7 +705,22 @@ export default function GameScreen({ mode }: GameScreenProps) {
               <span>Stockfish 18</span>
               {engineResult?.depth ? <span className="rounded bg-black/30 px-1.5 py-1 font-mono text-[0.625rem] text-cyan-200">d{engineResult.depth}</span> : null}
             </div>
+            {mode === 'review' && (
+              <button type="button" onClick={startNewAnalysis} className="min-h-11 flex items-center gap-1.5 rounded-lg border border-white/10 px-2 text-[0.6875rem] font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
+                <RotateCcw size={14} aria-hidden="true" />
+                {t('game.analysis.new')}
+              </button>
+            )}
           </div>
+
+          {mode === 'review' && viewMoveIndex !== -1 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 px-2 py-1 text-xs text-neutral-400">
+              <span>{t('game.analysis.reviewing')}</span>
+              <button type="button" onClick={() => setViewMoveIndex(-1)} className="min-h-9 rounded-lg px-2 font-bold text-cyan-200 hover:bg-cyan-500/10">
+                {t('game.analysis.resume')}
+              </button>
+            </div>
+          )}
 
           {activeTab === 'analysis' ? (
             <div className="px-2 py-1.5 space-y-1">
@@ -776,9 +809,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
       )}
 
       {/* Mobile Analysis Drawer Header */}
-      <div className="flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-4 lg:flex-1">
+      <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-4 lg:flex-1", !isMultiplayer && "lg:min-w-0")}>
 
-        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "xl:w-[110%] xl:max-w-[90vh]")}>
+        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "xl:max-w-[90vh]")}>
 
           <div className={cx(
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
@@ -943,7 +976,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       )}
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
+      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:w-[38%] xl:w-[38%] lg:max-w-[470px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
@@ -972,6 +1005,23 @@ export default function GameScreen({ mode }: GameScreenProps) {
         </nav>
 
         <div className={cx("hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]", !isMultiplayer && "xl:bg-white/[0.015]")}>
+
+          {mode === 'review' && (
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 px-4 pt-2">
+              {viewMoveIndex !== -1 && (
+                <>
+                  <span className="mr-auto text-xs text-neutral-400">{t('game.analysis.reviewing')}</span>
+                  <button type="button" onClick={() => setViewMoveIndex(-1)} className="min-h-9 rounded-lg px-2 text-xs font-bold text-cyan-200 hover:bg-cyan-500/10">
+                    {t('game.analysis.resume')}
+                  </button>
+                </>
+              )}
+              <button type="button" onClick={startNewAnalysis} className="min-h-9 flex items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
+                <RotateCcw size={14} aria-hidden="true" />
+                {t('game.analysis.new')}
+              </button>
+            </div>
+          )}
 
           <div className="shrink-0 flex flex-col border-b border-white/[0.06]">
             {!isLiveMultiplayer && (
