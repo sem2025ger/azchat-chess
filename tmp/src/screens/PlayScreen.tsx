@@ -286,7 +286,7 @@ export default function PlayScreen() {
             )}
 
             <div 
-              className="w-full aspect-square bg-neutral-900 rounded-[2rem] border-[6px] border-neutral-800/50 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-white/10 relative transition-all duration-700 group-hover/board:border-neutral-800 self-center max-w-[94vw] sm:max-w-[560px] lg:max-w-[min(640px,calc(100dvh-140px))] max-md:max-w-none max-md:border-2 max-md:rounded-xl"
+              className="w-full aspect-square bg-neutral-900 rounded-[2rem] border-[6px] border-neutral-800/50 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-white/10 relative transition-all duration-700 group-hover/board:border-neutral-800 self-center max-w-[94vw] sm:max-w-[560px] lg:max-w-[min(630px,calc(100dvh-120px))] max-md:max-w-none max-md:border-2 max-md:rounded-xl"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
               <ChessBoard overrideBoardTheme={boardTheme} className="border-none p-0 bg-transparent shadow-none max-md:[&_[draggable]_img]:scale-110" />
