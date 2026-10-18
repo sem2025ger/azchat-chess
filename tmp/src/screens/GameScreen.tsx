@@ -363,7 +363,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [engineFailed, setEngineFailed] = useState(false);
 
   const startNewAnalysis = () => {
-    if (moveHistory.length && !window.confirm(t('game.analysis.newConfirm'))) return;
     const empty = emptyAnalysisSession();
     saveAnalysisSession([], -1);
     setGame(empty.game);
@@ -811,7 +810,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Mobile Analysis Drawer Header */}
       <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-4 lg:flex-1", !isMultiplayer && "lg:min-w-0")}>
 
-        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "xl:max-w-[90vh]")}>
+        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]")}>
 
           <div className={cx(
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
@@ -849,10 +848,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
 
             <div ref={analysisBoardRef} className={cx(
-              "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300",
+              "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300", 
               isMultiplayer
                 ? "w-[min(96vw,56dvh)] md:w-full"
-                : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] border-b-0 md:w-full md:border-b-[8px]"
+                : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] border-b-0 md:w-full md:border-b-[8px] lg:!w-full lg:!max-w-[min(630px,calc(100dvh-120px))] lg:!flex-[0_1_auto]"
             )}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               
@@ -976,7 +975,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       )}
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:w-[38%] xl:w-[38%] lg:max-w-[470px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
+      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">

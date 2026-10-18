@@ -279,7 +279,7 @@ function ChessBoard({
       if (pointerDrag.current !== drag) return;
       drag.element.style.transition = 'none';
       drag.element.style.zIndex = '50';
-      drag.element.style.transform = `translate3d(${(drag.x - drag.startX) / drag.scaleX}px, ${(drag.y - drag.startY) / drag.scaleY}px, 0) scale(1.1)`;
+      drag.element.style.transform = `translate3d(${(drag.x - drag.startX) / drag.scaleX}px, ${(drag.y - drag.startY) / drag.scaleY}px, 0)`;
     });
   };
 
@@ -402,8 +402,8 @@ function ChessBoard({
                   draggable
                   onDragStart={(e) => handleDragStart(e, p.square)}
                   className={cx(
-                    'absolute w-[12.5%] h-[12.5%] transition-all duration-[150ms] xl:transition-transform xl:duration-[90ms] motion-reduce:xl:transition-none ease-out pointer-events-none md:pointer-events-auto cursor-grab active:cursor-grabbing hover:scale-[1.05]',
-                    isSelected ? 'scale-[1.1] z-40' : 'z-30'
+                    'absolute w-[12.5%] h-[12.5%] transition-all duration-[150ms] xl:transition-none ease-out pointer-events-none md:pointer-events-auto xl:pointer-events-none cursor-grab active:cursor-grabbing max-xl:hover:scale-[1.05]',
+                    isSelected ? 'max-xl:scale-[1.1] z-40' : 'z-30'
                   )}
                   style={{ left: `${fileIdx * 12.5}%`, top: `${rankIdx * 12.5}%` }}
                 >
@@ -492,7 +492,7 @@ function PieceImage({
     />
   );
   return (
-    <div className="w-full h-full flex items-center justify-center p-[3%] md:p-[8%] pointer-events-none select-none">
+    <div className="w-full h-full flex items-center justify-center p-[3%] md:p-[8%] lg:p-[5%] pointer-events-none select-none">
       {desktopPawnSrc || mobileSrc ? (
         <picture className="block w-full h-full">
           {desktopPawnSrc && <source media="(min-width: 1280px)" srcSet={desktopPawnSrc} type="image/svg+xml" />}
