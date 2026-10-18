@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
@@ -84,6 +84,32 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const requestedColor = searchParams.get('color');
   const playerColor: 'w' | 'b' = mode === 'live' && requestedColor === 'b' ? 'b' : 'w';
   const isMultiplayer = mode === 'live' && Boolean(roomId);
+
+  // Match the desktop analysis panel's outer height to the actual chessboard frame.
+  // ResizeObserver keeps this accurate when viewport dimensions or board sizing change.
+  const analysisBoardRef = useRef<HTMLDivElement>(null);
+  const [analysisBoardHeight, setAnalysisBoardHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isMultiplayer || typeof ResizeObserver === 'undefined') return;
+    const board = analysisBoardRef.current;
+    if (!board) return;
+
+    const measure = () => {
+      if (!window.matchMedia('(min-width: 1280px)').matches) return;
+      const height = Math.round(board.offsetHeight);
+      if (height > 0) setAnalysisBoardHeight(prev => prev === height ? prev : height);
+    };
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(board);
+    window.addEventListener('resize', measure);
+    measure();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [isMultiplayer]);
 
   const playerFlag = profile?.countryCode
     ? countryCodeToFlag(profile.countryCode)
@@ -624,7 +650,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   }, [engineResult, liveFen]);
 
   return (
-    <div className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden">
+    <div className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]")}>
 
       {/* Mobile analysis panel above the board */}
       {!isLiveMultiplayer && (
@@ -752,7 +778,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Mobile Analysis Drawer Header */}
       <div className="flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-4 lg:flex-1">
 
-        <div className="w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full">
+        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "xl:w-[110%] xl:max-w-[90vh]")}>
 
           <div className={cx(
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
@@ -789,7 +815,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               />
             </div>
 
-            <div className={cx(
+            <div ref={analysisBoardRef} className={cx(
               "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300",
               isMultiplayer
                 ? "w-[min(96vw,56dvh)] md:w-full"
@@ -917,7 +943,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       )}
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className="w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0">
+      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
@@ -945,7 +971,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </div>
         </nav>
 
-        <div className="hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]">
+        <div className={cx("hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]", !isMultiplayer && "xl:bg-white/[0.015]")}>
 
           <div className="shrink-0 flex flex-col border-b border-white/[0.06]">
             {!isLiveMultiplayer && (
@@ -962,7 +988,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             )}
           </div>
 
-          <div className="flex-1 min-h-0 flex flex-col overflow-hidden bg-black/[0.1]">
+          <div className={cx("flex-1 min-h-0 flex flex-col overflow-hidden bg-black/[0.1]", !isMultiplayer && "xl:bg-black/[0.025]")}>
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
               <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 bg-neutral-950/95 backdrop-blur-3xl z-20 border-b border-white/[0.03]">
