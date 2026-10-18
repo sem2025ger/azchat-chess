@@ -672,7 +672,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Mobile analysis panel above the board */}
       {!isLiveMultiplayer && (
         <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
-          <div className="min-h-14 grid grid-cols-[minmax(0,1fr)_2.75rem_minmax(0,1fr)] items-center gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
+          <div className="min-h-14 grid grid-cols-[max-content_minmax(0,1fr)_max-content] items-center gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
             <div className="flex min-w-0 shrink-0 items-center gap-1">
               <button
                 type="button"
@@ -705,9 +705,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 onClick={startNewAnalysis}
                 aria-label={t('game.analysis.new')}
                 title={t('game.analysis.new')}
-                className="h-11 w-11 shrink-0 flex items-center justify-center justify-self-center rounded-xl border border-[#CBA460]/65 bg-[linear-gradient(140deg,#46321B_0%,#211B16_55%,#382917_100%)] text-[#F5D898] shadow-[inset_0_1px_0_rgba(255,227,161,0.24),0_5px_14px_rgba(0,0,0,0.28)] transition-[border-color,color,box-shadow] duration-150 hover:border-[#F9D994] hover:text-[#FFF1CF] hover:shadow-[0_0_18px_rgba(203,164,96,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70"
+                className="mobile-new-analysis-obsidian relative isolate h-11 w-11 shrink-0 overflow-hidden flex items-center justify-center justify-self-center rounded-xl border border-[#BE9963]/65 bg-[linear-gradient(130deg,#0B0C12_0%,#191922_38%,#382917_67%,#0C111A_100%)] text-[#F5D898] shadow-[inset_0_1px_0_rgba(245,224,173,0.19),0_5px_14px_rgba(0,0,0,0.32)] transition-[border-color,color,box-shadow] duration-150 hover:border-[#F9D994] hover:text-[#FFF1CF] hover:shadow-[0_0_18px_rgba(203,164,96,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70"
               >
-                <RotateCcw size={19} aria-hidden="true" />
+                <RotateCcw size={19} className="relative z-10" aria-hidden="true" />
               </button>
             )}
             <div className="min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-cyan-100 bg-cyan-500/15 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] whitespace-nowrap">
