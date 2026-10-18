@@ -665,6 +665,14 @@
   .mobile-new-analysis-obsidian::before { animation: mobileObsidianSheen 10s ease-in-out infinite alternate; }
   .mobile-home-play::before { animation: mobilePlayGoldWave 9s ease-in-out infinite alternate; }
   .mobile-home-play::after { animation: mobilePlayVioletWave 11s ease-in-out infinite alternate; }
+  /* Gentle transform pulse: no layout shift, original waves stay unchanged. */
+  .mobile-home-play {
+    transform-origin: center;
+    animation: mobilePlayGentlePulse 4.8s ease-in-out infinite;
+  }
+  .mobile-home-play:active {
+    animation: none;
+  }
 }
 @keyframes mobileObsidianSheen { from { opacity: .12; } to { opacity: .45; } }
 @keyframes mobilePlayGoldWave {
@@ -676,6 +684,16 @@
   0% { transform: translate3d(30%, 0, 0); opacity: .12; }
   55% { opacity: .38; }
   100% { transform: translate3d(-30%, 0, 0); opacity: .28; }
+}
+@keyframes mobilePlayGentlePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 19px -9px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,232,174,.2), 0 0 14px rgba(184,149,97,.12);
+  }
+  50% {
+    transform: scale(1.014);
+    box-shadow: 0 9px 21px -9px rgba(0,0,0,.73), inset 0 1px 0 rgba(255,232,174,.25), 0 0 19px rgba(211,174,108,.24);
+  }
 }
 
 /* HOME — premium obsidian gold (full-size desktop sidebar only).
