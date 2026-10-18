@@ -15,9 +15,11 @@ export default function HomeScreen() {
   return (
     <div className="flex flex-col min-h-full xl:h-full w-full xl:overflow-hidden items-center justify-start xl:justify-center bg-transparent transition-all relative home-screen-root">
       <style>{`
-        /* All pieces slightly larger on Home board */
-        .home-board img {
-          transform: scale(1.16);
+        /* Keep the existing mobile Home piece scaling; match Analysis on desktop. */
+        @media (max-width: 767px) {
+          .home-board img {
+            transform: scale(1.16);
+          }
         }
         /* Lighten black pieces on Home board — charcoal, not deep black */
         .home-board img[src$="bK.svg"],
