@@ -492,7 +492,7 @@ function PieceImage({
     />
   );
   return (
-    <div className="w-full h-full flex items-center justify-center p-[3%] md:p-[8%] pointer-events-none select-none">
+    <div className="w-full h-full flex items-center justify-center p-[3%] md:p-[8%] xl:p-[5%] pointer-events-none select-none">
       {desktopPawnSrc || mobileSrc ? (
         <picture className="block w-full h-full">
           {desktopPawnSrc && <source media="(min-width: 1280px)" srcSet={desktopPawnSrc} type="image/svg+xml" />}
