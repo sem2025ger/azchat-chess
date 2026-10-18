@@ -346,12 +346,12 @@ export default function HomeScreen() {
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 md:gap-4 bg-[#121212]/98 p-3 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
+          <div className="mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 max-md:gap-0 md:gap-4 bg-[#121212]/98 p-3 max-md:py-5 max-md:px-4 md:p-6 rounded-[2rem] max-md:rounded-[1.75rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
 
 
           {/* 1. Hero Brand Header */}
           <div className="flex flex-col">
-            <h1 className="text-[2.2rem] md:text-[2.5rem] xl:text-[2.9rem] font-black text-glow-cycle leading-[0.95] tracking-[-0.03em] italic">
+            <h1 className="text-[2.2rem] max-md:text-center md:text-[2.5rem] xl:text-[2.9rem] font-black text-glow-cycle leading-[0.95] tracking-[-0.03em] italic">
               Chess<span className="text-chess-active"> Arena</span>
             </h1>
           </div>
@@ -359,7 +359,7 @@ export default function HomeScreen() {
           {/* Text-only play action, shared with the mobile Arena. */}
           <Link
             to="/play"
-            className="mobile-home-play desktop-home-play group relative flex items-center justify-center gap-0 px-4 py-2.5 md:py-3 min-h-[44px] md:min-h-[56px] btn-glow-cycle border border-white/20 text-black rounded-[0.875rem] md:rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-[72%] md:w-[94%] self-center"
+            className="hidden md:flex mobile-home-play desktop-home-play group relative items-center justify-center gap-0 px-4 py-2.5 md:py-3 min-h-[44px] md:min-h-[56px] btn-glow-cycle border border-white/20 text-black rounded-[0.875rem] md:rounded-2xl hover:-translate-y-[2px] active:translate-y-0 active:scale-[0.99] transition-all duration-200 transform-gpu overflow-hidden w-[72%] md:w-[94%] self-center"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
             <span className="relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
@@ -377,10 +377,12 @@ function HomeMoveControls({
   review,
   goTo,
   className,
+  compactMobile = false,
 }: {
   review: HomeBoardReview;
   goTo: (index: number) => void;
   className: string;
+  compactMobile?: boolean;
 }) {
   const { t } = useLanguage();
   const premiumButtonClass =
@@ -394,27 +396,37 @@ function HomeMoveControls({
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F8D791]';
 
   return (
-    <nav aria-label={t('home.board.moveNavigation')} className={`w-full grid-cols-2 gap-2.5 px-1 ${className}`}>
+    <nav aria-label={t('home.board.moveNavigation')} className={`w-full px-1 ${compactMobile ? 'grid-cols-[minmax(0,0.8fr)_minmax(0,2fr)_minmax(0,0.8fr)] gap-2' : 'grid-cols-2 gap-2.5'} ${className}`}>
       <button
         type="button"
-        className={premiumButtonClass}
+        className={compactMobile ? `${premiumButtonClass} !min-h-11 !px-1 !gap-0` : premiumButtonClass}
         aria-label={t('home.board.previousMove')}
         title={t('home.board.previousMove')}
         onClick={() => goTo(review.index - 1)}
         disabled={review.index === 0}
       >
         <ChevronLeft size={21} strokeWidth={2.5} aria-hidden="true" />
-        <span>{t('home.board.previousMove')}</span>
+        <span className={compactMobile ? 'sr-only' : undefined}>{t('home.board.previousMove')}</span>
       </button>
+      {compactMobile && (
+        <Link
+          to="/play"
+          className="mobile-home-play group relative flex min-h-11 min-w-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 btn-glow-cycle px-2 py-2 text-black shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)] transition-[transform,box-shadow] duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80"
+        >
+          <span className="relative z-10 w-full text-center font-extrabold text-[clamp(0.64rem,2.7vw,0.79rem)] leading-tight tracking-[0.01em] uppercase text-shadow-cycle">
+            {t('home.playChessNow')}
+          </span>
+        </Link>
+      )}
       <button
         type="button"
-        className={premiumButtonClass}
+        className={compactMobile ? `${premiumButtonClass} !min-h-11 !px-1 !gap-0` : premiumButtonClass}
         aria-label={t('home.board.nextMove')}
         title={t('home.board.nextMove')}
         onClick={() => goTo(review.index + 1)}
         disabled={review.index === review.moves.length}
       >
-        <span>{t('home.board.nextMove')}</span>
+        <span className={compactMobile ? 'sr-only' : undefined}>{t('home.board.nextMove')}</span>
         <ChevronRight size={21} strokeWidth={2.5} aria-hidden="true" />
       </button>
     </nav>
@@ -448,7 +460,7 @@ function MobileHomeBoard({
       <div className="home-board w-full aspect-square overflow-hidden rounded-lg ring-1 ring-white/10 shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]">
         <ChessBoard game={game} onMove={onMove} overrideBoardTheme="Classic Wood" className="!border-none !p-0" />
       </div>
-      <HomeMoveControls review={review} goTo={goTo} className="grid" />
+      <HomeMoveControls review={review} goTo={goTo} className="grid" compactMobile />
     </div>
   );
 }
