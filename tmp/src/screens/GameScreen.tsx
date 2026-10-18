@@ -672,13 +672,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Mobile analysis panel above the board */}
       {!isLiveMultiplayer && (
         <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
-          <div className="min-h-14 flex flex-nowrap items-center justify-between gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
+          <div className="min-h-14 grid grid-cols-[minmax(0,1fr)_2.75rem_minmax(0,1fr)] items-center gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
             <div className="flex min-w-0 shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={() => setActiveTab('analysis')}
                 className={cx(
-                  "min-h-11 px-2 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.06em] whitespace-nowrap transition-colors duration-150",
+                  "min-h-11 px-1.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.04em] whitespace-nowrap transition-colors duration-150",
                   activeTab === 'analysis'
                     ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                     : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
@@ -690,7 +690,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 type="button"
                 onClick={() => setActiveTab('moves')}
                 className={cx(
-                  "min-h-11 px-2 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.06em] whitespace-nowrap transition-colors duration-150",
+                  "min-h-11 px-1.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.04em] whitespace-nowrap transition-colors duration-150",
                   activeTab === 'moves'
                     ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                     : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
@@ -705,12 +705,12 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 onClick={startNewAnalysis}
                 aria-label={t('game.analysis.new')}
                 title={t('game.analysis.new')}
-                className="min-h-11 min-w-11 shrink-0 flex items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-neutral-200 transition-colors duration-150 hover:border-amber-300/40 hover:bg-amber-500/10 hover:text-amber-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70"
+                className="h-11 w-11 shrink-0 flex items-center justify-center justify-self-center rounded-xl border border-[#CBA460]/65 bg-[linear-gradient(140deg,#46321B_0%,#211B16_55%,#382917_100%)] text-[#F5D898] shadow-[inset_0_1px_0_rgba(255,227,161,0.24),0_5px_14px_rgba(0,0,0,0.28)] transition-[border-color,color,box-shadow] duration-150 hover:border-[#F9D994] hover:text-[#FFF1CF] hover:shadow-[0_0_18px_rgba(203,164,96,0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70"
               >
                 <RotateCcw size={19} aria-hidden="true" />
               </button>
             )}
-            <div className="ml-auto min-h-11 shrink-0 flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.06] whitespace-nowrap">
+            <div className="min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.06] whitespace-nowrap">
               <span>Stockfish 18</span>
             </div>
           </div>
@@ -763,7 +763,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               )}
             </div>
           ) : (
-            <div className="max-h-[12dvh] overflow-y-auto overscroll-contain touch-pan-y bg-black/[0.08]">
+            <div className="h-28 min-h-0 shrink-0 overflow-y-auto overscroll-contain touch-pan-y bg-black/[0.08]">
               {movePairs.length === 0 ? (
                 <div className="flex min-h-16 items-center justify-center px-3 text-[0.62rem] font-bold uppercase tracking-widest text-neutral-600">
                   {t('game.analysis.nomoves')}
