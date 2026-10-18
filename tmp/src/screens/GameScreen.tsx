@@ -852,7 +852,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300", 
               isMultiplayer
                 ? "w-[min(96vw,56dvh)] md:w-full"
-                : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] border-b-0 md:w-full md:border-b-[8px] lg:!w-full lg:!max-w-[min(640px,calc(100dvh-150px))] lg:!flex-[0_1_auto]"
+                : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] border-b-0 md:w-full md:border-b-[8px] lg:!w-full lg:!max-w-[min(630px,calc(100dvh-120px))] lg:!flex-[0_1_auto]"
             )}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               
@@ -879,7 +879,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               ) : null}
 
               <ChessBoard
-                className={!isMultiplayer ? 'p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg lg:!p-0 lg:!border-0 lg:!rounded-none max-md:[&_[draggable]_img]:scale-110' : undefined}
+                className={!isMultiplayer ? 'p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110' : undefined}
                 overrideBoardTheme={boardTheme}
                 game={displayedGame}
                 onMove={handleGameMove}
