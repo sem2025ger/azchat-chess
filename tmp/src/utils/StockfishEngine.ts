@@ -31,6 +31,7 @@ export class StockfishEngine {
   private _searching: boolean = false;
   private _pending: { fen: string; depth: number } | null = null;
   private _initTimer: ReturnType<typeof setTimeout> | null = null;
+  private _resultTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Accumulated UCI info state
   private _depth = 0;
@@ -78,7 +79,9 @@ export class StockfishEngine {
     if (this._initFailed) return;
     this._initFailed = true;
     this.ready = false;
+    this._searching = false;
     this._pending = null;
+    this.clearResultTimer();
     console.error('Engine: Stockfish failed to initialize');
     this.onErrorCallback?.();
   }
@@ -130,6 +133,7 @@ export class StockfishEngine {
       const m = line.match(/^bestmove\s+(\S+)/);
       const best = m?.[1] || this._pv[0] || '';
       this._searching = false;
+      this.clearResultTimer();
       const isUsablePv = (pvArr: string[], mateScore: number | undefined) => pvArr.length > 1 || (mateScore != null && pvArr.length > 0);
       const finalPv = isUsablePv(this._pv, this._mate) ? this._pv : (isUsablePv(this._lastGoodPv, this._mate) ? this._lastGoodPv : this._pv);
       this.onResultCallback?.({
@@ -199,15 +203,23 @@ export class StockfishEngine {
 
     // Emit intermediate results from depth 5+
     if (this._depth >= 5 && this._pv.length > 0 && this._searching) {
-      this.onResultCallback?.({
-        evaluation: this._eval,
-        bestMove: this._pv[0],
-        depth: this._depth,
-        mate: this._mate,
-        continuation: this._pv.length > 1 ? this._pv.slice(1) : undefined,
-        lines: this.getStableLines(),
-        analyzedFen: this._analyzedFen,
-      });
+      // Coalesce the three MultiPV streams. SAN formatting/rendering on the UI thread
+      // must not run for every worker message while the user is moving a piece.
+      if (this._resultTimer === null) {
+        this._resultTimer = setTimeout(() => {
+          this._resultTimer = null;
+          if (!this._searching || this._stoppingForRestart) return;
+          this.onResultCallback?.({
+            evaluation: this._eval,
+            bestMove: this._pv[0],
+            depth: this._depth,
+            mate: this._mate,
+            continuation: this._pv.length > 1 ? this._pv.slice(1) : undefined,
+            lines: this.getStableLines(),
+            analyzedFen: this._analyzedFen,
+          });
+        }, 80);
+      }
     }
   }
 
@@ -245,6 +257,7 @@ export class StockfishEngine {
     if (!this.ready) { this._pending = { fen, depth }; return; }
 
     if (this._searching) {
+      this.clearResultTimer();
       this._queuedAnalysis = { fen, depth };
       this._stoppingForRestart = true;
       this.send('stop');
@@ -255,6 +268,7 @@ export class StockfishEngine {
   }
 
   private beginSearch(fen?: string, depth = 18): void {
+    this.clearResultTimer();
     this._searching = true;
     this._depth = 0;
     this._eval = 0;
@@ -274,9 +288,14 @@ export class StockfishEngine {
   }
 
   public stop(): void {
+    this.clearResultTimer();
     this._queuedAnalysis = null;
-    this._stoppingForRestart = false;
-    if (this._searching) { this._searching = false; this.send('stop'); }
+    // UCI stop is asynchronous. Consume the old bestmove before starting another
+    // position, otherwise it can be misreported as the new position's result.
+    if (this._searching && !this._stoppingForRestart) {
+      this._stoppingForRestart = true;
+      this.send('stop');
+    }
   }
 
   public destroy(): void {
@@ -285,6 +304,8 @@ export class StockfishEngine {
     this._worker?.terminate();
     this._worker = null;
     this.ready = false;
+    this._searching = false;
+    this._stoppingForRestart = false;
   }
 
   public isReady(): boolean {
@@ -293,5 +314,10 @@ export class StockfishEngine {
 
   public hasFailed(): boolean {
     return this._initFailed;
+  }
+
+  private clearResultTimer(): void {
+    if (this._resultTimer !== null) clearTimeout(this._resultTimer);
+    this._resultTimer = null;
   }
 }

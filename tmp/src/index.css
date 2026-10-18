@@ -242,7 +242,7 @@
 
 /* Sidebar Interaction Design */
 .sidebar-item {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease, transform 90ms ease;
   position: relative;
 }
 
@@ -442,7 +442,7 @@
     inset 0 0 0 1px rgba(0, 206, 209, 0.18),
     0 0 18px rgba(0, 206, 209, 0.10);
   color: rgba(220, 220, 220, 0.9);
-  transition: background 600ms ease, box-shadow 600ms ease, color 600ms ease;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease, transform 90ms ease;
 }
 .sidebar-item.theme-premium:not(.sidebar-item-active):hover {
   background: linear-gradient(135deg, rgba(0, 206, 209, 0.12), transparent 60%);
@@ -459,7 +459,7 @@
     inset 0 0 0 1px rgba(223, 176, 98, 0.18),
     0 0 18px rgba(223, 176, 98, 0.10);
   color: rgba(220, 220, 220, 0.9);
-  transition: background 600ms ease, box-shadow 600ms ease, color 600ms ease;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease, transform 90ms ease;
 }
 .sidebar-item.theme-gold:not(.sidebar-item-active):hover {
   background: linear-gradient(135deg, rgba(223, 176, 98, 0.12), transparent 60%);
@@ -469,6 +469,18 @@
   color: #fff;
 }
 
+
+.site-nav-link {
+  touch-action: manipulation;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-item,
+  .sidebar-item.theme-premium:not(.sidebar-item-active),
+  .sidebar-item.theme-gold:not(.sidebar-item-active) {
+    transition: none;
+  }
+}
 
 /* Performance mode: keep the premium dark-glass look without continuous GPU blur. */
 [class*="backdrop-blur-"],
@@ -612,4 +624,54 @@
   img[data-desktop-pawn] {
     filter: none !important;
   }
+}
+
+
+/* HOME — premium obsidian gold (full-size desktop sidebar only).
+   Preserve the existing compact navigation and mobile bottom bar. */
+@media (min-width: 1280px) {
+  .sidebar-item.theme-premium:not(.sidebar-item-active) {
+    background: linear-gradient(128deg, #252017 0%, #171411 52%, #0c0c0b 100%);
+    color: #d9b879;
+    box-shadow:
+      inset 0 1px 0 rgba(248, 215, 151, 0.09),
+      inset 0 0 0 1px rgba(203, 164, 99, 0.34),
+      0 7px 17px rgba(0, 0, 0, 0.24);
+    transition: background 150ms ease, box-shadow 150ms ease, color 150ms ease;
+  }
+
+  .sidebar-item.theme-premium:not(.sidebar-item-active):hover {
+    background: linear-gradient(128deg, #30271b 0%, #1c1813 52%, #0f0e0c 100%);
+    color: #efd398;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 223, 158, 0.14),
+      inset 0 0 0 1px rgba(225, 185, 116, 0.56),
+      0 9px 21px rgba(0, 0, 0, 0.3),
+      0 0 16px rgba(196, 151, 74, 0.09);
+  }
+
+  .sidebar-item-active.theme-premium {
+    background: linear-gradient(128deg, #2b2419 0%, #181511 54%, #0e0d0b 100%);
+    color: #efd095;
+    border-color: rgba(217, 180, 112, 0.53);
+    box-shadow:
+      inset 4px 0 0 #cfa96a,
+      inset 0 1px 0 rgba(255, 224, 167, 0.12),
+      0 0 20px rgba(184, 137, 63, 0.15),
+      0 9px 22px rgba(0, 0, 0, 0.28);
+  }
+
+  .sidebar-item-active.theme-premium:hover {
+    color: #f3dcad;
+    border-color: rgba(238, 201, 139, 0.68);
+  }
+
+  .sidebar-item.theme-premium > .absolute.right-4 {
+    background: #d9b879;
+    box-shadow: 0 0 8px rgba(217, 184, 121, 0.6);
+  }
+}
+
+@media (min-width: 1280px) and (prefers-reduced-motion: reduce) {
+  .sidebar-item.theme-premium { transition: none; }
 }
