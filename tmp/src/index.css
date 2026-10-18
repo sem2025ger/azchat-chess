@@ -704,7 +704,7 @@
     overscroll-behavior-y: contain;
   }
 
-  .mobile-analysis-screen {
+  .mobile-analysis-layout .mobile-analysis-screen {
     flex: none;
     height: auto;
     min-height: 0;
