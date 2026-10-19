@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
@@ -10,11 +10,16 @@ import { twMerge } from 'tailwind-merge';
 import EvaluationBar from '../components/EvaluationBar';
 import AnalysisPanel from '../components/AnalysisPanel';
 import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
-import { Chess } from 'chess.js';
+import { Chess, DEFAULT_POSITION } from 'chess.js';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
 import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
+import { analysisMovePairs, positionDraft, placeDraftPiece, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
+import { analysisCopy } from '../components/analysis/copy';
+const SavedGamesPanel = lazy(() => import('../components/analysis/SavedGamesPanel'));
+const PositionTools = lazy(() => import('../components/analysis/PositionTools'));
+const EditorBoard = lazy(() => import('../components/analysis/EditorBoard'));
 
 function countryCodeToFlag(code: string): string | null {
   const normalized = code.trim().toUpperCase();
@@ -41,7 +46,35 @@ interface GameScreenProps {
 
 export default function GameScreen({ mode }: GameScreenProps) {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const words = analysisCopy[language];
+  const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'games' | 'position'>('analysis');
+  const [loadedGameTitle, setLoadedGameTitle] = useState('');
+  const [loadedGameDetails, setLoadedGameDetails] = useState<{ white: string; black: string; timeControl?: string } | null>(null);
+  const [editingPosition, setEditingPosition] = useState(false);
+  const [editorSelectedPiece, setEditorSelectedPiece] = useState('P');
+  const [positionDraftValue, setPositionDraftValue] = useState<PositionDraft>(() => positionDraft(new Chess().fen()));
+  const [positionDraftUndo, setPositionDraftUndo] = useState<PositionDraft[]>([]);
+  const updatePositionDraft = (next: PositionDraft) => {
+    setPositionDraftUndo(history => [...history.slice(-29), positionDraftValue]);
+    setPositionDraftValue(next);
+  };
+  const resetPositionDraft = (fen: string) => { setPositionDraftValue(positionDraft(fen)); setPositionDraftUndo([]); };
+  const clearPositionDraft = () => updatePositionDraft({ ...positionDraftValue, squares: Array(64).fill(''), castling: '-', ep: '-', half: '0', full: '1' });
+  const placePositionPiece = (index: number, piece = editorSelectedPiece) => updatePositionDraft(placeDraftPiece(positionDraftValue, index, piece));
+  const movePositionPiece = (from: number, to: number) => {
+    const piece = positionDraftValue.squares[from];
+    if (!piece || from === to) return;
+    const shifted = placeDraftPiece(positionDraftValue, to, piece);
+    const squares = [...shifted.squares];
+    squares[from] = '';
+    updatePositionDraft({ ...shifted, squares });
+  };
+  const undoPositionDraft = () => {
+    if (!positionDraftUndo.length) return;
+    setPositionDraftValue(positionDraftUndo[positionDraftUndo.length - 1]);
+    setPositionDraftUndo(previous => previous.slice(0, -1));
+  };
   const { user, profile } = useAuth();
   const [initialAnalysis] = useState(() => mode === 'review' ? loadAnalysisSession() : emptyAnalysisSession());
 
@@ -81,8 +114,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
   // Chess Game State
   const [game, setGame] = useState(initialAnalysis.game);
   useEffect(() => {
-    if (mode === 'review') saveAnalysisSession(moveHistory, viewMoveIndex);
-  }, [mode, moveHistory, viewMoveIndex]);
+    if (mode === 'review') saveAnalysisSession(moveHistory, viewMoveIndex, undefined, positionHistory[0]);
+  }, [mode, moveHistory, viewMoveIndex, positionHistory]);
   const { socket, isConnected } = useSocket();
   const [searchParams] = useSearchParams();
   const roomId = mode === 'live' ? searchParams.get('roomId') : null;
@@ -362,8 +395,29 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [isAnalysing, setIsAnalysing] = useState(false);
   const [engineFailed, setEngineFailed] = useState(false);
 
+  const loadWorkspaceAnalysis = (analysis: AnalysisLoad, title = '', details?: { white: string; black: string; timeControl?: string }) => {
+    if (mode !== 'review') return;
+    engineRef.current?.stop();
+    setGame(analysis.game);
+    setPositionHistory(analysis.positionHistory);
+    setMoveHistory(analysis.moveHistory);
+    setViewMoveIndex(analysis.viewMoveIndex);
+    setGameOverMessage(null);
+    setEngineResult(null);
+    setEngineFailed(false);
+    setLoadedGameTitle(title);
+    setLoadedGameDetails(details || null);
+    setWorkspaceTab('analysis');
+    setEditingPosition(false);
+    saveAnalysisSession(analysis.moveHistory, analysis.viewMoveIndex, undefined, analysis.positionHistory[0]);
+  };
+
   const startNewAnalysis = () => {
     const empty = emptyAnalysisSession();
+    setLoadedGameTitle('');
+    setLoadedGameDetails(null);
+    setWorkspaceTab('analysis');
+    setEditingPosition(false);
     saveAnalysisSession([], -1);
     setGame(empty.game);
     setPositionHistory(empty.positionHistory);
@@ -540,18 +594,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     ...(isLiveMultiplayer ? [] : [{ id: 'analysis', icon: Cpu, label: t('game.tabs.analysis') }]),
   ] as const;
 
-  // Build Move Pairs
-  const renderMoves = moveHistory;
-  const movePairs = [];
-  for (let i = 0; i < renderMoves.length; i += 2) {
-    movePairs.push({
-      n: Math.floor(i / 2) + 1,
-      w: renderMoves[i],
-      b: renderMoves[i + 1] || '',
-      wTime: '--',
-      bTime: '--',
-    });
-  }
+  const movePairs = analysisMovePairs(moveHistory, mode === 'review' ? positionHistory[0] : DEFAULT_POSITION);
 
   const displayedGame = useMemo(() => {
     if (viewMoveIndex === -1) return game;
@@ -772,18 +815,18 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 <table className="w-full border-collapse text-left">
                   <tbody className="divide-y divide-white/[0.04]">
                     {movePairs.map((move, i) => {
-                      const whitePositionIndex = i * 2 + 1;
-                      const blackPositionIndex = i * 2 + 2;
+                      const whitePositionIndex = move.wIndex;
+                      const blackPositionIndex = move.bIndex;
                       return (
                         <tr key={i} className="text-[0.7rem] font-bold text-neutral-300">
                           <td className="w-8 px-2 py-1.5 text-center font-mono text-neutral-600">{move.n}.</td>
                           <td
                             className="px-2 py-1.5"
                             onClick={() => {
-                              if (whitePositionIndex < positionHistory.length) setViewMoveIndex(whitePositionIndex);
+                              if (move.w && whitePositionIndex < positionHistory.length) setViewMoveIndex(whitePositionIndex);
                             }}
                           >
-                            {move.w}
+                            {move.w || '…'}
                           </td>
                           <td
                             className="px-2 py-1.5"
@@ -809,9 +852,27 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]")}>
 
+          {/* Desktop review uses borderless player identification instead of live-game cards/clocks. */}
+          {mode === 'review' && (
+            <div className="hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
+              <div className="flex min-w-0 items-center gap-2">
+                <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-500 bg-neutral-950" />
+                <span className="min-w-0 truncate font-semibold text-neutral-200" title={loadedGameDetails?.black || words.black}>
+                  {loadedGameDetails?.black || words.black}
+                </span>
+              </div>
+              {loadedGameDetails?.timeControl && (
+                <span className="shrink-0 font-mono text-[11px] tracking-wide text-neutral-500" title={loadedGameDetails.timeControl}>
+                  {loadedGameDetails.timeControl}
+                </span>
+              )}
+            </div>
+          )}
+
           <div className={cx(
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
-            !isMultiplayer && "hidden md:flex"
+            !isMultiplayer && "hidden md:flex",
+            mode === 'review' && "lg:hidden"
           )}>
             <div className="flex items-center gap-2.5">
               <div className="relative w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 ring-1 ring-black flex items-center justify-center">
@@ -875,21 +936,26 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 </div>
               ) : null}
 
-              <ChessBoard
-                className={!isMultiplayer ? 'p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 max-md:[&_.aspect-square]:!aspect-[50/51]' : undefined}
+              {mode === 'review' && workspaceTab === 'position' && editingPosition ? (
+                <Suspense fallback={null}>
+                  <EditorBoard draft={positionDraftValue} selected={editorSelectedPiece} words={words} onPlace={placePositionPiece} onMove={movePositionPiece} />
+                </Suspense>
+              ) : <ChessBoard
+                className={!isMultiplayer ? `p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 max-md:[&_.aspect-square]:!aspect-[50/51] ${mode === 'review' ? 'desktop-analysis-main-board' : ''}` : undefined}
                 externalCoordinatesOnDesktop={mode === 'review'}
                 overrideBoardTheme={boardTheme}
                 game={displayedGame}
                 onMove={handleGameMove}
                 orientation={playerColor}
                 readOnly={viewMoveIndex !== -1 || !!gameOverMessage || (isMultiplayer && playerColor !== game.turn())}
-              />
+              />}
             </div>
           </div>
 
           <div className={cx(
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
-            !isMultiplayer && "hidden md:flex"
+            !isMultiplayer && "hidden md:flex",
+            mode === 'review' && "lg:hidden"
           )}>
             <div className="flex items-center gap-2.5">
               <div className="relative group/avatar">
@@ -920,6 +986,15 @@ export default function GameScreen({ mode }: GameScreenProps) {
               {isMultiplayer ? formatTime(timeLeft.white) : '--:--'}
             </div>
           </div>
+
+          {mode === 'review' && (
+            <div className="hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
+              <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-400 bg-[#f5f2e8]" />
+              <span className="min-w-0 truncate font-semibold text-neutral-200" title={loadedGameDetails?.white || words.white}>
+                {loadedGameDetails?.white || words.white}
+              </span>
+            </div>
+          )}
 
         </div>
       </div>
@@ -1002,26 +1077,51 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </div>
         </nav>
 
-        <div className={cx("hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]", !isMultiplayer && "xl:bg-white/[0.015]")}>
+        {mode === 'review' && (
+          <>
+            <nav aria-label={words.analysis} className="hidden lg:flex shrink-0 items-center gap-1 border-b border-white/[0.06] bg-black/15 p-2">
+              {(['analysis', 'games', 'position'] as const).map(tab => (
+                <button key={tab} type="button" aria-pressed={workspaceTab === tab} onClick={() => {
+                  if (tab === 'position' && workspaceTab !== 'position') {
+                    resetPositionDraft(displayedGame.fen());
+                    setEditingPosition(true);
+                  }
+                  if (tab !== 'position') setEditingPosition(false);
+                  setWorkspaceTab(tab);
+                }} className={cx("min-h-9 min-w-0 flex-1 rounded-xl px-2 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200", workspaceTab === tab ? "border border-amber-200/20 bg-gradient-to-br from-amber-200/10 via-[#1c1c18] to-teal-900/15 text-amber-100" : "border border-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-200")}>
+                  {words[tab]}
+                </button>
+              ))}
+            </nav>
+            <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
+            {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
+            {workspaceTab === 'position' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionTools currentFen={displayedGame.fen()} words={words} onLoad={loadWorkspaceAnalysis} onCancel={() => { setEditingPosition(false); setWorkspaceTab('analysis'); }}
+              draft={positionDraftValue} selected={editorSelectedPiece} onSelected={setEditorSelectedPiece}
+              onDraft={updatePositionDraft} onClear={clearPositionDraft} onUndo={undoPositionDraft}
+              canUndo={positionDraftUndo.length > 0} onReset={resetPositionDraft} onEditingChange={setEditingPosition} /></div>}
+            </Suspense>
+          </>
+        )}
+        <div className={cx("hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]", !isMultiplayer && "xl:bg-white/[0.015]", mode === 'review' && workspaceTab !== 'analysis' && "lg:hidden")}>
+          {mode === 'review' && loadedGameTitle && <p role="status" className="hidden lg:block truncate px-4 pt-2 text-[11px] text-amber-100/60" title={loadedGameTitle}>{loadedGameTitle}</p>}
 
           {mode === 'review' && (
-            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 px-4 pt-2">
-              {viewMoveIndex !== -1 && (
-                <>
-                  <span className="mr-auto text-xs text-neutral-400">{t('game.analysis.reviewing')}</span>
-                  <button type="button" onClick={() => setViewMoveIndex(-1)} className="min-h-9 rounded-lg px-2 text-xs font-bold text-cyan-200 hover:bg-cyan-500/10">
-                    {t('game.analysis.resume')}
-                  </button>
-                </>
-              )}
-              <button type="button" onClick={startNewAnalysis} className="min-h-9 flex items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
+            // Never add/remove controls as a historic move is selected: reflow used
+            // to shift the Stockfish panel when stepping onto/off the last move.
+            <div className="desktop-analysis-review-controls flex h-12 shrink-0 flex-nowrap items-center justify-between gap-1.5 px-3">
+              <span className={cx("min-w-0 flex-1 truncate text-xs text-neutral-400", viewMoveIndex === -1 && "invisible")} aria-hidden={viewMoveIndex === -1}>{t('game.analysis.reviewing')}</span>
+              <button type="button" onClick={() => setViewMoveIndex(-1)} disabled={viewMoveIndex === -1} tabIndex={viewMoveIndex === -1 ? -1 : 0}
+                aria-hidden={viewMoveIndex === -1} className={cx("h-9 shrink-0 whitespace-nowrap rounded-lg px-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-500/10", viewMoveIndex === -1 && "invisible")}>
+                {t('game.analysis.resume')}
+              </button>
+              <button type="button" onClick={startNewAnalysis} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 px-2 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
                 <RotateCcw size={14} aria-hidden="true" />
                 {t('game.analysis.new')}
               </button>
             </div>
           )}
 
-          <div className="shrink-0 flex flex-col border-b border-white/[0.06]">
+          <div className={cx("shrink-0 flex flex-col border-b border-white/[0.06]", mode === "review" && "desktop-analysis-stockfish")}>
             {!isLiveMultiplayer && (
               <AnalysisPanel
                 score={engineResult?.evaluation || 0.0}
@@ -1048,27 +1148,27 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   </thead>
                   <tbody className="divide-y divide-white/[0.03]">
                     {movePairs.map((move, i) => {
-                      const whitePositionIndex = i * 2 + 1;
-                      const blackPositionIndex = i * 2 + 2;
+                      const whitePositionIndex = move.wIndex;
+                      const blackPositionIndex = move.bIndex;
 
                       return (
                         <tr key={i} className="hover:bg-white/[0.04] transition-all group text-xs font-black relative group/row">
                           <td className="py-1.5 px-2 text-neutral-600 bg-black/30 text-center border-r border-white/[0.03] text-[0.7rem] font-mono tracking-tighter italic">{move.n}.</td>
                           <td 
-                            className={cx("py-1.5 px-4 relative cursor-pointer", viewMoveIndex === whitePositionIndex && "bg-white/5")}
+                            className={cx("py-1.5 px-4 relative cursor-pointer", move.w && viewMoveIndex === whitePositionIndex && "bg-white/5")}
                             onClick={() => {
-                              if (whitePositionIndex < positionHistory.length) {
+                              if (move.w && whitePositionIndex < positionHistory.length) {
                                 setViewMoveIndex(whitePositionIndex);
                               }
                             }}
                           >
                             <div className="flex justify-between items-center group-hover/row:text-chess-gold transition-colors">
-                              <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w}</span>
+                              <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w || '…'}</span>
                               <span className="text-[0.65rem] text-neutral-700 font-mono italic opacity-40 group-hover:opacity-80">{move.wTime}</span>
                             </div>
                           </td>
                           <td 
-                            className={cx("py-1.5 px-4 relative", move.b ? "cursor-pointer" : "", viewMoveIndex === blackPositionIndex && "bg-white/5")}
+                            className={cx("py-1.5 px-4 relative", move.b ? "cursor-pointer" : "", move.b && viewMoveIndex === blackPositionIndex && "bg-white/5")}
                             onClick={() => {
                               if (move.b && blackPositionIndex < positionHistory.length) {
                                 setViewMoveIndex(blackPositionIndex);
@@ -1208,7 +1308,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </div>
         )}
 
-        {/* Professional Game Control Center */}
+        {/* Live-game actions do not belong to the replay and analysis workspace. */}
+        {mode !== 'review' && (
         <div className={cx(
           "p-2 bg-transparent md:bg-black/60 border-0 md:border-t border-white/10 flex md:grid md:grid-cols-2 gap-2 shrink-0 shadow-none md:shadow-[0_-30px_60px_-15px_rgba(0,0,0,0.8)] relative z-30 ring-0 md:ring-1 ring-white/5 md:backdrop-blur-3xl",
           !isMultiplayer && "hidden md:grid"
@@ -1236,6 +1337,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             {t('game.draw')}
           </button>
         </div>
+        )}
 
       </div>
     </div>

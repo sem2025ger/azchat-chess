@@ -36,6 +36,7 @@ export default function Layout() {
       if (routeScrollRef.current) routeScrollRef.current.scrollTop = 0;
     }
   }, [location.pathname]);
+  const isDesktopAnalysisRoute = location.pathname === '/game';
   const needsConstrainedScroll =
     location.pathname.startsWith('/profile') ||
     location.pathname.startsWith('/settings');
@@ -60,6 +61,7 @@ export default function Layout() {
   return (
     <div className={cx(
       needsConstrainedScroll ? "h-[100dvh] overflow-hidden" : "min-h-screen",
+      isDesktopAnalysisRoute && "lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden",
       "w-full flex selection:bg-chess-gold/30 selection:text-white",
       currentBgClass
     )}>
@@ -147,11 +149,13 @@ export default function Layout() {
       {/* Main Content Area */}
       <main className={cx(
         "flex-1 flex flex-col relative overflow-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0",
-        needsConstrainedScroll && "min-h-0"
+        needsConstrainedScroll && "min-h-0",
+        isDesktopAnalysisRoute && "lg:min-h-0"
       )}>
         <div ref={routeScrollRef} className={cx(
           "flex-1 overflow-y-auto relative z-10 custom-scrollbar flex flex-col",
-          needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : "overscroll-none"
+          needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : "overscroll-none",
+          isDesktopAnalysisRoute && "lg:overflow-hidden lg:min-h-0"
         )}>
           <Suspense key={location.pathname} fallback={<RouteLoadingFallback />}>
             <Outlet />

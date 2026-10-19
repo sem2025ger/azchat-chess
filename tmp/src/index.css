@@ -772,3 +772,124 @@
     translate: 12px 0;
   }
 }
+
+/* Tools are contained inside the existing desktop Analysis panel. */
+@media (min-width: 1024px) {
+  .desktop-analysis-panel .analysis-tool-button {
+    display: inline-flex;
+    min-height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: .375rem;
+    border: 1px solid rgb(255 255 255 / .1);
+    border-radius: .625rem;
+    padding: .375rem .625rem;
+    color: #cfc8b8;
+    font-size: .6875rem;
+    font-weight: 600;
+    transition: background-color .15s, border-color .15s;
+  }
+  .desktop-analysis-panel .analysis-tool-button:hover { background: rgb(223 176 98 / .07); border-color: rgb(223 176 98 / .35); }
+  .desktop-analysis-panel .analysis-tool-button:focus-visible { outline: 2px solid #dfb062; outline-offset: 2px; }
+  .desktop-analysis-panel .analysis-tool-button:disabled { opacity: .35; cursor: not-allowed; }
+}
+
+/* Desktop-only review: page and evaluation panel remain stationary while moves update. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen {
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish {
+    /* Reserve enough space for all three engine lines, independent of notation length. */
+    height: clamp(224px, 43%, 264px);
+    min-height: 0;
+    flex: none;
+    overflow: hidden;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div {
+    height: 100%;
+    min-height: 0;
+    padding: 9px 12px;
+    gap: 7px;
+    overflow: hidden; /* Only the move notation below is vertically scrollable. */
+  }
+  .desktop-analysis-screen .desktop-analysis-panel {
+    min-height: 0 !important;
+    max-height: 100% !important;
+  }
+  .desktop-analysis-screen .desktop-analysis-main-board img[alt^="b"],
+  .desktop-analysis-screen .desktop-editor-black-piece {
+    filter: brightness(1.27) contrast(1.12) drop-shadow(0 1px 1px rgba(252,235,195,.7));
+  }
+}
+
+/* Prevent move-by-move Stockfish updates and scrollbar anchoring from
+   moving the desktop review controls, move history, or chessboard. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen .desktop-analysis-stockfish {
+    overflow-anchor: none;
+    contain: layout;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div {
+    overflow-anchor: none;
+    scroll-behavior: auto;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > .panel-glow-cycle {
+    height: 32px;
+    min-height: 32px;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > header {
+    min-height: 25px;
+    padding-bottom: 4px;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > section {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    gap: 4px;
+    overflow: hidden;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > section > div {
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > section > div > div:first-child {
+    min-width: 3.5rem;
+    padding: 4px 6px;
+    font-size: .875rem;
+    line-height: 1.125rem;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > section > div > div:last-child {
+    min-width: 0;
+    padding-top: 0;
+    overflow: hidden;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish section .flex-wrap {
+    flex-wrap: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    /* Keep each evaluation and the opening moves readable, without scrollbars. */
+    mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 18px), transparent 100%);
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish section .flex-wrap > span {
+    flex-shrink: 0;
+  }
+  .desktop-analysis-screen .desktop-analysis-review-controls {
+    min-height: 3rem;
+    max-height: 3rem;
+    overflow: hidden;
+    overflow-anchor: none;
+  }
+}

@@ -1,10 +1,12 @@
-import { Chess } from 'chess.js';
+import { Chess, DEFAULT_POSITION } from 'chess.js';
+import { analysisFromMoves } from './analysisWorkspace.ts';
 
 export const ANALYSIS_SESSION_KEY = 'chess_analysis_session_v1';
 type SessionStorage = Pick<Storage, 'getItem' | 'setItem'>;
 interface SavedSession {
   version: 1;
   moves: string[];
+  initialFen?: string;
   viewMoveIndex: number;
 }
 
@@ -49,13 +51,10 @@ export function loadAnalysisSession(storage = browserStorage()) {
     return emptyAnalysisSession();
   }
 
-  const session = emptyAnalysisSession();
+  let session;
   try {
-    for (const san of candidate.moves) {
-      const move = session.game.move(san);
-      session.moveHistory.push(move.san);
-      session.positionHistory.push(session.game.fen());
-    }
+    if (candidate.initialFen !== undefined && typeof candidate.initialFen !== 'string') return emptyAnalysisSession();
+    session = analysisFromMoves(candidate.moves, candidate.initialFen || DEFAULT_POSITION);
   } catch {
     return emptyAnalysisSession();
   }
@@ -69,8 +68,9 @@ export function saveAnalysisSession(
   moves: string[],
   viewMoveIndex: number,
   storage = browserStorage(),
+  initialFen = DEFAULT_POSITION,
 ) {
-  memorySession = { version: 1, moves: [...moves], viewMoveIndex };
+  memorySession = { version: 1, moves: [...moves], viewMoveIndex, initialFen };
   try {
     storage?.setItem(ANALYSIS_SESSION_KEY, JSON.stringify(memorySession));
   } catch {
