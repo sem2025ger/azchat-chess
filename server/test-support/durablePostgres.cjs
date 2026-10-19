@@ -5,6 +5,7 @@ const { readFileSync } = require('node:fs');
 const { resolve } = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { once } = require('node:events');
+const { setTimeout: delay } = require('node:timers/promises');
 
 // A narrow HTTP adapter for testing the actual Supabase JS client's wire calls
 // against real PostgreSQL. This is NOT PostgREST or a hosted Supabase emulator.
@@ -85,7 +86,18 @@ async function isolatedPostgres(connectionString) {
   return { pool, controls, url: `http://127.0.0.1:${http.address().port}`,
     async close() {
       await new Promise(resolve => http.close(resolve)); await pool.end();
-      await admin.query('DROP DATABASE ' + database + ' WITH (FORCE)'); await admin.end();
+      // pg-pool can resolve end() after removing clients from its list but before
+      // their PostgreSQL backends have exited. FORCE can then send 57P01 to a
+      // closing client and fail the test with an unhandled connection error.
+      // Wait for actual backend exit and use a normal drop; do not hide errors.
+      const deadline = Date.now() + 5000;
+      while (true) {
+        const remaining = await admin.query('SELECT count(*)::int AS n FROM pg_catalog.pg_stat_activity WHERE datname=$1', [database]);
+        if (remaining.rows[0].n === 0) break;
+        if (Date.now() >= deadline) throw new Error('Isolated test database connections did not close');
+        await delay(25);
+      }
+      await admin.query('DROP DATABASE ' + database); await admin.end();
     } };
 }
 module.exports = { isolatedPostgres };

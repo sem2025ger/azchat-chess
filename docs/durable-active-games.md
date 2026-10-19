@@ -155,14 +155,14 @@ Verified on 2026-10-20 (Europe/Berlin):
 | Check | Result |
 | --- | --- |
 | Server frozen install | `npm ci --ignore-scripts`, exit 0 |
-| Server suite with real isolated PostgreSQL | 98 passed, 0 failed, 0 skipped |
+| Server suite with real isolated PostgreSQL | 99 passed, 0 failed, 0 skipped |
 | Frontend tests | 37 passed, 0 failed |
 | Frontend typecheck | `tsc -b`, exit 0 |
 | Frontend production build | exit 0 |
 | Frontend lint | 0 errors, 50 warnings, equal to baseline |
 | Server production dependency audit | exit 0, 0 vulnerabilities |
 | Frontend production dependency audit | exit 0, 2 moderate, 0 high/critical |
-| 50 accepted local socket move transitions | p50 16.38 ms, p95 27.17 ms |
+| 50 accepted local socket move transitions | p50 18.23 ms, p95 30.44 ms |
 | 50 unauthenticated HTTPS requests to Supabase REST root | p50 23.58 ms, p95 70.30 ms; all 401 |
 
 The HTTPS target was `https://kmwfvvliundhuovoakoa.supabase.co/rest/v1/`;
@@ -190,6 +190,13 @@ adapter maps their RPC and result-write requests to real PostgreSQL transactions
 under service_role. It supports response loss/failure injection. **It is not
 PostgREST or the hosted Supabase stack.** The test verifier is installed only by
 the separate test-process entry point, not by a production authentication flag.
+
+The first PostgreSQL 17 CI run passed every scenario assertion but failed at
+teardown: a forced database drop raced asynchronous client shutdown. Cleanup
+now waits for zero database backends and performs a normal drop, without
+suppressing connection errors or weakening assertions. Two small verification
+fix commits follow the requested five commits because the branch was already
+published and the repository forbids force-pushing.
 
 Restart procedure: create a private game, commit several moves, SIGKILL the
 process, launch a new process with no shared room memory, wait for the actual
