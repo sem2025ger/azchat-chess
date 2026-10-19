@@ -6,6 +6,7 @@ const { Chess } = require('chess.js');
 const { createDurableStore } = require('./durableStore');
 const { snapshot, restore, clocks, createDurableGames } = require('./durableGames');
 const { createSocketRateLimiter } = require('./rateLimiter');
+const { classifyPersistenceError } = require('./matchPersistence');
 
 function room() {
   return { roomId: randomUUID(), game: new Chess(), userIds: { w: randomUUID(), b: randomUUID() },
@@ -156,4 +157,15 @@ test('new database reconnect lookups use the existing lobby budget without charg
   await Promise.all(Array.from({length:6},()=>manager.reconnect(socket,randomUUID())));
   assert.equal(lookups,5);assert.equal(events.filter(e=>e.data.reason==='rate_limit_exceeded').length,1);
   assert.equal(socket.data.limiter.allow('game_action'),true);
+});
+
+test('RPC errors preserve HTTP retry classification without exposing database payloads', async () => {
+  for(const [status,code,classification] of [[429,'','transient'],[503,'','transient'],
+    [401,'','permanent'],[403,'42501','permanent'],[503,'23505','permanent']]) {
+    const store=createDurableStore({rpc:()=>({abortSignal:async()=>({status,error:{code,message:'private database payload'}})})});
+    await assert.rejects(store.write('complete',{room_id:randomUUID(),revision:1,fence:1},{}),error=>{
+      assert.equal(error.status,status);assert.equal(classifyPersistenceError(error),classification);
+      assert.equal(error.message.includes('private database payload'),false);return true;
+    });
+  }
 });

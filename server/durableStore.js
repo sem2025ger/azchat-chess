@@ -4,9 +4,10 @@ const { randomUUID } = require('node:crypto');
 const { createClient } = require('@supabase/supabase-js');
 
 class DurableError extends Error {
-  constructor(code = '08006') {
+  constructor(code = '08006', status) {
     super('Durable game operation unavailable');
     this.code = code;
+    if (Number.isInteger(status) && status >= 100 && status <= 599) this.status = status;
   }
 }
 
@@ -24,7 +25,7 @@ function createDurableStore(client, ownerId = randomUUID()) {
     if (response.error) {
       const code = /^[A-Z0-9_]{1,32}$/.test(response.error.code ?? '')
         ? response.error.code : 'storage_unavailable';
-      throw new DurableError(code);
+      throw new DurableError(code, response.status);
     }
     if (!response.data?.ok) throw new DurableError(response.data?.code);
     return response.data;
