@@ -793,3 +793,36 @@
   .desktop-analysis-panel .analysis-tool-button:focus-visible { outline: 2px solid #dfb062; outline-offset: 2px; }
   .desktop-analysis-panel .analysis-tool-button:disabled { opacity: .35; cursor: not-allowed; }
 }
+
+/* Desktop-only review: page and evaluation panel remain stationary while moves update. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen {
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    margin-top: 0 !important;
+    transform: none !important;
+    overflow: hidden !important;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish {
+    height: clamp(164px, 38%, 254px);
+    min-height: 0;
+    flex: none;
+    overflow: hidden;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+  }
+  .desktop-analysis-screen .desktop-analysis-panel {
+    min-height: 0 !important;
+    max-height: 100% !important;
+  }
+  .desktop-analysis-screen .desktop-analysis-main-board img[alt^="b"],
+  .desktop-analysis-screen .desktop-editor-black-piece {
+    filter: brightness(1.27) contrast(1.12) drop-shadow(0 1px 1px rgba(252,235,195,.7));
+  }
+}
