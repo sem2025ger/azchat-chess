@@ -81,6 +81,12 @@ function makeFakeCreateClient(response = { data: { id: MATCH_ID }, error: null }
       state.queryCalls.push({ method: 'single', args: [] });
       return response;
     },
+    eq() {
+      return builder;
+    },
+    async maybeSingle() {
+      return response;
+    },
   };
 
   function createClientImpl(...args) {

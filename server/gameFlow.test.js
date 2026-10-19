@@ -73,6 +73,9 @@ test('GF-1: finalizeGame calls match persistence adapter with exact completed co
 
   assert.equal(finalized, true);
   assert.equal(persistedRecords.length, 1);
+  assert.equal(room.persisted, false, 'a pending write is not a confirmed save');
+  await room.persistencePromise;
+  assert.equal(room.persisted, true);
 
   const record = persistedRecords[0];
   assert.equal(record.sourceRoomId, roomId);
@@ -307,6 +310,8 @@ test('GF-5: finalizeGame gracefully tolerates persistence failures without crash
 
   assert.equal(result, true);
   assert.equal(room.status, 'ended');
+  await room.persistencePromise;
+  assert.equal(room.persisted, false);
   cleanupRoom(roomId, room);
 });
 

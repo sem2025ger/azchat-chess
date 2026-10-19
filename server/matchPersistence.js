@@ -1,6 +1,7 @@
 'use strict';
 
 const { createClient } = require('@supabase/supabase-js');
+const { setTimeout: delay } = require('node:timers/promises');
 
 const VALID_RESULTS = new Set(['1-0', '0-1', '1/2-1/2']);
 const VALID_TERMINATION_REASONS = new Set([
@@ -27,18 +28,21 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3
 const ISO_TIMESTAMP_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 
 class MatchPersistenceError extends Error {
-  constructor(message, { cause, code } = {}) {
+  constructor(message, { cause, code, status } = {}) {
     super(message, cause === undefined ? undefined : { cause });
     this.name = 'MatchPersistenceError';
 
     if (code !== undefined) {
       this.code = code;
     }
+    if (Number.isInteger(status)) this.status = status;
   }
 }
 
 function validationError(message) {
-  return new MatchPersistenceError(`Invalid completed match: ${message}`);
+  return new MatchPersistenceError(`Invalid completed match: ${message}`, {
+    code: 'MATCH_VALIDATION_ERROR',
+  });
 }
 
 function isNonEmptyString(value) {
@@ -162,11 +166,88 @@ function safeErrorCode(error) {
   return undefined;
 }
 
-function persistenceError(error) {
+function persistenceError(error, status) {
   return new MatchPersistenceError('Failed to persist completed match', {
     cause: error,
     code: safeErrorCode(error),
+    status,
   });
+}
+
+function classifyPersistenceError(error) {
+  // Inspect causes too: fetch/PostgREST wrap transport failures differently.
+  for (let current = error, depth = 0; current && depth < 5; current = current.cause, depth++) {
+    const code = String(safeErrorCode(current) ?? '');
+    const status = current.status ?? (/^\d{3}$/.test(code) ? Number(code) : undefined);
+    if (/^(22|23|28|42)[A-Z0-9]{3}$/.test(code) || code.startsWith('MATCH_')) return 'permanent';
+    if ([400, 401, 403, 404, 405, 406, 409, 422].includes(status)) return 'permanent';
+  }
+  for (let current = error, depth = 0; current && depth < 5; current = current.cause, depth++) {
+    const code = String(safeErrorCode(current) ?? '');
+    const status = current.status ?? (/^\d{3}$/.test(code) ? Number(code) : undefined);
+    if (
+      /^(08|53)[A-Z0-9]{3}$/.test(code)
+      || /^(40001|40P01|55P03|57014|57P0[123]|PGRST00[0-3])$/.test(code)
+      || /^(ECONNRESET|ECONNREFUSED|ETIMEDOUT|EAI_AGAIN|ENOTFOUND|EPIPE|ENETUNREACH|EHOSTUNREACH|UND_ERR_CONNECT_TIMEOUT|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT|UND_ERR_SOCKET)$/.test(code)
+      || [408, 425, 429].includes(status)
+      || (status >= 500 && status <= 599)
+      || ['AbortError', 'TimeoutError'].includes(current.name)
+      || /\b(fetch failed|failed to fetch|network error|network request failed|socket hang up|connection (?:reset|refused|terminated|closed|failed)|connection pool|timed? ?out|timeout)\b/i.test(current.message || '')
+    ) return 'transient';
+  }
+  return 'permanent';
+}
+
+function lastPersistenceErrorCode(error) {
+  for (let current = error, depth = 0; current && depth < 5; current = current.cause, depth++) {
+    const code = safeErrorCode(current);
+    if (code !== undefined) return code;
+    if (Number.isInteger(current.status) && current.status >= 100 && current.status <= 599) {
+      return `HTTP_${current.status}`;
+    }
+  }
+  return 'UNKNOWN';
+}
+
+function persistRoomCompletedMatch(room, record, adapter, {
+  wait = delay,
+  logError = (entry) => console.error(JSON.stringify(entry)),
+} = {}) {
+  // Single flight also guards repeated callers while a write is in progress.
+  if (room.persistencePromise) return room.persistencePromise;
+  if (room.persisted) return Promise.resolve(true);
+
+  room.persistencePromise = (async () => {
+    const retryDelays = [1000, 4000]; // Three attempts total, including the initial write.
+    for (let attempts = 1; attempts <= 3; attempts++) {
+      try {
+        const saved = await adapter.persistCompletedMatch(record);
+        if (saved?.id !== record.id) {
+          throw new MatchPersistenceError('Completed match acknowledgement has the wrong id', {
+            code: 'MATCH_INVALID_ACK',
+          });
+        }
+        room.persisted = true;
+        return true;
+      } catch (error) {
+        const errorClass = classifyPersistenceError(error);
+        if (errorClass === 'transient' && attempts < 3) {
+          await wait(retryDelays[attempts - 1]);
+          continue;
+        }
+        room.persisted = false;
+        logError({
+          code: 'MATCH_PERSIST_FAILED',
+          matchId: record.id,
+          attempts,
+          errorClass,
+          lastErrorCode: lastPersistenceErrorCode(error),
+        });
+        return false;
+      }
+    }
+  })();
+  return room.persistencePromise;
 }
 
 function createMatchPersistenceFromEnv({
@@ -229,7 +310,26 @@ function createMatchPersistenceFromEnv({
       }
 
       if (response && response.error) {
-        throw persistenceError(response.error);
+        if (response.error.code === '23505') {
+          // A lost INSERT acknowledgement can be followed by a duplicate on retry.
+          // Confirm this exact completed match; unrelated unique conflicts still fail.
+          let existing;
+          try {
+            existing = await client.from('matches')
+              .select('id, source_room_id, status')
+              .eq('id', record.id)
+              .maybeSingle();
+          } catch (error) {
+            throw persistenceError(error);
+          }
+          if (existing?.error) throw persistenceError(existing.error, existing.status);
+          if (existing?.data?.id === record.id
+            && existing.data.source_room_id === record.sourceRoomId
+            && existing.data.status === 'completed') {
+            return { id: record.id };
+          }
+        }
+        throw persistenceError(response.error, response.status);
       }
 
       if (!response || !response.data || !response.data.id) {
@@ -244,4 +344,6 @@ function createMatchPersistenceFromEnv({
 module.exports = {
   createMatchPersistenceFromEnv,
   MatchPersistenceError,
+  classifyPersistenceError,
+  persistRoomCompletedMatch,
 };

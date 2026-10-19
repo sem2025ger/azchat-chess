@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const { createSocketAuthMiddleware } = require('./socketAuth');
-const { createMatchPersistenceFromEnv } = require('./matchPersistence');
+const { createMatchPersistenceFromEnv, persistRoomCompletedMatch } = require('./matchPersistence');
 const { createSocketRateLimiter } = require('./rateLimiter');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -207,7 +207,6 @@ function finalizeGame(roomId, payload) {
       // Explicit handling for self-match
       console.warn(`[persistence] Skipping persistence for room ${roomId}: self-match detected (${whiteId})`);
     } else {
-      room.persisted = true;
       let winnerId = null;
       if (payload.winnerColor === 'w') winnerId = whiteId;
       else if (payload.winnerColor === 'b') winnerId = blackId;
@@ -231,10 +230,8 @@ function finalizeGame(roomId, payload) {
         completedAt: new Date().toISOString(),
       };
 
-      matchPersistence.persistCompletedMatch(completedRecord).catch((err) => {
-        // Safe error logging without sensitive credentials
-        console.error(`[persistence] Error persisting match ${roomId}:`, err.message || 'unknown error');
-      });
+      // Keep the same record/ID across retries and leave the socket event loop free.
+      persistRoomCompletedMatch(room, completedRecord, matchPersistence);
     }
   }
 
