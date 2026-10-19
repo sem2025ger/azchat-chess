@@ -762,7 +762,7 @@
 /* Desktop Analysis: widen toward the board while preserving its approved size and height. */
 @media (min-width: 1024px) {
   .desktop-analysis-screen > .desktop-analysis-panel {
-    --analysis-panel-extension: clamp(0px, calc(9.375vw - 96px), 24px);
+    --analysis-panel-extension: clamp(0px, calc(14.0625vw - 144px), 36px);
     width: min(calc(35% + var(--analysis-panel-extension)), calc(440px + var(--analysis-panel-extension))) !important;
     max-width: none !important;
     margin-left: calc(-1 * var(--analysis-panel-extension));
