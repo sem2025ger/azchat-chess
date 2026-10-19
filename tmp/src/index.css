@@ -826,3 +826,38 @@
     filter: brightness(1.27) contrast(1.12) drop-shadow(0 1px 1px rgba(252,235,195,.7));
   }
 }
+
+/* Prevent move-by-move Stockfish updates and scrollbar anchoring from
+   moving the desktop review controls, move history, or chessboard. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen .desktop-analysis-stockfish {
+    overflow-anchor: none;
+    contain: layout;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div {
+    overflow-anchor: none;
+    scroll-behavior: auto;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > section {
+    min-height: 0;
+    flex: 1 0 auto;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish section > div.flex {
+    min-width: 0;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish section .flex-wrap {
+    flex-wrap: nowrap;
+    min-width: 0;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+  }
+  .desktop-analysis-screen .desktop-analysis-review-controls {
+    min-height: 3rem;
+    max-height: 3rem;
+    overflow: hidden;
+    overflow-anchor: none;
+  }
+}
