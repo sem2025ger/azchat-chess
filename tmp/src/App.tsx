@@ -17,6 +17,7 @@ const ProfileScreen = lazy(routeLoaders.profile);
 const SettingsScreen = lazy(routeLoaders.settings);
 const UpdatePasswordScreen = lazy(routeLoaders.updatePassword);
 
+// Keep the public maintenance gate active for production until separately authorized.
 function App() {
   if (import.meta.env.VITE_MAINTENANCE_MODE === 'true') {
     return <MaintenancePage />;
