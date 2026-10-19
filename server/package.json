@@ -18,6 +18,7 @@
     "socket.io": "^4.8.4"
   },
   "devDependencies": {
+    "pg": "8.16.3",
     "socket.io-client": "^4.8.4"
   }
 }
