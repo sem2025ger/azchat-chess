@@ -17,6 +17,7 @@ import { createTimeoutManager } from '../utils/timeoutManager';
 import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
 import { analysisMovePairs, positionDraft, placeDraftPiece, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
 import { analysisCopy } from '../components/analysis/copy';
+import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
 const SavedGamesPanel = lazy(() => import('../components/analysis/SavedGamesPanel'));
 const PositionTools = lazy(() => import('../components/analysis/PositionTools'));
 const EditorBoard = lazy(() => import('../components/analysis/EditorBoard'));
@@ -120,7 +121,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [searchParams] = useSearchParams();
   const roomId = mode === 'live' ? searchParams.get('roomId') : null;
   const requestedColor = searchParams.get('color');
-  const playerColor: 'w' | 'b' = mode === 'live' && requestedColor === 'b' ? 'b' : 'w';
+  const [serverColor, setServerColor] = useState<{ roomId: string; color: 'w' | 'b' } | null>(null);
+  const [syncedRoom, setSyncedRoom] = useState<string | null>(null);
+  const playerColor: 'w' | 'b' = serverColor?.roomId === roomId ? serverColor.color : mode === 'live' && requestedColor === 'b' ? 'b' : 'w';
   const isMultiplayer = mode === 'live' && Boolean(roomId);
 
   // Match the desktop analysis panel's outer height to the actual chessboard frame.
@@ -170,9 +173,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const isLiveMultiplayer = isMultiplayer && !gameOverMessage;
   const analysisActive = !isLiveMultiplayer && (isDesktop || activeTab === 'analysis');
   const canSendGameAction =
-    isMultiplayer && isConnected && Boolean(socket) && Boolean(roomId) && !gameOverMessage;
+    isMultiplayer && isConnected && syncedRoom === roomId && Boolean(socket) && Boolean(roomId) && !gameOverMessage;
 
-  const mapGameOverReason = useCallback((data?: { reason?: string; endedBy?: 'w' | 'b' | null }) => {
+  const mapGameOverReason = useCallback((data?: { reason?: string; endedBy?: 'w' | 'b' | null }, color = playerColor) => {
     const reason = data?.reason;
     switch (reason) {
       case 'opponent_disconnected': return "Opponent disconnected. Game over.";
@@ -180,11 +183,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
       case 'draw': return "Game over: draw.";
       case 'stalemate': return "Game over: stalemate.";
       case 'resignation':
-        return data?.endedBy === playerColor
+        return data?.endedBy === color
           ? t('game.result.resignation.self')
           : t('game.result.resignation.opponent');
       case 'timeout':
-        return data?.endedBy === playerColor
+        return data?.endedBy === color
           ? "You lost on time."
           : "Opponent lost on time. You won!";
       case 'draw_agreement': return t('game.result.drawAgreement');
@@ -219,6 +222,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
       setTimeLeft({ white: data.whiteTime, black: data.blackTime });
     };
     const onUpdate = (data: any) => {
+      const snapshot = decodeLiveSnapshot(data);
+      if (!snapshot) return;
       const isLocalEcho = data.fen === locallyPlayedFenRef.current;
       if (isLocalEcho) {
         locallyPlayedFenRef.current = null;
@@ -237,8 +242,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
       lastConfirmedFenRef.current = data.fen;
       setMoveRejectMessage(null);
-      setGame(new Chess(data.fen));
-      setPositionHistory(prev => prev[prev.length - 1] === data.fen ? prev : [...prev, data.fen]);
+      setGame(snapshot.game);
+      setPositionHistory(snapshot.positions);
       setViewMoveIndex(-1);
       if (data.whiteTime !== undefined) {
          setTimeLeft({ white: data.whiteTime, black: data.blackTime });
@@ -253,7 +258,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       setDrawOfferBy(null);
       setGameActionMessage(null);
       setDisconnectNotice(null);
-      setGameOverMessage(mapGameOverReasonRef.current(data));
+      setGameOverMessage(mapGameOverReasonRef.current(data, playerColorRef.current));
     };
 
     const onMoveRejected = (data: { reason?: string }) => {
@@ -326,13 +331,24 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
     const onReconnectSuccess = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
+      const snapshot = decodeLiveSnapshot(data);
+      if (!snapshot) return;
+      timeoutManagerRef.current.clear('reconnectRedirect');
       timeoutManagerRef.current.clear('disconnectNotice');
       setDisconnectNotice(null);
-      if (data?.fen) {
-        lastConfirmedFenRef.current = data.fen;
-        setGame(new Chess(data.fen));
-        setPositionHistory(prev => prev[prev.length - 1] === data.fen ? prev : [...prev, data.fen]);
+      locallyPlayedFenRef.current = null;
+      lastConfirmedFenRef.current = snapshot.game.fen();
+      setGame(snapshot.game);
+      setPositionHistory(snapshot.positions);
+      setViewMoveIndex(-1);
+      setSyncedRoom(roomId);
+      setMoveRejectMessage(null);
+      setDrawOfferBy(snapshot.drawOfferBy);
+      if (snapshot.color) {
+        playerColorRef.current = snapshot.color;
+        setServerColor({ roomId, color: snapshot.color });
       }
+      setGameOverMessage(snapshot.ended ? mapGameOverReasonRef.current(data.outcome, playerColorRef.current) : null);
       if (data?.whiteTime !== undefined) {
         setTimeLeft({ white: data.whiteTime, black: data.blackTime });
       }
@@ -343,6 +359,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
     const onReconnectFailed = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
+      if (data?.reason === 'recovery_pending' || data?.reason === 'storage_unavailable') {
+        setSyncedRoom(null);
+        setDisconnectNotice('Recovering game. Reconnecting...');
+        return;
+      }
       timeoutManagerRef.current.clear('disconnectNotice');
       setDisconnectNotice(null);
       setGameOverMessage("Session expired or game is no longer active.");
@@ -363,10 +384,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
     socket.on('reconnect_success', onReconnectSuccess);
     socket.on('reconnect_failed', onReconnectFailed);
 
-    // Request reconnection data if returning to an active game room
-    socket.emit('reconnect_game', { roomId });
+    const stopRecovery = attachLiveRecovery(socket, roomId, () => setSyncedRoom(null));
     
     return () => { 
+      stopRecovery();
       timeoutManagerRef.current.clearAll();
       socket.off('game_start', onStart);
       socket.off('update_board', onUpdate); 
@@ -503,6 +524,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const handleGameMove = useCallback(
     (source: string, target: string, promotion: string = 'q') => {
+      if (isMultiplayer && !canSendGameAction) return false;
       if (viewMoveIndex !== -1) {
         setViewMoveIndex(-1);
         return false;
@@ -544,7 +566,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer, playerColor]
+    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer, playerColor, canSendGameAction]
   );
 
 

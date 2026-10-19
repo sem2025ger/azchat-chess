@@ -106,7 +106,12 @@ export default function PlayScreen() {
     
     const onJoinFailed = (data: { reason: string }) => {
       setIsJoiningPrivate(false);
-      if (data.reason === 'room_not_found') setJoinError("Room not found or expired.");
+      if (data.reason === 'storage_unavailable') {
+        setIsSearching(false);
+        setIsPrivateCreating(false);
+        setJoinError('Game storage is unavailable. Please try again shortly.');
+      }
+      else if (data.reason === 'room_not_found') setJoinError("Room not found or expired.");
       else if (data.reason === 'room_full') setJoinError("This room is already full.");
       else if (data.reason === 'already_in_room') setJoinError("You are already in this room.");
       else setJoinError("Failed to join room.");
