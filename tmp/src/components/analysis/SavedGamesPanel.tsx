@@ -7,7 +7,7 @@ import type { AnalysisWords } from './copy';
 
 export default function SavedGamesPanel({ userId, words, language, onLoad }: {
   userId?: string; words: AnalysisWords; language: string;
-  onLoad: (analysis: AnalysisLoad, title: string) => void;
+  onLoad: (analysis: AnalysisLoad, title: string, details?: { white: string; black: string; timeControl?: string }) => void;
 }) {
   const [games, setGames] = useState<AnalysisGameSummary[]>([]);
   const [page, setPage] = useState(0);
@@ -38,7 +38,11 @@ export default function SavedGamesPanel({ userId, words, language, onLoad }: {
     setOpening(game.id); setError(null);
     try {
       const analysis = await fetchAnalysisGame(userId, game.id, request.signal);
-      if (!request.signal.aborted) onLoad(analysis, `${game.white_profile?.username || words.guest} — ${game.black_profile?.username || words.guest}`);
+      if (!request.signal.aborted) {
+        const white = game.white_profile?.username || words.guest;
+        const black = game.black_profile?.username || words.guest;
+        onLoad(analysis, `${white} — ${black}`, { white, black, timeControl: game.time_control || undefined });
+      }
     } catch { if (!request.signal.aborted) setError('game'); }
     finally { if (!request.signal.aborted) setOpening(null); }
   };
