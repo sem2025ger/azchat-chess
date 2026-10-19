@@ -758,3 +758,18 @@
 @media (min-width: 1280px) and (prefers-reduced-motion: reduce) {
   .sidebar-item.theme-premium { transition: none; }
 }
+
+/* Desktop review only: borrow space from the column gap without resizing the board. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen > .desktop-analysis-panel {
+    --analysis-panel-extension: clamp(0px, calc(9.375vw - 96px), 24px);
+    width: min(calc(35% + var(--analysis-panel-extension)), calc(440px + var(--analysis-panel-extension))) !important;
+    max-width: none !important;
+    margin-left: calc(-1 * var(--analysis-panel-extension));
+    height: var(--analysis-board-height);
+    min-height: 0;
+    max-height: none;
+    top: -1rem;
+    transition: none;
+  }
+}
