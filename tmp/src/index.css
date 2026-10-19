@@ -805,7 +805,8 @@
     overflow: hidden !important;
   }
   .desktop-analysis-screen .desktop-analysis-stockfish {
-    height: clamp(164px, 38%, 254px);
+    /* Reserve enough space for all three engine lines, independent of notation length. */
+    height: clamp(224px, 43%, 264px);
     min-height: 0;
     flex: none;
     overflow: hidden;
@@ -813,9 +814,9 @@
   .desktop-analysis-screen .desktop-analysis-stockfish > div {
     height: 100%;
     min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior-y: contain;
-    scrollbar-gutter: stable;
+    padding: 9px 12px;
+    gap: 7px;
+    overflow: hidden; /* Only the move notation below is vertically scrollable. */
   }
   .desktop-analysis-screen .desktop-analysis-panel {
     min-height: 0 !important;
@@ -838,21 +839,52 @@
     overflow-anchor: none;
     scroll-behavior: auto;
   }
-  .desktop-analysis-screen .desktop-analysis-stockfish > div > section {
-    min-height: 0;
-    flex: 1 0 auto;
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > .panel-glow-cycle {
+    height: 32px;
+    min-height: 32px;
   }
-  .desktop-analysis-screen .desktop-analysis-stockfish section > div.flex {
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > header {
+    min-height: 25px;
+    padding-bottom: 4px;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > section {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    gap: 4px;
+    overflow: hidden;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > section > div {
+    flex: 1 1 0;
+    min-height: 0;
     min-width: 0;
+    align-items: center;
+    gap: 10px;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > section > div > div:first-child {
+    min-width: 3.5rem;
+    padding: 4px 6px;
+    font-size: .875rem;
+    line-height: 1.125rem;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div > section > div > div:last-child {
+    min-width: 0;
+    padding-top: 0;
+    overflow: hidden;
   }
   .desktop-analysis-screen .desktop-analysis-stockfish section .flex-wrap {
     flex-wrap: nowrap;
     min-width: 0;
     max-width: 100%;
     white-space: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: thin;
+    overflow: hidden;
+    /* Keep each evaluation and the opening moves readable, without scrollbars. */
+    mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 18px), transparent 100%);
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish section .flex-wrap > span {
+    flex-shrink: 0;
   }
   .desktop-analysis-screen .desktop-analysis-review-controls {
     min-height: 3rem;
