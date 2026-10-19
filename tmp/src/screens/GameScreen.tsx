@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
@@ -10,11 +10,15 @@ import { twMerge } from 'tailwind-merge';
 import EvaluationBar from '../components/EvaluationBar';
 import AnalysisPanel from '../components/AnalysisPanel';
 import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
-import { Chess } from 'chess.js';
+import { Chess, DEFAULT_POSITION } from 'chess.js';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
 import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
+import { analysisMovePairs, type AnalysisLoad } from '../utils/analysisWorkspace';
+import { analysisCopy } from '../components/analysis/copy';
+const SavedGamesPanel = lazy(() => import('../components/analysis/SavedGamesPanel'));
+const PositionTools = lazy(() => import('../components/analysis/PositionTools'));
 
 function countryCodeToFlag(code: string): string | null {
   const normalized = code.trim().toUpperCase();
@@ -41,7 +45,10 @@ interface GameScreenProps {
 
 export default function GameScreen({ mode }: GameScreenProps) {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const words = analysisCopy[language];
+  const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'games' | 'position'>('analysis');
+  const [loadedGameTitle, setLoadedGameTitle] = useState('');
   const { user, profile } = useAuth();
   const [initialAnalysis] = useState(() => mode === 'review' ? loadAnalysisSession() : emptyAnalysisSession());
 
@@ -81,8 +88,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
   // Chess Game State
   const [game, setGame] = useState(initialAnalysis.game);
   useEffect(() => {
-    if (mode === 'review') saveAnalysisSession(moveHistory, viewMoveIndex);
-  }, [mode, moveHistory, viewMoveIndex]);
+    if (mode === 'review') saveAnalysisSession(moveHistory, viewMoveIndex, undefined, positionHistory[0]);
+  }, [mode, moveHistory, viewMoveIndex, positionHistory]);
   const { socket, isConnected } = useSocket();
   const [searchParams] = useSearchParams();
   const roomId = mode === 'live' ? searchParams.get('roomId') : null;
@@ -362,8 +369,25 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [isAnalysing, setIsAnalysing] = useState(false);
   const [engineFailed, setEngineFailed] = useState(false);
 
+  const loadWorkspaceAnalysis = (analysis: AnalysisLoad, title = '') => {
+    if (mode !== 'review') return;
+    engineRef.current?.stop();
+    setGame(analysis.game);
+    setPositionHistory(analysis.positionHistory);
+    setMoveHistory(analysis.moveHistory);
+    setViewMoveIndex(analysis.viewMoveIndex);
+    setGameOverMessage(null);
+    setEngineResult(null);
+    setEngineFailed(false);
+    setLoadedGameTitle(title);
+    setWorkspaceTab('analysis');
+    saveAnalysisSession(analysis.moveHistory, analysis.viewMoveIndex, undefined, analysis.positionHistory[0]);
+  };
+
   const startNewAnalysis = () => {
     const empty = emptyAnalysisSession();
+    setLoadedGameTitle('');
+    setWorkspaceTab('analysis');
     saveAnalysisSession([], -1);
     setGame(empty.game);
     setPositionHistory(empty.positionHistory);
@@ -540,18 +564,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     ...(isLiveMultiplayer ? [] : [{ id: 'analysis', icon: Cpu, label: t('game.tabs.analysis') }]),
   ] as const;
 
-  // Build Move Pairs
-  const renderMoves = moveHistory;
-  const movePairs = [];
-  for (let i = 0; i < renderMoves.length; i += 2) {
-    movePairs.push({
-      n: Math.floor(i / 2) + 1,
-      w: renderMoves[i],
-      b: renderMoves[i + 1] || '',
-      wTime: '--',
-      bTime: '--',
-    });
-  }
+  const movePairs = analysisMovePairs(moveHistory, mode === 'review' ? positionHistory[0] : DEFAULT_POSITION);
 
   const displayedGame = useMemo(() => {
     if (viewMoveIndex === -1) return game;
@@ -772,18 +785,18 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 <table className="w-full border-collapse text-left">
                   <tbody className="divide-y divide-white/[0.04]">
                     {movePairs.map((move, i) => {
-                      const whitePositionIndex = i * 2 + 1;
-                      const blackPositionIndex = i * 2 + 2;
+                      const whitePositionIndex = move.wIndex;
+                      const blackPositionIndex = move.bIndex;
                       return (
                         <tr key={i} className="text-[0.7rem] font-bold text-neutral-300">
                           <td className="w-8 px-2 py-1.5 text-center font-mono text-neutral-600">{move.n}.</td>
                           <td
                             className="px-2 py-1.5"
                             onClick={() => {
-                              if (whitePositionIndex < positionHistory.length) setViewMoveIndex(whitePositionIndex);
+                              if (move.w && whitePositionIndex < positionHistory.length) setViewMoveIndex(whitePositionIndex);
                             }}
                           >
-                            {move.w}
+                            {move.w || '…'}
                           </td>
                           <td
                             className="px-2 py-1.5"
@@ -1002,7 +1015,23 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </div>
         </nav>
 
-        <div className={cx("hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]", !isMultiplayer && "xl:bg-white/[0.015]")}>
+        {mode === 'review' && (
+          <>
+            <nav aria-label={words.analysis} className="hidden lg:flex shrink-0 items-center gap-1 border-b border-white/[0.06] bg-black/15 p-2">
+              {(['analysis', 'games', 'position'] as const).map(tab => (
+                <button key={tab} type="button" aria-pressed={workspaceTab === tab} onClick={() => setWorkspaceTab(tab)} className={cx("min-h-9 min-w-0 flex-1 rounded-xl px-2 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200", workspaceTab === tab ? "border border-amber-200/20 bg-gradient-to-br from-amber-200/10 via-[#1c1c18] to-teal-900/15 text-amber-100" : "border border-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-200")}>
+                  {words[tab]}
+                </button>
+              ))}
+            </nav>
+            <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
+            {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
+            {workspaceTab === 'position' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionTools currentFen={displayedGame.fen()} words={words} onLoad={loadWorkspaceAnalysis} onCancel={() => setWorkspaceTab('analysis')} /></div>}
+            </Suspense>
+          </>
+        )}
+        <div className={cx("hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]", !isMultiplayer && "xl:bg-white/[0.015]", mode === 'review' && workspaceTab !== 'analysis' && "lg:hidden")}>
+          {mode === 'review' && loadedGameTitle && <p role="status" className="hidden lg:block truncate px-4 pt-2 text-[11px] text-amber-100/60" title={loadedGameTitle}>{loadedGameTitle}</p>}
 
           {mode === 'review' && (
             <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 px-4 pt-2">
@@ -1048,27 +1077,27 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   </thead>
                   <tbody className="divide-y divide-white/[0.03]">
                     {movePairs.map((move, i) => {
-                      const whitePositionIndex = i * 2 + 1;
-                      const blackPositionIndex = i * 2 + 2;
+                      const whitePositionIndex = move.wIndex;
+                      const blackPositionIndex = move.bIndex;
 
                       return (
                         <tr key={i} className="hover:bg-white/[0.04] transition-all group text-xs font-black relative group/row">
                           <td className="py-1.5 px-2 text-neutral-600 bg-black/30 text-center border-r border-white/[0.03] text-[0.7rem] font-mono tracking-tighter italic">{move.n}.</td>
                           <td 
-                            className={cx("py-1.5 px-4 relative cursor-pointer", viewMoveIndex === whitePositionIndex && "bg-white/5")}
+                            className={cx("py-1.5 px-4 relative cursor-pointer", move.w && viewMoveIndex === whitePositionIndex && "bg-white/5")}
                             onClick={() => {
-                              if (whitePositionIndex < positionHistory.length) {
+                              if (move.w && whitePositionIndex < positionHistory.length) {
                                 setViewMoveIndex(whitePositionIndex);
                               }
                             }}
                           >
                             <div className="flex justify-between items-center group-hover/row:text-chess-gold transition-colors">
-                              <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w}</span>
+                              <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w || '…'}</span>
                               <span className="text-[0.65rem] text-neutral-700 font-mono italic opacity-40 group-hover:opacity-80">{move.wTime}</span>
                             </div>
                           </td>
                           <td 
-                            className={cx("py-1.5 px-4 relative", move.b ? "cursor-pointer" : "", viewMoveIndex === blackPositionIndex && "bg-white/5")}
+                            className={cx("py-1.5 px-4 relative", move.b ? "cursor-pointer" : "", move.b && viewMoveIndex === blackPositionIndex && "bg-white/5")}
                             onClick={() => {
                               if (move.b && blackPositionIndex < positionHistory.length) {
                                 setViewMoveIndex(blackPositionIndex);
