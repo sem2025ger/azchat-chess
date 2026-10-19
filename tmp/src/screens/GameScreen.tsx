@@ -1075,16 +1075,15 @@ export default function GameScreen({ mode }: GameScreenProps) {
           {mode === 'review' && loadedGameTitle && <p role="status" className="hidden lg:block truncate px-4 pt-2 text-[11px] text-amber-100/60" title={loadedGameTitle}>{loadedGameTitle}</p>}
 
           {mode === 'review' && (
-            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 px-4 pt-2">
-              {viewMoveIndex !== -1 && (
-                <>
-                  <span className="mr-auto text-xs text-neutral-400">{t('game.analysis.reviewing')}</span>
-                  <button type="button" onClick={() => setViewMoveIndex(-1)} className="min-h-9 rounded-lg px-2 text-xs font-bold text-cyan-200 hover:bg-cyan-500/10">
-                    {t('game.analysis.resume')}
-                  </button>
-                </>
-              )}
-              <button type="button" onClick={startNewAnalysis} className="min-h-9 flex items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
+            // Never add/remove controls as a historic move is selected: reflow used
+            // to shift the Stockfish panel when stepping onto/off the last move.
+            <div className="desktop-analysis-review-controls flex h-12 shrink-0 flex-nowrap items-center justify-between gap-1.5 px-3">
+              <span className={cx("min-w-0 flex-1 truncate text-xs text-neutral-400", viewMoveIndex === -1 && "invisible")} aria-hidden={viewMoveIndex === -1}>{t('game.analysis.reviewing')}</span>
+              <button type="button" onClick={() => setViewMoveIndex(-1)} disabled={viewMoveIndex === -1} tabIndex={viewMoveIndex === -1 ? -1 : 0}
+                aria-hidden={viewMoveIndex === -1} className={cx("h-9 shrink-0 whitespace-nowrap rounded-lg px-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-500/10", viewMoveIndex === -1 && "invisible")}>
+                {t('game.analysis.resume')}
+              </button>
+              <button type="button" onClick={startNewAnalysis} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 px-2 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
                 <RotateCcw size={14} aria-hidden="true" />
                 {t('game.analysis.new')}
               </button>
@@ -1278,7 +1277,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </div>
         )}
 
-        {/* Professional Game Control Center */}
+        {/* Live-game actions do not belong to the replay and analysis workspace. */}
+        {mode !== 'review' && (
         <div className={cx(
           "p-2 bg-transparent md:bg-black/60 border-0 md:border-t border-white/10 flex md:grid md:grid-cols-2 gap-2 shrink-0 shadow-none md:shadow-[0_-30px_60px_-15px_rgba(0,0,0,0.8)] relative z-30 ring-0 md:ring-1 ring-white/5 md:backdrop-blur-3xl",
           !isMultiplayer && "hidden md:grid"
@@ -1306,6 +1306,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             {t('game.draw')}
           </button>
         </div>
+        )}
 
       </div>
     </div>
