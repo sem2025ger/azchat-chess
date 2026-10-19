@@ -51,6 +51,7 @@ function cx(...inputs: (string | undefined | null | false)[]) {
 function ChessBoard({
   className,
   showCoordinates = true,
+  externalCoordinatesOnDesktop = false,
   game,
   onMove,
   orientation = 'w',
@@ -59,6 +60,7 @@ function ChessBoard({
 }: {
   className?: string;
   showCoordinates?: boolean;
+  externalCoordinatesOnDesktop?: boolean;
   game?: Chess;
   onMove?: (source: string, target: string, promotion?: string) => boolean;
   orientation?: 'w' | 'b';
@@ -311,6 +313,25 @@ function ChessBoard({
         className
       )}
     >
+      {showCoordinates && externalCoordinatesOnDesktop && (
+        <>
+          {/* Use the existing desktop frame gutters; the square grid and pointer bounds stay unchanged. */}
+          <div
+            data-coordinate-axis="rank"
+            aria-hidden="true"
+            className="hidden lg:grid grid-rows-8 absolute left-0 top-[calc(0.75rem+1px)] bottom-[calc(0.75rem+1px)] w-3 text-[0.65rem] leading-none font-bold text-neutral-400 select-none pointer-events-none"
+          >
+            {ranks.map(rank => <span key={rank} className="flex items-center justify-center">{rank}</span>)}
+          </div>
+          <div
+            data-coordinate-axis="file"
+            aria-hidden="true"
+            className="hidden lg:grid grid-cols-8 absolute left-[calc(0.75rem+1px)] right-[calc(0.75rem+1px)] bottom-0 h-3 text-[0.65rem] leading-none font-bold text-neutral-400 select-none pointer-events-none"
+          >
+            {files.map(file => <span key={file} className="flex items-center justify-center">{file}</span>)}
+          </div>
+        </>
+      )}
       <div className="aspect-square w-full rounded-sm overflow-hidden relative shadow-2xl border border-black/40">
         <div
           className="grid grid-cols-8 grid-rows-8 w-full h-full relative z-0 xl:touch-none"
@@ -362,7 +383,8 @@ function ChessBoard({
                     <span
                       className={cx(
                         'absolute top-0.5 left-1 text-[0.55rem] md:text-[0.7rem] font-bold select-none z-10 pointer-events-none',
-                        isDark ? 'text-white/50' : 'text-black/40'
+                        isDark ? 'text-white/50' : 'text-black/40',
+                        externalCoordinatesOnDesktop && 'lg:hidden'
                       )}
                     >
                       {rank}
@@ -373,7 +395,8 @@ function ChessBoard({
                     <span
                       className={cx(
                         'absolute bottom-0.5 right-1 text-[0.55rem] md:text-[0.7rem] font-bold select-none z-10 pointer-events-none',
-                        isDark ? 'text-white/50' : 'text-black/40'
+                        isDark ? 'text-white/50' : 'text-black/40',
+                        externalCoordinatesOnDesktop && 'lg:hidden'
                       )}
                     >
                       {file}
