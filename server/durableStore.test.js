@@ -125,14 +125,168 @@ test('an unresolved retention acknowledgement reconciles a tombstone omitted fro
   assert.equal(original.durableRow.result_saved,true);
 });
 
-test('flag off tolerates absent migration only after confirming the durable table is absent', async () => {
-  const options={enabled:false,rooms:new Map(),socketToRoom:new Map(),io:{},log:()=>{},getMatchPersistence:()=>({})};
+test('flag off keeps volatile availability when the migration is absent or its RPC is broken', async () => {
+  let at=0;
+  const options={enabled:false,rooms:new Map(),socketToRoom:new Map(),io:{},now:()=>at,log:()=>{},getMatchPersistence:()=>({})};
   for(const absent of [true,false]) {
+    at=0; let scans=0;
     const manager=createDurableGames({...options,store:{
-      scan:async()=>{throw Object.assign(new Error(),{code:'PGRST202'});},isUninstalled:async()=>absent,
+      scan:async()=>{scans++;throw Object.assign(new Error(),{code:'PGRST202'});},isUninstalled:async()=>absent,
     }});
-    await manager.recover(); assert.equal(manager.ready(),absent);
+    await manager.recover(); assert.equal(manager.ready(),true);
+    at=5000; await manager.tick(); await new Promise(setImmediate);
+    assert.equal(scans,absent?1:2,'only confirmed absence permits stopping periodic discovery');
   }
+});
+
+test('flag off and confirmed missing schema perform no periodic recovery scans', async () => {
+  let at = 0, scans = 0, probes = 0;
+  const manager = createDurableGames({ enabled: false, rooms: new Map(), socketToRoom: new Map(),
+    io: {}, now: () => at, log: () => {}, getMatchPersistence: () => ({}), store: {
+      scan: async () => { scans++; throw Object.assign(new Error(), { code: 'PGRST202' }); },
+      isUninstalled: async () => { probes++; return true; },
+      write: async () => assert.fail('disabled starts must not write durable storage'),
+    } });
+  await manager.recover();
+  const volatile = room(); await manager.start(volatile);
+  assert.equal(manager.ready(), true); assert.equal(volatile.durable, undefined);
+  for (at = 1000; at <= 180000; at += 1000) await manager.tick();
+  assert.equal(scans, 1); assert.equal(probes, 1);
+});
+
+test('flag off and unknown database state back off to a bounded minute without blocking starts', async () => {
+  let at = 0;
+  const scannedAt = [];
+  const manager = createDurableGames({ enabled: false, rooms: new Map(), socketToRoom: new Map(),
+    io: {}, now: () => at, log: () => {}, getMatchPersistence: () => ({}), store: {
+      scan: async () => { scannedAt.push(at); throw new Error('offline'); },
+      write: async () => assert.fail('volatile start must not write'),
+    } });
+  await manager.recover();
+  for (at = 1000; at <= 195000; at += 1000) {
+    await manager.tick(); await new Promise(setImmediate);
+    assert.equal(manager.ready(), true);
+    await manager.start(room());
+  }
+  assert.deepEqual(scannedAt, [0, 5000, 15000, 35000, 75000, 135000, 195000]);
+});
+
+test('flag off uses minute discovery for an installed empty schema and stays available after an outage', async () => {
+  let at = 0, scans = 0, offline = false;
+  const manager = createDurableGames({ enabled: false, rooms: new Map(), socketToRoom: new Map(),
+    io: {}, now: () => at, log: () => {}, getMatchPersistence: () => ({}), store: {
+      scan: async () => { scans++; if (offline) throw new Error('offline'); return []; },
+    } });
+  await manager.recover(); offline = true;
+  for (at = 1000; at < 60000; at += 1000) await manager.tick();
+  assert.equal(scans, 1);
+  await manager.tick(); await new Promise(setImmediate);
+  assert.equal(scans, 2); assert.equal(manager.ready(), true);
+  const volatile = room(); await manager.start(volatile); assert.equal(volatile.durable, undefined);
+  offline = false; at = 65000;
+  await manager.tick(); await new Promise(setImmediate);
+  assert.equal(scans, 3); assert.equal(manager.ready(), true);
+});
+
+test('flag on rejects starts and readiness while the database is unavailable', async () => {
+  let writes = 0;
+  const manager = createDurableGames({ enabled: true, rooms: new Map(), socketToRoom: new Map(),
+    io: {}, log: () => {}, getMatchPersistence: () => ({}), store: {
+      scan: async () => { throw new Error('offline'); }, write: async () => { writes++; },
+    } });
+  await manager.recover(); assert.equal(manager.ready(), false);
+  await assert.rejects(manager.start(room())); assert.equal(writes, 0);
+});
+
+test('flag off recovers an existing game after an initially unknown outage', async () => {
+  let at = Date.now(), offline = true, claims = 0;
+  const original = room(), ownerId = randomUUID(), rooms = new Map();
+  const row = { room_id: original.roomId, match_id: randomUUID(), revision: 1, fence: 1,
+    owner_id: randomUUID(), lease_until: new Date(0).toISOString(), state: snapshot(original), result_saved: false };
+  const manager = createDurableGames({ enabled: false, rooms, socketToRoom: new Map(),
+    io: {}, now: () => at, log: () => {}, getMatchPersistence: () => ({}), store: {
+      ownerId, scan: async () => { if (offline) throw new Error('offline'); return [row]; },
+      claim: async value => { claims++; return { ...value, owner_id: ownerId, fence: 2, lease_until: new Date(at + 15000).toISOString() }; },
+    } });
+  await manager.recover(); assert.equal(manager.ready(), true); assert.equal(rooms.size, 0);
+  offline = false; at += 5000;
+  await manager.tick(); await new Promise(setImmediate);
+  const recovered = rooms.get(original.roomId);
+  assert.equal(claims, 1); assert.equal(recovered.durable, true);
+  assert.equal(recovered.durableRow.fence, 2); assert.equal(recovered.status, 'active');
+});
+
+test('flag off drains a pending durable result after storage returns, with its stable match ID', async () => {
+  let at = Date.now(), offline = true, completions = 0;
+  const original = room(), ownerId = randomUUID(), rooms = new Map();
+  original.status = 'ended'; original.completedAt = new Date(at).toISOString();
+  original.outcome = { reason: 'resignation', result: '0-1', winnerColor: 'b', endedBy: 'w' };
+  let row = { room_id: original.roomId, match_id: randomUUID(), revision: 1, fence: 1,
+    owner_id: ownerId, lease_until: new Date(at + 15000).toISOString(), state: snapshot(original), result_saved: false };
+  const manager = createDurableGames({ enabled: false, rooms, socketToRoom: new Map(),
+    io: {}, now: () => at, log: () => {}, getMatchPersistence: () => ({}), store: {
+      ownerId, scan: async () => { if (offline) throw new Error('offline'); return [row]; },
+      write: async (operation, previous) => {
+        assert.equal(operation, 'complete'); assert.equal(previous.match_id, row.match_id); completions++;
+        row = { ...row, result_saved: true, revision: 2 }; return row;
+      },
+    } });
+  await manager.recover(); offline = false; at += 5000;
+  await manager.tick();
+  for (let i = 0; i < 10 && !rooms.get(original.roomId)?.persisted; i++) await new Promise(setImmediate);
+  assert.equal(completions, 1); assert.equal(rooms.get(original.roomId).persisted, true);
+  assert.equal(rooms.get(original.roomId).matchId, row.match_id);
+});
+
+test('flag off never abandons known other-owner games on a missing-schema response', async () => {
+  let at = Date.now(), missing = false, scans = 0;
+  const original = room();
+  const manager = createDurableGames({ enabled: false, rooms: new Map(), socketToRoom: new Map(),
+    io: {}, now: () => at, log: () => {}, getMatchPersistence: () => ({}), store: {
+      ownerId: randomUUID(),
+      scan: async () => {
+        scans++;
+        if (missing) throw Object.assign(new Error(), { code: 'PGRST202' });
+        return [{ room_id: original.roomId, owner_id: randomUUID(), result_saved: false,
+          lease_until: new Date(at + 15000).toISOString() }];
+      }, isUninstalled: async () => true,
+    } });
+  await manager.recover(); missing = true;
+  for (let i = 0; i < 3; i++) { at += 5000; await manager.tick(); await new Promise(setImmediate); }
+  assert.equal(scans, 4); assert.equal(manager.ready(), true);
+});
+
+test('flag off keeps a blocked durable room fenced while new volatile games remain available', async () => {
+  const original = room(), events = [];
+  original.durable = true; original.blocked = true;
+  original.durableRow = { room_id: original.roomId, state: snapshot(original), result_saved: false };
+  const socket = { id: 'white-socket', data: { userId: original.userIds.w, limiter: { allow: () => true } },
+    emit: (name, data) => events.push({ name, data }) };
+  const manager = createDurableGames({ enabled: false, rooms: new Map([[original.roomId, original]]),
+    socketToRoom: new Map([[socket.id, original.roomId]]), io: {}, log: () => {},
+    getMatchPersistence: () => ({}), store: { write: async () => assert.fail('blocked room must not write') } });
+  await manager.action(socket, 'make_move', { roomId: original.roomId, move: 'e4' });
+  assert.equal(events[0].data.reason, 'storage_unavailable'); assert.deepEqual(original.game.history(), []);
+  assert.equal(manager.ready(), true);
+  const volatile = room(); await manager.start(volatile); assert.equal(volatile.durable, undefined);
+});
+
+test('an authenticated reconnect wakes recovery for a game discovered during idle scanning', async () => {
+  const at = Date.now(), original = room(), ownerId = randomUUID(), rooms = new Map();
+  let rows = [], scans = 0;
+  const row = { room_id: original.roomId, match_id: randomUUID(), revision: 0, fence: 1,
+    owner_id: ownerId, lease_until: new Date(at + 15000).toISOString(), state: snapshot(original), result_saved: false };
+  const events = [];
+  const manager = createDurableGames({ enabled: false, rooms, socketToRoom: new Map(),
+    io: {}, now: () => at, log: () => {}, getMatchPersistence: () => ({}), store: {
+      ownerId, scan: async () => { scans++; return rows; }, read: async () => row,
+    } });
+  await manager.recover(); rows = [row];
+  await manager.reconnect({ data: { userId: original.userIds.w, limiter: { allow: () => true } },
+    emit: (name, data) => events.push({ name, data }) }, original.roomId);
+  await new Promise(setImmediate);
+  assert.equal(scans, 2); assert.equal(rooms.get(original.roomId).durable, true);
+  assert.equal(events[0].data.reason, 'recovery_pending');
 });
 
 test('queued durable mutations enforce the unchanged rate bucket at arrival time', async () => {

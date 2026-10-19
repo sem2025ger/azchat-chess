@@ -32,9 +32,10 @@ previous zero active-state writes; its network round trip and commit time are
 added before board acknowledgement. There is no separate per-move read or lease
 query. Terminal actions atomically record the pending handoff in their one RPC;
 the asynchronous completion/compaction is one further RPC, outside move
-acknowledgement latency. Background traffic is one recovery scan per five
-seconds per process and roughly one renewal per five to six seconds per owned
-game. Replay/JSON payload work grows with game history. An ambiguous response
+acknowledgement latency. With durability enabled or known games awaiting
+recovery, background traffic is one recovery scan per five seconds per process
+and roughly one renewal per five to six seconds per owned game. Disabled-mode
+discovery/backoff is described below. Replay/JSON payload work grows with game history. An ambiguous response
 can require an exceptional read; reconnect clearing a deadline is one RPC.
 
 A process-local promise queue serializes each room's mutations, reconnects,
@@ -58,13 +59,45 @@ Result completion is also fenced, retains the same immutable match ID and
 verifies duplicates inside the RPC before acknowledging success.
 
 Startup scans durable non-tombstone rows, claims expired leases, rebuilds rooms,
-checks elapsed deadlines and resumes pending results. It repeats recovery scans
-every five seconds. A process never depends on shutdown hooks or memory from
+checks elapsed deadlines and resumes pending results. A process never depends on shutdown hooks or memory from
 the previous process. During deployment overlap an affected client receives
 `recovery_pending` while the other lease is live. With healthy storage, takeover
 is normally within the remaining lease plus one scan interval and RPC latency.
-Storage/reconstruction failure makes `/health` return 503; blocked rooms reject
-actions and starts are rejected with `storage_unavailable`.
+With new durable starts enabled, storage/reconstruction failure makes `/health`
+return 503 and starts are rejected with `storage_unavailable`. Blocked durable
+rooms reject actions regardless of the new-start flag.
+
+### Disabled-mode availability and discovery
+
+`DURABLE_ACTIVE_GAMES=false` separates ordinary volatile availability from
+optional durable recovery. HTTP/socket startup does not wait for the initial
+recovery query. `/health` stays 200 and queue/private starts remain volatile
+even during an initial or later durable-storage failure. In this mode HTTP
+health is **not** a statement that existing durable games are healthy: each
+durable room retains its fenced storage checks, blocking and recovery. There
+is no conversion of a durable room into a volatile one.
+
+- Confirmed missing migration/table, with no known pending durable games:
+  perform the startup probe and stop periodic scans. Restart after applying
+  the migration; an explicit recovery request can also probe again.
+- Installed but empty schema: scan once per minute. An empty scan cannot prove
+  the feature was never used or that another process will not create a game.
+- Database state unknown because a query failed: retry after 5, 10, 20, 40,
+  then at most 60 seconds between attempts, without blocking volatile starts.
+  A missing function alone does not prove there is no recoverable data.
+- Known unfinished games/pending results (including another owner's lease):
+  retain five-second discovery and normal ownership renewal/result retries.
+  A later missing-schema response does not abandon known games.
+- An authenticated reconnect that reads a non-tombstone row wakes recovery
+  immediately; only the recovery path claims ownership. Socket requests do
+  not bypass ownership or make durable state authoritative in memory alone.
+
+After all known games drain, a successful empty scan returns to minute discovery.
+The trade-off is bounded discovery delay for previously unknown games: up to
+60 seconds plus query time (and any remaining lease), unless reconnect wakes
+recovery earlier. Zero periodic traffic is guaranteed only for a confirmed
+absent schema/no known games or absent storage credentials, not for an installed
+schema or unknown state. A restart loses that observation and probes again.
 
 ## Clocks and disconnects
 
@@ -150,7 +183,8 @@ frozen install; no dependency/version workaround is committed.
 That frozen dependency directory was copied back without deleting the frontend;
 the final frontend checks below were run from the original `tmp/` directory.
 
-Verified on 2026-10-20 (Europe/Berlin):
+Initial feature verification on 2026-10-20 (Europe/Berlin), before the
+disabled-mode correction:
 
 | Check | Result |
 | --- | --- |
@@ -164,6 +198,17 @@ Verified on 2026-10-20 (Europe/Berlin):
 | Frontend production dependency audit | exit 0, 2 moderate, 0 high/critical |
 | 50 accepted local socket move transitions | p50 18.23 ms, p95 30.44 ms |
 | 50 unauthenticated HTTPS requests to Supabase REST root | p50 23.58 ms, p95 70.30 ms; all 401 |
+
+The disabled-mode correction adds 14 counted regression cases, including real
+HTTP/socket starts while the initial recovery request is still held, absent
+schema, initial outage and outage after successful startup. Fake-clock tests
+verify no periodic requests after confirmed absence, minute discovery, capped
+backoff and continued recovery of active games/pending results. Local checks
+passed 98 server tests with the PostgreSQL parent suite explicitly skipped
+(local PostgreSQL unavailable), all 37 frontend tests, typecheck, build and
+lint (0 errors / 50 warnings). Both production audit gates passed with the same
+findings as above. The full PostgreSQL suite remains required in Server CI on
+the correction's head; do not treat the local skipped suite as database proof.
 
 The HTTPS target was `https://kmwfvvliundhuovoakoa.supabase.co/rest/v1/`;
 sequential GETs consumed each response body and used `performance.now()`.
@@ -233,10 +278,12 @@ block reviewing the PR. Do not infer activation readiness from loopback numbers.
    Never replay bootstrap or the old migration history against production.
    Independently verify the existing completed-match contract and new ACLs.
 4. With `DURABLE_ACTIVE_GAMES` absent/false, deploy only when separately
-   authorized. It probes recovery if service credentials exist; before this
-   migration, a missing RPC is tolerated only with the flag off and a separate
-   read confirms that the durable table is absent. A missing function with an
-   existing durable table fails readiness, rather than abandoning its games.
+   authorized. It probes recovery in the background if service credentials
+   exist, without gating volatile availability. A missing RPC triggers a
+   separate table-absence check; an installed/unknown schema retains bounded
+   recovery attempts. Restart this binary after applying the migration so a
+   process that confirmed the old absent schema probes again. With the flag
+   enabled, unavailable storage still fails readiness and durable starts.
 5. Prevent new starts through the owner's maintenance process and drain any
    already started volatile games before restarting to activate. Existing
    volatile games are not retroactively persisted; a restart still loses them.

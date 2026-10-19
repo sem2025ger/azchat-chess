@@ -3,13 +3,19 @@
 if (process.env.NODE_ENV !== 'test' || !/^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.SUPABASE_URL ?? '')) {
   throw new Error('Local test endpoint required');
 }
-const { server, recoveryReady, setTokenVerifier } = require('../index');
+const { server, recoveryReady, durableGames, setTokenVerifier } = require('../index');
 const users = {
   white: '11111111-1111-4111-8111-111111111111',
   black: '22222222-2222-4222-8222-222222222222',
   stranger: '33333333-3333-4333-8333-333333333333',
 };
 setTokenVerifier(async token => users[token] ? { id: users[token] } : null);
+// Explicit recovery requests are confined to this loopback test entry point.
+process.on('message', async message => {
+  if (message?.type !== 'recover') return;
+  await durableGames.recover();
+  process.send({ type: 'recovered' });
+});
 recoveryReady.then(() => server.listen(0, '127.0.0.1', () => {
   process.send({ port: server.address().port });
 }));

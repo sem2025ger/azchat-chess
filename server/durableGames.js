@@ -52,7 +52,9 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
   const queues = new Map();
   let storageHealthy = !enabled && !store;
   let scanPromise = null;
-  let lastScan = 0;
+  let nextScanAt = 0;
+  let retryDelay = 5000;
+  let recoveryRequired = false;
   let tickPromise = null;
   const opposite = color => color === 'w' ? 'b' : 'w';
   const diagnostic = error => log({ code: 'DURABLE_GAME_UNAVAILABLE',
@@ -66,7 +68,14 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
   }
 
   function ready() {
-    return storageHealthy && ![...rooms.values()].some(room => room.durable && room.blocked);
+    // Readiness governs NEW starts and HTTP availability. With the flag off,
+    // optional recovery failures must not take legacy volatile games offline.
+    // Existing durable rooms still enforce storage/ownership checks themselves.
+    return !enabled || (storageHealthy && ![...rooms.values()].some(room => room.durable && room.blocked));
+  }
+
+  function hasPendingRooms() {
+    return [...rooms.values()].some(room => room.durable && !room.durableRow.result_saved);
   }
 
   async function commit(room, state) {
@@ -218,20 +227,35 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
           });
         }
         storageHealthy = true;
+        recoveryRequired = rows.some(row => !row.result_saved) || hasPendingRooms();
+        retryDelay = 5000;
+        // An installed but empty schema cannot prove there was no activation
+        // (another process may still create games). Discover these at a bounded,
+        // slower cadence; known games retain the five-second recovery interval.
+        nextScanAt = now() + (enabled || recoveryRequired ? 5000 : 60000);
       } catch (error) {
-        // Before the migration exists, flag-off installations retain legacy behavior.
+        storageHealthy = false;
+        let uninstalled = false;
         if (!enabled && ['PGRST202', '42P01', '42883'].includes(error.code)) {
-          try { storageHealthy = await store.isUninstalled(); }
-          catch { storageHealthy = false; }
-          if (!storageHealthy) diagnostic(error);
-        } else { storageHealthy = false; diagnostic(error); }
+          try { uninstalled = await store.isUninstalled(); }
+          catch { /* Unknown is not proof that recovery can be abandoned. */ }
+        }
+        if (uninstalled && !recoveryRequired && !hasPendingRooms()) {
+          // Confirmed missing schema: no periodic polling until restart or an
+          // explicit recovery request. Rollout requires restart after migration.
+          nextScanAt = Infinity;
+        } else {
+          nextScanAt = now() + (enabled || recoveryRequired || hasPendingRooms() ? 5000 : retryDelay);
+          retryDelay = Math.min(retryDelay * 2, 60000);
+          diagnostic(error);
+        }
       }
-    })().finally(() => { scanPromise = null; lastScan = now(); });
+    })().finally(() => { scanPromise = null; });
     return scanPromise;
   }
 
   async function runTick() {
-    if (store && now() - lastScan >= 5000) void recover();
+    if (store && now() >= nextScanAt) void recover();
     await Promise.all([...rooms.values()].filter(room => room.durable).map(room =>
       serial(room.roomId, async () => {
         if (room.blocked || room.durableRow.result_saved) return;
@@ -352,6 +376,12 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
               initialFen: match.initial_fen, status: 'ended', outcome: row.state.outcome, whiteTime: 0, blackTime: 0 });
             socket.emit('game_over', { roomId, ...row.state.outcome }); return;
           }
+          // A reconnect can discover a game created by a different process
+          // since our last idle scan. Resume prompt recovery without trusting
+          // the client or executing the durable room as a volatile one.
+          recoveryRequired = true;
+          nextScanAt = 0;
+          void recover();
           // Only startup/recovery claims expired leases, never a socket request.
           throw new DurableError('recovery_pending');
         }

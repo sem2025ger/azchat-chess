@@ -131,8 +131,10 @@ const durableGames = createDurableGames({
   rooms: activeRooms, socketToRoom, io,
   getMatchPersistence: () => matchPersistence, naturalGameOver: getNaturalGameOverPayload,
 });
-// Recovery also runs with new durable starts disabled, to drain existing games.
-const recoveryReady = durableGames.recover();
+// Recover existing games even with new durable starts disabled, but optional
+// recovery must not hold volatile HTTP/socket startup behind a database timeout.
+const initialRecovery = durableGames.recover();
+const recoveryReady = durableEnabled ? initialRecovery : Promise.resolve();
 
 function getPlayerColor(room, socketId) {
   if (!room || !room.players) return null;
