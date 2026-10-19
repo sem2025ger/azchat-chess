@@ -10,6 +10,8 @@ const { createClient } = require('@supabase/supabase-js');
 const { createSocketAuthMiddleware } = require('./socketAuth');
 const { createMatchPersistenceFromEnv, persistRoomCompletedMatch } = require('./matchPersistence');
 const { createSocketRateLimiter } = require('./rateLimiter');
+const { createDurableStoreFromEnv } = require('./durableStore');
+const { createDurableGames } = require('./durableGames');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -108,7 +110,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.get('/health', (req, res) => {
-  res.json({ ok: true, service: "aztr-chess-server" });
+  const ok = durableGames.ready();
+  res.status(ok ? 200 : 503).json({ ok, service: "aztr-chess-server" });
 });
 
 const io = new Server(server, {
@@ -122,6 +125,14 @@ io.use(createSocketAuthMiddleware(verifyTokenProxy));
 let waitingQueue = []; // Array of socket objects
 const activeRooms = new Map(); // roomId -> { game, players: [{ socket, color }] }
 const socketToRoom = new Map(); // socket.id -> roomId
+const durableEnabled = process.env.DURABLE_ACTIVE_GAMES === 'true';
+const durableGames = createDurableGames({
+  store: createDurableStoreFromEnv(), enabled: durableEnabled,
+  rooms: activeRooms, socketToRoom, io,
+  getMatchPersistence: () => matchPersistence, naturalGameOver: getNaturalGameOverPayload,
+});
+// Recovery also runs with new durable starts disabled, to drain existing games.
+const recoveryReady = durableGames.recover();
 
 function getPlayerColor(room, socketId) {
   if (!room || !room.players) return null;
@@ -136,6 +147,7 @@ function oppositeColor(color) {
 
 function cleanupRoom(roomId, room) {
   if (!room) return;
+  if (room.durable && !room.durableRow.result_saved) return;
 
   if (room.disconnects) {
     if (room.disconnects.w?.timer) {
@@ -173,6 +185,7 @@ function cleanupRoom(roomId, room) {
 
 function finalizeGame(roomId, payload) {
   const room = activeRooms.get(roomId);
+  if (room?.durable) return durableGames.finalize(roomId, payload);
   if (!room || room.status === 'ended') {
     return false;
   }
@@ -253,6 +266,7 @@ function finalizeGame(roomId, payload) {
 function markPlayerDisconnected(roomId, disconnectedColor, graceSeconds = 30) {
   const roomData = activeRooms.get(roomId);
   if (!roomData || roomData.status !== 'active') return null;
+  if (roomData.durable) return durableGames.disconnect(roomId, disconnectedColor, roomData.players[disconnectedColor]);
 
   if (!roomData.disconnects) {
     roomData.disconnects = {
@@ -303,6 +317,7 @@ function markPlayerDisconnected(roomId, disconnectedColor, graceSeconds = 30) {
 
 function reconnectPlayerToRoom(roomId, playerColor, newSocket) {
   const room = activeRooms.get(roomId);
+  if (room?.durable) return durableGames.reconnect(newSocket, roomId);
   if (!room || room.status !== 'active') return null;
 
   const newSocketId = typeof newSocket === 'string' ? newSocket : newSocket?.id;
@@ -362,8 +377,13 @@ function reconnectPlayerToRoom(roomId, playerColor, newSocket) {
 
 // Watchdog timer: checks for clock timeouts on active games every 1 second
 function checkRoomTimeouts() {
+  void durableGames.tick().catch(() => console.error(JSON.stringify({ code: 'DURABLE_TICK_FAILED' })));
   const now = Date.now();
   for (const [roomId, room] of activeRooms.entries()) {
+    if (room.durable) {
+      if (room.durableRow.result_saved && now - Date.parse(room.completedAt) >= 30000) cleanupRoom(roomId, room);
+      continue;
+    }
     if (room.status !== 'active' || !room.lastMoveTimestamp) continue;
 
     const currentTurn = room.game.turn();
@@ -463,13 +483,15 @@ io.on('connection', (socket) => {
   socket.data = socket.data || {};
   socket.data.limiter = createSocketRateLimiter();
 
-  socket.on('join_queue', () => {
+  socket.on('join_queue', async () => {
     if (!socket.data.limiter.allow('lobby')) {
       socket.emit('rate_limit_exceeded', { action: 'join_queue' });
       return;
     }
 
     const userId = socket.data?.userId;
+    if (!durableGames.ready()) { socket.emit('join_failed', { reason: 'storage_unavailable' }); return; }
+    if (socket.data.startingGame) return;
 
     // Prevent duplicate entries by socket.id or authenticated userId
     if (waitingQueue.some(s => s.id === socket.id || (userId && s.data?.userId === userId))) {
@@ -489,6 +511,8 @@ io.on('connection', (socket) => {
       if (p2Index !== -1) {
         const player1 = waitingQueue.splice(0, 1)[0];
         const player2 = waitingQueue.splice(p2Index - 1, 1)[0];
+        player1.data.startingGame = true;
+        player2.data.startingGame = true;
 
         const roomId = crypto.randomUUID();
         const colors = Math.random() > 0.5 ? ['w', 'b'] : ['b', 'w'];
@@ -526,6 +550,16 @@ io.on('connection', (socket) => {
           },
         };
 
+        try {
+          await durableGames.start(roomData);
+        } catch {
+          player1.leave(roomId); player2.leave(roomId);
+          player1.emit('join_failed', { reason: 'storage_unavailable' });
+          player2.emit('join_failed', { reason: 'storage_unavailable' });
+          return;
+        } finally {
+          player1.data.startingGame = false; player2.data.startingGame = false;
+        }
         activeRooms.set(roomId, roomData);
         socketToRoom.set(player1.id, roomId);
         socketToRoom.set(player2.id, roomId);
@@ -539,6 +573,11 @@ io.on('connection', (socket) => {
           whiteTime: roomData.initialTime,
           blackTime: roomData.initialTime,
         });
+        if (roomData.durable) {
+          for (const player of [player1, player2]) if (!player.connected) {
+            void durableGames.disconnect(roomId, getPlayerColor(roomData, player.id), player.id);
+          }
+        }
       }
     }
   });
@@ -566,6 +605,8 @@ io.on('connection', (socket) => {
       socket.emit('rate_limit_exceeded', { action: 'create_private_room' });
       return;
     }
+    if (!durableGames.ready()) { socket.emit('join_failed', { reason: 'storage_unavailable' }); return; }
+    if (socket.data.startingGame) return;
 
     const existingRoomId = socketToRoom.get(socket.id);
     if (existingRoomId) {
@@ -634,7 +675,7 @@ io.on('connection', (socket) => {
     socket.emit('private_room_created', { roomId, timeControl: selectedTime });
   });
 
-  socket.on('join_private_room', (payload) => {
+  socket.on('join_private_room', async (payload) => {
     try {
       if (!socket.data?.limiter?.allow('lobby')) {
         socket.emit('rate_limit_exceeded', { action: 'join_private_room' });
@@ -648,13 +689,17 @@ io.on('connection', (socket) => {
 
       const roomId = payload.roomId;
       const roomData = activeRooms.get(roomId);
+      if (!durableGames.ready()) { socket.emit('join_failed', { reason: 'storage_unavailable' }); return; }
+      if (socket.data.startingGame || socketToRoom.has(socket.id)) {
+        socket.emit('join_failed', { reason: 'already_in_room' }); return;
+      }
 
       if (!roomData || !roomData.isPrivate) {
         socket.emit('join_failed', { reason: "room_not_found" });
         return;
       }
 
-      if (roomData.status === 'active' || (roomData.players.w && roomData.players.b)) {
+      if (roomData.status !== 'pending' || (roomData.players.w && roomData.players.b)) {
         socket.emit('join_failed', { reason: "room_full" });
         return;
       }
@@ -685,6 +730,21 @@ io.on('connection', (socket) => {
       roomData.blackTimeMs = roomData.initialTime * 1000;
       roomData.lastMoveTimestamp = Date.now();
 
+      // Reserve both identities while creation is in flight. No start is announced
+      // until the single database transition has been acknowledged.
+      roomData.status = 'starting';
+      socket.data.startingGame = true;
+      try {
+        const startedRoom = { ...roomData, status: 'active' };
+        await durableGames.start(startedRoom);
+        Object.assign(roomData, startedRoom);
+      } catch {
+        cleanupRoom(roomId, roomData);
+        io.to(creatorSocketId).emit('join_failed', { reason: 'storage_unavailable' });
+        socket.emit('join_failed', { reason: 'storage_unavailable' }); return;
+      } finally { socket.data.startingGame = false; }
+      roomData.status = 'active';
+
       socketToRoom.set(socket.id, roomId);
       socket.join(roomId);
 
@@ -697,6 +757,11 @@ io.on('connection', (socket) => {
         whiteTime: roomData.initialTime,
         blackTime: roomData.initialTime,
       });
+      if (roomData.durable) {
+        for (const color of ['w', 'b']) if (!io.sockets.sockets.get(roomData.players[color])?.connected) {
+          void durableGames.disconnect(roomId, color, roomData.players[color]);
+        }
+      }
     } catch (e) {
       console.error("Error joining private room:", e);
       socket.emit('join_failed', { reason: "room_not_found" });
@@ -704,6 +769,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('resign_game', (payload) => {
+    if (activeRooms.get(payload?.roomId)?.durable) { void durableGames.action(socket, 'resign_game', payload); return; }
     if (!socket.data?.limiter?.allow('game_action')) {
       socket.emit('game_action_rejected', { action: 'resign_game', reason: 'rate_limit_exceeded' });
       return;
@@ -725,6 +791,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('draw_offer', (payload) => {
+    if (activeRooms.get(payload?.roomId)?.durable) { void durableGames.action(socket, 'draw_offer', payload); return; }
     if (!socket.data?.limiter?.allow('game_action')) {
       socket.emit('game_action_rejected', { action: 'draw_offer', reason: 'rate_limit_exceeded' });
       return;
@@ -750,6 +817,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('draw_accept', (payload) => {
+    if (activeRooms.get(payload?.roomId)?.durable) { void durableGames.action(socket, 'draw_accept', payload); return; }
     if (!socket.data?.limiter?.allow('game_action')) {
       socket.emit('game_action_rejected', { action: 'draw_accept', reason: 'rate_limit_exceeded' });
       return;
@@ -779,6 +847,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('draw_decline', (payload) => {
+    if (activeRooms.get(payload?.roomId)?.durable) { void durableGames.action(socket, 'draw_decline', payload); return; }
     if (!socket.data?.limiter?.allow('game_action')) {
       socket.emit('game_action_rejected', { action: 'draw_decline', reason: 'rate_limit_exceeded' });
       return;
@@ -804,6 +873,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('make_move', (payload) => {
+    if (activeRooms.get(payload?.roomId)?.durable) { void durableGames.action(socket, 'make_move', payload); return; }
     try {
       if (!socket.data?.limiter?.allow('move')) {
         socket.emit('move_rejected', { reason: "rate_limit_exceeded" });
@@ -912,6 +982,9 @@ io.on('connection', (socket) => {
 
   socket.on('reconnect_game', (payload) => {
     const roomId = payload?.roomId;
+    if (activeRooms.get(roomId)?.durable || (!activeRooms.has(roomId) && (durableEnabled || SUPABASE_SERVICE_KEY))) {
+      void durableGames.reconnect(socket, roomId); return;
+    }
     if (!roomId || typeof roomId !== 'string') {
       socket.emit('reconnect_failed', { reason: 'invalid_payload' });
       return;
@@ -979,9 +1052,9 @@ io.on('connection', (socket) => {
 app.use(monitoring.expressErrorHandler);
 
 if (require.main === module) {
-  server.listen(PORT, () => {
+  recoveryReady.then(() => server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-  });
+  }));
 }
 
 module.exports = {
@@ -1004,5 +1077,7 @@ module.exports = {
   getNaturalGameOverPayload,
   rejectGameAction,
   getActivePlayerActionContext,
+  durableGames,
+  recoveryReady,
 };
 
