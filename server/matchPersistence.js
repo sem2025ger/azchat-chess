@@ -2,6 +2,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const { setTimeout: delay } = require('node:timers/promises');
+const { reportPersistenceFailure } = require('./monitoring');
 
 const VALID_RESULTS = new Set(['1-0', '0-1', '1/2-1/2']);
 const VALID_TERMINATION_REASONS = new Set([
@@ -212,6 +213,7 @@ function lastPersistenceErrorCode(error) {
 function persistRoomCompletedMatch(room, record, adapter, {
   wait = delay,
   logError = (entry) => console.error(JSON.stringify(entry)),
+  reportFailure = reportPersistenceFailure,
 } = {}) {
   // Single flight also guards repeated callers while a write is in progress.
   if (room.persistencePromise) return room.persistencePromise;
@@ -236,6 +238,12 @@ function persistRoomCompletedMatch(room, record, adapter, {
           continue;
         }
         room.persisted = false;
+        // This terminal branch runs once per single-flight persistence attempt.
+        // Send only technical diagnostics; keep the existing local log below.
+        try {
+          reportFailure({ code: 'MATCH_PERSIST_FAILED', attempts, errorClass,
+            lastErrorCode: lastPersistenceErrorCode(error) });
+        } catch { /* Monitoring must never change persistence behavior. */ }
         logError({
           code: 'MATCH_PERSIST_FAILED',
           matchId: record.id,

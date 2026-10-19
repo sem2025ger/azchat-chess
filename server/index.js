@@ -1,4 +1,5 @@
 require('dotenv').config();
+const monitoring = require('./monitoring').initializeMonitoring();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -973,6 +974,9 @@ io.on('connection', (socket) => {
     markPlayerDisconnected(roomId, disconnectedColor);
   });
 });
+
+// Observe HTTP errors without replacing Express's existing final handler.
+app.use(monitoring.expressErrorHandler);
 
 if (require.main === module) {
   server.listen(PORT, () => {
