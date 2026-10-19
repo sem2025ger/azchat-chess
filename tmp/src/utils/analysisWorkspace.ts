@@ -71,6 +71,9 @@ export function analysisFromPgn(pgn: string, initialFen = DEFAULT_POSITION): Ana
       ? `[SetUp "1"]\n[FEN "${validateAnalysisFen(initialFen)}"]\n${pgn}` : pgn;
     parsed.loadPgn(source);
     const moves = parsed.history({ verbose: true });
+    // A server record can be marked completed without any recorded move.
+    // Do not silently replace the current analysis with an empty chessboard.
+    if (moves.length === 0) throw new AnalysisInputError('invalidPgn');
     // PGN SetUp/FEN headers take precedence; otherwise use the match's initial position.
     const rootFen = moves[0]?.before || parsed.getHeaders().FEN || initialFen;
     return analysisFromMoves(moves.map(move => move.san), rootFen);
