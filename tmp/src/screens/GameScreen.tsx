@@ -50,6 +50,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const words = analysisCopy[language];
   const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'games' | 'position'>('analysis');
   const [loadedGameTitle, setLoadedGameTitle] = useState('');
+  const [loadedGameDetails, setLoadedGameDetails] = useState<{ white: string; black: string; timeControl?: string } | null>(null);
   const [editingPosition, setEditingPosition] = useState(false);
   const [editorSelectedPiece, setEditorSelectedPiece] = useState('P');
   const [positionDraftValue, setPositionDraftValue] = useState<PositionDraft>(() => positionDraft(new Chess().fen()));
@@ -394,7 +395,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [isAnalysing, setIsAnalysing] = useState(false);
   const [engineFailed, setEngineFailed] = useState(false);
 
-  const loadWorkspaceAnalysis = (analysis: AnalysisLoad, title = '') => {
+  const loadWorkspaceAnalysis = (analysis: AnalysisLoad, title = '', details?: { white: string; black: string; timeControl?: string }) => {
     if (mode !== 'review') return;
     engineRef.current?.stop();
     setGame(analysis.game);
@@ -405,6 +406,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     setEngineResult(null);
     setEngineFailed(false);
     setLoadedGameTitle(title);
+    setLoadedGameDetails(details || null);
     setWorkspaceTab('analysis');
     setEditingPosition(false);
     saveAnalysisSession(analysis.moveHistory, analysis.viewMoveIndex, undefined, analysis.positionHistory[0]);
@@ -413,6 +415,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const startNewAnalysis = () => {
     const empty = emptyAnalysisSession();
     setLoadedGameTitle('');
+    setLoadedGameDetails(null);
     setWorkspaceTab('analysis');
     setEditingPosition(false);
     saveAnalysisSession([], -1);
@@ -849,9 +852,27 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]")}>
 
+          {/* Desktop review uses borderless player identification instead of live-game cards/clocks. */}
+          {mode === 'review' && (
+            <div className="hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
+              <div className="flex min-w-0 items-center gap-2">
+                <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-500 bg-neutral-950" />
+                <span className="min-w-0 truncate font-semibold text-neutral-200" title={loadedGameDetails?.black || words.black}>
+                  {loadedGameDetails?.black || words.black}
+                </span>
+              </div>
+              {loadedGameDetails?.timeControl && (
+                <span className="shrink-0 font-mono text-[11px] tracking-wide text-neutral-500" title={loadedGameDetails.timeControl}>
+                  {loadedGameDetails.timeControl}
+                </span>
+              )}
+            </div>
+          )}
+
           <div className={cx(
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
-            !isMultiplayer && "hidden md:flex"
+            !isMultiplayer && "hidden md:flex",
+            mode === 'review' && "lg:hidden"
           )}>
             <div className="flex items-center gap-2.5">
               <div className="relative w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 ring-1 ring-black flex items-center justify-center">
@@ -933,7 +954,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
           <div className={cx(
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
-            !isMultiplayer && "hidden md:flex"
+            !isMultiplayer && "hidden md:flex",
+            mode === 'review' && "lg:hidden"
           )}>
             <div className="flex items-center gap-2.5">
               <div className="relative group/avatar">
@@ -964,6 +986,15 @@ export default function GameScreen({ mode }: GameScreenProps) {
               {isMultiplayer ? formatTime(timeLeft.white) : '--:--'}
             </div>
           </div>
+
+          {mode === 'review' && (
+            <div className="hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
+              <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-400 bg-[#f5f2e8]" />
+              <span className="min-w-0 truncate font-semibold text-neutral-200" title={loadedGameDetails?.white || words.white}>
+                {loadedGameDetails?.white || words.white}
+              </span>
+            </div>
+          )}
 
         </div>
       </div>
