@@ -218,10 +218,12 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   useEffect(() => {
     if (!socket || !roomId) return;
+    const isCurrentRoomEvent = (data: any) => !data?.roomId || data.roomId === roomId;
     const onStart = (data: any) => {
       setTimeLeft({ white: data.whiteTime, black: data.blackTime });
     };
     const onUpdate = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
       const snapshot = decodeLiveSnapshot(data);
       if (!snapshot) return;
       const isLocalEcho = data.fen === locallyPlayedFenRef.current;
@@ -251,8 +253,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
       if (Array.isArray(data.history)) {
         setMoveHistory(data.history);
       }
+      if (snapshot.ended) onGameOver(data.outcome);
     };
     const onGameOver = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
       timeoutManagerRef.current.clear('gameActionMessage');
       timeoutManagerRef.current.clear('disconnectNotice');
       setDrawOfferBy(null);
@@ -281,8 +285,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
       
       setMoveRejectMessage(msg);
     };
-
-    const isCurrentRoomEvent = (data: any) => !data?.roomId || data.roomId === roomId;
 
     const onDrawOfferReceived = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
@@ -357,6 +359,15 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
     };
 
+    const onSessionExpired = () => {
+      setSyncedRoom(null);
+      timeoutManagerRef.current.clear('disconnectNotice');
+      setDisconnectNotice(null);
+      setGameOverMessage("Session expired or game is no longer active.");
+      timeoutManagerRef.current.set('reconnectRedirect', () => {
+        navigateRef.current('/play');
+      }, 2500);
+    };
     const onReconnectFailed = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
       if (data?.reason === 'recovery_pending' || data?.reason === 'storage_unavailable') {
@@ -364,12 +375,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
         setDisconnectNotice('Recovering game. Reconnecting...');
         return;
       }
-      timeoutManagerRef.current.clear('disconnectNotice');
-      setDisconnectNotice(null);
-      setGameOverMessage("Session expired or game is no longer active.");
-      timeoutManagerRef.current.set('reconnectRedirect', () => {
-        navigateRef.current('/play');
-      }, 2500);
+      onSessionExpired();
     };
     
     socket.on('game_start', onStart);
@@ -384,7 +390,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     socket.on('reconnect_success', onReconnectSuccess);
     socket.on('reconnect_failed', onReconnectFailed);
 
-    const stopRecovery = attachLiveRecovery(socket, roomId, () => setSyncedRoom(null));
+    const stopRecovery = attachLiveRecovery(socket, roomId, () => setSyncedRoom(null), onSessionExpired);
     
     return () => { 
       stopRecovery();

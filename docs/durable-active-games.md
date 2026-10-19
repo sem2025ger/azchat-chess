@@ -131,7 +131,26 @@ games that finished while the player was away, including after room cleanup.
 Durable `update_board`/`reconnect_success` add `roomId`, `initialFen`, `status`,
 `outcome`, `revision`, `timeControl` and (on reconnect) `color` as appropriate.
 Legacy fields remain. Legacy reconnect responses without the additions still
-work. Temporary recovery failure does not redirect a client to matchmaking.
+work. Known-durable or enabled-mode temporary recovery failure does not redirect
+a client to matchmaking.
+With new durable starts disabled and the schema confirmed absent, a missing
+room instead returns the legacy `game_not_active`, without attempting a durable
+read. If storage is unavailable and that room is not known to be durable, the
+server returns `storage_unavailable` with `retryLimitMs: 30000`, rather than
+claiming recovery is in progress. The client counts this window from its first
+resync request, including query time, and then shows the existing session-expired
+message and redirects to `/play`. The deadline also stops an in-flight retry
+from prolonging the UI wait. This is only a UI deadline: background discovery
+and pending-result recovery continue. A confirmed durable row or enabled-mode
+response removes that deadline and retains the existing recovery behaviour.
+
+Recovery applies terminal outcomes to all currently attached sockets, including
+an ended row whose original acknowledgement was lost and a compacted tombstone.
+Expiry, normal completion, recovery and resync share per-connection notification
+deduplication. A new connection receives its own terminal snapshot/event;
+exactly-once network delivery is not claimed. `update_board.status=ended` also
+applies the terminal outcome in GameScreen, so either notification stops the
+active UI. Terminal events cancel obsolete recovery/expiry timers.
 New database lookups use the existing lobby budget; in-memory resync does not
 consume the game-action bucket. Existing bucket capacities/refill rates remain
 unchanged and queued actions are charged at arrival, before database waits.
@@ -209,6 +228,16 @@ passed 98 server tests with the PostgreSQL parent suite explicitly skipped
 lint (0 errors / 50 warnings). Both production audit gates passed with the same
 findings as above. The full PostgreSQL suite remains required in Server CI on
 the correction's head; do not treat the local skipped suite as database proof.
+
+The follow-up reconnect/terminal correction verifies the old missing-room
+response, the 30-second unknown-state UI bound, terminal snapshots without a
+separate event, and notification deduplication on both clients. Five server
+regressions and two client regressions were observed failing before the fix.
+The real PostgreSQL suite additionally injects loss of both the terminal commit
+response and its confirmation read while both clients stay connected; recovery
+must notify each once, including after resync. Local checks pass 103 server
+tests with the PostgreSQL parent explicitly skipped, and 41 frontend tests;
+the full crash/integration verification must pass in CI on the new head.
 
 The HTTPS target was `https://kmwfvvliundhuovoakoa.supabase.co/rest/v1/`;
 sequential GETs consumed each response body and used `performance.now()`.

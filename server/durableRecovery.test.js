@@ -122,6 +122,24 @@ test('isolated PostgreSQL and fresh-process crash recovery', { skip: !process.en
       await assert.rejects(other.write('commit',await row(game.roomId),(await row(game.roomId)).state),e=>e.code==='ownership_lost');
       await assert.rejects(other.claim(await row(game.roomId)),e=>e.code==='owned_elsewhere');
     });
+    await t.test('a committed ending with lost acknowledgement notifies both live clients once after recovery', async () => {
+      const match = await start(proc), notices = { white: 0, black: 0 };
+      for (const color of ['white', 'black']) match[color].on('game_over', () => { notices[color]++; });
+      const whiteOver = event(match.white, 'game_over'), blackOver = event(match.black, 'game_over');
+      db.controls.loseAcknowledgement = true;
+      db.controls.failOperation = 'read'; // Also lose the exceptional commit-confirmation read.
+      const rejected = event(match.white, 'game_action_rejected');
+      match.white.emit('resign_game', { roomId: match.roomId });
+      assert.equal((await rejected).reason, 'storage_unavailable');
+      assert.equal((await row(match.roomId)).state.status, 'ended');
+      assert.deepEqual(notices, { white: 0, black: 0 });
+      db.controls.failOperation = null;
+      const outcomes = await Promise.all([whiteOver, blackOver]);
+      assert.ok(outcomes.every(outcome => outcome.reason === 'resignation'));
+      await resync(match.white, match.roomId); await resync(match.black, match.roomId);
+      assert.deepEqual(notices, { white: 1, black: 1 });
+      match.a.disconnect(); match.b.disconnect();
+    });
     await t.test('several moves survive SIGKILL and a fresh process, with clocks, colours, and en passant intact', async () => {
       last = await move(game,'black','a6'); last = await move(game,'white','e5'); last = await move(game,'black','d5');
       const before = await row(game.roomId), oldPid = proc.child.pid;

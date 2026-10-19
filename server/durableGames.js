@@ -55,7 +55,9 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
   let nextScanAt = 0;
   let retryDelay = 5000;
   let recoveryRequired = false;
+  let schemaAbsent = false;
   let tickPromise = null;
+  const terminalNotices = new WeakMap();
   const opposite = color => color === 'w' ? 'b' : 'w';
   const diagnostic = error => log({ code: 'DURABLE_GAME_UNAVAILABLE',
     errorCode: /^[a-zA-Z0-9_]{1,40}$/.test(error?.code ?? '') ? error.code : 'storage_unavailable' });
@@ -76,6 +78,23 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
 
   function hasPendingRooms() {
     return [...rooms.values()].some(room => room.durable && !room.durableRow.result_saved);
+  }
+
+  function notifySocketEnded(socket, roomId, outcome) {
+    let notified = terminalNotices.get(socket);
+    if (!notified) { notified = new Set(); terminalNotices.set(socket, notified); }
+    if (notified.has(roomId)) return;
+    notified.add(roomId);
+    socket.emit('game_over', { roomId, ...outcome });
+  }
+
+  function notifyRoomEnded(room, outcome = room.outcome) {
+    // Deduplicate per live connection, including a resync after an expiry
+    // already notified that connection. A new connection still gets its result.
+    for (const id of room.socketIds ?? []) {
+      const socket = io.sockets?.sockets?.get(id);
+      if (socket) notifySocketEnded(socket, room.roomId, outcome);
+    }
   }
 
   async function commit(room, state) {
@@ -171,7 +190,7 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
     terminal(state, payload);
     if (payload.reason === 'timeout') state[payload.endedBy === 'w' ? 'whiteTimeMs' : 'blackTimeMs'] = 0;
     await commit(room, state);
-    io.to(room.roomId).emit('game_over', { roomId: room.roomId, ...room.outcome });
+    notifyRoomEnded(room);
     void finishResult(room);
     return true;
   }
@@ -182,6 +201,7 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
     scanPromise = (async () => {
       try {
         const rows = await store.scan();
+        schemaAbsent = false;
         const listed = new Set(rows.map(row => row.room_id));
         // A lost ACK can leave a blocked in-memory room whose durable copy has
         // already become a tombstone and therefore no longer appears in scan.
@@ -192,6 +212,7 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
           await serial(row.room_id, async () => {
             const previous = rooms.get(row.room_id);
             if (row.result_saved) {
+              if (previous) notifyRoomEnded(previous, row.state.outcome);
               if (previous?.status === 'ended') {
                 previous.durableRow = row; previous.persisted = true; previous.blocked = false;
               } else if (previous) {
@@ -222,7 +243,7 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
             // No synthetic disconnects: absence of restored sockets is not a loss.
             const expired = expiry(room);
             if (expired) await end(room, expired);
-            else if (room.status === 'ended') void finishResult(room);
+            if (room.status === 'ended') { notifyRoomEnded(room); void finishResult(room); }
             if (previous) io.to(room.roomId).emit('update_board', update(room));
           });
         }
@@ -235,12 +256,14 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
         nextScanAt = now() + (enabled || recoveryRequired ? 5000 : 60000);
       } catch (error) {
         storageHealthy = false;
+        schemaAbsent = false;
         let uninstalled = false;
         if (!enabled && ['PGRST202', '42P01', '42883'].includes(error.code)) {
           try { uninstalled = await store.isUninstalled(); }
           catch { /* Unknown is not proof that recovery can be abandoned. */ }
         }
         if (uninstalled && !recoveryRequired && !hasPendingRooms()) {
+          schemaAbsent = true;
           // Confirmed missing schema: no periodic polling until restart or an
           // explicit recovery request. Rollout requires restart after migration.
           nextScanAt = Infinity;
@@ -331,7 +354,7 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
         if (declined || name === 'draw_decline') io.to(roomId).emit('draw_offer_declined', { roomId, declinedBy: color });
         if (name === 'draw_offer') io.to(roomId).emit('draw_offer_received', { roomId, offeredBy: color });
         if (room.status === 'ended') {
-          io.to(roomId).emit('game_over', { roomId, ...room.outcome });
+          notifyRoomEnded(room);
           void finishResult(room);
         }
       } catch (error) { diagnostic(error); reject('storage_unavailable'); }
@@ -360,12 +383,17 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
       socket.emit('reconnect_failed', { roomId, reason: 'rate_limit_exceeded' }); return;
     }
     return serial(roomId, async () => {
+      let knownDurable = Boolean(rooms.get(roomId)?.durable);
       try {
         let room = rooms.get(roomId);
+        if (!room && !enabled && schemaAbsent) {
+          socket.emit('reconnect_failed', { roomId, reason: 'game_not_active' }); return;
+        }
         if (!room || room.blocked) {
           const row = await store.read(roomId);
           const color = ['w', 'b'].find(c => row.state.userIds[c] === socket.data.userId);
           if (!color) { socket.emit('reconnect_failed', { roomId, reason: 'not_a_player' }); return; }
+          knownDurable = true;
           if (row.result_saved) {
             const match = await store.completedMatch(row.match_id);
             if (match.source_room_id !== roomId || match.white_id !== row.state.userIds.w
@@ -374,7 +402,7 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
             if (match.pgn) game.loadPgn(match.pgn);
             socket.emit('reconnect_success', { roomId, color, fen: game.fen(), history: game.history(),
               initialFen: match.initial_fen, status: 'ended', outcome: row.state.outcome, whiteTime: 0, blackTime: 0 });
-            socket.emit('game_over', { roomId, ...row.state.outcome }); return;
+            notifySocketEnded(socket, roomId, row.state.outcome); return;
           }
           // A reconnect can discover a game created by a different process
           // since our last idle scan. Resume prompt recovery without trusting
@@ -405,7 +433,7 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
         room.players[color] = socket.id; room.socketIds.add(socket.id);
         socketToRoom.set(socket.id, roomId); socket.join(roomId);
         socket.emit('reconnect_success', { ...update(room), color });
-        if (room.status === 'ended') socket.emit('game_over', { roomId, ...room.outcome });
+        if (room.status === 'ended') notifySocketEnded(socket, roomId, room.outcome);
         else {
           io.to(roomId).emit('player_reconnected', { roomId, color });
           const opponent = opposite(color);
@@ -415,7 +443,10 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
         }
       } catch (error) {
         diagnostic(error);
-        socket.emit('reconnect_failed', { roomId, reason: error.code === 'not_found' ? 'game_not_active' : 'recovery_pending' });
+        const reason = error.code === 'not_found' ? 'game_not_active'
+          : enabled || knownDurable ? 'recovery_pending' : 'storage_unavailable';
+        socket.emit('reconnect_failed', { roomId, reason,
+          ...(reason === 'storage_unavailable' ? { retryLimitMs: 30000 } : {}) });
       }
     });
   }

@@ -21,29 +21,62 @@ export function decodeLiveSnapshot(value: unknown) {
   } catch { return null; }
 }
 
-export function attachLiveRecovery(socket: Socket, roomId: string, onWaiting: () => void) {
+export function attachLiveRecovery(socket: Socket, roomId: string, onWaiting: () => void, onExpired: () => void = () => {}) {
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+  let startedAt: number | undefined;
+  let expired = false;
+  let finished = false;
   const clear = () => { clearTimeout(timer); timer = undefined; };
-  const request = () => { clear(); if (socket.connected) socket.emit('reconnect_game', { roomId }); };
-  const connect = () => { onWaiting(); request(); };
+  const clearDeadline = () => { clearTimeout(deadlineTimer); deadlineTimer = undefined; };
+  const expire = () => { if (expired) return; expired = true; clear(); clearDeadline(); onExpired(); };
+  const request = () => {
+    clear();
+    if (!expired && !finished && socket.connected) {
+      startedAt ??= Date.now(); socket.emit('reconnect_game', { roomId });
+    }
+  };
+  const connect = () => { if (!expired && !finished) { onWaiting(); request(); } };
   const disconnect = () => { clear(); onWaiting(); };
-  const retry = (data: { roomId?: string; reason?: string }) => {
+  const retry = (data: { roomId?: string; reason?: string; retryLimitMs?: number }) => {
     if (data.roomId && data.roomId !== roomId) return;
-    if (!['recovery_pending', 'storage_unavailable'].includes(data.reason ?? '')) return;
+    if (expired || finished) return;
+    if (!['recovery_pending', 'storage_unavailable'].includes(data.reason ?? '')) { clear(); clearDeadline(); return; }
+    if (data.retryLimitMs === 30000) {
+      const remaining = (startedAt ?? Date.now()) + 30000 - Date.now();
+      if (remaining <= 0) { expire(); return; }
+      if (!deadlineTimer) deadlineTimer = setTimeout(expire, remaining);
+    } else {
+      // A known durable row or enabled mode must not be abandoned on this UI
+      // deadline. Server-side recovery is independent of the client's wait.
+      clearDeadline();
+    }
     onWaiting(); clear();
     timer = setTimeout(request, 2000);
   };
+  const success = (data: { roomId?: string; status?: string }) => {
+    if (data.roomId && data.roomId !== roomId) return;
+    clear(); clearDeadline(); startedAt = undefined; expired = false; finished = data.status === 'ended';
+  };
+  const ended = (data: { roomId?: string }) => {
+    if (data.roomId && data.roomId !== roomId) return;
+    clear(); clearDeadline(); finished = true;
+  };
+  const board = (data: { roomId?: string; status?: string }) => { if (data.status === 'ended') ended(data); };
   socket.on('connect', connect);
   socket.on('disconnect', disconnect);
   socket.on('reconnect_failed', retry);
   socket.on('move_rejected', retry);
   socket.on('game_action_rejected', retry);
-  socket.on('reconnect_success', clear);
+  socket.on('reconnect_success', success);
+  socket.on('game_over', ended);
+  socket.on('update_board', board);
   request();
   return () => {
-    clear();
+    clear(); clearDeadline();
     socket.off('connect', connect); socket.off('disconnect', disconnect);
     socket.off('reconnect_failed', retry); socket.off('move_rejected', retry);
-    socket.off('game_action_rejected', retry); socket.off('reconnect_success', clear);
+    socket.off('game_action_rejected', retry); socket.off('reconnect_success', success);
+    socket.off('game_over', ended); socket.off('update_board', board);
   };
 }

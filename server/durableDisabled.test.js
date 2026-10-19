@@ -5,6 +5,7 @@ const { createServer } = require('node:http');
 const { fork } = require('node:child_process');
 const { once } = require('node:events');
 const { resolve } = require('node:path');
+const { randomUUID } = require('node:crypto');
 const { io } = require('socket.io-client');
 
 function event(emitter, name, accept = () => true) {
@@ -72,6 +73,11 @@ test('disabled durability preserves HTTP and real socket starts during optional 
         };
         for (const isPrivate of [false, true]) {
           const a = await connect('white'), b = await connect('black');
+          const failed = event(a, 'reconnect_failed');
+          a.emit('reconnect_game', { roomId: randomUUID() });
+          const reply = await failed;
+          assert.equal(reply.reason, initial === 'missing' ? 'game_not_active' : 'storage_unavailable');
+          assert.equal(reply.retryLimitMs, initial === 'missing' ? undefined : 30000);
           const pa = event(a, 'match_found'), pb = event(b, 'match_found');
           if (isPrivate) {
             const created = event(a, 'private_room_created'); a.emit('create_private_room');
