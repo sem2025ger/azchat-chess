@@ -81,12 +81,14 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const EXACT_ALLOWED_ORIGINS = new Set([
   'https://chessaz.de',
   'https://www.chessaz.de',
+  'https://chessaz-preview.vercel.app',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   FRONTEND_URL,
 ]);
 
-const VERCEL_PREVIEW_PATTERN = /^https:\/\/azchat-chess-[a-z0-9-]+\.vercel\.app$/i;
+// Confirmed deployment/branch aliases for azchat-chess in the owner's Vercel team.
+const VERCEL_PREVIEW_PATTERN = /^https:\/\/azchat-chess-[a-z0-9-]+-semov20207-3068s-projects\.vercel\.app$/i;
 
 const isOriginAllowed = (origin) => {
   if (!origin) return true;
@@ -97,8 +99,7 @@ const isOriginAllowed = (origin) => {
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (isOriginAllowed(origin)) return callback(null, true);
-    callback(new Error(`CORS: origin ${origin} not allowed`));
+    callback(null, isOriginAllowed(origin));
   },
   methods: ["GET", "POST"],
 };
@@ -111,6 +112,8 @@ app.get('/health', (req, res) => {
 
 const io = new Server(server, {
   cors: corsOptions,
+  // CORS headers alone do not reject WebSocket handshakes.
+  allowRequest: (req, callback) => callback(null, isOriginAllowed(req.headers.origin)),
 });
 io.use(createSocketAuthMiddleware(verifyTokenProxy));
 
