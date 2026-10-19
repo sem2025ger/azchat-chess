@@ -10,6 +10,34 @@ export default function HomeScreen() {
   const { t } = useLanguage();
   useAuth();
 
+  // Independent desktop Home move history; mobile board state stays untouched.
+  const [desktopReview, setDesktopReview] = useState<HomeBoardReview>({ moves: [], index: 0 });
+  const desktopGame = useMemo(() => {
+    const position = new Chess();
+    for (const move of desktopReview.moves.slice(0, desktopReview.index)) position.move(move);
+    return position;
+  }, [desktopReview]);
+
+  const handleDesktopMove = (from: string, to: string, promotion = 'q') => {
+    const next = new Chess();
+    const moves = desktopReview.moves.slice(0, desktopReview.index);
+    for (const move of moves) next.move(move);
+    try {
+      const played = next.move({ from, to, promotion });
+      if (!played) return false;
+      setDesktopReview({ moves: [...moves, played.san], index: moves.length + 1 });
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const goToDesktopMove = (index: number) =>
+    setDesktopReview(current => ({
+      ...current,
+      index: Math.max(0, Math.min(current.moves.length, index)),
+    }));
+
   // User preferences applied automatically via ThemeContext
 
   return (
@@ -52,6 +80,15 @@ export default function HomeScreen() {
             font-size: 0.5rem !important;
             opacity: 0.6 !important;
             font-weight: 800 !important;
+          }
+        }
+        /* Approved desktop Home board only: fuller white and black pawns, unchanged squares. */
+        @media (min-width: 1280px) {
+          .home-screen-root .home-board img[alt="wP"],
+          .home-screen-root .home-board img[alt="bP"] {
+            transform: scale(1.055);
+            transform-origin: center;
+            filter: contrast(1.06) !important;
           }
         }
         /* Desktop-only Arena redesign: Dark Luxury graphite + Premium Gold. */
@@ -297,12 +334,16 @@ export default function HomeScreen() {
       <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-8 max-md:justify-start">
 
         {/* LEFT: Chessboard */}
-        <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container xl:-mt-12">
+        <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container xl:-mt-10">
           <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board home-board-frame max-md:hidden">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
-            <ChessBoard overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3" />
+            <ChessBoard game={desktopGame} onMove={handleDesktopMove} overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3" />
           </div>
           <MobileHomeBoard />
+          {/* Desktop move controls sit below the board without affecting its vertical position. */}
+          <div className="hidden xl:block absolute inset-x-0 top-full mt-3 z-20">
+            <HomeMoveControls review={desktopReview} goTo={goToDesktopMove} className="grid" />
+          </div>
         </div>
 
         {/* RIGHT: Premium Dashboard Container */}
@@ -373,7 +414,7 @@ function HomeMoveControls({
     <nav aria-label={t('home.board.moveNavigation')} className={`w-full px-1 ${compactMobile ? 'grid-cols-[minmax(0,0.8fr)_minmax(0,2fr)_minmax(0,0.8fr)] gap-2' : 'grid-cols-2 gap-2.5'} ${className}`}>
       <button
         type="button"
-        className={compactMobile ? `${premiumButtonClass} !min-h-[50px] !px-1 !gap-0` : premiumButtonClass}
+        className={compactMobile ? `${premiumButtonClass} !min-h-[50px] !px-1 !gap-0` : `${premiumButtonClass} disabled:!opacity-70`}
         aria-label={t('home.board.previousMove')}
         title={t('home.board.previousMove')}
         onClick={() => goTo(review.index - 1)}
@@ -394,7 +435,7 @@ function HomeMoveControls({
       )}
       <button
         type="button"
-        className={compactMobile ? `${premiumButtonClass} !min-h-[50px] !px-1 !gap-0` : premiumButtonClass}
+        className={compactMobile ? `${premiumButtonClass} !min-h-[50px] !px-1 !gap-0` : `${premiumButtonClass} disabled:!opacity-70`}
         aria-label={t('home.board.nextMove')}
         title={t('home.board.nextMove')}
         onClick={() => goTo(review.index + 1)}
