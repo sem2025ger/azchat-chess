@@ -772,3 +772,24 @@
     translate: 12px 0;
   }
 }
+
+/* Tools are contained inside the existing desktop Analysis panel. */
+@media (min-width: 1024px) {
+  .desktop-analysis-panel .analysis-tool-button {
+    display: inline-flex;
+    min-height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: .375rem;
+    border: 1px solid rgb(255 255 255 / .1);
+    border-radius: .625rem;
+    padding: .375rem .625rem;
+    color: #cfc8b8;
+    font-size: .6875rem;
+    font-weight: 600;
+    transition: background-color .15s, border-color .15s;
+  }
+  .desktop-analysis-panel .analysis-tool-button:hover { background: rgb(223 176 98 / .07); border-color: rgb(223 176 98 / .35); }
+  .desktop-analysis-panel .analysis-tool-button:focus-visible { outline: 2px solid #dfb062; outline-offset: 2px; }
+  .desktop-analysis-panel .analysis-tool-button:disabled { opacity: .35; cursor: not-allowed; }
+}

@@ -12,7 +12,7 @@ test('outside coordinates preserve board squares and pieces in both orientations
     configurable: true,
     value: { getItem: () => null },
   });
-  const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
     const { default: ChessBoard } = await server.ssrLoadModule('/src/components/ChessBoard.tsx');
     const { ThemeProvider } = await server.ssrLoadModule('/src/context/ThemeContext.tsx');
