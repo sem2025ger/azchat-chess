@@ -75,6 +75,7 @@ export default function EditorBoard({ draft, selected, words, onPlace, onMove }:
       <div className="aspect-square w-full overflow-hidden rounded-sm border border-black/40">
         <div
           aria-label={words.editor}
+          data-selected-piece={selected || "erase"}
           data-main-position-editor
           className="grid h-full w-full grid-cols-8 grid-rows-8 touch-none"
           onPointerDown={onPointerDown}
