@@ -939,3 +939,13 @@
 @media(max-width:1100px){.settings-quick-links{order:3;width:100%}.settings-command-center{margin-bottom:10px}}
 @media(max-width:640px){.settings-command-center{padding:10px}.settings-search-wrap{flex-basis:100%}.settings-assistant-toggle{margin-left:auto}.settings-quick-links{overflow-x:auto;flex-wrap:nowrap}.settings-quick-links button{flex:1 0 auto}.settings-style-recommendation{align-items:stretch;flex-direction:column}.settings-style-controls button{flex:1}}
 @media(prefers-reduced-motion:reduce){.settings-command-center *{transition:none!important;scroll-behavior:auto!important}}
+
+/* Allow the expanded command center to remain reachable at short desktop heights. */
+@media (min-width:1280px) {
+  body:has(.settings-command-center) .settings-command-center { flex-shrink:0; }
+  .settings-command-center ~ .hidden.lg\\:grid { min-height:0; }
+}
+.settings-command-center .settings-quick-undo{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 11px;border:1px solid rgba(199,160,92,.45);border-radius:9px;background:#24221e;color:#f5dca7;font-size:12px;font-weight:700}
+.settings-command-center .settings-quick-undo:hover{background:#343025}
+.settings-command-center .settings-result-grid button:focus-visible{outline-offset:-2px}
+[id^="settings-section-"]{scroll-margin-top:78px}
