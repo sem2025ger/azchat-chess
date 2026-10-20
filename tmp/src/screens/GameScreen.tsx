@@ -737,6 +737,28 @@ export default function GameScreen({ mode }: GameScreenProps) {
     };
   }, [engineResult, liveFen]);
 
+  // Keep a SINGLE set of real handlers: in review the toolbar appears under
+  // the main board; in live mode it stays in its existing right-side location.
+  const desktopAnalysisTransport = (
+              <div className={cx("h-14 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-8 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]", mode === 'review' && "desktop-analysis-transport")}>
+                <button disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><Rewind size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
+                <button disabled={!hasHistory} onClick={() => { 
+                  if (!hasHistory) return;
+                  const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
+                  setViewMoveIndex(Math.max(0, currentIndex - 1));
+                }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><ChevronLeft size={28} className="group-hover:-translate-x-1 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
+                <button disabled={!hasHistory} onClick={() => {
+                  if (!hasHistory) return;
+                  if (viewMoveIndex === -1) return;
+                  if (viewMoveIndex >= positionHistory.length - 2) {
+                    setViewMoveIndex(-1);
+                  } else {
+                    setViewMoveIndex(viewMoveIndex + 1);
+                  }
+                }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><ChevronRight size={28} className="group-hover:translate-x-1 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
+                <button disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
+              </div>
+  );
   return (
     <div className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
 
@@ -880,6 +902,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]")}>
 
+          {mode === 'review' && (
+            <header className="desktop-analysis-hero hidden lg:flex shrink-0 min-w-0 items-center justify-between gap-3 px-2" aria-label={words.analysis}>
+              <div className="min-w-0">
+                <h1 className="truncate text-[1.125rem] font-semibold text-[#f3e6c4]" title={loadedGameTitle || words.analysis}>{loadedGameTitle || words.analysis}</h1>
+                <p className="truncate text-xs text-[#aaa395]">{loadedGameDetails ? [loadedGameDetails.white, loadedGameDetails.black, loadedGameDetails.timeControl].filter(Boolean).join(" · ") : "Stockfish 18"}</p>
+              </div>
+              <span className="shrink-0 rounded-md border border-[#c9a665]/50 px-2 py-1 text-[11px] font-semibold text-[#e7c37b]">ChessAZ</span>
+            </header>
+          )}
+
           {/* Desktop review uses borderless player identification instead of live-game cards/clocks. */}
           {mode === 'review' && (
             <div className="hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
@@ -1016,7 +1048,25 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </div>
 
           {mode === 'review' && (
-            <div className="hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
+            <div className="desktop-analysis-left-nav hidden lg:flex w-full shrink-0 justify-center px-5">
+              {desktopAnalysisTransport}
+            </div>
+          )}
+
+          {mode === 'review' && hasHistory && (
+            <div className="desktop-analysis-move-timeline hidden lg:flex w-full shrink-0 flex-col gap-2 px-3" aria-label={t('game.tabs.moves')}>
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="font-semibold uppercase tracking-[0.13em] text-[#b5ab96]">{t('game.tabs.moves')}</span>
+                <output className="font-mono text-[#cfb274]">{viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex} / {positionHistory.length - 1}</output>
+              </div>
+              <input type="range" min="0" max={positionHistory.length - 1} value={viewMoveIndex === -1 ? positionHistory.length - 1 : Math.min(viewMoveIndex, positionHistory.length - 1)}
+                aria-label={t('game.tabs.moves')} onChange={event => { const index = Number(event.target.value); setViewMoveIndex(index === positionHistory.length - 1 ? -1 : index); }}
+                className="w-full accent-[#d4ab5e]" />
+            </div>
+          )}
+
+          {mode === 'review' && (
+            <div className="desktop-analysis-review-player-bottom hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
               <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-400 bg-[#f5f2e8]" />
               <span className="min-w-0 truncate font-semibold text-neutral-200" title={loadedGameDetails?.white || words.white}>
                 {loadedGameDetails?.white || words.white}
@@ -1214,24 +1264,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   </tbody>
                 </table>
               </div>
-              <div className={cx("h-14 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-8 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]", mode === 'review' && "desktop-analysis-transport")}>
-                <button disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><Rewind size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
-                <button disabled={!hasHistory} onClick={() => { 
-                  if (!hasHistory) return;
-                  const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
-                  setViewMoveIndex(Math.max(0, currentIndex - 1));
-                }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><ChevronLeft size={28} className="group-hover:-translate-x-1 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
-                <button disabled={!hasHistory} onClick={() => {
-                  if (!hasHistory) return;
-                  if (viewMoveIndex === -1) return;
-                  if (viewMoveIndex >= positionHistory.length - 2) {
-                    setViewMoveIndex(-1);
-                  } else {
-                    setViewMoveIndex(viewMoveIndex + 1);
-                  }
-                }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><ChevronRight size={28} className="group-hover:translate-x-1 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
-                <button disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
-              </div>
+              {mode !== 'review' && desktopAnalysisTransport}
+
             </div>
 
         </div>
