@@ -972,3 +972,25 @@
     transition: none;
   }
 }
+
+/* Approved ChessAZ Analysis: real Stockfish data and history, desktop review only. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen .analysis-engine-decoration { display: none; }
+  .desktop-analysis-screen .analysis-engine-content { background: linear-gradient(170deg,#161719,#0a0b0c); border-bottom:1px solid rgba(193,156,87,.15); gap:9px; padding:12px 13px; }
+  .desktop-analysis-screen .analysis-engine-status { border-color:rgba(210,166,84,.16); padding-bottom:8px; }
+  .desktop-analysis-screen .analysis-engine-status .text-neutral-300 { color:#f4efe4; }
+  .desktop-analysis-screen .analysis-engine-variations { gap:7px; }
+  .desktop-analysis-screen .analysis-engine-line { min-height:39px; padding:7px 9px; border-radius:10px; border:1px solid rgba(222,196,137,.1); background:linear-gradient(180deg,#111414,#0b0d0d); align-items:center; gap:11px; }
+  .desktop-analysis-screen .analysis-engine-score { border-radius:7px; font-variant-numeric:tabular-nums; font-size:12px; min-width:54px; padding:5px 7px; }
+  .desktop-analysis-screen .analysis-engine-pv { padding-top:0; min-width:0; justify-content:center; }
+  .desktop-analysis-screen .analysis-engine-moves { color:#e9e3d9; line-height:1.5; }
+  .desktop-analysis-screen .desktop-analysis-move-scroll { background:#111414; scrollbar-color:rgba(181,147,82,.42) transparent; }
+  .desktop-analysis-screen .desktop-analysis-move-table { font-variant-numeric:tabular-nums; color:#eee9df; }
+  .desktop-analysis-screen .desktop-analysis-move-table thead { background:#0b0e0e; border-bottom:1px solid rgba(199,170,105,.17); }
+  .desktop-analysis-screen .desktop-analysis-move-table th { color:#afa89a; font-size:10px; letter-spacing:.09em; font-weight:700; }
+  .desktop-analysis-screen .desktop-analysis-move-table tbody tr { border-bottom:1px solid rgba(231,221,195,.06); }
+  .desktop-analysis-screen .desktop-analysis-move-table tbody tr:hover { background:rgba(211,169,91,.07); }
+  .desktop-analysis-screen .desktop-analysis-move-table tbody tr>td:first-child { background:#0d1010; color:#9d9485; }
+  .desktop-analysis-screen .desktop-analysis-move-table tbody td span.text-neutral-300 { color:#eee9df; }
+  .desktop-analysis-screen .desktop-analysis-move-table tbody td[class*="bg-white"] { background:rgba(215,174,91,.12); }
+}
