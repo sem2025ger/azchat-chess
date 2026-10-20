@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, ChevronDown, RotateCcw, Search, SlidersHorizontal, Sparkles, X } from 'lucide-react';
+import { Check, ChevronDown, RotateCcw, Search, Sparkles, X } from 'lucide-react';
 import { BOARD_THEME_DETAILS, PIECE_STYLES, type BoardTheme, type PieceTheme } from '../../lib/chessThemes';
 import { useThemeContext, type BackgroundTheme, type SoundTheme } from '../../context/ThemeContext';
 import { playChessSound, setChessSoundMuted } from '../../utils/chessSounds';
@@ -168,38 +168,22 @@ export default function SettingsCommandCenter({ language }: { language: string }
   };
   const active = PRESETS[goal];
   const alreadySet = boardTheme === active.board && pieceTheme === active.pieces && sound === active.sound && background === active.background;
-  const jump = (kind: Kind) => {
-    const target = document.getElementById('settings-section-' + kind);
-    if (target && target.getClientRects().length > 0) {
-      target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-      const button = target.querySelector('button');
-      if (button instanceof HTMLElement) button.focus({ preventScroll: true });
-    } else {
-      input.current?.focus();
-      setQuery(t[kind]);
-    }
-  };
 
   return <section className="settings-command-center" aria-label={t.quick}>
     <div className="settings-command-top">
       <div className="settings-search-wrap">
         <Search size={17} aria-hidden="true" />
-        <input ref={input} type="search" value={query} onChange={event => setQuery(event.target.value)}
+        <input ref={input} type="search" value={query} onChange={event => { setQuery(event.target.value); if (event.target.value) setExpanded(false); }}
           autoComplete="off" spellCheck={false} aria-label={t.search} placeholder={t.search} />
         {query && <button type="button" aria-label={t.close} title={t.close} onClick={() => { setQuery(''); input.current?.focus(); }}><X size={16}/></button>}
         <span className="settings-keyboard-hint" aria-hidden="true">/</span>
       </div>
-      <div className="settings-quick-links" role="group" aria-label={t.quick}>
-        {(['board', 'pieces', 'sound', 'background'] as Kind[]).map(k =>
-          <button type="button" key={k} onClick={() => jump(k)}><SlidersHorizontal size={13}/>{t[k]}</button>
-        )}
-      </div>
-      <button type="button" className="settings-assistant-toggle" aria-expanded={expanded} onClick={() => setExpanded(v => !v)}>
+      <button type="button" className="settings-assistant-toggle" aria-expanded={expanded} onClick={() => { setExpanded(v => !v); setQuery(''); }}>
         <Sparkles size={16}/>{t.assistant}<ChevronDown size={15} className={expanded ? 'rotate-180' : ''}/>
       </button>
     </div>
 
-    {query && <div className="settings-search-results" aria-label={t.searchResults}>
+    {query && <div className="settings-search-results" aria-label={t.searchResults} role="region">
       <div className="settings-results-caption">{t.searchResults} · {results.length}</div>
       {results.length === 0 ? <p role="status">{t.empty}</p> :
         <div className="settings-result-grid">
@@ -216,7 +200,7 @@ export default function SettingsCommandCenter({ language }: { language: string }
     </div>}
 
     {previous && !expanded && <button type="button" className="settings-quick-undo" onClick={undo}><RotateCcw size={14}/>{t.undo}</button>}
-    {expanded && <div className="settings-assistant-panel">
+    {expanded && <div className="settings-assistant-panel" role="region" aria-label={t.assistant}>
       <div className="settings-assistant-lead"><Sparkles size={18}/><div><strong>{t.assistant}</strong><p>{t.intro}</p></div></div>
       <div className="settings-goal-picks" role="group" aria-label={t.assistant}>
         {(['blitz', 'focus', 'study'] as Goal[]).map(key =>
