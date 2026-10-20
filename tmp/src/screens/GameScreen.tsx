@@ -1209,6 +1209,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 loading={isAnalysing}
                 candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
                 lines={analysisData?.lines}
+                reviewLayout={mode === 'review'}
                 error={engineFailed}
               />
             )}
