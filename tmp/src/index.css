@@ -979,7 +979,7 @@
   .desktop-analysis-screen .analysis-engine-content { background: linear-gradient(170deg,#212326,#0f1112); border-bottom:1px solid rgba(193,156,87,.15); gap:9px; padding:12px 13px; }
   .desktop-analysis-screen .analysis-engine-status { border-color:rgba(210,166,84,.16); padding-bottom:8px; }
   .desktop-analysis-screen .analysis-engine-status .text-neutral-300 { color:#f4efe4; }
-  .desktop-analysis-screen .analysis-engine-variations { gap:7px; }
+  .desktop-analysis-screen .analysis-engine-variations { gap:12px; }
   .desktop-analysis-screen .analysis-engine-line { min-height:39px; padding:7px 9px; border-radius:10px; border:1px solid rgba(222,196,137,.1); background:linear-gradient(180deg,#1a1e1e,#111414); align-items:center; gap:11px; }
   .desktop-analysis-screen .analysis-engine-score { border-radius:7px; font-variant-numeric:tabular-nums; font-size:12px; min-width:54px; padding:5px 7px; }
   .desktop-analysis-screen .analysis-engine-pv { padding-top:0; min-width:0; justify-content:center; }
