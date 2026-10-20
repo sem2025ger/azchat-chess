@@ -8,6 +8,7 @@ export interface AnalysisGameSummary {
   result: string;
   time_control: string;
   completed_at: string;
+  termination_reason?: string | null;
   white_profile: { username: string } | null;
   black_profile: { username: string } | null;
 }
@@ -18,7 +19,7 @@ function participantFilter(userId: string) {
 }
 export async function fetchAnalysisGames(userId: string, page: number, signal: AbortSignal) {
   const { data, error } = await supabase.from('matches')
-    .select('id,white_id,black_id,result,time_control,completed_at,white_profile:profiles!white_id(username),black_profile:profiles!black_id(username)')
+    .select('id,white_id,black_id,result,time_control,completed_at,termination_reason,white_profile:profiles!white_id(username),black_profile:profiles!black_id(username)')
     .eq('status', 'completed').or(participantFilter(userId))
     .order('completed_at', { ascending: false }).order('id', { ascending: false })
     .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE).abortSignal(signal);

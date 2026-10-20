@@ -816,7 +816,7 @@
     min-height: 0;
     padding: 9px 12px;
     gap: 7px;
-    overflow: hidden; /* Only the move notation below is vertically scrollable. */
+    overflow-y: auto; /* Long PV lines scroll within unchanged panel dimensions. */
   }
   .desktop-analysis-screen .desktop-analysis-panel {
     min-height: 0 !important;

@@ -1,7 +1,7 @@
 import { useLanguage } from '../context/LanguageContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Ghost, Cpu, AlertCircle, ScanSearch } from 'lucide-react';
+import { Ghost, Cpu, AlertCircle } from 'lucide-react';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -50,28 +50,6 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
 
   return (
     <div className="h-auto flex flex-col p-4 gap-4 overflow-y-auto custom-scrollbar animate-fade-in">
-      {/* Decorative Title */}
-      <div className="panel-glow-cycle relative flex h-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-neutral-950/85 px-4">
-        <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-r from-amber-500/[0.04] via-cyan-500/[0.06] to-violet-500/[0.04]"
-          aria-hidden="true"
-        />
-
-        <div className="relative flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-black/40 shadow-inner">
-            <ScanSearch
-              size={16}
-              className="text-cyan-300 drop-shadow-[0_0_8px_rgba(34,211,238,0.55)]"
-              aria-hidden="true"
-            />
-          </div>
-
-          <span className="text-glow-cycle text-[0.72rem] font-black uppercase tracking-[0.28em]">
-            {t('game.tabs.analysis')}
-          </span>
-        </div>
-      </div>
-
       {/* Header */}
       <header className="flex items-center justify-between border-b border-white/[0.04] pb-3 shrink-0">
          <div className="flex items-center gap-2.5">
@@ -100,8 +78,8 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
            lines.map((line, idx) => (
              <div key={idx} className="flex items-start gap-4">
                 <div className={cx(
-                  "px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
-                  line.mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
+                  "w-[56px] min-w-[56px] max-w-[56px] px-1 py-1 rounded-lg font-mono text-[0.9rem] leading-5 font-black shadow-md text-center shrink-0 border",
+                  line.mate != null ? "bg-[#29210f] text-[#f5d58a] border-[#9c7330]" : 
                   line.evaluation > 0 ? "bg-white text-black border-white" : 
                   line.evaluation < 0 ? "bg-black text-white border-white/20" :
                   "bg-neutral-800 text-neutral-300 border-neutral-600"
@@ -109,14 +87,14 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
                    {line.mate != null ? (line.mate < 0 ? `-M${Math.abs(line.mate)}` : `M${line.mate}`) : (line.evaluation > 0 ? `+${line.evaluation.toFixed(2)}` : line.evaluation.toFixed(2))}
                 </div>
                 
-                <div className="flex-1 flex flex-col pt-0.5">
-                   <div className="text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
+                <div className="min-w-0 flex-1 flex flex-col pt-0.5">
+                   <div className="min-w-0 text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1 [overflow-wrap:anywhere]">
                       {line.moves.length > 0 ? line.moves.map((move, i) => (
                         <span key={i} className={i <= 1 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
                       )) : (
                         <span className="text-[0.7rem] text-neutral-600 italic">{t('game.analysis.analyzing_position')}</span>
                       )}
-                      {line.hasMore && <span className="text-[0.8rem] text-neutral-500 font-bold">…</span>}
+
                    </div>
                 </div>
              </div>
@@ -124,8 +102,8 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
          ) : (
            <div className="flex items-start gap-4">
               <div className={cx(
-                "px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
-                mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
+                "w-[56px] min-w-[56px] max-w-[56px] px-1 py-1 rounded-lg font-mono text-[0.9rem] leading-5 font-black shadow-md text-center shrink-0 border",
+                mate != null ? "bg-[#29210f] text-[#f5d58a] border-[#9c7330]" : 
                 score > 0 ? "bg-white text-black border-white" : 
                 score < 0 ? "bg-black text-white border-white/20" :
                 "bg-neutral-800 text-neutral-300 border-neutral-600"
@@ -133,7 +111,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
                  {mate != null ? (mate < 0 ? `-M${Math.abs(mate)}` : `M${mate}`) : (score > 0 ? `+${score.toFixed(2)}` : score.toFixed(2))}
               </div>
               
-              <div className="flex-1 flex flex-col pt-0.5">
+              <div className="min-w-0 flex-1 flex flex-col pt-0.5">
                  <div className="flex items-center gap-2 mb-1">
                     <span className="text-[0.65rem] font-bold text-neutral-500 uppercase tracking-wider">{t('game.analysis.bestMove')}:</span>
                     {bestMove ? (
@@ -142,7 +120,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
                        <span className="text-[0.7rem] italic text-neutral-600">...</span>
                     )}
                  </div>
-                 <div className="text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
+                 <div className="min-w-0 text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1 [overflow-wrap:anywhere]">
                     {pv ? pv.map((move, i) => (
                       <span key={i} className={i === 0 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
                     )) : (
