@@ -893,3 +893,82 @@
     overflow-anchor: none;
   }
 }
+
+
+/* ChessAZ approved Analysis look, stage 1: real desktop review only.
+   Reference: approved interactive mock commit 9e9aa461 (2026-10-20).
+   Obsidian backgrounds and gold top-edge gloss; no chessboard, layout,
+   gameplay, Stockfish, auth, or mobile overrides. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen .desktop-analysis-panel {
+    background: linear-gradient(155deg, #202027 0%, #121319 53%, #0b0c11 100%) !important;
+    border-color: rgba(188, 157, 91, 0.34) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 238, 201, .07),
+      inset 0 0 0 1px rgba(180, 146, 83, .1),
+      0 20px 44px rgba(0, 0, 0, .48),
+      0 0 20px rgba(210, 162, 78, .06);
+  }
+
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs {
+    background: rgba(10, 10, 14, .66);
+    border-color: rgba(199, 164, 94, .2);
+  }
+
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs > button,
+  .desktop-analysis-screen .desktop-analysis-new-button,
+  .desktop-analysis-screen .desktop-analysis-transport > button {
+    background: linear-gradient(180deg, #26252b 0%, #181920 56%, #101117 100%) !important;
+    border: 1px solid rgba(185, 151, 83, .44) !important;
+    color: #f8f1e0;
+    box-shadow: inset 0 1px 0 rgba(255, 233, 177, .27),
+      inset 0 0 0 1px rgba(215, 174, 91, .13),
+      0 5px 12px rgba(3, 3, 5, .29),
+      0 0 12px rgba(215, 174, 91, .08);
+    transition: background 160ms ease, border-color 160ms ease,
+      box-shadow 160ms ease, color 160ms ease;
+  }
+
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs > button[aria-pressed="true"] {
+    background: linear-gradient(180deg, #35323a 0%, #222128 59%, #15151c 100%) !important;
+    border-color: #c4a362 !important;
+    color: #fff7e7;
+    box-shadow: inset 0 1px 0 rgba(255, 239, 189, .35),
+      inset 0 0 0 1px rgba(208, 172, 101, .42),
+      0 6px 16px rgba(3, 3, 5, .35),
+      0 0 18px rgba(226, 181, 81, .15);
+  }
+
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs > button:not(:disabled):hover,
+  .desktop-analysis-screen .desktop-analysis-new-button:not(:disabled):hover,
+  .desktop-analysis-screen .desktop-analysis-transport > button:not(:disabled):hover {
+    border-color: rgba(230, 188, 102, .75) !important;
+    color: #fff9eb;
+    box-shadow: inset 0 1px 0 rgba(255, 243, 208, .39),
+      inset 0 0 0 1px rgba(210, 170, 92, .34),
+      0 7px 17px rgba(3, 3, 5, .4),
+      0 0 17px rgba(221, 178, 88, .2);
+  }
+
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs > button:focus-visible,
+  .desktop-analysis-screen .desktop-analysis-new-button:focus-visible,
+  .desktop-analysis-screen .desktop-analysis-transport > button:focus-visible {
+    outline: 2px solid #e0c080;
+    outline-offset: 2px;
+  }
+
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs > button:disabled,
+  .desktop-analysis-screen .desktop-analysis-new-button:disabled,
+  .desktop-analysis-screen .desktop-analysis-transport > button:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs > button,
+  .desktop-analysis-screen .desktop-analysis-new-button,
+  .desktop-analysis-screen .desktop-analysis-transport > button {
+    transition: none;
+  }
+}
