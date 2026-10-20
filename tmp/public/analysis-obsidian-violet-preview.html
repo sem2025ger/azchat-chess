@@ -20,8 +20,8 @@ iframe{width:100%;height:min(82vh,840px);min-height:520px;display:block;border:0
 </style>
 </head>
 <body>
-<header><div class="title">ChessAZ <span>· новый Анализ</span></div><div class="note">Демонстрация: только цвета кнопок · обсидиан + сиренево-фиолетовый<br>Доска, фигуры, расположение блоков и логика не изменены</div></header>
-<main><div class="frame"><iframe id="demo" title="Макет панели анализа ChessAZ с фиолетовыми кнопками" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><div id="error" role="alert"></div></div></main>
+<header><div class="title">ChessAZ <span>· новый Анализ</span></div><div class="note">Демонстрация: графитовый обсидиан · мягкий сиреневый акцент<br>Доска, фигуры, расположение блоков и логика не изменены</div></header>
+<main><div class="frame"><iframe id="demo" title="Макет панели анализа ChessAZ с обсидиановыми кнопками" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><div id="error" role="alert"></div></div></main>
 <script>
 (async function(){
   try{
@@ -34,7 +34,7 @@ iframe{width:100%;height:min(82vh,840px);min-height:520px;display:block;border:0
     const start=html.indexOf('chessaz-premium-emerald-buttons');
     const end=html.indexOf('\\u003c/style>',start);
     if(start<0||end<0)throw new Error('Не найден изолированный блок оформления кнопок');
-    const palette={"#153429":"#382C46","#F5F0E5":"#F4EEFC","#597553":"#776288","#11251E":"#2C2538","#CCD5CA":"#DBD4E8","#294D3B":"#584767","#205640":"#4D3B62","#FFF8E9":"#FFF8FF","#C3A563":"#9780AC","#143127":"#352940","#EBD6A4":"#E7D9F3","#496B51":"#706080","#12291F":"#2F273B","#D1D9CE":"#DCD4E8","#375747":"#584965","#20533D":"#514067","#FFF8EC":"#FAF5FF","#B79856":"#9C84B3","#C1D2C3":"#D7CEDE","#27684D":"#604978","#FFF7E5":"#FFF7FF","#C2A667":"#9D86B3","#1F6248":"#5C4774","#FFF7E8":"#FDF6FF","#C9A868":"#AE92BD"};
+    const palette={"#153429":"#35343E","#F5F0E5":"#E9E5EA","#597553":"#716A78","#11251E":"#2B2C36","#CCD5CA":"#D5D1D9","#294D3B":"#4A4654","#205640":"#42414E","#FFF8E9":"#F0ECF3","#C3A563":"#8B8096","#143127":"#32313B","#EBD6A4":"#D8CFDF","#496B51":"#696471","#12291F":"#2D2E38","#D1D9CE":"#D7D3DC","#375747":"#4B4855","#20533D":"#43404E","#FFF8EC":"#F4EFF5","#B79856":"#92869D","#C1D2C3":"#D5D1D9","#27684D":"#494655","#FFF7E5":"#F4EFF5","#C2A667":"#8D8397","#1F6248":"#464450","#FFF7E8":"#F5F0F6","#C9A868":"#9689A1"};
     let buttonStyle=html.slice(start,end);
     if(!buttonStyle.includes('#153429'))throw new Error('Палитра исходного макета изменилась');
     for(const [from,to] of Object.entries(palette))buttonStyle=buttonStyle.split(from).join(to);
