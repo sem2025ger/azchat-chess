@@ -994,3 +994,58 @@
   .desktop-analysis-screen .desktop-analysis-move-table tbody td span.text-neutral-300 { color:#eee9df; }
   .desktop-analysis-screen .desktop-analysis-move-table tbody td[class*="bg-white"] { background:rgba(215,174,91,.12); }
 }
+
+/* Analysis redesign stage 3: real chess controls and timeline under the board.
+   Review-only and desktop-only: the board itself, mobile and live play are unchanged. */
+@media (min-width:1024px) {
+  .desktop-analysis-screen .desktop-analysis-hero {
+    min-height: 54px;
+    max-width: 100%;
+    border-bottom: 1px solid rgba(193, 157, 93, .22);
+    margin-bottom: 5px;
+  }
+  .desktop-analysis-screen .desktop-analysis-left-nav {
+    min-height: 53px;
+    max-width: 100%;
+    align-items: center;
+    margin-top: 2px;
+  }
+  .desktop-analysis-screen .desktop-analysis-left-nav > .desktop-analysis-transport {
+    display: flex;
+    flex: 0 1 310px;
+    max-width: 310px;
+    min-height: 48px;
+    height: 48px;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 8px;
+    border: 1px solid rgba(193,157,93,.18);
+    border-radius: 14px;
+    background: #111214;
+    box-shadow: inset 0 1px 0 rgba(255,221,154,.06);
+  }
+  .desktop-analysis-screen .desktop-analysis-left-nav > .desktop-analysis-transport > button {
+    min-height: 36px;
+    min-width: 41px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 6px;
+  }
+  .desktop-analysis-screen .desktop-analysis-move-timeline {
+    max-width: min(520px,95%);
+    margin: 3px auto 0;
+    padding-bottom: 3px;
+  }
+  .desktop-analysis-screen .desktop-analysis-move-timeline input[type="range"] {
+    min-height: 19px;
+    cursor: pointer;
+  }
+  .desktop-analysis-screen .desktop-analysis-review-player-bottom {
+    min-height: 24px;
+  }
+  .desktop-analysis-screen .desktop-analysis-panel .desktop-analysis-review-controls {
+    background: linear-gradient(90deg,#111217,#17171b);
+    border-bottom: 1px solid rgba(193,157,93,.18);
+  }
+}
