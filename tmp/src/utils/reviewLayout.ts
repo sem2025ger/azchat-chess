@@ -6,7 +6,8 @@ export function reviewLayout(width: number, height: number) {
   const minPanelWidth = width >= 1300 ? 380 : 300;
   const availableHeight = Math.max(0, height - playerSpace);
   const availableWidth = Math.max(0, width - columnGap - evaluationSpace - minPanelWidth);
-  const boardSize = Math.floor(Math.min(availableHeight, availableWidth));
-  const panelWidth = Math.max(minPanelWidth, Math.min(460, width - boardSize - evaluationSpace - columnGap));
+  const fullBoardSize = Math.floor(Math.min(availableHeight, availableWidth));
+  const boardSize = Math.floor(fullBoardSize * 0.9);
+  const panelWidth = Math.max(minPanelWidth, Math.min(460, width - fullBoardSize - evaluationSpace - columnGap));
   return { boardSize, boardColumn: boardSize + evaluationSpace, panelWidth, columnGap };
 }
