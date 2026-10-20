@@ -398,9 +398,9 @@ export default function SettingsScreen() {
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <LayoutIcon size={16} className="text-purple-400" /> {t('settings.interfaceTheme')}
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                   {bgThemes.map((bg) => (
-                    <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("px-1.5 py-1.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight whitespace-nowrap", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
+                    <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("min-w-0 px-1.5 py-1.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
                       {bg.name}
                     </button>
                   ))}
@@ -412,26 +412,28 @@ export default function SettingsScreen() {
           <div className="settings-preview-column col-span-5 relative h-full min-h-0">
             <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl h-full">
               <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 xl:p-5 flex flex-col items-center gap-3 xl:gap-4 h-full">
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.4em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-3 w-full shrink-0">
+                  <span className="text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.15em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className={cx("text-[0.7rem] xl:text-[0.75rem] font-black text-emerald-400 uppercase tracking-widest transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
                       {t('settings.saved')} ✓
                     </span>
                     <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.6rem] xl:text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
                   </div>
                 </div>
-                <div className="settings-preview-board w-full aspect-square max-w-[260px] xl:max-w-[280px] rounded-2xl overflow-hidden shadow-2xl border-b-4 border-black/40">
-                  <ChessBoard className="!p-0 !border-none !bg-transparent !shadow-none ring-0" />
+                <div className="w-full flex-1 min-h-0 flex items-center justify-center">
+                  <div className="settings-preview-board">
+                    <ChessBoard externalCoordinatesOnDesktop className="!border-none !bg-transparent !shadow-none ring-0" />
+                  </div>
                 </div>
-                <div className="w-full space-y-1.5">
+                <div className="w-full space-y-2 shrink-0">
                   <PreviewStat label={t('settings.boardTheme')} value={boardTheme} icon={<Palette size={14} className="xl:w-4 xl:h-4" />} />
                   <PreviewStat label={t('settings.pieceSet')} value={pieceTheme.toUpperCase()} icon={<Monitor size={14} className="xl:w-4 xl:h-4" />} />
                   <PreviewStat label={t('settings.appTheme')} value={background} icon={<LayoutIcon size={14} className="xl:w-4 xl:h-4" />} />
                 </div>
                 <button 
                   onClick={handleRestoreDefaults}
-                  className="w-full py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.75rem] xl:text-[0.8rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
+                  className="w-full shrink-0 py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.75rem] xl:text-[0.8rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
                 >
                   {t('settings.restoreDefaults')}
                 </button>
@@ -490,12 +492,12 @@ function SelectionCard({ active, onClick, title, preview }: { active: boolean; o
 
 function PreviewStat({ label, value, icon }: { label: string; value: string; icon: any }) {
   return (
-    <div className="flex items-center justify-between p-2.5 xl:p-3 bg-white/[0.03] rounded-2xl border border-white/5 shadow-inner">
-      <div className="flex flex-col">
+    <div className="flex items-center justify-between gap-3 p-2.5 xl:p-3 bg-white/[0.03] rounded-2xl border border-white/5 shadow-inner">
+      <div className="flex flex-col min-w-0 flex-1">
         <span className="text-[0.65rem] font-black text-neutral-600 uppercase tracking-widest italic leading-none mb-1">{label}</span>
-        <span className="text-[0.95rem] font-black text-white truncate max-w-[150px]">{value}</span>
+        <span className="text-[0.95rem] font-black text-white break-words">{value}</span>
       </div>
-      <div className="text-neutral-700">{icon}</div>
+      <div className="text-neutral-700 shrink-0">{icon}</div>
     </div>
   );
 }

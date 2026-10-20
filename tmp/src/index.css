@@ -965,7 +965,10 @@
   .settings-options-column button:active { filter:brightness(1.12); }
   .settings-preview-column > div { height:100%; min-height:0; }
   .settings-preview-column > div > div { padding:clamp(8px,1.1vh,16px) !important; gap:clamp(4px,.8vh,12px) !important; }
-  .settings-preview-board { width:auto !important; height:auto; max-height:min(34vh,280px); max-width:min(34vh,280px) !important; aspect-ratio:1; flex-shrink:1; }
+  #settings-section-background section { min-height:clamp(134px,19.5vh,184px); display:flex; flex-direction:column; }
+  #settings-section-background section > .grid { flex:1; }
+  #settings-section-background button { min-height:clamp(28px,4.8vh,48px); white-space:normal; }
+  .settings-preview-board { --settings-preview-size:min(34vh,280px); width:min(100%,var(--settings-preview-size)); aspect-ratio:1; flex-shrink:0; }
   .settings-command-center { margin-bottom:clamp(5px,.8vh,10px); flex-shrink:0; }
   .settings-command-center .settings-search-results,
   .settings-command-center .settings-assistant-panel {
@@ -983,12 +986,12 @@
   .settings-options-column h2 { font-size:12px !important; margin-bottom:3px !important; }
   .settings-options-column button { padding-top:3px !important; padding-bottom:3px !important; }
   .settings-options-column .grid { gap:3px !important; }
-  .settings-preview-board { max-height:min(29vh,226px); max-width:min(29vh,226px) !important; }
+  .settings-preview-board { --settings-preview-size:min(29vh,226px); }
   .settings-preview-column > div > div { padding:7px !important; gap:4px !important; }
   .settings-command-center { padding:6px 10px; }
 }
 @media (min-width:1024px) and (max-height:650px) {
-  .settings-preview-board { max-height:22vh; max-width:22vh !important; }
+  .settings-preview-board { --settings-preview-size:22vh; }
   .settings-options-column section { padding:4px 8px !important; }
 }
 @media (prefers-reduced-motion:reduce) { .settings-fixed-workspace * { scroll-behavior:auto !important; } }
