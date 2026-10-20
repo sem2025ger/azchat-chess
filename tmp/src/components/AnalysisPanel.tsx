@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -23,10 +24,14 @@ interface AnalysisPanelProps {
   loading?: boolean;
   error?: boolean;
   noMoves?: boolean;
+  reviewLayout?: boolean;
 }
 
-export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves }: AnalysisPanelProps) {
+export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves, reviewLayout = false }: AnalysisPanelProps) {
   const { t } = useLanguage();
+  // Stockfish already calculates up to three MultiPV lines; select how many to show.
+  const [visiblePvLines, setVisiblePvLines] = useState(3);
+  const displayedLines = reviewLayout ? lines?.slice(0, visiblePvLines) : lines;
 
   if (noMoves) {
     return (
@@ -80,6 +85,21 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
             {depth > 0 && <span className="text-[0.65rem] font-semibold text-neutral-500 bg-white/5 px-2 py-0.5 rounded-full">depth {depth}</span>}
          </div>
          <div className="flex items-center gap-1.5">
+            {reviewLayout && (
+              <div className="hidden lg:inline-flex items-center gap-0.5 rounded-lg border border-[#8f7749]/50 bg-[#101116] p-0.5" role="group" aria-label="Количество линий Stockfish">
+                {([1, 2, 3] as const).map(count => (
+                  <button key={count} type="button" aria-label={`Показать ${count} ${count === 1 ? 'линию' : 'линии'} анализа`} aria-pressed={visiblePvLines === count}
+                    onClick={() => setVisiblePvLines(count)}
+                    className={cx(
+                      "min-h-7 min-w-7 rounded-md border px-1.5 text-xs font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200",
+                      visiblePvLines === count
+                        ? "border-[#d0aa65]/60 bg-gradient-to-b from-[#41382b] via-[#28231d] to-[#111217] text-[#f8dfab] shadow-[inset_0_1px_0_rgba(255,228,158,0.35),0_0_8px_rgba(214,169,84,0.19)]"
+                        : "border-transparent bg-[#17171c] text-[#a8a196] hover:border-[#af945f]/45 hover:text-[#f2dfbd]"
+                    )}
+                  >{count}</button>
+                ))}
+              </div>
+            )}
             {loading ? (
               <>
                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/80 animate-pulse" />
@@ -96,8 +116,8 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
 
       {/* Main evaluation row */}
       <section className="analysis-engine-variations flex flex-col gap-3 shrink-0">
-         {lines && lines.length > 0 ? (
-           lines.map((line, idx) => (
+         {displayedLines && displayedLines.length > 0 ? (
+           displayedLines.map((line, idx) => (
              <div key={idx} className="analysis-engine-line flex items-start gap-4">
                 <div className={cx(
                   "analysis-engine-score px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
