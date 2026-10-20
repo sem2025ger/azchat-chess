@@ -976,21 +976,21 @@
 /* Approved ChessAZ Analysis: real Stockfish data and history, desktop review only. */
 @media (min-width: 1024px) {
   .desktop-analysis-screen .analysis-engine-decoration { display: none; }
-  .desktop-analysis-screen .analysis-engine-content { background: linear-gradient(170deg,#161719,#0a0b0c); border-bottom:1px solid rgba(193,156,87,.15); gap:9px; padding:12px 13px; }
+  .desktop-analysis-screen .analysis-engine-content { background: linear-gradient(170deg,#212326,#0f1112); border-bottom:1px solid rgba(193,156,87,.15); gap:9px; padding:12px 13px; }
   .desktop-analysis-screen .analysis-engine-status { border-color:rgba(210,166,84,.16); padding-bottom:8px; }
   .desktop-analysis-screen .analysis-engine-status .text-neutral-300 { color:#f4efe4; }
   .desktop-analysis-screen .analysis-engine-variations { gap:7px; }
-  .desktop-analysis-screen .analysis-engine-line { min-height:39px; padding:7px 9px; border-radius:10px; border:1px solid rgba(222,196,137,.1); background:linear-gradient(180deg,#111414,#0b0d0d); align-items:center; gap:11px; }
+  .desktop-analysis-screen .analysis-engine-line { min-height:39px; padding:7px 9px; border-radius:10px; border:1px solid rgba(222,196,137,.1); background:linear-gradient(180deg,#1a1e1e,#111414); align-items:center; gap:11px; }
   .desktop-analysis-screen .analysis-engine-score { border-radius:7px; font-variant-numeric:tabular-nums; font-size:12px; min-width:54px; padding:5px 7px; }
   .desktop-analysis-screen .analysis-engine-pv { padding-top:0; min-width:0; justify-content:center; }
   .desktop-analysis-screen .analysis-engine-moves { color:#e9e3d9; line-height:1.5; }
-  .desktop-analysis-screen .desktop-analysis-move-scroll { background:#111414; scrollbar-color:rgba(181,147,82,.42) transparent; }
+  .desktop-analysis-screen .desktop-analysis-move-scroll { background:#1a1e1e; scrollbar-color:rgba(181,147,82,.42) transparent; }
   .desktop-analysis-screen .desktop-analysis-move-table { font-variant-numeric:tabular-nums; color:#eee9df; }
-  .desktop-analysis-screen .desktop-analysis-move-table thead { background:#0b0e0e; border-bottom:1px solid rgba(199,170,105,.17); }
+  .desktop-analysis-screen .desktop-analysis-move-table thead { background:#111515; border-bottom:1px solid rgba(199,170,105,.17); }
   .desktop-analysis-screen .desktop-analysis-move-table th { color:#afa89a; font-size:10px; letter-spacing:.09em; font-weight:700; }
   .desktop-analysis-screen .desktop-analysis-move-table tbody tr { border-bottom:1px solid rgba(231,221,195,.06); }
   .desktop-analysis-screen .desktop-analysis-move-table tbody tr:hover { background:rgba(211,169,91,.07); }
-  .desktop-analysis-screen .desktop-analysis-move-table tbody tr>td:first-child { background:#0d1010; color:#9d9485; }
+  .desktop-analysis-screen .desktop-analysis-move-table tbody tr>td:first-child { background:#141818; color:#9d9485; }
   .desktop-analysis-screen .desktop-analysis-move-table tbody td span.text-neutral-300 { color:#eee9df; }
   .desktop-analysis-screen .desktop-analysis-move-table tbody td[class*="bg-white"] { background:rgba(215,174,91,.12); }
 }
@@ -1045,7 +1045,7 @@
     min-height: 24px;
   }
   .desktop-analysis-screen .desktop-analysis-panel .desktop-analysis-review-controls {
-    background: linear-gradient(90deg,#111217,#17171b);
+    background: linear-gradient(90deg,#1a1b23,#232329);
     border-bottom: 1px solid rgba(193,157,93,.18);
   }
 }
@@ -1075,7 +1075,7 @@
     padding: 7px 18px 9px;
     border: 1px solid rgba(200, 158, 89, .22);
     border-radius: 14px;
-    background: linear-gradient(130deg, #15151b, #0d0e13);
+    background: linear-gradient(130deg, #202029, #14151d);
     box-shadow: inset 0 1px 0 rgba(248, 218, 155, .09), 0 8px 28px rgba(0,0,0,.24);
   }
   .desktop-analysis-screen > .analysis-redesign-header + div {
@@ -1191,6 +1191,7 @@
   }
   .desktop-analysis-screen > .desktop-analysis-panel {
     grid-row: 1;
+    background: linear-gradient(155deg, #1b231f, #181d1a 55%, #121815) !important;
     align-self: start;
     margin: 0 !important;
     height: var(--analysis-board-height, 580px) !important;
@@ -1203,7 +1204,7 @@
   .desktop-analysis-screen .analysis-engine-status { flex-wrap: wrap; gap: 8px; }
   .desktop-analysis-screen .analysis-engine-status > div { flex-wrap: wrap; }
   .desktop-analysis-screen .analysis-engine-score { width: 56px; min-width: 56px; }
-  .desktop-analysis-screen .desktop-analysis-transport { height: 52px; min-height: 52px; gap: 12px; background: #101113; }
+  .desktop-analysis-screen .desktop-analysis-transport { height: 52px; min-height: 52px; gap: 12px; background: #181a1d; }
   .desktop-analysis-screen .desktop-analysis-transport > button { min-height: 36px; min-width: 40px; padding: 5px; }
   .desktop-analysis-screen .position-map-facts { display: grid; gap: 7px; padding: 12px; border: 1px solid #d7ae5b33; border-radius: 12px; background: #111410; }
   .desktop-analysis-screen .analysis-position-map h2 { color: #f4e4c2; font-size: 17px; font-weight: 700; margin-bottom: 7px; }
