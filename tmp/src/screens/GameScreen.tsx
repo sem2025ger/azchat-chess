@@ -173,19 +173,17 @@ export default function GameScreen({ mode }: GameScreenProps) {
   useEffect(() => {
     if (mode !== 'review' || typeof ResizeObserver === 'undefined') return;
     const workspace = reviewWorkspaceRef.current;
-    const header = workspace?.querySelector<HTMLElement>('.analysis-redesign-header');
-    if (!workspace || !header) return;
+    if (!workspace) return;
     const measure = () => {
       if (!window.matchMedia('(min-width: 1024px)').matches) return;
       const style = getComputedStyle(workspace);
       const width = workspace.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
       const height = workspace.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-      const next = reviewLayout(width, height, header.offsetHeight);
+      const next = reviewLayout(width, height);
       if (next.boardSize > 0) setReviewGeometry(previous => previous?.boardSize === next.boardSize && previous?.boardColumn === next.boardColumn && previous?.panelWidth === next.panelWidth ? previous : next);
     };
     const observer = new ResizeObserver(measure);
     observer.observe(workspace);
-    observer.observe(header);
     window.addEventListener('resize', measure);
     measure();
     return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
@@ -822,11 +820,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 <button type="button" aria-label="К концу партии" title="К концу партии" disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
               </div>
   );
-  return (
-    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
-
-      {mode === 'review' && (
-        <AnalysisWorkspaceHeader
+  const analysisWorkspaceHeader = mode === 'review' ? (
+    <AnalysisWorkspaceHeader
           title={loadedGameTitle}
           initialFen={positionHistory[0] || DEFAULT_POSITION}
           moveHistory={moveHistory}
@@ -842,7 +837,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
             setWorkspaceTab('position');
           }}
         />
-      )}
+  ) : null;
+  return (
+    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
+
+      {mode === 'review' && <div className="lg:hidden">{analysisWorkspaceHeader}</div>}
             {/* Mobile analysis panel above the board */}
       {!isLiveMultiplayer && (
         <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
@@ -1195,6 +1194,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Professional Sidebar Sidebar Tabs */}
       <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' && "desktop-analysis-panel")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
+        {mode === 'review' && <div className="hidden lg:block shrink-0">{analysisWorkspaceHeader}</div>}
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">

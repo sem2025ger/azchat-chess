@@ -1050,7 +1050,7 @@
   }
 }
 
-/* Approved ChessAZ analysis workspace: header across BOTH columns. */
+/* Desktop review controls are contained in the right analysis panel. */
 @media (min-width: 1024px) {
   .desktop-analysis-screen {
     display: grid !important;
@@ -1063,12 +1063,10 @@
     padding-bottom: 8px;
     transform: none !important;
   }
-  .desktop-analysis-screen > .analysis-redesign-header {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    width: fit-content;
+  .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {
+    width: 100%;
     max-width: 100%;
-    justify-self: end;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1145,7 +1143,7 @@
     align-content: start;
     grid-template-columns: var(--review-board-column, minmax(0, 1fr)) var(--review-panel-width, minmax(0, 1fr));
     justify-content: center;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     column-gap: 64px;
     row-gap: 12px;
     max-width: none;
@@ -1153,8 +1151,7 @@
   }
   .desktop-analysis-screen > .desktop-analysis-board-column {
     grid-column: 1;
-    grid-row: 2;
-    margin-top: -24px;
+    grid-row: 1;
     align-self: start;
     transform: none !important;
     height: auto;
@@ -1190,9 +1187,10 @@
     padding-left: 44px;
   }
   .desktop-analysis-screen:has(.desktop-analysis-player-top) > .desktop-analysis-panel {
-    margin-top: 12px !important;
+    margin-top: 36px !important;
   }
   .desktop-analysis-screen > .desktop-analysis-panel {
+    grid-row: 1;
     align-self: start;
     margin: 0 !important;
     height: var(--analysis-board-height, 580px) !important;
