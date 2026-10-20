@@ -5,6 +5,7 @@ import { BOARD_THEMES, BOARD_THEME_DETAILS, PIECE_STYLES } from '../lib/chessThe
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import ChessBoard from '../components/ChessBoard';
+import SettingsCommandCenter from '../components/settings/SettingsCommandCenter';
 import { 
   Palette, Globe, Sparkles, Check, Monitor, Volume2, 
   ChevronRight, ArrowLeft, Clock, Layout as LayoutIcon
@@ -325,11 +326,12 @@ export default function SettingsScreen() {
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-[85rem] z-10 h-full flex flex-col xl:justify-center">
-        {/* Desktop View: Unified Grid */}
+        <SettingsCommandCenter language={language} />
+                {/* Desktop View: Unified Grid */}
         <div className="hidden lg:grid grid-cols-12 gap-4 xl:gap-8 items-stretch">
           <div className="col-span-7 flex flex-col justify-between gap-3 xl:gap-4 pr-0 xl:pr-2 h-full">
             {/* Row 1: Board Appearance */}
-            <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+            <div id="settings-section-board" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
               <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <Palette size={16} className="text-chess-gold" /> {t('settings.boardAppearance')}
@@ -356,7 +358,7 @@ export default function SettingsScreen() {
             {/* Row 2: Piece Styles and Sound Themes */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 xl:gap-4">
               {/* Piece Styles */}
-              <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+              <div id="settings-section-pieces" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
                 <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                   <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                     <Monitor size={16} className="text-chess-active" /> {t('settings.pieceStyles')}
@@ -376,7 +378,7 @@ export default function SettingsScreen() {
               </div>
 
               {/* Sound Themes */}
-              <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+              <div id="settings-section-sound" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
                 <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full flex flex-col">
                   <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                     <Volume2 size={16} className="text-neutral-400" /> {t('settings.soundThemes')}
@@ -391,7 +393,7 @@ export default function SettingsScreen() {
             </div>
 
             {/* Row 3: Background Theme */}
-            <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+            <div id="settings-section-background" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
               <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <LayoutIcon size={16} className="text-purple-400" /> {t('settings.interfaceTheme')}
