@@ -25,9 +25,11 @@ interface AnalysisPanelProps {
   error?: boolean;
   noMoves?: boolean;
   reviewLayout?: boolean;
+  requestedDepth?: number;
+  onIncreaseDepth?: () => void;
 }
 
-export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves, reviewLayout = false }: AnalysisPanelProps) {
+export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves, reviewLayout = false, requestedDepth, onIncreaseDepth }: AnalysisPanelProps) {
   const { t } = useLanguage();
   // Stockfish already calculates up to three MultiPV lines; select how many to show.
   const [visiblePvLines, setVisiblePvLines] = useState(3);
@@ -83,6 +85,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
             <Cpu size={16} className={cx("text-neutral-400", loading && "animate-pulse")} />
             <span className="text-[0.75rem] font-bold text-neutral-300">Stockfish</span>
             {depth > 0 && <span className="text-[0.65rem] font-semibold text-neutral-500 bg-white/5 px-2 py-0.5 rounded-full">depth {depth}</span>}
+            {reviewLayout && requestedDepth && onIncreaseDepth && <button type="button" className="analysis-depth-action hidden lg:inline-flex items-center rounded-lg border border-[#8f7749]/40 px-2 py-1 text-[11px] font-bold text-[#f4dca5]" onClick={onIncreaseDepth} title="Глубина анализа Stockfish">{requestedDepth >= 30 ? '18' : 'Глубже'} · {requestedDepth}</button>}
          </div>
          <div className="flex items-center gap-1.5">
             {reviewLayout && (
