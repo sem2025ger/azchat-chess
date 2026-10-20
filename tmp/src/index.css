@@ -1142,12 +1142,15 @@
     align-items: start !important;
     align-content: start;
     grid-template-columns: var(--review-board-column, minmax(0, 1fr)) var(--review-panel-width, minmax(0, 1fr));
-    justify-content: center;
+    justify-content: start;
     grid-template-rows: minmax(0, 1fr);
-    column-gap: 64px;
+    column-gap: var(--review-column-gap, 51px);
     row-gap: 12px;
     max-width: none;
-    padding: 12px 16px;
+    padding: calc(10px * var(--review-scale, 1)) calc(55px * var(--review-scale, 1)) calc(38px * var(--review-scale, 1)) calc(66px * var(--review-scale, 1));
+    margin: 0 !important;
+    height: 100% !important;
+    min-height: 0 !important;
   }
   .desktop-analysis-screen > .desktop-analysis-board-column {
     grid-column: 1;
@@ -1169,36 +1172,44 @@
     flex: none;
     align-items: stretch;
     padding: 0;
-    gap: 20px;
+    gap: calc(30px * var(--review-scale, 1));
   }
   .desktop-analysis-screen .desktop-analysis-board-frame {
     width: var(--review-board-size, 100%) !important;
     max-width: none !important;
     max-height: none !important;
-    aspect-ratio: auto;
+    height: var(--review-board-size, auto) !important;
+    aspect-ratio: 1;
+    margin: 0 !important;
     border-bottom-width: 0;
     flex: 0 0 var(--review-board-size, auto) !important;
   }
   .desktop-analysis-screen .desktop-analysis-player-top,
   .desktop-analysis-screen .desktop-analysis-review-player-bottom {
     display: flex;
-    height: 36px;
-    min-height: 36px;
-    padding-left: 44px;
+    height: calc(36px * var(--review-scale, 1));
+    min-height: calc(36px * var(--review-scale, 1));
+    padding-left: calc(54px * var(--review-scale, 1));
   }
   .desktop-analysis-screen:has(.desktop-analysis-player-top) > .desktop-analysis-panel {
-    margin-top: 36px !important;
+    margin-top: calc(36px * var(--review-scale, 1)) !important;
   }
   .desktop-analysis-screen > .desktop-analysis-panel {
     grid-row: 1;
     background: linear-gradient(155deg, #1b231f, #181d1a 55%, #121815) !important;
     align-self: start;
     margin: 0 !important;
-    height: var(--analysis-board-height, 580px) !important;
+    height: var(--review-board-size, 580px) !important;
     min-height: 0 !important;
     max-height: none !important;
   }
-  .desktop-analysis-screen .desktop-analysis-evaluation { translate: none; padding: 0; width: 24px; flex-shrink: 0; }
+  .desktop-analysis-screen .desktop-analysis-main-board {
+    width: 100%;
+    height: 100%;
+    padding: calc(16px * var(--review-scale, 1)) !important;
+    border-width: calc(6px * var(--review-scale, 1)) !important;
+  }
+  .desktop-analysis-screen .desktop-analysis-evaluation { translate: none; padding: 0; width: calc(24px * var(--review-scale, 1)); flex-shrink: 0; }
   .desktop-analysis-screen .desktop-analysis-stockfish { height: auto; max-height: 58%; overflow-y: auto; flex: 0 1 auto; }
   .desktop-analysis-screen .desktop-analysis-stockfish > div { height: auto; overflow: visible; }
   .desktop-analysis-screen .analysis-engine-status { flex-wrap: wrap; gap: 8px; }

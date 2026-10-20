@@ -1,13 +1,10 @@
-/** Desktop board geometry; the toolbar lives inside the right panel. */
+/** Approved desktop composition, scaled down together when the workspace is smaller. */
 export function reviewLayout(width: number, height: number) {
-  const columnGap = 64;
-  const evaluationSpace = 44;
-  const playerSpace = 72;
-  const minPanelWidth = width >= 1300 ? 380 : 300;
-  const availableHeight = Math.max(0, height - playerSpace);
-  const availableWidth = Math.max(0, width - columnGap - evaluationSpace - minPanelWidth);
-  const fullBoardSize = Math.floor(Math.min(availableHeight, availableWidth));
-  const boardSize = Math.floor(fullBoardSize * 0.95);
-  const panelWidth = Math.max(minPanelWidth, Math.min(460, width - fullBoardSize - evaluationSpace - columnGap));
-  return { boardSize, boardColumn: boardSize + evaluationSpace, panelWidth, columnGap };
+  // Reference is the approved HTML's 1560 x 880 workspace (excluding the sidebar).
+  const scale = Math.max(0, Math.min(1, width / 1560, height / 880));
+  const boardSize = 760 * scale; // 716px playing field plus the 22px frame on each side.
+  const evaluationSpace = 54 * scale;
+  const columnGap = 51 * scale;
+  const panelWidth = 574 * scale;
+  return { scale, boardSize, boardColumn: boardSize + evaluationSpace, panelWidth, columnGap };
 }
