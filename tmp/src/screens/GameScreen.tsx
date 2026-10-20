@@ -769,7 +769,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
           white={loadedGameDetails?.white || words.white}
           black={loadedGameDetails?.black || words.black}
           timeControl={loadedGameDetails?.timeControl}
-          game={game}
           initialFen={positionHistory[0] || DEFAULT_POSITION}
           moveHistory={moveHistory}
           currentFen={displayedGame.fen()}
