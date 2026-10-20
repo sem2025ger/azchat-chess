@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { positionMap } from '../../utils/positionMap';
 import type { EngineResult } from '../../utils/StockfishEngine';
 import type { Language } from '../../translations';
@@ -13,6 +13,20 @@ export default function PositionMap({ fen, result, language, failed, onHighlight
   const map = useMemo(() => positionMap(fen, result), [fen, result]);
   const [selected, setSelected] = useState<string | null>(null);
   const chosen = map.plans.find(plan => plan.id === selected);
+  // A PV can change after deeper Stockfish evaluation without changing its
+  // first move (and therefore its plan ID). Keep the board synchronized.
+  useEffect(() => {
+    if (!selected) return;
+    const active = map.plans.find(plan => plan.id === selected);
+    if (!active) {
+      onHighlight(null);
+      return;
+    }
+    onHighlight({
+      fen,
+      squares: [...new Set(active.moves.slice(0, 6).flatMap(move => [move.from, move.to]))],
+    });
+  }, [selected, map, fen, onHighlight]);
   const currentSide = map.turn === 'w' ? (ru ? 'белых' : 'White') : (ru ? 'чёрных' : 'Black');
   const score = (evaluation: number, mate?: number) => mate != null ? `${mate < 0 ? '−' : ''}M${Math.abs(mate)}` : `${evaluation > 0 ? '+' : ''}${evaluation.toFixed(2)}`;
   const empty = ru ? 'нет' : 'none';
@@ -35,7 +49,7 @@ export default function PositionMap({ fen, result, language, failed, onHighlight
     {map.plans.map((plan, index) => <button key={plan.id} type="button" className="position-map-plan" aria-pressed={selected === plan.id} onClick={() => {
       const next = selected === plan.id ? null : plan.id;
       setSelected(next);
-      onHighlight(next ? { fen, squares: [...new Set(plan.moves.slice(0, 6).flatMap(move => [move.from, move.to]))] } : null);
+      if (!next) onHighlight(null);
     }}>
       <span className="flex items-center justify-between gap-2"><strong>{ru ? 'Вариант' : 'Line'} {index + 1} · {plan.moves[0].san}</strong><span className="font-mono">{score(plan.evaluation, plan.mate)}</span></span>
       <span className="mt-2 block leading-relaxed">{plan.moves.slice(0, 10).map(move => move.san).join(' ')}</span>
