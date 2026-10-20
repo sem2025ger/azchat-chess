@@ -56,7 +56,7 @@ export default function AnalysisWorkspaceHeader({
       <div className="analysis-redesign-actions">
         <button type="button" onClick={exportPgn} disabled={!moveHistory.length} title="Копировать PGN с оценками рассчитанных позиций"><FileText size={14} />{copied === 'pgn' ? 'Скопировано' : 'PGN с оценками'}</button>
         <button type="button" onClick={() => void copy('fen', currentFen)} title="Копировать FEN выбранной позиции">{copied === 'fen' ? <Check size={14}/> : <ClipboardCopy size={14}/>} FEN</button>
-        <button type="button" aria-pressed={editing} onClick={onEdit}>Редактор доски</button>
+        <button type="button" className="hidden lg:inline-flex" aria-pressed={editing} onClick={onEdit}>Редактор доски</button>
         <button type="button" onClick={() => void share()} title="Поделиться ссылкой на страницу анализа"><Share2 size={14}/>{copied === 'share' ? 'Скопировано' : 'Поделиться'}</button>
         <button type="button" className="analysis-redesign-reset" onClick={onNew} title="Начать новый анализ">Новый анализ</button>
       </div>
