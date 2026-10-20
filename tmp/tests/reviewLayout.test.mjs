@@ -8,10 +8,10 @@ test('board fills available space independently of the toolbar inside the right 
     assert.ok(layout.boardColumn + layout.columnGap + layout.panelWidth <= width);
     assert.equal(layout.columnGap, 64);
     assert.ok(layout.boardSize + 72 <= height);
-    assert.ok(layout.panelWidth >= 280);
-    assert.ok(layout.panelWidth <= 440);
+    assert.ok(layout.panelWidth >= 300);
+    assert.ok(layout.panelWidth <= 460);
     assert.equal(layout.boardColumn - layout.boardSize, 44);
-    assert.equal(layout.boardSize, Math.floor(Math.min(height-72, width-64-44-(width >= 1300 ? 360 : 280))));
+    assert.equal(layout.boardSize, Math.floor(Math.min(height-72, width-64-44-(width >= 1300 ? 380 : 300))));
   }
 });
 
@@ -22,6 +22,6 @@ test('removing the toolbar row restores all available height to a height-limited
 
 test('narrow desktop layouts preserve the panel and spacing without horizontal overflow', () => {
   const layout = reviewLayout(800,1000);
-  assert.equal(layout.boardSize, 412);
+  assert.equal(layout.boardSize, 392);
   assert.equal(layout.boardColumn + layout.columnGap + layout.panelWidth, 800);
 });
