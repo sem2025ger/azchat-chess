@@ -3,6 +3,7 @@ import { Check, ChevronDown, RotateCcw, Search, SlidersHorizontal, Sparkles, X }
 import { BOARD_THEME_DETAILS, PIECE_STYLES, type BoardTheme, type PieceTheme } from '../../lib/chessThemes';
 import { useThemeContext, type BackgroundTheme, type SoundTheme } from '../../context/ThemeContext';
 import { playChessSound, setChessSoundMuted } from '../../utils/chessSounds';
+import { findSettings, STYLE_PRESETS } from './settingsLogic';
 
 type Kind = 'board' | 'pieces' | 'sound' | 'background';
 type Locale = 'ru' | 'en' | 'de' | 'az' | 'tr' | 'ua';
@@ -12,11 +13,7 @@ type Entry = { kind: Kind; label: string; value: string };
 
 const SOUNDS: SoundTheme[] = ['Default', 'Soft', 'Classic', 'Wood', 'Crystal', 'Muted / Off'];
 const BACKGROUNDS: BackgroundTheme[] = ['Void Black', 'Deep Space', 'Velvet Gold', 'Champagne Light', 'Coffee Brown', 'Walnut Dark', 'Emerald Night', 'Royal Blue', 'Royal Violet', 'Obsidian Gold'];
-const PRESETS: Record<Goal, Selection> = {
-  blitz: { board: 'Dark Green', pieces: 'neo', sound: 'Soft', background: 'Void Black' },
-  study: { board: 'Light Green', pieces: 'cburnett-classic', sound: 'Soft', background: 'Deep Space' },
-  focus: { board: 'Premium Graphite Gold', pieces: 'cburnett-classic', sound: 'Default', background: 'Obsidian Gold' },
-};
+const PRESETS: Record<Goal, Selection> = STYLE_PRESETS;
 const COPY = {
   ru: {
     search: 'Найти настройку…', hint: 'Например: зелёная доска, Merida, звук, золото',
@@ -104,13 +101,6 @@ const COPY = {
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
-const SEARCH_ALIASES: Record<Kind, string> = {
-  board: 'board доска шахматная шахівниця Brett lövhə tahta squares клетк green зел зол wood дерево графит graphite',
-  pieces: 'pieces фигуры фигур шахмат taşlar fiqurlar figuren merida cburnett staunton набор',
-  sound: 'sound звук звуки ses səs ton audio mute тихо silencio',
-  background: 'appearance interface интерфейс фон tema темы farbe background цвет kleur obsidian gold',
-};
-
 export default function SettingsCommandCenter({ language }: { language: string }) {
   const { boardTheme, setBoardTheme, pieceTheme, setPieceTheme, sound, setSound, background, setBackground } = useThemeContext();
   const t = COPY[(language in COPY ? language : 'en') as Locale];
@@ -127,11 +117,7 @@ export default function SettingsCommandCenter({ language }: { language: string }
     ...SOUNDS.map(x => ({ kind: 'sound' as const, label: x, value: x })),
     ...BACKGROUNDS.map(x => ({ kind: 'background' as const, label: x, value: x })),
   ], []);
-  const normalized = query.trim().toLocaleLowerCase();
-  const results = useMemo(() => normalized
-    ? entries.filter(x => (x.label + ' ' + x.value + ' ' + t[x.kind] + ' ' + SEARCH_ALIASES[x.kind])
-      .toLocaleLowerCase().includes(normalized)).slice(0, 12)
-    : [], [entries, normalized, t]);
+  const results = useMemo(() => findSettings(entries, query, t), [entries, query, t]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -155,6 +141,7 @@ export default function SettingsCommandCenter({ language }: { language: string }
     setChessSoundMuted(selection.sound === 'Muted / Off');
     setBackground(selection.background);
     setJustApplied(true);
+    setNotification('');
   };
   const applyResult = (entry: Entry) => {
     setPrevious(current);
@@ -169,6 +156,7 @@ export default function SettingsCommandCenter({ language }: { language: string }
     if (entry.kind === 'background') setBackground(entry.value as BackgroundTheme);
     setQuery('');
     setJustApplied(false);
+    setNotification('');
   };
   const undo = () => {
     if (!previous) return;
@@ -179,13 +167,16 @@ export default function SettingsCommandCenter({ language }: { language: string }
     setBackground(previous.background);
     setPrevious(null);
     setJustApplied(false);
+    setNotification('');
   };
   const active = PRESETS[goal];
   const alreadySet = boardTheme === active.board && pieceTheme === active.pieces && sound === active.sound && background === active.background;
   const jump = (kind: Kind) => {
     const target = document.getElementById('settings-section-' + kind);
     if (target && target.getClientRects().length > 0) {
-      target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+      target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      const button = target.querySelector('button');
+      if (button instanceof HTMLElement) button.focus({ preventScroll: true });
     } else {
       input.current?.focus();
       setQuery(t[kind]);
@@ -227,6 +218,7 @@ export default function SettingsCommandCenter({ language }: { language: string }
         </div>}
     </div>}
 
+    {previous && !expanded && <button type="button" className="settings-quick-undo" onClick={undo}><RotateCcw size={14}/>{t.undo}</button>}
     {expanded && <div className="settings-assistant-panel">
       <div className="settings-assistant-lead"><Sparkles size={18}/><div><strong>{t.assistant}</strong><p>{t.intro}</p></div></div>
       <div className="settings-goal-picks" role="group" aria-label={t.assistant}>
