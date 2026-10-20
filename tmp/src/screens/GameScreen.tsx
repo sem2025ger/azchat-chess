@@ -9,6 +9,7 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import EvaluationBar from '../components/EvaluationBar';
 import AnalysisPanel from '../components/AnalysisPanel';
+import AnalysisWorkspaceHeader from '../components/analysis/AnalysisWorkspaceHeader';
 import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { Chess, DEFAULT_POSITION } from 'chess.js';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
@@ -762,7 +763,22 @@ export default function GameScreen({ mode }: GameScreenProps) {
   return (
     <div className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
 
-      {/* Mobile analysis panel above the board */}
+      {mode === 'review' && (
+        <AnalysisWorkspaceHeader
+          title={loadedGameTitle}
+          white={loadedGameDetails?.white || words.white}
+          black={loadedGameDetails?.black || words.black}
+          timeControl={loadedGameDetails?.timeControl}
+          game={game}
+          initialFen={positionHistory[0] || DEFAULT_POSITION}
+          moveHistory={moveHistory}
+          currentFen={displayedGame.fen()}
+          moveIndex={viewMoveIndex === -1 ? Math.max(0, positionHistory.length - 1) : viewMoveIndex}
+          total={Math.max(0, positionHistory.length - 1)}
+          onNew={startNewAnalysis}
+        />
+      )}
+            {/* Mobile analysis panel above the board */}
       {!isLiveMultiplayer && (
         <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
           <div className="min-h-14 grid grid-cols-[max-content_minmax(0,1fr)_max-content] items-center gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
