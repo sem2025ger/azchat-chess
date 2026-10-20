@@ -320,16 +320,16 @@ export default function SettingsScreen() {
   };
 
   return (
-    <div className="min-h-full xl:h-[calc(100dvh-4rem)] w-full bg-transparent flex flex-col items-center relative transition-all overflow-x-hidden overflow-y-auto pt-0 px-2 pb-6 md:px-8 md:pb-8 md:pt-3">
+    <div className="settings-fixed-workspace min-h-0 h-full w-full bg-transparent flex flex-col items-center relative overflow-hidden pt-0 px-2 pb-2 md:px-5 md:pb-2 md:pt-1">
       {/* Background Decor */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="w-full max-w-[85rem] z-10 flex flex-col xl:justify-start">
+      <div className="settings-fixed-inner w-full max-w-[85rem] z-10 flex flex-col min-h-0 h-full justify-start">
         <SettingsCommandCenter language={language} />
                 {/* Desktop View: Unified Grid */}
-        <div className="hidden lg:grid grid-cols-12 gap-4 xl:gap-8 items-stretch">
-          <div className="col-span-7 flex flex-col justify-between gap-3 xl:gap-4 pr-0 xl:pr-2 h-full">
+        <div className="settings-desktop-grid hidden lg:grid grid-cols-12 gap-3 xl:gap-5 items-stretch flex-1 min-h-0">
+          <div className="settings-options-column col-span-7 flex flex-col justify-between gap-2 xl:gap-3 pr-0 xl:pr-2 min-h-0 h-full">
             {/* Row 1: Board Appearance */}
             <div id="settings-section-board" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
               <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
@@ -409,7 +409,7 @@ export default function SettingsScreen() {
             </div>
           </div>
 
-          <div className="col-span-5 relative h-full">
+          <div className="settings-preview-column col-span-5 relative h-full min-h-0">
             <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl h-full">
               <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 xl:p-5 flex flex-col items-center gap-3 xl:gap-4 h-full">
                 <div className="flex items-center justify-between w-full">
@@ -421,7 +421,7 @@ export default function SettingsScreen() {
                     <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.6rem] xl:text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
                   </div>
                 </div>
-                <div className="w-full aspect-square max-w-[260px] xl:max-w-[280px] rounded-2xl overflow-hidden shadow-2xl border-b-4 border-black/40">
+                <div className="settings-preview-board w-full aspect-square max-w-[260px] xl:max-w-[280px] rounded-2xl overflow-hidden shadow-2xl border-b-4 border-black/40">
                   <ChessBoard className="!p-0 !border-none !bg-transparent !shadow-none ring-0" />
                 </div>
                 <div className="w-full space-y-1.5">
@@ -441,7 +441,7 @@ export default function SettingsScreen() {
         </div>
 
         {/* Mobile View: Hub and Spoke */}
-        <div className="lg:hidden w-full h-full min-h-0 flex flex-col mt-2">
+        <div className="lg:hidden w-full h-full min-h-0 flex flex-col mt-2 overflow-y-auto">
           {renderMobileView()}
         </div>
       </div>
