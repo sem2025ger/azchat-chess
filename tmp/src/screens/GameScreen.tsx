@@ -1107,7 +1107,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         {mode === 'review' && (
           <>
-            <nav aria-label={words.analysis} className="hidden lg:flex shrink-0 items-center gap-1 border-b border-white/[0.06] bg-black/15 p-2">
+            <nav aria-label={words.analysis} className="desktop-analysis-workspace-tabs hidden lg:flex shrink-0 items-center gap-1 border-b border-white/[0.06] bg-black/15 p-2">
               {(['analysis', 'games', 'position'] as const).map(tab => (
                 <button key={tab} type="button" aria-pressed={workspaceTab === tab} onClick={() => {
                   if (tab === 'position' && workspaceTab !== 'position') {
@@ -1142,7 +1142,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 aria-hidden={viewMoveIndex === -1} className={cx("h-9 shrink-0 whitespace-nowrap rounded-lg px-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-500/10", viewMoveIndex === -1 && "invisible")}>
                 {t('game.analysis.resume')}
               </button>
-              <button type="button" onClick={startNewAnalysis} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 px-2 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
+              <button type="button" onClick={startNewAnalysis} className="desktop-analysis-new-button flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 px-2 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
                 <RotateCcw size={14} aria-hidden="true" />
                 {t('game.analysis.new')}
               </button>
@@ -1214,7 +1214,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   </tbody>
                 </table>
               </div>
-              <div className="h-14 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-8 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]">
+              <div className={cx("h-14 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-8 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]", mode === 'review' && "desktop-analysis-transport")}>
                 <button disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><Rewind size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
                 <button disabled={!hasHistory} onClick={() => { 
                   if (!hasHistory) return;
