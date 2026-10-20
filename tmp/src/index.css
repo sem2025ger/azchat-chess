@@ -1049,3 +1049,88 @@
     border-bottom: 1px solid rgba(193,157,93,.18);
   }
 }
+
+/* Approved ChessAZ analysis workspace: header across BOTH columns. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(355px, 35%);
+    grid-template-rows: minmax(58px, auto) minmax(0, 1fr);
+    align-items: center;
+    column-gap: 14px;
+    row-gap: 6px;
+    padding-top: 0;
+    padding-bottom: 8px;
+    transform: none !important;
+  }
+  .desktop-analysis-screen > .analysis-redesign-header {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 0;
+    gap: 16px;
+    padding: 7px 18px 9px;
+    border: 1px solid rgba(200, 158, 89, .22);
+    border-radius: 14px;
+    background: linear-gradient(130deg, #15151b, #0d0e13);
+    box-shadow: inset 0 1px 0 rgba(248, 218, 155, .09), 0 8px 28px rgba(0,0,0,.24);
+  }
+  .desktop-analysis-screen > .analysis-redesign-header + div {
+    grid-column: 1;
+    grid-row: 2;
+    transform: none !important;
+    min-height: 0;
+  }
+  .desktop-analysis-screen > .desktop-analysis-panel {
+    grid-column: 2;
+    grid-row: 2;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0;
+    height: min(100%, var(--analysis-board-height, 700px)) !important;
+    align-self: center;
+  }
+  .desktop-analysis-screen .desktop-analysis-hero { display: none; }
+  .analysis-redesign-title {
+    color: #f3deb1;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -.015em;
+    line-height: 1.3;
+  }
+  .analysis-redesign-meta { margin-top: 4px; color: #a9a396; font-size: 12px; }
+  .analysis-redesign-heading { min-width: 0; overflow: hidden; }
+  .analysis-redesign-heading > div { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .analysis-redesign-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+  .analysis-redesign-actions > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 35px;
+    padding: 6px 10px;
+    border: 1px solid rgba(192, 152, 87, .46);
+    border-radius: 9px;
+    color: #f0dfbd;
+    background: linear-gradient(180deg, #2c2a30, #16171e 60%, #101116);
+    box-shadow: inset 0 1px 0 rgba(255,232,165,.22), 0 4px 12px rgba(0,0,0,.25);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .analysis-redesign-actions > button:disabled { opacity: .35; cursor: not-allowed; }
+  .analysis-redesign-actions > button:not(:disabled):hover {
+    border-color: #dfb875;
+    box-shadow: inset 0 1px 0 rgba(255,232,165,.35), 0 0 14px rgba(207,160,74,.16);
+  }
+  .analysis-redesign-actions > button:focus-visible { outline: 2px solid #dfb875; outline-offset: 2px; }
+  .analysis-redesign-actions > .analysis-redesign-reset { color: #f8e6b9; }
+}
+@media (min-width:1024px) and (max-width:1279px) {
+  .desktop-analysis-screen { grid-template-columns: minmax(0, 1fr) minmax(335px, 39%); }
+  .analysis-redesign-title { font-size: 15px; }
+  .analysis-redesign-actions > button { font-size: 11px; padding: 5px 7px; }
+}
