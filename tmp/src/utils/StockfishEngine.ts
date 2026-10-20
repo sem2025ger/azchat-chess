@@ -41,6 +41,10 @@ export class StockfishEngine {
   private _lastGoodPv: string[] = [];
   private _lines: Record<number, EngineLine> = {};
   private _lastGoodLines: Record<number, EngineLine> = {};
+  // A complete MultiPV snapshot must come from one search depth. UCI sends
+  // each variation separately, so publishing on PV1's depth alone can mix
+  // fresh scores with old PV2/PV3 scores.
+  private _lastCompleteLines: EngineLine[] = [];
   private _rootBlackToMove = false;
   private _analyzedFen = '';
   private _queuedAnalysis: { fen?: string; depth: number } | null = null;
@@ -224,20 +228,24 @@ export class StockfishEngine {
   }
 
   private getStableLines(): EngineLine[] {
-    const out: EngineLine[] = [];
     const isUsableLine = (line?: EngineLine) =>
       !!line && (line.pv.length > 1 || (line.mate != null && line.pv.length > 0));
-
+    const candidates: EngineLine[] = [];
     for (let i = 1; i <= 3; i++) {
-      const line = this._lines[i];
-      const goodLine = this._lastGoodLines[i];
-      if (isUsableLine(line)) {
-        out.push(line!);
-      } else if (isUsableLine(goodLine)) {
-        out.push(goodLine!);
-      }
+      const current = this._lines[i];
+      const fallback = this._lastGoodLines[i];
+      if (isUsableLine(current)) candidates.push(current);
+      else if (isUsableLine(fallback)) candidates.push(fallback);
     }
-    return out;
+    // Keep each original per-MultiPV evaluation/mate; never copy PV1's score.
+    // Only advance a full three-line snapshot when every line has the same depth.
+    if (candidates.length === 3 && candidates.every(line => line.depth === candidates[0].depth)) {
+      this._lastCompleteLines = candidates.map(line => ({ ...line, pv: [...line.pv] }));
+    }
+    if (this._lastCompleteLines.length) return this._lastCompleteLines.map(line => ({ ...line, pv: [...line.pv] }));
+    // During initial search, publish only same-depth lines rather than combining
+    // a newer PV1 with older PV2/PV3 before their UCI messages arrive.
+    return candidates.filter(line => line.depth === candidates[0].depth);
   }
 
   /* ------------------------------------------------------------------ */
@@ -277,6 +285,7 @@ export class StockfishEngine {
     this._lastGoodPv = [];
     this._lines = {};
     this._lastGoodLines = {};
+    this._lastCompleteLines = [];
 
     const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     this._analyzedFen = (!fen || fen === 'startpos') ? START_FEN : fen;

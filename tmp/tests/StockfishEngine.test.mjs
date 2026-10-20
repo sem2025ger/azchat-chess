@@ -143,3 +143,54 @@ test('mate score and continuation survive coalescing', t => {
   assert.equal(results[0].mate, 2);
   assert.deepEqual(results[0].continuation, ['e7e5']);
 });
+
+test('each MultiPV line retains its own UCI score, including legitimately equal scores', t => {
+  const { worker, results } = setup();
+  info(worker, 18, 1, 41);
+  info(worker, 18, 2, 19);
+  info(worker, 18, 3, -12);
+  t.mock.timers.tick(80);
+  assert.deepEqual(results.at(-1).lines.map(line => line.evaluation), [0.41, 0.19, -0.12]);
+  assert.deepEqual(results.at(-1).lines.map(line => line.multipv), [1, 2, 3]);
+  info(worker, 19, 1, 33);
+  info(worker, 19, 2, 33);
+  info(worker, 19, 3, 33);
+  t.mock.timers.tick(80);
+  assert.deepEqual(results.at(-1).lines.map(line => line.evaluation), [0.33, 0.33, 0.33],
+    'correctly equal engine scores must never be artificially separated');
+});
+
+test('incomplete higher-depth MultiPV updates never mix old and new scores', t => {
+  const { worker, results } = setup();
+  info(worker, 18, 1, 41);
+  info(worker, 18, 2, 19);
+  info(worker, 18, 3, -12);
+  t.mock.timers.tick(80);
+  info(worker, 19, 1, 65);
+  t.mock.timers.tick(80);
+  assert.deepEqual(results.at(-1).lines.map(line => line.depth), [18, 18, 18]);
+  assert.deepEqual(results.at(-1).lines.map(line => line.evaluation), [0.41, 0.19, -0.12]);
+  info(worker, 19, 2, 23);
+  t.mock.timers.tick(80);
+  assert.deepEqual(results.at(-1).lines.map(line => line.depth), [18, 18, 18]);
+  info(worker, 19, 3, -7);
+  t.mock.timers.tick(80);
+  assert.deepEqual(results.at(-1).lines.map(line => line.depth), [19, 19, 19]);
+  assert.deepEqual(results.at(-1).lines.map(line => line.evaluation), [0.65, 0.23, -0.07]);
+});
+
+test('MultiPV mate and centipawn scores preserve independent white perspective after a position change', t => {
+  const { engine, worker, results } = setup();
+  info(worker, 8, 1, 30);
+  engine.analyze(nextFen);
+  worker.emit('bestmove e2e4');
+  worker.emit('info depth 9 multipv 1 score cp 45 pv e7e5 g1f3');
+  worker.emit('info depth 9 multipv 2 score mate 2 pv c7c5 g1f3');
+  worker.emit('info depth 9 multipv 3 score mate -3 pv e7e6 d2d4');
+  t.mock.timers.tick(80);
+  const latest = results.at(-1);
+  assert.equal(latest.analyzedFen, nextFen);
+  assert.deepEqual(latest.lines.map(line => line.evaluation), [-0.45, -100, 100]);
+  assert.deepEqual(latest.lines.map(line => line.mate), [undefined, -2, 3]);
+  assert.deepEqual(latest.lines.map(line => line.depth), [9, 9, 9]);
+});
