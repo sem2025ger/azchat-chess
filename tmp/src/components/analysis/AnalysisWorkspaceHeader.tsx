@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Chess } from 'chess.js';
 import { ClipboardCopy, Check, Share2, FileText } from 'lucide-react';
 
 interface Props {
