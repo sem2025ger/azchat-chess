@@ -421,12 +421,12 @@ export default function SettingsScreen() {
                     <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.6rem] xl:text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
                   </div>
                 </div>
-                <div className="w-full flex-1 min-h-0 flex items-center justify-center">
+                <div className="settings-preview-stage w-full flex-1 min-h-0 flex items-center justify-center">
                   <div className="settings-preview-board">
                     <ChessBoard externalCoordinatesOnDesktop className="!border-none !bg-transparent !shadow-none ring-0" />
                   </div>
                 </div>
-                <div className="w-full space-y-2 shrink-0">
+                <div className="w-full space-y-1.5 shrink-0">
                   <PreviewStat label={t('settings.boardTheme')} value={boardTheme} icon={<Palette size={14} className="xl:w-4 xl:h-4" />} />
                   <PreviewStat label={t('settings.pieceSet')} value={pieceTheme.toUpperCase()} icon={<Monitor size={14} className="xl:w-4 xl:h-4" />} />
                   <PreviewStat label={t('settings.appTheme')} value={background} icon={<LayoutIcon size={14} className="xl:w-4 xl:h-4" />} />
@@ -492,10 +492,10 @@ function SelectionCard({ active, onClick, title, preview }: { active: boolean; o
 
 function PreviewStat({ label, value, icon }: { label: string; value: string; icon: any }) {
   return (
-    <div className="flex items-center justify-between gap-3 p-2.5 xl:p-3 bg-white/[0.03] rounded-2xl border border-white/5 shadow-inner">
+    <div className="settings-preview-stat flex items-center justify-between gap-3 px-3 py-2 bg-white/[0.03] rounded-2xl border border-white/5 shadow-inner">
       <div className="flex flex-col min-w-0 flex-1">
-        <span className="text-[0.65rem] font-black text-neutral-600 uppercase tracking-widest italic leading-none mb-1">{label}</span>
-        <span className="text-[0.95rem] font-black text-white break-words">{value}</span>
+        <span className="text-[0.65rem] font-black text-neutral-600 uppercase tracking-widest italic leading-none mb-0.5">{label}</span>
+        <span className="text-sm leading-snug font-black text-white break-words">{value}</span>
       </div>
       <div className="text-neutral-700 shrink-0">{icon}</div>
     </div>
