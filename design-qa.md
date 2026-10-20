@@ -41,3 +41,10 @@ Do not describe the full redesign or visual alignment as verified. Keep PR Draft
 - Removed vertical centering, the 630px board cap, and the unused space inside the board column. Geometry now uses the actual workspace and header dimensions, keeping a 24 CSS-pixel board/panel gap and a square that fits the remaining height. Panel consumes remaining width.
 - Added geometry regression tests for standard, wide and wrapped-header viewports. These test actual sizing logic, not browser rendering.
 - Post-fix browser evidence remains unavailable; visual acceptance is still blocked pending an authorized inspection.
+
+## Owner feedback iteration — compact board and game metadata
+- Owner approved the 9334fb5 composition and requested a modest reduction of both board and analysis panel, leaving room for player names and possible future clock information.
+- Scale the preferred board and panel widths to 92%, retaining the 24px gap, readable text and minimum panel width. Reserve 96px vertically for game metadata and breathing room; the panel still follows the actual board height.
+- Show existing player rows only for a loaded game. Show a clock icon next to the supplied time control; do not invent remaining clock times for custom positions or games without clock data.
+- The new geometry regression failed before the fix, then passed. All 48 frontend tests and production build/typecheck passed.
+- Cloud browser access to the deployment was declined in this turn. No alternative browser or rendering workaround was attempted. Browser appearance and alignment remain unverified; PR stays Draft.

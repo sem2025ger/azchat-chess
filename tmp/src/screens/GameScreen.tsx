@@ -2,7 +2,7 @@ import { lazy, Suspense, useState, useEffect, useRef, useMemo, useCallback, type
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
-import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw } from 'lucide-react';
+import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw, Clock } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
@@ -181,7 +181,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       const width = workspace.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
       const height = workspace.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
       const next = reviewLayout(width, height, header.offsetHeight);
-      if (next.boardSize > 0) setReviewGeometry(previous => previous?.boardSize === next.boardSize && previous?.boardColumn === next.boardColumn ? previous : next);
+      if (next.boardSize > 0) setReviewGeometry(previous => previous?.boardSize === next.boardSize && previous?.boardColumn === next.boardColumn && previous?.panelWidth === next.panelWidth ? previous : next);
     };
     const observer = new ResizeObserver(measure);
     observer.observe(workspace);
@@ -823,7 +823,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               </div>
   );
   return (
-    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
+    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
 
       {mode === 'review' && (
         <AnalysisWorkspaceHeader
@@ -998,8 +998,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </header>
           )}
 
-          {/* Desktop review uses borderless player identification instead of live-game cards/clocks. */}
-          {mode === 'review' && (
+          {/* Show game metadata only for a loaded game, never for a custom position. */}
+          {mode === 'review' && loadedGameDetails && (
             <div className="desktop-analysis-player-top hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
               <div className="flex min-w-0 items-center gap-2">
                 <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-500 bg-neutral-950" />
@@ -1008,7 +1008,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 </span>
               </div>
               {loadedGameDetails?.timeControl && (
-                <span className="shrink-0 font-mono text-[11px] tracking-wide text-neutral-500" title={loadedGameDetails.timeControl}>
+                <span className="flex shrink-0 items-center gap-1 font-mono text-[11px] tracking-wide text-neutral-500" title={loadedGameDetails.timeControl}>
+                  <Clock size={12} aria-hidden="true" />
                   {loadedGameDetails.timeControl}
                 </span>
               )}
@@ -1135,7 +1136,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
           </div>
 
-          {mode === 'review' && (
+          {mode === 'review' && loadedGameDetails && (
             <div className="desktop-analysis-review-player-bottom hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
               <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-400 bg-[#f5f2e8]" />
               <span className="min-w-0 truncate font-semibold text-neutral-200" title={loadedGameDetails?.white || words.white}>
