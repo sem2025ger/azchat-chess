@@ -14,6 +14,7 @@ import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
 import PositionMap from '../components/analysis/PositionMap';
 import { positionMapLabel } from '../components/analysis/positionMapLabels';
+import { reviewLayout } from '../utils/reviewLayout';
 import type { PositionEvaluation } from '../utils/positionMap';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
@@ -143,6 +144,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   // Match the desktop analysis panel's outer height to the actual chessboard frame.
   // ResizeObserver keeps this accurate when viewport dimensions or board sizing change.
+  const reviewWorkspaceRef = useRef<HTMLDivElement>(null);
+  const [reviewGeometry, setReviewGeometry] = useState<ReturnType<typeof reviewLayout> | null>(null);
   const analysisBoardRef = useRef<HTMLDivElement>(null);
   const [analysisBoardHeight, setAnalysisBoardHeight] = useState<number | null>(null);
 
@@ -166,6 +169,27 @@ export default function GameScreen({ mode }: GameScreenProps) {
       window.removeEventListener('resize', measure);
     };
   }, [isMultiplayer, mode]);
+
+  useEffect(() => {
+    if (mode !== 'review' || typeof ResizeObserver === 'undefined') return;
+    const workspace = reviewWorkspaceRef.current;
+    const header = workspace?.querySelector<HTMLElement>('.analysis-redesign-header');
+    if (!workspace || !header) return;
+    const measure = () => {
+      if (!window.matchMedia('(min-width: 1024px)').matches) return;
+      const style = getComputedStyle(workspace);
+      const width = workspace.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      const height = workspace.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      const next = reviewLayout(width, height, header.offsetHeight);
+      if (next.boardSize > 0) setReviewGeometry(previous => previous?.boardSize === next.boardSize && previous?.boardColumn === next.boardColumn ? previous : next);
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(workspace);
+    observer.observe(header);
+    window.addEventListener('resize', measure);
+    measure();
+    return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
+  }, [mode]);
 
   const playerFlag = profile?.countryCode
     ? countryCodeToFlag(profile.countryCode)
@@ -799,7 +823,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               </div>
   );
   return (
-    <div className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
+    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
 
       {mode === 'review' && (
         <AnalysisWorkspaceHeader

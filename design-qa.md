@@ -28,10 +28,16 @@ final result: blocked
 
 ## Validation
 - Local production build (includes project-reference typecheck): passed.
-- Local frontend tests: 46 passed, zero failures/skips.
+- Local frontend tests: 48 passed, zero failures/skips.
 - Lint: zero errors, 50 existing warnings at last check.
 - New five-line UCI regression failed before the engine fix, then passed.
 - Browser-rendered primary interaction checks, viewport matrix, console inspection and focused/full-view comparison: blocked by denied browser access.
 
 ## Acceptance
 Do not describe the full redesign or visual alignment as verified. Keep PR Draft until the board/panel geometry, map selection, editor, history navigation, depth, five lines, export/share and responsive layouts can be checked in an authorized browser session. No merge or production configuration change is included.
+
+## Owner feedback iteration — 20 October 2026
+- Owner inspected Preview 880dc00 and reported that the workspace was too small, too low, and the panel too far right. This confirms the prior alignment/sizing fix is not visually accepted.
+- Removed vertical centering, the 630px board cap, and the unused space inside the board column. Geometry now uses the actual workspace and header dimensions, keeping a 24 CSS-pixel board/panel gap and a square that fits the remaining height. Panel consumes remaining width.
+- Added geometry regression tests for standard, wide and wrapped-header viewports. These test actual sizing logic, not browser rendering.
+- Post-fix browser evidence remains unavailable; visual acceptance is still blocked pending an authorized inspection.
