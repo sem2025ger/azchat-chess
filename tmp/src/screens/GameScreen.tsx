@@ -422,6 +422,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [engineResult, setEngineResult] = useState<EngineResult | null>(null);
   const [isAnalysing, setIsAnalysing] = useState(false);
   const [engineFailed, setEngineFailed] = useState(false);
+  const [analysisDepth, setAnalysisDepth] = useState(18);
 
   const loadWorkspaceAnalysis = (analysis: AnalysisLoad, title = '', details?: { white: string; black: string; timeControl?: string }) => {
     if (mode !== 'review') return;
@@ -512,7 +513,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           ? liveFen
           : positionHistory[historyIndex] || liveFen;
 
-      engineRef.current.analyze(targetFen);
+      engineRef.current.analyze(targetFen, mode === 'review' ? analysisDepth : 18);
     } else if (engineRef.current) {
       engineRef.current.stop();
     }
@@ -520,7 +521,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
     analysisActive,
     viewMoveIndex,
     liveFen,
-    positionHistory
+    positionHistory,
+    analysisDepth,
+    mode
   ]);
 
   useEffect(() => {
@@ -1225,6 +1228,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
                 lines={analysisData?.lines}
                 reviewLayout={mode === 'review'}
+                requestedDepth={mode === 'review' ? analysisDepth : undefined}
+                onIncreaseDepth={mode === 'review' ? () => setAnalysisDepth(depth => depth >= 30 ? 18 : depth + 6) : undefined}
                 error={engineFailed}
               />
             )}
