@@ -141,7 +141,6 @@ export default function SettingsCommandCenter({ language }: { language: string }
     setChessSoundMuted(selection.sound === 'Muted / Off');
     setBackground(selection.background);
     setJustApplied(true);
-    setNotification('');
   };
   const applyResult = (entry: Entry) => {
     setPrevious(current);
@@ -156,7 +155,6 @@ export default function SettingsCommandCenter({ language }: { language: string }
     if (entry.kind === 'background') setBackground(entry.value as BackgroundTheme);
     setQuery('');
     setJustApplied(false);
-    setNotification('');
   };
   const undo = () => {
     if (!previous) return;
@@ -167,7 +165,6 @@ export default function SettingsCommandCenter({ language }: { language: string }
     setBackground(previous.background);
     setPrevious(null);
     setJustApplied(false);
-    setNotification('');
   };
   const active = PRESETS[goal];
   const alreadySet = boardTheme === active.board && pieceTheme === active.pieces && sound === active.sound && background === active.background;
