@@ -1108,7 +1108,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
         {mode === 'review' && (
           <>
             <nav aria-label={words.analysis} className="desktop-analysis-workspace-tabs hidden lg:flex shrink-0 items-center gap-1 border-b border-white/[0.06] bg-black/15 p-2">
-              {(['analysis', 'games', 'position'] as const).map(tab => (
+              {(['analysis', 'position', 'games'] as const).map(tab => (
                 <button key={tab} type="button" aria-pressed={workspaceTab === tab} onClick={() => {
                   if (tab === 'position' && workspaceTab !== 'position') {
                     resetPositionDraft(displayedGame.fen());
@@ -1165,8 +1165,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </div>
 
           <div className={cx("flex-1 min-h-0 flex flex-col overflow-hidden bg-black/[0.1]", !isMultiplayer && "xl:bg-black/[0.025]")}>
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-              <table className="w-full text-left border-collapse">
+            <div className="desktop-analysis-move-scroll flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              <table className="desktop-analysis-move-table w-full text-left border-collapse">
                   <thead className="sticky top-0 bg-neutral-950/95 backdrop-blur-3xl z-20 border-b border-white/[0.03]">
                     <tr className="text-[0.6rem] font-black text-neutral-600 uppercase tracking-[0.2em]">
                       <th className="py-1.5 px-3 text-center w-12 border-r border-white/[0.03]">#</th>
