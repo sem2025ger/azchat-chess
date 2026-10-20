@@ -828,14 +828,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {mode === 'review' && (
         <AnalysisWorkspaceHeader
           title={loadedGameTitle}
-          white={loadedGameDetails?.white || words.white}
-          black={loadedGameDetails?.black || words.black}
-          timeControl={loadedGameDetails?.timeControl}
           initialFen={positionHistory[0] || DEFAULT_POSITION}
           moveHistory={moveHistory}
           currentFen={displayedGame.fen()}
-          moveIndex={viewMoveIndex === -1 ? Math.max(0, positionHistory.length - 1) : viewMoveIndex}
-          total={Math.max(0, positionHistory.length - 1)}
           onNew={startNewAnalysis}
           evaluations={evaluations}
           editing={workspaceTab === 'position'}
@@ -998,13 +993,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </header>
           )}
 
-          {/* Show game metadata only for a loaded game, never for a custom position. */}
-          {mode === 'review' && loadedGameDetails && (
+          {/* Colour labels follow the board orientation; loaded games supply player names. */}
+          {mode === 'review' && (
             <div className="desktop-analysis-player-top hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
               <div className="flex min-w-0 items-center gap-2">
-                <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-500 bg-neutral-950" />
-                <span className="min-w-0 truncate font-semibold text-neutral-200" title={loadedGameDetails?.black || words.black}>
-                  {loadedGameDetails?.black || words.black}
+                <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-500", playerColor === 'w' ? "bg-neutral-950" : "bg-[#f5f2e8]")} />
+                <span className="min-w-0 truncate font-semibold text-neutral-200" title={playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white}>
+                  {playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white}
                 </span>
               </div>
               {loadedGameDetails?.timeControl && (
@@ -1136,11 +1131,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
           </div>
 
-          {mode === 'review' && loadedGameDetails && (
+          {mode === 'review' && (
             <div className="desktop-analysis-review-player-bottom hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
-              <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-400 bg-[#f5f2e8]" />
-              <span className="min-w-0 truncate font-semibold text-neutral-200" title={loadedGameDetails?.white || words.white}>
-                {loadedGameDetails?.white || words.white}
+              <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-400", playerColor === 'w' ? "bg-[#f5f2e8]" : "bg-neutral-950")} />
+              <span className="min-w-0 truncate font-semibold text-neutral-200" title={playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black}>
+                {playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black}
               </span>
             </div>
           )}

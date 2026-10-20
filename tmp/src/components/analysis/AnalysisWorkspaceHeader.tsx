@@ -4,14 +4,9 @@ import { ClipboardCopy, Check, Share2, FileText } from 'lucide-react';
 
 interface Props {
   title: string;
-  white: string;
-  black: string;
-  timeControl?: string;
   initialFen: string;
   moveHistory: string[];
   currentFen: string;
-  moveIndex: number;
-  total: number;
   onNew: () => void;
   onEdit: () => void;
   editing: boolean;
@@ -20,8 +15,8 @@ interface Props {
 
 /** Presentation-only controls on top of the real analysis state. */
 export default function AnalysisWorkspaceHeader({
-  title, white, black, timeControl, initialFen, moveHistory,
-  currentFen, moveIndex, total, onNew, onEdit, editing, evaluations,
+  title, initialFen, moveHistory,
+  currentFen, onNew, onEdit, editing, evaluations,
 }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
   const copy = async (label: string, value: string) => {
@@ -58,10 +53,6 @@ export default function AnalysisWorkspaceHeader({
   };
   return (
     <header className="analysis-redesign-header" aria-label="Панель анализа партии">
-      <div className="analysis-redesign-heading">
-        <div className="analysis-redesign-title">{title || 'Анализ позиции'}</div>
-        <div className="analysis-redesign-meta">{white} — {black}{timeControl ? ` · ${timeControl}` : ''} · Ход {moveIndex} / {total}</div>
-      </div>
       <div className="analysis-redesign-actions">
         <button type="button" onClick={exportPgn} disabled={!moveHistory.length} title="Копировать PGN с оценками рассчитанных позиций"><FileText size={14} />{copied === 'pgn' ? 'Скопировано' : 'PGN с оценками'}</button>
         <button type="button" onClick={() => void copy('fen', currentFen)} title="Копировать FEN выбранной позиции">{copied === 'fen' ? <Check size={14}/> : <ClipboardCopy size={14}/>} FEN</button>

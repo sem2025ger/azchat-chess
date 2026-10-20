@@ -1105,7 +1105,7 @@
   .analysis-redesign-meta { margin-top: 4px; color: #a9a396; font-size: 12px; }
   .analysis-redesign-heading { min-width: 0; overflow: hidden; }
   .analysis-redesign-heading > div { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  .analysis-redesign-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+  .analysis-redesign-actions { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
   .analysis-redesign-actions > button {
     display: inline-flex;
     align-items: center;
@@ -1143,7 +1143,7 @@
     grid-template-columns: var(--review-board-column, minmax(0, 1fr)) var(--review-panel-width, minmax(0, 1fr));
     justify-content: center;
     grid-template-rows: auto minmax(0, 1fr);
-    column-gap: 24px;
+    column-gap: 48px;
     row-gap: 12px;
     max-width: none;
     padding: 12px 16px;
