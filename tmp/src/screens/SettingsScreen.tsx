@@ -320,12 +320,12 @@ export default function SettingsScreen() {
   };
 
   return (
-    <div className="min-h-full xl:h-[calc(100dvh-4rem)] w-full bg-transparent flex flex-col items-center relative transition-all overflow-x-hidden xl:overflow-hidden pt-0 px-2 pb-6 md:px-8 md:pb-8 md:pt-3">
+    <div className="min-h-full xl:h-[calc(100dvh-4rem)] w-full bg-transparent flex flex-col items-center relative transition-all overflow-x-hidden overflow-y-auto pt-0 px-2 pb-6 md:px-8 md:pb-8 md:pt-3">
       {/* Background Decor */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="w-full max-w-[85rem] z-10 h-full flex flex-col xl:justify-center">
+      <div className="w-full max-w-[85rem] z-10 flex flex-col xl:justify-start">
         <SettingsCommandCenter language={language} />
                 {/* Desktop View: Unified Grid */}
         <div className="hidden lg:grid grid-cols-12 gap-4 xl:gap-8 items-stretch">
