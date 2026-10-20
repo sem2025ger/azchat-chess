@@ -63,7 +63,7 @@ export default function PositionTools({
         <p className="mb-2 mt-1 text-xs leading-relaxed text-neutral-500">{words.fenInfo}</p>
         <textarea id="analysis-fen" value={fen} maxLength={200} onChange={event => setFen(event.target.value)} spellCheck={false} rows={4} aria-invalid={!!error} aria-describedby="analysis-position-validation" className="w-full resize-none rounded-xl border border-white/10 bg-black/30 p-3 font-mono text-xs leading-relaxed text-neutral-200 outline-none focus:border-amber-200/50" />
       </div> : <>
-        <p className="mb-2 text-xs leading-relaxed text-neutral-400">{words.choosePiece} — {words.editor}</p>
+        <p className="mb-2 text-xs leading-relaxed text-neutral-400">{words.choosePiece}</p>
         <div className="mb-3 grid grid-cols-7 gap-1" aria-label={words.choosePiece}>
           {['K','Q','R','B','N','P','', 'k','q','r','b','n','p'].map(piece => <button key={piece || 'erase'} type="button" draggable={!!piece}
             onDragStart={event => { if (piece) { event.dataTransfer.effectAllowed = 'copy'; event.dataTransfer.setData('application/x-chessaz-piece', piece); } }}
@@ -101,7 +101,7 @@ export default function PositionTools({
       <p id="analysis-position-validation" role="status" className={`mt-3 text-xs leading-relaxed ${error ? 'text-amber-200/80' : 'text-neutral-500'}`}>{error ? words[error] : words.draft}</p>
     </div>
     <footer className="shrink-0 space-y-2 border-t border-white/10 bg-black/20 p-3">
-      <button type="button" disabled={!!error} onClick={() => { try { onLoad(analysisFromFen(value)); } catch { /* Display the validation message */ } }} className="min-h-10 w-full rounded-xl border border-amber-200/30 bg-gradient-to-br from-amber-200/15 via-[#211d16] to-violet-400/10 px-3 text-xs font-bold text-amber-100 hover:border-amber-200/60 disabled:cursor-not-allowed disabled:opacity-35">{words.apply}</button>
+      <button type="button" disabled={!!error} onClick={() => { try { onLoad(analysisFromFen(value)); } catch { /* Display the validation message */ } }} className="min-h-10 w-full rounded-xl border border-amber-200/70 bg-amber-200 px-3 text-xs font-bold text-neutral-950 shadow-sm hover:bg-amber-100 hover:border-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200 disabled:border-white/10 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:shadow-none disabled:cursor-not-allowed">{words.apply}</button>
       <button type="button" onClick={onCancel} className="min-h-8 w-full text-xs text-neutral-400 hover:text-white">{words.cancel}</button>
     </footer>
   </section>;

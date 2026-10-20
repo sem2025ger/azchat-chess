@@ -679,15 +679,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
       const c = new Chess(analysisFen);
       const tokens: string[] = [];
       let first = true;
-      let sanCount = 0;
-      const maxVisibleSanMoves = 12;
-      let truncatedByLimit = false;
+
+
 
       for (const uci of line.pv) {
-        if (sanCount >= maxVisibleSanMoves) {
-          truncatedByLimit = true;
-          break;
-        }
 
         const turn = c.turn();
         const num =
@@ -716,17 +711,15 @@ export default function GameScreen({ mode }: GameScreenProps) {
         }
 
         first = false;
-        sanCount += 1;
+
       }
 
-      const hasMore = truncatedByLimit;
 
       return {
         evaluation: line.evaluation,
         mate: line.mate,
         depth: line.depth,
-        moves: tokens,
-        hasMore
+        moves: tokens
       };
     }).filter(line => line.moves.length > 0);
 
@@ -804,24 +797,24 @@ export default function GameScreen({ mode }: GameScreenProps) {
                     : '—';
 
                 const moves = line?.moves?.length
-                  ? line.moves.slice(0, 10).join(' ')
+                  ? line.moves.join(' ')
                   : index === 0 && analysisData?.continuation?.length
-                    ? [analysisData.bestMove, ...analysisData.continuation.slice(0, 8)].filter(Boolean).join(' ')
+                    ? [analysisData.bestMove, ...analysisData.continuation].filter(Boolean).join(' ')
                     : (isAnalysing ? 'Analyzing…' : '—');
 
                 return (
                   <div key={index} aria-label={`Engine line ${index + 1}`} className="min-h-10 grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2 border-b border-white/[0.06] last:border-b-0">
                     <div className={cx(
-                      "h-8 rounded-lg flex items-center justify-center font-mono text-[0.82rem] font-black border",
+                      "h-8 w-[56px] min-w-[56px] rounded-lg flex items-center justify-center font-mono text-[0.82rem] font-black border",
                       score.startsWith('+')
                         ? "bg-white text-black border-white"
                         : score.startsWith('-')
                           ? "bg-black text-white border-white/15"
-                          : "bg-neutral-800 text-neutral-200 border-neutral-700"
+                          : "bg-neutral-800 text-white border-neutral-600"
                     )}>
                       {score}
                     </div>
-                    <div tabIndex={0} aria-label={`Moves for engine line ${index + 1}`} className="min-w-0 whitespace-nowrap overflow-x-auto overscroll-x-contain touch-pan-x py-2 text-[0.8125rem] leading-5 font-semibold text-neutral-100 tracking-tight">
+                    <div tabIndex={0} aria-label={`Moves for engine line ${index + 1}`} className="min-w-0 whitespace-normal break-words py-2 text-[0.8125rem] leading-5 font-semibold text-neutral-100 tracking-tight">
                       {moves}
                     </div>
                   </div>
