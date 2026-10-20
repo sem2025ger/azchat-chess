@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ChessAZ — Анализ · обсидианово-фиолетовые кнопки</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0c0b11;color:#eee9f3;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+header{max-width:1460px;margin:0 auto;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.title{font-size:17px;font-weight:750;letter-spacing:.2px}
+.title span{color:#c1a7d6}
+.note{font-size:12px;color:#bcb4c7;line-height:1.5}
+main{max-width:1460px;margin:0 auto;padding:0 16px 24px}
+.frame{border:1px solid #5d4a6b;border-radius:14px;overflow:hidden;background:#0a0b0b;box-shadow:0 20px 70px rgba(15,6,28,.28)}
+iframe{width:100%;height:min(82vh,840px);min-height:520px;display:block;border:0;background:#0a0b0b}
+#error{display:none;padding:24px;background:#271927;color:#fbd9ef}
+@media(max-width:650px){header{padding:14px 12px}.note{font-size:11px}main{padding:0 8px 12px}iframe{height:80vh;min-height:490px}}
+</style>
+</head>
+<body>
+<header><div class="title">ChessAZ <span>· новый Анализ</span></div><div class="note">Демонстрация: только цвета кнопок · обсидиан + сиренево-фиолетовый<br>Доска, фигуры, расположение блоков и логика не изменены</div></header>
+<main><div class="frame"><iframe id="demo" title="Макет панели анализа ChessAZ с фиолетовыми кнопками" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><div id="error" role="alert"></div></div></main>
+<script>
+(async function(){
+  try{
+    const response=await fetch('./analysis-redesign-preview.html',{cache:'no-store'});
+    if(!response.ok)throw new Error('Исходный макет недоступен (HTTP '+response.status+')');
+    const outer=new DOMParser().parseFromString(await response.text(),'text/html');
+    const source=outer.getElementById('mock-source');
+    if(!source)throw new Error('Не найден исходный интерактивный макет');
+    let html=JSON.parse(source.textContent);
+    const start=html.indexOf('chessaz-premium-emerald-buttons');
+    const end=html.indexOf('\\u003c/style>',start);
+    if(start<0||end<0)throw new Error('Не найден изолированный блок оформления кнопок');
+    const palette={"#153429":"#382C46","#F5F0E5":"#F4EEFC","#597553":"#776288","#11251E":"#2C2538","#CCD5CA":"#DBD4E8","#294D3B":"#584767","#205640":"#4D3B62","#FFF8E9":"#FFF8FF","#C3A563":"#9780AC","#143127":"#352940","#EBD6A4":"#E7D9F3","#496B51":"#706080","#12291F":"#2F273B","#D1D9CE":"#DCD4E8","#375747":"#584965","#20533D":"#514067","#FFF8EC":"#FAF5FF","#B79856":"#9C84B3","#C1D2C3":"#D7CEDE","#27684D":"#604978","#FFF7E5":"#FFF7FF","#C2A667":"#9D86B3","#1F6248":"#5C4774","#FFF7E8":"#FDF6FF","#C9A868":"#AE92BD"};
+    let buttonStyle=html.slice(start,end);
+    if(!buttonStyle.includes('#153429'))throw new Error('Палитра исходного макета изменилась');
+    for(const [from,to] of Object.entries(palette))buttonStyle=buttonStyle.split(from).join(to);
+    html=html.slice(0,start)+buttonStyle+html.slice(end);
+    document.getElementById('demo').srcdoc=html;
+  }catch(err){
+    const e=document.getElementById('error');e.style.display='block';
+    e.textContent='Ошибка загрузки демонстрации: '+(err&&err.message||'неизвестная ошибка');
+  }
+})();
+</script>
+</body>
+</html>
