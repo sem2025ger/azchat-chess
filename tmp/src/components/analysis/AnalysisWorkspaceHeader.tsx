@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { ClipboardCopy, Check, Share2, FileText } from 'lucide-react';
-import { Chess } from 'chess.js';
 
 interface Props {
   title: string;
   white: string;
   black: string;
   timeControl?: string;
-  game: Chess;
   initialFen: string;
   moveHistory: string[];
   currentFen: string;
@@ -18,7 +16,7 @@ interface Props {
 
 /** Presentation-only controls on top of the real analysis state. */
 export default function AnalysisWorkspaceHeader({
-  title, white, black, timeControl, game, initialFen, moveHistory,
+  title, white, black, timeControl, initialFen, moveHistory,
   currentFen, moveIndex, total, onNew,
 }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
