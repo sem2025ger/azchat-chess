@@ -20,7 +20,7 @@ iframe{width:100%;height:min(82vh,840px);min-height:520px;display:block;border:0
 </style>
 </head>
 <body>
-<header><div class="title">ChessAZ <span>· новый Анализ</span></div><div class="note">Демонстрация: графитовый обсидиан · мягкий сиреневый акцент<br>Доска, фигуры, расположение блоков и логика не изменены</div></header>
+<header><div class="title">ChessAZ <span>· новый Анализ</span></div><div class="note">Демонстрация: тёмный обсидиан с лёгким лиловым переливом<br>Доска, фигуры, расположение блоков и логика не изменены</div></header>
 <main><div class="frame"><iframe id="demo" title="Макет панели анализа ChessAZ с обсидиановыми кнопками" sandbox="allow-scripts" referrerpolicy="no-referrer"></iframe><div id="error" role="alert"></div></div></main>
 <script>
 (async function(){
@@ -34,7 +34,7 @@ iframe{width:100%;height:min(82vh,840px);min-height:520px;display:block;border:0
     const start=html.indexOf('chessaz-premium-emerald-buttons');
     const end=html.indexOf('\\u003c/style>',start);
     if(start<0||end<0)throw new Error('Не найден изолированный блок оформления кнопок');
-    const palette={"#153429":"#35343E","#F5F0E5":"#E9E5EA","#597553":"#716A78","#11251E":"#2B2C36","#CCD5CA":"#D5D1D9","#294D3B":"#4A4654","#205640":"#42414E","#FFF8E9":"#F0ECF3","#C3A563":"#8B8096","#143127":"#32313B","#EBD6A4":"#D8CFDF","#496B51":"#696471","#12291F":"#2D2E38","#D1D9CE":"#D7D3DC","#375747":"#4B4855","#20533D":"#43404E","#FFF8EC":"#F4EFF5","#B79856":"#92869D","#C1D2C3":"#D5D1D9","#27684D":"#494655","#FFF7E5":"#F4EFF5","#C2A667":"#8D8397","#1F6248":"#464450","#FFF7E8":"#F5F0F6","#C9A868":"#9689A1"};
+    const palette={"#153429":"#2C2B39","#F5F0E5":"#E9E5ED","#597553":"#766D83","#11251E":"#262532","#CCD5CA":"#D7D2DE","#294D3B":"#403B4E","#205640":"#373342","#FFF8E9":"#F1EDF5","#C3A563":"#877B96","#143127":"#292837","#EBD6A4":"#DAD2E2","#496B51":"#696173","#12291F":"#252633","#D1D9CE":"#D7D2DE","#375747":"#403B4D","#20533D":"#383443","#FFF8EC":"#F3EFF7","#B79856":"#8D809C","#C1D2C3":"#D7D2DE","#27684D":"#3F3A4C","#FFF7E5":"#F3EFF7","#C2A667":"#8B8099","#1F6248":"#3B3748","#FFF7E8":"#F5F0F8","#C9A868":"#9588A5"};
     let buttonStyle=html.slice(start,end);
     if(!buttonStyle.includes('#153429'))throw new Error('Палитра исходного макета изменилась');
     for(const [from,to] of Object.entries(palette))buttonStyle=buttonStyle.split(from).join(to);
