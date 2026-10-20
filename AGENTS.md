@@ -97,7 +97,9 @@ authorize mobile changes. Preserve the other layouts unless explicitly included.
 
 # 6. Approved decisions
 
-- YYYY-MM-DD — <decision> — <files> — approved by owner
+- 2026-10-20 — Analysis: preserve independent MultiPV Stockfish evaluations at consistent depth — `tmp/src/utils/StockfishEngine.ts`, `tmp/tests/StockfishEngine.test.mjs` — approved by owner
+- 2026-10-20 — Analysis: complete engine lines, remove duplicate analysis heading, improve chip contrast, remove editor hint suffix and distinguish analyze-button states — `tmp/src/components/AnalysisPanel.tsx`, `tmp/src/screens/GameScreen.tsx`, `tmp/src/components/analysis/PositionTools.tsx`, `tmp/src/index.css` — approved by owner
+- 2026-10-20 — Games list: show existing opponent usernames without truncation, existing results, colours, time controls, dates and termination reasons; no invented metadata — `tmp/src/components/analysis/SavedGamesPanel.tsx`, `tmp/src/services/analysisGames.ts` — approved by owner
 
 # 7. Lessons learned
 
