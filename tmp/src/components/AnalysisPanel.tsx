@@ -49,9 +49,9 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
   const pv = candidates && candidates[0] && candidates[0].length > 0 ? candidates[0] : null;
 
   return (
-    <div className="h-auto flex flex-col p-4 gap-4 overflow-y-auto custom-scrollbar animate-fade-in">
+    <div className="analysis-engine-content h-auto flex flex-col p-4 gap-4 overflow-y-auto custom-scrollbar animate-fade-in">
       {/* Decorative Title */}
-      <div className="panel-glow-cycle relative flex h-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-neutral-950/85 px-4">
+      <div className="analysis-engine-decoration panel-glow-cycle relative flex h-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-neutral-950/85 px-4">
         <div
           className="pointer-events-none absolute inset-0 bg-gradient-to-r from-amber-500/[0.04] via-cyan-500/[0.06] to-violet-500/[0.04]"
           aria-hidden="true"
@@ -73,7 +73,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
       </div>
 
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-white/[0.04] pb-3 shrink-0">
+      <header className="analysis-engine-status flex items-center justify-between border-b border-white/[0.04] pb-3 shrink-0">
          <div className="flex items-center gap-2.5">
             <Cpu size={16} className={cx("text-neutral-400", loading && "animate-pulse")} />
             <span className="text-[0.75rem] font-bold text-neutral-300">Stockfish</span>
@@ -95,12 +95,12 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
       </header>
 
       {/* Main evaluation row */}
-      <section className="flex flex-col gap-3 shrink-0">
+      <section className="analysis-engine-variations flex flex-col gap-3 shrink-0">
          {lines && lines.length > 0 ? (
            lines.map((line, idx) => (
-             <div key={idx} className="flex items-start gap-4">
+             <div key={idx} className="analysis-engine-line flex items-start gap-4">
                 <div className={cx(
-                  "px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
+                  "analysis-engine-score px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
                   line.mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
                   line.evaluation > 0 ? "bg-white text-black border-white" : 
                   line.evaluation < 0 ? "bg-black text-white border-white/20" :
@@ -109,8 +109,8 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
                    {line.mate != null ? (line.mate < 0 ? `-M${Math.abs(line.mate)}` : `M${line.mate}`) : (line.evaluation > 0 ? `+${line.evaluation.toFixed(2)}` : line.evaluation.toFixed(2))}
                 </div>
                 
-                <div className="flex-1 flex flex-col pt-0.5">
-                   <div className="text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
+                <div className="analysis-engine-pv flex-1 flex flex-col pt-0.5">
+                   <div className="analysis-engine-moves text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
                       {line.moves.length > 0 ? line.moves.map((move, i) => (
                         <span key={i} className={i <= 1 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
                       )) : (
@@ -122,9 +122,9 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
              </div>
            ))
          ) : (
-           <div className="flex items-start gap-4">
+           <div className="analysis-engine-line flex items-start gap-4">
               <div className={cx(
-                "px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
+                "analysis-engine-score px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
                 mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
                 score > 0 ? "bg-white text-black border-white" : 
                 score < 0 ? "bg-black text-white border-white/20" :
@@ -133,7 +133,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
                  {mate != null ? (mate < 0 ? `-M${Math.abs(mate)}` : `M${mate}`) : (score > 0 ? `+${score.toFixed(2)}` : score.toFixed(2))}
               </div>
               
-              <div className="flex-1 flex flex-col pt-0.5">
+              <div className="analysis-engine-pv flex-1 flex flex-col pt-0.5">
                  <div className="flex items-center gap-2 mb-1">
                     <span className="text-[0.65rem] font-bold text-neutral-500 uppercase tracking-wider">{t('game.analysis.bestMove')}:</span>
                     {bestMove ? (
@@ -142,7 +142,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
                        <span className="text-[0.7rem] italic text-neutral-600">...</span>
                     )}
                  </div>
-                 <div className="text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
+                 <div className="analysis-engine-moves text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
                     {pv ? pv.map((move, i) => (
                       <span key={i} className={i === 0 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
                     )) : (
