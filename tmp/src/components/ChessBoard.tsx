@@ -52,6 +52,7 @@ function ChessBoard({
   className,
   showCoordinates = true,
   externalCoordinatesOnDesktop = false,
+  highlightedSquares = [],
   game,
   onMove,
   orientation = 'w',
@@ -61,6 +62,7 @@ function ChessBoard({
   className?: string;
   showCoordinates?: boolean;
   externalCoordinatesOnDesktop?: boolean;
+  highlightedSquares?: Square[];
   game?: Chess;
   onMove?: (source: string, target: string, promotion?: string) => boolean;
   orientation?: 'w' | 'b';
@@ -364,6 +366,7 @@ function ChessBoard({
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, squareRef)}
                 >
+                  {highlightedSquares.includes(squareRef as Square) && <div data-plan-highlight className="absolute inset-0 z-10 border-[3px] border-amber-300 bg-amber-300/25 pointer-events-none" />}
                   {isLastMove && <div className="absolute inset-0 bg-yellow-400/30 pointer-events-none" />}
                   {isSelected && (
                     <div className="absolute inset-0 bg-white/20 border-2 border-white/50 pointer-events-none" />

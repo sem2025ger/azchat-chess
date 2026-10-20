@@ -1134,3 +1134,71 @@
   .analysis-redesign-title { font-size: 15px; }
   .analysis-redesign-actions > button { font-size: 11px; padding: 5px 7px; }
 }
+
+/* Desktop review geometry: one explicit row for board and panel; no legacy offsets. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen {
+    align-items: start !important;
+    align-content: center;
+    grid-template-rows: auto auto;
+    row-gap: 18px;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+  .desktop-analysis-screen > .desktop-analysis-board-column {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    transform: none !important;
+    height: auto;
+    min-height: 0;
+  }
+  .desktop-analysis-screen .desktop-analysis-board-stack {
+    width: 100%;
+    max-width: min(100%, calc(100dvh - 166px)) !important;
+    height: auto !important;
+    justify-content: flex-start;
+    gap: 0;
+  }
+  .desktop-analysis-screen .desktop-analysis-board-row {
+    height: auto !important;
+    flex: none;
+    align-items: stretch;
+    padding: 0;
+    gap: 20px;
+  }
+  .desktop-analysis-screen .desktop-analysis-board-frame {
+    width: 100% !important;
+    max-width: 630px !important;
+    max-height: none !important;
+    aspect-ratio: auto;
+    border-bottom-width: 0;
+    flex: 1 1 0% !important;
+  }
+  .desktop-analysis-screen .desktop-analysis-player-top,
+  .desktop-analysis-screen .desktop-analysis-review-player-bottom { display: none; }
+  .desktop-analysis-screen > .desktop-analysis-panel {
+    align-self: start;
+    margin: 0 !important;
+    height: var(--analysis-board-height, 580px) !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+  .desktop-analysis-screen .desktop-analysis-evaluation { translate: none; padding: 0; width: 24px; flex-shrink: 0; }
+  .desktop-analysis-screen .desktop-analysis-stockfish { height: auto; max-height: 58%; overflow-y: auto; flex: 0 1 auto; }
+  .desktop-analysis-screen .desktop-analysis-stockfish > div { height: auto; overflow: visible; }
+  .desktop-analysis-screen .analysis-engine-status { flex-wrap: wrap; gap: 8px; }
+  .desktop-analysis-screen .analysis-engine-status > div { flex-wrap: wrap; }
+  .desktop-analysis-screen .analysis-engine-score { width: 56px; min-width: 56px; }
+  .desktop-analysis-screen .desktop-analysis-transport { height: 52px; min-height: 52px; gap: 12px; background: #101113; }
+  .desktop-analysis-screen .desktop-analysis-transport > button { min-height: 36px; min-width: 40px; padding: 5px; }
+  .desktop-analysis-screen .position-map-facts { display: grid; gap: 7px; padding: 12px; border: 1px solid #d7ae5b33; border-radius: 12px; background: #111410; }
+  .desktop-analysis-screen .analysis-position-map h2 { color: #f4e4c2; font-size: 17px; font-weight: 700; margin-bottom: 7px; }
+  .desktop-analysis-screen .position-map-facts h2:not(:first-child) { margin-top: 9px; }
+  .desktop-analysis-screen .position-map-facts p { font-size: 12px; color: #c0baae; line-height: 1.5; }
+  .desktop-analysis-screen .position-map-note { display: block; font-size: 12px; line-height: 1.6; color: #aaa496; margin-top: 6px; }
+  .desktop-analysis-screen .position-map-plan { display: block; width: 100%; text-align: left; padding: 12px; margin-top: 10px; border: 1px solid #d7ae5b44; border-radius: 12px; background: #131513; color: #eee6d3; }
+  .desktop-analysis-screen .position-map-plan[aria-pressed="true"] { border-color: #ddba70; background: #26251c; }
+  .desktop-analysis-screen .position-map-plan:hover { border-color: #ddba70; }
+  .desktop-analysis-screen .position-map-plan:focus-visible { outline: 2px solid #ddba70; outline-offset: 2px; }
+}

@@ -29,7 +29,7 @@ export class StockfishEngine {
   private ready: boolean = false;
   private _initFailed: boolean = false;
   private _searching: boolean = false;
-  private _pending: { fen: string; depth: number } | null = null;
+  private _pending: { fen: string; depth: number; multiPv: number } | null = null;
   private _initTimer: ReturnType<typeof setTimeout> | null = null;
   private _resultTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -41,9 +41,10 @@ export class StockfishEngine {
   private _lastGoodPv: string[] = [];
   private _lines: Record<number, EngineLine> = {};
   private _lastGoodLines: Record<number, EngineLine> = {};
+  private _multiPv = 3;
   private _rootBlackToMove = false;
   private _analyzedFen = '';
-  private _queuedAnalysis: { fen?: string; depth: number } | null = null;
+  private _queuedAnalysis: { fen?: string; depth: number; multiPv: number } | null = null;
   private _stoppingForRestart = false;
 
   constructor() {
@@ -107,9 +108,9 @@ export class StockfishEngine {
       if (this._initTimer) { clearTimeout(this._initTimer); this._initTimer = null; }
       console.log('Engine: UCI ready');
       if (this._pending) {
-        const { fen, depth } = this._pending;
+        const { fen, depth, multiPv } = this._pending;
         this._pending = null;
-        this.analyze(fen, depth);
+        this.analyze(fen, depth, multiPv);
       }
       return;
     }
@@ -127,7 +128,7 @@ export class StockfishEngine {
         this._stoppingForRestart = false;
         const queued = this._queuedAnalysis;
         this._queuedAnalysis = null;
-        if (queued) this.beginSearch(queued.fen, queued.depth);
+        if (queued) this.beginSearch(queued.fen, queued.depth, queued.multiPv);
         return;
       }
       const m = line.match(/^bestmove\s+(\S+)/);
@@ -153,7 +154,7 @@ export class StockfishEngine {
 
     const mpvM = line.match(/\bmultipv\s+(\d+)/);
     const multipv = mpvM ? parseInt(mpvM[1], 10) : 1;
-    if (multipv > 3) return;
+    if (multipv < 1 || multipv > this._multiPv) return;
 
     const dM = line.match(/\bdepth\s+(\d+)/);
     if (dM && multipv === 1) this._depth = parseInt(dM[1], 10);
@@ -228,7 +229,7 @@ export class StockfishEngine {
     const isUsableLine = (line?: EngineLine) =>
       !!line && (line.pv.length > 1 || (line.mate != null && line.pv.length > 0));
 
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= this._multiPv; i++) {
       const line = this._lines[i];
       const goodLine = this._lastGoodLines[i];
       if (isUsableLine(line)) {
@@ -252,22 +253,27 @@ export class StockfishEngine {
     this.onErrorCallback = callback;
   }
 
-  public analyze(fen: string, depth: number = 18): void {
+  public analyze(fen: string, depth: number = 18, requestedLines: number = 3): void {
+    const multiPv = Number.isFinite(requestedLines) ? Math.max(1, Math.min(5, Math.round(requestedLines))) : 3;
     if (!this._worker) return;
-    if (!this.ready) { this._pending = { fen, depth }; return; }
+    if (!this.ready) { this._pending = { fen, depth, multiPv }; return; }
 
     if (this._searching) {
       this.clearResultTimer();
-      this._queuedAnalysis = { fen, depth };
+      this._queuedAnalysis = { fen, depth, multiPv };
       this._stoppingForRestart = true;
       this.send('stop');
       return;
     }
 
-    this.beginSearch(fen, depth);
+    this.beginSearch(fen, depth, multiPv);
   }
 
-  private beginSearch(fen?: string, depth = 18): void {
+  private beginSearch(fen?: string, depth = 18, multiPv = 3): void {
+    if (this._multiPv !== multiPv) {
+      this._multiPv = multiPv;
+      this.send(`setoption name MultiPV value ${multiPv}`);
+    }
     this.clearResultTimer();
     this._searching = true;
     this._depth = 0;

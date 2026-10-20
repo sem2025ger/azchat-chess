@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -27,12 +26,13 @@ interface AnalysisPanelProps {
   reviewLayout?: boolean;
   requestedDepth?: number;
   onIncreaseDepth?: () => void;
+  pvLines?: number;
+  onPvLinesChange?: (count: number) => void;
 }
 
-export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves, reviewLayout = false, requestedDepth, onIncreaseDepth }: AnalysisPanelProps) {
+export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves, reviewLayout = false, requestedDepth, onIncreaseDepth, pvLines = 3, onPvLinesChange }: AnalysisPanelProps) {
   const { t } = useLanguage();
-  // Stockfish already calculates up to three MultiPV lines; select how many to show.
-  const [visiblePvLines, setVisiblePvLines] = useState(3);
+  const visiblePvLines = pvLines;
   const displayedLines = reviewLayout ? lines?.slice(0, visiblePvLines) : lines;
 
   if (noMoves) {
@@ -85,14 +85,14 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
             <Cpu size={16} className={cx("text-neutral-400", loading && "animate-pulse")} />
             <span className="text-[0.75rem] font-bold text-neutral-300">Stockfish</span>
             {depth > 0 && <span className="text-[0.65rem] font-semibold text-neutral-500 bg-white/5 px-2 py-0.5 rounded-full">depth {depth}</span>}
-            {reviewLayout && requestedDepth && onIncreaseDepth && <button type="button" className="analysis-depth-action hidden lg:inline-flex items-center rounded-lg border border-[#8f7749]/40 px-2 py-1 text-[11px] font-bold text-[#f4dca5]" onClick={onIncreaseDepth} title="Глубина анализа Stockfish">{requestedDepth >= 30 ? '18' : 'Глубже'} · {requestedDepth}</button>}
+            {reviewLayout && requestedDepth && onIncreaseDepth && <button type="button" className="analysis-depth-action hidden lg:inline-flex items-center rounded-lg border border-[#8f7749]/40 px-2 py-1 text-[11px] font-bold text-[#f4dca5]" onClick={onIncreaseDepth} disabled={requestedDepth >= 36} title={`Увеличить целевую глубину с ${requestedDepth} до ${Math.min(36, requestedDepth + 6)}`}>Глубже</button>}
          </div>
          <div className="flex items-center gap-1.5">
             {reviewLayout && (
               <div className="hidden lg:inline-flex items-center gap-0.5 rounded-lg border border-[#8f7749]/50 bg-[#101116] p-0.5" role="group" aria-label="Количество линий Stockfish">
-                {([1, 2, 3] as const).map(count => (
-                  <button key={count} type="button" aria-label={`Показать ${count} ${count === 1 ? 'линию' : 'линии'} анализа`} aria-pressed={visiblePvLines === count}
-                    onClick={() => setVisiblePvLines(count)}
+                {([1, 2, 3, 4, 5] as const).map(count => (
+                  <button key={count} type="button" aria-label={`Линий анализа: ${count}`} aria-pressed={visiblePvLines === count}
+                    onClick={() => onPvLinesChange?.(count)}
                     className={cx(
                       "min-h-7 min-w-7 rounded-md border px-1.5 text-xs font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200",
                       visiblePvLines === count

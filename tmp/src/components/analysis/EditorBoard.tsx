@@ -99,8 +99,8 @@ export default function EditorBoard({ draft, selected, words, onPlace, onMove }:
               >
                 {piece && <img src={pieceAsset(piece)} draggable={false} alt="" aria-hidden="true"
                   className={`pointer-events-none select-none h-[89%] w-[89%] object-contain ${piece === piece.toLowerCase() ? 'desktop-editor-black-piece' : ''}`} />}
-                {index % 8 === 0 && <span aria-hidden="true" className="pointer-events-none absolute left-1 top-0.5 text-[0.7rem] font-bold text-black/45">{8 - Math.floor(index / 8)}</span>}
-                {index >= 56 && <span aria-hidden="true" className="pointer-events-none absolute bottom-0.5 right-1 text-[0.7rem] font-bold text-black/45">{files[index % 8]}</span>}
+                {index % 8 === 0 && <span aria-hidden="true" className="pointer-events-none lg:hidden absolute left-1 top-0.5 text-[0.7rem] font-bold text-black/45">{8 - Math.floor(index / 8)}</span>}
+                {index >= 56 && <span aria-hidden="true" className="pointer-events-none lg:hidden absolute bottom-0.5 right-1 text-[0.7rem] font-bold text-black/45">{files[index % 8]}</span>}
               </button>
             );
           })}
