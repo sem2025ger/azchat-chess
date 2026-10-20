@@ -1144,10 +1144,10 @@
     grid-template-columns: var(--review-board-column, minmax(0, 1fr)) var(--review-panel-width, minmax(0, 1fr));
     justify-content: start;
     grid-template-rows: minmax(0, 1fr);
-    column-gap: var(--review-column-gap, 51px);
+    column-gap: var(--review-column-gap, 51px) !important;
     row-gap: 12px;
-    max-width: none;
-    padding: calc(10px * var(--review-scale, 1)) calc(55px * var(--review-scale, 1)) calc(38px * var(--review-scale, 1)) calc(66px * var(--review-scale, 1));
+    max-width: none !important;
+    padding: calc(10px * var(--review-scale, 1)) calc(55px * var(--review-scale, 1)) calc(38px * var(--review-scale, 1)) calc(66px * var(--review-scale, 1)) !important;
     margin: 0 !important;
     height: 100% !important;
     min-height: 0 !important;

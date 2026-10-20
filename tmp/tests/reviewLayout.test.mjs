@@ -31,6 +31,12 @@ test('larger workspaces preserve the approved size instead of growing the board 
 test('desktop panel shares the board height and the top player-row offset', () => {
   const css = fs.readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
   const geometry = css.slice(css.indexOf('/* Desktop review geometry:'));
+  // Responsive utility classes are emitted later in the production stylesheet.
+  // The approved geometry must win over lg:gap-3 and xl:px-6 / lg:pb-1.
+  const workspace = geometry.match(/\.desktop-analysis-screen\s*\{([^}]+)\}/)[1];
+  assert.match(workspace, /column-gap:\s*var\(--review-column-gap,\s*51px\)\s*!important/);
+  assert.match(workspace, /padding:[^;]+!important/);
+  assert.match(workspace, /max-width:\s*none\s*!important/);
   assert.match(geometry, /:has\(\.desktop-analysis-player-top\)\s*>\s*\.desktop-analysis-panel\s*\{\s*margin-top:\s*calc\(36px\s*\*\s*var\(--review-scale,\s*1\)\)\s*!important;/);
   const panel = geometry.match(/\.desktop-analysis-screen > \.desktop-analysis-panel\s*\{([^}]+)\}/)[1];
   assert.match(panel, /height:\s*var\(--review-board-size,\s*580px\)\s*!important/);
