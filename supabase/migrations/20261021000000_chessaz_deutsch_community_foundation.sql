@@ -127,12 +127,41 @@ CREATE POLICY chess_club_event_participants_join ON public.chess_club_event_part
       WHERE e.id = chess_club_event_participants.event_id
         AND e.status = 'collecting'
         AND m.user_id = (SELECT auth.uid())
-        AND (SELECT count(*) FROM public.chess_club_event_participants p
-             WHERE p.event_id = e.id) < e.max_players
+        -- Capacity is checked in a serialized BEFORE INSERT trigger below.
     )
   );
 CREATE POLICY chess_club_event_participants_leave ON public.chess_club_event_participants
   FOR DELETE TO authenticated USING (user_id = (SELECT auth.uid()));
+
+-- Atomic capacity enforcement: lock the parent event row before counting sign-ups.
+-- A self-referencing participant count in its own RLS INSERT policy would recurse.
+-- The trigger is private and cannot be invoked as a browser RPC.
+CREATE SCHEMA IF NOT EXISTS private;
+CREATE FUNCTION private.enforce_chess_club_event_capacity()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $
+DECLARE
+  limit_count integer;
+BEGIN
+  SELECT e.max_players INTO limit_count FROM public.chess_club_events e
+  WHERE e.id = NEW.event_id AND e.status = 'collecting'
+  FOR UPDATE;
+  IF limit_count IS NULL THEN
+    RAISE EXCEPTION 'Club event is not accepting participants'
+      USING ERRCODE = '23514';
+  END IF;
+  IF (SELECT count(*) FROM public.chess_club_event_participants p
+      WHERE p.event_id = NEW.event_id) >= limit_count THEN
+    RAISE EXCEPTION 'Club event is full' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$;
+REVOKE ALL ON FUNCTION private.enforce_chess_club_event_capacity() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER chess_club_event_capacity_guard
+  BEFORE INSERT ON public.chess_club_event_participants
+  FOR EACH ROW EXECUTE FUNCTION private.enforce_chess_club_event_capacity();
 
 INSERT INTO public.chess_clubs (slug, name, description, country_code)
 VALUES ('chessaz-deutsch', 'ChessAZ Deutsch',
