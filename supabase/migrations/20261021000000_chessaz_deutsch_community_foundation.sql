@@ -140,7 +140,7 @@ CREATE SCHEMA IF NOT EXISTS private;
 CREATE FUNCTION private.enforce_chess_club_event_capacity()
 RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
-AS $
+AS $$
 DECLARE
   limit_count integer;
 BEGIN
@@ -157,7 +157,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION private.enforce_chess_club_event_capacity() FROM PUBLIC, anon, authenticated;
 CREATE TRIGGER chess_club_event_capacity_guard
   BEFORE INSERT ON public.chess_club_event_participants
