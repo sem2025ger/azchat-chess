@@ -85,6 +85,7 @@ const EXACT_ALLOWED_ORIGINS = new Set([
   'https://chessaz.de',
   'https://www.chessaz.de',
   'https://chessaz-preview.vercel.app',
+  'https://chessaz-preview-workspace.vercel.app',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   FRONTEND_URL,
