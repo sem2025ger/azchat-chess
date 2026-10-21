@@ -963,6 +963,12 @@
   .settings-options-column .grid { gap:clamp(3px,.65vh,8px) !important; }
   .settings-options-column button { transition-property:background-color,border-color,color,box-shadow !important; transition-duration:100ms !important; transform:none !important; }
   .settings-options-column button:active { filter:brightness(1.12); }
+  #settings-section-board > section,
+  #settings-section-pieces > section,
+  #settings-section-sound > section,
+  #settings-section-background > section {
+    background:linear-gradient(120deg,#20242D 0%,#0B0F14 42%,#111827 76%,#161C27 100%);
+  }
   .settings-preview-column > div { height:100%; min-height:0; }
   .settings-preview-column > div > div { padding:clamp(8px,1.1vh,16px) !important; gap:clamp(4px,.8vh,12px) !important; }
   #settings-section-background section { min-height:clamp(134px,19.5vh,184px); display:flex; flex-direction:column; }
