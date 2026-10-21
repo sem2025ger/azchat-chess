@@ -1,0 +1,151 @@
+/* cormorant-garamond: cyrillic-ext */
+@font-face {
+  font-family: 'ChessAZ Settings Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/settings/cormorant-garamond-cyrillic-ext.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+/* cormorant-garamond: cyrillic */
+@font-face {
+  font-family: 'ChessAZ Settings Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/settings/cormorant-garamond-cyrillic.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+/* cormorant-garamond: latin-ext */
+@font-face {
+  font-family: 'ChessAZ Settings Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/settings/cormorant-garamond-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* cormorant-garamond: latin */
+@font-face {
+  font-family: 'ChessAZ Settings Display';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(/fonts/settings/cormorant-garamond-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* montserrat: cyrillic-ext */
+@font-face {
+  font-family: 'ChessAZ Settings UI';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/settings/montserrat-cyrillic-ext.woff2) format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+
+/* montserrat: cyrillic */
+@font-face {
+  font-family: 'ChessAZ Settings UI';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/settings/montserrat-cyrillic.woff2) format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+
+/* montserrat: latin-ext */
+@font-face {
+  font-family: 'ChessAZ Settings UI';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/settings/montserrat-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* montserrat: latin */
+@font-face {
+  font-family: 'ChessAZ Settings UI';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url(/fonts/settings/montserrat-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Typography is opt-in to Settings; navigation and the board retain their fonts. */
+.settings-fixed-workspace {
+  font-family: 'ChessAZ Settings UI', 'Segoe UI', sans-serif;
+  font-synthesis: none;
+}
+.settings-fixed-workspace button,
+.settings-fixed-workspace input {
+  font-family: inherit;
+}
+.settings-fixed-workspace .font-black:not(#settings-preview-board *),
+.settings-fixed-workspace .font-bold:not(#settings-preview-board *) {
+  font-weight: 600;
+}
+.settings-fixed-workspace .italic {
+  font-style: normal;
+}
+.settings-fixed-workspace .uppercase {
+  text-transform: none;
+}
+.settings-fixed-workspace button,
+.settings-fixed-workspace button span {
+  letter-spacing: 0.015em;
+}
+.settings-fixed-workspace h2,
+.settings-fixed-workspace .settings-preview-title {
+  font-family: 'ChessAZ Settings Display', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.settings-fixed-workspace h2 {
+  font-size: 24px;
+  line-height: 1.15;
+}
+.settings-fixed-workspace .settings-options-column h2 {
+  font-size: 21px !important;
+  line-height: 24px;
+}
+.settings-fixed-workspace .settings-preview-title {
+  font-size: 20px;
+  line-height: 22px;
+}
+.settings-fixed-workspace .settings-preview-stat span:first-child {
+  font-weight: 500;
+  letter-spacing: 0.045em;
+}
+.settings-fixed-workspace .settings-restore-defaults {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 19.2px;
+  letter-spacing: 0.02em;
+}
+.settings-fixed-workspace #settings-preview-board {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Settings-only interaction feedback: keep the approved geometry and typography. */
+.settings-fixed-workspace button {
+  cursor: pointer;
+  touch-action: manipulation;
+  transition-property: background-color, border-color, color, box-shadow, opacity !important;
+  transition-duration: 100ms !important;
+  transition-timing-function: ease-out !important;
+}
+.settings-fixed-workspace button:not(:disabled):active { filter: brightness(1.14); }
+.settings-fixed-workspace button:focus-visible {
+  outline: 2px solid rgba(223,176,98,.85);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .settings-fixed-workspace button { transition-duration: 0ms !important; }
+}

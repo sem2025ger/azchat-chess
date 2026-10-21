@@ -1,13 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Chess } from 'chess.js';
+import { trySettingsPreviewMove } from '../utils/settingsPreviewMove';
 import { useThemeContext, type BackgroundTheme, type SoundTheme } from '../context/ThemeContext';
 import { playChessSound, preloadChessSounds, setChessSoundMuted } from '../utils/chessSounds';
 import { BOARD_THEMES, BOARD_THEME_DETAILS, PIECE_STYLES } from '../lib/chessThemes';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import ChessBoard from '../components/ChessBoard';
+import SettingsCommandCenter from '../components/settings/SettingsCommandCenter';
+import './SettingsTypography.css';
 import { 
   Palette, Globe, Sparkles, Check, Monitor, Volume2, 
-  ChevronRight, ArrowLeft, Clock, Layout as LayoutIcon
+  ChevronRight, ArrowLeft, Clock, RotateCcw, Layout as LayoutIcon
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -28,6 +32,7 @@ export default function SettingsScreen() {
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const [activeSubView, setActiveSubView] = useState<SubView>('main');
+  const [previewGame, setPreviewGame] = useState(() => new Chess());
 
   const [showSaved, setShowSaved] = useState(false);
   const isFirstRender = useRef(true);
@@ -77,6 +82,15 @@ export default function SettingsScreen() {
     setBackground('Void Black');
     triggerSaved();
   };
+
+  const handlePreviewMove = useCallback((from: string, to: string, promotion = 'q') => {
+    const result = trySettingsPreviewMove(previewGame, from, to, promotion);
+    if (!result) return false;
+    setPreviewGame(result.game);
+    // Called in the originating pointer/click gesture, allowing AudioContext resume.
+    void playChessSound(result.sound, soundTheme);
+    return true;
+  }, [previewGame, soundTheme]);
 
   const handleSoundThemeSelect = (theme: SoundTheme) => {
     const muted = theme === 'Muted / Off';
@@ -309,7 +323,7 @@ export default function SettingsScreen() {
 
             <button 
               onClick={handleRestoreDefaults}
-              className="w-full py-5 rounded-3xl bg-white/5 text-neutral-500 font-black text-xs uppercase tracking-[0.3em] italic hover:text-white transition-all shadow-xl active:scale-95"
+              className="settings-restore-defaults w-full py-5 rounded-3xl bg-white/5 text-neutral-500 font-black text-xs uppercase tracking-[0.3em] italic hover:text-white transition-all shadow-xl active:scale-95"
             >
               {t('settings.restoreDefaults')}
             </button>
@@ -319,17 +333,18 @@ export default function SettingsScreen() {
   };
 
   return (
-    <div className="min-h-full xl:h-[calc(100dvh-4rem)] w-full bg-transparent flex flex-col items-center relative transition-all overflow-x-hidden xl:overflow-hidden pt-0 px-2 pb-6 md:px-8 md:pb-8 md:pt-3">
+    <div className="settings-fixed-workspace min-h-0 h-full w-full bg-transparent flex flex-col items-center relative overflow-hidden pt-0 px-2 pb-2 md:px-5 md:pb-2 md:pt-1">
       {/* Background Decor */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="w-full max-w-[85rem] z-10 h-full flex flex-col xl:justify-center">
-        {/* Desktop View: Unified Grid */}
-        <div className="hidden lg:grid grid-cols-12 gap-4 xl:gap-8 items-stretch">
-          <div className="col-span-7 flex flex-col justify-between gap-3 xl:gap-4 pr-0 xl:pr-2 h-full">
+      <div className="settings-fixed-inner w-full max-w-[85rem] z-10 flex flex-col min-h-0 h-full justify-start">
+        <SettingsCommandCenter language={language} />
+                {/* Desktop View: Unified Grid */}
+        <div className="settings-desktop-grid hidden lg:grid grid-cols-12 gap-3 xl:gap-5 items-stretch flex-1 min-h-0">
+          <div className="settings-options-column col-span-7 flex flex-col justify-between gap-2 xl:gap-3 pr-0 xl:pr-2 min-h-0 h-full">
             {/* Row 1: Board Appearance */}
-            <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+            <div id="settings-section-board" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
               <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <Palette size={16} className="text-chess-gold" /> {t('settings.boardAppearance')}
@@ -356,7 +371,7 @@ export default function SettingsScreen() {
             {/* Row 2: Piece Styles and Sound Themes */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 xl:gap-4">
               {/* Piece Styles */}
-              <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+              <div id="settings-section-pieces" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
                 <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                   <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                     <Monitor size={16} className="text-chess-active" /> {t('settings.pieceStyles')}
@@ -376,7 +391,7 @@ export default function SettingsScreen() {
               </div>
 
               {/* Sound Themes */}
-              <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+              <div id="settings-section-sound" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
                 <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full flex flex-col">
                   <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                     <Volume2 size={16} className="text-neutral-400" /> {t('settings.soundThemes')}
@@ -391,14 +406,14 @@ export default function SettingsScreen() {
             </div>
 
             {/* Row 3: Background Theme */}
-            <div className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+            <div id="settings-section-background" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
               <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <LayoutIcon size={16} className="text-purple-400" /> {t('settings.interfaceTheme')}
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
                   {bgThemes.map((bg) => (
-                    <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("px-1.5 py-1.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight whitespace-nowrap", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
+                    <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("min-w-0 px-1.5 py-1.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
                       {bg.name}
                     </button>
                   ))}
@@ -407,29 +422,38 @@ export default function SettingsScreen() {
             </div>
           </div>
 
-          <div className="col-span-5 relative h-full">
+          <div className="settings-preview-column col-span-5 relative h-full min-h-0">
             <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl h-full">
               <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 xl:p-5 flex flex-col items-center gap-3 xl:gap-4 h-full">
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.4em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
-                  <div className="flex items-center gap-2">
-                    <span className={cx("text-[0.7rem] xl:text-[0.75rem] font-black text-emerald-400 uppercase tracking-widest transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
-                      {t('settings.saved')} ✓
-                    </span>
-                    <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.6rem] xl:text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
+                <div className="relative flex items-center justify-center min-h-[44px] w-full shrink-0">
+                  <span className={cx("absolute left-0 max-w-[80px] text-[0.6rem] font-black text-emerald-400 uppercase tracking-wider leading-tight transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
+                    {t('settings.saved')} ✓
+                  </span>
+                  <span className="settings-preview-title w-full px-[5.5rem] text-center text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.15em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
+                  <button
+                    type="button"
+                    aria-controls="settings-preview-board"
+                    title={t('settings.resetPreviewPosition')}
+                    onClick={() => setPreviewGame(new Chess())}
+                    className="absolute right-0 inline-flex items-center gap-1 px-2 py-1.5 rounded-xl border border-chess-gold/30 bg-chess-gold/5 text-chess-gold text-[0.65rem] font-bold transition-colors hover:bg-chess-gold/10 hover:border-chess-gold/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chess-gold/50"
+                  >
+                    <RotateCcw size={14} aria-hidden="true" />
+                    {t('settings.refreshPreview')}
+                  </button>
+                </div>
+                <div className="settings-preview-stage w-full flex-1 min-h-0 flex items-center justify-center">
+                  <div id="settings-preview-board" className="settings-preview-board">
+                    <ChessBoard game={previewGame} onMove={handlePreviewMove} externalCoordinatesOnDesktop className="!border-none !bg-transparent !shadow-none ring-0" />
                   </div>
                 </div>
-                <div className="w-full aspect-square max-w-[260px] xl:max-w-[280px] rounded-2xl overflow-hidden shadow-2xl border-b-4 border-black/40">
-                  <ChessBoard className="!p-0 !border-none !bg-transparent !shadow-none ring-0" />
-                </div>
-                <div className="w-full space-y-1.5">
+                <div className="w-full space-y-1.5 shrink-0">
                   <PreviewStat label={t('settings.boardTheme')} value={boardTheme} icon={<Palette size={14} className="xl:w-4 xl:h-4" />} />
                   <PreviewStat label={t('settings.pieceSet')} value={pieceTheme.toUpperCase()} icon={<Monitor size={14} className="xl:w-4 xl:h-4" />} />
                   <PreviewStat label={t('settings.appTheme')} value={background} icon={<LayoutIcon size={14} className="xl:w-4 xl:h-4" />} />
                 </div>
                 <button 
                   onClick={handleRestoreDefaults}
-                  className="w-full py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.75rem] xl:text-[0.8rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
+                  className="settings-restore-defaults w-full shrink-0 py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.75rem] xl:text-[0.8rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
                 >
                   {t('settings.restoreDefaults')}
                 </button>
@@ -439,7 +463,7 @@ export default function SettingsScreen() {
         </div>
 
         {/* Mobile View: Hub and Spoke */}
-        <div className="lg:hidden w-full h-full min-h-0 flex flex-col mt-2">
+        <div className="lg:hidden w-full h-full min-h-0 flex flex-col mt-2 overflow-y-auto">
           {renderMobileView()}
         </div>
       </div>
@@ -488,12 +512,12 @@ function SelectionCard({ active, onClick, title, preview }: { active: boolean; o
 
 function PreviewStat({ label, value, icon }: { label: string; value: string; icon: any }) {
   return (
-    <div className="flex items-center justify-between p-2.5 xl:p-3 bg-white/[0.03] rounded-2xl border border-white/5 shadow-inner">
-      <div className="flex flex-col">
-        <span className="text-[0.65rem] font-black text-neutral-600 uppercase tracking-widest italic leading-none mb-1">{label}</span>
-        <span className="text-[0.95rem] font-black text-white truncate max-w-[150px]">{value}</span>
+    <div className="settings-preview-stat flex items-center justify-between gap-3 px-3 py-2 bg-white/[0.03] rounded-2xl border border-white/5 shadow-inner">
+      <div className="flex flex-col min-w-0 flex-1">
+        <span className="text-[0.65rem] font-black text-neutral-600 uppercase tracking-widest italic leading-none mb-0.5">{label}</span>
+        <span className="text-sm leading-snug font-black text-white break-words">{value}</span>
       </div>
-      <div className="text-neutral-700">{icon}</div>
+      <div className="text-neutral-700 shrink-0">{icon}</div>
     </div>
   );
 }
