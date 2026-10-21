@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import ChessBoard from '../components/ChessBoard';
 import SettingsCommandCenter from '../components/settings/SettingsCommandCenter';
+import './SettingsTypography.css';
 import { 
   Palette, Globe, Sparkles, Check, Monitor, Volume2, 
   ChevronRight, ArrowLeft, Clock, RotateCcw, Layout as LayoutIcon
@@ -311,7 +312,7 @@ export default function SettingsScreen() {
 
             <button 
               onClick={handleRestoreDefaults}
-              className="w-full py-5 rounded-3xl bg-white/5 text-neutral-500 font-black text-xs uppercase tracking-[0.3em] italic hover:text-white transition-all shadow-xl active:scale-95"
+              className="settings-restore-defaults w-full py-5 rounded-3xl bg-white/5 text-neutral-500 font-black text-xs uppercase tracking-[0.3em] italic hover:text-white transition-all shadow-xl active:scale-95"
             >
               {t('settings.restoreDefaults')}
             </button>
@@ -417,7 +418,7 @@ export default function SettingsScreen() {
                   <span className={cx("absolute left-0 max-w-[80px] text-[0.6rem] font-black text-emerald-400 uppercase tracking-wider leading-tight transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
                     {t('settings.saved')} ✓
                   </span>
-                  <span className="w-full px-[5.5rem] text-center text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.15em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
+                  <span className="settings-preview-title w-full px-[5.5rem] text-center text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.15em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
                   <button
                     type="button"
                     aria-controls="settings-preview-board"
@@ -441,7 +442,7 @@ export default function SettingsScreen() {
                 </div>
                 <button 
                   onClick={handleRestoreDefaults}
-                  className="w-full shrink-0 py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.75rem] xl:text-[0.8rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
+                  className="settings-restore-defaults w-full shrink-0 py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.75rem] xl:text-[0.8rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
                 >
                   {t('settings.restoreDefaults')}
                 </button>
