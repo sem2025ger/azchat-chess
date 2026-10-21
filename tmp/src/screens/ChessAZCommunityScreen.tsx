@@ -146,15 +146,17 @@ export default function ChessAZCommunityScreen() {
     return () => { active = false; window.clearInterval(timer); };
   }, [refresh, authLoading, t.failed]);
 
-  const perform = async (fn: () => PromiseLike<{ error: { message: string } | null }>) => {
+  const perform = async (fn: () => PromiseLike<{ error: { message: string } | null }>): Promise<boolean> => {
     setBusy(true); setError(''); setNotice('');
     try {
       const result = await fn();
       if (result.error) throw result.error;
       await refresh();
       setNotice(t.success);
+      return true;
     } catch {
       setError(t.failed);
+      return false;
     } finally {
       setBusy(false);
     }
@@ -163,19 +165,19 @@ export default function ChessAZCommunityScreen() {
     event.preventDefault();
     if (!club || !user || !member || !message.trim() || busy) return;
     const body = message.trim();
-    await perform(() => supabase.from('chess_club_messages')
+    const saved = await perform(() => supabase.from('chess_club_messages')
       .insert({ club_id: club.id, author_id: user.id, body }));
-    setMessage('');
+    if (saved) setMessage('');
   };
   const proposeEvent = async (event: FormEvent) => {
     event.preventDefault();
     if (!club || !user || !member || eventTitle.trim().length < 4 || busy) return;
     const title = eventTitle.trim();
-    await perform(() => supabase.from('chess_club_events').insert({
+    const saved = await perform(() => supabase.from('chess_club_events').insert({
       club_id: club.id, created_by: user.id, title, format: eventFormat,
       min_players: 4, max_players: 16
     }));
-    setEventTitle('');
+    if (saved) setEventTitle('');
   };
   const membershipAction = () => {
     if (!club || !user || busy) return;
