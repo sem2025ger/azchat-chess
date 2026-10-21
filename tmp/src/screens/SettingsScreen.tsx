@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Chess } from 'chess.js';
+import { trySettingsPreviewMove } from '../utils/settingsPreviewMove';
 import { useThemeContext, type BackgroundTheme, type SoundTheme } from '../context/ThemeContext';
 import { playChessSound, preloadChessSounds, setChessSoundMuted } from '../utils/chessSounds';
 import { BOARD_THEMES, BOARD_THEME_DETAILS, PIECE_STYLES } from '../lib/chessThemes';
@@ -30,7 +32,7 @@ export default function SettingsScreen() {
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const [activeSubView, setActiveSubView] = useState<SubView>('main');
-  const [previewVersion, setPreviewVersion] = useState(0);
+  const [previewGame, setPreviewGame] = useState(() => new Chess());
 
   const [showSaved, setShowSaved] = useState(false);
   const isFirstRender = useRef(true);
@@ -80,6 +82,15 @@ export default function SettingsScreen() {
     setBackground('Void Black');
     triggerSaved();
   };
+
+  const handlePreviewMove = useCallback((from: string, to: string, promotion = 'q') => {
+    const result = trySettingsPreviewMove(previewGame, from, to, promotion);
+    if (!result) return false;
+    setPreviewGame(result.game);
+    // Called in the originating pointer/click gesture, allowing AudioContext resume.
+    void playChessSound(result.sound, soundTheme);
+    return true;
+  }, [previewGame, soundTheme]);
 
   const handleSoundThemeSelect = (theme: SoundTheme) => {
     const muted = theme === 'Muted / Off';
@@ -423,7 +434,7 @@ export default function SettingsScreen() {
                     type="button"
                     aria-controls="settings-preview-board"
                     title={t('settings.resetPreviewPosition')}
-                    onClick={() => setPreviewVersion(version => version + 1)}
+                    onClick={() => setPreviewGame(new Chess())}
                     className="absolute right-0 inline-flex items-center gap-1 px-2 py-1.5 rounded-xl border border-chess-gold/30 bg-chess-gold/5 text-chess-gold text-[0.65rem] font-bold transition-colors hover:bg-chess-gold/10 hover:border-chess-gold/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chess-gold/50"
                   >
                     <RotateCcw size={14} aria-hidden="true" />
@@ -432,7 +443,7 @@ export default function SettingsScreen() {
                 </div>
                 <div className="settings-preview-stage w-full flex-1 min-h-0 flex items-center justify-center">
                   <div id="settings-preview-board" className="settings-preview-board">
-                    <ChessBoard key={previewVersion} externalCoordinatesOnDesktop className="!border-none !bg-transparent !shadow-none ring-0" />
+                    <ChessBoard game={previewGame} onMove={handlePreviewMove} externalCoordinatesOnDesktop className="!border-none !bg-transparent !shadow-none ring-0" />
                   </div>
                 </div>
                 <div className="w-full space-y-1.5 shrink-0">
