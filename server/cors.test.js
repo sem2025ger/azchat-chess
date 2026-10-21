@@ -13,11 +13,15 @@ process.env.FRONTEND_URL = 'https://configured-frontend.example';
 const { server, io, setTokenVerifier } = require('./index');
 const TEAM_PREVIEW = 'https://azchat-chess-405k296wy-semov20207-3068s-projects.vercel.app';
 const PERMANENT_PREVIEW = 'https://chessaz-preview.vercel.app';
+const WORKSPACE_PREVIEW = 'https://chessaz-preview-workspace.vercel.app';
 const UNTRUSTED = [
   'https://untrusted.example',
   'https://azchat-chess-evil.vercel.app',
   'https://azchat-chess-405k296wy-other-team.vercel.app',
   `${TEAM_PREVIEW}.evil.example`,
+  `${WORKSPACE_PREVIEW}.evil.example`,
+  `${WORKSPACE_PREVIEW}@evil.example`,
+  WORKSPACE_PREVIEW.replace('https:', 'http:'),
   'https://azchat-chess-405k296wy-semov20207-3068s-projects.vercel.app@evil.example',
   TEAM_PREVIEW.replace('https:', 'http:'),
 ];
@@ -38,7 +42,7 @@ test('CORS: approved exact origins and verified team previews receive allow-orig
   for (const origin of [
     'https://chessaz.de', 'https://www.chessaz.de',
     'http://localhost:5173', 'http://127.0.0.1:5173',
-    process.env.FRONTEND_URL, PERMANENT_PREVIEW, TEAM_PREVIEW,
+    process.env.FRONTEND_URL, PERMANENT_PREVIEW, WORKSPACE_PREVIEW, TEAM_PREVIEW,
     'https://azchat-chess-git-main-semov20207-3068s-projects.vercel.app',
   ]) {
     const response = await fetch(`${baseUrl}/health`, { headers: { Origin: origin } });
@@ -64,13 +68,13 @@ test('CORS: requests without Origin continue to work', async () => {
 });
 
 test('CORS: preflight reflects an approved origin and omits CORS headers for an untrusted origin', async () => {
-  for (const origin of [PERMANENT_PREVIEW, UNTRUSTED[1]]) {
+  for (const origin of [PERMANENT_PREVIEW, WORKSPACE_PREVIEW, UNTRUSTED[1]]) {
     const response = await fetch(`${baseUrl}/health`, {
       method: 'OPTIONS',
       headers: { Origin: origin, 'Access-Control-Request-Method': 'GET' },
     });
     assert.ok(response.status < 500);
-    assert.equal(response.headers.get('access-control-allow-origin'), origin === PERMANENT_PREVIEW ? origin : null);
+    assert.equal(response.headers.get('access-control-allow-origin'), [PERMANENT_PREVIEW, WORKSPACE_PREVIEW].includes(origin) ? origin : null);
   }
 });
 
@@ -109,7 +113,7 @@ test('CORS: WebSocket handshakes reject untrusted origins before socket authenti
 
 test('CORS: approved origins and no-Origin clients connect through polling and WebSocket', async () => {
   for (const transport of ['polling', 'websocket']) {
-    for (const origin of [TEAM_PREVIEW, PERMANENT_PREVIEW, undefined]) {
+    for (const origin of [TEAM_PREVIEW, PERMANENT_PREVIEW, WORKSPACE_PREVIEW, undefined]) {
       assert.equal(await socketHandshake(origin, transport), 'connected', `${transport}: ${origin}`);
     }
   }
