@@ -143,3 +143,18 @@ test('mate score and continuation survive coalescing', t => {
   assert.equal(results[0].mate, 2);
   assert.deepEqual(results[0].continuation, ['e7e5']);
 });
+
+test('review can request five real lines; a new count is applied only after stopping the previous search', t => {
+  const { engine, worker, results } = setup();
+  engine.analyze(nextFen, 24, 5);
+  assert.equal(worker.commands.at(-1), 'stop');
+  worker.emit('bestmove e2e4');
+  assert.ok(worker.commands.includes('setoption name MultiPV value 5'));
+  for (let n = 1; n <= 5; n++) worker.emit(`info depth 9 multipv ${n} score cp ${n * 10} pv e7e5 g1f3`);
+  t.mock.timers.tick(80);
+  assert.equal(results.at(-1).lines.length, 5);
+  assert.equal(results.at(-1).lines[4].evaluation, -0.5);
+  engine.analyze(nextFen, 30, 1);
+  worker.emit('bestmove e7e5');
+  assert.ok(worker.commands.includes('setoption name MultiPV value 1'));
+});

@@ -2,20 +2,25 @@ import { lazy, Suspense, useState, useEffect, useRef, useMemo, useCallback, type
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
-import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw } from 'lucide-react';
+import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw, Clock } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import EvaluationBar from '../components/EvaluationBar';
 import AnalysisPanel from '../components/AnalysisPanel';
+import AnalysisWorkspaceHeader from '../components/analysis/AnalysisWorkspaceHeader';
 import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
-import { Chess, DEFAULT_POSITION } from 'chess.js';
+import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
+import PositionMap from '../components/analysis/PositionMap';
+import { positionMapLabel } from '../components/analysis/positionMapLabels';
+import { reviewLayout } from '../utils/reviewLayout';
+import type { PositionEvaluation } from '../utils/positionMap';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
 import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
-import { analysisMovePairs, positionDraft, placeDraftPiece, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
+import { analysisMovePairs, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
 import { analysisCopy } from '../components/analysis/copy';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
 const SavedGamesPanel = lazy(() => import('../components/analysis/SavedGamesPanel'));
@@ -49,10 +54,14 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const words = analysisCopy[language];
-  const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'games' | 'position'>('analysis');
+  const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position'>('analysis');
+  const [pvLines, setPvLines] = useState(3);
+  const [planHighlight, setPlanHighlight] = useState<{ fen: string; squares: Square[] } | null>(null);
+  const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
   const [loadedGameTitle, setLoadedGameTitle] = useState('');
   const [loadedGameDetails, setLoadedGameDetails] = useState<{ white: string; black: string; timeControl?: string } | null>(null);
   const [editingPosition, setEditingPosition] = useState(false);
+  const tabBeforeEditor = useRef<'analysis' | 'map' | 'games'>('analysis');
   const [editorSelectedPiece, setEditorSelectedPiece] = useState('P');
   const [positionDraftValue, setPositionDraftValue] = useState<PositionDraft>(() => positionDraft(new Chess().fen()));
   const [positionDraftUndo, setPositionDraftUndo] = useState<PositionDraft[]>([]);
@@ -77,7 +86,14 @@ export default function GameScreen({ mode }: GameScreenProps) {
     setPositionDraftUndo(previous => previous.slice(0, -1));
   };
   const { user, profile } = useAuth();
-  const [initialAnalysis] = useState(() => mode === 'review' ? loadAnalysisSession() : emptyAnalysisSession());
+  const [initialAnalysis] = useState(() => {
+    if (mode !== 'review') return emptyAnalysisSession();
+    const sharedFen = new URLSearchParams(window.location.search).get('fen');
+    if (sharedFen) {
+      try { return analysisFromFen(sharedFen); } catch { /* Invalid shared input never replaces saved analysis. */ }
+    }
+    return loadAnalysisSession();
+  });
 
   // User preferences applied automatically via ThemeContext
   const [activeTab, setActiveTab] = useState<'moves' | 'analysis'>(() =>
@@ -128,6 +144,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   // Match the desktop analysis panel's outer height to the actual chessboard frame.
   // ResizeObserver keeps this accurate when viewport dimensions or board sizing change.
+  const reviewWorkspaceRef = useRef<HTMLDivElement>(null);
+  const [reviewGeometry, setReviewGeometry] = useState<ReturnType<typeof reviewLayout> | null>(null);
   const analysisBoardRef = useRef<HTMLDivElement>(null);
   const [analysisBoardHeight, setAnalysisBoardHeight] = useState<number | null>(null);
 
@@ -137,7 +155,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     if (!board) return;
 
     const measure = () => {
-      if (!window.matchMedia('(min-width: 1280px)').matches) return;
+      if (!window.matchMedia(mode === 'review' ? '(min-width: 1024px)' : '(min-width: 1280px)').matches) return;
       const height = Math.round(board.offsetHeight);
       if (height > 0) setAnalysisBoardHeight(prev => prev === height ? prev : height);
     };
@@ -150,7 +168,23 @@ export default function GameScreen({ mode }: GameScreenProps) {
       observer.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, [isMultiplayer]);
+  }, [isMultiplayer, mode]);
+
+  useEffect(() => {
+    if (mode !== 'review' || typeof ResizeObserver === 'undefined') return;
+    const workspace = reviewWorkspaceRef.current;
+    if (!workspace) return;
+    const measure = () => {
+      if (!window.matchMedia('(min-width: 1024px)').matches) return;
+      const next = reviewLayout(workspace.clientWidth, workspace.clientHeight);
+      if (next.boardSize > 0) setReviewGeometry(previous => previous?.scale === next.scale ? previous : next);
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(workspace);
+    window.addEventListener('resize', measure);
+    measure();
+    return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
+  }, [mode]);
 
   const playerFlag = profile?.countryCode
     ? countryCodeToFlag(profile.countryCode)
@@ -421,10 +455,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [engineResult, setEngineResult] = useState<EngineResult | null>(null);
   const [isAnalysing, setIsAnalysing] = useState(false);
   const [engineFailed, setEngineFailed] = useState(false);
+  const [analysisDepth, setAnalysisDepth] = useState(18);
 
   const loadWorkspaceAnalysis = (analysis: AnalysisLoad, title = '', details?: { white: string; black: string; timeControl?: string }) => {
     if (mode !== 'review') return;
     engineRef.current?.stop();
+    setEvaluations({});
+    setPlanHighlight(null);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('fen');
+    navigate({ search: nextParams.toString() }, { replace: true });
     setGame(analysis.game);
     setPositionHistory(analysis.positionHistory);
     setMoveHistory(analysis.moveHistory);
@@ -440,6 +480,12 @@ export default function GameScreen({ mode }: GameScreenProps) {
   };
 
   const startNewAnalysis = () => {
+    engineRef.current?.stop();
+    setEvaluations({});
+    setPlanHighlight(null);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('fen');
+    navigate({ search: nextParams.toString() }, { replace: true });
     const empty = emptyAnalysisSession();
     setLoadedGameTitle('');
     setLoadedGameDetails(null);
@@ -480,6 +526,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
       engineRef.current = new StockfishEngine();
       engineRef.current.onResult((res) => {
         setEngineResult(res);
+        if (mode === 'review' && res.analyzedFen && res.depth >= 5) {
+          const fen = res.analyzedFen;
+          setEvaluations(previous => {
+            if ((previous[fen]?.depth || 0) > res.depth) return previous;
+            return { ...previous, [fen]: { evaluation: res.evaluation, mate: res.mate, depth: res.depth } };
+          });
+        }
         setIsAnalysing(false);
         setEngineFailed(false);
       });
@@ -492,7 +545,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       engineRef.current?.destroy();
       engineRef.current = null;
     };
-  }, [isLiveMultiplayer]);
+  }, [isLiveMultiplayer, mode]);
 
   // Update analysis when tab changes to analysis or fen changes
   const liveFen = game.fen();
@@ -511,7 +564,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           ? liveFen
           : positionHistory[historyIndex] || liveFen;
 
-      engineRef.current.analyze(targetFen);
+      engineRef.current.analyze(targetFen, mode === 'review' ? analysisDepth : 18, mode === 'review' ? pvLines : 3);
     } else if (engineRef.current) {
       engineRef.current.stop();
     }
@@ -519,7 +572,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
     analysisActive,
     viewMoveIndex,
     liveFen,
-    positionHistory
+    positionHistory,
+    analysisDepth,
+    pvLines,
+    mode
   ]);
 
   useEffect(() => {
@@ -635,6 +691,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     }
   }, [game, viewMoveIndex, positionHistory]);
 
+  const currentEngineResult = mode === 'review' && engineResult?.analyzedFen !== displayedGame.fen() ? null : engineResult;
   const hasHistory = positionHistory.length > 1;
   const mobileReviewControlClass = 'min-h-11 flex items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] text-neutral-200 shadow-sm transition-[color,background-color,transform] duration-150 hover:bg-cyan-500/10 hover:text-cyan-100 active:scale-95 disabled:opacity-30 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60';
 
@@ -680,7 +737,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       const tokens: string[] = [];
       let first = true;
       let sanCount = 0;
-      const maxVisibleSanMoves = 12;
+      const maxVisibleSanMoves = mode === 'review' ? Number.POSITIVE_INFINITY : 12;
       let truncatedByLimit = false;
 
       for (const uci of line.pv) {
@@ -735,12 +792,54 @@ export default function GameScreen({ mode }: GameScreenProps) {
       continuation: continuationSan,
       lines
     };
-  }, [engineResult, liveFen]);
+  }, [engineResult, liveFen, mode]);
 
+  // Keep a SINGLE set of real handlers: the toolbar stays in the analysis panel.
+  // In review, navigation must not add height below
+  // the main board; in live mode it stays in its existing right-side location.
+  const desktopAnalysisTransport = (
+              <div className={cx("h-14 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-8 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]", mode === 'review' && "desktop-analysis-transport")}>
+                <button type="button" aria-label="К началу партии" title="К началу партии" disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><Rewind size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
+                <button type="button" aria-label="Предыдущий ход" title="Предыдущий ход" disabled={!hasHistory} onClick={() => {
+                  if (!hasHistory) return;
+                  const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
+                  setViewMoveIndex(Math.max(0, currentIndex - 1));
+                }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><ChevronLeft size={28} className="group-hover:-translate-x-1 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
+                <button type="button" aria-label="Следующий ход" title="Следующий ход" disabled={!hasHistory} onClick={() => {
+                  if (!hasHistory) return;
+                  if (viewMoveIndex === -1) return;
+                  if (viewMoveIndex >= positionHistory.length - 2) {
+                    setViewMoveIndex(-1);
+                  } else {
+                    setViewMoveIndex(viewMoveIndex + 1);
+                  }
+                }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><ChevronRight size={28} className="group-hover:translate-x-1 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
+                <button type="button" aria-label="К концу партии" title="К концу партии" disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
+              </div>
+  );
+  const analysisWorkspaceHeader = mode === 'review' ? (
+    <AnalysisWorkspaceHeader
+          title={loadedGameTitle}
+          initialFen={positionHistory[0] || DEFAULT_POSITION}
+          moveHistory={moveHistory}
+          currentFen={displayedGame.fen()}
+          onNew={startNewAnalysis}
+          evaluations={evaluations}
+          editing={workspaceTab === 'position'}
+          onEdit={() => {
+            if (workspaceTab !== 'position') tabBeforeEditor.current = workspaceTab;
+            resetPositionDraft(displayedGame.fen());
+            setEditingPosition(true);
+            setPlanHighlight(null);
+            setWorkspaceTab('position');
+          }}
+        />
+  ) : null;
   return (
-    <div className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
+    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
 
-      {/* Mobile analysis panel above the board */}
+      {mode === 'review' && <div className="lg:hidden">{analysisWorkspaceHeader}</div>}
+            {/* Mobile analysis panel above the board */}
       {!isLiveMultiplayer && (
         <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
           <div className="min-h-14 grid grid-cols-[max-content_minmax(0,1fr)_max-content] items-center gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
@@ -876,21 +975,32 @@ export default function GameScreen({ mode }: GameScreenProps) {
       )}
 
       {/* Mobile Analysis Drawer Header */}
-      <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-4 lg:flex-1", !isMultiplayer && "lg:min-w-0")}>
+      <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-4 lg:flex-1", !isMultiplayer && "lg:min-w-0", mode === 'review' && "desktop-analysis-board-column")}>
 
-        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]")}>
+        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]", mode === 'review' && "desktop-analysis-board-stack")}>
 
-          {/* Desktop review uses borderless player identification instead of live-game cards/clocks. */}
           {mode === 'review' && (
-            <div className="hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
+            <header className="desktop-analysis-hero hidden lg:flex shrink-0 min-w-0 items-center justify-between gap-3 px-2" aria-label={words.analysis}>
+              <div className="min-w-0">
+                <h1 className="truncate text-[1.125rem] font-semibold text-[#f3e6c4]" title={loadedGameTitle || words.analysis}>{loadedGameTitle || words.analysis}</h1>
+                <p className="truncate text-xs text-[#aaa395]">{loadedGameDetails ? [loadedGameDetails.white, loadedGameDetails.black, loadedGameDetails.timeControl].filter(Boolean).join(" · ") : "Stockfish 18"}</p>
+              </div>
+              <span className="shrink-0 rounded-md border border-[#c9a665]/50 px-2 py-1 text-[11px] font-semibold text-[#e7c37b]">ChessAZ</span>
+            </header>
+          )}
+
+          {/* Colour labels follow the board orientation; loaded games supply player names. */}
+          {mode === 'review' && (
+            <div className="desktop-analysis-player-top hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
               <div className="flex min-w-0 items-center gap-2">
-                <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-500 bg-neutral-950" />
-                <span className="min-w-0 truncate font-semibold text-neutral-200" title={loadedGameDetails?.black || words.black}>
-                  {loadedGameDetails?.black || words.black}
+                <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-500", playerColor === 'w' ? "bg-neutral-950" : "bg-[#f5f2e8]")} />
+                <span className="min-w-0 truncate font-semibold text-neutral-200" title={playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white}>
+                  {playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white}
                 </span>
               </div>
               {loadedGameDetails?.timeControl && (
-                <span className="shrink-0 font-mono text-[11px] tracking-wide text-neutral-500" title={loadedGameDetails.timeControl}>
+                <span className="flex shrink-0 items-center gap-1 font-mono text-[11px] tracking-wide text-neutral-500" title={loadedGameDetails.timeControl}>
+                  <Clock size={12} aria-hidden="true" />
                   {loadedGameDetails.timeControl}
                 </span>
               )}
@@ -918,7 +1028,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
           </div>
 
-          <div className="relative flex gap-0 md:gap-6 w-full justify-center group/board items-center py-0 md:py-1 lg:h-full lg:min-h-0 lg:flex-1">
+          <div className={cx("relative flex gap-0 md:gap-6 w-full justify-center group/board items-center py-0 md:py-1 lg:h-full lg:min-h-0 lg:flex-1", mode === 'review' && "desktop-analysis-board-row")}>
 
             {/* Desktop evaluation bar — preserved from production. */}
             <div className={cx(
@@ -935,6 +1045,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
 
             <div ref={analysisBoardRef} className={cx(
+              mode === 'review' && "desktop-analysis-board-frame",
               "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300", 
               isMultiplayer
                 ? "w-[min(96vw,56dvh)] md:w-full"
@@ -971,6 +1082,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               ) : <ChessBoard
                 className={!isMultiplayer ? `p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 max-md:[&_.aspect-square]:!aspect-[50/51] ${mode === 'review' ? 'desktop-analysis-main-board' : ''}` : undefined}
                 externalCoordinatesOnDesktop={mode === 'review'}
+                highlightedSquares={mode === 'review' && workspaceTab === 'map' && planHighlight?.fen === displayedGame.fen() ? planHighlight.squares : undefined}
                 overrideBoardTheme={boardTheme}
                 game={displayedGame}
                 onMove={handleGameMove}
@@ -1016,10 +1128,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </div>
 
           {mode === 'review' && (
-            <div className="hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
-              <span aria-hidden="true" className="h-3 w-3 shrink-0 rounded-full border border-neutral-400 bg-[#f5f2e8]" />
-              <span className="min-w-0 truncate font-semibold text-neutral-200" title={loadedGameDetails?.white || words.white}>
-                {loadedGameDetails?.white || words.white}
+            <div className="desktop-analysis-review-player-bottom hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
+              <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-400", playerColor === 'w' ? "bg-[#f5f2e8]" : "bg-neutral-950")} />
+              <span className="min-w-0 truncate font-semibold text-neutral-200" title={playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black}>
+                {playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black}
               </span>
             </div>
           )}
@@ -1079,6 +1191,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Professional Sidebar Sidebar Tabs */}
       <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' && "desktop-analysis-panel")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
+        {mode === 'review' && <div className="hidden lg:block shrink-0">{analysisWorkspaceHeader}</div>}
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">
@@ -1107,23 +1220,21 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         {mode === 'review' && (
           <>
-            <nav aria-label={words.analysis} className="hidden lg:flex shrink-0 items-center gap-1 border-b border-white/[0.06] bg-black/15 p-2">
-              {(['analysis', 'games', 'position'] as const).map(tab => (
+            <nav aria-label={words.analysis} className="desktop-analysis-workspace-tabs hidden lg:flex shrink-0 items-center gap-1 border-b border-white/[0.06] bg-black/15 p-2">
+              {(['analysis', 'map', 'games'] as const).map(tab => (
                 <button key={tab} type="button" aria-pressed={workspaceTab === tab} onClick={() => {
-                  if (tab === 'position' && workspaceTab !== 'position') {
-                    resetPositionDraft(displayedGame.fen());
-                    setEditingPosition(true);
-                  }
-                  if (tab !== 'position') setEditingPosition(false);
+                  setEditingPosition(false);
+                  setPlanHighlight(null);
                   setWorkspaceTab(tab);
                 }} className={cx("min-h-9 min-w-0 flex-1 rounded-xl px-2 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200", workspaceTab === tab ? "border border-amber-200/20 bg-gradient-to-br from-amber-200/10 via-[#1c1c18] to-teal-900/15 text-amber-100" : "border border-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-200")}>
-                  {words[tab]}
+                  {tab === 'map' ? positionMapLabel[language] : words[tab]}
                 </button>
               ))}
             </nav>
             <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
             {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
-            {workspaceTab === 'position' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionTools currentFen={displayedGame.fen()} words={words} onLoad={loadWorkspaceAnalysis} onCancel={() => { setEditingPosition(false); setWorkspaceTab('analysis'); }}
+            {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionMap key={displayedGame.fen()} fen={displayedGame.fen()} result={engineResult} language={language} failed={engineFailed} onHighlight={setPlanHighlight} /></div>}
+            {workspaceTab === 'position' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionTools currentFen={displayedGame.fen()} words={words} onLoad={loadWorkspaceAnalysis} onCancel={() => { setEditingPosition(false); setWorkspaceTab(tabBeforeEditor.current); }}
               draft={positionDraftValue} selected={editorSelectedPiece} onSelected={setEditorSelectedPiece}
               onDraft={updatePositionDraft} onClear={clearPositionDraft} onUndo={undoPositionDraft}
               canUndo={positionDraftUndo.length > 0} onReset={resetPositionDraft} onEditingChange={setEditingPosition} /></div>}
@@ -1142,7 +1253,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 aria-hidden={viewMoveIndex === -1} className={cx("h-9 shrink-0 whitespace-nowrap rounded-lg px-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-500/10", viewMoveIndex === -1 && "invisible")}>
                 {t('game.analysis.resume')}
               </button>
-              <button type="button" onClick={startNewAnalysis} className="flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 px-2 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
+              <button type="button" onClick={startNewAnalysis} className="desktop-analysis-new-button flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 px-2 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
                 <RotateCcw size={14} aria-hidden="true" />
                 {t('game.analysis.new')}
               </button>
@@ -1152,21 +1263,26 @@ export default function GameScreen({ mode }: GameScreenProps) {
           <div className={cx("shrink-0 flex flex-col border-b border-white/[0.06]", mode === "review" && "desktop-analysis-stockfish")}>
             {!isLiveMultiplayer && (
               <AnalysisPanel
-                score={engineResult?.evaluation || 0.0}
-                bestMove={analysisData?.bestMove}
-                depth={engineResult?.depth || 0}
-                mate={engineResult?.mate}
-                loading={isAnalysing}
-                candidates={analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
-                lines={analysisData?.lines}
+                score={currentEngineResult?.evaluation || 0.0}
+                bestMove={currentEngineResult ? analysisData?.bestMove : undefined}
+                depth={currentEngineResult?.depth || 0}
+                mate={currentEngineResult?.mate}
+                loading={isAnalysing || mode === 'review' && !currentEngineResult && !engineFailed}
+                candidates={currentEngineResult && analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
+                lines={currentEngineResult?.analyzedFen === displayedGame.fen() ? analysisData?.lines : undefined}
+                reviewLayout={mode === 'review'}
+                requestedDepth={mode === 'review' ? analysisDepth : undefined}
+                onIncreaseDepth={mode === 'review' ? () => setAnalysisDepth(depth => Math.min(36, depth + 6)) : undefined}
+                pvLines={mode === 'review' ? pvLines : undefined}
+                onPvLinesChange={mode === 'review' ? setPvLines : undefined}
                 error={engineFailed}
               />
             )}
           </div>
 
           <div className={cx("flex-1 min-h-0 flex flex-col overflow-hidden bg-black/[0.1]", !isMultiplayer && "xl:bg-black/[0.025]")}>
-            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-              <table className="w-full text-left border-collapse">
+            <div className="desktop-analysis-move-scroll flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+              <table className="desktop-analysis-move-table w-full text-left border-collapse">
                   <thead className="sticky top-0 bg-neutral-950/95 backdrop-blur-3xl z-20 border-b border-white/[0.03]">
                     <tr className="text-[0.6rem] font-black text-neutral-600 uppercase tracking-[0.2em]">
                       <th className="py-1.5 px-3 text-center w-12 border-r border-white/[0.03]">#</th>
@@ -1214,24 +1330,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   </tbody>
                 </table>
               </div>
-              <div className="h-14 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-8 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]">
-                <button disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><Rewind size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
-                <button disabled={!hasHistory} onClick={() => { 
-                  if (!hasHistory) return;
-                  const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
-                  setViewMoveIndex(Math.max(0, currentIndex - 1));
-                }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><ChevronLeft size={28} className="group-hover:-translate-x-1 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
-                <button disabled={!hasHistory} onClick={() => {
-                  if (!hasHistory) return;
-                  if (viewMoveIndex === -1) return;
-                  if (viewMoveIndex >= positionHistory.length - 2) {
-                    setViewMoveIndex(-1);
-                  } else {
-                    setViewMoveIndex(viewMoveIndex + 1);
-                  }
-                }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><ChevronRight size={28} className="group-hover:translate-x-1 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
-                <button disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
-              </div>
+              {desktopAnalysisTransport}
+
             </div>
 
         </div>
@@ -1257,7 +1357,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </button>
           
           <button 
-            onClick={() => { 
+            onClick={() => {
               if (!hasHistory) return;
               const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
               setViewMoveIndex(Math.max(0, currentIndex - 1));
