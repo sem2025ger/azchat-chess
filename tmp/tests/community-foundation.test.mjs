@@ -41,3 +41,9 @@ test('existing chat route now hosts the separate community module', () => {
   assert.match(ui, /\.from\('chess_club_events'\)/);
   assert.match(ui, /\.from\('chess_club_event_participants'\)/);
 });
+
+test('database trigger has valid matching PostgreSQL dollar-quoted body', () => {
+  assert.match(sql, /CREATE FUNCTION private\.enforce_chess_club_event_capacity\(\)[\s\S]*?AS \$\$[\s\S]*?\$\$;/);
+  assert.equal((sql.match(/\$\$/g) ?? []).length, 2);
+  assert.doesNotMatch(sql, /AS \$\n/);
+});
