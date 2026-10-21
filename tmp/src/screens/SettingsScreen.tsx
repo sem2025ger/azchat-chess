@@ -8,7 +8,7 @@ import ChessBoard from '../components/ChessBoard';
 import SettingsCommandCenter from '../components/settings/SettingsCommandCenter';
 import { 
   Palette, Globe, Sparkles, Check, Monitor, Volume2, 
-  ChevronRight, ArrowLeft, Clock, Layout as LayoutIcon
+  ChevronRight, ArrowLeft, Clock, RotateCcw, Layout as LayoutIcon
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -29,6 +29,7 @@ export default function SettingsScreen() {
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const [activeSubView, setActiveSubView] = useState<SubView>('main');
+  const [previewVersion, setPreviewVersion] = useState(0);
 
   const [showSaved, setShowSaved] = useState(false);
   const isFirstRender = useRef(true);
@@ -412,18 +413,25 @@ export default function SettingsScreen() {
           <div className="settings-preview-column col-span-5 relative h-full min-h-0">
             <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl h-full">
               <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 xl:p-5 flex flex-col items-center gap-3 xl:gap-4 h-full">
-                <div className="flex items-center justify-between gap-3 w-full shrink-0">
-                  <span className="text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.15em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className={cx("text-[0.7rem] xl:text-[0.75rem] font-black text-emerald-400 uppercase tracking-widest transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
-                      {t('settings.saved')} ✓
-                    </span>
-                    <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[0.6rem] xl:text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest">Active Render</div>
-                  </div>
+                <div className="relative flex items-center justify-center min-h-[44px] w-full shrink-0">
+                  <span className={cx("absolute left-0 max-w-[80px] text-[0.6rem] font-black text-emerald-400 uppercase tracking-wider leading-tight transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
+                    {t('settings.saved')} ✓
+                  </span>
+                  <span className="w-full px-[5.5rem] text-center text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.15em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
+                  <button
+                    type="button"
+                    aria-controls="settings-preview-board"
+                    title={t('settings.resetPreviewPosition')}
+                    onClick={() => setPreviewVersion(version => version + 1)}
+                    className="absolute right-0 inline-flex items-center gap-1 px-2 py-1.5 rounded-xl border border-chess-gold/30 bg-chess-gold/5 text-chess-gold text-[0.65rem] font-bold transition-colors hover:bg-chess-gold/10 hover:border-chess-gold/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chess-gold/50"
+                  >
+                    <RotateCcw size={14} aria-hidden="true" />
+                    {t('settings.refreshPreview')}
+                  </button>
                 </div>
                 <div className="settings-preview-stage w-full flex-1 min-h-0 flex items-center justify-center">
-                  <div className="settings-preview-board">
-                    <ChessBoard externalCoordinatesOnDesktop className="!border-none !bg-transparent !shadow-none ring-0" />
+                  <div id="settings-preview-board" className="settings-preview-board">
+                    <ChessBoard key={previewVersion} externalCoordinatesOnDesktop className="!border-none !bg-transparent !shadow-none ring-0" />
                   </div>
                 </div>
                 <div className="w-full space-y-1.5 shrink-0">

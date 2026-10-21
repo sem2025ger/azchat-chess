@@ -38,6 +38,10 @@ test('settings preview renders all squares, pieces and outside coordinate rails'
     assert.doesNotMatch(preview, /!p-0/); // preserve the coordinate gutters
     assert.ok(html.includes('Тема интерфейса'));
     assert.doesNotMatch(html, /class="settings-quick-links/);
+    const reset = html.match(/<button[^>]*aria-controls="settings-preview-board"[^>]*>(.*?)<\/button>/);
+    assert.ok(reset, 'preview needs its own reset control');
+    assert.match(reset[1], /Обновить/);
+    assert.doesNotMatch(html, /Active Render/);
   } finally {
     await server.close();
     if (storage) Object.defineProperty(globalThis, 'localStorage', storage);

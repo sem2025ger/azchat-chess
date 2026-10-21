@@ -205,6 +205,8 @@ export const translations: TranslationDictionary = {
   // Settings screen
   'settings.subtitle': { en: 'Configuration & Appearance', de: 'Konfiguration & Aussehen', ua: 'Конфігурація та зовнішній вигляд', ru: 'Конфигурация и внешний вид', az: 'Konfiqurasiya və Görünüş', tr: 'Yapılandırma ve Görünüm' },
   'settings.livePreview': { en: 'Live HD Preview', de: 'Live HD-Vorschau', ua: 'Огляд HD наживо', ru: 'Предварительный просмотр HD', az: 'Canlı HD Önizləmə', tr: 'Canlı HD Önizleme' },
+  'settings.refreshPreview': { en: 'Reset', de: 'Reset', ua: 'Оновити', ru: 'Обновить', az: 'Yenilə', tr: 'Yenile' },
+  'settings.resetPreviewPosition': { en: 'Return the preview board to the starting position', de: 'Vorschaubrett auf die Anfangsstellung zurücksetzen', ua: 'Повернути дошку до початкової позиції', ru: 'Вернуть доску в начальную позицию', az: 'Önizləmə lövhəsini başlanğıc mövqeyinə qaytar', tr: 'Önizleme tahtasını başlangıç konumuna döndür' },
   'settings.rendering': { en: 'Rendering', de: 'Rendering', ua: 'Рендеринг', ru: 'Рендеринг', az: 'Render', tr: 'İşleme' },
   'settings.boardEngine': { en: 'Board Engine', de: 'Board-Engine', ua: 'Рушій дошки', ru: 'Движок доски', az: 'Taxta Mühərriki', tr: 'Tahta Motoru' },
   'settings.pieceSet': { en: 'Piece Set', de: 'Figurenset', ua: 'Набір фігур', ru: 'Набор фигур', az: 'Fiqur Dəsti', tr: 'Taş Seti' },
