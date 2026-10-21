@@ -87,8 +87,8 @@
 .settings-fixed-workspace input {
   font-family: inherit;
 }
-.settings-fixed-workspace .font-black,
-.settings-fixed-workspace .font-bold {
+.settings-fixed-workspace .font-black:not(#settings-preview-board *),
+.settings-fixed-workspace .font-bold:not(#settings-preview-board *) {
   font-weight: 600;
 }
 .settings-fixed-workspace .italic {
