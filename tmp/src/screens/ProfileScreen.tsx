@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import MobilePlayerPassport from '../components/profile/MobilePlayerPassport';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Target, Swords, Zap, Activity, Calendar, MapPin, LogOut, Loader2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
+import { authRedirect, safeAuthReturn, normalizedEmail, validEmail, authErrorKey, googleProviderEnabled } from '../utils/authFlow';
 import { calculateMatchStats, getMatchResultForPlayer } from '../utils/profileContract';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -37,12 +38,10 @@ export default function ProfileScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedReturn = searchParams.get('returnTo');
-  const mobileReturnTo = requestedReturn === '/play' || requestedReturn?.startsWith('/play?room=') || requestedReturn?.startsWith('/play?invite=1&tc=')
-    ? requestedReturn
-    : null;
+  const mobileReturnTo = safeAuthReturn(requestedReturn);
 
   useEffect(() => {
-    if (session && !isLoading && mobileReturnTo && window.matchMedia('(max-width: 767px)').matches) {
+    if (session && !isLoading && mobileReturnTo && (mobileReturnTo === '/chat' || window.matchMedia('(max-width: 767px)').matches)) {
       navigate(mobileReturnTo, { replace: true });
     }
   }, [session, isLoading, mobileReturnTo, navigate]);
@@ -85,6 +84,39 @@ export default function ProfileScreen() {
   const [authLoading, setAuthLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [authMessage, setAuthMessage] = useState('');
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [emailCooldown, setEmailCooldown] = useState(0);
+  const authPending = useRef(false);
+
+  useEffect(() => {
+    if (session) return;
+    let active = true;
+    void googleProviderEnabled(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY)
+      .then(enabled => { if (active) setGoogleEnabled(enabled); });
+    return () => { active = false; };
+  }, [session]);
+
+  useEffect(() => {
+    if (!emailCooldown) return;
+    const timer = window.setTimeout(() => setEmailCooldown(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [emailCooldown]);
+
+  const handleGoogle = async () => {
+    if (!googleEnabled || authPending.current) return;
+    authPending.current = true;
+    setAuthLoading(true); setErrorMsg(''); setAuthMessage('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google', options: { redirectTo: authRedirect(window.location.origin, '/profile', mobileReturnTo) }
+      });
+      if (error) throw error;
+    } catch (error) {
+      setErrorMsg(t(authErrorKey(error)));
+    } finally {
+      authPending.current = false; setAuthLoading(false);
+    }
+  };
 
   const stats = [
     { label: 'Blitz', value: profile?.ratingBlitz ?? t('profile.unrated'), icon: Zap, color: 'text-amber-400', bg: 'bg-amber-400/5', border: 'border-amber-400/20' },
@@ -94,32 +126,36 @@ export default function ProfileScreen() {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (authPending.current || (!isLoginMode && emailCooldown > 0)) return;
+    authPending.current = true;
     setAuthLoading(true);
     setErrorMsg('');
     setAuthMessage('');
 
     // Pre-flight check for missing environment keys causing fetch crashes
     if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL.includes('mock-url') || import.meta.env.VITE_SUPABASE_URL.includes('YOUR_PROJECT_REF')) {
-      setErrorMsg('CONFIGURATION ERROR: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are missing or set to placeholder in tmp/.env. Please configure them to enable authentication.');
+      setErrorMsg(t('auth.unavailable'));
+      authPending.current = false;
       setAuthLoading(false);
       return;
     }
 
     try {
       if (isLoginMode) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail(email), password });
         if (error) throw error;
       } else {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: normalizedEmail(email),
           password,
           options: {
-            data: { username },
-            emailRedirectTo: `${window.location.origin}/profile`
+            data: { username: username.trim() },
+            emailRedirectTo: authRedirect(window.location.origin, '/profile', mobileReturnTo)
           }
         });
         if (error) throw error;
 
+        setEmailCooldown(60);
         // Supabase can intentionally return a user without identities when the
         // email is already registered. Treat that as an existing account.
         if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
@@ -137,63 +173,49 @@ export default function ProfileScreen() {
           setAuthMessage(t('auth.registrationSuccess'));
         }
       }
-    } catch (err: any) {
-      if (err.message === 'Failed to fetch') {
-         setErrorMsg('NETWORK ERROR: Failed to reach Supabase. Check if your VITE_SUPABASE_URL is valid, or if you have an active internet connection.');
-      } else {
-         setErrorMsg(err.message || 'Authentication error');
-      }
+    } catch (error) {
+      setErrorMsg(t(authErrorKey(error)));
+      if (authErrorKey(error) === 'auth.emailRateLimit') setEmailCooldown(60);
     } finally {
+      authPending.current = false;
       setAuthLoading(false);
     }
   };
 
-  const handleForgotPassword = async () => {
-    setErrorMsg('');
-    setAuthMessage('');
-    if (!email) {
+  const requestEmail = async (kind: 'recovery' | 'magic') => {
+    if (authPending.current || emailCooldown > 0) return;
+    setErrorMsg(''); setAuthMessage('');
+    if (!validEmail(email)) {
       setErrorMsg(t('auth.emailRequired'));
       return;
     }
+    authPending.current = true;
     setAuthLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`
-      });
-      if (error) throw error;
-      setAuthMessage(t('auth.resetEmailSent'));
-    } catch (err: any) {
-      if (err?.code === 'over_email_send_rate_limit' || err?.status === 429 || String(err?.message || '').includes('rate limit')) {
-        setErrorMsg(t('auth.emailRateLimit'));
-      } else {
-        setErrorMsg(err.message || t('auth.recoveryError'));
-      }
+      const result = kind === 'recovery'
+        ? await supabase.auth.resetPasswordForEmail(normalizedEmail(email), {
+            redirectTo: authRedirect(window.location.origin, '/update-password', mobileReturnTo)
+          })
+        : await supabase.auth.signInWithOtp({
+            email: normalizedEmail(email), options: {
+              shouldCreateUser: false,
+              emailRedirectTo: authRedirect(window.location.origin, '/profile', mobileReturnTo)
+            }
+          });
+      if (result.error) throw result.error;
+      setEmailCooldown(60);
+      setAuthMessage(t(kind === 'recovery' ? 'auth.resetEmailSent' : 'auth.magicLinkSent'));
+    } catch (error) {
+      const key = authErrorKey(error);
+      setErrorMsg(t(key));
+      if (key === 'auth.emailRateLimit') setEmailCooldown(60);
     } finally {
+      authPending.current = false;
       setAuthLoading(false);
     }
   };
-
-  const handleMagicLink = async () => {
-    setErrorMsg('');
-    setAuthMessage('');
-    if (!email) {
-      setErrorMsg(t('auth.emailRequired'));
-      return;
-    }
-    setAuthLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: `${window.location.origin}/profile` }
-      });
-      if (error) throw error;
-      setAuthMessage(t('auth.magicLinkSent'));
-    } catch (err: any) {
-      setErrorMsg(err.message || t('auth.recoveryError'));
-    } finally {
-      setAuthLoading(false);
-    }
-  };
+  const handleForgotPassword = () => requestEmail('recovery');
+  const handleMagicLink = () => requestEmail('magic');
 
   if (isLoading) {
     return (
@@ -240,14 +262,22 @@ export default function ProfileScreen() {
               </button>
             </div>
 
+            {googleEnabled && (
+              <button type="button" disabled={authLoading} onClick={handleGoogle}
+                className="mb-4 min-h-11 w-full rounded-xl border border-white/20 bg-white px-4 py-3 font-semibold text-neutral-950 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300">
+                {t('auth.continueGoogle')}
+              </button>
+            )}
+            {emailCooldown > 0 && <p role="status" className="mb-3 text-sm text-neutral-300">{t('auth.emailCooldown')} {emailCooldown} s</p>}
             <form onSubmit={handleAuth} className="space-y-5 md:space-y-6 max-md:space-y-2.5">
               {!isLoginMode && (
                 <div className="space-y-1">
-                  <label className="text-base max-md:text-sm font-semibold text-neutral-200 block mb-1">
+                  <label htmlFor="auth-username" className="text-base max-md:text-sm font-semibold text-neutral-200 block mb-1">
                     {t('auth.usernameLabel')}
                   </label>
                   <input 
                     required 
+                    id="auth-username" name="username" autoComplete="username" maxLength={40}
                     value={username} 
                     onChange={e => setUsername(e.target.value)} 
                     type="text" 
@@ -257,11 +287,12 @@ export default function ProfileScreen() {
               )}
               
               <div className="space-y-1">
-                <label className="text-base max-md:text-sm font-semibold text-neutral-200 block mb-1">
+                <label htmlFor="auth-email" className="text-base max-md:text-sm font-semibold text-neutral-200 block mb-1">
                   {t('auth.emailLabel')}
                 </label>
                 <input 
                   required 
+                  id="auth-email" name="email" autoComplete="email" autoCapitalize="none" spellCheck={false}
                   value={email} 
                   onChange={e => setEmail(e.target.value)} 
                   type="email" 
@@ -271,14 +302,14 @@ export default function ProfileScreen() {
 
               <div className="space-y-1">
                 <div className="flex justify-between items-center mb-1">
-                  <label className="text-base max-md:text-sm font-semibold text-neutral-200 block">
+                  <label htmlFor="auth-password" className="text-base max-md:text-sm font-semibold text-neutral-200 block">
                     {t('auth.passwordLabel')}
                   </label>
                   {isLoginMode && (
                     <button
                       type="button"
                       onClick={handleForgotPassword}
-                      disabled={authLoading}
+                      disabled={authLoading || emailCooldown > 0}
                       className="text-sm max-md:text-xs text-chess-gold hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none"
                     >
                       {t('auth.forgotPassword')}
@@ -287,6 +318,7 @@ export default function ProfileScreen() {
                 </div>
                 <input 
                   required 
+                  id="auth-password" name="password" autoComplete={isLoginMode ? "current-password" : "new-password"}
                   value={password} 
                   onChange={e => setPassword(e.target.value)} 
                   type="password" 
@@ -295,18 +327,18 @@ export default function ProfileScreen() {
               </div>
 
               {errorMsg && (
-                <div className="text-center p-3 max-md:p-2 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-lg mt-4">
+                <div role="alert" className="text-center p-3 max-md:p-2 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-lg mt-4">
                   {errorMsg}
                 </div>
               )}
 
               {authMessage && (
-                <div className="text-center p-3 max-md:p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-lg mt-4">
+                <div role="status" className="text-center p-3 max-md:p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-lg mt-4">
                   {authMessage}
                 </div>
               )}
 
-              <button disabled={authLoading} type="submit" className="w-full py-4 md:py-5 mt-4 max-md:py-2.5 max-md:mt-2 bg-chess-gold/90 hover:bg-chess-gold disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-bold text-lg max-md:text-base shadow-lg shadow-chess-gold/10 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
+              <button disabled={authLoading || (!isLoginMode && emailCooldown > 0)} type="submit" className="w-full py-4 md:py-5 mt-4 max-md:py-2.5 max-md:mt-2 bg-chess-gold/90 hover:bg-chess-gold disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-bold text-lg max-md:text-base shadow-lg shadow-chess-gold/10 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
                 {authLoading ? <Loader2 size={18} className="animate-spin" /> : null}
                 {isLoginMode ? t('auth.submitLogin') : t('auth.submitRegister')}
               </button>
@@ -318,7 +350,7 @@ export default function ProfileScreen() {
                     <span className="text-sm text-neutral-500 uppercase tracking-widest">{t('auth.or')}</span>
                     <div className="flex-1 h-px bg-white/10"></div>
                   </div>
-                  <button type="button" onClick={handleMagicLink} disabled={authLoading} className="w-full py-4 md:py-5 max-md:py-2.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg max-md:text-base shadow-lg border border-white/5 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
+                  <button type="button" onClick={handleMagicLink} disabled={authLoading || emailCooldown > 0} className="w-full py-4 md:py-5 max-md:py-2.5 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg max-md:text-base shadow-lg border border-white/5 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
                     {authLoading ? <Loader2 size={18} className="animate-spin" /> : null}
                     {t('auth.emailLinkLogin')}
                   </button>
@@ -576,4 +608,5 @@ export default function ProfileScreen() {
     </div>
   );
 }
+
 
