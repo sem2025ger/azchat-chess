@@ -34,10 +34,20 @@ export function authErrorKey(error: unknown): string {
   return 'auth.recoveryError';
 }
 
-export function canUpdatePassword(hasSession: boolean, loading: boolean, search: string, hash: string): boolean {
-  return hasSession && !loading
+export function canUpdatePassword(verifiedRecoverySession: boolean, loading: boolean, search: string, hash: string): boolean {
+  return verifiedRecoverySession && !loading
     && !new URLSearchParams(search).has('error')
     && !new URLSearchParams(hash.replace(/^#/, '')).has('error');
+}
+
+// Supabase can respond with an account-related error for email links even when
+// the UI must not disclose whether the account exists. Never echo the raw error.
+export function accountNotFoundError(error: unknown): boolean {
+  const details = error && typeof error === 'object'
+    ? error as { code?: string }
+    : {};
+  return details.code === 'user_not_found' || details.code === 'otp_disabled'
+    || details.code === 'user_already_exists';
 }
 
 // The public Auth settings endpoint contains provider flags, never OAuth secrets.
