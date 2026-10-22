@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   isLoading: boolean;
+  passwordRecoveryVerified: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   isLoading: true,
+  passwordRecoveryVerified: false,
   signOut: async () => {},
 });
 
@@ -26,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [passwordRecoveryVerified, setPasswordRecoveryVerified] = useState(false);
 
   useEffect(() => {
     // 1. Get initial session
@@ -41,7 +44,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // 2. Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        // Only the Supabase PASSWORD_RECOVERY redirect may unlock the reset form.
+        // An existing normal login must not be treated as proof of recovery.
+        if (event === 'PASSWORD_RECOVERY' && session?.user) setPasswordRecoveryVerified(true);
+        if (event === 'SIGNED_OUT' || event === 'USER_UPDATED') setPasswordRecoveryVerified(false);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -81,7 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, isLoading, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, isLoading, passwordRecoveryVerified, signOut }}>
       {children}
     </AuthContext.Provider>
   );
