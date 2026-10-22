@@ -46,5 +46,8 @@ jobs:
       - name: Frontend tests
         run: npm test
 
+      - name: Real Stockfish 19 Chromium UCI/WASM smoke test
+        run: node tests/stockfish19-browser-smoke.mjs
+
       - name: Lint
         run: npm run lint
