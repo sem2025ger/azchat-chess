@@ -36,6 +36,10 @@ export default function UpdatePasswordScreen() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
+      // Require an explicit login with the new password, never silently use
+      // the recovery session as a permanent user session.
+      const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' });
+      if (signOutError) console.warn('Recovery session cleanup could not complete');
       setSuccessMsg(t('auth.passwordUpdated'));
     } catch (error) {
       setErrorMsg(t(authErrorKey(error)));
@@ -106,8 +110,8 @@ export default function UpdatePasswordScreen() {
             </button>
 
             {successMsg && (
-              <button type="button" onClick={() => navigate(successMsg && returnTo ? returnTo : signInPath)} className="w-full py-4 md:py-5 mt-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold text-lg border border-white/5 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
-                {t(successMsg && returnTo === '/chat' ? 'auth.continueClub' : 'auth.backToSignIn')}
+              <button type="button" onClick={() => navigate(signInPath)} className="w-full py-4 md:py-5 mt-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold text-lg border border-white/5 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
+                {t('auth.backToSignIn')}
               </button>
             )}
             
