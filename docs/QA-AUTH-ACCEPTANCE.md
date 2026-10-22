@@ -20,6 +20,18 @@ production services, database policies, email confirmation or passwords of exist
 - Form labels/autocomplete and status/alert roles support keyboard, password
   managers and assistive technology. No new runtime dependencies.
 
+## Recovery redirect regression (22 October 2026)
+
+QA Auth logs showed recovery verification redirecting to the QA Site URL root instead
+of the requested `/update-password` route. The startup recovery callback guard now
+normalizes valid implicit recovery fragments from `/`, `/home` or `/profile` to
+`/update-password` before rendering; it leaves ordinary sign-in/confirmation links
+untouched and forwards expired-link errors to the reset error screen.
+A successful password change now ends the local recovery session and sends the user
+back to sign-in. This is not a substitute for configuring the exact allowed
+`/update-password` redirect URL in the QA Supabase project; keep that as a release
+requirement, and verify the actual email click from a clean browser.
+
 ## Remaining configuration and release gates
 
 1. Google: configure a web OAuth client in Google Cloud and the QA Supabase
