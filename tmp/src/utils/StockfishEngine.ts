@@ -1,5 +1,5 @@
 // Stockfish Engine – Real UCI integration via Web Worker
-// Loads Stockfish.js from CDN, communicates over standard UCI protocol.
+// Loads a locally hosted, release-pinned Stockfish.js Web Worker via UCI.
 
 export interface EngineLine {
   multipv: number;
@@ -58,7 +58,7 @@ export class StockfishEngine {
   private initWorker(): void {
     try {
       console.log('Engine: Creating Stockfish worker…');
-      this._worker = new Worker('/stockfish-18-lite-single.js');
+      this._worker = new Worker('/stockfish-19-lite-single.js');
       this._worker.onmessage = (e: MessageEvent) => this.onUCI(String(e.data));
       this._worker.onerror = (err) => {
         console.error('Engine worker error:', err);
