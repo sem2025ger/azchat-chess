@@ -8,12 +8,17 @@ import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { Chess } from 'chess.js';
+import { transpileModule, ScriptTarget, ModuleKind } from 'typescript';
 
 const dist = resolve('dist');
 const workerJs = join(dist, 'stockfish-19-lite-single.js');
 const workerWasm = join(dist, 'stockfish-19-lite-single.wasm');
 assert.ok(existsSync(workerJs) && existsSync(workerWasm),
   'Run npm run build before the browser engine smoke test');
+// Exercise the actual application parser/scheduler as well as the raw UCI worker.
+const integrationModule = transpileModule(await readFile(resolve('src/utils/StockfishEngine.ts'), 'utf8'), {
+  compilerOptions: { target: ScriptTarget.ES2022, module: ModuleKind.ES2022 }
+}).outputText;
 
 function browserFixture() {
   window.__chessazSmoke = (async () => {
@@ -81,10 +86,71 @@ function browserFixture() {
       const second = await search('black to move', blackFen, 8);
       const mateFen = 'rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2';
       const third = await search('mate in one', mateFen, 8);
+      const { StockfishEngine } = await import('/StockfishEngine.js');
+      const integration = new StockfishEngine();
+      const received = [];
+      const stale = [];
+      let expectedFen = null;
+      let wrapperError = false;
+      integration.onError(() => { wrapperError = true; });
+      integration.onResult(result => {
+        received.push(result);
+        if (expectedFen && result.analyzedFen !== expectedFen) stale.push(result.analyzedFen);
+      });
+      const startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+      async function waitFor(predicate, label, timeoutMs = 30000) {
+        const deadline = performance.now() + timeoutMs;
+        while (!predicate()) {
+          if (wrapperError || integration.hasFailed()) throw new Error('Application engine failed: ' + label);
+          if (performance.now() >= deadline) throw new Error('Application engine timed out: ' + label);
+          await new Promise(done => setTimeout(done, 20));
+        }
+      }
+      async function analyze(fen, depth, lines) {
+        expectedFen = fen;
+        const cursor = received.length;
+        integration.analyze(fen, depth, lines);
+        await waitFor(() => received.slice(cursor).some(r => r.analyzedFen === fen && r.depth >= depth && r.lines?.length === lines), 'FEN/MultiPV ' + lines);
+        return received.slice(cursor).find(r => r.analyzedFen === fen && r.depth >= depth && r.lines?.length === lines);
+      }
+      let wrapper;
+      try {
+        await waitFor(() => integration.isReady(), 'initialization');
+        const variants = [];
+        for (const count of [1, 3, 5, 1]) variants.push(await analyze(startFen, 8, count));
+        const materialWhite = await analyze('7k/8/8/8/8/8/Q7/6K1 w - - 0 1', 8, 1);
+        const materialBlack = await analyze('7k/8/8/8/8/8/Q7/6K1 b - - 0 1', 8, 1);
+        // Keep a deep search running, then replace it repeatedly while stop is asynchronous.
+        expectedFen = startFen;
+        const cursor = received.length;
+        integration.analyze(startFen, 36, 5);
+        await waitFor(() => received.length > cursor, 'deep search progress');
+        const soakStarted = performance.now();
+        await new Promise(done => setTimeout(done, 10000));
+        const soakResults = received.slice(cursor);
+        for (const fen of [blackFen, startFen, blackFen, startFen]) {
+          expectedFen = fen;
+          integration.analyze(fen, 36, 3);
+          await new Promise(done => setTimeout(done, 25));
+        }
+        const mateResult = await analyze(mateFen, 8, 1);
+        integration.stop();
+        const stoppedCount = received.length;
+        await new Promise(done => setTimeout(done, 200));
+        wrapper = {
+          variants, materialWhite, materialBlack, mateResult, stale,
+          soakMs: performance.now() - soakStarted, soakUpdates: soakResults.length,
+          stopQuiet: received.length === stoppedCount, wrapperError
+        };
+      } finally {
+        integration.destroy();
+      }
       return {
         ok: true,
+        run: new URL(location.href).searchParams.get('run'),
+        viewportWidth: window.innerWidth,
         engine: output.find(line => /^id name /.test(line)) || '',
-        results: [first, second, third]
+        results: [first, second, third], wrapper
       };
     } finally {
       engine.terminate();
@@ -92,7 +158,7 @@ function browserFixture() {
   })();
 }
 
-const html = '<!doctype html><html><head><meta charset="utf-8"></head><body><script>(' +
+const html = '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><script>(' +
   browserFixture.toString() + ')();</script></body></html>';
 const server = createServer(async (req, res) => {
   try {
@@ -100,6 +166,11 @@ const server = createServer(async (req, res) => {
     if (pathname === '/') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(html);
+      return;
+    }
+    if (pathname === '/StockfishEngine.js') {
+      res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
+      res.end(integrationModule);
       return;
     }
     const assets = {
@@ -175,12 +246,14 @@ try {
         mobile: true, width: 390, height: 844, deviceScaleFactor: 2
       });
     }
-    await cdp('Page.navigate', { url: 'http://127.0.0.1:' + port + '/' });
+    // A distinct URL prevents reusing the previous document's resolved promise.
+    const fixtureUrl = 'http://127.0.0.1:' + port + '/?run=' + device;
+    await cdp('Page.navigate', { url: fixtureUrl });
     // Wait for the new navigation, not a stale execution context from the previous run.
     let navigated = false;
     for (let attempt = 0; attempt < 150; attempt++) {
       try {
-        const state = await cdp('Runtime.evaluate', { expression: 'location.href === "http://127.0.0.1:' + port + '/" && !!window.__chessazSmoke', returnByValue: true });
+        const state = await cdp('Runtime.evaluate', { expression: 'location.href === ' + JSON.stringify(fixtureUrl) + ' && !!window.__chessazSmoke', returnByValue: true });
         if (state.result?.value === true) { navigated = true; break; }
       } catch {}
       await new Promise(done => setTimeout(done, 100));
@@ -196,8 +269,28 @@ try {
     }
     const result = evaluation.result?.value;
     assert.equal(result?.ok, true, device + ': missing Stockfish success result');
-    assert.match(result.engine, /stockfish/i, 'Missing UCI engine identification');
+    assert.equal(result.run, device, 'Result belongs to a previous document');
+    if (device === 'mobile-emulation') assert.equal(result.viewportWidth, 390);
+    assert.match(result.engine, /stockfish\s+19\b/i, 'Wrong UCI engine version');
     assert.deepEqual(result.results[0].multipv, [1, 2, 3], 'MultiPV 3 did not execute');
+    const wrapper = result.wrapper;
+    assert.deepEqual(wrapper.variants.map(r => r.lines.length), [1, 3, 5, 1]);
+    assert.deepEqual(wrapper.stale, [], 'Application emitted a stale FEN after restart');
+    assert.ok(wrapper.materialWhite.evaluation > 3 && wrapper.materialBlack.evaluation > 3,
+      'White advantage must stay positive for either side to move');
+    assert.equal(wrapper.mateResult.mate, -1, 'Black mate must be negative from White perspective');
+    assert.equal(wrapper.stopQuiet, true, 'Stop must cancel delayed callbacks');
+    assert.equal(wrapper.wrapperError, false);
+    assert.ok(wrapper.soakUpdates > 1 && wrapper.soakMs >= 10000, 'Deep analysis did not continue');
+    for (const r of [...wrapper.variants, wrapper.materialWhite, wrapper.materialBlack, wrapper.mateResult]) {
+      for (const line of r.lines) {
+        const chess = new Chess(r.analyzedFen);
+        for (const move of line.pv) {
+          assert.ok(chess.move({ from: move.slice(0, 2), to: move.slice(2, 4), promotion: move[4] || 'q' }),
+            device + ': illegal application PV');
+        }
+      }
+    }
     for (const r of result.results) {
       assert.ok(r.hasScore, device + ': no real UCI evaluation for ' + r.label);
       assert.match(r.bestmove, /^[a-h][1-8][a-h][1-8][qrbn]?$/, 'Invalid UCI bestmove');
@@ -214,6 +307,7 @@ try {
     }
     console.log('PASS real Chromium ' + device + ': UCI, evaluations, MultiPV 3, FEN changes, mate-in-one');
     console.log('Engine: ' + result.engine);
+    console.log('PASS application wrapper: MultiPV 1/3/5/1, score perspective, rapid restarts, stop, legal PV; deep analysis ' + Math.round(wrapper.soakMs) + 'ms / ' + wrapper.soakUpdates + ' updates');
   }
 } finally {
   try { ws?.close(); } catch {}
