@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const sql = fs.readFileSync(path.join(__dirname,
-  '../supabase/migrations/20261022000000_chessaz_deutsch_tournament_calendar.sql'), 'utf8');
+  '../supabase/migrations/20261022004847_chessaz_deutsch_tournament_calendar.sql'), 'utf8');
 const ui = fs.readFileSync(path.join(__dirname,
   '../tmp/src/screens/ChessAZCommunityScreen.tsx'), 'utf8');
 
