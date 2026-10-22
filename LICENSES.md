@@ -14,3 +14,12 @@
 - **Recorded SHA-256 values**:
   - **JS**: 2278005057F381491F1C9BB3E44C9F5920B3A00BEF9759E33CC6582769A1F1FE
   - **WASM**: A8FBC05EC6920B56D7485826DCB02C5FFD2826BCBF751CF973046F237A9096F1
+
+## Component: Stockfish.js 19 Lite Single (analysis engine)
+- **Release**: v19.0.1
+- **Files staged during frontend build**: `stockfish-19-lite-single.js`, `stockfish-19-lite-single.wasm`
+- **Source**: https://github.com/nmrugg/stockfish.js/releases/tag/v19.0.1
+- **Upstream Stockfish source**: https://github.com/official-stockfish/Stockfish
+- **License**: GNU General Public License version 3 (GPL-3.0); retain notices and provide corresponding source to satisfy redistribution obligations.
+- **Integrity**: `tmp/scripts/prepare-stockfish19.mjs` verifies the SHA-256 digests and sizes advertised by the pinned GitHub release before including binaries in the build.
+- **Previous assets**: Stockfish.js 18 stays in the repository for rollback; the analysis worker references 19 only in this feature branch.
