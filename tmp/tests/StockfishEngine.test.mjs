@@ -12,7 +12,7 @@ let engines;
 class WorkerStub {
   commands = [];
   terminated = false;
-  constructor() { workers.push(this); }
+  constructor(url) { this.url = url; workers.push(this); }
   postMessage(command) { this.commands.push(command); }
   terminate() { this.terminated = true; }
   emit(line) { this.onmessage({ data: line }); }
@@ -157,4 +157,11 @@ test('review can request five real lines; a new count is applied only after stop
   engine.analyze(nextFen, 30, 1);
   worker.emit('bestmove e7e5');
   assert.ok(worker.commands.includes('setoption name MultiPV value 1'));
+});
+
+
+test('analysis worker uses the locally staged Stockfish.js 19 release', () => {
+  const { worker } = setup();
+  assert.equal(worker.url, '/stockfish-19-lite-single.js');
+  assert.ok(worker.commands.includes('uci'));
 });
