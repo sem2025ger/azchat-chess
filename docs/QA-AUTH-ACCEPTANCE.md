@@ -11,7 +11,8 @@ production services, database policies, email confirmation or passwords of exist
   settings explicitly report external.google=true. This flag does not prove
   the Google client credentials/consent screen are correct: live OAuth still needs QA.
 - Trim pasted email addresses, validate recovery/link input, prevent concurrent
-  auth submissions, and share a 60-second cooldown across email actions.
+  auth submissions, and apply a 60-second local minimum pause after accepted
+  email requests within each form. This pause does not predict server quota reset.
 - Reset requests use account-neutral messaging: HTTP 200 does not prove an
   account exists, that a message was dispatched, or that it reached an inbox.
 - Email link login cannot silently create another account.
@@ -86,3 +87,31 @@ or delivery status; do not conclude that the current email was sent.
 
 Full end-to-end acceptance remains open until the configuration and real
 mailbox/OAuth tests above pass. Unit/CI success is not a delivery guarantee.
+
+## Email limit follow-up
+
+- QA Auth logs inspected on 22 October 2026 (the preceding 24 hours) contain
+  11 `over_email_send_rate_limit` responses with status 429: /recover=8,
+  /signup=2, /otp=1. These are actual sending limits, not wrong-password errors.
+- Only the explicit email-send error is labelled as an email limit. Client/IP
+  rate limits and unclassified 429 responses have a separate request-limit message.
+  The error code alone does not establish whether the active restriction is
+  project-wide or per-address, nor the exact reset time.
+- Failed requests no longer start an invented 60-second server-limit countdown.
+  Successful/accepted email requests retain the local anti-repeat pause, now
+  explicitly labelled as a minimum; service restrictions may last longer.
+  Confirmed users can still attempt password sign-in while email actions cool down.
+  No automatic retry or raw server-detail disclosure is introduced.
+- Updated feedback in all six supported languages. Regression coverage distinguishes
+  email, IP/client, SMS and generic 429 errors and rejects classification by raw text.
+- SMTP configuration is still UNCONFIRMED: the connector has no Auth-config read
+  operation, and the QA dashboard redirects this browser to sign-in. No SMTP,
+  provider, sender, quota or DNS configuration was changed. A supported authenticated
+  management session is required to inspect the actual configuration.
+- Supabase documents a 2-email/hour project limit for its built-in sender; custom
+  SMTP has its own configured limits. This documentation is not proof that the
+  built-in sender is the active QA configuration. Inspect before choosing a remedy.
+
+References: https://supabase.com/docs/guides/auth/rate-limits ,
+https://supabase.com/docs/guides/auth/auth-smtp ,
+https://supabase.com/docs/guides/auth/debugging/error-codes .

@@ -28,7 +28,6 @@ export default function RecoveryRequestForm({ initialEmail = '', returnTo }: { i
     } catch (failure) {
       const key = authErrorKey(failure);
       setError(t(key));
-      if (key === 'auth.emailRateLimit') setCooldown(60);
     } finally {
       inFlight.current = false; setPending(false);
     }

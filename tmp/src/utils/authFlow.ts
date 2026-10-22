@@ -43,7 +43,10 @@ export function validEmail(value: string): boolean {
 
 export function authErrorKey(error: unknown): string {
   const details = error && typeof error === 'object' ? error as { code?: string; status?: number; message?: string } : {};
-  if (details.status === 429 || details.code?.includes('rate_limit')) return 'auth.emailRateLimit';
+  // An Auth error code identifies the limit, but supplies no reliable retry deadline.
+  // A generic 429 (including password sign-in) must not be described as an email limit.
+  if (details.code === 'over_email_send_rate_limit') return 'auth.emailRateLimit';
+  if (details.status === 429 || details.code?.includes('rate_limit')) return 'auth.requestRateLimit';
   if (details.code === 'invalid_credentials') return 'auth.invalidCredentials';
   if (details.code === 'email_not_confirmed') return 'auth.confirmEmail';
   if (details.code === 'weak_password') return 'auth.weakPassword';

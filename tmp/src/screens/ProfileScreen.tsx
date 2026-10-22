@@ -176,7 +176,6 @@ export default function ProfileScreen() {
     } catch (error) {
       const key = authErrorKey(error);
       setErrorMsg(t(accountNotFoundError(error) ? 'auth.registrationSuccess' : key));
-      if (key === 'auth.emailRateLimit') setEmailCooldown(60);
     } finally {
       authPending.current = false;
       setAuthLoading(false);
@@ -213,7 +212,6 @@ export default function ProfileScreen() {
         setAuthMessage(t('auth.magicLinkSent'));
       } else {
         setErrorMsg(t(key));
-        if (key === 'auth.emailRateLimit') setEmailCooldown(60);
       }
     } finally {
       authPending.current = false;

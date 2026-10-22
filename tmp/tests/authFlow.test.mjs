@@ -34,9 +34,16 @@ test('auth failures have actionable messages and never echo raw server details',
   assert.equal(authErrorKey({code: 'invalid_credentials'}), 'auth.invalidCredentials');
   assert.equal(authErrorKey({code: 'email_not_confirmed'}), 'auth.confirmEmail');
   assert.equal(authErrorKey({code: 'over_email_send_rate_limit'}), 'auth.emailRateLimit');
-  assert.equal(authErrorKey({status: 429}), 'auth.emailRateLimit');
+  assert.equal(authErrorKey({status: 429}), 'auth.requestRateLimit');
   assert.equal(authErrorKey(new TypeError('Failed to fetch')), 'auth.networkError');
   assert.equal(authErrorKey({message: 'private server information'}), 'auth.recoveryError');
+});
+
+test('email delivery limits and client request limits remain distinct without inferring a retry time', () => {
+  assert.equal(authErrorKey({code: 'over_email_send_rate_limit', status: 429}), 'auth.emailRateLimit');
+  assert.equal(authErrorKey({code: 'over_request_rate_limit', status: 429}), 'auth.requestRateLimit');
+  assert.equal(authErrorKey({code: 'over_sms_send_rate_limit'}), 'auth.requestRateLimit');
+  assert.equal(authErrorKey({status: 429, message: 'email rate limit exceeded'}), 'auth.requestRateLimit');
 });
 
 test('password changes wait for session and reject expired callback even when another session exists', () => {
