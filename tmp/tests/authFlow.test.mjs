@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { safeAuthReturn, authRedirect, normalizedEmail, validEmail, authErrorKey, googleProviderEnabled, canUpdatePassword, accountNotFoundError } from '../src/utils/authFlow.ts';
+import { safeAuthReturn, authRedirect, normalizedEmail, validEmail, authErrorKey, googleProviderEnabled, canUpdatePassword, accountNotFoundError, recoveryCallbackDestination } from '../src/utils/authFlow.ts';
 
 test('auth return accepts club and existing game routes, rejects external redirects', () => {
   for (const path of ['/chat', '/play', '/play?room=abc', '/play?invite=1&tc=5%2B0']) assert.equal(safeAuthReturn(path), path);
@@ -50,4 +50,26 @@ test('Google availability requires explicit enabled flag, hides unavailable prov
   assert.equal(await googleProviderEnabled('https://qa.example', 'public-test-key', async () => { throw new Error('offline'); }), false);
   assert.equal(await googleProviderEnabled('https://qa.example', 'public-test-key', async () => new Response('', {status:403})), false);
   assert.equal(await googleProviderEnabled('', '', response({external:{google:true}})), false);
+});
+
+
+test('Supabase recovery Site URL fallback enters password form without exposing tokens', () => {
+  const link = 'https://chessaz-preview-workspace.vercel.app/#access_token=test-access&refresh_token=test-refresh&type=recovery';
+  assert.equal(recoveryCallbackDestination(link), '/update-password#access_token=test-access&refresh_token=test-refresh&type=recovery');
+  const profileCallback = 'https://qa.example/profile?returnTo=%2Fchat#access_token=a&refresh_token=b&type=recovery';
+  assert.equal(recoveryCallbackDestination(profileCallback),
+    '/update-password?returnTo=%2Fchat#access_token=a&refresh_token=b&type=recovery');
+});
+
+test('normal login/signup callbacks never route into password reset', () => {
+  for (const href of [
+    'https://qa.example/#access_token=a&refresh_token=b&type=signup',
+    'https://qa.example/#access_token=a&refresh_token=b&type=magiclink',
+    'https://qa.example/#type=recovery',
+    'https://qa.example/chat#access_token=a&refresh_token=b&type=recovery',
+    'https://qa.example/update-password#access_token=a&refresh_token=b&type=recovery',
+    'https://qa.example/profile?returnTo=%2Fchat'
+  ]) assert.equal(recoveryCallbackDestination(href), null);
+  assert.equal(recoveryCallbackDestination('https://qa.example/#error=access_denied&error_code=otp_expired'),
+    '/update-password#error=access_denied&error_code=otp_expired');
 });
