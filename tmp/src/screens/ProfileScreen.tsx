@@ -5,7 +5,7 @@ import { Target, Swords, Zap, Activity, Calendar, MapPin, LogOut, Loader2 } from
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
-import { authRedirect, safeAuthReturn, normalizedEmail, validEmail, authErrorKey, googleProviderEnabled } from '../utils/authFlow';
+import { authRedirect, safeAuthReturn, normalizedEmail, validEmail, authErrorKey, googleProviderEnabled, accountNotFoundError } from '../utils/authFlow';
 import { calculateMatchStats, getMatchResultForPlayer } from '../utils/profileContract';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -156,12 +156,12 @@ export default function ProfileScreen() {
         if (error) throw error;
 
         setEmailCooldown(60);
-        // Supabase can intentionally return a user without identities when the
-        // email is already registered. Treat that as an existing account.
+        // Some Supabase settings return an obfuscated identity for an existing account.
+        // Do not reveal account existence through registration feedback.
         if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
           setIsLoginMode(true);
           setPassword('');
-          setAuthMessage(t('auth.accountAlreadyExists'));
+          setAuthMessage(t('auth.registrationSuccess'));
           return;
         }
 
@@ -174,8 +174,9 @@ export default function ProfileScreen() {
         }
       }
     } catch (error) {
-      setErrorMsg(t(authErrorKey(error)));
-      if (authErrorKey(error) === 'auth.emailRateLimit') setEmailCooldown(60);
+      const key = authErrorKey(error);
+      setErrorMsg(t(accountNotFoundError(error) ? 'auth.registrationSuccess' : key));
+      if (key === 'auth.emailRateLimit') setEmailCooldown(60);
     } finally {
       authPending.current = false;
       setAuthLoading(false);
@@ -207,8 +208,13 @@ export default function ProfileScreen() {
       setAuthMessage(t(kind === 'recovery' ? 'auth.resetEmailSent' : 'auth.magicLinkSent'));
     } catch (error) {
       const key = authErrorKey(error);
-      setErrorMsg(t(key));
-      if (key === 'auth.emailRateLimit') setEmailCooldown(60);
+      if (kind === 'magic' && accountNotFoundError(error)) {
+        setEmailCooldown(60);
+        setAuthMessage(t('auth.magicLinkSent'));
+      } else {
+        setErrorMsg(t(key));
+        if (key === 'auth.emailRateLimit') setEmailCooldown(60);
+      }
     } finally {
       authPending.current = false;
       setAuthLoading(false);
