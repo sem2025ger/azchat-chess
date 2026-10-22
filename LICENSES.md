@@ -21,5 +21,10 @@
 - **Source**: https://github.com/nmrugg/stockfish.js/releases/tag/v19.0.1
 - **Upstream Stockfish source**: https://github.com/official-stockfish/Stockfish
 - **License**: GNU General Public License version 3 (GPL-3.0); retain notices and provide corresponding source to satisfy redistribution obligations.
-- **Integrity**: `tmp/scripts/prepare-stockfish19.mjs` verifies the SHA-256 digests and sizes advertised by the pinned GitHub release before including binaries in the build.
+- **Corresponding source**: release commit `0d5dd7944f88c817c07a26bc4fb1905d5f9c46d6`, https://github.com/nmrugg/stockfish.js/archive/0d5dd7944f88c817c07a26bc4fb1905d5f9c46d6.tar.gz . Its README and build scripts document Emscripten 6.0.9 and the Lite Single build, including required network retrieval.
+- **Public notice**: `/stockfish-19-notice.html` is shipped alongside the binaries and linked from the analysis engine label. `/stockfish-license.txt` supplies the GPL text. Original engine notices remain untouched.
+- **Integrity**: `tmp/scripts/prepare-stockfish19.mjs` verifies sizes and SHA-256 values pinned in git; mutable release metadata cannot approve replacement binaries.
+  - JS: `ccb130d7ff29408531c47d859a49f91d59d4f482d05a53eb1a3231a4f624c91a`
+  - WASM: `ee4f115bdb2d32cadf96cada104a05b5ec257d7ad6f57582190b49bc71f096de`
+- **Release gate**: maintain availability of the exact corresponding source for as long as redistribution requires it; check the published notice/source links before production. Full application licensing and source rebuild reproducibility have not been certified by this engineering review.
 - **Previous assets**: Stockfish.js 18 stays in the repository for rollback; the analysis worker references 19 only in this feature branch.

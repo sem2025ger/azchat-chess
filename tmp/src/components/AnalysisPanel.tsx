@@ -83,7 +83,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
       <header className="analysis-engine-status flex items-center justify-between border-b border-white/[0.04] pb-3 shrink-0">
          <div className="flex items-center gap-2.5">
             <Cpu size={16} className={cx("text-neutral-400", loading && "animate-pulse")} />
-            <span className="text-[0.75rem] font-bold text-neutral-300">Stockfish 19</span>
+            <a href="/stockfish-19-notice.html" target="_blank" rel="noopener noreferrer" className="text-[0.75rem] font-bold text-neutral-300" aria-label="Stockfish 19 — лицензия и исходный код">Stockfish 19</a>
             {depth > 0 && <span className="text-[0.65rem] font-semibold text-neutral-500 bg-white/5 px-2 py-0.5 rounded-full">depth {depth}</span>}
             {reviewLayout && requestedDepth && onIncreaseDepth && <button type="button" className="analysis-depth-action hidden lg:inline-flex items-center rounded-lg border border-[#8f7749]/40 px-2 py-1 text-[11px] font-bold text-[#f4dca5]" onClick={onIncreaseDepth} disabled={requestedDepth >= 36} title={`Увеличить целевую глубину с ${requestedDepth} до ${Math.min(36, requestedDepth + 6)}`}>Глубже</button>}
          </div>
