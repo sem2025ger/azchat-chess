@@ -1,3 +1,19 @@
+// When Supabase's allowed redirect configuration falls back to its Site URL,
+// an implicit recovery callback can arrive at / or /profile. Route it to the
+// password screen BEFORE React and Supabase finish processing the URL fragment.
+// Never log or store the access/refresh tokens from the callback URL.
+export function recoveryCallbackDestination(href: string): string | null {
+  const url = new URL(href);
+  if (!['/', '/home', '/profile'].includes(url.pathname)) return null;
+  const callback = new URLSearchParams(url.hash.replace(/^#/, ''));
+  const validRecoveryShape = callback.get('type') === 'recovery'
+    && callback.has('access_token') && callback.has('refresh_token');
+  // Used/expired links returned by Supabase must show an error instead of the home page.
+  const expiredLink = callback.has('error') && callback.get('error_code') === 'otp_expired';
+  if (!validRecoveryShape && !expiredLink) return null;
+  return '/update-password' + url.search + url.hash;
+}
+
 // Only known application destinations may survive authentication redirects.
 export function safeAuthReturn(value: string | null): string | null {
   if (value === '/chat' || value === '/play') return value;
