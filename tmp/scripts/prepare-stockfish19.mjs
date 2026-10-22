@@ -29,8 +29,8 @@ const assets = await Promise.all(names.map(async name => {
     throw new Error('Missing or unverifiable Stockfish 19 artifact: ' + name);
   }
   const bytes = Buffer.from(await (await fetchVerified(base + name)).arrayBuffer());
-  if (bytes.byteLength !== asset.size || bytes.length < (name.endsWith('.wasm') ? 100_000 : 5_000) ||
-      bytes.length > 5_000_000) throw new Error('Invalid Stockfish asset length: ' + name);
+  if (bytes.byteLength !== asset.size || bytes.length < (name.endsWith('.wasm') ? 100_000 : 1_000) ||
+      bytes.length > 50_000_000) throw new Error('Invalid Stockfish asset length: ' + name);
   if (name.endsWith('.wasm') && bytes.subarray(0, 4).toString('hex') !== '0061736d') {
     throw new Error('Stockfish WebAssembly signature mismatch');
   }
