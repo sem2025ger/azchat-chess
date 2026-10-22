@@ -11,6 +11,12 @@ type ClubEvent = {
   min_players: number; max_players: number; status: string; created_at: string;
 };
 type Participant = { event_id: string; user_id: string };
+type ScheduledTournament = {
+  id: string; title: string; format: 'bullet' | 'blitz' | 'rapid';
+  min_players: number; max_players: number; status: string;
+  registration_opens_at: string; starts_at: string;
+};
+type TournamentEntry = { tournament_id: string; user_id: string };
 type Words = Record<'welcome' | 'subtitle' | 'join' | 'login' | 'membersOnly' | 'messages' | 'send' |
   'messagePlaceholder' | 'events' | 'create' | 'eventPlaceholder' | 'participate' | 'withdraw' |
   'ready' | 'players' | 'loading' | 'failed' | 'success' | 'emptyMessages' | 'emptyEvents' |
@@ -68,6 +74,8 @@ export default function ChessAZCommunityScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [events, setEvents] = useState<ClubEvent[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [tournaments, setTournaments] = useState<ScheduledTournament[]>([]);
+  const [tournamentEntries, setTournamentEntries] = useState<TournamentEntry[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [eventTitle, setEventTitle] = useState('');
@@ -84,6 +92,7 @@ export default function ChessAZCommunityScreen() {
     setClub(found as Club | null);
     if (!found || !user) {
       setMember(false); setMessages([]); setEvents([]); setParticipants([]);
+      setTournaments([]); setTournamentEntries([]);
       return;
     }
     const { data: joined, error: memberError } = await supabase.from('chess_club_members')
@@ -93,17 +102,33 @@ export default function ChessAZCommunityScreen() {
     setMember(active);
     if (!active) {
       setMessages([]); setEvents([]); setParticipants([]);
+      setTournaments([]); setTournamentEntries([]);
       return;
     }
-    const [messageResult, eventResult] = await Promise.all([
+    const [messageResult, eventResult, tournamentResult] = await Promise.all([
       supabase.from('chess_club_messages').select('id,author_id,body,created_at')
         .eq('club_id', found.id).order('created_at', { ascending: false }).limit(50),
       supabase.from('chess_club_events')
         .select('id,title,format,min_players,max_players,status,created_at')
-        .eq('club_id', found.id).order('created_at', { ascending: false }).limit(30)
+        .eq('club_id', found.id).order('created_at', { ascending: false }).limit(30),
+      supabase.from('chess_club_tournaments')
+        .select('id,title,format,min_players,max_players,status,registration_opens_at,starts_at')
+        .eq('club_id', found.id).eq('status', 'scheduled')
+        .gte('starts_at', new Date().toISOString()).order('starts_at').limit(30)
     ]);
     if (messageResult.error) throw messageResult.error;
     if (eventResult.error) throw eventResult.error;
+    if (tournamentResult.error) throw tournamentResult.error;
+    const nextTournaments = (tournamentResult.data ?? []) as ScheduledTournament[];
+    setTournaments(nextTournaments);
+    if (nextTournaments.length) {
+      const { data, error: entryError } = await supabase.from('chess_club_tournament_entries')
+        .select('tournament_id,user_id').in('tournament_id', nextTournaments.map(e => e.id));
+      if (entryError) throw entryError;
+      setTournamentEntries((data ?? []) as TournamentEntry[]);
+    } else {
+      setTournamentEntries([]);
+    }
     const nextMessages = (messageResult.data ?? []) as Message[];
     const nextEvents = (eventResult.data ?? []) as ClubEvent[];
     setMessages([...nextMessages].reverse());
@@ -193,6 +218,15 @@ export default function ChessAZCommunityScreen() {
           .insert({ event_id: item.id, user_id: user.id }));
   };
 
+  const toggleTournamentEntry = (item: ScheduledTournament, registered: boolean) => {
+    if (!user || busy) return;
+    void perform(() => registered
+      ? supabase.from('chess_club_tournament_entries')
+          .delete().eq('tournament_id', item.id).eq('user_id', user.id)
+      : supabase.from('chess_club_tournament_entries')
+          .insert({ tournament_id: item.id, user_id: user.id }));
+  };
+
   const surface = 'rounded-2xl border border-white/10 bg-neutral-900/75 p-4 md:p-6 shadow-xl';
   const button = 'rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-neutral-950 disabled:opacity-50';
   const input = 'w-full rounded-xl border border-white/15 bg-neutral-950/80 px-3 py-2.5 text-white outline-none focus:border-amber-400';
@@ -272,6 +306,48 @@ export default function ChessAZCommunityScreen() {
                       disabled={busy || item.status !== 'collecting' || (!participating && signups.length >= item.max_players)}
                       onClick={() => toggleParticipation(item, participating)}>
                       {participating ? t.withdraw : t.participate}
+                    </button>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+          <section className={`${surface} xl:col-span-2`} aria-label="ChessAZ tournament calendar">
+            <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">
+              <Trophy size={20} /> {language === 'de' ? 'Turnierkalender' : language === 'ru' ? 'Календарь турниров' : 'Tournament calendar'}
+            </h2>
+            <p className="mb-4 text-xs text-neutral-400">
+              {language === 'de'
+                ? 'Geplante Turniere und Anmeldung; automatische Partien und Paarungen sind noch nicht aktiviert.'
+                : language === 'ru'
+                  ? 'Расписание и запись участников; автоматический запуск партий и жеребьёвка пока не включены.'
+                  : 'Upcoming dates and signups; automated games and pairings are not yet enabled.'}
+            </p>
+            {!tournaments.length && <p className="text-neutral-400">
+              {language === 'de' ? 'Noch keine Termine geplant.' : language === 'ru' ? 'Пока нет запланированных турниров.' : 'No tournaments scheduled yet.'}
+            </p>}
+            <div className="grid gap-3 md:grid-cols-2">
+              {tournaments.map(item => {
+                const count = tournamentEntries.filter(p => p.tournament_id === item.id).length;
+                const registered = tournamentEntries.some(p => p.tournament_id === item.id && p.user_id === user?.id);
+                const opened = Date.now() >= Date.parse(item.registration_opens_at);
+                const title = language === 'de' ? 'Anmelden' : language === 'ru' ? 'Записаться' : 'Register';
+                return (
+                  <article key={item.id} className="rounded-xl border border-white/10 bg-black/30 p-4">
+                    <h3 className="font-semibold">{item.title}</h3>
+                    <p className="mt-1 text-xs text-neutral-300">
+                      {new Intl.DateTimeFormat(language === 'de' ? 'de-DE' : language === 'ru' ? 'ru-RU' : 'en-GB',
+                        { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Berlin' }).format(new Date(item.starts_at))}
+                      {' · Europe/Berlin · '}{item.format} · {count}/{item.max_players}
+                    </p>
+                    <button type="button" className="mt-3 rounded-lg border border-amber-300/40 px-3 py-2 text-sm text-amber-200 disabled:opacity-50"
+                      disabled={busy || (!registered && (!opened || count >= item.max_players))}
+                      onClick={() => toggleTournamentEntry(item, registered)}>
+                      {registered
+                        ? (language === 'de' ? 'Abmelden' : language === 'ru' ? 'Отменить запись' : 'Withdraw')
+                        : !opened
+                          ? (language === 'de' ? 'Anmeldung noch geschlossen' : language === 'ru' ? 'Регистрация пока закрыта' : 'Registration not open yet')
+                          : title}
                     </button>
                   </article>
                 );
