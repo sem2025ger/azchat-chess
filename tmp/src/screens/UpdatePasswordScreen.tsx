@@ -5,6 +5,7 @@ import { safeAuthReturn, authErrorKey, canUpdatePassword } from '../utils/authFl
 import { supabase } from '../services/supabase';
 import { useLanguage } from '../context/LanguageContext';
 import { Loader2 } from 'lucide-react';
+import RecoveryRequestForm from '../components/RecoveryRequestForm';
 
 export default function UpdatePasswordScreen() {
   const { t } = useLanguage();
@@ -62,8 +63,13 @@ export default function UpdatePasswordScreen() {
             </h1>
           </div>
 
-          {!sessionLoading && !canUpdate && !successMsg && <p role="alert" className="mb-5 text-sm text-amber-200">{t('auth.invalidRecovery')}</p>}
-          <form onSubmit={handleUpdate} className="space-y-5 md:space-y-6">
+          {sessionLoading && <p role="status" className="text-sm text-neutral-200">{t('auth.checkingRecovery')}</p>}
+          {!sessionLoading && !canUpdate && !successMsg && <>
+            <p role="alert" className="mb-5 text-sm text-amber-200">{t('auth.invalidRecovery')}</p>
+            <RecoveryRequestForm initialEmail={user?.email} returnTo={returnTo} />
+            <button type="button" onClick={() => navigate(signInPath)} className="mt-5 min-h-11 w-full text-sm text-neutral-300 underline">{t('auth.backToSignIn')}</button>
+          </>}
+          {(canUpdate || !!successMsg) && <form onSubmit={handleUpdate} className="space-y-5 md:space-y-6">
             <div className="space-y-1">
               <label htmlFor="new-password" className="text-base font-semibold text-neutral-200 block mb-1">
                 {t('auth.newPasswordLabel')}
@@ -122,7 +128,7 @@ export default function UpdatePasswordScreen() {
                  </button>
                </div>
             )}
-          </form>
+          </form>}
         </div>
       </div>
     </div>

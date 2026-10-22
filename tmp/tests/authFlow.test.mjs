@@ -1,6 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { safeAuthReturn, authRedirect, normalizedEmail, validEmail, authErrorKey, googleProviderEnabled, canUpdatePassword, accountNotFoundError, recoveryCallbackDestination } from '../src/utils/authFlow.ts';
+import { safeAuthReturn, authRedirect, normalizedEmail, validEmail, authErrorKey, googleProviderEnabled, canUpdatePassword, accountNotFoundError, recoveryCallbackDestination, requestRecoveryEmail } from '../src/utils/authFlow.ts';
+
+test('requesting a fresh recovery link validates email and targets the reset form, never an external return', async () => {
+  const calls = [];
+  const auth = { resetPasswordForEmail: async (...args) => { calls.push(args); return { error: null }; } };
+  await assert.rejects(requestRecoveryEmail(auth, 'invalid', 'https://qa.example', '/chat'), { code: 'invalid_email' });
+  assert.equal(calls.length, 0);
+  await requestRecoveryEmail(auth, ' Player@example.com ', 'https://qa.example', '/chat');
+  assert.deepEqual(calls[0], ['Player@example.com', { redirectTo: 'https://qa.example/update-password?returnTo=%2Fchat' }]);
+  await requestRecoveryEmail(auth, 'Player@example.com', 'https://qa.example', 'https://evil.example');
+  assert.equal(calls[1][1].redirectTo, 'https://qa.example/update-password');
+  await assert.rejects(requestRecoveryEmail({ resetPasswordForEmail: async () => ({ error: { status: 429 } }) }, 'p@example.com', 'https://qa.example', null), { status: 429 });
+});
 
 test('auth return accepts club and existing game routes, rejects external redirects', () => {
   for (const path of ['/chat', '/play', '/play?room=abc', '/play?invite=1&tc=5%2B0']) assert.equal(safeAuthReturn(path), path);
@@ -33,6 +45,8 @@ test('password changes wait for session and reject expired callback even when an
   assert.equal(canUpdatePassword(true, false, '', '#error=access_denied&error_code=otp_expired'), false);
   assert.equal(canUpdatePassword(true, false, 'error=access_denied', ''), false);
   assert.equal(canUpdatePassword(true, false, 'returnTo=%2Fchat', ''), true);
+  assert.equal(canUpdatePassword(true, false, 'error_code=otp_expired', ''), false);
+  assert.equal(canUpdatePassword(true, false, '', '#error_description=Invalid+link'), false);
 });
 
 test('email-link account status is not exposed to the user', () => {
@@ -72,4 +86,8 @@ test('normal login/signup callbacks never route into password reset', () => {
   ]) assert.equal(recoveryCallbackDestination(href), null);
   assert.equal(recoveryCallbackDestination('https://qa.example/#error=access_denied&error_code=otp_expired'),
     '/update-password#error=access_denied&error_code=otp_expired');
+  assert.equal(recoveryCallbackDestination('https://qa.example/?error_code=otp_expired'),
+    '/update-password?error_code=otp_expired');
+  assert.equal(recoveryCallbackDestination('https://qa.example/#error_code=otp_expired'),
+    '/update-password#error_code=otp_expired');
 });

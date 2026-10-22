@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase, type UserProfile } from '../services/supabase';
+import { supabase, passwordRecovery, type UserProfile } from '../services/supabase';
 import { type Session, type User } from '@supabase/supabase-js';
 import { mapProfileRow } from '../utils/profileContract';
 
@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setPasswordRecoveryVerified(passwordRecovery.isVerified(session));
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
@@ -44,11 +45,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // 2. Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         // Only the Supabase PASSWORD_RECOVERY redirect may unlock the reset form.
         // An existing normal login must not be treated as proof of recovery.
-        if (event === 'PASSWORD_RECOVERY' && session?.user) setPasswordRecoveryVerified(true);
-        if (event === 'SIGNED_OUT' || event === 'USER_UPDATED') setPasswordRecoveryVerified(false);
+        setPasswordRecoveryVerified(passwordRecovery.isVerified(session));
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {

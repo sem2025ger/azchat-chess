@@ -34,6 +34,31 @@ requirement, and verify the actual email click from a clean browser.
 
 ## Remaining configuration and release gates
 
+### Recovery follow-up, 23 October 2026
+
+- Confirmed with the actual Supabase JavaScript SDK and a mocked Auth transport:
+  a successful implicit recovery consumes the URL and emits PASSWORD_RECOVERY
+  once. A React subscriber mounted later sees INITIAL_SESSION, not that earlier
+  recovery event. This can leave the former UI unable to unlock the form.
+- Register a memory-only observer immediately after createClient, and normalize
+  fallback routes before creating that client. React reads only SDK-verified
+  recovery proof; a normal signed-in session or URL flag cannot unlock reset.
+  Logout, normal sign-in, a different user and successful password update clear it.
+- Error callbacks are checked in both query and hash, including error_code without
+  an error field. The invalid/expired screen now requests a fresh email directly,
+  with account-neutral feedback, validation, an in-flight guard and cooldown.
+- QA logs on 22 October at 22:00:08 UTC contain /recover=200 and mail.send;
+  /verify subsequently includes both a successful Login and invalid/expired-link
+  errors. These logs do not prove the reason for expiry or delivery to every mailbox.
+- Public QA settings inspected in this follow-up report email=true,
+  mailer_autoconfirm=false, external.google=false. Google login remains unavailable
+  until a real Google OAuth client is configured and tested; no credentials were
+  fabricated and email confirmation was not disabled.
+- Regression coverage includes the real SDK's early event, delayed UI mount,
+  ordinary login isolation, expired callbacks, fresh email request destination,
+  and rendering the actual password/retry screen. These isolated tests are not
+  an end-to-end mailbox test and do not change any real user's password.
+
 1. Google: configure a web OAuth client in Google Cloud and the QA Supabase
    Google provider. Keep the secret in provider settings, never frontend source.
    Callback: https://iukmpcytsuofqhxsumbu.supabase.co/auth/v1/callback .

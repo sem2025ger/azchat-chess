@@ -9,7 +9,8 @@ export function recoveryCallbackDestination(href: string): string | null {
   const validRecoveryShape = callback.get('type') === 'recovery'
     && callback.has('access_token') && callback.has('refresh_token');
   // Used/expired links returned by Supabase must show an error instead of the home page.
-  const expiredLink = callback.has('error') && callback.get('error_code') === 'otp_expired';
+  const expiredLink = callback.get('error_code') === 'otp_expired'
+    || url.searchParams.get('error_code') === 'otp_expired';
   if (!validRecoveryShape && !expiredLink) return null;
   return '/update-password' + url.search + url.hash;
 }
@@ -46,14 +47,31 @@ export function authErrorKey(error: unknown): string {
   if (details.code === 'invalid_credentials') return 'auth.invalidCredentials';
   if (details.code === 'email_not_confirmed') return 'auth.confirmEmail';
   if (details.code === 'weak_password') return 'auth.weakPassword';
+  if (details.code === 'invalid_email') return 'auth.emailRequired';
   if (details.message === 'Failed to fetch' || error instanceof TypeError) return 'auth.networkError';
   return 'auth.recoveryError';
 }
 
+interface RecoveryEmailAuth {
+  resetPasswordForEmail(email: string, options: { redirectTo: string }): Promise<{ error: unknown }>;
+}
+
+export async function requestRecoveryEmail(auth: RecoveryEmailAuth, email: string, origin: string, returnTo: string | null) {
+  if (!validEmail(email)) throw Object.assign(new Error('Invalid email'), { code: 'invalid_email' });
+  const { error } = await auth.resetPasswordForEmail(normalizedEmail(email), {
+    redirectTo: authRedirect(origin, '/update-password', returnTo),
+  });
+  if (error && !accountNotFoundError(error)) throw error;
+}
+
 export function canUpdatePassword(verifiedRecoverySession: boolean, loading: boolean, search: string, hash: string): boolean {
   return verifiedRecoverySession && !loading
-    && !new URLSearchParams(search).has('error')
-    && !new URLSearchParams(hash.replace(/^#/, '')).has('error');
+    && !hasAuthCallbackError(search, hash);
+}
+
+export function hasAuthCallbackError(search: string, hash: string): boolean {
+  return [new URLSearchParams(search), new URLSearchParams(hash.replace(/^#/, ''))]
+    .some(params => ['error', 'error_code', 'error_description'].some(key => params.has(key)));
 }
 
 // Supabase can respond with an account-related error for email links even when
