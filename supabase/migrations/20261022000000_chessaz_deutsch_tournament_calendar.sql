@@ -161,14 +161,14 @@ BEGIN
       FROM pg_catalog.generate_series(0, p_horizon_days) AS n
     LOOP
       IF template.cadence = 'daily'
-        OR pg_catalog.extract(isodow FROM local_date)::int = template.weekday_iso THEN
+        OR EXTRACT(isodow FROM local_date)::int = template.weekday_iso THEN
         proposed_start := pg_catalog.make_timestamptz(
-          pg_catalog.extract(year FROM local_date)::int,
-          pg_catalog.extract(month FROM local_date)::int,
-          pg_catalog.extract(day FROM local_date)::int,
-          pg_catalog.extract(hour FROM template.local_start_time)::int,
-          pg_catalog.extract(minute FROM template.local_start_time)::int,
-          pg_catalog.extract(second FROM template.local_start_time),
+          EXTRACT(year FROM local_date)::int,
+          EXTRACT(month FROM local_date)::int,
+          EXTRACT(day FROM local_date)::int,
+          EXTRACT(hour FROM template.local_start_time)::int,
+          EXTRACT(minute FROM template.local_start_time)::int,
+          EXTRACT(second FROM template.local_start_time),
           template.time_zone
         );
         IF proposed_start > p_now THEN
