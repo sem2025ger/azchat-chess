@@ -200,19 +200,26 @@ try {
   directory = await mkdtemp(join(tmpdir(), 'chessaz-chrome-'));
   chrome = spawn(chromeBinary, [
     '--headless=new', '--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu',
+    '--disable-background-networking', '--disable-extensions', '--disable-component-update',
     '--no-first-run', '--no-default-browser-check', '--remote-allow-origins=*',
     '--remote-debugging-port=0', '--user-data-dir=' + directory, 'about:blank'
-  ], { stdio: 'ignore' });
+  ], { stdio: ['ignore', 'ignore', 'pipe'] });
+  let chromeStderr = '';
+  let launchError;
+  chrome.stderr.on('data', chunk => { chromeStderr = (chromeStderr + chunk.toString()).slice(-16000); });
+  chrome.on('error', error => { launchError = error; });
   let debugPort;
-  for (let attempt = 0; attempt < 150; attempt++) {
+  const startupDeadline = Date.now() + 45000;
+  while (Date.now() < startupDeadline) {
     try {
       debugPort = Number((await readFile(join(directory, 'DevToolsActivePort'), 'utf8')).split('\n')[0]);
       if (debugPort) break;
     } catch {}
-    if (chrome.exitCode !== null) throw new Error('Chromium exited before opening DevTools');
+    if (launchError) throw launchError;
+    if (chrome.exitCode !== null) throw new Error('Chromium exited before opening DevTools: ' + chromeStderr);
     await new Promise(done => setTimeout(done, 100));
   }
-  assert.ok(debugPort, 'Chromium DevTools did not become available');
+  assert.ok(debugPort, 'Chromium DevTools did not become available within 45s: ' + chromeStderr);
   const targets = await (await fetch('http://127.0.0.1:' + debugPort + '/json/list')).json();
   const target = targets.find(t => t.type === 'page');
   assert.ok(target?.webSocketDebuggerUrl, 'No Chromium page target');
@@ -234,7 +241,14 @@ try {
   function cdp(method, params = {}) {
     return new Promise((resolve, reject) => {
       const id = ++nextId;
-      pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => {
+        pending.delete(id);
+        reject(new Error('Chromium command timed out: ' + method));
+      }, 120000);
+      pending.set(id, {
+        resolve: value => { clearTimeout(timer); resolve(value); },
+        reject: error => { clearTimeout(timer); reject(error); }
+      });
       ws.send(JSON.stringify({ id, method, params }));
     });
   }
