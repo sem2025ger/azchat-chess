@@ -176,8 +176,18 @@ try {
       });
     }
     await cdp('Page.navigate', { url: 'http://127.0.0.1:' + port + '/' });
+    // Wait for the new navigation, not a stale execution context from the previous run.
+    let navigated = false;
+    for (let attempt = 0; attempt < 150; attempt++) {
+      try {
+        const state = await cdp('Runtime.evaluate', { expression: 'location.href === "http://127.0.0.1:' + port + '/" && !!window.__chessazSmoke', returnByValue: true });
+        if (state.result?.value === true) { navigated = true; break; }
+      } catch {}
+      await new Promise(done => setTimeout(done, 100));
+    }
+    assert.ok(navigated, 'Browser fixture did not load after navigation');
     const evaluation = await cdp('Runtime.evaluate', {
-      expression: '(async()=>{for(let n=0;n<200;n++){if(window.__chessazSmoke)return await window.__chessazSmoke;await new Promise(r=>setTimeout(r,100));}throw new Error("Browser fixture did not load")})()',
+      expression: 'window.__chessazSmoke',
       awaitPromise: true,
       returnByValue: true
     });
