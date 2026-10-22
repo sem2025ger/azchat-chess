@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Globe, Users, MessageCircle, Trophy, Loader2 } from 'lucide-react';
+import { Globe, Users, MessageCircle, Trophy, Loader2, BarChart3, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { supabase } from '../services/supabase';
@@ -17,6 +17,16 @@ type ScheduledTournament = {
   registration_opens_at: string; starts_at: string;
 };
 type TournamentEntry = { tournament_id: string; user_id: string };
+type ClubTab = 'discussions' | 'tournaments' | 'members' | 'rating' | 'about';
+type ClubMember = { user_id: string; role: string; joined_at: string };
+type ClubProfile = { id: string; username: string; rating_blitz: number | null; rating_rapid: number | null; rating_bullet: number | null; country_code: string | null };
+const clubTabs = [
+  { id: 'discussions', icon: MessageCircle, en: 'Discussions', de: 'Diskussionen', ru: 'Обсуждения' },
+  { id: 'tournaments', icon: Trophy, en: 'Tournaments', de: 'Turniere', ru: 'Турниры' },
+  { id: 'members', icon: Users, en: 'Members', de: 'Mitglieder', ru: 'Участники' },
+  { id: 'rating', icon: BarChart3, en: 'Rating', de: 'Rangliste', ru: 'Рейтинг' },
+  { id: 'about', icon: Info, en: 'About', de: 'Über den Club', ru: 'О клубе' }
+] as const;
 type Words = Record<'welcome' | 'subtitle' | 'join' | 'login' | 'membersOnly' | 'messages' | 'send' |
   'messagePlaceholder' | 'events' | 'create' | 'eventPlaceholder' | 'participate' | 'withdraw' |
   'ready' | 'players' | 'loading' | 'failed' | 'success' | 'emptyMessages' | 'emptyEvents' |
@@ -77,6 +87,10 @@ export default function ChessAZCommunityScreen() {
   const [tournaments, setTournaments] = useState<ScheduledTournament[]>([]);
   const [tournamentEntries, setTournamentEntries] = useState<TournamentEntry[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState<ClubTab>('discussions');
+  const [ratingMode, setRatingMode] = useState<'blitz'|'rapid'|'bullet'>('blitz');
+  const [members, setMembers] = useState<ClubMember[]>([]);
+  const [memberProfiles, setMemberProfiles] = useState<ClubProfile[]>([]);
   const [message, setMessage] = useState('');
   const [eventTitle, setEventTitle] = useState('');
   const [eventFormat, setEventFormat] = useState<'bullet' | 'blitz' | 'rapid'>('blitz');
@@ -93,6 +107,7 @@ export default function ChessAZCommunityScreen() {
     if (!found || !user) {
       setMember(false); setMessages([]); setEvents([]); setParticipants([]);
       setTournaments([]); setTournamentEntries([]);
+      setMembers([]); setMemberProfiles([]);
       return;
     }
     const { data: joined, error: memberError } = await supabase.from('chess_club_members')
@@ -103,9 +118,10 @@ export default function ChessAZCommunityScreen() {
     if (!active) {
       setMessages([]); setEvents([]); setParticipants([]);
       setTournaments([]); setTournamentEntries([]);
+      setMembers([]); setMemberProfiles([]);
       return;
     }
-    const [messageResult, eventResult, tournamentResult] = await Promise.all([
+    const [messageResult, eventResult, tournamentResult, membersResult] = await Promise.all([
       supabase.from('chess_club_messages').select('id,author_id,body,created_at')
         .eq('club_id', found.id).order('created_at', { ascending: false }).limit(50),
       supabase.from('chess_club_events')
@@ -114,11 +130,23 @@ export default function ChessAZCommunityScreen() {
       supabase.from('chess_club_tournaments')
         .select('id,title,format,min_players,max_players,status,registration_opens_at,starts_at')
         .eq('club_id', found.id).eq('status', 'scheduled')
-        .gte('starts_at', new Date().toISOString()).order('starts_at').limit(30)
+        .gte('starts_at', new Date().toISOString()).order('starts_at').limit(30),
+      supabase.from('chess_club_members').select('user_id,role,joined_at')
+        .eq('club_id', found.id).order('joined_at', { ascending: true }).limit(200)
     ]);
     if (messageResult.error) throw messageResult.error;
     if (eventResult.error) throw eventResult.error;
     if (tournamentResult.error) throw tournamentResult.error;
+    if (membersResult.error) throw membersResult.error;
+    const memberRows = (membersResult.data ?? []) as ClubMember[];
+    setMembers(memberRows);
+    if (memberRows.length) {
+      const { data, error } = await supabase.from('profiles')
+        .select('id,username,rating_blitz,rating_rapid,rating_bullet,country_code')
+        .in('id', memberRows.map(m => m.user_id));
+      if (error) throw error;
+      setMemberProfiles((data ?? []) as ClubProfile[]);
+    } else setMemberProfiles([]);
     const nextTournaments = (tournamentResult.data ?? []) as ScheduledTournament[];
     setTournaments(nextTournaments);
     if (nextTournaments.length) {
@@ -254,7 +282,19 @@ export default function ChessAZCommunityScreen() {
         </section>
       )}
       {club && member && !loading && (
-        <div className="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <div className="mt-5 space-y-5">
+          <nav role="tablist" aria-label="ChessAZ Deutsch club sections" className="flex gap-2 overflow-x-auto rounded-xl border border-white/10 bg-neutral-900/80 p-2">
+            {clubTabs.map(item => {
+              const Icon = item.icon;
+              return <button type="button" role="tab" key={item.id} id={`club-tab-${item.id}`}
+                aria-selected={activeTab === item.id} aria-controls={`club-panel-${item.id}`}
+                onClick={() => { setActiveTab(item.id); setError(''); setNotice(''); }}
+                className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 ${activeTab === item.id ? 'bg-amber-400 text-neutral-950' : 'text-neutral-300 hover:bg-white/10'}`}>
+                <Icon size={17} aria-hidden="true" /> {language === 'de' ? item.de : language === 'ru' ? item.ru : item.en}
+              </button>;
+            })}
+          </nav>
+          <div id="club-panel-discussions" role="tabpanel" aria-labelledby="club-tab-discussions" hidden={activeTab !== 'discussions'} className={activeTab === 'discussions' ? '' : 'hidden'}>
           <section className={surface} aria-label={t.messages}>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold"><MessageCircle size={20} />{t.messages}</h2>
             <div aria-live="polite" className="mb-4 max-h-[26rem] min-h-48 space-y-3 overflow-y-auto">
@@ -276,6 +316,8 @@ export default function ChessAZCommunityScreen() {
               <button className={button} disabled={busy || !message.trim()}>{t.send}</button>
             </form>
           </section>
+          </div>
+          <div id="club-panel-tournaments" role="tabpanel" aria-labelledby="club-tab-tournaments" hidden={activeTab !== 'tournaments'} className={activeTab === 'tournaments' ? 'space-y-5' : 'hidden'}>
           <section className={surface} aria-label={t.events}>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold"><Trophy size={20} />{t.events}</h2>
             <form onSubmit={proposeEvent} className="mb-5 flex flex-col gap-2">
@@ -312,7 +354,7 @@ export default function ChessAZCommunityScreen() {
               })}
             </div>
           </section>
-          <section className={`${surface} xl:col-span-2`} aria-label="ChessAZ tournament calendar">
+          <section className={surface} aria-label="ChessAZ tournament calendar">
             <h2 className="mb-2 flex items-center gap-2 text-lg font-semibold">
               <Trophy size={20} /> {language === 'de' ? 'Turnierkalender' : language === 'ru' ? 'Календарь турниров' : 'Tournament calendar'}
             </h2>
@@ -353,6 +395,34 @@ export default function ChessAZCommunityScreen() {
                 );
               })}
             </div>
+          </section>
+          </div>
+          <section id="club-panel-members" role="tabpanel" aria-labelledby="club-tab-members" hidden={activeTab !== 'members'} className={`${surface} ${activeTab !== 'members' ? 'hidden' : ''}`}>
+            <h2 className="mb-3 flex items-center gap-2 text-xl font-bold"><Users size={22} />{language === 'de' ? 'Mitglieder' : language === 'ru' ? 'Участники' : 'Members'}</h2>
+            <p className="mb-4 text-xs text-neutral-400">{language === 'de' ? 'Maximal 200 Mitglieder werden angezeigt.' : language === 'ru' ? 'Отображаются до 200 участников.' : 'Showing up to 200 members.'}</p>
+            {!members.length && <p className="text-neutral-400">{language === 'de' ? 'Noch keine Mitglieder.' : language === 'ru' ? 'Пока нет участников.' : 'No members yet.'}</p>}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{members.map(m => {
+              const p = memberProfiles.find(x => x.id === m.user_id);
+              return <article key={m.user_id} className="rounded-xl border border-white/10 bg-black/30 p-4">
+                <p className="truncate font-semibold">{p?.username ?? (language === 'de' ? 'Spieler' : language === 'ru' ? 'Игрок' : 'Player')}</p>
+                <p className="mt-1 text-xs text-neutral-400">{m.role}{p?.country_code ? ` · ${p.country_code}` : ''}</p>
+                <p className="mt-2 text-xs text-neutral-400">{new Date(m.joined_at).toLocaleDateString(language === 'de' ? 'de-DE' : 'ru-RU')}</p>
+              </article>;
+            })}</div>
+          </section>
+          <section id="club-panel-rating" role="tabpanel" aria-labelledby="club-tab-rating" hidden={activeTab !== 'rating'} className={`${surface} ${activeTab !== 'rating' ? 'hidden' : ''}`}>
+            <h2 className="mb-3 flex items-center gap-2 text-xl font-bold"><BarChart3 size={22}/>{language === 'de' ? 'Club-Rangliste' : language === 'ru' ? 'Рейтинг клуба' : 'Club ratings'}</h2>
+            <p className="mb-4 text-sm text-neutral-400">{language === 'de' ? 'Gespeicherte Profilratings. Keine Turnierergebnisse. 1200 kann ein Startwert sein.' : language === 'ru' ? 'Сохранённые рейтинги профилей, не результаты турниров. 1200 может быть стартовым значением.' : 'Saved player ratings, not tournament results. 1200 may be a starting value.'}</p>
+            <div role="group" aria-label="Time control" className="mb-4 flex gap-2">{(['blitz','rapid','bullet'] as const).map(m => <button type="button" key={m} aria-pressed={ratingMode===m} onClick={() => setRatingMode(m)} className={`rounded-lg px-4 py-2 text-sm ${m===ratingMode ? 'bg-amber-400 font-bold text-neutral-950' : 'border border-white/15 text-neutral-300'}`}>{m[0].toUpperCase()+m.slice(1)}</button>)}</div>
+            {!memberProfiles.length && <p className="text-neutral-400">{language === 'de' ? 'Noch keine Wertungen.' : language === 'ru' ? 'Нет участников для рейтинга.' : 'No ranked members yet.'}</p>}
+            <div className="divide-y divide-white/10 rounded-xl border border-white/10">{memberProfiles.filter(p => p[`rating_${ratingMode}`] != null).sort((a,b) => (b[`rating_${ratingMode}`] ?? 0)-(a[`rating_${ratingMode}`] ?? 0)||a.username.localeCompare(b.username)).map((p,i) => <div key={p.id} className="flex items-center gap-3 p-4"><span className="w-8 font-bold text-amber-200">{i+1}</span><span className="min-w-0 flex-1 truncate">{p.username}</span><strong className="tabular-nums">{p[`rating_${ratingMode}`]}</strong></div>)}</div>
+            <p className="mt-4 text-xs text-neutral-400">{language === 'de' ? 'Teilansicht: bis zu 200 Clubmitglieder.' : language === 'ru' ? 'Частичный список: до 200 членов клуба.' : 'Partial list: up to 200 club members.'}</p>
+          </section>
+          <section id="club-panel-about" role="tabpanel" aria-labelledby="club-tab-about" hidden={activeTab !== 'about'} className={`${surface} ${activeTab !== 'about' ? 'hidden' : ''}`}>
+            <h2 className="mb-3 flex items-center gap-2 text-xl font-bold"><Info size={22}/>{language === 'de' ? 'Über den Club' : language === 'ru' ? 'О клубе' : 'About the club'}</h2>
+            <p className="max-w-3xl text-neutral-300">{club.description || t.subtitle}</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-white/10 p-4"><p className="text-xs text-neutral-400">{language === 'de' ? 'Sprache' : language === 'ru' ? 'Язык' : 'Language'}</p><p>Deutsch</p></div><div className="rounded-xl border border-white/10 p-4"><p className="text-xs text-neutral-400">{language === 'de' ? 'Schachgemeinschaft' : language === 'ru' ? 'Сообщество' : 'Community'}</p><p>ChessAZ Deutsch</p></div></div>
+            <p className="mt-4 text-sm text-neutral-400">{language === 'de' ? 'Automatische Paarungen und Live-Turnierpartien sind noch nicht verfügbar.' : language === 'ru' ? 'Автоматические жеребьёвки и турнирные партии пока не запущены.' : 'Automatic pairings and tournament games are not yet live.'}</p>
           </section>
         </div>
       )}
