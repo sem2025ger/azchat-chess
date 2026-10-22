@@ -29,3 +29,7 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Verified release binaries are staged by scripts/prepare-stockfish19.mjs.
+/public/stockfish-19-lite-single.js
+/public/stockfish-19-lite-single.wasm

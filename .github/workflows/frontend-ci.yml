@@ -12,6 +12,7 @@ permissions:
 jobs:
   frontend:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: tmp
@@ -45,6 +46,9 @@ jobs:
 
       - name: Frontend tests
         run: npm test
+
+      - name: Real Stockfish 19 Chromium UCI/WASM smoke test
+        run: node tests/stockfish19-browser-smoke.mjs
 
       - name: Lint
         run: npm run lint
