@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { safeAuthReturn, authRedirect, normalizedEmail, validEmail, authErrorKey, googleProviderEnabled, canUpdatePassword } from '../src/utils/authFlow.ts';
+import { safeAuthReturn, authRedirect, normalizedEmail, validEmail, authErrorKey, googleProviderEnabled, canUpdatePassword, accountNotFoundError } from '../src/utils/authFlow.ts';
 
 test('auth return accepts club and existing game routes, rejects external redirects', () => {
   for (const path of ['/chat', '/play', '/play?room=abc', '/play?invite=1&tc=5%2B0']) assert.equal(safeAuthReturn(path), path);
@@ -33,6 +33,13 @@ test('password changes wait for session and reject expired callback even when an
   assert.equal(canUpdatePassword(true, false, '', '#error=access_denied&error_code=otp_expired'), false);
   assert.equal(canUpdatePassword(true, false, 'error=access_denied', ''), false);
   assert.equal(canUpdatePassword(true, false, 'returnTo=%2Fchat', ''), true);
+});
+
+test('email-link account status is not exposed to the user', () => {
+  assert.equal(accountNotFoundError({code:'user_not_found'}), true);
+  assert.equal(accountNotFoundError({code:'otp_disabled'}), true);
+  assert.equal(accountNotFoundError({code:'user_already_exists'}), true);
+  assert.equal(accountNotFoundError({code:'invalid_credentials'}), false);
 });
 
 test('Google availability requires explicit enabled flag, hides unavailable provider', async () => {
