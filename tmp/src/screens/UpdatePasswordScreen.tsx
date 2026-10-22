@@ -9,11 +9,11 @@ import { Loader2 } from 'lucide-react';
 export default function UpdatePasswordScreen() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { user, isLoading: sessionLoading } = useAuth();
+  const { user, isLoading: sessionLoading, passwordRecoveryVerified } = useAuth();
   const [params] = useSearchParams();
   const returnTo = safeAuthReturn(params.get('returnTo'));
   const signInPath = returnTo ? `/profile?returnTo=${encodeURIComponent(returnTo)}` : '/profile';
-  const canUpdate = canUpdatePassword(Boolean(user), sessionLoading, params.toString(), window.location.hash);
+  const canUpdate = canUpdatePassword(Boolean(user) && passwordRecoveryVerified, sessionLoading, params.toString(), window.location.hash);
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -58,7 +58,7 @@ export default function UpdatePasswordScreen() {
             </h1>
           </div>
 
-          {!sessionLoading && !canUpdate && <p role="alert" className="mb-5 text-sm text-amber-200">{t('auth.invalidRecovery')}</p>}
+          {!sessionLoading && !canUpdate && !successMsg && <p role="alert" className="mb-5 text-sm text-amber-200">{t('auth.invalidRecovery')}</p>}
           <form onSubmit={handleUpdate} className="space-y-5 md:space-y-6">
             <div className="space-y-1">
               <label htmlFor="new-password" className="text-base font-semibold text-neutral-200 block mb-1">
