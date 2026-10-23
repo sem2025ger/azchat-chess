@@ -213,22 +213,22 @@
     border-radius: 16px; border: 1px solid rgba(188, 209, 230, .22);
     background: rgba(15, 24, 38, .26); text-align: left;
   }
-  .settings-fixed-workspace .settings-mobile-confirm [role="switch"] {
+  .settings-fixed-workspace .settings-mobile-confirm .settings-mobile-toggle {
     flex: none; display: flex; align-items: center; padding: 3px;
     width: 46px; height: 26px; border-radius: 20px;
     border: 1px solid rgba(220, 233, 248, .22);
     background: #39495b;
     transition: background .15s ease;
   }
-  .settings-fixed-workspace .settings-mobile-confirm [role="switch"][aria-checked="true"] {
+  .settings-fixed-workspace .settings-mobile-confirm[aria-checked="true"] .settings-mobile-toggle {
     background: #567f94;
   }
-  .settings-fixed-workspace .settings-mobile-confirm [role="switch"] > span {
+  .settings-fixed-workspace .settings-mobile-confirm .settings-mobile-toggle > span {
     width: 18px; height: 18px; border-radius: 50%;
     background: #f1f4f9; box-shadow: 0 1px 5px #0005;
     transition: transform .15s ease;
   }
-  .settings-fixed-workspace .settings-mobile-confirm [role="switch"][aria-checked="true"] > span {
+  .settings-fixed-workspace .settings-mobile-confirm[aria-checked="true"] .settings-mobile-toggle > span {
     transform: translateX(19px);
   }
 }
