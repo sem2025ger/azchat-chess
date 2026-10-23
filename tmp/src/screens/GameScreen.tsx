@@ -2,7 +2,7 @@ import { lazy, Suspense, useState, useEffect, useLayoutEffect, useRef, useMemo, 
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
-import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw, Clock } from 'lucide-react';
+import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw, Clock, Map, FolderOpen, Pencil, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
@@ -55,6 +55,14 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const { t, language } = useLanguage();
   const words = analysisCopy[language];
   const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position'>('analysis');
+  // The mobile analysis tools open only on demand; preserve the full-size board.
+  const [mobileTool, setMobileTool] = useState<'map' | 'games' | 'position' | null>(null);
+  const mobileToolDialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (mobileTool && mobileToolDialogRef.current && !mobileToolDialogRef.current.open) {
+      mobileToolDialogRef.current.showModal();
+    }
+  }, [mobileTool]);
   const [pvLines, setPvLines] = useState(3);
   const [planHighlight, setPlanHighlight] = useState<{ fen: string; squares: Square[] } | null>(null);
   const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
@@ -476,6 +484,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     setLoadedGameTitle(title);
     setLoadedGameDetails(details || null);
     setWorkspaceTab('analysis');
+    setMobileTool(null);
     setEditingPosition(false);
     saveAnalysisSession(analysis.moveHistory, analysis.viewMoveIndex, undefined, analysis.positionHistory[0]);
   };
@@ -491,6 +500,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     setLoadedGameTitle('');
     setLoadedGameDetails(null);
     setWorkspaceTab('analysis');
+    setMobileTool(null);
     setEditingPosition(false);
     saveAnalysisSession([], -1);
     setGame(empty.game);
@@ -836,10 +846,37 @@ export default function GameScreen({ mode }: GameScreenProps) {
           }}
         />
   ) : null;
+  const openMobileTool = (tool: 'map' | 'games' | 'position') => {
+    if (tool === 'position') {
+      resetPositionDraft(displayedGame.fen());
+      setEditingPosition(true);
+    }
+    setPlanHighlight(null);
+    setMobileTool(tool);
+  };
+  const handleMobileMapHighlight = useCallback((selection: { fen: string; squares: Square[] } | null) => {
+    setPlanHighlight(selection);
+    if (selection) setMobileTool(null);
+  }, []);
   return (
     <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
 
       {mode === 'review' && <div className="lg:hidden">{analysisWorkspaceHeader}</div>}
+      {mode === 'review' && (
+        <nav aria-label={words.analysis} className="lg:hidden mx-2 mb-1 grid grid-cols-3 gap-1.5 shrink-0" data-mobile-analysis-tools>
+          {([
+            { tab: 'map' as const, label: positionMapLabel[language], icon: Map },
+            { tab: 'games' as const, label: words.games, icon: FolderOpen },
+            { tab: 'position' as const, label: words.editor, icon: Pencil },
+          ]).map(({ tab, label, icon: Icon }) => (
+            <button key={tab} type="button" aria-haspopup="dialog" onClick={() => openMobileTool(tab)}
+              className="min-w-0 min-h-11 flex items-center justify-center gap-1 rounded-lg border border-amber-200/20 bg-[#181c1b] px-1.5 text-xs font-semibold text-amber-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">
+              <Icon size={15} aria-hidden="true" className="shrink-0" />
+              <span className="truncate">{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
             {/* Mobile analysis panel above the board */}
       {!isLiveMultiplayer && (
         <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
@@ -973,6 +1010,59 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
           )}
         </section>
+      )}
+
+
+      {/* Native modal preserves touch-size board and traps focus while tools are open. */}
+      {mode === 'review' && mobileTool && (
+        <dialog ref={mobileToolDialogRef}
+          aria-label={mobileTool === 'map' ? positionMapLabel[language] : mobileTool === 'games' ? words.games : words.editor}
+          onClose={() => { setMobileTool(null); setEditingPosition(false); }}
+          className="w-[calc(100%-1rem)] max-w-[42rem] h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] overflow-hidden rounded-2xl border border-amber-200/25 bg-[#121716] p-0 text-white shadow-2xl backdrop:bg-black/85"
+          data-mobile-analysis-dialog>
+          <div className="flex h-full min-h-0 flex-col">
+            <header className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4">
+              <h2 className="min-w-0 truncate text-base font-semibold text-amber-100">
+                {mobileTool === 'map' ? positionMapLabel[language] : mobileTool === 'games' ? words.games : words.editor}
+              </h2>
+              <button type="button" onClick={() => mobileToolDialogRef.current?.close()}
+                aria-label={words.cancel} className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">
+                <X size={20} aria-hidden="true"/>
+              </button>
+            </header>
+            {mobileTool === 'position' && editingPosition && (
+              <div className="mx-auto w-[min(86vw,35dvh)] shrink-0 pt-2" data-mobile-position-editor>
+                <Suspense fallback={<p role="status" className="p-3 text-center text-xs">{words.loading}</p>}>
+                  <EditorBoard draft={positionDraftValue} selected={editorSelectedPiece} words={words}
+                    onPlace={placePositionPiece} onMove={movePositionPiece}/>
+                </Suspense>
+              </div>
+            )}
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <Suspense fallback={<p role="status" className="p-4 text-xs text-neutral-400">{words.loading}</p>}>
+                {mobileTool === 'games' && (
+                  <SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words}
+                    onLoad={loadWorkspaceAnalysis}/>
+                )}
+                {mobileTool === 'map' && (
+                  <PositionMap key={displayedGame.fen()} fen={displayedGame.fen()}
+                    result={currentEngineResult} language={language} failed={engineFailed}
+                    onHighlight={handleMobileMapHighlight}/>
+                )}
+                {mobileTool === 'position' && (
+                  <PositionTools currentFen={displayedGame.fen()} words={words}
+                    onLoad={loadWorkspaceAnalysis}
+                    onCancel={() => { setMobileTool(null); setEditingPosition(false); }}
+                    draft={positionDraftValue} selected={editorSelectedPiece}
+                    onSelected={setEditorSelectedPiece} onDraft={updatePositionDraft}
+                    onClear={clearPositionDraft} onUndo={undoPositionDraft}
+                    canUndo={positionDraftUndo.length > 0} onReset={resetPositionDraft}
+                    onEditingChange={setEditingPosition}/>
+                )}
+              </Suspense>
+            </div>
+          </div>
+        </dialog>
       )}
 
       {/* Mobile Analysis Drawer Header */}
