@@ -1,7 +1,8 @@
 /* Review only. Desktop analysis and live boards retain their existing geometry. */
 @media (max-width: 767px) {
   [data-analysis-route] {
-    --mobile-app-nav-height: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    --mobile-analysis-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --mobile-app-nav-height: calc(4.5rem + var(--mobile-analysis-safe-bottom));
     height: 100dvh;
     min-height: 0;
     overflow: hidden;
@@ -24,10 +25,10 @@
     gap: 0 !important;
     padding: 0 0 4px !important;
   }
-  .mobile-analysis-header { flex: none; padding: 6px 8px 8px; --mobile-analysis-label-size: 14px; }
+  .mobile-analysis-header { flex: none; padding: 4px 8px; --mobile-analysis-label-size: 14px; }
   .mobile-analysis-topbar { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .mobile-analysis-tabs {
-    display: flex; min-width: 0; gap: 2px; padding: 3px; border: 1px solid #ffffff0d;
+    display: flex; min-width: 0; gap: 2px; padding: 2px; border: 1px solid #ffffff0d;
     border-radius: 12px; background: #0b1011; flex: 1;
   }
   .mobile-analysis-tabs button {
@@ -45,23 +46,24 @@
   .desktop-analysis-screen > .desktop-analysis-board-column { flex: none; min-height: 0; }
   .desktop-analysis-screen .desktop-analysis-board-stack { flex: none; min-height: 0; gap: 0; }
   .desktop-analysis-screen .desktop-analysis-board-row { flex: none; min-height: 0; }
+  /* Reserve header, two PV rows, 44px transport targets and the fixed app dock. */
   .desktop-analysis-screen .desktop-analysis-board-frame {
-    width: min(100%, max(240px, calc(100dvh - 20.75rem - env(safe-area-inset-bottom, 0px)))) !important;
+    width: min(100%, max(208px, calc(100dvh - 19.25rem - var(--mobile-analysis-safe-bottom)))) !important;
     aspect-ratio: 1 / 1 !important; flex: none !important; border: 0;
     border-radius: 3px; box-shadow: 0 12px 28px -20px #000;
   }
   .desktop-analysis-screen .desktop-analysis-board-frame .desktop-analysis-main-board .aspect-square { aspect-ratio: 1 / 1 !important; }
-  .desktop-analysis-screen [data-mobile-move-navigation] { margin: 8px 8px 0; padding: 4px; gap: 6px; border-radius: 14px; background: #0e1312; }
+  .desktop-analysis-screen [data-mobile-move-navigation] { margin: 6px 8px 0; padding: 3px; gap: 6px; border-radius: 14px; background: #0e1312; }
   .desktop-analysis-screen [data-mobile-move-navigation] button { min-height: 44px; border-radius: 10px; box-shadow: none; color: #e4d2a6; }
   .desktop-analysis-screen > .desktop-analysis-panel { display: none; }
-  .mobile-analysis-details { flex: none; margin: 8px 8px 0; min-width: 0; border: 1px solid #d0d7cf14; border-radius: 14px; background: #111816; overflow: hidden; }
-  .mobile-analysis-lines-heading { display: flex; align-items: center; justify-content: space-between; min-height: 26px; padding: 3px 10px; color: #aebdb3; font-size: 11px; font-weight: 600; }
+  .mobile-analysis-details { flex: none; height: 110px; margin: 6px 8px 0; min-width: 0; border: 1px solid #d0d7cf14; border-radius: 14px; background: #111816; overflow: hidden; }
+  .mobile-analysis-lines-heading { display: flex; align-items: center; justify-content: space-between; height: 20px; padding: 0 10px; color: #aebdb3; font-size: 11px; font-weight: 600; }
   .mobile-analysis-lines-heading > span:last-child { font-variant-numeric: tabular-nums; color: #8a9e93; }
   .mobile-analysis-score { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 54px; min-height: 30px; padding: 3px 6px; border: 1px solid #e2ded02b; border-radius: 7px; background: #e9e8df; color: #111815; font: 700 14px ui-monospace, monospace; }
   .mobile-analysis-line { display: flex; min-height: 44px; align-items: center; gap: 8px; padding: 6px 8px; border-top: 1px solid #ffffff0a; }
-  .mobile-analysis-line p { flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; white-space: nowrap; color: #d2d9d3; font: 500 13px/1.6 ui-monospace, monospace; scrollbar-width: thin; scrollbar-color: #8d9c8959 transparent; }
+  .mobile-analysis-line p { flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; white-space: nowrap; color: #d2d9d3; font: italic 700 15px/1.5 ui-monospace, monospace; scrollbar-width: thin; scrollbar-color: #8d9c8959 transparent; }
   .mobile-analysis-line p:focus-visible { outline: 1px solid #e9c986; outline-offset: 2px; }
-  .mobile-analysis-moves { max-height: 240px; overflow-y: auto; overscroll-behavior: contain; }
+  .mobile-analysis-moves { height: 100%; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
   .mobile-analysis-moves table { width: 100%; table-layout: fixed; border-collapse: collapse; }
   .mobile-analysis-moves th { width: 40px; color: #88968e; font: 12px ui-monospace, monospace; }
   .mobile-analysis-moves td { padding: 3px; }
