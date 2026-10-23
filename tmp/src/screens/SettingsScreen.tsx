@@ -81,6 +81,7 @@ export default function SettingsScreen() {
     setPieceTheme('neo');
     setSoundTheme('Default');
     setBackground('Void Black');
+    setConfirmMobileMoves(false);
     triggerSaved();
   };
 
