@@ -40,7 +40,7 @@ function FigurineMove({ move }: { move: string }) {
     const piece = /^[KQRBN]$/.test(part) ? part : /^=[QRBN]$/.test(part) ? part[1] : null;
     return piece ? <span key={index}>{part.startsWith('=') ? '=' : ''}<img
       className="mobile-analysis-figurine" src={`/pieces/classic/w${piece}.svg`}
-      width={31} height={31} alt="" aria-hidden="true" draggable={false} /></span> : part;
+      width={33} height={33} alt="" aria-hidden="true" draggable={false} /></span> : part;
   })}</span>;
 }
 

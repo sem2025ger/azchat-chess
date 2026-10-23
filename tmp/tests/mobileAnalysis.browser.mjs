@@ -118,6 +118,8 @@ try {
         lineFontSize:parseFloat(getComputedStyle(document.querySelector('.mobile-analysis-line p')).fontSize),
         lineWeight:parseInt(getComputedStyle(document.querySelector('.mobile-analysis-line p')).fontWeight),
         lineBounds:[...document.querySelectorAll('[data-mobile-engine-line]')].map(row=>row.getBoundingClientRect().toJSON()),
+         scoreSize:parseFloat(getComputedStyle(document.querySelector('.mobile-analysis-score')).fontSize),
+         scoreWeight:parseInt(getComputedStyle(document.querySelector('.mobile-analysis-score')).fontWeight),
         labelSize:getComputedStyle(document.querySelector('.mobile-analysis-engine')).fontSize,
         tabSize:getComputedStyle(document.querySelector('.mobile-analysis-tabs button')).fontSize };
     })()`);
@@ -125,6 +127,8 @@ try {
     assert.ok(Math.abs(bounds.board.width - bounds.board.height) < 1, 'Board frame must stay square');
     assert.ok(Math.abs(bounds.grid.width - bounds.grid.height) < 1, 'Actual square grid must stay square');
     assert.equal(bounds.rows, 2, 'Both line slots are visible without expansion');
+     assert.ok(bounds.lineBounds.every(row => row.height <= 44.5 && row.height >= 43.5), 'Two PV rows remain compact and evenly sized');
+     assert.ok(bounds.scoreSize >= 18 && bounds.scoreWeight >= 800, 'Score badges remain prominent and bold');
     assert.ok(bounds.lineFontSize >= 20 && bounds.lineWeight >= 700, 'PV moves remain large and bold');
     assert.ok(bounds.lineBounds.every(row => row.top >= bounds.details.top && row.bottom <= bounds.details.bottom + 1), 'Both complete rows fit inside the analysis panel');
     assert.equal(bounds.labelSize, bounds.tabSize, 'Engine label matches tab typography');
@@ -156,7 +160,7 @@ try {
   assert.ok(await evaluate("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 2')"), 'Worker calculates two lines, rather than hiding extra work');
   console.log('PASS real Stockfish worker and two visible PV lines');
   await waitFor("document.querySelectorAll('.mobile-analysis-figurine').length > 0 && [...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0)");
-  assert.ok(await evaluate("[...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0 && Math.abs(img.getBoundingClientRect().width - 31) < 0.5)"), 'Figurines load from existing assets at fixed readable size');
+  assert.ok(await evaluate("[...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0 && Math.abs(img.getBoundingClientRect().width - 33) < 0.5)"), 'Figurines load from existing assets at fixed readable size');
   assert.ok(await evaluate("!document.querySelector('.mobile-analysis-lines-heading') && getComputedStyle(document.querySelector('#mobile-analysis-details .sr-only')).position === 'absolute'"), 'Engine variant heading consumes no visible row');
   await capture('analysis-mobile-new');
   await evaluate("document.querySelector('.desktop-analysis-main-board [data-square=e2]').click()");
