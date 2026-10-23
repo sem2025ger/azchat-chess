@@ -37,6 +37,10 @@ const VALUE_TERMS: Record<string, string> = {
   'Royal Blue': 'синий blue blau',
   'Royal Violet': 'фиолетовый purple violett mor',
   'Obsidian Gold': 'обсидиан золото золотой gold',
+  'Slate Blue': 'синий серый сланец blau grau mavi boz',
+  'Sage Stone': 'шалфей зелёный зеленый salbei grün yaşıl yeşil',
+  'Warm Taupe': 'тёплый теплый коричневый серый warm braun grau qəhvəyi kahverengi',
+  'Amethyst Mist': 'аметист фиолетовый сиреневый amethyst violett bənövşəyi mor',
 };
 
 /** Diacritic-insensitive matching, including ё/е and ü/u. All tokens must match the specific entry. */

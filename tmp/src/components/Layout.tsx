@@ -3,6 +3,7 @@ import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
 import nightEarthStill from '../assets/night-earth-still.webp';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Home, Grid, MessageSquare, User, Settings, Circle } from 'lucide-react';
+import { premiumInterfaceThemes } from '../lib/interfaceThemes';
 import { useThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { type Language } from '../translations';
@@ -45,6 +46,7 @@ export default function Layout() {
   const { language, setLanguage, t } = useLanguage();
 
   const bgClasses: Record<string, string> = {
+    ...Object.fromEntries(premiumInterfaceThemes.map(theme => [theme.id, theme.class])),
     'Void Black': 'bg-[#161512]',
     'Deep Space': 'bg-gradient-to-br from-[#1a1c2c] via-[#0f0f1b] to-black',
     'Velvet Gold': 'bg-gradient-to-br from-[#2f2210] via-[#1c1408] to-[#0e0a04] shadow-[inset_0_0_150px_rgba(223,176,98,0.03)]',

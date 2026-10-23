@@ -3,6 +3,7 @@ import { Chess } from 'chess.js';
 import { trySettingsPreviewMove } from '../utils/settingsPreviewMove';
 import { useThemeContext, type BackgroundTheme, type SoundTheme } from '../context/ThemeContext';
 import { playChessSound, preloadChessSounds, setChessSoundMuted } from '../utils/chessSounds';
+import { premiumInterfaceThemes } from '../lib/interfaceThemes';
 import { BOARD_THEMES, BOARD_THEME_DETAILS, PIECE_STYLES } from '../lib/chessThemes';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
@@ -27,7 +28,7 @@ export default function SettingsScreen() {
     boardTheme, setBoardTheme,
     pieceTheme, setPieceTheme,
     sound: soundTheme, setSound: setSoundTheme,
-    background, setBackground,
+    background, setBackground, specialThemesEnabled,
     confirmMobileMoves, setConfirmMobileMoves
   } = useThemeContext();
   const { language, setLanguage, t } = useLanguage();
@@ -119,7 +120,10 @@ export default function SettingsScreen() {
     { id: 'Royal Blue', name: 'Royal Blue', class: 'bg-gradient-to-br from-[#1e3a8a] to-[#0a0f24]' },
     { id: 'Royal Violet', name: 'Royal Violet', class: 'bg-gradient-to-br from-[#4c1d95] to-[#170833]' },
     { id: 'Obsidian Gold', name: 'Obsidian Gold', class: 'bg-gradient-to-br from-[#1f1a10] to-[#0a0a0a]' },
+    ...premiumInterfaceThemes,
   ];
+
+  const premiumBackground = specialThemesEnabled ? premiumInterfaceThemes.find(theme => theme.id === background) : undefined;
 
   const presets = [
     { name: 'Classical Pro', board: 'Classic Green', pieces: 'classic' },
@@ -205,13 +209,17 @@ export default function SettingsScreen() {
               {bgThemes.map((bg) => (
                 <button
                   key={bg.id}
+                  aria-pressed={background === bg.id}
                   onClick={() => setBackground(bg.id)}
                   className={cx(
                     "flex items-center justify-between p-4 rounded-2xl border transition-all",
                     background === bg.id ? "bg-purple-500/10 border-purple-500/40 text-purple-300" : "bg-white/[0.03] border-white/5 text-neutral-400"
                   )}
                 >
-                  <span className="font-black uppercase tracking-widest text-sm">{bg.name}</span>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span aria-hidden="true" className={cx('h-7 w-7 shrink-0 rounded-lg border border-white/25', bg.class)} />
+                    <span className="font-black uppercase tracking-widest text-sm">{bg.name}</span>
+                  </span>
                   {background === bg.id && <Check size={18} className="text-purple-400" />}
                 </button>
               ))}
@@ -353,7 +361,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <div className="settings-fixed-workspace min-h-0 h-full w-full bg-transparent flex flex-col items-center relative overflow-hidden pt-0 px-2 pb-2 md:px-5 md:pb-2 md:pt-1">
+    <div data-premium-theme={premiumBackground?.id} style={premiumBackground ? { background: premiumBackground.gradient } : undefined} className="settings-fixed-workspace min-h-0 h-full w-full bg-transparent flex flex-col items-center relative overflow-hidden pt-0 px-2 pb-2 md:px-5 md:pb-2 md:pt-1">
       {/* Background Decor */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
@@ -431,9 +439,9 @@ export default function SettingsScreen() {
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <LayoutIcon size={16} className="text-purple-400" /> {t('settings.interfaceTheme')}
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                <div className="settings-background-options grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 custom-scrollbar">
                   {bgThemes.map((bg) => (
-                    <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("min-w-0 px-1.5 py-1.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
+                    <button key={bg.id} aria-pressed={background === bg.id} onClick={() => setBackground(bg.id)} className={cx("min-w-0 px-1.5 py-1.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
                       {bg.name}
                     </button>
                   ))}

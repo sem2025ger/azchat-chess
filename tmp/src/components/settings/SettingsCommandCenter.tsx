@@ -3,6 +3,7 @@ import { Check, ChevronDown, RotateCcw, Search, Sparkles, X } from 'lucide-react
 import { BOARD_THEME_DETAILS, PIECE_STYLES, type BoardTheme, type PieceTheme } from '../../lib/chessThemes';
 import { useThemeContext, type BackgroundTheme, type SoundTheme } from '../../context/ThemeContext';
 import { playChessSound, setChessSoundMuted } from '../../utils/chessSounds';
+import { premiumInterfaceThemes } from '../../lib/interfaceThemes';
 import { findSettings, STYLE_PRESETS } from './settingsLogic';
 
 type Kind = 'board' | 'pieces' | 'sound' | 'background';
@@ -12,7 +13,7 @@ type Selection = { board: BoardTheme; pieces: PieceTheme; sound: SoundTheme; bac
 type Entry = { kind: Kind; label: string; value: string };
 
 const SOUNDS: SoundTheme[] = ['Default', 'Soft', 'Classic', 'Wood', 'Crystal', 'Muted / Off'];
-const BACKGROUNDS: BackgroundTheme[] = ['Void Black', 'Deep Space', 'Velvet Gold', 'Champagne Light', 'Coffee Brown', 'Walnut Dark', 'Emerald Night', 'Royal Blue', 'Royal Violet', 'Obsidian Gold'];
+const BACKGROUNDS: BackgroundTheme[] = ['Void Black', 'Deep Space', 'Velvet Gold', 'Champagne Light', 'Coffee Brown', 'Walnut Dark', 'Emerald Night', 'Royal Blue', 'Royal Violet', 'Obsidian Gold', ...premiumInterfaceThemes.map(theme => theme.id)];
 const PRESETS: Record<Goal, Selection> = STYLE_PRESETS;
 const COPY = {
   ru: {

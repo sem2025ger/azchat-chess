@@ -3,8 +3,10 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { PIECE_STYLES } from '../lib/chessThemes';
 import type { BoardTheme, PieceTheme } from '../lib/chessThemes';
 
+import { premiumInterfaceThemes, type PremiumInterfaceTheme } from '../lib/interfaceThemes';
+
 // Defines the options
-export type BackgroundTheme = 'Void Black' | 'Deep Space' | 'Velvet Gold' | 'Champagne Light' | 'Coffee Brown' | 'Walnut Dark' | 'Emerald Night' | 'Royal Blue' | 'Royal Violet' | 'Obsidian Gold';
+export type BackgroundTheme = 'Void Black' | 'Deep Space' | 'Velvet Gold' | 'Champagne Light' | 'Coffee Brown' | 'Walnut Dark' | 'Emerald Night' | 'Royal Blue' | 'Royal Violet' | 'Obsidian Gold' | PremiumInterfaceTheme;
 export type SoundTheme = 'Default' | 'Soft' | 'Classic' | 'Wood' | 'Crystal' | 'Muted / Off';
 
 interface ThemeContextType {
@@ -39,7 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (saved === 'Game Room') return 'Deep Space';
     if (saved === 'Velvet Gold Background') return 'Velvet Gold';
     const validThemes = ['Void Black', 'Deep Space', 'Velvet Gold', 'Champagne Light', 'Coffee Brown', 'Walnut Dark', 'Emerald Night', 'Royal Blue', 'Royal Violet', 'Obsidian Gold'];
-    if (saved && validThemes.includes(saved)) return saved as BackgroundTheme;
+    if (saved && (validThemes.includes(saved) || premiumInterfaceThemes.some(theme => theme.id === saved))) return saved as BackgroundTheme;
     return 'Void Black';
   });
   
