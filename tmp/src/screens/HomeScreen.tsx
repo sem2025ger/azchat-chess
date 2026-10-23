@@ -82,6 +82,39 @@ export default function HomeScreen() {
             font-weight: 800 !important;
           }
         }
+        /* Chess Arena: mobile-only, understated obsidian-gold architectural frame.
+           Keep the approved golden wordmark and the exact board dimensions. */
+        @media (max-width: 767px) {
+          .home-screen-root [data-mobile-home-stack] {
+            padding-top: 12px;
+          }
+          .home-screen-root .mobile-home-arena {
+            border: 1px solid rgba(221, 184, 110, .5);
+            border-bottom: 1px solid rgba(221, 184, 110, .3);
+            border-radius: 24px;
+            background:
+              radial-gradient(ellipse at 5% 0%, rgba(230, 180, 101, .14), transparent 42%),
+              radial-gradient(ellipse at 96% 100%, rgba(117, 122, 169, .10), transparent 44%),
+              linear-gradient(130deg, #20201e 0%, #13161a 47%, #0c1116 100%);
+            box-shadow: 0 15px 28px -18px rgba(0,0,0,.85),
+              0 0 0 1px rgba(176, 142, 85, .11),
+              inset 0 1px 0 rgba(255, 234, 182, .17),
+              inset 0 -1px 0 rgba(255, 220, 155, .04);
+          }
+          .home-screen-root .mobile-home-arena::before {
+            inset: 5px; border-radius: 19px; opacity: 1; animation: none;
+            border: 1px solid rgba(207, 171, 105, .23);
+            box-shadow: inset 0 0 14px rgba(203, 168, 103, .035);
+          }
+          .home-screen-root .mobile-home-arena::after {
+            inset: -1px; border-radius: 25px; opacity: 1; animation: none;
+            border: 1px solid transparent;
+            background:
+              linear-gradient(90deg, transparent, rgba(247,213,151,.76), transparent) top 11px center / 38% 1px no-repeat,
+              linear-gradient(90deg, transparent, rgba(166,140,212,.34), transparent) bottom 10px center / 30% 1px no-repeat;
+            box-shadow: none;
+          }
+        }
         /* Approved desktop Home board only: fuller white and black pawns, unchanged squares. */
         @media (min-width: 1280px) {
           .home-screen-root .home-board img[alt="wP"],
@@ -331,7 +364,7 @@ export default function HomeScreen() {
       `}</style>
 
       {/* 2-Column Layout */}
-      <div className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-8 max-md:justify-start">
+      <div data-mobile-home-stack className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-8 max-md:justify-start">
 
         {/* LEFT: Chessboard */}
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container xl:-mt-10">
