@@ -58,7 +58,10 @@ test('mobile analysis keeps scores, move indices and export actions in their ded
     const moves = render(createElement(MobileAnalysisDetails, { ...props, activeTab:'moves', currentIndex:1, moves:[{n:17,w:'',b:'Kf7',wIndex:0,bIndex:1}] }));
     assert.match(moves, /17\.<\/th>/);
     assert.match(moves, /aria-current="step">Kf7<\/button>/);
-    assert.equal((moves.match(/<button/g) || []).length, 1);
+    assert.equal((moves.match(/<button/g) || []).length, 2);
+    assert.match(moves, /data-copy-moves/);
+    assert.match(moves, /Копировать ходы/);
+    assert.match(moves, /disabled=\"\"/);
   } finally {
     await server.close();
     if (storage) Object.defineProperty(globalThis, 'localStorage', storage); else delete globalThis.localStorage;
