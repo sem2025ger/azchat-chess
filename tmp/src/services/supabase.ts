@@ -1,4 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import { recoveryCallbackDestination } from '../utils/authFlow';
+import { observePasswordRecovery } from '../utils/authRecovery';
+
+// Normalize before creating the SDK client: it consumes/clears successful URL
+// fragments during initialization, potentially before React has mounted.
+if (typeof window !== 'undefined') {
+  const destination = recoveryCallbackDestination(window.location.href);
+  if (destination) window.history.replaceState(window.history.state, '', destination);
+}
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mock-url.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'mock-anon-key';
@@ -8,6 +17,7 @@ if (supabaseUrl === 'https://mock-url.supabase.co' || !import.meta.env.VITE_SUPA
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const passwordRecovery = observePasswordRecovery(supabase.auth);
 
 export interface UserProfile {
   id: string;
