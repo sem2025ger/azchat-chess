@@ -115,3 +115,76 @@ mailbox/OAuth tests above pass. Unit/CI success is not a delivery guarantee.
 References: https://supabase.com/docs/guides/auth/rate-limits ,
 https://supabase.com/docs/guides/auth/auth-smtp ,
 https://supabase.com/docs/guides/auth/debugging/error-codes .
+
+## Resend SMTP implementation handoff (23 October 2026, QA ONLY)
+
+### Verified domain — DNS configured independently by the owner
+
+- Resend domain: \`auth.chessaz.de\` — screenshot confirms **Verified / ready to send**.
+- DNS zone is hosted at IONOS. User created and IONOS acknowledged:
+  - \`TXT resend._domainkey.auth.chessaz.de\`: the full Resend-provided DKIM value
+    (not stored in the repository).
+  - \`MX send.auth.chessaz.de\`: \`feedback-smtp.eu-west-1.amazonses.com\`, priority 10.
+  - \`TXT send.auth.chessaz.de\`: \`v=spf1 include:amazonses.com ~all\`.
+- Existing root-domain MX/SPF, application A/CNAME, nameservers and production
+  resources were not intentionally modified by this procedure. The external
+  DNS verification is an email-domain milestone, not an SMTP-in-Supabase test.
+
+### Target QA configuration (not yet applied)
+
+Project: **ChessAZ Deutsch QA**, Supabase ref \`iukmpcytsuofqhxsumbu\`.
+DO NOT use \`AZTR Chess\` (\`kmwfvvliundhuovoakoa\`) or production.
+
+- Dashboard: \`https://supabase.com/dashboard/project/iukmpcytsuofqhxsumbu/auth/smtp\`
+  (Authentication > Email > SMTP Settings).
+- **Enable Custom SMTP** only for QA.
+- Sender email: \`noreply@auth.chessaz.de\`.
+- Sender name: \`ChessAZ Deutsch QA\` (deliberate QA identification).
+- SMTP host: \`smtp.resend.com\`; port \`465\` (implicit SSL/TLS).
+- SMTP username: \`resend\`.
+- SMTP password: a *new, Resend Sending-access API key restricted to
+  auth.chessaz.de*, entered directly into Supabase settings by the owner.
+  NEVER send a key by chat, put it in source control or Vercel VITE_ variables.
+- Keep **Confirm email** enabled; do not loosen user/RLS permissions.
+- Under Auth > Rate Limits, configure **Emails sent** to at most
+  **30/hour** for QA, subject to account/provider limits; keep the provider
+  minimum interval and local form pause distinct. Resend Free currently
+  documents 100/day and 3,000/month, so throttle tests to avoid unnecessary sends.
+- Verify Site URL and exact Redirect URL allowlist for stable QA Preview
+  \`https://chessaz-preview-workspace.vercel.app\` including
+  \`/profile\` and \`/update-password\`. Do not whitelist arbitrary
+  Preview deployments or point QA URLs at production.
+
+### Acceptance after authenticated SMTP configuration
+
+1. Verify QA Auth settings show the expected sender/host, sender still matches
+   the verified domain, and Resend provides a successful delivery event.
+2. Create a *new test user* through stable QA Preview in a controlled mailbox:
+   confirmation email, link, authenticated profile/club access, logout.
+3. Request recovery for this test user: email delivered to mailbox, link opens
+   /update-password, reset password, local recovery session ends, login with new
+   password succeeds; old password fails.
+4. Reused/expired recovery links and unauthenticated attempts must never expose
+   the password form. Validate unknown-email feedback, wrong credentials, 
+   desktop/mobile and club-return. Do not test with a production user/account.
+5. Check Supabase auth logs and Resend Emails dashboard for delivery/errors,
+   confirm no rate-limit 429 under a low-volume sequence. CI 79 unit tests and
+   Vercel READY are **not** a replacement for this end-to-end test.
+
+### Access limitations
+
+The authenticated Supabase integration currently exposes project/SQL/log/DB
+tools, **not** Auth SMTP configuration read/write. No Resend account/API-key
+management integration is connected. Therefore these credentials/configuration
+cannot be applied or certified from this chat toolset. An authenticated owner
+action in the Resend and Supabase dashboards, or a separately authorized
+management API client with appropriate scopes, is required. No SMTP change,
+rate-limit change, email send, PR merge or production modification was performed
+by the model during this handoff.
+
+References:
+- https://resend.com/docs/send-with-supabase-smtp
+- https://resend.com/docs/send-with-smtp
+- https://supabase.com/docs/guides/auth/auth-smtp
+- https://supabase.com/docs/guides/auth/rate-limits
+- https://resend.com/pricing
