@@ -1083,7 +1083,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   <EditorBoard draft={positionDraftValue} selected={editorSelectedPiece} words={words} onPlace={placePositionPiece} onMove={movePositionPiece} />
                 </Suspense>
               ) : <ChessBoard
-                className={!isMultiplayer ? `p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 max-md:[&_.aspect-square]:!aspect-[50/51] ${mode === 'review' ? 'desktop-analysis-main-board' : ''}` : undefined}
+                className={!isMultiplayer ? `p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 max-md:[&_.aspect-square]:!aspect-[50/51] ${mode === 'review' ? 'desktop-analysis-main-board transition-none duration-0' : ''}` : undefined}
                 externalCoordinatesOnDesktop={mode === 'review'}
                 highlightedSquares={mode === 'review' && workspaceTab === 'map' && planHighlight?.fen === displayedGame.fen() ? planHighlight.squares : undefined}
                 overrideBoardTheme={boardTheme}
