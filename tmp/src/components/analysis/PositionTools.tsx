@@ -74,12 +74,12 @@ export default function PositionTools({
         <textarea id="analysis-fen" value={fen} maxLength={200} onChange={event => setFen(event.target.value)} spellCheck={false} rows={4} aria-invalid={!!error} aria-describedby="analysis-position-validation" className="w-full resize-none rounded-xl border border-white/10 bg-black/30 p-3 font-mono text-xs leading-relaxed text-neutral-200 outline-none focus:border-amber-200/50" />
       </div> : <>
         <p className="mb-2 text-xs leading-relaxed text-neutral-400">{words.choosePiece} — {words.editor}</p>
-        <div className="mb-3 grid grid-cols-7 gap-1" aria-label={words.choosePiece}>
+        <div className={`mb-3 grid grid-cols-7 gap-1 ${mobile ? 'mobile-position-palette' : ''}`} aria-label={words.choosePiece}>
           {['K','Q','R','B','N','P','', 'k','q','r','b','n','p'].map(piece => <button key={piece || 'erase'} type="button" draggable={!!piece}
             onDragStart={event => { if (piece) { event.dataTransfer.effectAllowed = 'copy'; event.dataTransfer.setData('application/x-chessaz-piece', piece); } }}
             title={piece ? pieceName(piece) : words.erase} aria-label={piece ? pieceName(piece) : words.erase} aria-pressed={selected === piece}
             onClick={() => onSelected(piece)} className={`flex aspect-square items-center justify-center rounded-lg border p-1 ${selected === piece ? 'border-amber-200/70 bg-amber-200/15' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}>
-            {piece ? <img src={pieceImage(piece)} alt="" className={`h-7 w-7 ${piece === piece.toLowerCase() ? 'desktop-editor-black-piece' : ''}`} draggable={false} /> : <Eraser size={18} className="text-neutral-300" />}
+            {piece ? <img src={pieceImage(piece)} alt="" className={`${mobile ? 'h-[34px] w-[34px]' : 'h-7 w-7'} ${piece === piece.toLowerCase() ? 'desktop-editor-black-piece' : ''}`} draggable={false} /> : <Eraser size={18} className="text-neutral-300" />}
           </button>)}
         </div>
         <div className="mb-3 grid grid-cols-2 gap-2">
