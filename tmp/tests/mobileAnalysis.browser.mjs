@@ -125,7 +125,7 @@ try {
     assert.ok(Math.abs(bounds.board.width - bounds.board.height) < 1, 'Board frame must stay square');
     assert.ok(Math.abs(bounds.grid.width - bounds.grid.height) < 1, 'Actual square grid must stay square');
     assert.equal(bounds.rows, 2, 'Both line slots are visible without expansion');
-    assert.ok(bounds.lineFontSize >= 18 && bounds.lineWeight >= 700, 'PV moves remain large and bold');
+    assert.ok(bounds.lineFontSize >= 20 && bounds.lineWeight >= 700, 'PV moves remain large and bold');
     assert.ok(bounds.lineBounds.every(row => row.top >= bounds.details.top && row.bottom <= bounds.details.bottom + 1), 'Both complete rows fit inside the analysis panel');
     assert.equal(bounds.labelSize, bounds.tabSize, 'Engine label matches tab typography');
     assert.ok(bounds.details.top >= bounds.header.bottom - 1 && bounds.board.top >= bounds.details.bottom - 1, 'Two engine rows sit between header and board');
@@ -155,8 +155,8 @@ try {
   await waitFor("document.querySelectorAll('.mobile-analysis-line').length === 2 && [...document.querySelectorAll('.mobile-analysis-score')].every(score=>score.textContent !== '—')");
   assert.ok(await evaluate("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 2')"), 'Worker calculates two lines, rather than hiding extra work');
   console.log('PASS real Stockfish worker and two visible PV lines');
-  await waitFor("document.querySelectorAll('.mobile-analysis-figurine').length > 0");
-  assert.ok(await evaluate("[...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0 && img.getBoundingClientRect().width === 22)"), 'Figurines load from existing assets at fixed readable size');
+  await waitFor("document.querySelectorAll('.mobile-analysis-figurine').length > 0 && [...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0)");
+  assert.ok(await evaluate("[...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0 && img.getBoundingClientRect().width === 26)"), 'Figurines load from existing assets at fixed readable size');
   assert.ok(await evaluate("!document.querySelector('.mobile-analysis-lines-heading') && getComputedStyle(document.querySelector('#mobile-analysis-details .sr-only')).position === 'absolute'"), 'Engine variant heading consumes no visible row');
   await capture('analysis-mobile-new');
   await evaluate("document.querySelector('.desktop-analysis-main-board [data-square=e2]').click()");

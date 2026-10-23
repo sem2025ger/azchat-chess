@@ -39,8 +39,8 @@ function FigurineMove({ move }: { move: string }) {
   return <span className="mobile-analysis-san">{move.split(/(^[KQRBN]|=[QRBN])/).map((part, index) => {
     const piece = /^[KQRBN]$/.test(part) ? part : /^=[QRBN]$/.test(part) ? part[1] : null;
     return piece ? <span key={index}>{part.startsWith('=') ? '=' : ''}<img
-      className="mobile-analysis-figurine" src={`/pieces/flat2d/w${piece}.svg`}
-      width={22} height={24} alt="" aria-hidden="true" draggable={false} /></span> : part;
+      className="mobile-analysis-figurine" src={`/pieces/classic/w${piece}.svg`}
+      width={26} height={26} alt="" aria-hidden="true" draggable={false} /></span> : part;
   })}</span>;
 }
 

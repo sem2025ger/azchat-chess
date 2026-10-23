@@ -45,7 +45,7 @@ test('mobile analysis keeps scores, move indices and export actions in their ded
     const figurines = render(createElement(MobileAnalysisDetails, { ...props,
       result:{evaluation:0.1,depth:12}, lines:[{evaluation:0.1,moves:notation},{evaluation:-0.16,mate:-3,moves:['O-O-O','e4']}] }));
     assert.equal((figurines.match(/class="mobile-analysis-figurine"/g) || []).length, 7);
-    for (const piece of ['N', 'B', 'R', 'Q', 'K']) assert.ok(figurines.includes(`/pieces/flat2d/w${piece}.svg`));
+    for (const piece of ['N', 'B', 'R', 'Q', 'K']) assert.ok(figurines.includes(`/pieces/classic/w${piece}.svg`));
     assert.match(figurines, /aria-label="Варианты движка: 1\. 17\.\.\. Nbd7 Bxc5\+ Rae1 Qh5# Kf7 O-O exd8=Q\+ a8=N"/);
     assert.match(figurines, />bd7<|bd7<\/span>/);
     assert.match(figurines, /O-O<\/span>/);
