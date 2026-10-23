@@ -1,5 +1,4 @@
-import { useState, type ReactNode } from 'react';
-import { ChevronDown, Cpu, FolderOpen, Map, Pencil } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import type { EngineResult } from '../../utils/StockfishEngine';
 import { analysisCopy } from './copy';
@@ -10,13 +9,12 @@ type Tab = 'analysis' | 'moves';
 interface Line { evaluation: number; mate?: number | null; moves: string[] }
 interface MovePair { n: number; w: string; b?: string; wIndex: number; bIndex: number }
 
-export function MobileAnalysisHeader({ activeTab, onTab, onTool, actions }: {
+export function MobileAnalysisHeader({ activeTab, onTab, actions }: {
   activeTab: Tab; onTab: (tab: Tab) => void;
-  onTool: (tool: 'map' | 'games' | 'position') => void; actions: ReactNode;
+  actions: ReactNode;
 }) {
   const { language, t } = useLanguage();
   const words = analysisCopy[language];
-  const copy = mobileAnalysisCopy[language];
   return <header className="mobile-analysis-header md:hidden" data-mobile-analysis-header>
     <div className="mobile-analysis-topbar">
       <div className="mobile-analysis-tabs" role="group" aria-label={words.analysis}>
@@ -25,19 +23,9 @@ export function MobileAnalysisHeader({ activeTab, onTab, onTool, actions }: {
           {t(`game.tabs.${tab}`)}
         </button>)}
       </div>
-      <span className="mobile-analysis-engine"><Cpu size={13} aria-hidden="true"/>Stockfish 18</span>
+      <span className="mobile-analysis-engine">Stockfish 18</span>
       {actions}
     </div>
-    <nav className="mobile-analysis-tools" aria-label={words.analysis}>
-      {([
-        { tool:'map', label:copy.map, icon:Map },
-        { tool:'games', label:words.games, icon:FolderOpen },
-        { tool:'position', label:copy.editor, icon:Pencil },
-      ] as const).map(({ tool, label, icon: Icon }) => <button key={tool} type="button"
-        aria-haspopup="dialog" onClick={() => onTool(tool)} data-mobile-tool={tool}>
-        <Icon size={16} aria-hidden="true"/><span>{label}</span>
-      </button>)}
-    </nav>
   </header>;
 }
 
@@ -47,43 +35,30 @@ const scoreText = (result?: { evaluation: number; mate?: number | null } | null)
     : `${result.evaluation > 0 ? '+' : ''}${result.evaluation.toFixed(2)}`;
 
 export function MobileAnalysisDetails({ activeTab, result, lines, loading, failed, moves,
-  currentIndex, onMove, pvLines, onPvLines, depth, onDepth }: {
+  currentIndex, onMove, depth }: {
   activeTab: Tab; result: EngineResult | null; lines?: Line[]; loading: boolean; failed: boolean;
   moves: MovePair[]; currentIndex: number; onMove: (index: number) => void;
-  pvLines: number; onPvLines: (count: number) => void; depth: number; onDepth: () => void;
+  depth: number;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const { language, t } = useLanguage();
   const copy = mobileAnalysisCopy[language];
-  const visibleLines = result ? lines?.slice(0, pvLines) || [] : [];
+  const visibleLines = result ? lines?.slice(0, 2) || [] : [];
   return <section id="mobile-analysis-details" className="mobile-analysis-details md:hidden"
     aria-label={t(`game.tabs.${activeTab}`)}>
     {activeTab === 'analysis' ? <>
-      <button type="button" className="mobile-analysis-summary" aria-expanded={expanded}
-        aria-controls="mobile-engine-lines" onClick={() => setExpanded(value => !value)}>
-        <span className="mobile-analysis-score">{scoreText(result)}</span>
-        <span className="mobile-analysis-summary-text">
-          <span>{copy.lines}</span>
-          <span>{failed ? t('game.analysis.unavailable') : visibleLines[0]?.moves.join(' ') || t(loading ? 'game.analysis.analyzing' : 'game.analysis.ready')}</span>
-        </span>
-        <ChevronDown size={18} aria-hidden="true" className={expanded ? 'rotate-180' : ''}/>
-        <span className="sr-only">{expanded ? copy.collapse : copy.expand}</span>
-      </button>
-      <div id="mobile-engine-lines" hidden={!expanded}>
-        <div className="mobile-analysis-engine-controls">
-          <div role="group" aria-label={copy.lines}>
-            {[1, 2, 3, 4, 5].map(count => <button key={count} type="button" aria-pressed={pvLines === count}
-              aria-label={`${copy.lines}: ${count}`} onClick={() => onPvLines(count)}>{count}</button>)}
-          </div>
-          <button type="button" onClick={onDepth} disabled={depth >= 36} aria-label={`${copy.lines}: ${depth} → ${Math.min(36, depth + 6)}`}>
-            {result?.depth || 0}/{depth} <span aria-hidden="true">+</span>
-          </button>
-        </div>
-        {failed ? <p role="status" className="mobile-analysis-notice">{t('game.analysis.unavailable')}</p>
-          : visibleLines.length ? visibleLines.map((line, index) => <div key={index} className="mobile-analysis-line">
+      <div className="mobile-analysis-lines-heading">
+        <span>{copy.lines}</span><span>{result?.depth || 0}/{depth}</span>
+      </div>
+      <div id="mobile-engine-lines" aria-label={copy.lines} aria-busy={loading && !failed}>
+        {[0, 1].map(index => {
+          const line = visibleLines[index];
+          return <div key={index} className="mobile-analysis-line" data-mobile-engine-line>
             <span className="mobile-analysis-score">{scoreText(line)}</span>
-            <p>{line.moves.join(' ')}</p>
-          </div>) : <p role="status" className="mobile-analysis-notice">{t('game.analysis.analyzing')}</p>}
+            <p tabIndex={line ? 0 : undefined} aria-label={`${copy.lines}: ${index + 1}`}>
+              {failed ? t('game.analysis.unavailable') : line?.moves.join(' ') || t(loading ? 'game.analysis.analyzing' : 'game.analysis.ready')}
+            </p>
+          </div>;
+        })}
       </div>
     </> : <div className="mobile-analysis-moves" tabIndex={0}>
       {moves.length ? <table><tbody>{moves.map(move => <tr key={move.n}>

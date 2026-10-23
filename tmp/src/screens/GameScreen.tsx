@@ -2,7 +2,7 @@ import { lazy, Suspense, useState, useEffect, useLayoutEffect, useRef, useMemo, 
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
-import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw, Clock, Map, FolderOpen, Pencil, X } from 'lucide-react';
+import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw, Clock, Map, FolderOpen, Pencil, X, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
@@ -70,6 +70,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     return () => { document.body.style.overflow = previousOverflow; };
   }, [mobileTool]);
   const [pvLines, setPvLines] = useState(3);
+  const [mobileOrientation, setMobileOrientation] = useState<'w' | 'b'>('w');
   const [planHighlight, setPlanHighlight] = useState<{ fen: string; squares: Square[] } | null>(null);
   const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
   const [loadedGameTitle, setLoadedGameTitle] = useState('');
@@ -128,6 +129,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       ? window.matchMedia('(min-width: 768px)').matches
       : false
   );
+  const effectivePvLines = mode === 'review' && !isDesktop ? 2 : pvLines;
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
@@ -589,7 +591,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           ? liveFen
           : positionHistory[historyIndex] || liveFen;
 
-      engineRef.current.analyze(targetFen, mode === 'review' ? analysisDepth : 18, mode === 'review' ? pvLines : 3);
+      engineRef.current.analyze(targetFen, mode === 'review' ? analysisDepth : 18, mode === 'review' ? effectivePvLines : 3);
     } else if (engineRef.current) {
       engineRef.current.stop();
     }
@@ -599,7 +601,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     liveFen,
     positionHistory,
     analysisDepth,
-    pvLines,
+    effectivePvLines,
     mode
   ]);
 
@@ -845,6 +847,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const analysisWorkspaceHeader = (mobile = false) => mode === 'review' ? (
     <AnalysisWorkspaceHeader
           mobile={mobile}
+          onMobileTool={mobile ? openMobileTool : undefined}
+          mobileDepth={mobile ? analysisDepth : undefined}
+          onMobileDepth={mobile ? () => setAnalysisDepth(depth => Math.min(36, depth + 6)) : undefined}
           title={loadedGameTitle}
           initialFen={positionHistory[0] || DEFAULT_POSITION}
           moveHistory={moveHistory}
@@ -877,7 +882,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
 
       {mode === 'review' && <>
-        <MobileAnalysisHeader activeTab={activeTab} onTab={setActiveTab} onTool={openMobileTool}
+        <MobileAnalysisHeader activeTab={activeTab} onTab={setActiveTab}
           actions={analysisWorkspaceHeader(true)} />
         <div className="hidden md:block lg:hidden">{analysisWorkspaceHeader()}</div>
       </>}
@@ -1186,7 +1191,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 overrideBoardTheme={boardTheme}
                 game={displayedGame}
                 onMove={handleGameMove}
-                orientation={playerColor}
+                orientation={mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
                 readOnly={viewMoveIndex !== -1 || !!gameOverMessage || (isMultiplayer && playerColor !== game.turn())}
               />}
             </div>
@@ -1241,7 +1246,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
       {/* Mobile review navigation stays visible in both Analysis and Moves. */}
       {!isMultiplayer && (
-        <nav aria-label="Move navigation" data-mobile-move-navigation className="md:hidden grid grid-cols-4 gap-2 mx-2 mt-1 mb-1 p-1 shrink-0 rounded-2xl border border-white/[0.06] bg-black/20">
+        <nav aria-label="Move navigation" data-mobile-move-navigation className={cx("md:hidden grid gap-2 mx-2 mt-1 mb-1 p-1 shrink-0 rounded-2xl border border-white/[0.06] bg-black/20", mode === 'review' ? "grid-cols-5" : "grid-cols-4")}>
           <button
             type="button"
             aria-label="First position"
@@ -1285,6 +1290,12 @@ export default function GameScreen({ mode }: GameScreenProps) {
           >
             <FastForward size={22} />
           </button>
+          {mode === 'review' && <button type="button" data-mobile-board-flip
+            aria-label={mobileAnalysisCopy[language].flip} title={mobileAnalysisCopy[language].flip}
+            aria-pressed={mobileOrientation === 'b'} className={mobileReviewControlClass}
+            onClick={() => setMobileOrientation(previous => previous === 'w' ? 'b' : 'w')}>
+            <ArrowUpDown size={20} aria-hidden="true"/>
+          </button>}
         </nav>
       )}
 
@@ -1292,8 +1303,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
         result={currentEngineResult} lines={currentEngineResult ? analysisData?.lines : undefined}
         loading={isAnalysing || !currentEngineResult && !engineFailed} failed={engineFailed}
         moves={movePairs} currentIndex={viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex}
-        onMove={setViewMoveIndex} pvLines={pvLines} onPvLines={setPvLines} depth={analysisDepth}
-        onDepth={() => setAnalysisDepth(depth => Math.min(36, depth + 6))} />}
+        onMove={setViewMoveIndex} depth={analysisDepth} />}
 
       {/* Professional Sidebar Sidebar Tabs */}
       <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' ? "desktop-analysis-panel" : "animate-fade-in-right transition-all")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
