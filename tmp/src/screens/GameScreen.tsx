@@ -849,7 +849,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
           mobile={mobile}
           onMobileTool={mobile ? openMobileTool : undefined}
           mobileDepth={mobile ? analysisDepth : undefined}
-          onMobileDepth={mobile ? () => setAnalysisDepth(depth => Math.min(36, depth + 6)) : undefined}
+          onMobileDepth={mobile ? (direction) => setAnalysisDepth(depth => Math.max(6, Math.min(36, depth + direction * 6))) : undefined}
+          currentResult={mobile ? currentEngineResult : undefined}
           title={loadedGameTitle}
           initialFen={positionHistory[0] || DEFAULT_POSITION}
           moveHistory={moveHistory}
