@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { annotatedPgn, type PositionEvaluation } from '../../utils/positionMap';
-import { ClipboardCopy, Check, Share2, FileText, MoreHorizontal, RotateCcw, X, Map, FolderOpen, Pencil, Plus } from 'lucide-react';
+import { ClipboardCopy, Check, Share2, FileText, MoreHorizontal, RotateCcw, X, Map, FolderOpen, Pencil, Plus, Minus } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { mobileAnalysisCopy } from './mobileAnalysisCopy';
 import { analysisCopy } from './copy';
+import { formatFullAnalysisReport } from '../../utils/fullAnalysisReport';
+import type { EngineResult } from '../../utils/StockfishEngine';
 
 interface Props {
   title: string;
@@ -17,13 +19,14 @@ interface Props {
   mobile?: boolean;
   onMobileTool?: (tool: 'map' | 'games' | 'position') => void;
   mobileDepth?: number;
-  onMobileDepth?: () => void;
+  onMobileDepth?: (direction: -1 | 1) => void;
+  currentResult?: EngineResult | null;
 }
 
 /** Presentation-only controls on top of the real analysis state. */
 export default function AnalysisWorkspaceHeader({
   title, initialFen, moveHistory,
-  currentFen, onNew, onEdit, editing, evaluations, mobile = false, onMobileTool, mobileDepth, onMobileDepth,
+  currentFen, onNew, onEdit, editing, evaluations, mobile = false, onMobileTool, mobileDepth, onMobileDepth, currentResult,
 }: Props) {
   const { language, t } = useLanguage();
   const words = mobileAnalysisCopy[language];
@@ -62,6 +65,10 @@ export default function AnalysisWorkspaceHeader({
     if (pgn !== null) void copy('pgn', pgn);
     else setCopyError(true);
   };
+  const exportFull = () => {
+    try { void copy('full', formatFullAnalysisReport({ initialFen, moves: moveHistory, currentFen, evaluations, currentResult: currentResult || null, title })); }
+    catch { setCopyError(true); }
+  };
   const share = async () => {
     const shared = new URL(window.location.href);
     shared.searchParams.delete('roomId');
@@ -94,10 +101,12 @@ export default function AnalysisWorkspaceHeader({
         </button>)}
       </div>}
       <div className="mobile-analysis-action-list">
-        {onMobileDepth && mobileDepth !== undefined && <button type="button" disabled={mobileDepth >= 36}
-          onClick={() => { dialogRef.current?.close(); onMobileDepth(); }}>
-          <Plus size={18} aria-hidden="true"/>{words.deeper} · {mobileDepth} → {Math.min(36, mobileDepth + 6)}
-        </button>}
+        {onMobileDepth && mobileDepth !== undefined && <div className="mobile-analysis-depth-control" role="group" aria-label={words.deeper}>
+          <span>{words.deeper} · {mobileDepth}</span>
+          <button type="button" aria-label={words.lessDepth} disabled={mobileDepth <= 6} onClick={() => onMobileDepth(-1)}><Minus size={18}/></button>
+          <button type="button" aria-label={words.moreDepth} disabled={mobileDepth >= 36} onClick={() => onMobileDepth(1)}><Plus size={18}/></button>
+        </div>}
+        <button type="button" onClick={exportFull}><FileText size={18}/>{words.fullReport}</button>
         <button type="button" disabled={!moveHistory.length} onClick={exportPgn}><FileText size={18}/>{words.pgn}</button>
         <button type="button" onClick={() => void copy('fen', currentFen)}><ClipboardCopy size={18}/>{words.fen}</button>
         <button type="button" onClick={() => void share()}><Share2 size={18}/>{words.share}</button>
