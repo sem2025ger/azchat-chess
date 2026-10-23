@@ -229,14 +229,14 @@ function MobileNavItem({ to, icon, label, premiumHome = false, accent }: { to: s
           premiumHome
             ? (isActive
                 ? "text-[#F6DCAC] scale-110 rounded-xl bg-[linear-gradient(145deg,rgba(223,176,98,0.15),rgba(25,22,24,0.88)_60%,rgba(167,139,250,0.09))] ring-1 ring-[#CDA35A]/40 shadow-[inset_0_1px_0_rgba(255,235,183,0.1),0_0_12px_rgba(223,176,98,0.12)]"
-                : "text-[#DEBF85] hover:text-[#F6DCAC] rounded-xl bg-[linear-gradient(145deg,rgba(223,176,98,0.09),rgba(25,22,24,0.88)_60%,rgba(167,139,250,0.06))] ring-1 ring-[#CDA35A]/25")
+                : "text-neutral-500 hover:text-neutral-300")
             : (isActive ? (accent ? mobileActiveAccent[accent] : "text-chess-active") : "text-neutral-500 hover:text-neutral-300")
         )
       }
     >
       <div className="relative">
         {icon}
-        <Circle size={4} className="absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-chess-active fill-current" />
+        <Circle size={4} className="absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-current fill-current" />
       </div>
       <span className="text-[0.5rem] font-black uppercase tracking-widest">{label}</span>
     </NavLink>
