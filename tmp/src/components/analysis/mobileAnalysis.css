@@ -57,22 +57,35 @@
     border-radius: 3px; box-shadow: 0 12px 28px -20px #000;
   }
   .desktop-analysis-screen .desktop-analysis-board-frame .desktop-analysis-main-board .aspect-square { aspect-ratio: 1 / 1 !important; }
+  /* Slightly fuller chess pieces in Review only. Preserve square geometry, drag targets
+     and the existing 110% optical image scale; do not modify Home or live games. */
+  .desktop-analysis-screen .desktop-analysis-main-board [data-piece-square] > div {
+    padding: 1% !important;
+  }
   .desktop-analysis-screen [data-mobile-move-navigation] { margin: 10px 10px 0; padding: 5px; gap: 6px; border-radius: 14px; background: #0e1312; }
   .desktop-analysis-screen [data-mobile-move-navigation] button { min-height: 46px; border-radius: 10px; box-shadow: none; color: #e4d2a6; }
   .desktop-analysis-screen > .desktop-analysis-panel { display: none; }
   .mobile-analysis-details { flex: none; margin: 10px 10px 0; min-width: 0; border: 1px solid #d0d7cf14; border-radius: 14px; background: #111816; overflow: hidden; }
   .mobile-analysis-summary { display: flex; width: 100%; min-height: 62px; align-items: center; gap: 10px; padding: 10px; text-align: left; }
   .mobile-analysis-summary > svg { flex: none; color: #b3b9b4; }
-  .mobile-analysis-score { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 54px; min-height: 34px; padding: 4px 7px; border: 1px solid #e2ded02b; border-radius: 8px; background: #e9e8df; color: #111815; font: 700 14px ui-monospace, monospace; }
+  .mobile-analysis-score { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 54px; min-height: 34px; padding: 4px 7px; border: 1px solid #e2ded02b; border-radius: 8px; background: #e9e8df; color: #111815; font: 750 14px ui-monospace, monospace; font-variant-numeric: tabular-nums; }
   .mobile-analysis-summary-text { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
   .mobile-analysis-summary-text > span:first-child { color: #c9cdca; font-size: 11px; font-weight: 650; }
-  .mobile-analysis-summary-text > span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #9aaba2; font-size: 12px; }
+  .mobile-analysis-summary-text > span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #d6ddd6; font-size: 13px; font-weight: 700; line-height: 1.4; }
   .mobile-analysis-engine-controls { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid #ffffff0a; padding: 8px; }
   .mobile-analysis-engine-controls > div { display: flex; gap: 3px; }
   .mobile-analysis-engine-controls button { min-height: 44px; min-width: 36px; padding: 4px 8px; border-radius: 8px; color: #b8c3bd; font-size: 12px; }
   .mobile-analysis-engine-controls button[aria-pressed="true"] { color: #f2dba7; background: #c8a35e20; }
-  .mobile-analysis-line { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border-top: 1px solid #ffffff0a; }
-  .mobile-analysis-line p { min-width: 0; overflow-wrap: anywhere; color: #d2d9d3; font-size: 12px; line-height: 1.8; }
+  /* Compact PV rows: visually group evaluation and SAN without crowding taps. */
+  .mobile-analysis-line { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-top: 1px solid #ffffff0a; }
+  .mobile-analysis-line .mobile-analysis-score { min-height: 32px; }
+  .mobile-analysis-line p {
+    flex: 1; min-width: 0; margin: 0; overflow-x: auto; overflow-y: hidden;
+    overflow-wrap: normal; white-space: nowrap; overscroll-behavior-x: contain;
+    touch-action: pan-x; scrollbar-width: none;
+    color: #edf2ed; font-size: 13px; font-weight: 700; line-height: 1.4;
+  }
+  .mobile-analysis-line p::-webkit-scrollbar { display: none; }
   .mobile-analysis-moves { max-height: 240px; overflow-y: auto; overscroll-behavior: contain; }
   .mobile-analysis-moves table { width: 100%; table-layout: fixed; border-collapse: collapse; }
   .mobile-analysis-moves th { width: 40px; color: #88968e; font: 12px ui-monospace, monospace; }
