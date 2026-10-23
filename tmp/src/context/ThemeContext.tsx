@@ -3,8 +3,10 @@ import { createContext, useContext, useState, useEffect, type ReactNode } from '
 import { PIECE_STYLES } from '../lib/chessThemes';
 import type { BoardTheme, PieceTheme } from '../lib/chessThemes';
 
+import { premiumInterfaceThemes, type PremiumInterfaceTheme } from '../lib/interfaceThemes';
+
 // Defines the options
-export type BackgroundTheme = 'Void Black' | 'Deep Space' | 'Velvet Gold' | 'Champagne Light' | 'Coffee Brown' | 'Walnut Dark' | 'Emerald Night' | 'Royal Blue' | 'Royal Violet' | 'Obsidian Gold';
+export type BackgroundTheme = 'Void Black' | 'Deep Space' | 'Velvet Gold' | 'Champagne Light' | 'Coffee Brown' | 'Walnut Dark' | 'Emerald Night' | 'Royal Blue' | 'Royal Violet' | 'Obsidian Gold' | PremiumInterfaceTheme;
 export type SoundTheme = 'Default' | 'Soft' | 'Classic' | 'Wood' | 'Crystal' | 'Muted / Off';
 
 interface ThemeContextType {
@@ -18,6 +20,8 @@ interface ThemeContextType {
   setBoardTheme: (val: BoardTheme) => void;
   sound: SoundTheme;
   setSound: (val: SoundTheme) => void;
+  confirmMobileMoves: boolean;
+  setConfirmMobileMoves: (val: boolean) => void;
 }
 
 const DEFAULT_PIECE_THEME: PieceTheme = 'cburnett-classic';
@@ -37,7 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (saved === 'Game Room') return 'Deep Space';
     if (saved === 'Velvet Gold Background') return 'Velvet Gold';
     const validThemes = ['Void Black', 'Deep Space', 'Velvet Gold', 'Champagne Light', 'Coffee Brown', 'Walnut Dark', 'Emerald Night', 'Royal Blue', 'Royal Violet', 'Obsidian Gold'];
-    if (saved && validThemes.includes(saved)) return saved as BackgroundTheme;
+    if (saved && (validThemes.includes(saved) || premiumInterfaceThemes.some(theme => theme.id === saved))) return saved as BackgroundTheme;
     return 'Void Black';
   });
   
@@ -57,6 +61,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return (localStorage.getItem('chess_sound') as SoundTheme) || 'Default';
   });
 
+  const [confirmMobileMoves, setConfirmMobileMoves] = useState(() => localStorage.getItem('chess_confirmMobileMoves') === 'true');
+
+  useEffect(() => { localStorage.setItem('chess_confirmMobileMoves', String(confirmMobileMoves)); }, [confirmMobileMoves]);
   useEffect(() => { localStorage.setItem('chess_specialThemesEnabled', JSON.stringify(specialThemesEnabled)); }, [specialThemesEnabled]);
   useEffect(() => { localStorage.setItem('chess_background', background); }, [background]);
   useEffect(() => { localStorage.setItem('chess_pieceTheme', pieceTheme); }, [pieceTheme]);
@@ -69,7 +76,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       background, setBackground,
       pieceTheme, setPieceTheme,
       boardTheme, setBoardTheme,
-      sound, setSound
+      sound, setSound,
+      confirmMobileMoves, setConfirmMobileMoves
     }}>
       {children}
     </ThemeContext.Provider>

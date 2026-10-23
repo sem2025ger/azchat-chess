@@ -215,7 +215,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     ? countryCodeToFlag(profile.countryCode)
     : null;
 
-  const { sound, boardTheme } = useThemeContext();
+  const { sound, boardTheme, confirmMobileMoves } = useThemeContext();
   const soundThemeRef = useRef(sound);
   useEffect(() => {
     soundThemeRef.current = sound;
@@ -1196,6 +1196,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 externalCoordinatesOnDesktop={mode === 'review'}
                 highlightedSquares={mode === 'review' && workspaceTab === 'map' && planHighlight?.fen === displayedGame.fen() ? planHighlight.squares : undefined}
                 overrideBoardTheme={boardTheme}
+                confirmMovesMobile={mode === 'live' && confirmMobileMoves}
                 game={displayedGame}
                 onMove={handleGameMove}
                 orientation={mode === 'review' && !isDesktop ? mobileOrientation : playerColor}

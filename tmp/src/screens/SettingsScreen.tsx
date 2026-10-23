@@ -3,6 +3,7 @@ import { Chess } from 'chess.js';
 import { trySettingsPreviewMove } from '../utils/settingsPreviewMove';
 import { useThemeContext, type BackgroundTheme, type SoundTheme } from '../context/ThemeContext';
 import { playChessSound, preloadChessSounds, setChessSoundMuted } from '../utils/chessSounds';
+import { premiumInterfaceThemes } from '../lib/interfaceThemes';
 import { BOARD_THEMES, BOARD_THEME_DETAILS, PIECE_STYLES } from '../lib/chessThemes';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
@@ -27,7 +28,8 @@ export default function SettingsScreen() {
     boardTheme, setBoardTheme,
     pieceTheme, setPieceTheme,
     sound: soundTheme, setSound: setSoundTheme,
-    background, setBackground
+    background, setBackground, specialThemesEnabled,
+    confirmMobileMoves, setConfirmMobileMoves
   } = useThemeContext();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
@@ -80,6 +82,7 @@ export default function SettingsScreen() {
     setPieceTheme('neo');
     setSoundTheme('Default');
     setBackground('Void Black');
+    setConfirmMobileMoves(false);
     triggerSaved();
   };
 
@@ -117,7 +120,10 @@ export default function SettingsScreen() {
     { id: 'Royal Blue', name: 'Royal Blue', class: 'bg-gradient-to-br from-[#1e3a8a] to-[#0a0f24]' },
     { id: 'Royal Violet', name: 'Royal Violet', class: 'bg-gradient-to-br from-[#4c1d95] to-[#170833]' },
     { id: 'Obsidian Gold', name: 'Obsidian Gold', class: 'bg-gradient-to-br from-[#1f1a10] to-[#0a0a0a]' },
+    ...premiumInterfaceThemes,
   ];
+
+  const premiumBackground = specialThemesEnabled ? premiumInterfaceThemes.find(theme => theme.id === background) : undefined;
 
   const presets = [
     { name: 'Classical Pro', board: 'Classic Green', pieces: 'classic' },
@@ -125,6 +131,15 @@ export default function SettingsScreen() {
     { name: 'Nature Wood', board: 'Classic Wood', pieces: 'classic' },
   ];
 
+  const mobileCopy: Record<string, { presets: string; soundGame: string; inPlay: string; confirm: string; hint: string }> = {
+    ru: { presets: 'Готовые стили', soundGame: 'Звук и игра', inPlay: 'Настроить в игре', confirm: 'Подтверждать ход', hint: 'Защита от случайного касания' },
+    en: { presets: 'Style Presets', soundGame: 'Sound & Game', inPlay: 'Set in Play', confirm: 'Confirm moves', hint: 'Protect against accidental taps' },
+    de: { presets: 'Designvorlagen', soundGame: 'Ton und Spiel', inPlay: 'Im Spiel einstellen', confirm: 'Züge bestätigen', hint: 'Schutz vor versehentlichem Tippen' },
+    az: { presets: 'Hazır üslublar', soundGame: 'Səs və oyun', inPlay: 'Oyunda tənzimlə', confirm: 'Gedişi təsdiqlə', hint: 'Təsadüfi toxunmanın qarşısını alır' },
+    tr: { presets: 'Hazır stiller', soundGame: 'Ses ve oyun', inPlay: 'Oyunda ayarla', confirm: 'Hamleyi onayla', hint: 'Yanlış dokunuşları önler' },
+    ua: { presets: 'Готові стилі', soundGame: 'Звук та гра', inPlay: 'Налаштувати у грі', confirm: 'Підтверджувати хід', hint: 'Захист від випадкових торкань' },
+  };
+  const mobileLabels = mobileCopy[language] || mobileCopy.en;
   const languages = [
     { id: 'en', name: 'English', flag: '🇬🇧' },
     { id: 'de', name: 'Deutsch', flag: '🇩🇪' },
@@ -194,13 +209,17 @@ export default function SettingsScreen() {
               {bgThemes.map((bg) => (
                 <button
                   key={bg.id}
+                  aria-pressed={background === bg.id}
                   onClick={() => setBackground(bg.id)}
                   className={cx(
                     "flex items-center justify-between p-4 rounded-2xl border transition-all",
                     background === bg.id ? "bg-purple-500/10 border-purple-500/40 text-purple-300" : "bg-white/[0.03] border-white/5 text-neutral-400"
                   )}
                 >
-                  <span className="font-black uppercase tracking-widest text-sm">{bg.name}</span>
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span aria-hidden="true" className={cx('h-7 w-7 shrink-0 rounded-lg border border-white/25', bg.class)} />
+                    <span className="font-black uppercase tracking-widest text-sm">{bg.name}</span>
+                  </span>
                   {background === bg.id && <Check size={18} className="text-purple-400" />}
                 </button>
               ))}
@@ -253,7 +272,7 @@ export default function SettingsScreen() {
       case 'presets':
         return (
           <div className="space-y-6 animate-fade-in">
-            <SubViewHeader title="Studio Presets" onBack={() => setActiveSubView('main')} />
+            <SubViewHeader title={mobileLabels.presets} onBack={() => setActiveSubView('main')} />
             <div className="flex flex-col gap-3 px-2">
               {presets.map((p) => (
                 <button
@@ -283,7 +302,7 @@ export default function SettingsScreen() {
             <div className="space-y-4 animate-fade-in px-2 pt-4">
               <div className="space-y-3">
                 <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl">
-                  <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
+                  <div className="settings-mobile-card rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
                   <HubLink 
                     icon={<Palette size={18} />} 
                     title={t('settings.boardAppearance')} 
@@ -305,18 +324,27 @@ export default function SettingsScreen() {
                     onClick={() => setActiveSubView('background')} 
                     preview={<div className={cx("w-6 h-6 rounded-md border border-white/10", bgThemes.find(t => t.id === background)?.class)} />}
                   />
-                  <HubLink icon={<Sparkles size={18} />} title="Studio Presets" onClick={() => setActiveSubView('presets')} />
+                  <HubLink icon={<Sparkles size={18} />} title={mobileLabels.presets} onClick={() => setActiveSubView('presets')} />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <h2 className="text-[0.8rem] font-black text-neutral-500 uppercase tracking-[0.4em] italic px-2">Sound & Game</h2>
+                <h2 className="settings-mobile-section-heading px-2">{mobileLabels.soundGame}</h2>
                 <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl">
-                  <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
+                  <div className="settings-mobile-card rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
                   <HubLink icon={<Volume2 size={18} />} title={t('settings.soundThemes')} value={soundTheme.toUpperCase()} onClick={() => setActiveSubView('sound')} />
-                  <HubLink icon={<Clock size={18} />} title={t('play.timeControl')} value="Config in Play" onClick={() => navigate('/play')} />
+                  <HubLink icon={<Clock size={18} />} title={t('play.timeControl')} value={mobileLabels.inPlay} onClick={() => navigate('/play')} />
                   <HubLink icon={<Globe size={18} />} title={t('settings.changeLanguage')} value={language.toUpperCase()} onClick={() => setActiveSubView('language')} />
+                  <div className="mx-2 my-2">
+                    <button type="button" className="settings-mobile-confirm" role="switch" aria-checked={confirmMobileMoves} aria-label={mobileLabels.confirm} onClick={() => setConfirmMobileMoves(!confirmMobileMoves)}>
+                      <span className="flex min-w-0 flex-col gap-1">
+                        <span className="text-sm font-semibold text-slate-100">{mobileLabels.confirm}</span>
+                        <span className="text-xs leading-snug text-slate-300">{mobileLabels.hint}</span>
+                      </span>
+                      <span className="settings-mobile-toggle" aria-hidden="true"><span /></span>
+                    </button>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -333,7 +361,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <div className="settings-fixed-workspace min-h-0 h-full w-full bg-transparent flex flex-col items-center relative overflow-hidden pt-0 px-2 pb-2 md:px-5 md:pb-2 md:pt-1">
+    <div data-premium-theme={premiumBackground?.id} style={premiumBackground ? { background: premiumBackground.gradient } : undefined} className="settings-fixed-workspace min-h-0 h-full w-full bg-transparent flex flex-col items-center relative overflow-hidden pt-0 px-2 pb-2 md:px-5 md:pb-2 md:pt-1">
       {/* Background Decor */}
       <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
@@ -411,9 +439,9 @@ export default function SettingsScreen() {
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <LayoutIcon size={16} className="text-purple-400" /> {t('settings.interfaceTheme')}
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+                <div className="settings-background-options grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 custom-scrollbar">
                   {bgThemes.map((bg) => (
-                    <button key={bg.id} onClick={() => setBackground(bg.id)} className={cx("min-w-0 px-1.5 py-1.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
+                    <button key={bg.id} aria-pressed={background === bg.id} onClick={() => setBackground(bg.id)} className={cx("min-w-0 px-1.5 py-1.5 rounded-xl border text-[0.65rem] font-black uppercase tracking-[0.1em] active:scale-95 leading-tight", background === bg.id ? "bg-purple-500/15 border-purple-500/50 text-purple-300" : "bg-black/20 border-white/5 text-neutral-500 hover:bg-black/40 hover:text-neutral-300")}>
                       {bg.name}
                     </button>
                   ))}
@@ -463,7 +491,7 @@ export default function SettingsScreen() {
         </div>
 
         {/* Mobile View: Hub and Spoke */}
-        <div className="lg:hidden w-full h-full min-h-0 flex flex-col mt-2 overflow-y-auto">
+        <div className="settings-mobile-view lg:hidden w-full min-h-0 flex flex-col mt-2 overflow-y-auto">
           {renderMobileView()}
         </div>
       </div>
