@@ -91,8 +91,10 @@ export default function AnalysisWorkspaceHeader({
       onClick={event => { if (event.target === event.currentTarget) dialogRef.current?.close(); }}>
       <header><h2>{words.more}</h2><button type="button" aria-label={words.close} onClick={() => dialogRef.current?.close()}><X size={20}/></button></header>
       {onMobileTool && <div className="mobile-analysis-action-list mobile-analysis-tool-actions">
+        <button type="button" data-mobile-new-analysis onClick={() => { dialogRef.current?.close(); onNew(); }}>
+          <RotateCcw size={18} aria-hidden="true"/>{t('game.analysis.new')}
+        </button>
         {([
-          { tool: 'map', label: words.map, icon: Map },
           { tool: 'games', label: analysisCopy[language].games, icon: FolderOpen },
           { tool: 'position', label: words.editor, icon: Pencil },
         ] as const).map(({ tool, label, icon: Icon }) => <button key={tool} type="button"
@@ -110,7 +112,7 @@ export default function AnalysisWorkspaceHeader({
         <button type="button" disabled={!moveHistory.length} onClick={exportPgn}><FileText size={18}/>{words.pgn}</button>
         <button type="button" onClick={() => void copy('fen', currentFen)}><ClipboardCopy size={18}/>{words.fen}</button>
         <button type="button" onClick={() => void share()}><Share2 size={18}/>{words.share}</button>
-        <button type="button" onClick={() => { dialogRef.current?.close(); onNew(); }}><RotateCcw size={18}/>{t('game.analysis.new')}</button>
+
       </div>
       <p role="status" className="mobile-analysis-copy-status">{copyError ? words.copyFailed : copied ? words.copied : ''}</p>
     </dialog>
