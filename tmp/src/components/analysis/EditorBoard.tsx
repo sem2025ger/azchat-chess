@@ -10,6 +10,7 @@ interface EditorBoardProps {
   words: AnalysisWords;
   onPlace: (index: number, piece?: string) => void;
   onMove: (from: number, to: number) => void;
+  mobile?: boolean;
 }
 
 const files = 'abcdefgh';
@@ -17,7 +18,7 @@ const pieces = /^[KQRBNPkqrbnp]$/;
 
 // This replaces (rather than overlaps) the normal board during desktop setup.
 // It accepts incomplete positions: chess.js validation is done only on Apply.
-export default function EditorBoard({ draft, selected, words, onPlace, onMove }: EditorBoardProps) {
+export default function EditorBoard({ draft, selected, words, onPlace, onMove, mobile = false }: EditorBoardProps) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
   const colors = BOARD_THEMES[specialThemesEnabled ? boardTheme : 'Classic Green'] || BOARD_THEMES['Classic Green'];
   const drag = useRef<{ pointerId: number; from: number; x: number; y: number } | null>(null);
@@ -97,7 +98,10 @@ export default function EditorBoard({ draft, selected, words, onPlace, onMove }:
                 aria-label={`${words.square} ${square}${piece ? ', ' + (piece === piece.toUpperCase() ? words.white : words.black) + ' ' + words[piece.toLowerCase() as 'k' | 'q' | 'r' | 'b' | 'n' | 'p'] : ''}`}
                 onClick={() => {
                   if (suppressClick.current) { suppressClick.current = false; return; }
-                  onPlace(index);
+                  // Mobile: tap an occupied square to remove only that piece.
+                  // Empty squares still place the selected piece, while drag moves pieces.
+                  // Desktop retains its existing tap-to-replace behavior.
+                  onPlace(index, mobile && piece ? '' : undefined);
                 }}
                 onContextMenu={event => { event.preventDefault(); onPlace(index, ''); }}
                 onDragOver={event => event.preventDefault()}
