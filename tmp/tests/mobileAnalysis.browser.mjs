@@ -123,7 +123,13 @@ try {
   console.log('PASS editor validation placement and draft cancellation');
 } finally {
   try { ws?.close(); } catch { /* Already disconnected. */ }
-  chrome?.kill('SIGKILL');
+  if (chrome && chrome.exitCode === null && chrome.signalCode === null) {
+    await new Promise(done => {
+      chrome.once('exit', done);
+      if (!chrome.kill('SIGKILL')) done();
+    });
+  }
   await new Promise(done => server.close(done));
-  if (profile) await rm(profile, { recursive:true, force:true });
+  // Chromium children may finish flushing profile files just after the parent exits.
+  if (profile) await rm(profile, { recursive:true, force:true, maxRetries:10, retryDelay:100 });
 }
