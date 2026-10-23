@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { ClipboardCopy, Check } from 'lucide-react';
+import { colorizeAnalysisMoves, formatPlayedMoves, type AnalysisSide } from '../../utils/mobileAnalysisNotation';
 import { useLanguage } from '../../context/LanguageContext';
 import type { EngineResult } from '../../utils/StockfishEngine';
 import { analysisCopy } from './copy';
@@ -35,23 +37,29 @@ const scoreText = (result?: { evaluation: number; mate?: number | null } | null)
     : `${result.evaluation > 0 ? '+' : ''}${result.evaluation.toFixed(2)}`;
 
 // Presentation only: preserve SAN in the session, engine and accessible label.
-function FigurineMove({ move }: { move: string }) {
+function FigurineMove({ move, side }: { move: string; side: AnalysisSide }) {
   return <span className="mobile-analysis-san">{move.split(/(^[KQRBN]|=[QRBN])/).map((part, index) => {
     const piece = /^[KQRBN]$/.test(part) ? part : /^=[QRBN]$/.test(part) ? part[1] : null;
     return piece ? <span key={index}>{part.startsWith('=') ? '=' : ''}<img
-      className="mobile-analysis-figurine" src={`/pieces/classic/w${piece}.svg`}
+      className="mobile-analysis-figurine" src={`/pieces/classic/${side}${piece}.svg`}
       width={33} height={33} alt="" aria-hidden="true" draggable={false} /></span> : part;
   })}</span>;
 }
 
 export function MobileAnalysisDetails({ activeTab, result, lines, loading, failed, moves,
-  currentIndex, onMove, depth }: {
+  currentIndex, onMove, depth, startSide = 'w' }: {
   activeTab: Tab; result: EngineResult | null; lines?: Line[]; loading: boolean; failed: boolean;
   moves: MovePair[]; currentIndex: number; onMove: (index: number) => void;
-  depth: number;
+  depth: number; startSide?: AnalysisSide;
 }) {
   const { language, t } = useLanguage();
   const copy = mobileAnalysisCopy[language];
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+  const copyMoves = async () => {
+    if (!moves.some(row => row.w || row.b)) return;
+    try { await navigator.clipboard.writeText(formatPlayedMoves(moves)); setCopyStatus('copied'); }
+    catch { setCopyStatus('error'); }
+  };
   const visibleLines = result ? lines?.slice(0, 2) || [] : [];
   return <section id="mobile-analysis-details" className="mobile-analysis-details md:hidden"
     aria-label={t(`game.tabs.${activeTab}`)}>
@@ -66,13 +74,23 @@ export function MobileAnalysisDetails({ activeTab, result, lines, loading, faile
             <span className="mobile-analysis-score">{scoreText(line)}</span>
             <p tabIndex={line ? 0 : undefined} aria-label={`${copy.lines}: ${index + 1}${line ? `. ${line.moves.join(' ')}` : ''}`}>
               {failed ? t('game.analysis.unavailable') : line?.moves.length
-                ? line.moves.map((move, moveIndex) => <FigurineMove key={moveIndex} move={move} />)
+                ? colorizeAnalysisMoves(line.moves, startSide).map(({ move, side }, moveIndex) => side
+                  ? <FigurineMove key={moveIndex} move={move} side={side} />
+                  : <span key={moveIndex} className="mobile-analysis-san">{move}</span>)
                 : t(loading ? 'game.analysis.analyzing' : 'game.analysis.ready')}
             </p>
           </div>;
         })}
       </div>
-    </> : <div className="mobile-analysis-moves" tabIndex={0}>
+    </> : <div className="mobile-analysis-moves">
+      <div className="mobile-analysis-moves-toolbar">
+        <span role="status" className="mobile-analysis-moves-status">{copyStatus === 'copied' ? copy.copied : copyStatus === 'error' ? copy.copyFailed : ''}</span>
+        <button type="button" data-copy-moves aria-label={copy.copyMoves} disabled={!moves.some(row => row.w || row.b)} onClick={() => void copyMoves()}>
+          {copyStatus === 'copied' ? <Check size={16} aria-hidden="true"/> : <ClipboardCopy size={16} aria-hidden="true"/>}
+          {copyStatus === 'copied' ? copy.copied : copy.copyMoves}
+        </button>
+      </div>
+      <div className="mobile-analysis-moves-scroll" tabIndex={0}>
       {moves.length ? <table><tbody>{moves.map(move => <tr key={move.n}>
         <th scope="row">{move.n}.</th>
         <td>{move.w && <button type="button" aria-current={currentIndex === move.wIndex ? 'step' : undefined}
@@ -80,6 +98,7 @@ export function MobileAnalysisDetails({ activeTab, result, lines, loading, faile
         <td>{move.b && <button type="button" aria-current={currentIndex === move.bIndex ? 'step' : undefined}
           onClick={() => onMove(move.bIndex)}>{move.b}</button>}</td>
       </tr>)}</tbody></table> : <p className="mobile-analysis-notice">{t('game.analysis.nomoves')}</p>}
+      </div>
     </div>}
   </section>;
 }
