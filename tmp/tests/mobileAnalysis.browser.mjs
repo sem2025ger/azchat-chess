@@ -25,6 +25,14 @@ const server = createServer(async (request, response) => {
 let chrome;
 let ws;
 let profile;
+let closeBrowser;
+// Fail closed if Chromium or an open socket prevents the regression from ending.
+const deadline = setTimeout(() => {
+  console.error('FAIL mobile browser regression exceeded 120 seconds');
+  chrome?.kill('SIGKILL');
+  server.closeAllConnections();
+  process.exit(1);
+}, 120000);
 try {
   await new Promise((done, fail) => server.listen(0, '127.0.0.1', error => error ? fail(error) : done()));
   const base = 'http://127.0.0.1:' + server.address().port;
@@ -65,6 +73,7 @@ try {
     pending.set(requestId, { resolve:value => { clearTimeout(timer); resolve(value); }, reject:error => { clearTimeout(timer); reject(error); } });
     ws.send(JSON.stringify({ id:requestId, method, params }));
   });
+  closeBrowser = () => cdp('Browser.close');
   const evaluate = async expression => {
     const value = await cdp('Runtime.evaluate', { expression, returnByValue:true, awaitPromise:true });
     if (value.exceptionDetails) throw Error(JSON.stringify(value.exceptionDetails));
@@ -203,6 +212,8 @@ try {
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#mobile-analysis-details')).display"), 'none', 'Mobile panel stays hidden on desktop');
   console.log('PASS desktop retains three/five-line controls');
 } finally {
+  // A clean browser shutdown closes renderer/worker connections as well as its parent.
+  try { await closeBrowser?.(); } catch { /* Fall back to killing an unresponsive browser. */ }
   try { ws?.close(); } catch { /* Already disconnected. */ }
   if (chrome && chrome.exitCode === null && chrome.signalCode === null) {
     await new Promise(done => {
@@ -210,7 +221,9 @@ try {
       if (!chrome.kill('SIGKILL')) done();
     });
   }
+  server.closeAllConnections();
   await new Promise(done => server.close(done));
   // Chromium children may finish flushing profile files just after the parent exits.
   if (profile) await rm(profile, { recursive:true, force:true, maxRetries:10, retryDelay:100 });
+  clearTimeout(deadline);
 }
