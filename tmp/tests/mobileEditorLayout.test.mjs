@@ -30,3 +30,13 @@ test('mobile editor has accessible in-panel navigation and large lower controls'
   assert.match(css, /\.mobile-editor-castling input\[type='checkbox'\] \{ width: 21px; height: 21px/);
   assert.match(css, /\.mobile-editor-advanced summary \{[^}]*min-height: 44px/);
 });
+
+test('single tap removes only an occupied mobile editor square while desktop stays unchanged', () => {
+  assert.match(editor, /mobile\?: boolean/);
+  assert.match(editor, /onPlace\(index, mobile && piece \? '' : undefined\)/);
+  assert.match(editor, /onMove\(state\.from, to\)/);
+  const game = fs.readFileSync(new URL('../src/screens/GameScreen.tsx', import.meta.url), 'utf8');
+  assert.match(game, /onPlace=\{placePositionPiece\} onMove=\{movePositionPiece\} mobile\/>/);
+  assert.match(game, /onPlace=\{placePositionPiece\} onMove=\{movePositionPiece\} \/>/);
+  assert.match(tools, /data-mobile-editor-erase-hint/);
+});
