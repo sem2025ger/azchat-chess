@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { annotatedPgn, type PositionEvaluation } from '../../utils/positionMap';
-import { ClipboardCopy, Check, Share2, FileText, MoreHorizontal, RotateCcw, X, Map, FolderOpen, Pencil, Plus, Minus } from 'lucide-react';
+import { ClipboardCopy, Check, Share2, FileText, MoreHorizontal, RotateCcw, X, FolderOpen, Pencil, Plus, Minus } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { mobileAnalysisCopy } from './mobileAnalysisCopy';
 import { analysisCopy } from './copy';
