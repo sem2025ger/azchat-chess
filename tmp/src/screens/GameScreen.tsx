@@ -155,7 +155,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     if (!board) return;
 
     const measure = () => {
-      if (!window.matchMedia(mode === 'review' ? '(min-width: 1024px)' : '(min-width: 1280px)').matches) return;
+      if (!window.matchMedia('(min-width: 1280px)').matches) return;
       const height = Math.round(board.offsetHeight);
       if (height > 0) setAnalysisBoardHeight(prev => prev === height ? prev : height);
     };
