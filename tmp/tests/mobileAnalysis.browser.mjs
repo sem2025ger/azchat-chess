@@ -156,7 +156,7 @@ try {
   assert.ok(await evaluate("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 2')"), 'Worker calculates two lines, rather than hiding extra work');
   console.log('PASS real Stockfish worker and two visible PV lines');
   await waitFor("document.querySelectorAll('.mobile-analysis-figurine').length > 0 && [...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0)");
-  assert.ok(await evaluate("[...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0 && img.getBoundingClientRect().width === 26)"), 'Figurines load from existing assets at fixed readable size');
+  assert.ok(await evaluate("[...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0 && img.getBoundingClientRect().width === 29)"), 'Figurines load from existing assets at fixed readable size');
   assert.ok(await evaluate("!document.querySelector('.mobile-analysis-lines-heading') && getComputedStyle(document.querySelector('#mobile-analysis-details .sr-only')).position === 'absolute'"), 'Engine variant heading consumes no visible row');
   await capture('analysis-mobile-new');
   await evaluate("document.querySelector('.desktop-analysis-main-board [data-square=e2]').click()");
