@@ -891,7 +891,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
         result={currentEngineResult} lines={currentEngineResult ? analysisData?.lines : undefined}
         loading={isAnalysing || !currentEngineResult && !engineFailed} failed={engineFailed}
         moves={movePairs} currentIndex={viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex}
-        onMove={setViewMoveIndex} depth={analysisDepth} />}
+        onMove={setViewMoveIndex} depth={analysisDepth} startSide={displayedGame.turn()} />}
 
       {mode === 'review' && (
         <nav aria-label={words.analysis} className="lg:hidden mx-2 mb-1 hidden md:grid grid-cols-3 gap-1.5 shrink-0" data-mobile-analysis-tools>
