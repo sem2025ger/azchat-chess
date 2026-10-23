@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { annotatedPgn, type PositionEvaluation } from '../../utils/positionMap';
-import { ClipboardCopy, Check, Share2, FileText, MoreHorizontal, RotateCcw, X } from 'lucide-react';
+import { ClipboardCopy, Check, Share2, FileText, MoreHorizontal, RotateCcw, X, Map, FolderOpen, Pencil, Plus } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { mobileAnalysisCopy } from './mobileAnalysisCopy';
+import { analysisCopy } from './copy';
 
 interface Props {
   title: string;
@@ -14,12 +15,15 @@ interface Props {
   editing: boolean;
   evaluations: Record<string, PositionEvaluation>;
   mobile?: boolean;
+  onMobileTool?: (tool: 'map' | 'games' | 'position') => void;
+  mobileDepth?: number;
+  onMobileDepth?: () => void;
 }
 
 /** Presentation-only controls on top of the real analysis state. */
 export default function AnalysisWorkspaceHeader({
   title, initialFen, moveHistory,
-  currentFen, onNew, onEdit, editing, evaluations, mobile = false,
+  currentFen, onNew, onEdit, editing, evaluations, mobile = false, onMobileTool, mobileDepth, onMobileDepth,
 }: Props) {
   const { language, t } = useLanguage();
   const words = mobileAnalysisCopy[language];
@@ -79,7 +83,21 @@ export default function AnalysisWorkspaceHeader({
     <dialog ref={dialogRef} className="mobile-analysis-actions-dialog" aria-label={words.more}
       onClick={event => { if (event.target === event.currentTarget) dialogRef.current?.close(); }}>
       <header><h2>{words.more}</h2><button type="button" aria-label={words.close} onClick={() => dialogRef.current?.close()}><X size={20}/></button></header>
+      {onMobileTool && <div className="mobile-analysis-action-list mobile-analysis-tool-actions">
+        {([
+          { tool: 'map', label: words.map, icon: Map },
+          { tool: 'games', label: analysisCopy[language].games, icon: FolderOpen },
+          { tool: 'position', label: words.editor, icon: Pencil },
+        ] as const).map(({ tool, label, icon: Icon }) => <button key={tool} type="button"
+          data-mobile-tool={tool} aria-haspopup="dialog" onClick={() => { dialogRef.current?.close(); onMobileTool(tool); }}>
+          <Icon size={18} aria-hidden="true"/>{label}
+        </button>)}
+      </div>}
       <div className="mobile-analysis-action-list">
+        {onMobileDepth && mobileDepth !== undefined && <button type="button" disabled={mobileDepth >= 36}
+          onClick={() => { dialogRef.current?.close(); onMobileDepth(); }}>
+          <Plus size={18} aria-hidden="true"/>{words.deeper} · {mobileDepth} → {Math.min(36, mobileDepth + 6)}
+        </button>}
         <button type="button" disabled={!moveHistory.length} onClick={exportPgn}><FileText size={18}/>{words.pgn}</button>
         <button type="button" onClick={() => void copy('fen', currentFen)}><ClipboardCopy size={18}/>{words.fen}</button>
         <button type="button" onClick={() => void share()}><Share2 size={18}/>{words.share}</button>
