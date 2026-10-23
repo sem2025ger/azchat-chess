@@ -34,6 +34,16 @@ const scoreText = (result?: { evaluation: number; mate?: number | null } | null)
     ? `${result.mate < 0 ? '−' : ''}M${Math.abs(result.mate)}`
     : `${result.evaluation > 0 ? '+' : ''}${result.evaluation.toFixed(2)}`;
 
+// Presentation only: preserve SAN in the session, engine and accessible label.
+function FigurineMove({ move }: { move: string }) {
+  return <span className="mobile-analysis-san">{move.split(/(^[KQRBN]|=[QRBN])/).map((part, index) => {
+    const piece = /^[KQRBN]$/.test(part) ? part : /^=[QRBN]$/.test(part) ? part[1] : null;
+    return piece ? <span key={index}>{part.startsWith('=') ? '=' : ''}<img
+      className="mobile-analysis-figurine" src={`/pieces/flat2d/w${piece}.svg`}
+      width={22} height={24} alt="" aria-hidden="true" draggable={false} /></span> : part;
+  })}</span>;
+}
+
 export function MobileAnalysisDetails({ activeTab, result, lines, loading, failed, moves,
   currentIndex, onMove, depth }: {
   activeTab: Tab; result: EngineResult | null; lines?: Line[]; loading: boolean; failed: boolean;
@@ -46,7 +56,7 @@ export function MobileAnalysisDetails({ activeTab, result, lines, loading, faile
   return <section id="mobile-analysis-details" className="mobile-analysis-details md:hidden"
     aria-label={t(`game.tabs.${activeTab}`)}>
     {activeTab === 'analysis' ? <>
-      <div className="mobile-analysis-lines-heading">
+      <div className="sr-only">
         <span>{copy.lines}</span><span>{result?.depth || 0}/{depth}</span>
       </div>
       <div id="mobile-engine-lines" aria-label={copy.lines} aria-busy={loading && !failed}>
@@ -54,8 +64,10 @@ export function MobileAnalysisDetails({ activeTab, result, lines, loading, faile
           const line = visibleLines[index];
           return <div key={index} className="mobile-analysis-line" data-mobile-engine-line>
             <span className="mobile-analysis-score">{scoreText(line)}</span>
-            <p tabIndex={line ? 0 : undefined} aria-label={`${copy.lines}: ${index + 1}`}>
-              {failed ? t('game.analysis.unavailable') : line?.moves.join(' ') || t(loading ? 'game.analysis.analyzing' : 'game.analysis.ready')}
+            <p tabIndex={line ? 0 : undefined} aria-label={`${copy.lines}: ${index + 1}${line ? `. ${line.moves.join(' ')}` : ''}`}>
+              {failed ? t('game.analysis.unavailable') : line?.moves.length
+                ? line.moves.map((move, moveIndex) => <FigurineMove key={moveIndex} move={move} />)
+                : t(loading ? 'game.analysis.analyzing' : 'game.analysis.ready')}
             </p>
           </div>;
         })}
