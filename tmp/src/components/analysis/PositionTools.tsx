@@ -41,7 +41,7 @@ export default function PositionTools({
     if (!container || !target) return;
     const top = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop - 8;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    container.scrollTo({ top: Math.max(0, top), behavior: reducedMotion ? 'instant' : 'smooth' });
+    container.scrollTo({ top: Math.max(0, top), behavior: reducedMotion ? 'auto' : 'smooth' });
   };
   const value = mode === 'fen' ? fen : positionDraftFen(draft);
   const error = useMemo(() => {
