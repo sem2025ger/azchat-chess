@@ -86,6 +86,7 @@ export default function PositionTools({
         <textarea id="analysis-fen" value={fen} maxLength={200} onChange={event => setFen(event.target.value)} spellCheck={false} rows={4} aria-invalid={!!error} aria-describedby="analysis-position-validation" className="w-full resize-none rounded-xl border border-white/10 bg-black/30 p-3 font-mono text-xs leading-relaxed text-neutral-200 outline-none focus:border-amber-200/50" />
       </div> : <>
         <p className="mb-2 text-xs leading-relaxed text-neutral-400">{words.choosePiece} — {words.editor}</p>
+        {mobile && <p data-mobile-editor-erase-hint className="mb-3 rounded-lg border border-amber-200/20 bg-amber-200/[0.045] px-3 py-2 text-[13px] leading-5 font-medium text-[#e8d6b3]">{mobileWords.eraseTip}</p>}
         <div ref={paletteRef} data-mobile-editor-palette={mobile || undefined} className={`mb-3 grid grid-cols-7 gap-1 ${mobile ? 'mobile-position-palette' : ''}`} aria-label={words.choosePiece}>
           {['K','Q','R','B','N','P','', 'k','q','r','b','n','p'].map(piece => <button key={piece || 'erase'} type="button" draggable={!!piece}
             onDragStart={event => { if (piece) { event.dataTransfer.effectAllowed = 'copy'; event.dataTransfer.setData('application/x-chessaz-piece', piece); } }}

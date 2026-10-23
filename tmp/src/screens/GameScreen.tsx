@@ -1067,7 +1067,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                     board={editingPosition && <div className="mobile-position-board" data-mobile-position-editor>
                       <Suspense fallback={<p role="status" className="p-3 text-center text-xs">{words.loading}</p>}>
                         <EditorBoard draft={positionDraftValue} selected={editorSelectedPiece} words={words}
-                          onPlace={placePositionPiece} onMove={movePositionPiece}/>
+                          onPlace={placePositionPiece} onMove={movePositionPiece} mobile/>
                       </Suspense>
                     </div>}
                     onLoad={loadWorkspaceAnalysis}
