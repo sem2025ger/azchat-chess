@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { annotatedPgn, type PositionEvaluation } from '../../utils/positionMap';
-import { ClipboardCopy, Check, Share2, FileText } from 'lucide-react';
+import { ClipboardCopy, Check, Share2, FileText, MoreHorizontal, RotateCcw, X } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
+import { mobileAnalysisCopy } from './mobileAnalysisCopy';
 
 interface Props {
   title: string;
@@ -11,20 +13,37 @@ interface Props {
   onEdit: () => void;
   editing: boolean;
   evaluations: Record<string, PositionEvaluation>;
+  mobile?: boolean;
 }
 
 /** Presentation-only controls on top of the real analysis state. */
 export default function AnalysisWorkspaceHeader({
   title, initialFen, moveHistory,
-  currentFen, onNew, onEdit, editing, evaluations,
+  currentFen, onNew, onEdit, editing, evaluations, mobile = false,
 }: Props) {
+  const { language, t } = useLanguage();
+  const words = mobileAnalysisCopy[language];
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [copyError, setCopyError] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 768px)');
+    const closeOnDesktop = () => { if (media.matches) dialogRef.current?.close(); };
+    media.addEventListener('change', closeOnDesktop);
+    return () => {
+      media.removeEventListener('change', closeOnDesktop);
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
   const copy = async (label: string, value: string) => {
+    setCopyError(false);
     try {
       await navigator.clipboard.writeText(value);
       setCopied(label);
-      window.setTimeout(() => setCopied(current => current === label ? null : current), 1800);
-    } catch { setCopied(null); }
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      copyTimeoutRef.current = setTimeout(() => setCopied(current => current === label ? null : current), 1800);
+    } catch { setCopied(null); setCopyError(true); }
   };
   const buildPgn = () => {
     try {
@@ -37,6 +56,7 @@ export default function AnalysisWorkspaceHeader({
   const exportPgn = () => {
     const pgn = buildPgn();
     if (pgn !== null) void copy('pgn', pgn);
+    else setCopyError(true);
   };
   const share = async () => {
     const shared = new URL(window.location.href);
@@ -51,6 +71,23 @@ export default function AnalysisWorkspaceHeader({
     }
     void copy('share', url);
   };
+  if (mobile) return <>
+    <button type="button" className="mobile-analysis-more" aria-label={words.more}
+      aria-haspopup="dialog" onClick={() => { setCopyError(false); setCopied(null); dialogRef.current?.showModal(); }}>
+      <MoreHorizontal size={22} aria-hidden="true"/>
+    </button>
+    <dialog ref={dialogRef} className="mobile-analysis-actions-dialog" aria-label={words.more}
+      onClick={event => { if (event.target === event.currentTarget) dialogRef.current?.close(); }}>
+      <header><h2>{words.more}</h2><button type="button" aria-label={words.close} onClick={() => dialogRef.current?.close()}><X size={20}/></button></header>
+      <div className="mobile-analysis-action-list">
+        <button type="button" disabled={!moveHistory.length} onClick={exportPgn}><FileText size={18}/>{words.pgn}</button>
+        <button type="button" onClick={() => void copy('fen', currentFen)}><ClipboardCopy size={18}/>{words.fen}</button>
+        <button type="button" onClick={() => void share()}><Share2 size={18}/>{words.share}</button>
+        <button type="button" onClick={() => { dialogRef.current?.close(); onNew(); }}><RotateCcw size={18}/>{t('game.analysis.new')}</button>
+      </div>
+      <p role="status" className="mobile-analysis-copy-status">{copyError ? words.copyFailed : copied ? words.copied : ''}</p>
+    </dialog>
+  </>;
   return (
     <header className="analysis-redesign-header" aria-label="Панель анализа партии">
       <div className="analysis-redesign-actions">
