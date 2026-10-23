@@ -1,13 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { DEFAULT_POSITION } from 'chess.js';
 import { Eraser, RotateCcw, Trash2, Undo2 } from 'lucide-react';
 import { useThemeContext } from '../../context/ThemeContext';
 import { analysisFromFen, AnalysisInputError, positionDraftFen, validateAnalysisFen, type AnalysisInputErrorCode, type AnalysisLoad, type PositionDraft } from '../../utils/analysisWorkspace';
 import type { AnalysisWords } from './copy';
+import { useLanguage } from '../../context/LanguageContext';
+import { mobileAnalysisCopy } from './mobileAnalysisCopy';
 
 export default function PositionTools({
   currentFen, words, onLoad, onCancel, draft, selected, onSelected,
   onDraft, onClear, onUndo, canUndo, onReset, onEditingChange,
+  board, mobile = false,
 }: {
   currentFen: string;
   words: AnalysisWords;
@@ -22,7 +25,10 @@ export default function PositionTools({
   canUndo: boolean;
   onReset: (fen: string) => void;
   onEditingChange: (editing: boolean) => void;
+  board?: ReactNode;
+  mobile?: boolean;
 }) {
+  const { language } = useLanguage();
   const [mode, setMode] = useState<'fen' | 'editor'>('editor');
   const [fen, setFen] = useState(currentFen);
   const { pieceTheme } = useThemeContext();
@@ -31,6 +37,9 @@ export default function PositionTools({
     try { validateAnalysisFen(value); return null; }
     catch (err) { return err instanceof AnalysisInputError ? err.code : 'invalidFen' as AnalysisInputErrorCode; }
   }, [value]);
+  const validationMessage = mobile && mode === 'editor' && error === 'invalidFen' &&
+    (draft.squares.filter(piece => piece === 'K').length !== 1 || draft.squares.filter(piece => piece === 'k').length !== 1)
+    ? mobileAnalysisCopy[language].missingKings : error ? words[error] : words.draft;
 
   const pieceName = (piece: string) => `${piece === piece.toUpperCase() ? words.white : words.black} ${words[piece.toLowerCase() as 'k' | 'q' | 'r' | 'b' | 'n' | 'p']}`;
   const pieceImage = (piece: string) => {
@@ -40,7 +49,7 @@ export default function PositionTools({
   };
   const reset = (next: string) => { setFen(next); onReset(next); };
 
-  return <section aria-label={words.position} className="flex min-h-0 flex-1 flex-col">
+  return <section aria-label={words.position} className={`flex min-h-0 flex-1 flex-col ${mobile ? 'mobile-position-tools' : ''}`}>
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain custom-scrollbar p-3">
       <div className="mb-3 flex gap-1 rounded-xl border border-white/10 bg-black/20 p-1">
         {(['fen', 'editor'] as const).map(tab => <button key={tab} type="button" aria-pressed={mode === tab} onClick={() => {
@@ -56,6 +65,7 @@ export default function PositionTools({
           onEditingChange(tab === 'editor');
         }} className={`min-h-9 flex-1 rounded-lg px-2 text-xs font-bold ${mode === tab ? 'bg-amber-200/10 text-amber-100' : 'text-neutral-400 hover:text-neutral-200'}`}>{words[tab]}</button>)}
       </div>
+      {board}
       <button type="button" onClick={() => reset(currentFen)} className="analysis-tool-button mb-3 w-full">{words.current}</button>
 
       {mode === 'fen' ? <div>
@@ -98,10 +108,11 @@ export default function PositionTools({
           </label>)}
         </div></details>
       </>}
-      <p id="analysis-position-validation" role="status" className={`mt-3 text-xs leading-relaxed ${error ? 'text-amber-200/80' : 'text-neutral-500'}`}>{error ? words[error] : words.draft}</p>
+      {!mobile && <p id="analysis-position-validation" role="status" className={`mt-3 text-xs leading-relaxed ${error ? 'text-amber-200/80' : 'text-neutral-500'}`}>{validationMessage}</p>}
     </div>
     <footer className="shrink-0 space-y-2 border-t border-white/10 bg-black/20 p-3">
-      <button type="button" disabled={!!error} onClick={() => { try { onLoad(analysisFromFen(value)); } catch { /* Display the validation message */ } }} className="min-h-10 w-full rounded-xl border border-amber-200/30 bg-gradient-to-br from-amber-200/15 via-[#211d16] to-violet-400/10 px-3 text-xs font-bold text-amber-100 hover:border-amber-200/60 disabled:cursor-not-allowed disabled:opacity-35">{words.apply}</button>
+      {mobile && <p id="analysis-position-validation" role="status" className={`text-xs leading-relaxed ${error ? 'text-amber-200' : 'text-neutral-400'}`}>{validationMessage}</p>}
+      <button type="button" disabled={!!error} aria-describedby="analysis-position-validation" onClick={() => { try { onLoad(analysisFromFen(value)); } catch { /* Display the validation message */ } }} className="min-h-10 w-full rounded-xl border border-amber-200/30 bg-gradient-to-br from-amber-200/15 via-[#211d16] to-violet-400/10 px-3 text-xs font-bold text-amber-100 hover:border-amber-200/60 disabled:cursor-not-allowed disabled:opacity-35">{words.apply}</button>
       <button type="button" onClick={onCancel} className="min-h-8 w-full text-xs text-neutral-400 hover:text-white">{words.cancel}</button>
     </footer>
   </section>;
