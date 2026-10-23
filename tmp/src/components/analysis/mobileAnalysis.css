@@ -110,10 +110,13 @@
   .mobile-analysis-copy-status { min-height: 22px; margin-top: 8px; color: #b4e0cf; font-size: 12px; }
   .mobile-analysis-tool-dialog { width: calc(100% - 16px); height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); max-height: 100dvh; border-radius: 18px; }
   .mobile-analysis-tool-dialog > div > header { min-height: 64px; padding: 8px 12px; background: #141c18; }
-  .mobile-position-board { width: min(100%, 34dvh, 320px); margin: 4px auto 14px; }
-  .mobile-position-tools > div { padding: 12px; }
+  .mobile-position-board { width: min(100%, 54dvh, 480px); max-width: 100%; margin: 2px auto 10px; }
+  .mobile-position-tools > div { padding: 10px 12px; }
   .mobile-position-tools .analysis-tool-button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 8px; border: 1px solid #d1c09a24; border-radius: 10px; background: #ffffff04; font-size: 12px; color: #d3d6ca; }
-  .mobile-position-tools [aria-label] > button[aria-pressed] { min-height: 40px; }
+  .mobile-position-tools [aria-label] > button[aria-pressed] { min-height: 42px; }
+  .mobile-position-tools .mobile-position-palette { gap: 5px; }
+  .mobile-position-tools .mobile-position-palette button { padding: 2px; min-height: 42px; border-radius: 10px; }
+  .mobile-position-tools .mobile-position-palette img { width: 34px; height: 34px; max-width: 94%; max-height: 94%; object-fit: contain; }
   .mobile-position-tools footer { padding: 12px; background: #101713; }
   .mobile-position-tools footer > button { min-height: 44px; }
   .mobile-position-tools footer p { max-height: 64px; overflow-y: auto; }
