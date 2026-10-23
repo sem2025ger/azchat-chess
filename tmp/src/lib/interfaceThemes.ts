@@ -1,20 +1,20 @@
-/** Optional midtone interface palettes. Existing themes remain unchanged. */
+/** Optional muted dark interface palettes (approximately 50% lower HSL lightness). Existing themes remain unchanged. */
 export const PREMIUM_INTERFACE_THEMES = {
   'Slate Blue': {
-    className: 'bg-gradient-to-br from-[#53677c] via-[#465a70] to-[#3b4d62]',
-    gradient: 'linear-gradient(145deg, #53677c, #465a70 52%, #3b4d62)',
+    className: 'bg-gradient-to-br from-[#2a343e] via-[#232d38] to-[#1e2631]',
+    gradient: 'linear-gradient(145deg, #2a343e, #232d38 52%, #1e2631)',
   },
   'Sage Stone': {
-    className: 'bg-gradient-to-br from-[#5e716a] via-[#4e625c] to-[#40554f]',
-    gradient: 'linear-gradient(145deg, #5e716a, #4e625c 52%, #40554f)',
+    className: 'bg-gradient-to-br from-[#2f3835] via-[#27312e] to-[#202a28]',
+    gradient: 'linear-gradient(145deg, #2f3835, #27312e 52%, #202a28)',
   },
   'Warm Taupe': {
-    className: 'bg-gradient-to-br from-[#7a6b5e] via-[#6b5c51] to-[#594d45]',
-    gradient: 'linear-gradient(145deg, #7a6b5e, #6b5c51 52%, #594d45)',
+    className: 'bg-gradient-to-br from-[#3d362f] via-[#362e28] to-[#2c2622]',
+    gradient: 'linear-gradient(145deg, #3d362f, #362e28 52%, #2c2622)',
   },
   'Amethyst Mist': {
-    className: 'bg-gradient-to-br from-[#70657f] via-[#60556f] to-[#50475f]',
-    gradient: 'linear-gradient(145deg, #70657f, #60556f 52%, #50475f)',
+    className: 'bg-gradient-to-br from-[#383240] via-[#302a38] to-[#282430]',
+    gradient: 'linear-gradient(145deg, #383240, #302a38 52%, #282430)',
   },
 } as const;
 

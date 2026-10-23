@@ -41,7 +41,7 @@ test('saved interface themes survive initialization and remain selectable with r
         const theme = premiumInterfaceThemes.find(x => x.id === name);
         assert.ok(layout.includes(theme.class), 'global background must match selected palette');
         for (const color of theme.gradient.match(/#[a-f0-9]{6}/g)) {
-          assert.ok(luminance(color) > .055 && luminance(color) < .22, 'palette stays between very dark and light');
+          assert.ok(luminance(color) > .01 && luminance(color) < .05, 'muted dark palette luminance');
           assert.ok(1.05 / (luminance(color) + .05) >= 4.5, 'white text contrast');
         }
         assert.equal(findSettings([{ kind: 'background', label: name, value: name }], name, { background: 'Интерфейс' })[0]?.value, name);
@@ -76,4 +76,30 @@ test('extra desktop palettes remain reachable inside a bounded scroll section', 
     bounded = rule.parent.params === '(min-width: 1024px)' && properties['overflow-y'] === 'auto' && /clamp/.test(properties['max-height']);
   });
   assert.ok(bounded, 'new options must not grow beyond short desktop screens');
+});
+
+// Owner requested the same four hues with roughly half their original lightness.
+test('the four optional palettes retain their hues at half the original lightness', async () => {
+  const original = {
+    'Slate Blue': ['#53677c', '#465a70', '#3b4d62'],
+    'Sage Stone': ['#5e716a', '#4e625c', '#40554f'],
+    'Warm Taupe': ['#7a6b5e', '#6b5c51', '#594d45'],
+    'Amethyst Mist': ['#70657f', '#60556f', '#50475f'],
+  };
+  const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  try {
+    const { premiumInterfaceThemes } = await server.ssrLoadModule('/src/lib/interfaceThemes.ts');
+    assert.deepEqual(premiumInterfaceThemes.map(theme => theme.id), Object.keys(original));
+    for (const theme of premiumInterfaceThemes) {
+      const colors = theme.gradient.match(/#[a-f0-9]{6}/g);
+      assert.deepEqual(theme.class.match(/#[a-f0-9]{6}/g), colors, 'swatches and applied background agree');
+      colors.forEach((color, stop) => {
+        for (const channel of [1, 3, 5]) {
+          const before = parseInt(original[theme.id][stop].slice(channel, channel + 2), 16);
+          const after = parseInt(color.slice(channel, channel + 2), 16);
+          assert.ok(Math.abs(after / before - .5) <= .015, theme.id + ' preserves relative color channels at half brightness');
+        }
+      });
+    }
+  } finally { await server.close(); }
 });
