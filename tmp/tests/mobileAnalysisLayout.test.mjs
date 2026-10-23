@@ -18,7 +18,9 @@ test('mobile analysis keeps scores, move indices and export actions in their ded
       activeTab:'analysis', onTab:noop,
       actions:createElement(Header, { mobile:true, onMobileTool:noop, mobileDepth:18, onMobileDepth:noop, title:'', initialFen:'', moveHistory:['e4'], currentFen:'', onNew:noop, onEdit:noop, editing:false, evaluations:{} }),
     }));
-    assert.equal((header.match(/data-mobile-tool=/g) || []).length, 3);
+    assert.equal((header.match(/data-mobile-tool=/g) || []).length, 2);
+    assert.match(header, /data-mobile-new-analysis/);
+    assert.doesNotMatch(header, /data-mobile-tool="map"/);
     assert.doesNotMatch(header.split('<dialog')[0], /data-mobile-tool=|mobile-analysis-tools|<svg[^>]*lucide-cpu/);
     assert.match(header, /mobile-analysis-engine">Stockfish 18<\/span>/);
     assert.match(header, /aria-haspopup="dialog"/);

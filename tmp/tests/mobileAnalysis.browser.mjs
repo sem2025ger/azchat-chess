@@ -183,6 +183,16 @@ try {
   assert.equal(await evaluate("document.querySelector('.desktop-analysis-board-frame').getBoundingClientRect().top"), boardTop, 'Reading a PV continuation must not move the board');
   await evaluate("document.querySelectorAll('.mobile-analysis-tabs button')[1].click()");
   assert.equal(await evaluate("document.querySelector('.desktop-analysis-board-frame').getBoundingClientRect().top"), boardTop, 'Moves tab must not shift the board');
+  const movesGeometry = await evaluate(`(() => {
+    const copy = document.querySelector('[data-copy-moves]').getBoundingClientRect();
+    const panel = document.querySelector('.mobile-analysis-moves').getBoundingClientRect();
+    const rows = [...document.querySelectorAll('.mobile-analysis-moves tr')].map(row => row.getBoundingClientRect());
+    return {copy:copy.toJSON(),panel:panel.toJSON(),rows:rows.map(row=>row.toJSON())};
+  })()`);
+  assert.ok(movesGeometry.copy.width <= 36 && movesGeometry.copy.height <= 36 && movesGeometry.copy.right <= movesGeometry.panel.right,
+    'Copy action stays icon-sized in upper-right corner: ' + JSON.stringify(movesGeometry));
+  assert.ok(movesGeometry.rows.length && movesGeometry.rows[0].bottom <= movesGeometry.panel.bottom,
+    'At least the first played move remains visible with an unchanged board');
   await evaluate("document.querySelectorAll('.mobile-analysis-tabs button')[0].click()");
   assert.equal(await evaluate("document.querySelector('.desktop-analysis-board-frame').getBoundingClientRect().top"), boardTop, 'Returning to analysis must preserve board position');
   console.log('PASS moves, history, board flip without engine restart, stable tabs and independent PV scrolling');
