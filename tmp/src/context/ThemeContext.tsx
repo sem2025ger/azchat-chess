@@ -18,6 +18,8 @@ interface ThemeContextType {
   setBoardTheme: (val: BoardTheme) => void;
   sound: SoundTheme;
   setSound: (val: SoundTheme) => void;
+  confirmMobileMoves: boolean;
+  setConfirmMobileMoves: (val: boolean) => void;
 }
 
 const DEFAULT_PIECE_THEME: PieceTheme = 'cburnett-classic';
@@ -57,6 +59,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return (localStorage.getItem('chess_sound') as SoundTheme) || 'Default';
   });
 
+  const [confirmMobileMoves, setConfirmMobileMoves] = useState(() => localStorage.getItem('chess_confirmMobileMoves') === 'true');
+
+  useEffect(() => { localStorage.setItem('chess_confirmMobileMoves', String(confirmMobileMoves)); }, [confirmMobileMoves]);
   useEffect(() => { localStorage.setItem('chess_specialThemesEnabled', JSON.stringify(specialThemesEnabled)); }, [specialThemesEnabled]);
   useEffect(() => { localStorage.setItem('chess_background', background); }, [background]);
   useEffect(() => { localStorage.setItem('chess_pieceTheme', pieceTheme); }, [pieceTheme]);
@@ -69,7 +74,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       background, setBackground,
       pieceTheme, setPieceTheme,
       boardTheme, setBoardTheme,
-      sound, setSound
+      sound, setSound,
+      confirmMobileMoves, setConfirmMobileMoves
     }}>
       {children}
     </ThemeContext.Provider>
