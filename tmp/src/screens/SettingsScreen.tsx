@@ -27,7 +27,8 @@ export default function SettingsScreen() {
     boardTheme, setBoardTheme,
     pieceTheme, setPieceTheme,
     sound: soundTheme, setSound: setSoundTheme,
-    background, setBackground
+    background, setBackground,
+    confirmMobileMoves, setConfirmMobileMoves
   } = useThemeContext();
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
@@ -125,6 +126,15 @@ export default function SettingsScreen() {
     { name: 'Nature Wood', board: 'Classic Wood', pieces: 'classic' },
   ];
 
+  const mobileCopy: Record<string, { presets: string; soundGame: string; inPlay: string; confirm: string; hint: string }> = {
+    ru: { presets: 'Готовые стили', soundGame: 'Звук и игра', inPlay: 'Настроить в игре', confirm: 'Подтверждать ход', hint: 'Защита от случайного касания' },
+    en: { presets: 'Style Presets', soundGame: 'Sound & Game', inPlay: 'Set in Play', confirm: 'Confirm moves', hint: 'Protect against accidental taps' },
+    de: { presets: 'Designvorlagen', soundGame: 'Ton und Spiel', inPlay: 'Im Spiel einstellen', confirm: 'Züge bestätigen', hint: 'Schutz vor versehentlichem Tippen' },
+    az: { presets: 'Hazır üslublar', soundGame: 'Səs və oyun', inPlay: 'Oyunda tənzimlə', confirm: 'Gedişi təsdiqlə', hint: 'Təsadüfi toxunmanın qarşısını alır' },
+    tr: { presets: 'Hazır stiller', soundGame: 'Ses ve oyun', inPlay: 'Oyunda ayarla', confirm: 'Hamleyi onayla', hint: 'Yanlış dokunuşları önler' },
+    ua: { presets: 'Готові стилі', soundGame: 'Звук та гра', inPlay: 'Налаштувати у грі', confirm: 'Підтверджувати хід', hint: 'Захист від випадкових торкань' },
+  };
+  const mobileLabels = mobileCopy[language] || mobileCopy.en;
   const languages = [
     { id: 'en', name: 'English', flag: '🇬🇧' },
     { id: 'de', name: 'Deutsch', flag: '🇩🇪' },
@@ -253,7 +263,7 @@ export default function SettingsScreen() {
       case 'presets':
         return (
           <div className="space-y-6 animate-fade-in">
-            <SubViewHeader title="Studio Presets" onBack={() => setActiveSubView('main')} />
+            <SubViewHeader title={mobileLabels.presets} onBack={() => setActiveSubView('main')} />
             <div className="flex flex-col gap-3 px-2">
               {presets.map((p) => (
                 <button
@@ -283,7 +293,7 @@ export default function SettingsScreen() {
             <div className="space-y-4 animate-fade-in px-2 pt-4">
               <div className="space-y-3">
                 <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl">
-                  <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
+                  <div className="settings-mobile-card rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
                   <HubLink 
                     icon={<Palette size={18} />} 
                     title={t('settings.boardAppearance')} 
@@ -305,18 +315,27 @@ export default function SettingsScreen() {
                     onClick={() => setActiveSubView('background')} 
                     preview={<div className={cx("w-6 h-6 rounded-md border border-white/10", bgThemes.find(t => t.id === background)?.class)} />}
                   />
-                  <HubLink icon={<Sparkles size={18} />} title="Studio Presets" onClick={() => setActiveSubView('presets')} />
+                  <HubLink icon={<Sparkles size={18} />} title={mobileLabels.presets} onClick={() => setActiveSubView('presets')} />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <h2 className="text-[0.8rem] font-black text-neutral-500 uppercase tracking-[0.4em] italic px-2">Sound & Game</h2>
+                <h2 className="settings-mobile-section-heading px-2">{mobileLabels.soundGame}</h2>
                 <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl">
-                  <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
+                  <div className="settings-mobile-card rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
                   <HubLink icon={<Volume2 size={18} />} title={t('settings.soundThemes')} value={soundTheme.toUpperCase()} onClick={() => setActiveSubView('sound')} />
-                  <HubLink icon={<Clock size={18} />} title={t('play.timeControl')} value="Config in Play" onClick={() => navigate('/play')} />
+                  <HubLink icon={<Clock size={18} />} title={t('play.timeControl')} value={mobileLabels.inPlay} onClick={() => navigate('/play')} />
                   <HubLink icon={<Globe size={18} />} title={t('settings.changeLanguage')} value={language.toUpperCase()} onClick={() => setActiveSubView('language')} />
+                  <div className="mx-2 my-2">
+                    <button type="button" className="settings-mobile-confirm" role="switch" aria-checked={confirmMobileMoves} aria-label={mobileLabels.confirm} onClick={() => setConfirmMobileMoves(!confirmMobileMoves)}>
+                      <span className="flex min-w-0 flex-col gap-1">
+                        <span className="text-sm font-semibold text-slate-100">{mobileLabels.confirm}</span>
+                        <span className="text-xs leading-snug text-slate-300">{mobileLabels.hint}</span>
+                      </span>
+                      <span className="settings-mobile-toggle" aria-hidden="true"><span /></span>
+                    </button>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -463,7 +482,7 @@ export default function SettingsScreen() {
         </div>
 
         {/* Mobile View: Hub and Spoke */}
-        <div className="lg:hidden w-full h-full min-h-0 flex flex-col mt-2 overflow-y-auto">
+        <div className="settings-mobile-view lg:hidden w-full min-h-0 flex flex-col mt-2 overflow-y-auto">
           {renderMobileView()}
         </div>
       </div>
