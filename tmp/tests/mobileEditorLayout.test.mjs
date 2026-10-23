@@ -15,7 +15,7 @@ test('mobile editor coordinates live outside all 64 editable squares', () => {
 });
 
 test('editor-only touch board and palette sizes grow without altering review board', () => {
-  assert.match(css, /\.mobile-position-board \{ width: min\(100%, 54dvh, 480px\)/);
+  assert.match(css, /\.mobile-position-board \{ width: min\(100%, 64dvh, 540px\)/);
   assert.match(css, /\.mobile-position-tools \.mobile-position-palette img \{ width: 38px; height: 38px/);
   assert.match(tools, /mobile-position-palette/);
   assert.match(tools, /mobile \? 'h-\[38px\] w-\[38px\]'/);
@@ -39,4 +39,11 @@ test('single tap removes only an occupied mobile editor square while desktop sta
   assert.match(game, /onPlace=\{placePositionPiece\} onMove=\{movePositionPiece\} mobile\/>/);
   assert.match(game, /onPlace=\{placePositionPiece\} onMove=\{movePositionPiece\} \/>/);
   assert.match(tools, /data-mobile-editor-erase-hint/);
+});
+
+test('larger mobile editor does not resize analysis chessboard or move its coordinates', () => {
+  assert.match(css, /\.mobile-position-board \{ width: min\(100%, 64dvh, 540px\)/);
+  assert.match(css, /\.mobile-position-board \[data-editor-index\] img \{ width: 92%; height: 92%; \}/);
+  assert.match(editor, /data-coordinate-axis="rank-mobile"/);
+  assert.match(editor, /data-coordinate-axis="file-mobile"/);
 });
