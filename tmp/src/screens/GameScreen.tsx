@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
+import { lazy, Suspense, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
@@ -150,7 +150,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [analysisBoardHeight, setAnalysisBoardHeight] = useState<number | null>(null);
 
   useEffect(() => {
-    if (isMultiplayer || typeof ResizeObserver === 'undefined') return;
+    if (isMultiplayer || mode === 'review' || typeof ResizeObserver === 'undefined') return;
     const board = analysisBoardRef.current;
     if (!board) return;
 
@@ -170,7 +170,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
     };
   }, [isMultiplayer, mode]);
 
-  useEffect(() => {
+  // Measure review dimensions before first paint to prevent board/panel reflow.
+  useLayoutEffect(() => {
     if (mode !== 'review' || typeof ResizeObserver === 'undefined') return;
     const workspace = reviewWorkspaceRef.current;
     if (!workspace) return;
@@ -836,7 +837,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
         />
   ) : null;
   return (
-    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
+    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
 
       {mode === 'review' && <div className="lg:hidden">{analysisWorkspaceHeader}</div>}
             {/* Mobile analysis panel above the board */}
@@ -975,7 +976,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       )}
 
       {/* Mobile Analysis Drawer Header */}
-      <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-4 lg:flex-1", !isMultiplayer && "lg:min-w-0", mode === 'review' && "desktop-analysis-board-column")}>
+      <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 group w-full py-0 lg:-translate-y-4 lg:flex-1", !isMultiplayer && "lg:min-w-0", mode === 'review' ? "desktop-analysis-board-column" : "animate-scale-up")}>
 
         <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]", mode === 'review' && "desktop-analysis-board-stack")}>
 
@@ -1032,7 +1033,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
             {/* Desktop evaluation bar — preserved from production. */}
             <div className={cx(
-              "hidden md:block transition-all duration-1000 ease-in-out self-stretch rounded-2xl overflow-hidden py-1",
+              "hidden md:block self-stretch rounded-2xl overflow-hidden py-1",
+              mode !== 'review' && "transition-all duration-1000 ease-in-out",
               analysisActive ? "w-6 md:w-8 opacity-100 translate-x-0" : "w-0 opacity-0 overflow-hidden -translate-x-8 pointer-events-none",
               mode === 'review' && "desktop-analysis-evaluation"
             )}>
@@ -1046,10 +1048,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
             <div ref={analysisBoardRef} className={cx(
               mode === 'review' && "desktop-analysis-board-frame",
-              "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300", 
+              "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full", 
               isMultiplayer
                 ? "w-[min(96vw,56dvh)] md:w-full"
-                : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] max-md:!aspect-[50/51] border-b-0 md:w-full md:border-b-[8px] lg:!w-full lg:!max-w-[min(630px,calc(100dvh-120px))] lg:!flex-[0_1_auto]"
+                : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] max-md:!aspect-[50/51] border-b-0 md:w-full md:border-b-[8px] lg:!w-full lg:!max-w-[min(630px,calc(100dvh-120px))] lg:!flex-[0_1_auto]",
+              mode !== 'review' && "transition-[width] duration-300"
             )}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               
@@ -1189,7 +1192,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       )}
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' && "desktop-analysis-panel")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
+      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' ? "desktop-analysis-panel" : "animate-fade-in-right transition-all")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
         {mode === 'review' && <div className="hidden lg:block shrink-0">{analysisWorkspaceHeader}</div>}
         {/* Premium Segmented Control Tab Navigation */}
