@@ -83,13 +83,17 @@ export function MobileAnalysisDetails({ activeTab, result, lines, loading, faile
         })}
       </div>
     </> : <div className="mobile-analysis-moves">
-      <div className="mobile-analysis-moves-toolbar">
-        <span role="status" className="mobile-analysis-moves-status">{copyStatus === 'copied' ? copy.copied : copyStatus === 'error' ? copy.copyFailed : ''}</span>
-        <button type="button" data-copy-moves aria-label={copy.copyMoves} disabled={!moves.some(row => row.w || row.b)} onClick={() => void copyMoves()}>
-          {copyStatus === 'copied' ? <Check size={16} aria-hidden="true"/> : <ClipboardCopy size={16} aria-hidden="true"/>}
-          {copyStatus === 'copied' ? copy.copied : copy.copyMoves}
-        </button>
-      </div>
+      {/* Floating, icon-only control: keeps both rows of played moves in view. */}
+      <button type="button" data-copy-moves className="mobile-analysis-moves-copy"
+        aria-label={copyStatus === 'copied' ? copy.copied : copy.copyMoves}
+        title={copyStatus === 'copied' ? copy.copied : copy.copyMoves}
+        data-copy-status={copyStatus}
+        disabled={!moves.some(row => row.w || row.b)} onClick={() => void copyMoves()}>
+        {copyStatus === 'copied' ? <Check size={19} aria-hidden="true"/> : <ClipboardCopy size={19} aria-hidden="true"/>}
+      </button>
+      <span className="sr-only" role="status" aria-live="polite">
+        {copyStatus === 'copied' ? copy.copied : copyStatus === 'error' ? copy.copyFailed : ''}
+      </span>
       <div className="mobile-analysis-moves-scroll" tabIndex={0}>
       {moves.length ? <table><tbody>{moves.map(move => <tr key={move.n}>
         <th scope="row">{move.n}.</th>
