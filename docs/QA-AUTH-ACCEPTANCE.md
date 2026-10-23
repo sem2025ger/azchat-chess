@@ -1,5 +1,7 @@
 # ChessAZ Deutsch authentication QA
 
+> **Latest QA status (23 October 2026):** Owner-completed Resend SMTP integration is functioning. Registration, email confirmation, password recovery and subsequent sign-in were successfully exercised by the owner. The 30/hour email quota is recorded in QA Auth logs. See the final verification at the end of this document. Earlier "SMTP not configured" paragraphs below are historical and superseded; do not interpret them as current status.
+
 Scope: preview branch based on club dashboard commit 674a23c. No changes to main,
 production services, database policies, email confirmation or passwords of existing users.
 
@@ -120,28 +122,28 @@ https://supabase.com/docs/guides/auth/debugging/error-codes .
 
 ### Verified domain — DNS configured independently by the owner
 
-- Resend domain: \`auth.chessaz.de\` — screenshot confirms **Verified / ready to send**.
+- Resend domain: `auth.chessaz.de` — screenshot confirms **Verified / ready to send**.
 - DNS zone is hosted at IONOS. User created and IONOS acknowledged:
-  - \`TXT resend._domainkey.auth.chessaz.de\`: the full Resend-provided DKIM value
+  - `TXT resend._domainkey.auth.chessaz.de`: the full Resend-provided DKIM value
     (not stored in the repository).
-  - \`MX send.auth.chessaz.de\`: \`feedback-smtp.eu-west-1.amazonses.com\`, priority 10.
-  - \`TXT send.auth.chessaz.de\`: \`v=spf1 include:amazonses.com ~all\`.
+  - `MX send.auth.chessaz.de`: `feedback-smtp.eu-west-1.amazonses.com`, priority 10.
+  - `TXT send.auth.chessaz.de`: `v=spf1 include:amazonses.com ~all`.
 - Existing root-domain MX/SPF, application A/CNAME, nameservers and production
   resources were not intentionally modified by this procedure. The external
   DNS verification is an email-domain milestone, not an SMTP-in-Supabase test.
 
 ### Target QA configuration (not yet applied)
 
-Project: **ChessAZ Deutsch QA**, Supabase ref \`iukmpcytsuofqhxsumbu\`.
-DO NOT use \`AZTR Chess\` (\`kmwfvvliundhuovoakoa\`) or production.
+Project: **ChessAZ Deutsch QA**, Supabase ref `iukmpcytsuofqhxsumbu`.
+DO NOT use `AZTR Chess` (`kmwfvvliundhuovoakoa`) or production.
 
-- Dashboard: \`https://supabase.com/dashboard/project/iukmpcytsuofqhxsumbu/auth/smtp\`
+- Dashboard: `https://supabase.com/dashboard/project/iukmpcytsuofqhxsumbu/auth/smtp`
   (Authentication > Email > SMTP Settings).
 - **Enable Custom SMTP** only for QA.
-- Sender email: \`noreply@auth.chessaz.de\`.
-- Sender name: \`ChessAZ Deutsch QA\` (deliberate QA identification).
-- SMTP host: \`smtp.resend.com\`; port \`465\` (implicit SSL/TLS).
-- SMTP username: \`resend\`.
+- Sender email: `noreply@auth.chessaz.de`.
+- Sender name: `ChessAZ Deutsch QA` (deliberate QA identification).
+- SMTP host: `smtp.resend.com`; port `465` (implicit SSL/TLS).
+- SMTP username: `resend`.
 - SMTP password: a *new, Resend Sending-access API key restricted to
   auth.chessaz.de*, entered directly into Supabase settings by the owner.
   NEVER send a key by chat, put it in source control or Vercel VITE_ variables.
@@ -151,8 +153,8 @@ DO NOT use \`AZTR Chess\` (\`kmwfvvliundhuovoakoa\`) or production.
   minimum interval and local form pause distinct. Resend Free currently
   documents 100/day and 3,000/month, so throttle tests to avoid unnecessary sends.
 - Verify Site URL and exact Redirect URL allowlist for stable QA Preview
-  \`https://chessaz-preview-workspace.vercel.app\` including
-  \`/profile\` and \`/update-password\`. Do not whitelist arbitrary
+  `https://chessaz-preview-workspace.vercel.app` including
+  `/profile` and `/update-password`. Do not whitelist arbitrary
   Preview deployments or point QA URLs at production.
 
 ### Acceptance after authenticated SMTP configuration
@@ -188,3 +190,87 @@ References:
 - https://supabase.com/docs/guides/auth/auth-smtp
 - https://supabase.com/docs/guides/auth/rate-limits
 - https://resend.com/pricing
+
+## Final QA verification: 23 October 2026
+
+**Scope:** Supabase `ChessAZ Deutsch QA` (`iukmpcytsuofqhxsumbu`),
+Vercel project `chessaz-preview-workspace`, GitHub draft PR #74
+(`fix/chessaz-deutsch-auth-flow`). The production Supabase
+`AZTR Chess`, production Render, `main`, production site, and
+other PRs remain out of scope and unchanged by this verification.
+
+### Confirmed evidence
+
+- The owner entered Resend SMTP credentials directly into the QA Supabase
+  dashboard without sharing them in chat. Screenshot showed
+  "Successfully updated settings" for sender `noreply@auth.chessaz.de`,
+  sender name "ChessAZ Deutsch QA", `smtp.resend.com:465`,
+  username `resend`, and a hidden SMTP password. Key value
+  **was never recorded** in this repository.
+- Resend screenshot shows `auth.chessaz.de` = **Verified**.
+  The owner's controlled Gmail testing confirmed delivery of both
+  registration confirmation and password recovery messages from the
+  custom sender. This is user-reported real-world evidence, not an
+  automated Resend API delivery-status inspection.
+- QA Auth logs at **2026-10-23 01:02:29 UTC** confirmed a runtime
+  change of `GOTRUE_RATE_LIMIT_EMAIL_SENT` **from 2/hour to 30/hour**.
+  Do not confuse the 30/hour project allowance with a 60-second
+  client-side minimum pause or Resend's separate account quotas.
+- Read-only Auth logs during **2026-10-23 01:00–01:28 UTC** show:
+  `/signup` HTTP 200 with `user_confirmation_requested`;
+  `/verify` HTTP 303 with `user_signedup` at 01:25:08;
+  `/recover` HTTP 200 with `user_recovery_requested` at 01:24:58;
+  `/logout` HTTP 204; `/token` HTTP 200 with login at 01:25:58.
+  The `email_not_confirmed` rejection before confirmation was correctly
+  returned, protecting unconfirmed accounts. No auth `429` was seen
+  in that **bounded** post-SMTP time window; this is not proof of
+  unlimited delivery or absence of all failures.
+- Read-only aggregate Auth DB query returned **one** new registration
+  since 01:00 UTC and **one** confirmed registration. No user email,
+  password, recovery link, access token, or secret was exported.
+- The owner explicitly reported finishing registration, password
+  recovery, resetting credentials, and signing in successfully.
+  This completes the owner's basic manual acceptance test; it
+  does not independently establish the handling of used/expired
+  links, two devices, accessibility, or high-volume email.
+- Vercel Preview `dpl_AFCvsBb3nvUVc8zQHrjt2KHABNET` = READY,
+  corresponding to PR head `c382d86ef58bedec55279f6349633921a0552d66`
+  before this documentation update.
+- GitHub Frontend CI `39880271612` passed at that code head.
+  Earlier code regression run covered 79 tests; documentation-only
+  changes do not claim new browser E2E tests.
+
+### Security and remaining acceptance gates
+
+- Supabase QA Security Advisor warns **Leaked Password Protection Disabled**
+  (`auth_leaked_password_protection`, severity WARN). Consider enabling
+  it in QA Authentication password-strength settings if available on
+  the current plan; verify behavior before proposing production use:
+  https://supabase.com/docs/guides/auth/password-security .
+  No change was made to this setting by the assistant.
+- QA Security Advisor also reports RLS-enabled tables without policies:
+  `public.chat_messages`, `public.chess_club_tournament_templates`,
+  `public.matchmaking_queue` (severity INFO). This can mean **intentional
+  deny-by-default**; do **not** create permissive policies blindly.
+  Confirm intended API access and server-side behavior against
+  the product contract before making changes:
+  https://supabase.com/docs/guides/database/database-linter .
+- Performance Advisor reports two missing covering foreign-key indexes
+  (`chess_club_events_created_by_fkey`,
+  `chess_club_messages_author_id_fkey`) and nine unused-index notices.
+  These are **not** auth release blockers based on available evidence;
+  make no ad-hoc database migrations during the auth closeout.
+- Google OAuth remains unconfigured/unverified in QA and is correctly
+  hidden by the application when `external.google=false`.
+  Do not describe Google login as ready.
+- Separate fresh-browser end-to-end checks are still needed for
+  reused/expired links, explicit account isolation with multiple tabs,
+  wrong-password handling, cancellation, mobile layout, and club-return
+  navigation; confirm any outstanding QA redirect allowlist entries
+  against the actual Supabase dashboard. Keep all confirmation checks
+  enabled and do not surface account existence in error messages.
+- **Disposition:** QA email/password core journey = **manually accepted
+  with supporting logs**; broader authentication security / production
+  readiness = **OPEN** pending these explicit gates.
+  Keep PR #74 **Draft / unmerged**, and do not change production or
+  invoke paid services without owner approval.
