@@ -18,7 +18,7 @@ test('editor-only touch board and palette sizes grow without altering review boa
   assert.match(css, /\.mobile-position-board \{ width: min\(100%, 54dvh, 480px\)/);
   assert.match(css, /\.mobile-position-tools \.mobile-position-palette img \{ width: 38px; height: 38px/);
   assert.match(tools, /mobile-position-palette/);
-  assert.match(tools, /mobile \? 'h-\[34px\] w-\[34px\]'/);
+  assert.match(tools, /mobile \? 'h-\[38px\] w-\[38px\]'/);
 });
 
 test('mobile editor has accessible in-panel navigation and large lower controls', () => {
