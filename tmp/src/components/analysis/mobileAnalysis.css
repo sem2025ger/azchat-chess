@@ -116,7 +116,31 @@
   .mobile-position-tools [aria-label] > button[aria-pressed] { min-height: 42px; }
   .mobile-position-tools .mobile-position-palette { gap: 5px; }
   .mobile-position-tools .mobile-position-palette button { padding: 2px; min-height: 42px; border-radius: 10px; }
-  .mobile-position-tools .mobile-position-palette img { width: 34px; height: 34px; max-width: 94%; max-height: 94%; object-fit: contain; }
+  .mobile-position-tools [data-mobile-editor-scroll] { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+  .mobile-position-tools .mobile-editor-jump {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; width: 100%; margin: 2px 0 12px; padding: 8px 10px;
+    border: 1px solid #b89b655c; border-radius: 11px;
+    background: linear-gradient(135deg, #222a29, #111819);
+    color: #e9d9b6; font-size: 14px; font-weight: 700;
+  }
+  .mobile-position-tools .mobile-editor-jump svg { flex: none; }
+  .mobile-position-tools .mobile-position-palette img { width: 38px; height: 38px; max-width: 96%; max-height: 96%; object-fit: contain; }
+  .mobile-position-tools .mobile-position-palette button[aria-pressed='true'] { border-color: #e9c986; background: #e9c98629; box-shadow: 0 0 0 1px #e9c98642 inset; }
+  .mobile-position-tools .mobile-editor-turn,
+  .mobile-position-tools .mobile-editor-castling,
+  .mobile-position-tools .mobile-editor-advanced { font-size: 15px; line-height: 1.45; color: #e0dfd2; }
+  .mobile-position-tools .mobile-editor-turn { min-height: 48px; font-weight: 650; }
+  .mobile-position-tools .mobile-editor-turn select { min-height: 44px; min-width: 112px; padding: 9px 12px; font-size: 15px; font-weight: 600; }
+  .mobile-position-tools .mobile-editor-castling legend { font-size: 15px; font-weight: 700; color: #e3dbcb; }
+  .mobile-position-tools .mobile-editor-castling label { min-height: 44px; gap: 9px; padding: 5px 2px; font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .mobile-position-tools .mobile-editor-castling input[type='checkbox'] { width: 21px; height: 21px; flex: none; accent-color: #c9a866; }
+  .mobile-position-tools .mobile-editor-advanced summary { display: flex; align-items: center; min-height: 44px; font-size: 15px; font-weight: 650; color: #e1dbc9; }
+  .mobile-position-tools .mobile-editor-advanced label { min-height: 44px; font-size: 14px; }
+  .mobile-position-tools .mobile-editor-advanced input { min-height: 40px; font-size: 14px; }
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-position-tools [data-mobile-editor-scroll] { scroll-behavior: auto; }
+  }
   .mobile-position-tools footer { padding: 12px; background: #101713; }
   .mobile-position-tools footer > button { min-height: 44px; }
   .mobile-position-tools footer p { max-height: 64px; overflow-y: auto; }
