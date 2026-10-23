@@ -1335,3 +1335,37 @@
   .settings-options-column section { padding:4px 8px !important; }
 }
 @media (prefers-reduced-motion:reduce) { .settings-fixed-workspace * { scroll-behavior:auto !important; } }
+
+/* Mobile review follows document flow; Layout reserves the dock and safe area. */
+@media (max-width: 767px) {
+  .desktop-analysis-screen.desktop-analysis-screen { height:auto; max-height:none; min-height:0; flex:0 0 auto; overflow:visible; gap:10px; padding:0 0 16px; }
+  .desktop-analysis-screen .mobile-analysis-content { display:contents; }
+  .mobile-analysis-topbar { order:0; grid-template-columns:minmax(0,1fr) auto auto; flex-shrink:0; padding:6px 8px; gap:6px; }
+  .mobile-analysis-topbar > div:nth-child(2) { font-size:12px; padding:0 6px; }
+  .mobile-analysis-topbar > div:first-child { gap:2px; }
+  .mobile-analysis-topbar > div:first-child > button { padding:0 6px; font-size:10px; letter-spacing:0; }
+  .mobile-analysis-tools { order:1; margin-bottom:0; padding:1px 0 4px; }
+  .desktop-analysis-screen > .desktop-analysis-board-column { order:2; flex:0 0 auto; padding:0 8px; }
+  .desktop-analysis-screen .desktop-analysis-board-frame { width:100%; max-width:560px; aspect-ratio:1 / 1 !important; flex-shrink:0; }
+  .desktop-analysis-screen .mobile-analysis-transport { order:3; margin-top:0; margin-bottom:0; }
+  .mobile-analysis-details { order:4; margin:0 8px; border:1px solid #dec48926; border-radius:14px; background:#111614; overflow:hidden; flex-shrink:0; }
+  .mobile-analysis-summary { display:flex; align-items:center; gap:12px; min-height:48px; padding:10px 12px; font-size:12px; color:#c5c0b4; cursor:pointer; list-style:none; }
+  .mobile-analysis-summary::-webkit-details-marker { display:none; }
+  .mobile-analysis-summary:focus-visible { outline:2px solid #ddba70; outline-offset:-3px; }
+  .mobile-analysis-details .analysis-engine-decoration { display:none; }
+  .mobile-analysis-details .analysis-engine-content { max-height:45dvh; }
+  .desktop-analysis-screen > .desktop-analysis-panel { order:5; flex:0 0 auto; }
+  [data-mobile-analysis-dialog] { padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); }
+  [data-mobile-analysis-dialog] .analysis-tool-button, [data-mobile-analysis-dialog] footer > button { min-height:44px; }
+  [data-mobile-analysis-dialog] .analysis-tool-button { display:flex; align-items:center; justify-content:center; gap:6px; padding:10px; border:1px solid #dec48926; border-radius:12px; background:#1a211d; color:#e6dfce; font-size:12px; }
+  [data-mobile-analysis-dialog] .analysis-tool-button:disabled { opacity:.35; }
+  [data-mobile-analysis-dialog] button[draggable] { min-height:44px; }
+}
+.mobile-analysis-more { display:flex; align-items:center; justify-content:center; min-height:44px; min-width:44px; border-radius:12px; border:1px solid #dec4893d; color:#eddfc0; background:#191d1b; }
+.mobile-analysis-action-sheet { width:calc(100% - 24px); max-width:420px; max-height:calc(100dvh - 24px); overflow-y:auto; border:1px solid #d7ae5b55; border-radius:20px; padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px)); background:#141917; color:#eee7d9; }
+.mobile-analysis-action-sheet::backdrop { background:#000b; }
+.mobile-analysis-action-sheet button { min-height:44px; min-width:44px; }
+.mobile-analysis-sheet-actions { display:grid; gap:8px; }
+.mobile-analysis-sheet-actions button { display:flex; gap:12px; align-items:center; padding:12px; border:1px solid #d7ae5b33; border-radius:12px; text-align:left; background:#1e2420; }
+.mobile-analysis-sheet-actions button:disabled { opacity:.35; }
+.mobile-analysis-overflow button:focus-visible { outline:2px solid #ddba70; outline-offset:2px; }

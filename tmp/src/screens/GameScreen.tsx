@@ -63,6 +63,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       mobileToolDialogRef.current.showModal();
     }
   }, [mobileTool]);
+  const [mobileAnalysisExpanded, setMobileAnalysisExpanded] = useState(false);
   const [pvLines, setPvLines] = useState(3);
   const [planHighlight, setPlanHighlight] = useState<{ fen: string; squares: Square[] } | null>(null);
   const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
@@ -639,7 +640,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer, playerColor, canSendGameAction]
+    [viewMoveIndex, setViewMoveIndex, game, socket, roomId, sound, isMultiplayer, playerColor, canSendGameAction]
   );
 
 
@@ -828,8 +829,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 <button type="button" aria-label="К концу партии" title="К концу партии" disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
               </div>
   );
-  const analysisWorkspaceHeader = mode === 'review' ? (
+  const analysisWorkspaceHeader = (compact = false) => mode === 'review' ? (
     <AnalysisWorkspaceHeader
+          compact={compact}
           title={loadedGameTitle}
           initialFen={positionHistory[0] || DEFAULT_POSITION}
           moveHistory={moveHistory}
@@ -846,103 +848,24 @@ export default function GameScreen({ mode }: GameScreenProps) {
           }}
         />
   ) : null;
-  const openMobileTool = (tool: 'map' | 'games' | 'position') => {
-    if (tool === 'position') {
-      resetPositionDraft(displayedGame.fen());
-      setEditingPosition(true);
-    }
-    setPlanHighlight(null);
-    setMobileTool(tool);
-  };
-  const handleMobileMapHighlight = useCallback((selection: { fen: string; squares: Square[] } | null) => {
-    setPlanHighlight(selection);
-    if (selection) setMobileTool(null);
-  }, []);
-  return (
-    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
-
-      {mode === 'review' && <div className="lg:hidden">{analysisWorkspaceHeader}</div>}
-      {mode === 'review' && (
-        <nav aria-label={words.analysis} className="lg:hidden mx-2 mb-1 grid grid-cols-3 gap-1.5 shrink-0" data-mobile-analysis-tools>
-          {([
-            { tab: 'map' as const, label: positionMapLabel[language], icon: Map },
-            { tab: 'games' as const, label: words.games, icon: FolderOpen },
-            { tab: 'position' as const, label: words.editor, icon: Pencil },
-          ]).map(({ tab, label, icon: Icon }) => (
-            <button key={tab} type="button" aria-haspopup="dialog" onClick={() => openMobileTool(tab)}
-              className="min-w-0 min-h-11 flex items-center justify-center gap-1 rounded-lg border border-amber-200/20 bg-[#181c1b] px-1.5 text-xs font-semibold text-amber-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">
-              <Icon size={15} aria-hidden="true" className="shrink-0" />
-              <span className="truncate">{label}</span>
-            </button>
-          ))}
-        </nav>
-      )}
-            {/* Mobile analysis panel above the board */}
-      {!isLiveMultiplayer && (
-        <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
-          <div className="min-h-14 grid grid-cols-[max-content_minmax(0,1fr)_max-content] items-center gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
-            <div className="flex min-w-0 shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setActiveTab('analysis')}
-                className={cx(
-                  "min-h-11 px-1.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.04em] whitespace-nowrap transition-colors duration-150",
-                  activeTab === 'analysis'
-                    ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-                    : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
-                )}
-              >
-                Analysis
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('moves')}
-                className={cx(
-                  "min-h-11 px-1.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.04em] whitespace-nowrap transition-colors duration-150",
-                  activeTab === 'moves'
-                    ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
-                    : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
-                )}
-              >
-                Moves
-              </button>
-            </div>
-            {mode === 'review' && (
-              <button
-                type="button"
-                onClick={startNewAnalysis}
-                aria-label={t('game.analysis.new')}
-                title={t('game.analysis.new')}
-                className="mobile-new-analysis-obsidian relative isolate h-11 w-11 shrink-0 overflow-hidden flex items-center justify-center justify-self-center rounded-xl border border-[#BE9963]/65 bg-[linear-gradient(130deg,#0B0C12_0%,#191922_38%,#382917_67%,#0C111A_100%)] text-[#F5D898] shadow-[inset_0_1px_0_rgba(245,224,173,0.19),0_5px_14px_rgba(0,0,0,0.32)] transition-[border-color,color,box-shadow] duration-150 hover:border-[#F9D994] hover:text-[#FFF1CF] hover:shadow-[0_0_18px_rgba(203,164,96,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70"
-              >
-                <RotateCcw size={19} className="relative z-10" aria-hidden="true" />
-              </button>
-            )}
-            <div className="min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-cyan-100 bg-cyan-500/15 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] whitespace-nowrap">
-              <span>Stockfish 18</span>
-            </div>
-          </div>
-
-          {/* Keep the mobile analysis header height stable while stepping through moves;
-              the move navigation below the board already provides return to latest. */}
-
-          {activeTab === 'analysis' ? (
+  const mobileAnalysisBody = (
+activeTab === 'analysis' ? (
             <div className="px-2 py-1.5 space-y-1">
               {Array.from({ length: 2 }, (_, index) => {
-                const line = analysisData?.lines?.[index];
+                const line = currentEngineResult ? analysisData?.lines?.[index] : undefined;
                 const score = line
                   ? (line.mate != null
                       ? (line.mate < 0 ? `-M${Math.abs(line.mate)}` : `M${line.mate}`)
                       : (line.evaluation > 0 ? `+${line.evaluation.toFixed(2)}` : line.evaluation.toFixed(2)))
-                  : index === 0 && engineResult
-                    ? (engineResult.mate != null
-                        ? (engineResult.mate < 0 ? `-M${Math.abs(engineResult.mate)}` : `M${engineResult.mate}`)
-                        : (engineResult.evaluation > 0 ? `+${engineResult.evaluation.toFixed(2)}` : engineResult.evaluation.toFixed(2)))
+                  : index === 0 && currentEngineResult
+                    ? (currentEngineResult.mate != null
+                        ? (currentEngineResult.mate < 0 ? `-M${Math.abs(currentEngineResult.mate)}` : `M${currentEngineResult.mate}`)
+                        : (currentEngineResult.evaluation > 0 ? `+${currentEngineResult.evaluation.toFixed(2)}` : currentEngineResult.evaluation.toFixed(2)))
                     : '—';
 
                 const moves = line?.moves?.length
                   ? line.moves.slice(0, 10).join(' ')
-                  : index === 0 && analysisData?.continuation?.length
+                  : index === 0 && currentEngineResult && analysisData?.continuation?.length
                     ? [analysisData.bestMove, ...analysisData.continuation.slice(0, 8)].filter(Boolean).join(' ')
                     : (isAnalysing ? 'Analyzing…' : '—');
 
@@ -1008,10 +931,87 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 </table>
               )}
             </div>
-          )}
+          )
+  );
+  const openMobileTool = (tool: 'map' | 'games' | 'position') => {
+    if (tool === 'position') {
+      resetPositionDraft(displayedGame.fen());
+      setEditingPosition(true);
+    }
+    setPlanHighlight(null);
+    setMobileTool(tool);
+  };
+  const handleMobileMapHighlight = useCallback((selection: { fen: string; squares: Square[] } | null) => {
+    setPlanHighlight(selection);
+    if (selection) setMobileTool(null);
+  }, []);
+  return (
+    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
+
+      {mode === 'review' && <div className="hidden md:block lg:hidden">{analysisWorkspaceHeader()}</div>}
+      {/* Compact mobile header; review details follow board navigation. */}
+      {!isLiveMultiplayer && (
+        <section className={cx(mode === 'review' && "mobile-analysis-content", "md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]")}>
+          <div className={cx("min-h-14 grid grid-cols-[max-content_minmax(0,1fr)_max-content] items-center gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40", mode === 'review' && "mobile-analysis-topbar")}>
+            <div className="flex min-w-0 shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab('analysis')}
+                aria-pressed={activeTab === 'analysis'}
+                className={cx(
+                  "min-h-11 px-1.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.04em] whitespace-nowrap transition-colors duration-150",
+                  activeTab === 'analysis'
+                    ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                    : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
+                )}
+              >
+                {t('game.tabs.analysis')}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setActiveTab('moves'); if (mode === 'review') setMobileAnalysisExpanded(true); }}
+                aria-pressed={activeTab === 'moves'}
+                className={cx(
+                  "min-h-11 px-1.5 rounded-lg text-[0.6875rem] font-black uppercase tracking-[0.04em] whitespace-nowrap transition-colors duration-150",
+                  activeTab === 'moves'
+                    ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                    : "bg-white/[0.03] text-neutral-400 ring-1 ring-white/[0.06]"
+                )}
+              >
+                {t('game.tabs.moves')}
+              </button>
+            </div>
+
+            <div className="min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-cyan-100 bg-cyan-500/15 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] whitespace-nowrap">
+              <span>Stockfish 18</span>
+            </div>
+            {mode === 'review' && analysisWorkspaceHeader(true)}
+          </div>
+
+          {/* Keep the mobile analysis header height stable while stepping through moves;
+              the move navigation below the board already provides return to latest. */}
+
+          {mode !== 'review' && mobileAnalysisBody}
         </section>
       )}
 
+
+      {mode === 'review' && (
+        <nav aria-label={words.analysis} className="lg:hidden mx-2 mb-1 mobile-analysis-tools grid grid-cols-3 gap-1.5 shrink-0 max-md:flex max-md:gap-2 max-md:overflow-x-auto" data-mobile-analysis-tools>
+          {([
+            { tab: 'map' as const, label: positionMapLabel[language], icon: Map },
+            { tab: 'games' as const, label: words.games, icon: FolderOpen },
+            { tab: 'position' as const, label: words.editor, icon: Pencil },
+          ]).map(({ tab, label, icon: Icon }) => (
+            <button key={tab} type="button" aria-label={label} aria-haspopup="dialog" onClick={() => openMobileTool(tab)}
+              className="min-h-11 shrink-0 flex items-center justify-center gap-1.5 rounded-full border border-amber-200/20 bg-[#181c1b] px-3 text-xs font-semibold text-amber-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">
+              <Icon size={15} aria-hidden="true" className="shrink-0" />
+              <span className="whitespace-nowrap md:hidden">{tab === 'map' ? t('game.analysis.mapShort') : tab === 'position' ? t('game.analysis.editorShort') : label}</span>
+              <span className="hidden md:inline truncate">{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
 
       {/* Native modal preserves touch-size board and traps focus while tools are open. */}
       {mode === 'review' && mobileTool && (
@@ -1173,7 +1173,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   <EditorBoard draft={positionDraftValue} selected={editorSelectedPiece} words={words} onPlace={placePositionPiece} onMove={movePositionPiece} />
                 </Suspense>
               ) : <ChessBoard
-                className={!isMultiplayer ? `p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 max-md:[&_.aspect-square]:!aspect-[50/51] ${mode === 'review' ? 'desktop-analysis-main-board transition-none duration-0' : ''}` : undefined}
+                className={!isMultiplayer ? `p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 ${mode === 'review' ? 'desktop-analysis-main-board transition-none duration-0' : 'max-md:[&_.aspect-square]:!aspect-[50/51]'}` : undefined}
                 externalCoordinatesOnDesktop={mode === 'review'}
                 highlightedSquares={mode === 'review' && workspaceTab === 'map' && planHighlight?.fen === displayedGame.fen() ? planHighlight.squares : undefined}
                 overrideBoardTheme={boardTheme}
@@ -1234,7 +1234,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
       {/* Mobile review navigation stays visible in both Analysis and Moves. */}
       {!isMultiplayer && (
-        <nav aria-label="Move navigation" className="md:hidden grid grid-cols-4 gap-2 mx-2 mt-1 mb-1 p-1 shrink-0 rounded-2xl border border-white/[0.06] bg-black/20">
+        <nav aria-label="Move navigation" className="mobile-analysis-transport md:hidden grid grid-cols-4 gap-2 mx-2 mt-1 mb-1 p-1 shrink-0 rounded-2xl border border-white/[0.06] bg-black/20">
           <button
             type="button"
             aria-label="First position"
@@ -1281,10 +1281,30 @@ export default function GameScreen({ mode }: GameScreenProps) {
         </nav>
       )}
 
+      {mode === 'review' && (
+            <details className="mobile-analysis-details md:hidden" open={mobileAnalysisExpanded}
+              onToggle={event => setMobileAnalysisExpanded(event.currentTarget.open)}>
+              <summary className="mobile-analysis-summary">
+                <span className="font-mono text-amber-100">{currentEngineResult
+                  ? currentEngineResult.mate != null ? `M${currentEngineResult.mate}` : `${currentEngineResult.evaluation > 0 ? '+' : ''}${currentEngineResult.evaluation.toFixed(2)}`
+                  : '—'}</span>
+                <span className="min-w-0 flex-1 truncate">{engineFailed ? t('game.analysis.unavailable')
+                  : currentEngineResult ? analysisData?.lines?.[0]?.moves.slice(0, 6).join(' ') || analysisData?.bestMove : t('game.analysis.analyzing')}</span>
+                <span>{mobileAnalysisExpanded ? t('game.analysis.collapse') : t('game.analysis.expand')}</span>
+              </summary>
+              {activeTab === 'analysis' ? (
+                <AnalysisPanel score={currentEngineResult?.evaluation || 0} depth={currentEngineResult?.depth || 0}
+                  bestMove={currentEngineResult ? analysisData?.bestMove : undefined}
+                  mate={currentEngineResult?.mate} lines={currentEngineResult ? analysisData?.lines : undefined}
+                  loading={isAnalysing || !currentEngineResult && !engineFailed} error={engineFailed} />
+              ) : mobileAnalysisBody}
+            </details>
+      )}
+
       {/* Professional Sidebar Sidebar Tabs */}
       <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' ? "desktop-analysis-panel" : "animate-fade-in-right transition-all")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
-        {mode === 'review' && <div className="hidden lg:block shrink-0">{analysisWorkspaceHeader}</div>}
+        {mode === 'review' && <div className="hidden lg:block shrink-0">{analysisWorkspaceHeader()}</div>}
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">

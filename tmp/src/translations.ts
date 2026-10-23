@@ -76,6 +76,12 @@ export const translations: TranslationDictionary = {
   'play.tournaments': { en: 'Join Tournament', de: 'Turnier beitreten', ua: 'Приєднатися до турніру', ru: 'Присоединиться к турниру', az: 'Turnirə Qoşul', tr: 'Turnuvaya Katıl' },
 
   // Game Screen
+  'game.analysis.actions': { en: 'Analysis actions', de: 'Analyse-Aktionen', ru: 'Действия анализа', az: 'Təhlil əməliyyatları', tr: 'Analiz işlemleri', ua: 'Дії аналізу' },
+  'game.analysis.mapShort': { en: 'Map', de: 'Karte', ru: 'Карта', az: 'Xəritə', tr: 'Harita', ua: 'Карта' },
+  'game.analysis.editorShort': { en: 'Editor', de: 'Editor', ru: 'Редактор', az: 'Redaktor', tr: 'Düzenleyici', ua: 'Редактор' },
+  'game.analysis.exportPgn': { en: 'PGN with evaluations', de: 'PGN mit Bewertungen', ru: 'PGN с оценками', az: 'Qiymətləndirmələrlə PGN', tr: 'Değerlendirmeli PGN', ua: 'PGN з оцінками' },
+  'game.analysis.expand': { en: 'Expand', de: 'Aufklappen', ru: 'Развернуть', az: 'Genişləndir', tr: 'Genişlet', ua: 'Розгорнути' },
+  'game.analysis.collapse': { en: 'Collapse', de: 'Zuklappen', ru: 'Свернуть', az: 'Yığ', tr: 'Daralt', ua: 'Згорнути' },
   'game.tabs.moves': { en: 'Moves', de: 'Züge', ua: 'Ходи', ru: 'Ходы', az: 'Gedişlər', tr: 'Hamleler' },
   'game.tabs.chat': { en: 'Chat', de: 'Chat', ua: 'Чат', ru: 'Чат', az: 'Söhbət', tr: 'Sohbet' },
 
