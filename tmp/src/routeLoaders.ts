@@ -45,7 +45,7 @@ export function scheduleNavigationPreload(currentPath: string) {
     return () => {};
   }
 
-  const queue = ['/play', '/profile', '/settings', '/chat']
+  const queue = ['/game', '/play', '/profile', '/settings', '/chat']
     .filter(path => path !== currentPath);
   let cancelled = false;
   let idleHandle: number | undefined;
