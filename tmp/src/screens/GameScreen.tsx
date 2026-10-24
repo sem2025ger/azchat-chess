@@ -25,7 +25,7 @@ import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '
 import { analysisMovePairs, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
 import { analysisCopy } from '../components/analysis/copy';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
-const SavedGamesPanel = lazy(() => import('../components/analysis/SavedGamesPanel'));
+const GamesLibraryPanel = lazy(() => import('../components/analysis/GamesLibraryPanel'));
 const PositionTools = lazy(() => import('../components/analysis/PositionTools'));
 const EditorBoard = lazy(() => import('../components/analysis/EditorBoard'));
 
@@ -883,7 +883,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
 
       {mode === 'review' && <>
-        <MobileAnalysisHeader activeTab={activeTab} onTab={setActiveTab}
+        <MobileAnalysisHeader activeTab={activeTab} onTab={setActiveTab} onGames={() => openMobileTool('games')}
           actions={analysisWorkspaceHeader(true)} />
         <div className="hidden md:block lg:hidden">{analysisWorkspaceHeader()}</div>
       </>}
@@ -1053,7 +1053,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <Suspense fallback={<p role="status" className="p-4 text-xs text-neutral-400">{words.loading}</p>}>
                 {mobileTool === 'games' && (
-                  <SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words}
+                  <GamesLibraryPanel fen={displayedGame.fen()} key={user?.id || 'guest'} userId={user?.id} language={language} words={words}
                     onLoad={loadWorkspaceAnalysis}/>
                 )}
                 {mobileTool === 'map' && (
@@ -1351,7 +1351,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               ))}
             </nav>
             <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
-            {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
+            {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><GamesLibraryPanel fen={displayedGame.fen()} key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
             {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionMap key={displayedGame.fen()} fen={displayedGame.fen()} result={engineResult} language={language} failed={engineFailed} onHighlight={setPlanHighlight} /></div>}
             {workspaceTab === 'position' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionTools currentFen={displayedGame.fen()} words={words} onLoad={loadWorkspaceAnalysis} onCancel={() => { setEditingPosition(false); setWorkspaceTab(tabBeforeEditor.current); }}
               draft={positionDraftValue} selected={editorSelectedPiece} onSelected={setEditorSelectedPiece}
