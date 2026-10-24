@@ -12,6 +12,7 @@ const { createMatchPersistenceFromEnv, persistRoomCompletedMatch } = require('./
 const { createSocketRateLimiter } = require('./rateLimiter');
 const { createDurableStoreFromEnv } = require('./durableStore');
 const { createDurableGames } = require('./durableGames');
+const { createTournamentRunner } = require('./tournamentRunner');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
@@ -131,6 +132,16 @@ const durableGames = createDurableGames({
   store: createDurableStoreFromEnv(), enabled: durableEnabled,
   rooms: activeRooms, socketToRoom, io,
   getMatchPersistence: () => matchPersistence, naturalGameOver: getNaturalGameOverPayload,
+});
+// Tournament worker is fail-closed and needs durable PostgreSQL rooms.
+// Disabled by default even when the calendar exists; no new paid service.
+const tournamentsEnabled = process.env.TOURNAMENT_ENGINE_ENABLED === 'true' && durableEnabled && Boolean(SUPABASE_SERVICE_KEY);
+const tournamentRunner = createTournamentRunner({
+  db: tournamentsEnabled ? createClient(SUPABASE_URL,SUPABASE_SERVICE_KEY,{
+    auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},
+  }) : null,
+  durableGames,io,activeRooms,socketToRoom,enabled:tournamentsEnabled,
+  log:message=>console.error(JSON.stringify(message)),
 });
 // Recover existing games even with new durable starts disabled, but optional
 // recovery must not hold volatile HTTP/socket startup behind a database timeout.
@@ -379,8 +390,13 @@ function reconnectPlayerToRoom(roomId, playerColor, newSocket) {
 }
 
 // Watchdog timer: checks for clock timeouts on active games every 1 second
+let lastTournamentTick=0;
 function checkRoomTimeouts() {
   void durableGames.tick().catch(() => console.error(JSON.stringify({ code: 'DURABLE_TICK_FAILED' })));
+  if(tournamentsEnabled && Date.now()-lastTournamentTick >= 7000) {
+    lastTournamentTick=Date.now();
+    void tournamentRunner.tick().catch(() => console.error(JSON.stringify({code:'TOURNAMENT_TICK_FAILED'})));
+  }
   const now = Date.now();
   for (const [roomId, room] of activeRooms.entries()) {
     if (room.durable) {
@@ -1081,6 +1097,7 @@ module.exports = {
   rejectGameAction,
   getActivePlayerActionContext,
   durableGames,
+  tournamentRunner,
   recoveryReady,
 };
 
