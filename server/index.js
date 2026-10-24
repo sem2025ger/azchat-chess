@@ -110,6 +110,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// Independent read-only game sources; no socket or durable-game state access.
+app.use('/api/games', require('./src/games/routes').createGamesRouter());
+
 app.get('/health', (req, res) => {
   const ok = durableGames.ready();
   res.status(ok ? 200 : 503).json({ ok, service: "aztr-chess-server" });
