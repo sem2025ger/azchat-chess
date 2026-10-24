@@ -42,7 +42,7 @@ export default function HomeScreen() {
   // User preferences applied automatically via ThemeContext
 
   return (
-    <div className="flex flex-col min-h-full xl:h-full w-full xl:overflow-hidden items-center justify-start xl:justify-center bg-transparent transition-all relative home-screen-root">
+    <div className="flex flex-col min-h-full xl:h-full w-full xl:overflow-y-auto items-center justify-start xl:justify-center bg-transparent transition-all relative home-screen-root">
       <style>{`
         /* Keep the existing mobile Home piece scaling; match Analysis on desktop. */
         @media (max-width: 767px) {
@@ -365,7 +365,7 @@ export default function HomeScreen() {
       `}</style>
 
       {/* 2-Column Layout */}
-      <div data-mobile-home-stack className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-visible max-md:px-1 max-md:gap-8 max-md:justify-start">
+      <div data-mobile-home-stack className="w-full max-w-[85rem] flex flex-col xl:flex-row items-center justify-center gap-5 xl:gap-6 z-10 h-full px-2 sm:px-8 md:px-12 xl:px-7 py-2 xl:py-0 overflow-y-auto xl:overflow-y-auto max-md:px-1 max-md:gap-8 max-md:justify-start">
 
         {/* LEFT: Chessboard */}
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container xl:-mt-10">
@@ -413,10 +413,10 @@ export default function HomeScreen() {
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
             <span className="relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
           </Link>
-        </div>
-        {/* Keep multiplayer readiness visible without hiding the established Chess Arena. */}
-        <div className="w-full">
-          <OnlineLobby timeControl="3 min." compact />
+          {/* Multiplayer availability directly under the main play button. */}
+          <div className="w-full mt-2">
+            <OnlineLobby timeControl="3 min." compact />
+          </div>
         </div>
       </div>
     </div>
