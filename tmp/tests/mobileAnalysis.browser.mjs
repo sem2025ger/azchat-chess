@@ -79,7 +79,12 @@ try {
   };
   const waitFor = async expression => {
     for (let n = 0; n < 200; n++) {
-      try { if (await evaluate(expression)) return; } catch { /* Navigation changes contexts. */ }
+      try { if (await evaluate(expression)) return; }
+      catch (error) {
+        // Only a navigation context replacement is transient. A dead/unresponsive
+        // renderer must fail with its real error rather than spin to the watchdog.
+        if (!/context.*destroyed|Cannot find context|Inspected target navigated|Execution context was destroyed/i.test(String(error))) throw error;
+      }
       await pause();
     }
     const state = await evaluate("JSON.stringify({url:location.href,ready:document.readyState,text:document.body?.innerText.slice(0,800)})").catch(()=>'context unavailable');
@@ -215,6 +220,12 @@ try {
   await evaluate("[...document.querySelectorAll('.mobile-position-tools footer button')].find(button=>button.textContent==='Отмена').click()");
   assert.equal(await evaluate("localStorage.getItem('chess_analysis_session_v1')"), saved, 'Cancel must preserve analysis');
   console.log('PASS editor validation placement and draft cancellation');
+  // Desktop preservation is a separate scenario. Dispose the mobile document
+  // before changing media queries, avoiding an unrelated engine restart during
+  // unload; all real-engine and desktop assertions below remain unchanged.
+  console.log('CHECK desktop: dispose mobile document before viewport change');
+  await cdp('Page.navigate', { url:'about:blank' });
+  await waitFor("location.href === 'about:blank'");
   console.log('CHECK desktop: switch viewport');
   await cdp('Emulation.setDeviceMetricsOverride', { mobile:false, width:1440, height:900, deviceScaleFactor:1 });
   await cdp('Page.navigate', { url:base + '/game?desktop-qa=preserved' });

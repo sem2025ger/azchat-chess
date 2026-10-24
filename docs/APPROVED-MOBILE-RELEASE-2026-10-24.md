@@ -30,3 +30,5 @@ The first release CI passed all 119 server tests but npm audit blocked release o
 ## Browser regression diagnostics
 
 Two final CI attempts passed all mobile geometry, real Stockfish, move/history/flip and editor checks, then timed out during the desktop transition. Preserve every assertion; log desktop progress and the original exception, and bound disposable Chromium/server cleanup so it cannot mask the failing stage. Local checks continue to exercise real Stockfish and desktop three/five-line controls. No application behavior is changed by this test-harness follow-up.
+
+The failing CI checkpoint was narrowed to the first desktop engine-line wait after a hot viewport change. Isolate the desktop preservation scenario by unloading the mobile document to about:blank before changing viewport/media queries; retain the subsequent real three/five-line checks. Wait helpers now ignore only navigation-context replacements, so CDP errors fail immediately with their actual cause.
