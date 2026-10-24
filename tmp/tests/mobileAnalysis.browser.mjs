@@ -279,6 +279,48 @@ try {
   assert.ok(await evaluate("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 5')"), 'Desktop retains five-line engine support');
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#mobile-analysis-details')).display"), 'none', 'Mobile panel stays hidden on desktop');
   console.log('PASS desktop retains three/five-line controls');
+  // Lobby layout is independent of game/analysis layout and needs no account.
+  await cdp('Page.navigate', { url:'about:blank' });
+  await waitFor("location.href === 'about:blank'");
+  for (const [width, height] of [[375,667], [393,720], [390,844]]) {
+    await cdp('Emulation.setDeviceMetricsOverride', { mobile:true, width, height, deviceScaleFactor:1 });
+    await cdp('Page.navigate', { url:base + '/play?mobile-qa=arena' });
+    await waitFor("!!document.querySelector('.mobile-arena-panel select')");
+    const geometry = await evaluate(`(() => {
+      const panel = document.querySelector('.mobile-arena-panel');
+      const board = document.querySelector('.play-lobby-board').getBoundingClientRect();
+      const nav = document.querySelector('[data-mobile-app-nav]').getBoundingClientRect();
+      return {panel:panel.getBoundingClientRect().toJSON(),board:board.toJSON(),nav:nav.toJSON(),
+        internalScroll:panel.scrollHeight > panel.clientHeight + 2,
+        lobby:document.querySelectorAll('.online-lobby').length,
+        clocks:panel.querySelectorAll('select').length,options:panel.querySelectorAll('option').length};
+    })()`);
+    assert.ok(geometry.panel.bottom <= geometry.nav.top, 'All mobile arena actions stay above navigation: ' + JSON.stringify(geometry));
+    assert.ok(Math.abs(geometry.board.width - geometry.board.height) < 1, 'Lobby board stays square');
+    assert.equal(geometry.internalScroll, false);
+    assert.equal(geometry.lobby, 0, 'Desktop lobby must not mount on mobile');
+    assert.equal(geometry.clocks, 1);
+    assert.equal(geometry.options, 9);
+    await evaluate("(() => {const clock=document.querySelector('.mobile-arena-panel select');clock.value='5 min.';clock.dispatchEvent(new Event('change',{bubbles:true}));})()");
+    await waitFor("document.querySelector('.mobile-arena-clock strong').textContent === '5 мин.'");
+    await evaluate("document.querySelector('.mobile-arena-footer button').focus();document.querySelector('.mobile-arena-footer button').click()");
+    await waitFor("!!document.querySelector('[role=dialog]')");
+    const dialog = await evaluate("document.querySelector('[role=dialog]').getBoundingClientRect().toJSON()");
+    assert.ok(dialog.top >= 0 && dialog.bottom <= height, 'Friend dialog fits mobile viewport');
+    await evaluate("document.querySelector('[aria-label=\"Закрыть\"]').click()");
+    await waitFor("!document.querySelector('[role=dialog]')");
+    assert.equal(await evaluate("document.activeElement === document.querySelector('.mobile-arena-footer button')"), true, 'Closing the friend dialog restores focus to its visible trigger');
+    console.log('PASS compact mobile arena, native clock and friend dialog at', width, height);
+  }
+  await cdp('Page.navigate', { url:'about:blank' });
+  await waitFor("location.href === 'about:blank'");
+  await cdp('Emulation.setDeviceMetricsOverride', { mobile:false, width:1440, height:900, deviceScaleFactor:1 });
+  await cdp('Page.navigate', { url:base + '/play?desktop-qa=arena' });
+  await waitFor("!!document.querySelector('.arena-play-panel .online-lobby')");
+  assert.equal(await evaluate("document.querySelectorAll('.arena-quick-times button').length"), 4);
+  assert.equal(await evaluate("document.querySelectorAll('.mobile-arena-panel').length"), 0);
+  assert.equal(await evaluate("document.querySelector('[role=switch]').getAttribute('aria-checked')"), 'false');
+  console.log('PASS desktop golden arena and opt-in readiness preserved');
  } catch (error) {
   // Print the actual failing assertion before cleanup; a stuck child must not
   // mask it behind the outer watchdog's generic timeout.

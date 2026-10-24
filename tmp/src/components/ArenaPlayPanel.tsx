@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { ChevronDown, Club, Crown } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import OnlineLobby from './OnlineLobby';
+import MobileArenaPlayPanel from './MobileArenaPlayPanel';
 import './ArenaPlayPanel.css';
 
-type Props = {
+export type ArenaPlayPanelProps = {
   timeControl: string;
   onTimeChange: (value: string) => void;
   onStart: () => void;
@@ -13,7 +14,20 @@ type Props = {
 const quickTimes = ['1 min.', '3 min.', '5 min.', '10 min.'];
 const otherTimes = ['1 | 1', '2 | 1', '3 | 2', '15 | 10', '30 min.'];
 
-export default function ArenaPlayPanel({ timeControl, onTimeChange, onStart, onFriend }: Props) {
+const mobileQuery = '(max-width: 767px)';
+function subscribeToViewport(update: () => void) {
+  const query = window.matchMedia(mobileQuery);
+  query.addEventListener('change', update);
+  return () => query.removeEventListener('change', update);
+}
+const isMobileViewport = () => window.matchMedia(mobileQuery).matches;
+
+export default function ArenaPlayPanel(props: ArenaPlayPanelProps) {
+  const mobile = useSyncExternalStore(subscribeToViewport, isMobileViewport, () => false);
+  return mobile ? <MobileArenaPlayPanel {...props} /> : <DesktopArenaPlayPanel {...props} />;
+}
+
+function DesktopArenaPlayPanel({ timeControl, onTimeChange, onStart, onFriend }: ArenaPlayPanelProps) {
   const { language, t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const text = (ru: string, de: string, en: string, az: string) =>

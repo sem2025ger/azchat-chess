@@ -37,3 +37,31 @@ The position map derives current-board facts and legal Stockfish continuations;
 it is not a full strategic explanation system. Map body translations cover
 Russian/English with English fallback. The source mock's full graph is not implemented.
 Public maintenance gating and backend/database settings are unchanged.
+
+## Mobile play controls — 24 October 2026
+
+Scope: restore the owner's older multicolor play-panel reference on mobile
+only. The golden desktop panel, game screen and analysis screen are preserved.
+The selected reference is `1000173859.jpg` (a camera photograph, not a pixel
+specification). The mobile adaptation deliberately omits the two footer
+subtitles and retains the requested tournament availability label.
+
+- Compared the source panel and the rendered mobile panel together in a
+  normalized comparison image. The time/icon/chevron, rounded gradient CTA,
+  dark frame and two footer actions follow the reference's visual hierarchy.
+- Initial P1: the footer overlapped bottom navigation at 375 × 667. Fixed by
+  constraining the pre-game board to available portrait height while retaining
+  its square aspect ratio. Re-capture confirmed panel bottom 569, navigation
+  top 595, board 277 × 277; no scrollable overflow.
+- At 390 × 844: panel bottom 674, navigation top 772; board 382 × 382.
+- Browser verified native clock selection and the existing invitation dialog.
+  CSS respects reduced-motion preferences; controls retain touch target sizes.
+- Desktop golden panel retains its original JSX/styles, four quick presets,
+  and readiness off by default. Browser inspection confirmed these controls.
+- Local validation: 105 frontend tests passed, production build/typecheck
+  passed, lint zero errors (55 pre-existing warnings). CI adds viewport and
+  dialog/focus regressions for 375 × 667, 393 × 720 and 390 × 844.
+- This UI-only task does not certify real-account mail/password delivery or
+  replay a two-person game. No auth, backend or chess rules were changed.
+
+final result: passed

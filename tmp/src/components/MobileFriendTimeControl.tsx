@@ -121,6 +121,7 @@ function MobileControl({ timeControl, onTimeChange, presets, resetRef, controlsH
   useEffect(() => {
     if (!mode) return;
     const previousOverflow = document.body.style.overflow;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     document.body.style.overflow = 'hidden';
     const panel = panelRef.current;
     panel?.querySelector<HTMLButtonElement>('button')?.focus();
@@ -138,9 +139,10 @@ function MobileControl({ timeControl, onTimeChange, presets, resetRef, controlsH
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKeyDown);
-      (mode === 'time' ? timeButtonRef : friendButtonRef).current?.focus();
+      const originalButton = (mode === 'time' ? timeButtonRef : friendButtonRef).current;
+      (controlsHidden ? opener : originalButton)?.focus();
     };
-  }, [mode]);
+  }, [mode, controlsHidden]);
 
   useEffect(() => {
     if (!openRef) return;

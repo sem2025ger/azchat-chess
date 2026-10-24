@@ -28,3 +28,29 @@ test('arena renders chosen clock, four quick presets and opt-in readiness before
     else delete globalThis.localStorage;
   }
 });
+
+test('mobile arena has one native clock selector and compact actions without desktop lobby controls', async () => {
+  const storage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: key => key === 'app-language' ? 'ru' : null } });
+  const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  try {
+    const { default: Panel } = await server.ssrLoadModule('/src/components/MobileArenaPlayPanel.tsx');
+    const { LanguageProvider } = await server.ssrLoadModule('/src/context/LanguageContext.tsx');
+    for (const timeControl of ['3 min.', '1 | 1', '15 | 10']) {
+      const html = renderToStaticMarkup(createElement(LanguageProvider, null,
+        createElement(Panel, { timeControl, onTimeChange() {}, onStart() {}, onFriend() {} })));
+      assert.equal((html.match(/<select /g) || []).length, 1);
+      assert.equal((html.match(/<option /g) || []).length, 9);
+      assert.match(html, new RegExp(`value="${timeControl.replace(/[|]/g, '\\|')}" selected=""`));
+      assert.equal((html.match(/<button /g) || []).length, 3);
+      assert.match(html, /НАЧАТЬ ИГРУ/);
+      assert.match(html, /aria-haspopup="dialog"/);
+      assert.match(html, /Турниры · скоро/);
+      assert.doesNotMatch(html, /role="switch"|Выбрать соперника|arena-quick-times|overflow-y/);
+    }
+  } finally {
+    await server.close();
+    if (storage) Object.defineProperty(globalThis, 'localStorage', storage);
+    else delete globalThis.localStorage;
+  }
+});
