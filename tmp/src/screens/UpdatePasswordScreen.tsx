@@ -9,7 +9,8 @@ export default function UpdatePasswordScreen() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const backTo = clubReturnTarget(searchParams.get('returnTo')) ?? '/profile';
+  const requestedReturn = searchParams.get('returnTo');
+  const backTo = requestedReturn === '/play' ? '/play' : (clubReturnTarget(requestedReturn) ?? '/profile');
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
