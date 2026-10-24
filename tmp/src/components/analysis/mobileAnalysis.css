@@ -65,6 +65,33 @@
   .mobile-analysis-figurine { display: inline-block; width: 33px; height: 33px; vertical-align: -9px; object-fit: contain; }
   .mobile-analysis-figurine[src*='/b'] { background: transparent; filter: drop-shadow(0 0 1px #d3ddcc) drop-shadow(0 0 1px #d3ddcc); }
   .mobile-analysis-line p:focus-visible { outline: 1px solid #e9c986; outline-offset: 2px; }
+
+  /* Premium, non-white score plates: fixed size, tabular digits and a calm
+     graphite/champagne border. No change to the 94px container or board. */
+  .mobile-analysis-score {
+    box-sizing: border-box;
+    flex: 0 0 68px;
+    width: 68px;
+    min-width: 68px;
+    max-width: 68px;
+    height: 36px;
+    border: 1px solid rgba(206, 173, 117, .63);
+    border-radius: 9px;
+    background: linear-gradient(155deg, #333741 0%, #232831 54%, #141a20 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12),
+      inset 0 0 0 1px rgba(242,205,137,.08), 0 3px 9px #0005;
+    color: #f4e8cd;
+    font: 800 17px/1.2 ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    white-space: nowrap;
+    transition: color 140ms ease, border-color 140ms ease;
+  }
+  .mobile-analysis-line { overflow-anchor: none; }
+  .mobile-analysis-line p { overflow-anchor: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-analysis-score { transition: none; }
+  }
   .mobile-analysis-moves { position: relative; height: 100%; max-height: 100%; overflow: hidden; }
   /* The generic ".mobile-analysis-moves button" selector below used to force
      width:100% and 44px height on Copy. This more specific rule preserves

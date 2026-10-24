@@ -1335,3 +1335,85 @@
   .settings-options-column section { padding:4px 8px !important; }
 }
 @media (prefers-reduced-motion:reduce) { .settings-fixed-workspace * { scroll-behavior:auto !important; } }
+
+
+/* Fixed review PV geometry: never let a new FEN, depth, or missing PV move the
+   Stockfish rows. This is intentionally AFTER earlier responsive overrides.
+   Board geometry and other screens remain untouched. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen .desktop-analysis-stockfish {
+    height: clamp(228px, 47%, 282px) !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    flex: 0 0 auto !important;
+    overflow: hidden !important;
+    overflow-anchor: none;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > .analysis-engine-content {
+    height: 100% !important;
+    min-height: 0;
+    overflow: hidden !important;
+    padding: 9px 12px;
+    gap: 6px;
+    animation: none;
+  }
+  .desktop-analysis-screen .analysis-engine-status {
+    flex: 0 0 55px;
+    min-height: 55px;
+    max-height: 55px;
+    overflow: hidden;
+    align-content: center;
+  }
+  .desktop-analysis-screen .analysis-engine-variations {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    justify-content: flex-start;
+    gap: 5px;
+  }
+  .desktop-analysis-screen .analysis-engine-variations > .analysis-engine-line {
+    flex: 1 1 0;
+    min-height: 0;
+    height: 0;
+    overflow: hidden;
+    contain: layout;
+    align-items: center;
+    gap: 10px;
+  }
+  .desktop-analysis-screen .analysis-engine-score {
+    box-sizing: border-box;
+    flex: 0 0 70px;
+    width: 70px !important;
+    min-width: 70px !important;
+    max-width: 70px;
+    min-height: 30px;
+    padding: 5px 4px !important;
+    border: 1px solid rgba(206, 173, 117, .58) !important;
+    border-radius: 9px;
+    background: linear-gradient(155deg,#30343b 0%,#1b2028 55%,#13171e 100%) !important;
+    color: #f5e8c8 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12),
+      inset 0 0 0 1px rgba(242,205,137,.07),
+      0 3px 10px rgba(0,0,0,.22);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+    white-space: nowrap;
+    transition: color 140ms ease, border-color 140ms ease;
+  }
+  .desktop-analysis-screen .analysis-engine-pv {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    padding-top: 0;
+  }
+  .desktop-analysis-screen .analysis-engine-moves {
+    min-width: 0;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .desktop-analysis-screen .analysis-engine-score { transition: none; }
+}

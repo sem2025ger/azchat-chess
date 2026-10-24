@@ -33,7 +33,11 @@ interface AnalysisPanelProps {
 export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves, reviewLayout = false, requestedDepth, onIncreaseDepth, pvLines = 3, onPvLinesChange }: AnalysisPanelProps) {
   const { t } = useLanguage();
   const visiblePvLines = pvLines;
-  const displayedLines = reviewLayout ? lines?.slice(0, visiblePvLines) : lines;
+  // Reserve stable PV slots during each new search; never collapse the rows while
+  // the worker is finding the next position. The slot index is its stable key.
+  const displayedLines = reviewLayout
+    ? Array.from({ length: visiblePvLines }, (_, index) => lines?.[index] ?? null)
+    : lines;
 
   if (noMoves) {
     return (
@@ -121,25 +125,25 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
       <section className="analysis-engine-variations flex flex-col gap-3 shrink-0">
          {displayedLines && displayedLines.length > 0 ? (
            displayedLines.map((line, idx) => (
-             <div key={idx} className="analysis-engine-line flex items-start gap-4">
+             <div key={idx} data-engine-slot={idx + 1} className="analysis-engine-line flex items-start gap-4">
                 <div className={cx(
                   "analysis-engine-score px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
-                  line.mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
-                  line.evaluation > 0 ? "bg-white text-black border-white" : 
-                  line.evaluation < 0 ? "bg-black text-white border-white/20" :
+                  line?.mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
+                  (line?.evaluation ?? 0) > 0 ? "bg-white text-black border-white" : 
+                  (line?.evaluation ?? 0) < 0 ? "bg-black text-white border-white/20" :
                   "bg-neutral-800 text-neutral-300 border-neutral-600"
                 )}>
-                   {line.mate != null ? (line.mate < 0 ? `-M${Math.abs(line.mate)}` : `M${line.mate}`) : (line.evaluation > 0 ? `+${line.evaluation.toFixed(2)}` : line.evaluation.toFixed(2))}
+                   {!line ? '—' : line.mate != null ? (line.mate < 0 ? `-M${Math.abs(line.mate)}` : `M${line.mate}`) : (line.evaluation > 0 ? `+${line.evaluation.toFixed(2)}` : line.evaluation.toFixed(2))}
                 </div>
                 
                 <div className="analysis-engine-pv flex-1 flex flex-col pt-0.5">
                    <div className="analysis-engine-moves text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
-                      {line.moves.length > 0 ? line.moves.map((move, i) => (
+                      {(line?.moves.length ?? 0) > 0 ? (line?.moves ?? []).map((move, i) => (
                         <span key={i} className={i <= 1 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
                       )) : (
                         <span className="text-[0.7rem] text-neutral-600 italic">{t('game.analysis.analyzing_position')}</span>
                       )}
-                      {line.hasMore && <span className="text-[0.8rem] text-neutral-500 font-bold">…</span>}
+                      {line?.hasMore && <span className="text-[0.8rem] text-neutral-500 font-bold">…</span>}
                    </div>
                 </div>
              </div>
