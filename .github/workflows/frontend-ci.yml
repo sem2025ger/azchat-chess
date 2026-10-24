@@ -48,7 +48,8 @@ jobs:
         run: npm test
 
       - name: Mobile analysis browser regression
-        run: node tests/mobileAnalysis.browser.mjs
+        # Provide a valid session bus instead of inheriting runner-specific D-Bus state.
+        run: dbus-run-session -- node tests/mobileAnalysis.browser.mjs
 
       - name: Lint
         run: npm run lint
