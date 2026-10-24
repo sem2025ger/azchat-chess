@@ -2,13 +2,13 @@
 const { GamesError } = require('./errors');
 function createLichessClient({ fetchImpl = fetch, token = process.env.LICHESS_API_TOKEN, now = Date.now, timeoutMs = 8000, maxQueue = 64 } = {}) {
   let tail = Promise.resolve(), cooldown = 0, queued = 0;
-  function request(path, { explorer = false, accept = 'application/json' } = {}) {
+  function request(path, { explorer = false, requiresAuth = explorer, accept = 'application/json' } = {}) {
     if (queued >= maxQueue) return Promise.reject(new GamesError('UPSTREAM_UNAVAILABLE'));
     queued++;
     const task = tail.then(async () => {
       if (now() < cooldown) throw new GamesError('UPSTREAM_RATE_LIMITED', Math.ceil((cooldown - now()) / 1000));
       // The current official explorer specification requires OAuth2.
-      if (explorer && !token) throw new GamesError('UPSTREAM_AUTH_REQUIRED');
+      if (requiresAuth && !token) throw new GamesError('UPSTREAM_AUTH_REQUIRED');
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {

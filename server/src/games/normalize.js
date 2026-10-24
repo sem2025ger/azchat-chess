@@ -7,7 +7,9 @@ function masters(text, fen) {
     const data = JSON.parse(text);
     if (!Array.isArray(data.moves) || !Array.isArray(data.topGames)) throw new Error();
     return { source: 'lichess-masters', fen, total: { white: count(data.white), draws: count(data.draws), black: count(data.black) },
-      moves: data.moves.map(m => ({ uci: m.uci, san: m.san, white: count(m.white), draws: count(m.draws), black: count(m.black), games: m.white + m.draws + m.black })),
+      moves: data.moves.map(m => {
+        if (typeof m.uci !== 'string' || typeof m.san !== 'string' || m.san.length > 20 || !/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(m.uci)) throw new Error();
+        return ({ uci: m.uci, san: m.san, white: count(m.white), draws: count(m.draws), black: count(m.black), games: m.white + m.draws + m.black }); }),
       topGames: data.topGames.map(g => {
         if (!/^[a-z0-9]{8}$/i.test(g.id) || !g.white?.name || !g.black?.name || !Number.isInteger(g.year) || ![null,'white','black'].includes(g.winner)) throw new Error();
         return { id: g.id, white: g.white, black: g.black, year: g.year, ...(g.month ? { month: g.month } : {}), result: result(g.winner) };

@@ -59,7 +59,7 @@ function SourceGamesPanel({ fen, onLoad }: { fen: string; onLoad: (analysis: Ana
       })();
     }, 400);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [normalizedFen, retry, mode, status]);
+  }, [normalizedFen, mode, status]);
   const searchPlayer = async () => {
     if (!/^[A-Za-z0-9_-]{2,30}$/.test(username)) { setError(new GamesApiError('INVALID_USERNAME')); return; }
     const controller = new AbortController(); openRequest.current?.abort(); openRequest.current = controller;
@@ -105,7 +105,7 @@ function SourceGamesPanel({ fen, onLoad }: { fen: string; onLoad: (analysis: Ana
       {error && <div role="alert" className="mb-3 rounded-lg border border-red-300/25 p-3 text-red-200"><p>{t(`games.error.${error.code}`)}{error.retryAfter > 0 && ` · ${error.retryAfter} ${t('games.seconds')}`}</p><button type="button" className="mt-2 min-h-9 underline" onClick={() => mode === 'db' ? void searchDb() : mode === 'player' ? void searchPlayer() : setRetry(x => x + 1)}>{t('games.retry')}</button></div>}
       {mode === 'position' && !loading && !error && data && <>
         {!data.moves.length && !data.topGames.length && <p className="py-5 text-neutral-400">{t('games.emptyPosition')}</p>}
-        <div className="space-y-2">{data.moves.map(move => <div key={move.uci} className="rounded-lg border border-white/10 p-2"><div className="mb-1 flex justify-between"><strong>{move.san}</strong><span>{move.games.toLocaleString()} {t('games.count')}</span></div><div className="flex h-2 overflow-hidden rounded" aria-label={`${t('game.white')} ${move.white}, ${t('games.draws')} ${move.draws}, ${t('game.black')} ${move.black}`}><span className="bg-neutral-100" style={{width:`${move.games ? move.white / move.games * 100 : 0}%`}} /><span className="bg-neutral-500" style={{width:`${move.games ? move.draws / move.games * 100 : 0}%`}} /><span className="bg-neutral-800" style={{width:`${move.games ? move.black / move.games * 100 : 0}%`}} /></div></div>)}</div>
+        <div className="space-y-2">{data.moves.map(move => <div key={move.uci} className="rounded-lg border border-white/10 p-2"><div className="mb-1 flex justify-between"><strong>{move.san}</strong><span>{move.games.toLocaleString()} {t('games.count')}</span></div><div className="flex h-2 overflow-hidden rounded" aria-label={`${t('game.white')} ${move.white}, ${t('games.draws')} ${move.draws}, ${t('game.black')} ${move.black}`}><span className="bg-neutral-100" style={{width:`${move.games ? move.white / move.games * 100 : 0}%`}} /><span className="bg-neutral-500" style={{width:`${move.games ? move.draws / move.games * 100 : 0}%`}} /><span className="bg-neutral-800" style={{width:`${move.games ? move.black / move.games * 100 : 0}%`}} /></div><p className="mt-1 text-[11px] text-neutral-400">{t('game.white')} {move.games ? Math.round(move.white / move.games * 100) : 0}% · {t('games.draws')} {move.games ? Math.round(move.draws / move.games * 100) : 0}% · {t('game.black')} {move.games ? Math.round(move.black / move.games * 100) : 0}%</p></div>)}</div>
         <h3 className="mb-2 mt-5 font-bold text-amber-100">{t('games.top')}</h3>
         <GameRows games={data.topGames} opening={opening} onOpen={open} />
         <h3 className="mb-2 mt-4 font-bold text-amber-100">{t('games.recent')}</h3><p className="text-neutral-400">{t('games.noRecentMasters')}</p>

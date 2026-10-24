@@ -21,5 +21,5 @@ async function main(argv=process.argv.slice(2),env=process.env){
   if(count>latest)throw new Error('INVALID_ARGUMENTS');
   for(let issue=latest-count+1;issue<=latest;issue++)console.log(JSON.stringify({issue,...await importIssue({issue,store,maxMb:Number(env.TWIC_MAX_DB_MB||300)})}));
 }
-if(require.main===module)main().catch(()=>{console.error('TWIC import stopped; check QA target, flags, source access and size budget.');process.exitCode=1;});
+if(require.main===module)main().catch(error=>{const code = /^(INVALID_|CHOOSE_ONE_|TARGET_MUST_|TWIC_|DB_SIZE_LIMIT|CHESS_DB_)[A-Z_]*$/.test(error.message) ? error.message : 'TWIC_IMPORT_FAILED'; console.error(code);process.exitCode=1;});
 module.exports={options,main};

@@ -92,3 +92,8 @@ test('public PGN request does not require a token when upstream accepts anonymou
  const client=createLichessClient({fetchImpl:async()=>new Response('1. e4 e5 *')});
  assert.equal(await client.request('/masters/pgn/aAbqI4ey',{explorer:true,requiresAuth:false}),'1. e4 e5 *');
 });
+test('rate-limit identity trusts only explicitly configured proxy hops',()=>{
+ const {clientIp}=require('./src/games/clientIp');
+ const req={socket:{remoteAddress:'127.0.0.1'},headers:{'x-forwarded-for':'192.0.2.99, 198.51.100.12'}};
+ assert.equal(clientIp(req),'127.0.0.1');assert.equal(clientIp(req,'1'),'198.51.100.12');assert.equal(clientIp(req,'2'),'192.0.2.99');assert.equal(clientIp(req,'-1'),'127.0.0.1');
+});

@@ -10,7 +10,7 @@ function createGamesRouter({ env = process.env, client = createLichessClient({ t
   const router = express.Router();
   const buckets = new Map();
   router.use((req, res, next) => {
-    const key = req.ip; const time = now();
+    const key = require('./clientIp').clientIp(req, env.GAMES_TRUST_PROXY_HOPS); const time = now();
     for (const [ip, value] of buckets) if (value.until <= time) buckets.delete(ip);
     let item = buckets.get(key);
     if (!item) {
@@ -26,8 +26,8 @@ function createGamesRouter({ env = process.env, client = createLichessClient({ t
   router.use('/masters', (req, res, next) => flags().lichess ? next() : errorResponse(new GamesError('FEATURE_DISABLED'), res));
   router.get('/masters', route(async (req, res) => {
     const fen = validate.fen(req.query.fen);
-    const top = validate.integer(req.query.top, 15, 15);
-    validate.integer(req.query.recent, 15, 15);
+    const top = validate.integer(req.query.top, 15, 15, 0);
+    validate.integer(req.query.recent, 15, 15, 0);
     const data = await cache.get(`masters:${fen}:${top}`, 86400000, async () => normalize.masters(await client.request('/masters?' + new URLSearchParams({ fen: fen + ' 0 1', topGames: String(top) }), { explorer: true }), fen));
     res.json(data);
   }));
