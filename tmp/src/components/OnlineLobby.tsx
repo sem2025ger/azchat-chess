@@ -17,7 +17,7 @@ export function toServerTimeControl(value: string): string {
   return TIME_CONTROLS[value] ?? '3+0';
 }
 
-/** Presence is opt-in and scoped to the Play screen. Never expose socket IDs or email. */
+/** Game invitations are opt-in on the Play screen, independently of being online. */
 export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   const { socket, isConnected } = useSocket();
   const { session, user } = useAuth();
@@ -31,7 +31,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   const [inbound, setInbound] = useState<Invite | null>(null);
   const [pendingTarget, setPendingTarget] = useState<string | null>(null);
   const [message, setMessage] = useState('');
-  const [visible, setVisible] = useState(false);
+  const [readyToPlay, setReadyToPlay] = useState(false);
   const targetRef = useRef<string | null>(null);
   const roomRef = useRef<string | null>(null);
   const timeRef = useRef(timeControl);
@@ -40,7 +40,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   const available = useMemo(() => userIds.filter(id => id !== user?.id), [userIds, user?.id]);
 
   useEffect(() => {
-    if (!socket || !isConnected || !session || !visible) {
+    if (!socket || !isConnected || !session || !readyToPlay) {
       setUserIds([]);
       return;
     }
@@ -101,7 +101,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       if (roomRef.current) socket.emit('cancel_matchmaking');
       if (expiresRef.current) clearTimeout(expiresRef.current);
     };
-  }, [socket, isConnected, session?.user?.id, visible]);
+  }, [socket, isConnected, session?.user?.id, readyToPlay]);
 
   useEffect(() => {
     if (!available.length && !inbound) return;
@@ -147,16 +147,37 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
 
   return (
     <section className="rounded-2xl border border-white/10 bg-[#131817] p-3 text-neutral-100" aria-label="Online players lobby">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-bold">{tr('Spieler online', 'Игроки онлайн', 'Online players')}</h2>
-        <button type="button" className="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold hover:bg-white/10"
-          aria-pressed={visible} onClick={() => { if (visible && roomRef.current) socket?.emit('cancel_matchmaking'); targetRef.current = null; roomRef.current = null; if (expiresRef.current) clearTimeout(expiresRef.current); setVisible(v => !v); setPendingTarget(null); }}>
-          {visible ? tr('Nicht sichtbar', 'Скрыться', 'Go invisible') : tr('Sichtbar werden', 'Показаться онлайн', 'Go visible')}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h2 className="text-sm font-bold">{tr('Spielbereite Spieler', 'Игроки, готовые играть', 'Players ready to play')}</h2>
+          <span className="text-xs text-neutral-400" aria-live="polite">
+            {isConnected ? tr('● Online', '● В сети', '● Online') : tr('○ Offline', '○ Не в сети', '○ Offline')}
+          </span>
+        </div>
+        <button type="button" role="switch" aria-checked={readyToPlay}
+          disabled={!isConnected}
+          className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${readyToPlay ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-200' : 'border-white/20 hover:bg-white/10'}`}
+          onClick={() => {
+            if (readyToPlay && roomRef.current) socket?.emit('cancel_matchmaking');
+            if (readyToPlay && inbound) socket?.emit('decline_lobby_invitation', { roomId: inbound.roomId });
+            targetRef.current = null;
+            roomRef.current = null;
+            if (expiresRef.current) clearTimeout(expiresRef.current);
+            setReadyToPlay(v => !v);
+            setPendingTarget(null);
+            if (readyToPlay) setInbound(null);
+          }}>
+          {readyToPlay ? tr('Spielbereit', 'Готов играть', 'Ready to play') : tr('Nicht spielbereit', 'Не готов играть', 'Not ready to play')}
         </button>
       </div>
-      {visible && (
+      <p className="mt-2 text-xs text-neutral-400" role="status">
+        {readyToPlay
+          ? tr('Du kannst Einladungen zum Spielen erhalten.', 'Ты доступен для приглашений на партию.', 'You can receive game invitations.')
+          : tr('Du bist nicht in der Gegnerliste und erhältst keine neuen Einladungen. Du kannst die Website weiter nutzen.', 'Тебя нет в списке соперников, новые приглашения не приходят. Сайтом можно пользоваться.', 'You are not listed as an opponent and cannot receive new invitations. You can still use the website.')}
+      </p>
+      {readyToPlay && (
         <div className="mt-3 space-y-2">
-          <p className="text-xs text-neutral-400">{tr('Du bist für andere Spieler hier sichtbar. Andere Bereiche zeigen dich nicht als online.', 'Ты виден другим игрокам только здесь.', 'You are visible to players in this lobby only.')}</p>
+          <p className="text-xs text-neutral-400">{tr('Hier siehst du spielbereite Spieler. Laufende Partien werden aus der Liste entfernt.', 'Здесь отображаются игроки, готовые к партии. Играющие исчезают из списка.', 'Players ready to play appear here; busy players are excluded.')}</p>
           {available.length === 0 && <p className="text-xs text-neutral-400">{tr('Noch keine anderen Spieler verfügbar.', 'Других доступных игроков пока нет.', 'No other players available yet.')}</p>}
           {available.map(id => (
             <div key={id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
