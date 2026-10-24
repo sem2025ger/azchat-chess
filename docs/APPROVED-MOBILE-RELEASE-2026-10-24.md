@@ -20,9 +20,13 @@ The source QA stack also contains separate club, tournament and authentication w
 - TypeScript production build passed; lint: 0 errors, 50 existing production warnings.
 - Real Chromium Analysis regression passed at six mobile sizes, with a simulated bottom safe area, real Stockfish, history, board flip, editor validation/cancel and desktop three/five-line controls.
 - Settings checked at 360×640, 393×852, 430×932, 1024×600 and 1280×720: all 14 themes reachable, new dark gradients applied, reload persistence, restore-defaults behavior and readable controls.
-- Source parity: approved UI source files are copied from the approved SHA; only trailing whitespace in GameScreen is cleaned.
+- Source parity: approved UI source files are copied from the approved SHA; only trailing whitespace in GameScreen is cleaned; the browser test harness cleanup/diagnostics are hardened as recorded below.
 - GitHub Frontend and Server CI must pass on the release PR before main is updated.
 
 ## Required dependency security patch
 
 The first release CI passed all 119 server tests but npm audit blocked release on GHSA-27r3-jxmh-p828 in the existing body-parser 1.20.8 lock entry. Update only that transitive lock entry to 1.20.9; retain package.json, server code, all other lock entries (including platform metadata), and database migrations. Local audit after the patch reports zero vulnerabilities. Frontend and Server CI are required again for the final release commit. This does not change backend configuration or provision services.
+
+## Browser regression diagnostics
+
+Two final CI attempts passed all mobile geometry, real Stockfish, move/history/flip and editor checks, then timed out during the desktop transition. Preserve every assertion; log desktop progress and the original exception, and bound disposable Chromium/server cleanup so it cannot mask the failing stage. Local checks continue to exercise real Stockfish and desktop three/five-line controls. No application behavior is changed by this test-harness follow-up.

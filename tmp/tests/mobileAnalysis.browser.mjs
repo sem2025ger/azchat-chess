@@ -25,7 +25,6 @@ const server = createServer(async (request, response) => {
 let chrome;
 let ws;
 let profile;
-let closeBrowser;
 // Fail closed if Chromium or an open socket prevents the regression from ending.
 const deadline = setTimeout(() => {
   console.error('FAIL mobile browser regression exceeded 120 seconds');
@@ -73,7 +72,6 @@ try {
     pending.set(requestId, { resolve:value => { clearTimeout(timer); resolve(value); }, reject:error => { clearTimeout(timer); reject(error); } });
     ws.send(JSON.stringify({ id:requestId, method, params }));
   });
-  closeBrowser = () => cdp('Browser.close');
   const evaluate = async expression => {
     const value = await cdp('Runtime.evaluate', { expression, returnByValue:true, awaitPromise:true });
     if (value.exceptionDetails) throw Error(JSON.stringify(value.exceptionDetails));
@@ -217,27 +215,41 @@ try {
   await evaluate("[...document.querySelectorAll('.mobile-position-tools footer button')].find(button=>button.textContent==='Отмена').click()");
   assert.equal(await evaluate("localStorage.getItem('chess_analysis_session_v1')"), saved, 'Cancel must preserve analysis');
   console.log('PASS editor validation placement and draft cancellation');
+  console.log('CHECK desktop: switch viewport');
   await cdp('Emulation.setDeviceMetricsOverride', { mobile:false, width:1440, height:900, deviceScaleFactor:1 });
   await cdp('Page.navigate', { url:base + '/game?desktop-qa=preserved' });
+  console.log('CHECK desktop: navigation committed; wait for three engine lines');
   await waitFor("document.querySelectorAll('.analysis-engine-line').length === 3");
   await evaluate("document.querySelector('[aria-label=\"Линий анализа: 5\"]').click()");
+  console.log('CHECK desktop: wait for five engine lines');
   await waitFor("document.querySelectorAll('.analysis-engine-line').length === 5");
   assert.ok(await evaluate("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 5')"), 'Desktop retains five-line engine support');
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#mobile-analysis-details')).display"), 'none', 'Mobile panel stays hidden on desktop');
   console.log('PASS desktop retains three/five-line controls');
+ } catch (error) {
+  // Print the actual failing assertion before cleanup; a stuck child must not
+  // mask it behind the outer watchdog's generic timeout.
+  console.error('FAIL mobile browser check:', error);
+  throw error;
 } finally {
-  // A clean browser shutdown closes renderer/worker connections as well as its parent.
-  try { await closeBrowser?.(); } catch { /* Fall back to killing an unresponsive browser. */ }
+  // Closing a CDP socket can leave a pending Browser.close response unresolved.
+  // Terminate the disposable browser after assertions and bound all cleanup.
   try { ws?.close(); } catch { /* Already disconnected. */ }
   if (chrome && chrome.exitCode === null && chrome.signalCode === null) {
-    await new Promise(done => {
-      chrome.once('exit', done);
-      if (!chrome.kill('SIGKILL')) done();
-    });
+    let cleanupTimer;
+    await Promise.race([
+      new Promise(done => { chrome.once('exit', done); if (!chrome.kill('SIGKILL')) done(); }),
+      new Promise(done => { cleanupTimer = setTimeout(done, 3000); }),
+    ]);
+    clearTimeout(cleanupTimer);
   }
   server.closeAllConnections();
-  await new Promise(done => server.close(done));
-  // Chromium children may finish flushing profile files just after the parent exits.
+  let serverTimer;
+  await Promise.race([
+    new Promise(done => server.close(done)),
+    new Promise(done => { serverTimer = setTimeout(done, 3000); }),
+  ]);
+  clearTimeout(serverTimer);
   if (profile) await rm(profile, { recursive:true, force:true, maxRetries:10, retryDelay:100 });
   clearTimeout(deadline);
 }
