@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { StockfishEngine } from '../src/utils/StockfishEngine.ts';
 
 const originalWorker = globalThis.Worker;
+const productionAsset = '/stockfish-19-lite-single.js';
 const startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const nextFen = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1';
 let workers;
@@ -12,7 +13,7 @@ let engines;
 class WorkerStub {
   commands = [];
   terminated = false;
-  constructor() { workers.push(this); }
+  constructor(url) { this.url = url; workers.push(this); }
   postMessage(command) { this.commands.push(command); }
   terminate() { this.terminated = true; }
   emit(line) { this.onmessage({ data: line }); }
@@ -47,6 +48,11 @@ function info(worker, depth = 8, multipv = 1, cp = 24) {
   const pv = ['e2e4 e7e5 g1f3', 'd2d4 d7d5 c2c4', 'g1f3 d7d5 d2d4'][multipv - 1];
   worker.emit(`info depth ${depth} multipv ${multipv} score cp ${cp} pv ${pv}`);
 }
+
+test('production Web Worker uses the versioned Stockfish 19 asset', () => {
+  const { worker } = setup();
+  assert.equal(worker.url, productionAsset);
+});
 
 test('burst updates are coalesced while all three real engine lines stay available', t => {
   const { worker, results } = setup();

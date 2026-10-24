@@ -939,7 +939,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               </button>
             </div>
             <div className="min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-cyan-100 bg-cyan-500/15 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] whitespace-nowrap">
-              <span>Stockfish 18</span>
+              <span>Stockfish 19</span>
             </div>
           </div>
 
@@ -1093,7 +1093,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             <header className="desktop-analysis-hero hidden lg:flex shrink-0 min-w-0 items-center justify-between gap-3 px-2" aria-label={words.analysis}>
               <div className="min-w-0">
                 <h1 className="truncate text-[1.125rem] font-semibold text-[#f3e6c4]" title={loadedGameTitle || words.analysis}>{loadedGameTitle || words.analysis}</h1>
-                <p className="truncate text-xs text-[#aaa395]">{loadedGameDetails ? [loadedGameDetails.white, loadedGameDetails.black, loadedGameDetails.timeControl].filter(Boolean).join(" · ") : "Stockfish 18"}</p>
+                <p className="truncate text-xs text-[#aaa395]">{loadedGameDetails ? [loadedGameDetails.white, loadedGameDetails.black, loadedGameDetails.timeControl].filter(Boolean).join(" · ") : "Stockfish 19"}</p>
               </div>
               <span className="shrink-0 rounded-md border border-[#c9a665]/50 px-2 py-1 text-[11px] font-semibold text-[#e7c37b]">ChessAZ</span>
             </header>

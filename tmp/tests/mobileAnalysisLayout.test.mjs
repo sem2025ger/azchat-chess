@@ -22,7 +22,7 @@ test('mobile analysis keeps scores, move indices and export actions in their ded
     assert.match(header, /data-mobile-new-analysis/);
     assert.doesNotMatch(header, /data-mobile-tool="map"/);
     assert.doesNotMatch(header.split('<dialog')[0], /data-mobile-tool=|mobile-analysis-tools|<svg[^>]*lucide-cpu/);
-    assert.match(header, /mobile-analysis-engine">Stockfish 18<\/span>/);
+    assert.match(header, /mobile-analysis-engine">Stockfish 19<\/span>/);
     assert.match(header, /aria-haspopup="dialog"/);
     assert.match(header, /<dialog[^>]*mobile-analysis-actions-dialog/);
     assert.equal((header.match(/>Копировать FEN<\/button>/g) || []).length, 1);

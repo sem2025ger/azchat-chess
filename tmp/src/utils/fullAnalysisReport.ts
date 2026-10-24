@@ -34,7 +34,7 @@ export function formatFullAnalysisReport({
   }
   if (!found) report.push('(no recorded evaluations)');
 
-  report.push('', 'Stockfish 18 — selected position:');
+  report.push('', 'Stockfish 19 — selected position:');
   // Stockfish can still be calculating, or contain a result from a previous move.
   // Never mislabel those results as the selected position's analysis.
   if (!currentResult || currentResult.analyzedFen !== currentFen) {
