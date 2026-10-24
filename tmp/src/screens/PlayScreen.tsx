@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useThemeContext } from '../context/ThemeContext';
 import ChessBoard from '../components/ChessBoard';
 import MobileFriendTimeControl from '../components/MobileFriendTimeControl';
+import OnlineLobby, { toServerTimeControl } from '../components/OnlineLobby';
 
 import { Shield, Zap, Users, Trophy, X, Loader2, Sparkles, Swords, Clock, ChevronDown, Copy, Check } from 'lucide-react';
 
@@ -418,6 +419,11 @@ export default function PlayScreen() {
 
             </div>
 
+            {/* Compact, unobtrusive lobby controls sit between the clock and primary action. */}
+            <div className="relative z-10 px-2 pb-2">
+              <OnlineLobby timeControl={timeControl} />
+            </div>
+
             {/* CTA Area */}
             <div className="p-2 bg-black/60 border-t border-white/10 space-y-1.5 relative z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
                <button
@@ -435,7 +441,7 @@ export default function PlayScreen() {
                       return;
                     }
                     setIsSearching(true);
-                    socket.emit('join_queue');
+                    socket.emit('join_queue', { timeControl: toServerTimeControl(timeControl) });
                   }}
                   className={cx(
                     "w-full py-2.5 xl:py-3.5 rounded-[2rem] relative overflow-hidden transition-all duration-[150ms] group/cta active:scale-[0.97] border border-white/20 btn-glow-cycle"
@@ -465,7 +471,7 @@ export default function PlayScreen() {
                   if (socket && isConnected) {
                     setIsPrivateCreating(true);
                     setPrivateRoomId(null);
-                    socket.emit('create_private_room');
+                    socket.emit('create_private_room', { timeControl: toServerTimeControl(timeControl) });
                   } else {
                     setJoinError("Connection not ready. Please try again.");
                     setTimeout(() => setJoinError(null), 5000);

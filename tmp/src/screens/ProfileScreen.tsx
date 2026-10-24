@@ -44,7 +44,7 @@ export default function ProfileScreen() {
     : null;
 
   useEffect(() => {
-    if (session && !isLoading && mobileReturnTo && window.matchMedia('(max-width: 767px)').matches) {
+    if (session && !isLoading && mobileReturnTo && (mobileReturnTo === '/play' || window.matchMedia('(max-width: 767px)').matches)) {
       navigate(mobileReturnTo, { replace: true });
     }
   }, [session, isLoading, mobileReturnTo, navigate]);
@@ -121,7 +121,7 @@ export default function ProfileScreen() {
           password,
           options: {
             data: { username },
-            emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo))
+            emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play')
           }
         });
         if (error) throw error;
@@ -190,7 +190,7 @@ export default function ProfileScreen() {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo)) }
+        options: { emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play') }
       });
       if (error) throw error;
       setAuthMessage(t('auth.magicLinkSent'));

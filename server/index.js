@@ -124,6 +124,51 @@ io.use(createSocketAuthMiddleware(verifyTokenProxy));
 
 // State
 let waitingQueue = []; // Array of socket objects
+// Only authenticated players on the Play screen opt in to presence.
+// No email addresses, access tokens or socket IDs are shared in the list.
+const lobbyPresence = new Map(); // socket.id -> authenticated userId
+const readyLobbySockets = new Set(); // explicit ready-to-play state
+const inviteTargets = new Map(); // pending roomId -> target userId
+const ALLOWED_TIME_CONTROLS = new Set(['1+0', '1+1', '2+1', '3+0', '3+2', '5+0', '10+0', '15+10', '30+0']);
+
+function getAvailableLobbySockets() {
+  return [...lobbyPresence.entries()].flatMap(([id, userId]) => {
+    const peer = io.sockets.sockets.get(id);
+    return peer?.connected && readyLobbySockets.has(id) && !socketToRoom.has(id) &&
+      !waitingQueue.some(s => s.id === id) && !peer.data?.startingGame
+      ? [{ peer, userId }] : [];
+  });
+}
+
+function broadcastLobbyPresence() {
+  // Do not disclose the full online presence roster; only players explicitly
+  // ready for personal challenges are visible to other lobby participants.
+  const readyUsers = [...new Set(getAvailableLobbySockets().map(({ userId }) => userId))];
+  for (const [id] of lobbyPresence) {
+    const peer = io.sockets.sockets.get(id);
+    if (peer?.connected) {
+      const visible = readyUsers.filter(uid => uid !== peer.data.userId);
+      peer.emit('lobby_presence', { userIds: visible, readyUserIds: visible });
+    }
+  }
+}
+
+function setLobbyReady(socket, ready) {
+  const id = socket.id;
+  const eligible = ready && lobbyPresence.has(id) &&
+    !socketToRoom.has(id) && !waitingQueue.some(s => s.id === id) &&
+    !socket.data?.startingGame;
+  if (eligible) readyLobbySockets.add(id);
+  else readyLobbySockets.delete(id);
+  socket.emit('lobby_ready_state', { ready: readyLobbySockets.has(id) });
+  broadcastLobbyPresence();
+}
+
+function unregisterLobbySocket(id) {
+  readyLobbySockets.delete(id);
+  if (lobbyPresence.delete(id)) broadcastLobbyPresence();
+}
+
 const activeRooms = new Map(); // roomId -> { game, players: [{ socket, color }] }
 const socketToRoom = new Map(); // socket.id -> roomId
 const durableEnabled = process.env.DURABLE_ACTIVE_GAMES === 'true';
@@ -184,6 +229,8 @@ function cleanupRoom(roomId, room) {
   }
 
   activeRooms.delete(roomId);
+  inviteTargets.delete(roomId);
+  broadcastLobbyPresence();
 }
 
 function finalizeGame(roomId, payload) {
@@ -486,13 +533,76 @@ io.on('connection', (socket) => {
   socket.data = socket.data || {};
   socket.data.limiter = createSocketRateLimiter();
 
-  socket.on('join_queue', async () => {
+  socket.on('lobby_presence_enter', (payload) => {
+    lobbyPresence.set(socket.id, socket.data.userId);
+    // New visits default to ready. A user who explicitly switched off
+    // readiness may carry that preference across Home and Play routes.
+    // In-game and queued sockets are never eligible for invitations.
+    setLobbyReady(socket, payload?.ready !== false);
+  });
+
+  socket.on('lobby_ready_set', (payload) => {
+    if (typeof payload?.ready !== 'boolean' || !socket.data?.limiter?.allow('lobby')) {
+      socket.emit('lobby_ready_state', { ready: readyLobbySockets.has(socket.id) });
+      return;
+    }
+    setLobbyReady(socket, payload.ready);
+  });
+
+  socket.on('lobby_presence_leave', () => unregisterLobbySocket(socket.id));
+
+  socket.on('invite_lobby_player', (payload) => {
+    if (!socket.data.limiter.allow('lobby')) {
+      socket.emit('invitation_failed', { reason: 'rate_limit_exceeded' }); return;
+    }
+    const targetUserId = payload?.targetUserId;
+    const roomId = payload?.roomId;
+    if (typeof targetUserId !== 'string' || typeof roomId !== 'string' ||
+        targetUserId === socket.data.userId || !lobbyPresence.has(socket.id)) {
+      socket.emit('invitation_failed', { reason: 'invalid_invitation' }); return;
+    }
+    const room = activeRooms.get(roomId);
+    if (!room || !room.isPrivate || room.status !== 'pending' ||
+        !Object.values(room.players).includes(socket.id) ||
+        !ALLOWED_TIME_CONTROLS.has(room.timeControl)) {
+      socket.emit('invitation_failed', { reason: 'invalid_invitation' }); return;
+    }
+    const recipient = getAvailableLobbySockets().find(x => x.userId === targetUserId);
+    if (!recipient) {
+      socket.emit('invitation_failed', { reason: 'player_unavailable' }); return;
+    }
+    if (inviteTargets.has(roomId)) {
+      socket.emit('invitation_failed', { reason: 'already_invited' }); return;
+    }
+    inviteTargets.set(roomId, targetUserId);
+    recipient.peer.emit('lobby_game_invitation', {
+      roomId, fromUserId: socket.data.userId, timeControl: room.timeControl
+    });
+    socket.emit('invitation_sent', { roomId });
+  });
+
+  socket.on('decline_lobby_invitation', (payload) => {
+    const roomId = payload?.roomId;
+    if (typeof roomId !== 'string' || inviteTargets.get(roomId) !== socket.data.userId) return;
+    const room = activeRooms.get(roomId);
+    if (room?.status === 'pending') {
+      const hostId = room.players.w || room.players.b;
+      io.to(hostId).emit('invitation_declined', { roomId });
+    }
+    inviteTargets.delete(roomId);
+  });
+
+  socket.on('join_queue', async (payload) => {
     if (!socket.data.limiter.allow('lobby')) {
       socket.emit('rate_limit_exceeded', { action: 'join_queue' });
       return;
     }
 
     const userId = socket.data?.userId;
+    const selectedTime = payload?.timeControl ?? '10+0';
+    if (!ALLOWED_TIME_CONTROLS.has(selectedTime)) {
+      socket.emit('join_failed', { reason: 'invalid_time_control' }); return;
+    }
     if (!durableGames.ready()) { socket.emit('join_failed', { reason: 'storage_unavailable' }); return; }
     if (socket.data.startingGame) return;
 
@@ -502,18 +612,25 @@ io.on('connection', (socket) => {
     }
     if (socketToRoom.has(socket.id)) return;
 
+    socket.data.matchTimeControl = selectedTime;
     waitingQueue.push(socket);
+    setLobbyReady(socket, false);
 
     // Pair players when at least 2 are waiting with distinct user IDs
     if (waitingQueue.length >= 2) {
-      const p1 = waitingQueue[0];
-      const p2Index = waitingQueue.findIndex(
-        (s, idx) => idx > 0 && (!p1.data?.userId || !s.data?.userId || s.data.userId !== p1.data.userId)
-      );
+      let p1Index = -1;
+      let p2Index = -1;
+      for (let i = 0; i < waitingQueue.length && p2Index === -1; i++) {
+        const candidate = waitingQueue[i];
+        const match = waitingQueue.findIndex((s, idx) => idx > i &&
+          s.data.matchTimeControl === candidate.data.matchTimeControl &&
+          s.data?.userId !== candidate.data?.userId);
+        if (match !== -1) { p1Index = i; p2Index = match; }
+      }
 
       if (p2Index !== -1) {
-        const player1 = waitingQueue.splice(0, 1)[0];
-        const player2 = waitingQueue.splice(p2Index - 1, 1)[0];
+        const player2 = waitingQueue.splice(p2Index, 1)[0];
+        const player1 = waitingQueue.splice(p1Index, 1)[0];
         player1.data.startingGame = true;
         player2.data.startingGame = true;
 
@@ -523,16 +640,17 @@ io.on('connection', (socket) => {
         player1.join(roomId);
         player2.join(roomId);
 
-        const initialTime = 600;
+        const [minutes, increment] = player1.data.matchTimeControl.split('+').map(Number);
+        const initialTime = minutes * 60;
         const roomData = {
           roomId,
           game: new Chess(),
           status: 'active',
           drawOfferBy: null,
           startedAt: new Date().toISOString(),
-          timeControl: '10+0',
+          timeControl: player1.data.matchTimeControl,
           initialTime,
-          increment: 0,
+          increment,
           initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
           whiteTimeMs: initialTime * 1000,
           blackTimeMs: initialTime * 1000,
@@ -566,6 +684,8 @@ io.on('connection', (socket) => {
         activeRooms.set(roomId, roomData);
         socketToRoom.set(player1.id, roomId);
         socketToRoom.set(player2.id, roomId);
+        setLobbyReady(player1, false);
+        setLobbyReady(player2, false);
 
         console.log(`Match created: ${roomId} [${player1.id}=${colors[0]}, ${player2.id}=${colors[1]}]`);
 
@@ -587,6 +707,7 @@ io.on('connection', (socket) => {
 
   socket.on('cancel_matchmaking', () => {
     waitingQueue = waitingQueue.filter((waitingSocket) => waitingSocket.id !== socket.id);
+    broadcastLobbyPresence();
 
     const roomId = socketToRoom.get(socket.id);
     if (roomId) {
@@ -594,7 +715,9 @@ io.on('connection', (socket) => {
       if (room) {
         if (room.isPrivate === true && room.status === 'pending' && (room.players.w === socket.id || room.players.b === socket.id)) {
           activeRooms.delete(roomId);
+          inviteTargets.delete(roomId);
           socketToRoom.delete(socket.id);
+          broadcastLobbyPresence();
           socket.leave(roomId);
         }
       } else {
@@ -629,8 +752,7 @@ io.on('connection', (socket) => {
 
     // Only the new mobile invitation sends a time control. Legacy callers retain 10+0.
     const requestedTime = payload?.timeControl;
-    const allowedTimes = new Set(['1+0', '1+1', '2+1', '3+0', '3+2', '5+0', '10+0', '15+10', '30+0']);
-    if (requestedTime !== undefined && !allowedTimes.has(requestedTime)) {
+    if (requestedTime !== undefined && !ALLOWED_TIME_CONTROLS.has(requestedTime)) {
       socket.emit('join_failed', { reason: 'invalid_time_control' });
       return;
     }
@@ -672,6 +794,7 @@ io.on('connection', (socket) => {
 
     activeRooms.set(roomId, roomData);
     socketToRoom.set(socket.id, roomId);
+    setLobbyReady(socket, false);
     socket.join(roomId);
 
     console.log(`Private match created: ${roomId} by ${socket.id}`);
@@ -691,6 +814,11 @@ io.on('connection', (socket) => {
       }
 
       const roomId = payload.roomId;
+      // Explicit invitations cannot be redeemed by another signed-in user.
+      const inviteTarget = inviteTargets.get(roomId);
+      if (inviteTarget && inviteTarget !== socket.data.userId) {
+        socket.emit('join_failed', { reason: 'invitation_not_for_you' }); return;
+      }
       const roomData = activeRooms.get(roomId);
       if (!durableGames.ready()) { socket.emit('join_failed', { reason: 'storage_unavailable' }); return; }
       if (socket.data.startingGame || socketToRoom.has(socket.id)) {
@@ -748,8 +876,10 @@ io.on('connection', (socket) => {
       } finally { socket.data.startingGame = false; }
       roomData.status = 'active';
 
+      inviteTargets.delete(roomId);
       socketToRoom.set(socket.id, roomId);
       socket.join(roomId);
+      setLobbyReady(socket, false);
 
       console.log(`Private match joined: ${roomId} [${creatorSocketId}=${creatorColor}, ${socket.id}=${emptyColor}]`);
 
@@ -1020,6 +1150,7 @@ io.on('connection', (socket) => {
 
     // Remove from waiting queue
     waitingQueue = waitingQueue.filter((s) => s.id !== socket.id);
+    unregisterLobbySocket(socket.id);
 
     // Handle room disconnect
     const roomId = socketToRoom.get(socket.id);
@@ -1082,5 +1213,7 @@ module.exports = {
   getActivePlayerActionContext,
   durableGames,
   recoveryReady,
+  lobbyPresence,
+  readyLobbySockets,
 };
 
