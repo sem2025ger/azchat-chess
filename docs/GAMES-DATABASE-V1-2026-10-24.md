@@ -52,31 +52,25 @@ Live checks, sequential, no token or real game payload persisted:
 5. `feat(games): add guarded QA TWIC importer, hashing and size limits`: server DB adapter, `twic/{pgn,importer,cli}.js`, importer tests, package and lockfile.
 6. `feat(games): add gated database search, QA integration tests and scheduler`: parameterized search routes, isolated PostgreSQL test, daily scheduler, frontend database mode, strengthened saved-games regression and migration-version alignment.
 7. Follow-up fixes: observed public PGN access, documented move-field validation, complete phone tab labels, scoped proxy identity and stopping requests from a hidden desktop panel. Each has a regression assertion.
-8. Documentation: this report and `.env.example`. The requested AGENTS additions are pending explicit owner permission in a user message: automatic approval review rejected publishing that protected file, including after checking the attachment. AGENTS.md remains unchanged in the remote PR; proposed entries are preserved below.
+8. Documentation: this sanitized public evidence report and `.env.example`. AGENTS.md is unchanged: automatic approval review rejected the requested additions and requires explicit permission naming that protected file. This administrative exception does not prevent code review; deployment and activation remain separate owner steps.
 
 New runtime dependency: `fflate` 0.8.3 only, for bounded in-memory ZIP extraction. No database dumps, real PGNs, ZIPs or personal data are committed. Lockfile changes are limited to this dependency; the existing security patch is preserved.
 
-## Database objects and QA evidence
+## Database and QA summary
 
-QA ref: `iukmpcytsuofqhxsumbu`. **Nothing applied to production.**
+**Nothing applied to production.** The additive migration was applied only to the approved QA environment.
 
-- Tables: `chess_db_games`, `chess_db_positions`, `chess_db_imports`.
-- Indexes: games primary id, unique game_hash, white/black prefix indexes, year, ECO; positions primary `(pos_hash,game_id,ply)` plus game_id covering index; imports primary issue. No new extension. pg_trgm was not installed on QA; name search is prefix-only.
-- All three tables: RLS enabled, no anon/authenticated policies or table grants. Sequence also revoked from browser roles. Only service_role has table/sequence access.
-- Functions: `chess_db_control(text,int,jsonb,int,text,int)` and `chess_db_search(text,bigint,int,int)`, SECURITY INVOKER with empty search_path; execute revoked from PUBLIC/anon/authenticated, granted only to service_role. SQL uses function parameters, not dynamic SQL.
-- Import batches are atomic with advisory locking, unique game hash, index insertion only for newly added games, pre-batch budget estimate and post-insert size check inside the transaction. Only plies 1–24 are indexed. No browser import endpoint exists.
-- CLI and scheduler hard-refuse every target except the explicitly supplied QA ref. Both import flags default off. No credentials were retrieved or logged.
-- Migration applied: yes, QA only. Synthetic QA transaction: inserted=1, duplicate inserted=0, combined name/position search total=1, RLS/grant assertions passed; then ROLLBACK.
-- Final QA state after verification: games=0, positions=0, imports=0. Size before schema 12,293,811 bytes (11.72 MiB); after schema/rolled-back verification 12,555,955 bytes (11.97 MiB). Small physical allocation from schema/testing remains; no test rows remain.
-- Real one-issue import: not executed because public reuse permission is not established. Real inserted/skipped and measured MiB per issue are unavailable. The 300 MiB total-database budget leaves about 288 MiB at the observed QA size; the number of issues that fit cannot be established responsibly from one synthetic short game. The default four-issue backfill can stop early at the budget and must not be assumed to fit.
-- After TWIC rights clearance, with the owner's existing QA-only server credentials loaded securely and `TWIC_IMPORT_ENABLED` set by the owner, start with `npm --prefix server run twic:import -- --issue 1667 --target-ref iukmpcytsuofqhxsumbu`. No inline credential or new paid infrastructure is required. The CLI emits inserted/skipped and size before/after; use those measurements before backfilling. No production import is allowed by this implementation.
-- Supabase security advisor: new tables intentionally produce INFO `rls_enabled_no_policy` because they are server-only. Existing leaked-password-protection warning was unchanged. References: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy and https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection .
+- The implementation adds game, opening-position and import-progress storage with supporting indexes. Name search is prefix-only; no new extension was installed.
+- Synthetic checks verified duplicate prevention, combined name/position lookup, restricted browser access and atomic imports. Test rows were rolled back; the game tables remain empty.
+- No real TWIC issue was imported. Storage per issue and the number of issues fitting the budget remain unmeasured. The enforced 300 MiB total-database budget must be checked before real backfill; a four-issue request is not a promise that four issues fit.
+- Actual QA project identifiers, connection information and environment-specific advisory details are omitted from this public report. No credentials or real game data are included.
+- Real import and public distribution remain disabled pending source-rights clearance and owner activation. No production import is allowed by this milestone.
 
 ## Validation
 
 - Frozen installs: `npm ci --legacy-peer-deps` passed for server and frontend.
 - Frontend: 106 tests passed, TypeScript and Vite build passed; lint 0 errors / 50 existing warnings. Browser source modes were tested against explicit synthetic API responses, not represented as live masters data.
-- Server: 127 tests passed locally; 3 PostgreSQL-only suites skipped locally because no local Postgres binary/service was available. Required CI runs them against its disposable Postgres 17 service.
+- Server: 127 tests passed locally; 3 PostgreSQL-only suites skipped locally. The checked code revision subsequently passed 151/151 tests in CI, with zero skipped tests, including isolated PostgreSQL checks.
 - Production audits: server 0 vulnerabilities; frontend 0 high/critical, 2 moderate entries in existing react-router/react-router-dom. Both requested high-severity gates pass. No unrelated dependency upgrade or audit-fix sweep.
 - Browser: Chromium at 360/390/430/1280 px; all three source modes; no horizontal overflow or clipped mobile tab labels; explicit-submit-only player requests; every mode's empty/error state; Retry-After message; existing PGN load path; hidden DB mode when status.db=false; no fetch while Games is closed. A further resize check confirms a hidden desktop source panel stops requesting. Screenshots show synthetic fixture data, not user data.
 - Existing real-Stockfish browser regression passed locally: all mobile geometries, real Stockfish 19 identity, two mobile PV lines, move/history/flip controls, editor validation and three/five desktop PV lines. Exact final PR-head CI results are recorded in the PR description.
@@ -101,9 +95,9 @@ Open decisions: TWIC permission and exact required attribution if permission is 
 
 Native review recommended for all new `games.*` keys in Azerbaijani, Turkish and Ukrainian; German/Russian/English were written directly. The typed dictionaries and tests enforce complete six-language coverage. The complete key list is obtained with `Object.keys(translations).filter(k => k.startsWith('games.'))`; it includes tab/tabShort, saved/sources, position/player/db, loading/retry/seconds/count/draws/top/recent/noRecentMasters, attributionMasters/attributionLichess/attributionTwic, disabled/open, username/search/openings/sample/emptyPlayer/noOpenings, playerName/onlyPosition/dbInfo/emptyDb/more, and error.INVALID_FEN/INVALID_QUERY/INVALID_USERNAME/NOT_FOUND/FEATURE_DISABLED/UPSTREAM_RATE_LIMITED/UPSTREAM_AUTH_REQUIRED/UPSTREAM_UNAVAILABLE/INTERNAL.
 
-## Pending protected-file approval
 
-Automatic approval review rejected including AGENTS.md in the remote tree because it did not accept the attachment as explicit permission in trusted user text. The action remains blocked; it was not retried through another route. Other code and documentation are delivered without changing that protected file. Owner confirmation is required before adding these proposed notes:
+## Closure status
 
-- Section 6: Games Database v1 uses server-side Lichess sources, bounded in-memory player data, disabled TWIC flags, QA-only import, plies 1–24 and a 300 MiB total-database budget. Activation and merge remain owner-only.
-- Section 7, exact requested text: Supavisor session pooler ignores PGOPTIONS; to enforce read-only use BEGIN READ ONLY and verify SHOW transaction_read_only inside the same session.
+The functional code passed both required CI checks, frontend 106/106 and server 151/151, including real-Stockfish browser regression. The final documentation-only update does not enable any feature, import data, change credentials, alter hosting settings, merge the PR or publish the site. The PR description records CI links for the current revision. Source-rights clearance, token provisioning and operational activation are separate owner steps.
+
+Administrative exception: the two requested AGENTS.md additions remain unapplied because automatic approval review requires explicit approval of that exact protected-file change. No alternative file is used to override existing instructions.
