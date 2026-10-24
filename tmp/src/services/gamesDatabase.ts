@@ -20,3 +20,6 @@ export async function gamesRequest<T>(path: string, signal: AbortSignal): Promis
   if (!response.ok) throw new GamesApiError(body?.error?.code || 'UPSTREAM_UNAVAILABLE', Number(response.headers.get('Retry-After')) || 0);
   return body as T;
 }
+
+export type UserGamesResult = { games: SourceGame[]; openings: { white: OpeningStat[]; black: OpeningStat[] } };
+export type OpeningStat = { eco: string; name: string; games: number; scorePct: number };

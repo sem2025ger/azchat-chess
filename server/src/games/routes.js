@@ -40,6 +40,16 @@ function createGamesRouter({ env = process.env, client = createLichessClient({ t
     });
     res.json({ pgn });
   }));
+  router.get('/lichess-user/:username', route(async (req, res) => {
+    if (!flags().lichess) throw new GamesError('FEATURE_DISABLED');
+    const username = validate.username(req.params.username);
+    const max = validate.integer(req.query.max, 30, 50);
+    const data = await cache.get(`user:${username}:${max}`, 900000, async () => {
+      const text = await client.request('/api/games/user/' + username + '?' + new URLSearchParams({ max: String(max), moves: 'true', opening: 'true', pgnInJson: 'true', ongoing: 'false', finished: 'true', perfType: 'ultraBullet,bullet,blitz,rapid,classical,correspondence' }), { accept: 'application/x-ndjson' });
+      return require('./userGames').userGames(text, username, max);
+    });
+    res.json(data);
+  }));
   router.use((req, res) => errorResponse(new GamesError('NOT_FOUND'), res));
   return router;
 }

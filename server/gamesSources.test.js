@@ -67,3 +67,14 @@ test('HTTP error contract, flags, validation and inbound limiter',async()=>{
     const noToken=await fetch(base+'/masters?fen='+encodeURIComponent(fen));assert.equal(noToken.status,503);assert.equal((await noToken.json()).error.code,'UPSTREAM_AUTH_REQUIRED');
   });
 });
+const { userGames } = require('./src/games/userGames');
+test('NDJSON and per-colour opening scores use player perspective; malformed input is an error',()=>{
+ const make=(id,color,winner)=>({id,createdAt:1700000000000,status:winner?'mate':'draw',winner,speed:'blitz',players:{white:{user:{name:color==='white'?'Alice':'Bob'},rating:1500},black:{user:{name:color==='black'?'Alice':'Bob'},rating:1600}},opening:{eco:'A00',name:'Example opening'},pgn:'1. e4 e5 *'});
+ const data=userGames([make('aaaaaaaa','white','white'),make('bbbbbbbb','white',null),make('cccccccc','black','white')].map(JSON.stringify).join('\n')+'\n','alice',30);
+ assert.equal(data.games.length,3);assert.equal(data.openings.white[0].scorePct,75);assert.equal(data.openings.black[0].scorePct,0);
+ assert.deepEqual(userGames('','alice',30).games,[]);
+ assert.throws(()=>userGames('{bad}\n','alice',30),{code:'UPSTREAM_UNAVAILABLE'});
+});
+test('unknown player upstream 404 stays NOT_FOUND',async()=>{
+ await assert.rejects(createLichessClient({fetchImpl:async()=>new Response('',{status:404})}).request('/api/games/user/unknown'),{code:'NOT_FOUND'});
+});

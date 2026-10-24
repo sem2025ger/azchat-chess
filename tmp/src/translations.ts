@@ -3,6 +3,14 @@ export type Language = 'en' | 'de' | 'az' | 'tr' | 'ua' | 'ru';
 type TranslationDictionary = Record<string, Record<Language, string>>;
 
 export const translations: TranslationDictionary = {
+  "games.player": {"en": "Player", "de": "Spieler", "az": "Oyunçu", "tr": "Oyuncu", "ua": "Гравець", "ru": "Игрок"},
+  "games.username": {"en": "Lichess username", "de": "Lichess-Benutzername", "az": "Lichess istifadəçi adı", "tr": "Lichess kullanıcı adı", "ua": "Ім’я користувача Lichess", "ru": "Имя пользователя Lichess"},
+  "games.search": {"en": "Search", "de": "Suchen", "az": "Axtar", "tr": "Ara", "ua": "Шукати", "ru": "Найти"},
+  "games.openings": {"en": "Openings", "de": "Eröffnungen", "az": "Debütlər", "tr": "Açılışlar", "ua": "Дебюти", "ru": "Дебюты"},
+  "games.sample": {"en": "Statistics from these recent games only; score = wins + half of draws.", "de": "Statistik nur dieser letzten Partien; Score = Siege + halbe Remis.", "az": "Yalnız bu son partiyaların statistikası; xal = qələbə + heç-heçənin yarısı.", "tr": "Yalnızca bu son partilerin istatistiği; puan = galibiyet + beraberliğin yarısı.", "ua": "Статистика лише цих останніх партій; очки = перемоги + половина нічиїх.", "ru": "Статистика только этих последних партий; очки = победы + половина ничьих."},
+  "games.emptyPlayer": {"en": "No recent standard games found.", "de": "Keine aktuellen Standardpartien gefunden.", "az": "Son standart partiya tapılmadı.", "tr": "Son standart parti bulunamadı.", "ua": "Останніх стандартних партій не знайдено.", "ru": "Последние стандартные партии не найдены."},
+  "games.noOpenings": {"en": "No opening data in this sample.", "de": "Keine Eröffnungsdaten in dieser Auswahl.", "az": "Bu nümunədə debüt məlumatı yoxdur.", "tr": "Bu örnekte açılış bilgisi yok.", "ua": "У цій вибірці немає даних про дебюти.", "ru": "В этой выборке нет данных о дебютах."},
+  "games.attributionLichess": {"en": "Games: lichess.org", "de": "Partien: lichess.org", "az": "Partiyalar: lichess.org", "tr": "Partiler: lichess.org", "ua": "Партії: lichess.org", "ru": "Партии: lichess.org"},
   // Games Database v1
   "games.tab": {"en": "Games", "de": "Partien", "az": "Partiyalar", "tr": "Partiler", "ua": "Партії", "ru": "Партии"},
   "games.tabShort": {"en": "Games", "de": "Partien", "az": "Oyunlar", "tr": "Partiler", "ua": "Партії", "ru": "Партии"},
