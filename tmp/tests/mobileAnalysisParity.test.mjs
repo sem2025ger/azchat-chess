@@ -9,7 +9,9 @@ test('mobile review provides map, saved games and position editing without resiz
   for (const tool of ["'map'", "'games'", "'position'"]) assert.ok(game.includes(tool));
   assert.match(game, /data-mobile-analysis-dialog/);
   assert.match(game, /showModal\(\)/);
-  assert.match(game, /<SavedGamesPanel key=/);
+  const library = fs.readFileSync(new URL('../src/components/analysis/GamesLibraryPanel.tsx', import.meta.url), 'utf8');
+  assert.match(library, /<SavedGamesPanel/);
+  assert.match(game, /<GamesLibraryPanel fen={displayedGame.fen\(\)} key=/);
   assert.match(game, /<PositionMap key=/);
   assert.match(game, /<PositionTools currentFen=/);
   assert.match(game, /data-mobile-position-editor/);

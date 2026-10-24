@@ -11,9 +11,9 @@ type Tab = 'analysis' | 'moves';
 interface Line { evaluation: number; mate?: number | null; moves: string[] }
 interface MovePair { n: number; w: string; b?: string; wIndex: number; bIndex: number }
 
-export function MobileAnalysisHeader({ activeTab, onTab, actions }: {
+export function MobileAnalysisHeader({ activeTab, onTab, actions, onGames }: {
   activeTab: Tab; onTab: (tab: Tab) => void;
-  actions: ReactNode;
+  actions: ReactNode; onGames?: () => void;
 }) {
   const { language, t } = useLanguage();
   const words = analysisCopy[language];
@@ -24,6 +24,7 @@ export function MobileAnalysisHeader({ activeTab, onTab, actions }: {
           aria-pressed={activeTab === tab} aria-controls="mobile-analysis-details" onClick={() => onTab(tab)}>
           {t(`game.tabs.${tab}`)}
         </button>)}
+        {onGames && <button type="button" aria-haspopup="dialog" onClick={onGames}>{t('games.tabShort')}</button>}
       </div>
       <span className="mobile-analysis-engine">Stockfish 19</span>
       {actions}
