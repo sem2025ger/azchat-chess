@@ -32,3 +32,8 @@ test('player searches submit explicitly and DB mode is gated by server status',(
  assert.match(panel,/value === 'db' \? status\?\.db/);
  assert.match(panel,/games.attributionTwic/);assert.match(panel,/games.emptyDb/);assert.match(panel,/playerData.openings\[color\]/);
 });
+
+test('desktop-only source panel unmounts below desktop breakpoint',()=>{
+ const panel=read('../src/components/analysis/GamesLibraryPanel.tsx');const screen=read('../src/screens/GameScreen.tsx');
+ assert.match(panel,/if \(!visible\) return null/);assert.match(panel,/min-width: 1024px/);assert.match(screen,/<GamesLibraryPanel desktopOnly/);
+});

@@ -1351,7 +1351,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               ))}
             </nav>
             <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
-            {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><GamesLibraryPanel fen={displayedGame.fen()} key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
+            {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><GamesLibraryPanel desktopOnly fen={displayedGame.fen()} key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
             {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionMap key={displayedGame.fen()} fen={displayedGame.fen()} result={engineResult} language={language} failed={engineFailed} onHighlight={setPlanHighlight} /></div>}
             {workspaceTab === 'position' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionTools currentFen={displayedGame.fen()} words={words} onLoad={loadWorkspaceAnalysis} onCancel={() => { setEditingPosition(false); setWorkspaceTab(tabBeforeEditor.current); }}
               draft={positionDraftValue} selected={editorSelectedPiece} onSelected={setEditorSelectedPiece}

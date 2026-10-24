@@ -5,12 +5,21 @@ import { analysisFromPgn, type AnalysisLoad } from '../../utils/analysisWorkspac
 import SavedGamesPanel from './SavedGamesPanel';
 import type { AnalysisWords } from './copy';
 
-export default function GamesLibraryPanel({ userId, language, words, fen, onLoad }: {
-  userId?: string; language: string; words: AnalysisWords; fen: string;
+export default function GamesLibraryPanel({ userId, language, words, fen, onLoad, desktopOnly = false }: {
+  userId?: string; language: string; words: AnalysisWords; fen: string; desktopOnly?: boolean;
   onLoad: (analysis: AnalysisLoad, title: string, details?: { white: string; black: string }) => void;
 }) {
   const { t } = useLanguage();
   const [saved, setSaved] = useState(false);
+  const [visible, setVisible] = useState(() => !desktopOnly || window.matchMedia('(min-width: 1024px)').matches);
+  useEffect(() => {
+    if (!desktopOnly) return;
+    const media = window.matchMedia('(min-width: 1024px)');
+    const update = () => setVisible(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [desktopOnly]);
+  if (!visible) return null;
   return <section className="flex min-h-0 min-w-0 flex-1 flex-col" aria-label={t('games.tab')}>
     <div className="flex shrink-0 gap-2 border-b border-white/10 p-2">
       {[false, true].map(value => <button key={String(value)} type="button" aria-pressed={saved === value} onClick={() => setSaved(value)} className={`min-h-10 min-w-0 flex-1 rounded-lg px-2 text-xs font-semibold ${saved === value ? 'bg-white/10 text-amber-100' : 'text-neutral-400'}`}>{t(value ? 'games.saved' : 'games.sources')}</button>)}
