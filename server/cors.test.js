@@ -14,7 +14,11 @@ const { server, io, setTokenVerifier } = require('./index');
 const TEAM_PREVIEW = 'https://azchat-chess-405k296wy-semov20207-3068s-projects.vercel.app';
 const PERMANENT_PREVIEW = 'https://chessaz-preview.vercel.app';
 const WORKSPACE_PREVIEW = 'https://chessaz-preview-workspace.vercel.app';
+const WORKSPACE_DEPLOYMENT = 'https://chessaz-preview-workspace-68bwdot2r-semov20207-3068s-projects.vercel.app';
 const UNTRUSTED = [
+  WORKSPACE_DEPLOYMENT.replace('semov20207-3068s-projects', 'other-team'),
+  `${WORKSPACE_DEPLOYMENT}.evil.example`,
+  WORKSPACE_DEPLOYMENT.replace('https:', 'http:'),
   'https://untrusted.example',
   'https://azchat-chess-evil.vercel.app',
   'https://azchat-chess-405k296wy-other-team.vercel.app',
@@ -42,7 +46,7 @@ test('CORS: approved exact origins and verified team previews receive allow-orig
   for (const origin of [
     'https://chessaz.de', 'https://www.chessaz.de',
     'http://localhost:5173', 'http://127.0.0.1:5173',
-    process.env.FRONTEND_URL, PERMANENT_PREVIEW, WORKSPACE_PREVIEW, TEAM_PREVIEW,
+    process.env.FRONTEND_URL, PERMANENT_PREVIEW, WORKSPACE_PREVIEW, WORKSPACE_DEPLOYMENT, TEAM_PREVIEW,
     'https://azchat-chess-git-main-semov20207-3068s-projects.vercel.app',
   ]) {
     const response = await fetch(`${baseUrl}/health`, { headers: { Origin: origin } });

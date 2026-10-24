@@ -93,11 +93,13 @@ const EXACT_ALLOWED_ORIGINS = new Set([
 
 // Confirmed deployment/branch aliases for azchat-chess in the owner's Vercel team.
 const VERCEL_PREVIEW_PATTERN = /^https:\/\/azchat-chess-[a-z0-9-]+-semov20207-3068s-projects\.vercel\.app$/i;
+const WORKSPACE_PREVIEW_PATTERN = /^https:\/\/chessaz-preview-workspace-[a-z0-9-]+-semov20207-3068s-projects\.vercel\.app$/i;
 
 const isOriginAllowed = (origin) => {
   if (!origin) return true;
   if (EXACT_ALLOWED_ORIGINS.has(origin)) return true;
   if (VERCEL_PREVIEW_PATTERN.test(origin)) return true;
+  if (WORKSPACE_PREVIEW_PATTERN.test(origin)) return true;
   return false;
 };
 
