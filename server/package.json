@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "node --test *.test.js"
+    "test": "node --test *.test.js",
+    "twic:import": "node src/games/twic/cli.js"
   },
   "dependencies": {
     "@sentry/node": "11.8.0",
@@ -15,6 +16,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.22.3",
+    "fflate": "0.8.3",
     "socket.io": "^4.8.4"
   },
   "devDependencies": {
