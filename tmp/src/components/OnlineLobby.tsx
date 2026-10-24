@@ -21,7 +21,7 @@ export function toServerTimeControl(value: string): string {
 /** Show only ready-to-play challengers in a compact, expandable Play lobby. */
 export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   const { socket, isConnected } = useSocket();
-  const { session, user } = useAuth();
+  const { session, user, isLoading } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const isGerman = language === 'de';
@@ -155,6 +155,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
 
   const signInForPlay = () => navigate('/profile?returnTo=%2Fplay');
   const setReady = () => {
+    if (isLoading) return;
     if (!session) { signInForPlay(); return; }
     if (!isConnected || !socket) return;
     const nextReady = !readyToPlay;
@@ -171,19 +172,20 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
     setReadyToPlay(nextReady);
   };
   const togglePlayers = () => {
+    if (isLoading) return;
     if (!session) { signInForPlay(); return; }
     setShowPlayers(v => !v);
   };
 
   return (
-    <section aria-label={tr('Spielbereitschaft und Gegner', 'Готовность и соперники', 'Readiness and opponents')} className="w-full">
+    <section aria-label={tr('Spielbereitschaft und Gegner', 'Готовность и соперники', 'Readiness and opponents')} className="w-full online-lobby">
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-2 rounded-xl border border-[#5c4a33]/70 bg-[#161718] p-2">
         <button
           type="button"
           role="switch"
           aria-checked={!!session && isConnected && readyToPlay}
           onClick={setReady}
-          disabled={!!session && !isConnected}
+          disabled={isLoading || (!!session && !isConnected)}
           className={`flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-center text-[11px] font-bold leading-tight transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs ${session && isConnected && readyToPlay ? 'border-emerald-600/60 bg-emerald-950/60 text-emerald-200' : 'border-white/15 bg-white/[0.04] text-neutral-300'}`}
         >
           <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${session && isConnected && readyToPlay ? 'bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,0.55)]' : 'bg-neutral-500'}`} />
@@ -193,6 +195,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
           type="button"
           aria-expanded={showPlayers}
           aria-controls="chessaz-ready-opponents"
+          disabled={isLoading}
           onClick={togglePlayers}
           className="flex min-h-[44px] min-w-0 items-center justify-center gap-1 rounded-lg border border-[#78603d]/80 bg-[#27231c] px-1.5 py-2 text-center text-[11px] font-bold leading-tight text-[#f1d5a5] transition-colors hover:bg-[#342b1e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 sm:gap-1.5 sm:px-2 sm:text-xs"
         >
