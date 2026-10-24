@@ -281,7 +281,7 @@ export default function ChessAZCommunityScreen() {
           <p className="text-sm text-neutral-300">{user ? t.membersOnly : t.login}</p>
           {user
             ? <button className={button} disabled={busy} onClick={membershipAction}>{t.join}</button>
-            : <Link to="/profile" className={button}>{language === 'de' ? 'Anmelden' : language === 'ru' ? 'Войти' : 'Sign in'}</Link>}
+            : <Link to="/profile?returnTo=%2Fchat" className={button}>{language === 'de' ? 'Anmelden' : language === 'ru' ? 'Войти' : 'Sign in'}</Link>}
         </section>
       )}
       {club && member && !loading && (
