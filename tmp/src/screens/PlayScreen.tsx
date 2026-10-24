@@ -10,6 +10,7 @@ import ChessBoard from '../components/ChessBoard';
 import MobileFriendTimeControl from '../components/MobileFriendTimeControl';
 import { toServerTimeControl } from '../components/OnlineLobby';
 import ArenaPlayPanel from '../components/ArenaPlayPanel';
+import MobileOpponentSearchOverlay from '../components/MobileOpponentSearchOverlay';
 
 import { X, Loader2, Swords, Clock, Copy, Check } from 'lucide-react';
 
@@ -32,6 +33,7 @@ export default function PlayScreen() {
   const { t } = useLanguage();
   const [timeControl, setTimeControl] = useState('3 min.');
   const [isSearching, setIsSearching] = useState(false);
+  const [waitingForSocket, setWaitingForSocket] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
   const accentTheme: AccentTheme = 'gold';
 
@@ -89,6 +91,7 @@ export default function PlayScreen() {
     if (!socket) return;
     const onMatchFound = (data: any) => {
       setIsSearching(false);
+      setWaitingForSocket(false);
       setIsPrivateCreating(false);
       setIsJoiningPrivate(false);
       navigate(`/play?roomId=${data.roomId}&color=${data.color}`);
@@ -148,6 +151,7 @@ export default function PlayScreen() {
     if (authError === 'unauthorized') {
       setJoinError('Session expired. Please sign in again.');
       setIsSearching(false);
+      setWaitingForSocket(false);
       setIsPrivateCreating(false);
       setIsJoiningPrivate(false);
       const timer = setTimeout(() => setJoinError(null), 5000);
@@ -164,6 +168,35 @@ export default function PlayScreen() {
     }
     return () => clearInterval(interval);
   }, [isSearching]);
+
+  // A sleeping multiplayer backend can take time to establish its first WebSocket.
+  // Queue exactly once after connection, unless the player cancels or times out.
+  useEffect(() => {
+    if (!waitingForSocket || !isConnected || !socket) return;
+    setWaitingForSocket(false);
+    socket.emit('join_queue', { timeControl: toServerTimeControl(timeControl) });
+  }, [waitingForSocket, isConnected, socket, timeControl]);
+
+  useEffect(() => {
+    if (!waitingForSocket) return;
+    const timer = setTimeout(() => {
+      setWaitingForSocket(false);
+      setIsSearching(false);
+      setJoinError('Connection unavailable. Please try again shortly.');
+    }, 65000);
+    return () => clearTimeout(timer);
+  }, [waitingForSocket]);
+
+  const cancelMatchmaking = () => {
+    if (socket && isConnected) socket.emit('cancel_matchmaking');
+    setWaitingForSocket(false);
+    setIsSearching(false);
+    setIsPrivateCreating(false);
+    setIsJoiningPrivate(false);
+    setPrivateRoomId(null);
+    setJoinError(null);
+    setCopiedLink(false);
+  };
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -204,25 +237,35 @@ export default function PlayScreen() {
                 {joinError}
               </div>
             )}
-            {/* Matchmaking Overlay */}
+            {/* Search on phones has its own typography and visual hierarchy. */}
+            {isSearching && (
+              <MobileOpponentSearchOverlay
+                title={t('play.searching')}
+                description={t('play.searchingDesc')}
+                elapsed={formatTime(searchTime)}
+                cancelLabel={t('play.cancel')}
+                onCancel={cancelMatchmaking}
+              />
+            )}
+            {/* Keep the established desktop and private-room overlays unchanged. */}
             {(isSearching || isPrivateCreating || isJoiningPrivate) && (
-              <div className="absolute inset-0 z-50 flex items-center justify-center rounded-[2rem] overflow-hidden">
+              <div className={isSearching ? "absolute inset-0 z-50 hidden md:flex items-center justify-center rounded-[2rem] overflow-hidden" : "absolute inset-0 z-50 flex items-center justify-center rounded-[2rem] overflow-hidden"}>
                 <div className="absolute inset-0 bg-black/95 backdrop-blur-3xl transition-all duration-700" />
-                <div className={cx("relative z-10 flex flex-col items-center text-center p-4 animate-scale-up scale-75 lg:scale-90", isSearching && "max-md:w-full max-md:max-w-[340px] max-md:scale-100 max-md:p-2.5")}>
-                  <div className={cx("w-20 h-20 mb-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden group/loader shadow-2xl", isSearching && "max-md:w-14 max-md:h-14 max-md:mb-3 max-md:rounded-xl")}>
+                <div className="relative z-10 flex flex-col items-center text-center p-4 animate-scale-up scale-75 lg:scale-90">
+                  <div className="w-20 h-20 mb-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden group/loader shadow-2xl">
                     <Loader2 size={40} className={cx("animate-spin-slow absolute opacity-20", accentColors[accentTheme].primary)} />
                     <Swords size={28} className={cx("animate-bounce", accentColors[accentTheme].primary)} />
                   </div>
-                  <h2 className={cx("text-2xl font-black text-white uppercase italic skew-x-[-6deg] mb-1 tracking-tighter", isSearching && "max-md:text-[20px] max-md:leading-[1.25] max-md:font-semibold max-md:font-sans max-md:normal-case max-md:not-italic max-md:skew-x-0 max-md:tracking-[-0.025em] max-md:text-[#eee5d7]")}>
+                  <h2 className="text-2xl font-black text-white uppercase italic skew-x-[-6deg] mb-1 tracking-tighter">
                     {isSearching ? t('play.searching') : isJoiningPrivate ? "Joining private room..." : "Waiting for friend..."}
                   </h2>
-                  <p className={cx("text-neutral-500 text-[0.55rem] font-black uppercase tracking-[0.2em] mb-6 opacity-60 italic", isSearching && "max-md:text-[14px] max-md:leading-5 max-md:font-medium max-md:normal-case max-md:not-italic max-md:tracking-[0.01em] max-md:text-[#bcb6aa] max-md:opacity-100 max-md:mb-4")}>
+                  <p className="text-neutral-500 text-[0.55rem] font-black uppercase tracking-[0.2em] mb-6 opacity-60 italic">
                     {isSearching ? t('play.searchingDesc') : "Get ready for a great match"}
                   </p>
                   
                   {isSearching && (
-                    <div className="bg-white/[0.03] px-8 py-3 rounded-xl border border-white/10 font-mono text-2xl font-bold text-white mb-6 shadow-inner flex items-center gap-2 max-md:px-5 max-md:py-2 max-md:mb-4 max-md:text-[23px] max-md:text-[#f1e7d9]">
-                      <Clock size={16} className="text-neutral-600 max-md:text-[#bcb6aa]" />
+                    <div className="bg-white/[0.03] px-8 py-3 rounded-xl border border-white/10 font-mono text-2xl font-bold text-white mb-6 shadow-inner flex items-center gap-2">
+                      <Clock size={16} className="text-neutral-600" />
                       {formatTime(searchTime)}
                     </div>
                   )}
@@ -251,19 +294,8 @@ export default function PlayScreen() {
                   )}
                   
                   <button 
-                    onClick={() => {
-                      if (socket && isConnected) {
-                        socket.emit('cancel_matchmaking');
-                      }
-
-                      setIsSearching(false);
-                      setIsPrivateCreating(false);
-                      setIsJoiningPrivate(false);
-                      setPrivateRoomId(null);
-                      setJoinError(null);
-                      setCopiedLink(false);
-                    }}
-                    className={cx("flex items-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg font-black text-[0.65rem] uppercase tracking-widest transition-all active:scale-95 shadow-2xl group/cancel", isSearching && "max-md:min-h-[44px] max-md:py-2.5 max-md:text-[15px] max-md:font-semibold max-md:normal-case max-md:tracking-[0.01em] max-md:text-[#e9aaa5] max-md:border-red-400/30")}
+                    onClick={cancelMatchmaking}
+                    className="flex items-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg font-black text-[0.65rem] uppercase tracking-widest transition-all active:scale-95 shadow-2xl group/cancel"
                   >
                     <X size={14} className="group-hover:rotate-90 transition-transform" /> {t('play.cancel')}
                   </button>
@@ -310,7 +342,16 @@ export default function PlayScreen() {
               mobileInviteReset.current?.();
               if (authIsLoading) return;
               if (!session) { navigate('/profile?returnTo=%2Fplay'); return; }
-              if (!socket || !isConnected) { setJoinError('Connection not ready. Please try again.'); return; }
+              if (!socket || !isConnected) {
+                if (authError === 'unauthorized') {
+                  setJoinError('Session expired. Please sign in again.');
+                  return;
+                }
+                setWaitingForSocket(true);
+                setIsSearching(true);
+                return;
+              }
+              setWaitingForSocket(false);
               setIsSearching(true);
               socket.emit('join_queue', { timeControl: toServerTimeControl(timeControl) });
             }}
