@@ -282,10 +282,10 @@ try {
   // Lobby layout is independent of game/analysis layout and needs no account.
   await cdp('Page.navigate', { url:'about:blank' });
   await waitFor("location.href === 'about:blank'");
-  for (const [width, height] of [[375,667], [393,720], [390,844]]) {
+  for (const [width, height] of [[375,667], [393,720], [390,844], [360,640]]) {
     await cdp('Emulation.setDeviceMetricsOverride', { mobile:true, width, height, deviceScaleFactor:1 });
     await cdp('Page.navigate', { url:base + '/play?mobile-qa=arena' });
-    await waitFor("!!document.querySelector('.mobile-arena-panel select')");
+    await waitFor("!!document.querySelector('.mobile-arena-time[aria-haspopup=dialog]')");
     const geometry = await evaluate(`(() => {
       const panel = document.querySelector('.mobile-arena-panel');
       const board = document.querySelector('.play-lobby-board').getBoundingClientRect();
@@ -293,16 +293,44 @@ try {
       return {panel:panel.getBoundingClientRect().toJSON(),board:board.toJSON(),nav:nav.toJSON(),
         internalScroll:panel.scrollHeight > panel.clientHeight + 2,
         lobby:document.querySelectorAll('.online-lobby').length,
-        clocks:panel.querySelectorAll('select').length,options:panel.querySelectorAll('option').length};
+        clocks:panel.querySelectorAll('.mobile-arena-time').length,nativeLists:panel.querySelectorAll('select').length,
+        timeHeight:panel.querySelector('.mobile-arena-time').getBoundingClientRect().height};
     })()`);
     assert.ok(geometry.panel.bottom <= geometry.nav.top, 'All mobile arena actions stay above navigation: ' + JSON.stringify(geometry));
     assert.ok(Math.abs(geometry.board.width - geometry.board.height) < 1, 'Lobby board stays square');
     assert.equal(geometry.internalScroll, false);
     assert.equal(geometry.lobby, 0, 'Desktop lobby must not mount on mobile');
     assert.equal(geometry.clocks, 1);
-    assert.equal(geometry.options, 9);
-    await evaluate("(() => {const clock=document.querySelector('.mobile-arena-panel select');clock.value='5 min.';clock.dispatchEvent(new Event('change',{bubbles:true}));})()");
+    assert.equal(geometry.nativeLists, 0);
+    assert.ok(geometry.timeHeight >= 44 && geometry.timeHeight <= 50, 'Compact time trigger keeps a touch target');
+    assert.ok(geometry.board.width >= Math.min(width - 8, height - 340), 'Board uses the recovered vertical space');
+    await evaluate("document.querySelector('.mobile-arena-time').click()");
+    await waitFor("document.querySelector('.mobile-time-dialog')?.open");
+    const picker = await evaluate(`(() => {
+      const d=document.querySelector('.mobile-time-dialog'); const r=d.getBoundingClientRect();
+      return {rect:r.toJSON(),scroll:d.scrollHeight>d.clientHeight+1,buttons:d.querySelectorAll('.mobile-time-options button').length,
+        groups:[...d.querySelectorAll('h3')].map(n=>n.textContent),width:innerWidth,height:innerHeight};
+    })()`);
+    assert.equal(picker.scroll, false, 'All nine options fit without a scroll');
+    assert.equal(picker.buttons, 9);
+    assert.deepEqual(picker.groups, ['Bullet','Blitz','Rapid']);
+    assert.ok(picker.rect.top >= 0 && picker.rect.bottom <= height);
+    assert.ok(Math.abs((picker.rect.top + picker.rect.bottom)/2 - height/2) < 2, 'Time picker is centered');
+    await evaluate("[...document.querySelectorAll('.mobile-time-options button')].find(b=>b.textContent === '5 мин.').click()");
     await waitFor("document.querySelector('.mobile-arena-clock strong').textContent === '5 мин.'");
+    assert.equal(await evaluate("document.querySelector('.mobile-time-dialog').open"), true, 'Selection remains visible until confirmed');
+    assert.equal(await evaluate("document.querySelector('.mobile-time-options button[aria-pressed=true]').textContent"), '5 мин.');
+    await evaluate("document.querySelector('.mobile-time-done').click()");
+    await waitFor("!document.querySelector('.mobile-time-dialog')");
+    assert.equal(await evaluate("document.activeElement === document.querySelector('.mobile-arena-time')"), true);
+    await evaluate("document.querySelector('.mobile-arena-time').click()");
+    await waitFor("document.querySelector('.mobile-time-dialog')?.open");
+    await evaluate("document.querySelector('.mobile-time-options button[aria-pressed=true]').click()");
+    await waitFor("!document.querySelector('.mobile-time-dialog')");
+    await evaluate("document.querySelector('.mobile-arena-time').click()");
+    await waitFor("document.querySelector('.mobile-time-dialog')?.open");
+    await evaluate("document.querySelector('.mobile-time-close').click()");
+    await waitFor("!document.querySelector('.mobile-time-dialog')");
     await evaluate("document.querySelector('.mobile-arena-footer button').focus();document.querySelector('.mobile-arena-footer button').click()");
     await waitFor("!!document.querySelector('[role=dialog]')");
     const dialog = await evaluate("document.querySelector('[role=dialog]').getBoundingClientRect().toJSON()");
@@ -310,7 +338,7 @@ try {
     await evaluate("document.querySelector('[aria-label=\"Закрыть\"]').click()");
     await waitFor("!document.querySelector('[role=dialog]')");
     assert.equal(await evaluate("document.activeElement === document.querySelector('.mobile-arena-footer button')"), true, 'Closing the friend dialog restores focus to its visible trigger');
-    console.log('PASS compact mobile arena, native clock and friend dialog at', width, height);
+    console.log('PASS larger board, centered time grid, selection/close/focus and friend dialog at', width, height);
   }
   await cdp('Page.navigate', { url:'about:blank' });
   await waitFor("location.href === 'about:blank'");
