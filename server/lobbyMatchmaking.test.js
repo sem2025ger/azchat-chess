@@ -55,7 +55,16 @@ test('lobby: matching respects chosen clocks and direct challenges restrict reci
     const host = await client(port, 'host-player'); sockets.push(host);
     const recipient = await client(port, 'target-player'); sockets.push(recipient);
     const stranger = await client(port, 'stranger-player'); sockets.push(stranger);
-    const presence = once(host, 'lobby_presence');
+    const presence = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('No target in presence')), 4000);
+      const handler = value => {
+        if (!value?.userIds?.includes('target-player')) return;
+        clearTimeout(timer);
+        host.off('lobby_presence', handler);
+        resolve(value);
+      };
+      host.on('lobby_presence', handler);
+    });
     host.emit('lobby_presence_enter');
     recipient.emit('lobby_presence_enter');
     stranger.emit('lobby_presence_enter');
