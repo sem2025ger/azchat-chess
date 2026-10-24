@@ -19,5 +19,5 @@
   .mobile-arena-panel .text-glow-cycle { background-size:200% 100%; animation:textGlowCycle 18s ease-in-out infinite; }
 }
 @media (max-width:767px) and (orientation:portrait) {
-  .play-lobby-board { max-width:min(100%, max(200px, calc(100dvh - 390px))) !important; }
+  .play-lobby-board { max-width:min(100%, max(200px, calc(100dvh - 390px - env(safe-area-inset-bottom, 0px)))) !important; }
 }
