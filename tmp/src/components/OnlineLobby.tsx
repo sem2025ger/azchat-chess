@@ -35,7 +35,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   const targetRef = useRef<string | null>(null);
   const roomRef = useRef<string | null>(null);
   const timeRef = useRef(timeControl);
-  timeRef.current = timeControl;
+  useEffect(() => { timeRef.current = timeControl; }, [timeControl]);
   const expiresRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const available = useMemo(() => userIds.filter(id => id !== user?.id), [userIds, user?.id]);
 
