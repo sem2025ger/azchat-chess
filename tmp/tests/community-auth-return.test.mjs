@@ -17,10 +17,11 @@ test('all email callbacks carry club intent to a stable QA host', () => {
   assert.match(helper, /chessaz-preview-workspace\.vercel\.app/);
   assert.match(helper, /callback\.searchParams\.set\('returnTo', '\/chat'\)/);
   assert.match(profile, /emailRedirectTo: authCallbackUrl\(window\.location\.origin, '\/profile', Boolean\(clubReturnTo\), mobileReturnTo === '\/play'\)/);
-  assert.match(profile, /redirectTo: authCallbackUrl\(window\.location\.origin, '\/update-password', Boolean\(clubReturnTo\)\)/);
+  assert.match(profile, /redirectTo: authCallbackUrl\(window\.location\.origin, '\/update-password', Boolean\(clubReturnTo\), mobileReturnTo === '\/play'\)/);
 });
 test('password recovery keeps /chat as an explicit post-update option', () => {
-  assert.match(reset, /clubReturnTarget\(searchParams\.get\('returnTo'\)\)/);
+  assert.match(reset, /clubReturnTarget\(requestedReturn\)/);
   assert.match(reset, /navigate\(backTo\)/);
+  assert.match(reset, /requestedReturn === '\/play' \? '\/play'/);
   assert.match(helper, /return value === '\/chat' \? '\/chat' : null/);
 });
