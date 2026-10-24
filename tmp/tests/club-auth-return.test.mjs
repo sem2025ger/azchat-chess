@@ -15,9 +15,9 @@ test('password and OTP callbacks keep club return on the stable QA origin', () =
   assert.match(helper, /chessaz-preview-workspace\.vercel\.app/);
   assert.match(helper, /current\.origin/);
   assert.match(helper, /value === '\/chat'/);
-  assert.match(profile, /authCallbackUrl\(window\.location\.origin, '\/update-password', Boolean\(clubReturnTo\)\)/);
+  assert.match(profile, /authCallbackUrl\(window\.location\.origin, '\/update-password', Boolean\(clubReturnTo\), mobileReturnTo === '\/play'\)/);
   assert.match(profile, /authCallbackUrl\(window\.location\.origin, '\/profile', Boolean\(clubReturnTo\), mobileReturnTo === '\/play'\)/);
-  assert.match(password, /clubReturnTarget\(searchParams\.get\('returnTo'\)\)/);
+  assert.match(password, /clubReturnTarget\(requestedReturn\)/);
   assert.match(password, /navigate\(backTo\)/);
 });
 
@@ -25,4 +25,6 @@ test('play magic-link callbacks preserve /play and return after signing in', () 
   assert.match(helper, /else if \(returnToPlay\) callback\.searchParams\.set\('returnTo', '\/play'\)/);
   assert.match(profile, /mobileReturnTo === '\/play'/);
   assert.match(profile, /navigate\(mobileReturnTo, \{ replace: true \}\)/);
+  assert.match(password, /requestedReturn === '\/play' \? '\/play'/);
+  assert.match(password, /clubReturnTarget\(requestedReturn\)/);
 });
