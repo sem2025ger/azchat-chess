@@ -419,6 +419,11 @@ export default function PlayScreen() {
 
             </div>
 
+            {/* Online players and readiness placed directly above the play action. */}
+            <div className="relative z-10 p-2">
+              <OnlineLobby timeControl={timeControl} compact />
+            </div>
+
             {/* CTA Area */}
             <div className="p-2 bg-black/60 border-t border-white/10 space-y-1.5 relative z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
                <button
@@ -482,7 +487,6 @@ export default function PlayScreen() {
             </div>
 
           </div>
-          <OnlineLobby timeControl={timeControl} />
           {/* Spacer: matches user footer height so panel bottom aligns with board bottom */}
           <div className="h-0 md:h-[38px] shrink-0" />
         </div>
