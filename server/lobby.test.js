@@ -36,6 +36,22 @@ test('online lobby: private invitations and time-aware matchmaking', async () =>
     const bPresence = next(a,'lobby_presence');
     b.emit('lobby_presence_enter');
     assert.deepEqual((await bPresence).userIds, ['b']);
+    // Both users enter the game lobby ready by default.
+    const initialReady = next(a, 'lobby_presence');
+    b.emit('lobby_ready_set', { ready: false });
+    const notReady = await initialReady;
+    assert.deepEqual(notReady.userIds, ['b'], 'not-ready player stays online');
+    assert.deepEqual(notReady.readyUserIds, [], 'not-ready player is not challengeable');
+    const unavailableRoom = next(a, 'private_room_created');
+    a.emit('create_private_room', { timeControl: '3+2' });
+    const unavailableId = (await unavailableRoom).roomId;
+    const denied = next(a, 'invitation_failed');
+    a.emit('invite_lobby_player', { roomId: unavailableId, targetUserId: 'b' });
+    assert.equal((await denied).reason, 'player_unavailable');
+    a.emit('cancel_matchmaking');
+    const readyAgain = next(a, 'lobby_presence');
+    b.emit('lobby_ready_set', { ready: true });
+    assert.deepEqual((await readyAgain).readyUserIds, ['b']);
 
     const created = next(a,'private_room_created');
     a.emit('create_private_room', { timeControl: '3+2' });
