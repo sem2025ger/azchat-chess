@@ -533,12 +533,11 @@ io.on('connection', (socket) => {
   socket.data = socket.data || {};
   socket.data.limiter = createSocketRateLimiter();
 
-  socket.on('lobby_presence_enter', (payload) => {
+  socket.on('lobby_presence_enter', () => {
     lobbyPresence.set(socket.id, socket.data.userId);
-    // New visits default to ready. A user who explicitly switched off
-    // readiness may carry that preference across Home and Play routes.
-    // In-game and queued sockets are never eligible for invitations.
-    setLobbyReady(socket, payload?.ready !== false);
+    // Entering Play does not opt a user in. Only a deliberate ready toggle
+    // makes the authenticated player discoverable to other lobby users.
+    setLobbyReady(socket, false);
   });
 
   socket.on('lobby_ready_set', (payload) => {
