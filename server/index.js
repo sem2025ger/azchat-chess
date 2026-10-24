@@ -141,16 +141,15 @@ function getAvailableLobbySockets() {
 }
 
 function broadcastLobbyPresence() {
-  const onlineUsers = [...new Set([...lobbyPresence.entries()]
-    .filter(([id]) => io.sockets.sockets.get(id)?.connected)
-    .map(([, userId]) => userId))];
+  // Do not disclose the full online presence roster; only players explicitly
+  // ready for personal challenges are visible to other lobby participants.
   const readyUsers = [...new Set(getAvailableLobbySockets().map(({ userId }) => userId))];
   for (const [id] of lobbyPresence) {
     const peer = io.sockets.sockets.get(id);
-    if (peer?.connected) peer.emit('lobby_presence', {
-      userIds: onlineUsers.filter(uid => uid !== peer.data.userId),
-      readyUserIds: readyUsers.filter(uid => uid !== peer.data.userId)
-    });
+    if (peer?.connected) {
+      const visible = readyUsers.filter(uid => uid !== peer.data.userId);
+      peer.emit('lobby_presence', { userIds: visible, readyUserIds: visible });
+    }
   }
 }
 
