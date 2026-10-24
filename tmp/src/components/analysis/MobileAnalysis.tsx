@@ -25,7 +25,7 @@ export function MobileAnalysisHeader({ activeTab, onTab, actions }: {
           {t(`game.tabs.${tab}`)}
         </button>)}
       </div>
-      <span className="mobile-analysis-engine">Stockfish 18</span>
+      <span className="mobile-analysis-engine">Stockfish 19</span>
       {actions}
     </div>
   </header>;

@@ -97,18 +97,39 @@ try {
     window.__stockfishId = '';
     window.__stockfishWorkerUrls = [];
     const NativeWorker = window.Worker;
-    window.Worker = class extends NativeWorker {
-      constructor(...args) {
-        super(...args);
-        window.__stockfishWorkerUrls.push(String(args[0]));
-        this.addEventListener('message', event => {
-          if (typeof event.data !== 'string') return;
-          const name = event.data.match(/^id name (.*)$/m);
-          if (name) window.__stockfishId = name[1].trim();
-        });
-      }
-      postMessage(...args) { window.__engineCommands.push(args[0]); return super.postMessage(...args); }
-    };
+    // Geometry-only pages need no engine computation. Running several WASM
+    // workers sequentially in headless Chromium can stall the CDP renderer.
+    // Keep the genuine browser engine for both full interaction scenarios.
+    const realEngineQA = location.search.includes('mobile-qa=interactions') ||
+      location.search.includes('desktop-qa=preserved');
+    if (realEngineQA) {
+      window.Worker = class extends NativeWorker {
+        constructor(...args) {
+          super(...args);
+          window.__stockfishWorkerUrls.push(String(args[0]));
+          this.addEventListener('message', event => {
+            if (typeof event.data !== 'string') return;
+            const name = event.data.match(/^id name (.*)$/m);
+            if (name) window.__stockfishId = name[1].trim();
+          });
+        }
+        postMessage(...args) { window.__engineCommands.push(args[0]); return super.postMessage(...args); }
+      };
+    } else {
+      // UI geometry assertions are independent of evaluation. A minimal
+      // handshake stub avoids WASM startup, without changing the app code.
+      window.Worker = class {
+        onmessage = null;
+        onerror = null;
+        postMessage(command) {
+          window.__engineCommands.push(command);
+          if (command === 'uci' || command === 'isready') {
+            queueMicrotask(() => this.onmessage?.({ data: command === 'uci' ? 'uciok' : 'readyok' }));
+          }
+        }
+        terminate() {}
+      };
+    }
   ` });
   const capture = async name => {
     if (!process.env.MOBILE_QA_SCREENSHOT_DIR) return;
@@ -173,6 +194,7 @@ try {
   const realEngineIdentity = await evaluate("window.__stockfishId");
   assert.match(realEngineIdentity, /Stockfish\\s+19(?:\\b|\\D)/i, 'Official UCI id must identify the genuine Stockfish 19 engine');
   assert.ok(await evaluate("window.__stockfishWorkerUrls.some(url => url.endsWith('/stockfish-19-lite-single.js'))"), 'Analysis must load bundled Stockfish 19 worker');
+  assert.equal(await evaluate("document.querySelector('.mobile-analysis-engine')?.textContent.trim()"), 'Stockfish 19', 'Engine label matches actual UCI version');
   console.log('PASS real Stockfish 19 UCI identity: ' + realEngineIdentity);
   console.log('PASS real Stockfish worker and two visible PV lines');
   await waitFor("document.querySelectorAll('.mobile-analysis-figurine').length > 0 && [...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0)");
