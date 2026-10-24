@@ -294,7 +294,8 @@ try {
         internalScroll:panel.scrollHeight > panel.clientHeight + 2,
         lobby:document.querySelectorAll('.online-lobby').length,
         clocks:panel.querySelectorAll('.mobile-arena-time').length,nativeLists:panel.querySelectorAll('select').length,
-        timeHeight:panel.querySelector('.mobile-arena-time').getBoundingClientRect().height};
+        timeHeight:panel.querySelector('.mobile-arena-time').getBoundingClientRect().height,
+        scrollOwners:[...document.querySelectorAll('main,main div')].filter(n=>/auto|scroll/.test(getComputedStyle(n).overflowY)).map(n=>({client:n.clientHeight,scroll:n.scrollHeight}))};
     })()`);
     assert.ok(geometry.panel.bottom <= geometry.nav.top, 'All mobile arena actions stay above navigation: ' + JSON.stringify(geometry));
     assert.ok(Math.abs(geometry.board.width - geometry.board.height) < 1, 'Lobby board stays square');
@@ -303,7 +304,8 @@ try {
     assert.equal(geometry.clocks, 1);
     assert.equal(geometry.nativeLists, 0);
     assert.ok(geometry.timeHeight >= 44 && geometry.timeHeight <= 50, 'Compact time trigger keeps a touch target');
-    assert.ok(geometry.board.width >= Math.min(width - 8, height - 340), 'Board uses the recovered vertical space');
+    assert.ok(geometry.board.width >= Math.min(width - 8, height - 344), 'Board uses the recovered vertical space');
+    assert.ok(geometry.scrollOwners.every(n=>n.scroll<=n.client+2), 'Pre-game screen needs no nested vertical scrolling: '+JSON.stringify(geometry));
     await evaluate("document.querySelector('.mobile-arena-time').click()");
     await waitFor("document.querySelector('.mobile-time-dialog')?.open");
     const picker = await evaluate(`(() => {

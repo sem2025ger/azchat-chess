@@ -178,7 +178,7 @@ export default function PlayScreen() {
   };
 
   return (
-    <div className="min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto relative pb-6 lg:pb-3 max-md:px-1">
+    <div className="play-lobby-screen min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto relative pb-6 lg:pb-3 max-md:px-1">
       
 
       <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_370px] 2xl:grid-cols-[minmax(0,1fr)_430px] gap-2 lg:gap-4 items-start justify-center flex-1 min-h-0 max-lg:flex-none max-lg:min-h-fit pt-0 lg:pt-0">
