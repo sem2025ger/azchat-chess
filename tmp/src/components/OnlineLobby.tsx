@@ -32,7 +32,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   const [inbound, setInbound] = useState<Invite | null>(null);
   const [pendingTarget, setPendingTarget] = useState<string | null>(null);
   const [message, setMessage] = useState('');
-  const [readyToPlay, setReadyToPlay] = useState(() => sessionStorage.getItem('chessaz_lobby_ready') !== 'false');
+  const [readyToPlay, setReadyToPlay] = useState(false);
   const [readyIds, setReadyIds] = useState<string[]>([]);
   const [showPlayers, setShowPlayers] = useState(false);
   const targetRef = useRef<string | null>(null);
@@ -45,7 +45,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
 
   useEffect(() => {
     if (!socket || !isConnected || !session) {
-      setUserIds([]); setReadyIds([]);
+      setUserIds([]); setReadyIds([]); setReadyToPlay(false);
       return;
     }
     const onPresence = (data: { userIds?: string[]; readyUserIds?: string[] }) => {
@@ -97,11 +97,10 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       targetRef.current = null; roomRef.current = null;
       if (expiresRef.current) clearTimeout(expiresRef.current);
       setPendingTarget(null); setInbound(null);
-      sessionStorage.setItem('chessaz_lobby_ready', 'false');
       setReadyToPlay(false);
     };
     socket.on('match_found', onMatch);
-    socket.emit('lobby_presence_enter', { ready: sessionStorage.getItem('chessaz_lobby_ready') !== 'false' });
+    socket.emit('lobby_presence_enter');
     return () => {
       socket.emit('lobby_presence_leave');
       socket.off('lobby_presence', onPresence);
@@ -169,7 +168,6 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       setPendingTarget(null);
       setInbound(null);
     }
-    sessionStorage.setItem('chessaz_lobby_ready', String(nextReady));
     setReadyToPlay(nextReady);
   };
   const togglePlayers = () => {
@@ -179,23 +177,24 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
 
   return (
     <section aria-label={tr('Spielbereitschaft und Gegner', 'Готовность и соперники', 'Readiness and opponents')} className="w-full">
-      <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#5c4a33]/70 bg-[#161718] p-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-2 rounded-xl border border-[#5c4a33]/70 bg-[#161718] p-2">
         <button
           type="button"
           role="switch"
           aria-checked={!!session && isConnected && readyToPlay}
           onClick={setReady}
-          className={`flex min-h-[44px] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 py-2 text-[11px] font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 sm:text-xs ${session && isConnected && readyToPlay ? 'border-emerald-600/60 bg-emerald-950/60 text-emerald-200' : 'border-white/15 bg-white/[0.04] text-neutral-300'}`}
+          disabled={!!session && !isConnected}
+          className={`flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2 py-2 text-center text-[11px] font-bold leading-tight transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs ${session && isConnected && readyToPlay ? 'border-emerald-600/60 bg-emerald-950/60 text-emerald-200' : 'border-white/15 bg-white/[0.04] text-neutral-300'}`}
         >
           <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${session && isConnected && readyToPlay ? 'bg-emerald-400 shadow-[0_0_8px_rgba(74,222,128,0.55)]' : 'bg-neutral-500'}`} />
-          <span className="min-w-0">{readyToPlay ? tr('Spielbereit', 'Готов играть', 'Ready to play') : tr('Nicht bereit', 'Не готов', 'Not ready')}</span>
+          <span className="min-w-0">{session && isConnected && readyToPlay ? tr('Spielbereit', 'Готов играть', 'Ready to play') : tr('Nicht bereit', 'Не готов', 'Not ready')}</span>
         </button>
         <button
           type="button"
           aria-expanded={showPlayers}
           aria-controls="chessaz-ready-opponents"
           onClick={togglePlayers}
-          className="flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[#78603d]/80 bg-[#27231c] px-2 py-2 text-[11px] font-bold text-[#f1d5a5] transition-colors hover:bg-[#342b1e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 sm:text-xs"
+          className="flex min-h-[44px] min-w-0 items-center justify-center gap-1 rounded-lg border border-[#78603d]/80 bg-[#27231c] px-1.5 py-2 text-center text-[11px] font-bold leading-tight text-[#f1d5a5] transition-colors hover:bg-[#342b1e] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 sm:gap-1.5 sm:px-2 sm:text-xs"
         >
           <Swords size={14} className="shrink-0" aria-hidden="true" />
           <span className="min-w-0">{tr('Gegner wählen', 'Выбрать соперника', 'Choose opponent')}</span>
