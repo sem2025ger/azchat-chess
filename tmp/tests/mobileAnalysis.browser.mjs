@@ -270,8 +270,12 @@ try {
   console.log('CHECK desktop: navigation committed; wait for three engine lines');
   await waitFor("document.querySelectorAll('.analysis-engine-line').length === 3");
   await evaluate("document.querySelector('[aria-label=\"Линий анализа: 5\"]').click()");
-  console.log('CHECK desktop: wait for five engine lines');
-  await waitFor("document.querySelectorAll('.analysis-engine-line').length === 5");
+  console.log('CHECK desktop: wait for five real Stockfish variations');
+  // Fixed slots appear immediately, before the worker can receive the new
+  // MultiPV command. Wait for the actual command and five non-placeholder
+  // scores; asserting the slot count alone would produce a false pass.
+  await waitFor("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 5')");
+  await waitFor("document.querySelectorAll('.analysis-engine-line').length === 5 && [...document.querySelectorAll('.analysis-engine-score')].every(score => score.textContent.trim() !== '—')");
   assert.ok(await evaluate("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 5')"), 'Desktop retains five-line engine support');
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#mobile-analysis-details')).display"), 'none', 'Mobile panel stays hidden on desktop');
   console.log('PASS desktop retains three/five-line controls');
