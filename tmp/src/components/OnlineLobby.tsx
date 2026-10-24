@@ -19,7 +19,7 @@ export function toServerTimeControl(value: string): string {
 }
 
 /** Show only ready-to-play challengers in a compact, expandable Play lobby. */
-export default function OnlineLobby({ timeControl, compact = false }: { timeControl: string; compact?: boolean }) {
+export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   const { socket, isConnected } = useSocket();
   const { session, user } = useAuth();
   const { language } = useLanguage();
