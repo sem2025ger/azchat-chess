@@ -94,8 +94,19 @@ try {
   await cdp('Page.addScriptToEvaluateOnNewDocument', { source:`
     localStorage.setItem('app-language','ru');localStorage.setItem('chess_sound','Muted / Off');
     window.__engineCommands = [];
+    window.__stockfishId = '';
+    window.__stockfishWorkerUrls = [];
     const NativeWorker = window.Worker;
     window.Worker = class extends NativeWorker {
+      constructor(...args) {
+        super(...args);
+        window.__stockfishWorkerUrls.push(String(args[0]));
+        this.addEventListener('message', event => {
+          if (typeof event.data !== 'string') return;
+          const name = event.data.match(/^id name (.*)$/m);
+          if (name) window.__stockfishId = name[1].trim();
+        });
+      }
       postMessage(...args) { window.__engineCommands.push(args[0]); return super.postMessage(...args); }
     };
   ` });
@@ -158,6 +169,11 @@ try {
   await cdp('Page.navigate', { url:base + '/game?mobile-qa=interactions' });
   await waitFor("document.querySelectorAll('.mobile-analysis-line').length === 2 && [...document.querySelectorAll('.mobile-analysis-score')].every(score=>score.textContent !== '—')");
   assert.ok(await evaluate("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 2')"), 'Worker calculates two lines, rather than hiding extra work');
+  await waitFor("typeof window.__stockfishId === 'string' && window.__stockfishId.length > 0");
+  const realEngineIdentity = await evaluate("window.__stockfishId");
+  assert.match(realEngineIdentity, /Stockfish\\s+19(?:\\b|\\D)/i, 'Official UCI id must identify the genuine Stockfish 19 engine');
+  assert.ok(await evaluate("window.__stockfishWorkerUrls.some(url => url.endsWith('/stockfish-19-lite-single.js'))"), 'Analysis must load bundled Stockfish 19 worker');
+  console.log('PASS real Stockfish 19 UCI identity: ' + realEngineIdentity);
   console.log('PASS real Stockfish worker and two visible PV lines');
   await waitFor("document.querySelectorAll('.mobile-analysis-figurine').length > 0 && [...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0)");
   assert.ok(await evaluate("[...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0 && Math.abs(img.getBoundingClientRect().width - 33) < 0.5)"), 'Figurines load from existing assets at fixed readable size');
