@@ -31,22 +31,28 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   const [inbound, setInbound] = useState<Invite | null>(null);
   const [pendingTarget, setPendingTarget] = useState<string | null>(null);
   const [message, setMessage] = useState('');
-  const [readyToPlay, setReadyToPlay] = useState(false);
+  const [readyToPlay, setReadyToPlay] = useState(true);
+  const [readyIds, setReadyIds] = useState<string[]>([]);
   const targetRef = useRef<string | null>(null);
   const roomRef = useRef<string | null>(null);
   const timeRef = useRef(timeControl);
   useEffect(() => { timeRef.current = timeControl; }, [timeControl]);
   const expiresRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const readySet = useMemo(() => new Set(readyIds), [readyIds]);
   const available = useMemo(() => userIds.filter(id => id !== user?.id), [userIds, user?.id]);
 
   useEffect(() => {
-    if (!socket || !isConnected || !session || !readyToPlay) {
-      setUserIds([]);
+    if (!socket || !isConnected || !session) {
+      setUserIds([]); setReadyIds([]);
       return;
     }
-    socket.emit('lobby_presence_enter');
-    const onPresence = (data: { userIds?: string[] }) =>
+    const onPresence = (data: { userIds?: string[]; readyUserIds?: string[] }) => {
       setUserIds(Array.isArray(data?.userIds) ? data.userIds.filter(id => typeof id === 'string').slice(0, 100) : []);
+      setReadyIds(Array.isArray(data?.readyUserIds) ? data.readyUserIds.filter(id => typeof id === 'string').slice(0, 100) : []);
+    };
+    const onReady = (data: { ready?: boolean }) => {
+      if (typeof data?.ready === 'boolean') setReadyToPlay(data.ready);
+    };
     const onInvitation = (data: Invite) => {
       if (typeof data?.roomId !== 'string' || typeof data?.fromUserId !== 'string') return;
       setInbound(current => current ?? data);
@@ -80,6 +86,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       socket.emit('cancel_matchmaking');
     };
     socket.on('lobby_presence', onPresence);
+    socket.on('lobby_ready_state', onReady);
     socket.on('lobby_game_invitation', onInvitation);
     socket.on('private_room_created', onCreated);
     socket.on('invitation_failed', onFail);
@@ -88,11 +95,14 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       targetRef.current = null; roomRef.current = null;
       if (expiresRef.current) clearTimeout(expiresRef.current);
       setPendingTarget(null); setInbound(null);
+      setReadyToPlay(false);
     };
     socket.on('match_found', onMatch);
+    socket.emit('lobby_presence_enter');
     return () => {
       socket.emit('lobby_presence_leave');
       socket.off('lobby_presence', onPresence);
+      socket.off('lobby_ready_state', onReady);
       socket.off('lobby_game_invitation', onInvitation);
       socket.off('private_room_created', onCreated);
       socket.off('invitation_failed', onFail);
@@ -101,7 +111,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       if (roomRef.current) socket.emit('cancel_matchmaking');
       if (expiresRef.current) clearTimeout(expiresRef.current);
     };
-  }, [socket, isConnected, session?.user?.id, readyToPlay]);
+  }, [socket, isConnected, session?.user?.id]);
 
   useEffect(() => {
     if (!available.length && !inbound) return;
@@ -127,7 +137,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       if (roomRef.current) socket.emit('cancel_matchmaking');
       targetRef.current = null; roomRef.current = null;
       setPendingTarget(null);
-      setMessage('Invitation expired.');
+      setMessage(tr('Einladung abgelaufen.', 'Время приглашения истекло.', 'Invitation expired.'));
     }, 60000);
   };
 
@@ -158,14 +168,16 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
           disabled={!isConnected}
           className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${readyToPlay ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-200' : 'border-white/20 hover:bg-white/10'}`}
           onClick={() => {
-            if (readyToPlay && roomRef.current) socket?.emit('cancel_matchmaking');
-            if (readyToPlay && inbound) socket?.emit('decline_lobby_invitation', { roomId: inbound.roomId });
-            targetRef.current = null;
-            roomRef.current = null;
-            if (expiresRef.current) clearTimeout(expiresRef.current);
-            setReadyToPlay(v => !v);
-            setPendingTarget(null);
-            if (readyToPlay) setInbound(null);
+            const nextReady = !readyToPlay;
+            socket?.emit('lobby_ready_set', { ready: nextReady });
+            if (!nextReady && roomRef.current) socket?.emit('cancel_matchmaking');
+            if (!nextReady && inbound) socket?.emit('decline_lobby_invitation', { roomId: inbound.roomId });
+            if (!nextReady) {
+              targetRef.current = null; roomRef.current = null;
+              if (expiresRef.current) clearTimeout(expiresRef.current);
+              setPendingTarget(null); setInbound(null);
+            }
+            setReadyToPlay(nextReady);
           }}>
           {readyToPlay ? tr('Spielbereit', 'Готов играть', 'Ready to play') : tr('Nicht spielbereit', 'Не готов играть', 'Not ready to play')}
         </button>
@@ -173,24 +185,26 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       <p className="mt-2 text-xs text-neutral-400" role="status">
         {readyToPlay
           ? tr('Du kannst Einladungen zum Spielen erhalten.', 'Ты доступен для приглашений на партию.', 'You can receive game invitations.')
-          : tr('Du bist nicht in der Gegnerliste und erhältst keine neuen Einladungen. Du kannst die Website weiter nutzen.', 'Тебя нет в списке соперников, новые приглашения не приходят. Сайтом можно пользоваться.', 'You are not listed as an opponent and cannot receive new invitations. You can still use the website.')}
+          : tr('Du bleibst online sichtbar, erhältst aber keine neuen Spieleinladungen.', 'Ты виден в списке онлайн, но новые приглашения не приходят.', 'You remain visible online but cannot receive new game invitations.')}
       </p>
-      {readyToPlay && (
-        <div className="mt-3 space-y-2">
-          <p className="text-xs text-neutral-400">{tr('Hier siehst du spielbereite Spieler. Laufende Partien werden aus der Liste entfernt.', 'Здесь отображаются игроки, готовые к партии. Играющие исчезают из списка.', 'Players ready to play appear here; busy players are excluded.')}</p>
+      <div className="mt-3 space-y-2">
+          <p className="text-xs text-neutral-400">{tr('Spieler sind online sichtbar, auch wenn sie nicht bereit sind. Herausfordern nur, wenn bereit.', 'Игроки видны в сети даже когда не готовы; вызвать можно только готовых.', 'Players remain visible online even if not ready; only ready players can be challenged.')}</p>
           {available.length === 0 && <p className="text-xs text-neutral-400">{tr('Noch keine anderen Spieler verfügbar.', 'Других доступных игроков пока нет.', 'No other players available yet.')}</p>}
           {available.map(id => (
             <div key={id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-              <span className="min-w-0 truncate text-sm">{profiles[id] || tr('Spieler', 'Игрок', 'Player')}</span>
-              <button type="button" disabled={!!pendingTarget} className="shrink-0 rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-neutral-950 disabled:opacity-50"
-                onClick={() => challenge(id)}>{pendingTarget === id ? tr('Warten…', 'Ожидание…', 'Waiting…') : tr('Herausfordern', 'Вызвать', 'Challenge')}</button>
+              <span className="min-w-0 flex-1 truncate text-sm">{profiles[id] || tr('Spieler', 'Игрок', 'Player')}</span>
+              <span className={`shrink-0 text-[11px] ${readySet.has(id) ? 'text-emerald-300' : 'text-neutral-400'}`}>
+                {readySet.has(id) ? tr('Bereit', 'Готов', 'Ready') : tr('Nicht bereit', 'Не готов', 'Not ready')}
+              </span>
+              {readySet.has(id) && readyToPlay && <button type="button" disabled={!!pendingTarget} className="shrink-0 rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-neutral-950 disabled:opacity-50"
+                onClick={() => challenge(id)}>{pendingTarget === id ? tr('Warten…', 'Ожидание…', 'Waiting…') : tr('Herausfordern', 'Вызвать', 'Challenge')}</button>}
             </div>
           ))}
           {!!pendingTarget && <button type="button" className="text-xs underline underline-offset-4" onClick={() => {
             socket?.emit('cancel_matchmaking'); targetRef.current = null; roomRef.current = null; if (expiresRef.current) clearTimeout(expiresRef.current); setPendingTarget(null);
           }}>{tr('Einladung abbrechen', 'Отменить приглашение', 'Cancel invitation')}</button>}
         </div>
-      )}
+      </div>
       {message && <p role="status" className="mt-2 text-xs text-amber-200">{message}</p>}
       {inbound && <div role="dialog" aria-label="Game invitation" className="mt-3 rounded-xl border border-amber-300/30 bg-amber-400/10 p-3">
         <p className="text-sm font-semibold">{tr('Spieleinladung von', 'Приглашение от', 'Invitation from')} {profiles[inbound.fromUserId] || tr('Spieler', 'игрока', 'player')} · {inbound.timeControl}</p>
