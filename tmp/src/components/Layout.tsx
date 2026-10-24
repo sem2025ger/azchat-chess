@@ -1,8 +1,9 @@
-import { Suspense, useEffect, useRef, useSyncExternalStore } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
 import nightEarthStill from '../assets/night-earth-still.webp';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Home, Grid, MessageSquare, User, Settings, Circle } from 'lucide-react';
+import { premiumInterfaceThemes } from '../lib/interfaceThemes';
 import { useThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { type Language } from '../translations';
@@ -30,11 +31,12 @@ export default function Layout() {
   useEffect(() => scheduleNavigationPreload(location.pathname), [location.pathname]);
   // The scroll container stays mounted across routes. Do not preserve the Analysis
   // scroll offset when the user returns to the mobile Home screen.
-  useEffect(() => {
-    if ((location.pathname === '/home' || location.pathname === '/') &&
-        window.matchMedia('(max-width: 767px)').matches) {
-      if (routeScrollRef.current) routeScrollRef.current.scrollTop = 0;
-    }
+  useLayoutEffect(() => {
+    // The route scroll owner is persistent; reset before paint, for every mobile tab.
+    // The viewport/body may also have retained an old offset on shorter screens.
+    if (!window.matchMedia('(max-width: 767px)').matches) return;
+    if (routeScrollRef.current) routeScrollRef.current.scrollTop = 0;
+    window.scrollTo(0, 0);
   }, [location.pathname]);
   const isDesktopAnalysisRoute = location.pathname === '/game';
   const needsConstrainedScroll =
@@ -44,6 +46,7 @@ export default function Layout() {
   const { language, setLanguage, t } = useLanguage();
 
   const bgClasses: Record<string, string> = {
+    ...Object.fromEntries(premiumInterfaceThemes.map(theme => [theme.id, theme.class])),
     'Void Black': 'bg-[#161512]',
     'Deep Space': 'bg-gradient-to-br from-[#1a1c2c] via-[#0f0f1b] to-black',
     'Velvet Gold': 'bg-gradient-to-br from-[#2f2210] via-[#1c1408] to-[#0e0a04] shadow-[inset_0_0_150px_rgba(223,176,98,0.03)]',
@@ -60,11 +63,11 @@ export default function Layout() {
 
   return (
     <div className={cx(
-      needsConstrainedScroll ? "h-[100dvh] overflow-hidden" : "min-h-screen",
+      needsConstrainedScroll ? "h-[100dvh] overflow-hidden" : "min-h-screen max-md:h-[100dvh] max-md:min-h-0 max-md:overflow-hidden",
       isDesktopAnalysisRoute && "lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden",
       "w-full flex selection:bg-chess-gold/30 selection:text-white",
       currentBgClass
-    )}>
+    )} data-analysis-route={isDesktopAnalysisRoute || undefined}>
 
       {/* Premium Sidebar Navigation - Hidden on Mobile */}
       <aside className="hidden md:flex w-20 xl:w-72 bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
@@ -138,22 +141,22 @@ export default function Layout() {
       </aside>
 
       {/* Mobile Bottom Navigation - Visible only on Small Screens */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
+      <nav data-mobile-app-nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} premiumHome />
-        <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} />
-        <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} />
-        <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} />
-        <MobileNavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} />
+        <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} accent="analysis" />
+        <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} accent="chat" />
+        <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} accent="profile" />
+        <MobileNavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} accent="settings" />
       </nav>
 
       {/* Main Content Area */}
       <main className={cx(
-        "flex-1 flex flex-col relative overflow-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0",
+        "flex-1 flex flex-col relative overflow-hidden pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 max-md:min-h-0",
         needsConstrainedScroll && "min-h-0",
         isDesktopAnalysisRoute && "lg:min-h-0"
       )}>
         <div ref={routeScrollRef} className={cx(
-          "flex-1 overflow-y-auto relative z-10 custom-scrollbar flex flex-col",
+          "flex-1 min-h-0 overflow-y-auto relative z-10 custom-scrollbar flex flex-col max-md:overflow-anchor-none",
           needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : "overscroll-none",
           isDesktopAnalysisRoute && "lg:overflow-hidden lg:min-h-0"
         )}>
@@ -205,7 +208,14 @@ function NavItemActiveDot() {
   );
 }
 
-function MobileNavItem({ to, icon, label, premiumHome = false }: { to: string, icon: React.ReactNode, label: string, premiumHome?: boolean }) {
+const mobileActiveAccent = {
+  analysis: 'text-[#A8DED0] bg-[linear-gradient(150deg,rgba(61,130,116,.24),rgba(16,27,28,.88))] ring-1 ring-[#6CB7A4]/40 shadow-[inset_0_1px_0_rgba(195,245,230,.12)]',
+  chat: 'text-[#D7C1F0] bg-[linear-gradient(150deg,rgba(116,89,150,.24),rgba(24,21,33,.88))] ring-1 ring-[#AC91CF]/40 shadow-[inset_0_1px_0_rgba(240,215,255,.10)]',
+  profile: 'text-[#B6CCEF] bg-[linear-gradient(150deg,rgba(74,109,165,.23),rgba(16,24,35,.9))] ring-1 ring-[#8BA8D5]/40 shadow-[inset_0_1px_0_rgba(215,230,255,.10)]',
+  settings: 'text-[#EACB9F] bg-[linear-gradient(150deg,rgba(145,107,69,.22),rgba(30,23,19,.9))] ring-1 ring-[#C6A174]/40 shadow-[inset_0_1px_0_rgba(255,227,191,.11)]',
+} as const;
+
+function MobileNavItem({ to, icon, label, premiumHome = false, accent }: { to: string, icon: React.ReactNode, label: string, premiumHome?: boolean, accent?: keyof typeof mobileActiveAccent }) {
   const { pathname } = useLocation();
   const destination = to === '/home' && pathname === '/' ? '/' : to;
 
@@ -217,18 +227,18 @@ function MobileNavItem({ to, icon, label, premiumHome = false }: { to: string, i
       onPointerDown={() => prefetchRoute(to)}
       className={({ isActive }) =>
         cx(
-          "site-nav-link flex flex-col items-center justify-center flex-1 h-full gap-1 transition-[color,transform,opacity] duration-150 active:opacity-80 motion-reduce:transition-none",
+          "site-nav-link flex flex-col items-center justify-center flex-1 min-w-0 h-full gap-1 rounded-xl transition-[color,background-color,border-color,box-shadow,opacity] duration-150 active:opacity-80 motion-reduce:transition-none",
           premiumHome
             ? (isActive
                 ? "text-[#F6DCAC] scale-110 rounded-xl bg-[linear-gradient(145deg,rgba(223,176,98,0.15),rgba(25,22,24,0.88)_60%,rgba(167,139,250,0.09))] ring-1 ring-[#CDA35A]/40 shadow-[inset_0_1px_0_rgba(255,235,183,0.1),0_0_12px_rgba(223,176,98,0.12)]"
-                : "text-[#DEBF85] hover:text-[#F6DCAC] rounded-xl bg-[linear-gradient(145deg,rgba(223,176,98,0.09),rgba(25,22,24,0.88)_60%,rgba(167,139,250,0.06))] ring-1 ring-[#CDA35A]/25")
-            : (isActive ? "text-chess-active scale-110" : "text-neutral-500 hover:text-neutral-300")
+                : "text-neutral-500 hover:text-neutral-300")
+            : (isActive ? (accent ? mobileActiveAccent[accent] : "text-chess-active") : "text-neutral-500 hover:text-neutral-300")
         )
       }
     >
       <div className="relative">
         {icon}
-        <Circle size={4} className="absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-chess-active fill-current" />
+        <Circle size={4} className="absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-current fill-current" />
       </div>
       <span className="text-[0.5rem] font-black uppercase tracking-widest">{label}</span>
     </NavLink>

@@ -1,8 +1,8 @@
-import { lazy, Suspense, useState, useEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
+import { lazy, Suspense, useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, type CSSProperties } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
-import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw, Clock } from 'lucide-react';
+import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw, Clock, Map, FolderOpen, Pencil, X, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { clsx } from 'clsx';
@@ -10,6 +10,8 @@ import { twMerge } from 'tailwind-merge';
 import EvaluationBar from '../components/EvaluationBar';
 import AnalysisPanel from '../components/AnalysisPanel';
 import AnalysisWorkspaceHeader from '../components/analysis/AnalysisWorkspaceHeader';
+import { MobileAnalysisHeader, MobileAnalysisDetails } from '../components/analysis/MobileAnalysis';
+import { mobileAnalysisCopy } from '../components/analysis/mobileAnalysisCopy';
 import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
 import PositionMap from '../components/analysis/PositionMap';
@@ -55,12 +57,33 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const { t, language } = useLanguage();
   const words = analysisCopy[language];
   const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position'>('analysis');
+  // The mobile analysis tools open only on demand; preserve the full-size board.
+  const [mobileTool, setMobileTool] = useState<'map' | 'games' | 'position' | null>(null);
+  const mobileToolDialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (mobileTool && mobileToolDialogRef.current && !mobileToolDialogRef.current.open) {
+      mobileToolDialogRef.current.showModal();
+    }
+    if (!mobileTool) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [mobileTool]);
   const [pvLines, setPvLines] = useState(3);
+  const [mobileOrientation, setMobileOrientation] = useState<'w' | 'b'>('w');
   const [planHighlight, setPlanHighlight] = useState<{ fen: string; squares: Square[] } | null>(null);
   const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
   const [loadedGameTitle, setLoadedGameTitle] = useState('');
   const [loadedGameDetails, setLoadedGameDetails] = useState<{ white: string; black: string; timeControl?: string } | null>(null);
   const [editingPosition, setEditingPosition] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const closeOnDesktop = () => {
+      if (media.matches) { setMobileTool(null); setEditingPosition(false); }
+    };
+    media.addEventListener('change', closeOnDesktop);
+    return () => media.removeEventListener('change', closeOnDesktop);
+  }, []);
   const tabBeforeEditor = useRef<'analysis' | 'map' | 'games'>('analysis');
   const [editorSelectedPiece, setEditorSelectedPiece] = useState('P');
   const [positionDraftValue, setPositionDraftValue] = useState<PositionDraft>(() => positionDraft(new Chess().fen()));
@@ -106,6 +129,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       ? window.matchMedia('(min-width: 768px)').matches
       : false
   );
+  const effectivePvLines = mode === 'review' && !isDesktop ? 2 : pvLines;
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
@@ -150,12 +174,12 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [analysisBoardHeight, setAnalysisBoardHeight] = useState<number | null>(null);
 
   useEffect(() => {
-    if (isMultiplayer || typeof ResizeObserver === 'undefined') return;
+    if (isMultiplayer || mode === 'review' || typeof ResizeObserver === 'undefined') return;
     const board = analysisBoardRef.current;
     if (!board) return;
 
     const measure = () => {
-      if (!window.matchMedia(mode === 'review' ? '(min-width: 1024px)' : '(min-width: 1280px)').matches) return;
+      if (!window.matchMedia('(min-width: 1280px)').matches) return;
       const height = Math.round(board.offsetHeight);
       if (height > 0) setAnalysisBoardHeight(prev => prev === height ? prev : height);
     };
@@ -170,7 +194,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
     };
   }, [isMultiplayer, mode]);
 
-  useEffect(() => {
+  // Measure review dimensions before first paint to prevent board/panel reflow.
+  useLayoutEffect(() => {
     if (mode !== 'review' || typeof ResizeObserver === 'undefined') return;
     const workspace = reviewWorkspaceRef.current;
     if (!workspace) return;
@@ -190,7 +215,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     ? countryCodeToFlag(profile.countryCode)
     : null;
 
-  const { sound, boardTheme } = useThemeContext();
+  const { sound, boardTheme, confirmMobileMoves } = useThemeContext();
   const soundThemeRef = useRef(sound);
   useEffect(() => {
     soundThemeRef.current = sound;
@@ -475,6 +500,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     setLoadedGameTitle(title);
     setLoadedGameDetails(details || null);
     setWorkspaceTab('analysis');
+    setMobileTool(null);
     setEditingPosition(false);
     saveAnalysisSession(analysis.moveHistory, analysis.viewMoveIndex, undefined, analysis.positionHistory[0]);
   };
@@ -490,6 +516,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     setLoadedGameTitle('');
     setLoadedGameDetails(null);
     setWorkspaceTab('analysis');
+    setMobileTool(null);
     setEditingPosition(false);
     saveAnalysisSession([], -1);
     setGame(empty.game);
@@ -564,7 +591,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           ? liveFen
           : positionHistory[historyIndex] || liveFen;
 
-      engineRef.current.analyze(targetFen, mode === 'review' ? analysisDepth : 18, mode === 'review' ? pvLines : 3);
+      engineRef.current.analyze(targetFen, mode === 'review' ? analysisDepth : 18, mode === 'review' ? effectivePvLines : 3);
     } else if (engineRef.current) {
       engineRef.current.stop();
     }
@@ -574,7 +601,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     liveFen,
     positionHistory,
     analysisDepth,
-    pvLines,
+    effectivePvLines,
     mode
   ]);
 
@@ -628,7 +655,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer, playerColor, canSendGameAction]
+    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
   );
 
 
@@ -817,8 +844,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 <button type="button" aria-label="К концу партии" title="К концу партии" disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
               </div>
   );
-  const analysisWorkspaceHeader = mode === 'review' ? (
+  const analysisWorkspaceHeader = (mobile = false) => mode === 'review' ? (
     <AnalysisWorkspaceHeader
+          mobile={mobile}
+          onMobileTool={mobile ? openMobileTool : undefined}
+          mobileDepth={mobile ? analysisDepth : undefined}
+          onMobileDepth={mobile ? (direction) => setAnalysisDepth(depth => Math.max(6, Math.min(36, depth + direction * 6))) : undefined}
+          currentResult={mobile ? currentEngineResult : undefined}
           title={loadedGameTitle}
           initialFen={positionHistory[0] || DEFAULT_POSITION}
           moveHistory={moveHistory}
@@ -835,12 +867,49 @@ export default function GameScreen({ mode }: GameScreenProps) {
           }}
         />
   ) : null;
+  const openMobileTool = (tool: 'map' | 'games' | 'position') => {
+    if (tool === 'position') {
+      resetPositionDraft(displayedGame.fen());
+      setEditingPosition(true);
+    }
+    setPlanHighlight(null);
+    setMobileTool(tool);
+  };
+  const handleMobileMapHighlight = useCallback((selection: { fen: string; squares: Square[] } | null) => {
+    setPlanHighlight(selection);
+    if (selection) setMobileTool(null);
+  }, []);
   return (
-    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent animate-fade-in relative transition-all lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' && "desktop-analysis-screen")}>
+    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
 
-      {mode === 'review' && <div className="lg:hidden">{analysisWorkspaceHeader}</div>}
+      {mode === 'review' && <>
+        <MobileAnalysisHeader activeTab={activeTab} onTab={setActiveTab}
+          actions={analysisWorkspaceHeader(true)} />
+        <div className="hidden md:block lg:hidden">{analysisWorkspaceHeader()}</div>
+      </>}
+      {mode === 'review' && <MobileAnalysisDetails activeTab={activeTab}
+        result={currentEngineResult} lines={currentEngineResult ? analysisData?.lines : undefined}
+        loading={isAnalysing || !currentEngineResult && !engineFailed} failed={engineFailed}
+        moves={movePairs} currentIndex={viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex}
+        onMove={setViewMoveIndex} depth={analysisDepth} startSide={displayedGame.turn()} />}
+
+      {mode === 'review' && (
+        <nav aria-label={words.analysis} className="lg:hidden mx-2 mb-1 hidden md:grid grid-cols-3 gap-1.5 shrink-0" data-mobile-analysis-tools>
+          {([
+            { tab: 'map' as const, label: positionMapLabel[language], icon: Map },
+            { tab: 'games' as const, label: words.games, icon: FolderOpen },
+            { tab: 'position' as const, label: words.editor, icon: Pencil },
+          ]).map(({ tab, label, icon: Icon }) => (
+            <button key={tab} type="button" aria-haspopup="dialog" onClick={() => openMobileTool(tab)}
+              className="min-w-0 min-h-11 flex items-center justify-center gap-1 rounded-lg border border-amber-200/20 bg-[#181c1b] px-1.5 text-xs font-semibold text-amber-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">
+              <Icon size={15} aria-hidden="true" className="shrink-0" />
+              <span className="truncate">{label}</span>
+            </button>
+          ))}
+        </nav>
+      )}
             {/* Mobile analysis panel above the board */}
-      {!isLiveMultiplayer && (
+      {mode !== 'review' && !isLiveMultiplayer && (
         <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
           <div className="min-h-14 grid grid-cols-[max-content_minmax(0,1fr)_max-content] items-center gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
             <div className="flex min-w-0 shrink-0 items-center gap-1">
@@ -869,17 +938,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 Moves
               </button>
             </div>
-            {mode === 'review' && (
-              <button
-                type="button"
-                onClick={startNewAnalysis}
-                aria-label={t('game.analysis.new')}
-                title={t('game.analysis.new')}
-                className="mobile-new-analysis-obsidian relative isolate h-11 w-11 shrink-0 overflow-hidden flex items-center justify-center justify-self-center rounded-xl border border-[#BE9963]/65 bg-[linear-gradient(130deg,#0B0C12_0%,#191922_38%,#382917_67%,#0C111A_100%)] text-[#F5D898] shadow-[inset_0_1px_0_rgba(245,224,173,0.19),0_5px_14px_rgba(0,0,0,0.32)] transition-[border-color,color,box-shadow] duration-150 hover:border-[#F9D994] hover:text-[#FFF1CF] hover:shadow-[0_0_18px_rgba(203,164,96,0.22)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70"
-              >
-                <RotateCcw size={19} className="relative z-10" aria-hidden="true" />
-              </button>
-            )}
             <div className="min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-cyan-100 bg-cyan-500/15 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] whitespace-nowrap">
               <span>Stockfish 18</span>
             </div>
@@ -974,8 +1032,60 @@ export default function GameScreen({ mode }: GameScreenProps) {
         </section>
       )}
 
+
+      {/* Native modal preserves touch-size board and traps focus while tools are open. */}
+      {mode === 'review' && mobileTool && (
+        <dialog ref={mobileToolDialogRef}
+          aria-label={mobileTool === 'map' ? positionMapLabel[language] : mobileTool === 'games' ? words.games : words.editor}
+          onClose={() => { setMobileTool(null); setEditingPosition(false); }}
+          className="mobile-analysis-tool-dialog w-[calc(100%-1rem)] max-w-[42rem] h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] overflow-hidden rounded-2xl border border-amber-200/25 bg-[#121716] p-0 text-white shadow-2xl backdrop:bg-black/85"
+          data-mobile-analysis-dialog>
+          <div className="flex h-full min-h-0 flex-col">
+            <header className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-white/10 px-4">
+              <h2 className="min-w-0 truncate text-base font-semibold text-amber-100">
+                {mobileTool === 'map' ? positionMapLabel[language] : mobileTool === 'games' ? words.games : words.editor}
+              </h2>
+              <button type="button" onClick={() => mobileToolDialogRef.current?.close()}
+                aria-label={mobileAnalysisCopy[language].close} className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200">
+                <X size={20} aria-hidden="true"/>
+              </button>
+            </header>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <Suspense fallback={<p role="status" className="p-4 text-xs text-neutral-400">{words.loading}</p>}>
+                {mobileTool === 'games' && (
+                  <SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words}
+                    onLoad={loadWorkspaceAnalysis}/>
+                )}
+                {mobileTool === 'map' && (
+                  <PositionMap key={displayedGame.fen()} fen={displayedGame.fen()}
+                    result={currentEngineResult} language={language} failed={engineFailed}
+                    onHighlight={handleMobileMapHighlight}/>
+                )}
+                {mobileTool === 'position' && (
+                  <PositionTools currentFen={displayedGame.fen()} words={words}
+                    mobile
+                    board={editingPosition && <div className="mobile-position-board" data-mobile-position-editor>
+                      <Suspense fallback={<p role="status" className="p-3 text-center text-xs">{words.loading}</p>}>
+                        <EditorBoard draft={positionDraftValue} selected={editorSelectedPiece} words={words}
+                          onPlace={placePositionPiece} onMove={movePositionPiece} mobile/>
+                      </Suspense>
+                    </div>}
+                    onLoad={loadWorkspaceAnalysis}
+                    onCancel={() => { setMobileTool(null); setEditingPosition(false); }}
+                    draft={positionDraftValue} selected={editorSelectedPiece}
+                    onSelected={setEditorSelectedPiece} onDraft={updatePositionDraft}
+                    onClear={clearPositionDraft} onUndo={undoPositionDraft}
+                    canUndo={positionDraftUndo.length > 0} onReset={resetPositionDraft}
+                    onEditingChange={setEditingPosition}/>
+                )}
+              </Suspense>
+            </div>
+          </div>
+        </dialog>
+      )}
+
       {/* Mobile Analysis Drawer Header */}
-      <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 animate-scale-up group w-full py-0 lg:-translate-y-4 lg:flex-1", !isMultiplayer && "lg:min-w-0", mode === 'review' && "desktop-analysis-board-column")}>
+      <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 group w-full py-0 lg:-translate-y-4 lg:flex-1", !isMultiplayer && "lg:min-w-0", mode === 'review' ? "desktop-analysis-board-column" : "animate-scale-up")}>
 
         <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]", mode === 'review' && "desktop-analysis-board-stack")}>
 
@@ -1032,7 +1142,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
             {/* Desktop evaluation bar — preserved from production. */}
             <div className={cx(
-              "hidden md:block transition-all duration-1000 ease-in-out self-stretch rounded-2xl overflow-hidden py-1",
+              "hidden md:block self-stretch rounded-2xl overflow-hidden py-1",
+              mode !== 'review' && "transition-all duration-1000 ease-in-out",
               analysisActive ? "w-6 md:w-8 opacity-100 translate-x-0" : "w-0 opacity-0 overflow-hidden -translate-x-8 pointer-events-none",
               mode === 'review' && "desktop-analysis-evaluation"
             )}>
@@ -1046,10 +1157,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
             <div ref={analysisBoardRef} className={cx(
               mode === 'review' && "desktop-analysis-board-frame",
-              "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full transition-[width] duration-300", 
+              "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full",
               isMultiplayer
                 ? "w-[min(96vw,56dvh)] md:w-full"
-                : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] max-md:!aspect-[50/51] border-b-0 md:w-full md:border-b-[8px] lg:!w-full lg:!max-w-[min(630px,calc(100dvh-120px))] lg:!flex-[0_1_auto]"
+                : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] max-md:!aspect-[50/51] border-b-0 md:w-full md:border-b-[8px] lg:!w-full lg:!max-w-[min(630px,calc(100dvh-120px))] lg:!flex-[0_1_auto]",
+              mode !== 'review' && "transition-[width] duration-300"
             )}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
               
@@ -1080,13 +1192,14 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   <EditorBoard draft={positionDraftValue} selected={editorSelectedPiece} words={words} onPlace={placePositionPiece} onMove={movePositionPiece} />
                 </Suspense>
               ) : <ChessBoard
-                className={!isMultiplayer ? `p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 max-md:[&_.aspect-square]:!aspect-[50/51] ${mode === 'review' ? 'desktop-analysis-main-board' : ''}` : undefined}
+                className={!isMultiplayer ? `p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 max-md:[&_.aspect-square]:!aspect-[50/51] ${mode === 'review' ? 'desktop-analysis-main-board transition-none duration-0' : ''}` : undefined}
                 externalCoordinatesOnDesktop={mode === 'review'}
                 highlightedSquares={mode === 'review' && workspaceTab === 'map' && planHighlight?.fen === displayedGame.fen() ? planHighlight.squares : undefined}
                 overrideBoardTheme={boardTheme}
+                confirmMovesMobile={mode === 'live' && confirmMobileMoves}
                 game={displayedGame}
                 onMove={handleGameMove}
-                orientation={playerColor}
+                orientation={mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
                 readOnly={viewMoveIndex !== -1 || !!gameOverMessage || (isMultiplayer && playerColor !== game.turn())}
               />}
             </div>
@@ -1141,7 +1254,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
       {/* Mobile review navigation stays visible in both Analysis and Moves. */}
       {!isMultiplayer && (
-        <nav aria-label="Move navigation" className="md:hidden grid grid-cols-4 gap-2 mx-2 mt-1 mb-1 p-1 shrink-0 rounded-2xl border border-white/[0.06] bg-black/20">
+        <nav aria-label="Move navigation" data-mobile-move-navigation className={cx("md:hidden grid gap-2 mx-2 mt-1 mb-1 p-1 shrink-0 rounded-2xl border border-white/[0.06] bg-black/20", mode === 'review' ? "grid-cols-5" : "grid-cols-4")}>
           <button
             type="button"
             aria-label="First position"
@@ -1185,13 +1298,19 @@ export default function GameScreen({ mode }: GameScreenProps) {
           >
             <FastForward size={22} />
           </button>
+          {mode === 'review' && <button type="button" data-mobile-board-flip
+            aria-label={mobileAnalysisCopy[language].flip} title={mobileAnalysisCopy[language].flip}
+            aria-pressed={mobileOrientation === 'b'} className={mobileReviewControlClass}
+            onClick={() => setMobileOrientation(previous => previous === 'w' ? 'b' : 'w')}>
+            <ArrowUpDown size={20} aria-hidden="true"/>
+          </button>}
         </nav>
       )}
 
       {/* Professional Sidebar Sidebar Tabs */}
-      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] animate-fade-in-right relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle transition-all mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' && "desktop-analysis-panel")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
+      <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' ? "desktop-analysis-panel" : "animate-fade-in-right transition-all")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
-        {mode === 'review' && <div className="hidden lg:block shrink-0">{analysisWorkspaceHeader}</div>}
+        {mode === 'review' && <div className="hidden lg:block shrink-0">{analysisWorkspaceHeader()}</div>}
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">

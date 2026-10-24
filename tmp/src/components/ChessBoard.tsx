@@ -58,6 +58,7 @@ function ChessBoard({
   orientation = 'w',
   overrideBoardTheme,
   readOnly = false,
+  confirmMovesMobile = false,
 }: {
   className?: string;
   showCoordinates?: boolean;
@@ -68,6 +69,7 @@ function ChessBoard({
   orientation?: 'w' | 'b';
   overrideBoardTheme?: BoardTheme;
   readOnly?: boolean;
+  confirmMovesMobile?: boolean;
 }) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
   const [localGame, setLocalGame] = useState(() => new Chess());
@@ -80,6 +82,7 @@ function ChessBoard({
   const dragFrame = useRef<number | null>(null);
 
   const [pendingPromotion, setPendingPromotion] = useState<{ source: string; target: string; color: Color } | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<{ source: string; target: string; promotion: string } | null>(null);
 
   const activeFen = activeGame.fen();
 
@@ -101,6 +104,7 @@ function ChessBoard({
     setSelectedSquare(null);
     setLegalMoves([]);
     setPendingPromotion(null);
+    setPendingConfirmation(null);
     cancelDrag();
     return cancelDrag;
   }, [activeFen, orientation, readOnly, cancelDrag]);
@@ -128,7 +132,7 @@ function ChessBoard({
       ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
       : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
 
-  const handleMove = (source: string, target: string, chosenPromotion?: string) => {
+  const handleMove = (source: string, target: string, chosenPromotion?: string, confirmed = false) => {
     const piece = activeGame.get(source as Square);
     const isPawnPromotion =
       piece?.type === 'p' &&
@@ -141,7 +145,20 @@ function ChessBoard({
 
     const promotion = chosenPromotion || 'q';
     const moveObj = { from: source, to: target, promotion };
-
+    // In quick games this remains off by default. Validate the candidate locally
+    // before offering confirmation; never send a pending move to the server.
+    if (confirmMovesMobile && !confirmed && window.matchMedia('(max-width: 767px)').matches) {
+      try {
+        const candidate = new Chess(activeFen);
+        candidate.move(moveObj);
+        setPendingPromotion(null);
+        setPendingConfirmation({ source, target, promotion });
+        return false;
+      } catch {
+        return false;
+      }
+    }
+    setPendingConfirmation(null);
     if (onMove) {
       if (onMove(source, target, promotion)) {
         setSelectedSquare(null);
@@ -168,6 +185,7 @@ function ChessBoard({
   };
 
   const onSquareClick = (square: string) => {
+    if (pendingConfirmation) setPendingConfirmation(null);
     if (readOnly) {
       return;
     }
@@ -439,6 +457,13 @@ function ChessBoard({
             })}
           </div>
 
+          {pendingConfirmation && (
+            <div className="absolute inset-x-2 bottom-2 z-50 flex items-center justify-between gap-2 rounded-xl border border-[#A3C4D8]/50 bg-[#202E40]/95 p-2 shadow-2xl" data-mobile-move-confirmation role="group" aria-label="Confirm chess move">
+              <span className="min-w-0 truncate px-1 text-xs font-semibold text-slate-100">{pendingConfirmation.source} → {pendingConfirmation.target}</span>
+              <button type="button" onClick={() => setPendingConfirmation(null)} className="min-h-11 rounded-lg border border-white/20 px-3 text-xs font-semibold text-slate-100" aria-label="Cancel pending move">✕</button>
+              <button type="button" onClick={() => handleMove(pendingConfirmation.source, pendingConfirmation.target, pendingConfirmation.promotion, true)} className="min-h-11 rounded-lg bg-[#91BFC6] px-3 text-xs font-bold text-[#111F2B]" aria-label="Confirm pending move">✓</button>
+            </div>
+          )}
           {pendingPromotion && (
             <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/88 animate-fade-in p-4 pointer-events-auto">
               <div className="bg-neutral-900/95 border border-white/20 rounded-2xl p-4 shadow-2xl flex flex-col items-center gap-3">

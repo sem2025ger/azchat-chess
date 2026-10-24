@@ -10,6 +10,7 @@ interface EditorBoardProps {
   words: AnalysisWords;
   onPlace: (index: number, piece?: string) => void;
   onMove: (from: number, to: number) => void;
+  mobile?: boolean;
 }
 
 const files = 'abcdefgh';
@@ -17,7 +18,7 @@ const pieces = /^[KQRBNPkqrbnp]$/;
 
 // This replaces (rather than overlaps) the normal board during desktop setup.
 // It accepts incomplete positions: chess.js validation is done only on Apply.
-export default function EditorBoard({ draft, selected, words, onPlace, onMove }: EditorBoardProps) {
+export default function EditorBoard({ draft, selected, words, onPlace, onMove, mobile = false }: EditorBoardProps) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
   const colors = BOARD_THEMES[specialThemesEnabled ? boardTheme : 'Classic Green'] || BOARD_THEMES['Classic Green'];
   const drag = useRef<{ pointerId: number; from: number; x: number; y: number } | null>(null);
@@ -72,8 +73,15 @@ export default function EditorBoard({ draft, selected, words, onPlace, onMove }:
       <div data-coordinate-axis="file" aria-hidden="true" className="hidden lg:grid grid-cols-8 absolute left-[calc(0.75rem+1px)] right-[calc(0.75rem+1px)] bottom-0 h-3 text-[0.65rem] font-bold text-neutral-400 pointer-events-none">
         {[...files].map(f => <span key={f} className="flex items-center justify-center">{f}</span>)}
       </div>
-      <div className="aspect-square w-full overflow-hidden rounded-sm border border-black/40">
-        <div
+      {/* External ranks/files on phones. The original desktop coordinate rails
+          remain untouched; neither axes nor labels intercept editor gestures. */}
+      <div className="flex w-full items-stretch gap-[3px] md:block">
+        <div data-coordinate-axis="rank-mobile" aria-hidden="true"
+          className="grid w-[18px] shrink-0 grid-rows-8 text-[12px] font-semibold tabular-nums text-[#d3c5a5] md:hidden">
+          {[8,7,6,5,4,3,2,1].map(rank => <span key={rank} className="flex items-center justify-center">{rank}</span>)}
+        </div>
+        <div className="aspect-square min-w-0 flex-1 overflow-hidden rounded-sm border border-black/40 md:w-full md:flex-none">
+          <div
           aria-label={words.editor}
           data-selected-piece={selected || "erase"}
           data-main-position-editor
@@ -90,7 +98,10 @@ export default function EditorBoard({ draft, selected, words, onPlace, onMove }:
                 aria-label={`${words.square} ${square}${piece ? ', ' + (piece === piece.toUpperCase() ? words.white : words.black) + ' ' + words[piece.toLowerCase() as 'k' | 'q' | 'r' | 'b' | 'n' | 'p'] : ''}`}
                 onClick={() => {
                   if (suppressClick.current) { suppressClick.current = false; return; }
-                  onPlace(index);
+                  // Mobile: tap an occupied square to remove only that piece.
+                  // Empty squares still place the selected piece, while drag moves pieces.
+                  // Desktop retains its existing tap-to-replace behavior.
+                  onPlace(index, mobile && piece ? '' : undefined);
                 }}
                 onContextMenu={event => { event.preventDefault(); onPlace(index, ''); }}
                 onDragOver={event => event.preventDefault()}
@@ -99,12 +110,18 @@ export default function EditorBoard({ draft, selected, words, onPlace, onMove }:
               >
                 {piece && <img src={pieceAsset(piece)} draggable={false} alt="" aria-hidden="true"
                   className={`pointer-events-none select-none h-[89%] w-[89%] object-contain ${piece === piece.toLowerCase() ? 'desktop-editor-black-piece' : ''}`} />}
-                {index % 8 === 0 && <span aria-hidden="true" className="pointer-events-none lg:hidden absolute left-1 top-0.5 text-[0.7rem] font-bold text-black/45">{8 - Math.floor(index / 8)}</span>}
-                {index >= 56 && <span aria-hidden="true" className="pointer-events-none lg:hidden absolute bottom-0.5 right-1 text-[0.7rem] font-bold text-black/45">{files[index % 8]}</span>}
+                {/* Medium-width tablet fallback only; phone axes are outside cells. */}
+                {index % 8 === 0 && <span aria-hidden="true" className="pointer-events-none hidden md:block lg:hidden absolute left-1 top-0.5 text-[0.7rem] font-bold text-black/45">{8 - Math.floor(index / 8)}</span>}
+                {index >= 56 && <span aria-hidden="true" className="pointer-events-none hidden md:block lg:hidden absolute bottom-0.5 right-1 text-[0.7rem] font-bold text-black/45">{files[index % 8]}</span>}
               </button>
             );
           })}
+          </div>
         </div>
+      </div>
+      <div data-coordinate-axis="file-mobile" aria-hidden="true"
+        className="ml-[21px] grid h-[17px] grid-cols-8 text-[12px] font-semibold tracking-wide text-[#d3c5a5] md:hidden">
+        {[...files].map(file => <span key={file} className="flex items-center justify-center">{file}</span>)}
       </div>
     </div>
   );

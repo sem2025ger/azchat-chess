@@ -1,0 +1,155 @@
+/* Review only. Desktop analysis and live boards retain their existing geometry. */
+@media (max-width: 767px) {
+  [data-analysis-route] {
+    --mobile-analysis-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --mobile-app-nav-height: calc(4.5rem + var(--mobile-analysis-safe-bottom));
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+  [data-analysis-route] > main {
+    min-height: 0;
+    padding-bottom: var(--mobile-app-nav-height);
+  }
+  [data-analysis-route] > main > div {
+    min-height: 0;
+    overscroll-behavior-y: contain;
+  }
+  [data-analysis-route] [data-mobile-app-nav] { height: var(--mobile-app-nav-height); }
+  .desktop-analysis-screen {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 100% !important;
+    flex: 0 0 auto;
+    overflow: visible !important;
+    gap: 0 !important;
+    padding: 0 0 4px !important;
+  }
+  .mobile-analysis-header { flex: none; padding: 4px 8px; --mobile-analysis-label-size: 14px; }
+  .mobile-analysis-topbar { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .mobile-analysis-tabs {
+    display: flex; min-width: 0; gap: 2px; padding: 2px; border: 1px solid #ffffff0d;
+    border-radius: 12px; background: #0b1011; flex: 1;
+  }
+  .mobile-analysis-tabs button {
+    flex: 1; min-width: 0; min-height: 44px; border-radius: 9px;
+    padding: 0 5px; font-size: var(--mobile-analysis-label-size); font-weight: 650; color: #aaaead;
+  }
+  .mobile-analysis-tabs button[aria-pressed="true"] {
+    color: #bff6f3; background: #123437; box-shadow: inset 0 0 0 1px #75ded52b;
+  }
+  .mobile-analysis-engine { flex: none; color: #c0d3cc; font-size: var(--mobile-analysis-label-size); font-weight: 650; white-space: nowrap; }
+  .mobile-analysis-more {
+    display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+    flex: none; color: #e1d1af; border: 1px solid #d4ba7e24; border-radius: 12px; background: #1c201e;
+  }
+  .desktop-analysis-screen > .desktop-analysis-board-column { flex: none; min-height: 0; }
+  .desktop-analysis-screen .desktop-analysis-board-stack { flex: none; min-height: 0; gap: 0; }
+  .desktop-analysis-screen .desktop-analysis-board-row { flex: none; min-height: 0; }
+  /* Reserve header, two PV rows, 44px transport targets and the fixed app dock. */
+  .desktop-analysis-screen .desktop-analysis-board-frame {
+    width: min(100%, max(208px, calc(100dvh - 19.25rem - var(--mobile-analysis-safe-bottom)))) !important;
+    aspect-ratio: 1 / 1 !important; flex: none !important; border: 0;
+    border-radius: 3px; box-shadow: 0 12px 28px -20px #000;
+  }
+  .desktop-analysis-screen .desktop-analysis-board-frame .desktop-analysis-main-board .aspect-square { aspect-ratio: 1 / 1 !important; }
+  .desktop-analysis-screen [data-mobile-move-navigation] { margin: 6px 8px 0; padding: 3px; gap: 6px; border-radius: 14px; background: #0e1312; }
+  .desktop-analysis-screen [data-mobile-move-navigation] button { min-height: 44px; border-radius: 10px; box-shadow: none; color: #e4d2a6; }
+  .desktop-analysis-screen > .desktop-analysis-panel { display: none; }
+  .mobile-analysis-details { flex: none; height: 94px; margin: 3px 8px 0; min-width: 0; border: 1px solid #d0d7cf14; border-radius: 14px; background: #111816; overflow: hidden; }
+  .mobile-analysis-score { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 64px; min-height: 36px; padding: 4px 6px; border: 1px solid #e2ded04d; border-radius: 8px; background: linear-gradient(145deg, #ddcda6 0%, #c2b99b 70%, #969d94 100%); box-shadow: inset 0 0 0 1px #121a1b42, inset 0 -3px 8px #171c2420; color: #182021; font: 900 19px/1.2 ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .mobile-analysis-line { display: flex; height: 46px; align-items: center; gap: 6px; padding: 3px 8px; }
+  .mobile-analysis-line + .mobile-analysis-line { border-top: 1px solid #ffffff14; }
+  .mobile-analysis-line p { flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; white-space: nowrap; color: #f2f3ed; font: oblique 6deg 900 21px/1.25 Arial, "Helvetica Neue", sans-serif; scrollbar-width: thin; scrollbar-color: #8d9c8959 transparent; }
+  .mobile-analysis-san { display: inline-block; margin-inline-end: 4px; }
+  .mobile-analysis-figurine { display: inline-block; width: 33px; height: 33px; vertical-align: -9px; object-fit: contain; }
+  .mobile-analysis-figurine[src*='/b'] { background: transparent; filter: drop-shadow(0 0 1px #d3ddcc) drop-shadow(0 0 1px #d3ddcc); }
+  .mobile-analysis-line p:focus-visible { outline: 1px solid #e9c986; outline-offset: 2px; }
+  .mobile-analysis-moves { position: relative; height: 100%; max-height: 100%; overflow: hidden; }
+  /* The generic ".mobile-analysis-moves button" selector below used to force
+     width:100% and 44px height on Copy. This more specific rule preserves
+     an icon-sized control at the extreme right without enlarging the board. */
+  .mobile-analysis-moves > button[data-copy-moves] {
+    position: absolute; z-index: 2; top: 4px; right: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; min-width: 34px; max-width: 34px;
+    height: 34px; min-height: 34px; padding: 0;
+    border: 1px solid #c5a67065; border-radius: 9px; text-align: center;
+    color: #e7d7b0; background: linear-gradient(135deg, #222729, #11181c);
+    box-shadow: 0 1px 6px #0008, inset 0 1px 0 #ffffff13;
+  }
+  .mobile-analysis-moves > button[data-copy-moves][data-copy-status='copied'] { color: #b8ead1; border-color: #7eb99a8c; }
+  .mobile-analysis-moves > button[data-copy-moves]:disabled { opacity: .35; }
+  .mobile-analysis-moves-scroll { height: 100%; overflow-y: auto; overscroll-behavior: contain; padding-right: 0; }
+  .mobile-analysis-moves table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+  .mobile-analysis-moves th { width: 40px; color: #88968e; font: 12px ui-monospace, monospace; }
+  .mobile-analysis-moves td { padding: 0 3px; }
+  /* Protect only the first row's black-move space beneath the fixed copy icon. */
+  .mobile-analysis-moves tr:first-child td:last-child { padding-right: 42px; }
+  .mobile-analysis-moves-scroll td button { width: 100%; min-height: 29px; padding: 2px 7px; border-radius: 7px; text-align: left; font-size: 13px; font-weight: 600; color: #dce3dc; }
+  .mobile-analysis-moves button[aria-current="step"] { background: #60c7c31a; color: #a7f4ed; }
+  .mobile-analysis-notice { padding: 16px; color: #a6b4ab; font-size: 12px; }
+  .mobile-analysis-actions-dialog {
+    width: calc(100% - 20px); max-width: 420px; max-height: calc(100dvh - 24px - env(safe-area-inset-bottom, 0px));
+    margin: auto auto calc(12px + env(safe-area-inset-bottom, 0px)); padding: 14px;
+    overflow-y: auto; border: 1px solid #d4b7804d; border-radius: 20px;
+    background: #141b18; color: #e8e5da; box-shadow: 0 -10px 60px #0008;
+  }
+  .mobile-analysis-actions-dialog::backdrop, .mobile-analysis-tool-dialog::backdrop { background: #030806db; }
+  .mobile-analysis-actions-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 10px; }
+  .mobile-analysis-actions-dialog h2 { font-size: 15px; font-weight: 650; }
+  .mobile-analysis-actions-dialog header button { display: flex; justify-content: center; align-items: center; min-height: 44px; min-width: 44px; border: 1px solid #ffffff14; border-radius: 10px; }
+  .mobile-analysis-action-list { display: grid; gap: 6px; }
+  .mobile-analysis-depth-control { display: grid; grid-template-columns: minmax(0,1fr) 48px 48px; align-items: center; gap: 8px; min-height: 54px; padding: 4px 8px 4px 12px; border: 1px solid #ffffff18; border-radius: 12px; color: #dfd4b7; font-size: 13px; font-weight: 650; }
+  .mobile-analysis-depth-control button { display: flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border-radius: 10px; border: 1px solid #d6b47530; background: #f3e6c40b; }
+  .mobile-analysis-depth-control button:disabled { opacity: .35; }
+  .mobile-analysis-depth-control button:focus-visible { outline: 2px solid #e9c986; }
+  .mobile-analysis-tool-actions { padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid #ffffff14; }
+  .mobile-analysis-action-list button { display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 10px 12px; border: 1px solid #ffffff0c; border-radius: 12px; background: #ffffff04; font-size: 13px; text-align: left; }
+  .mobile-analysis-action-list svg { flex: none; color: #dac391; }
+  .mobile-analysis-copy-status { min-height: 22px; margin-top: 8px; color: #b4e0cf; font-size: 12px; }
+  .mobile-analysis-tool-dialog { width: calc(100% - 8px); height: calc(100dvh - 16px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); max-height: 100dvh; border-radius: 18px; }
+  .mobile-analysis-tool-dialog > div > header { min-height: 64px; padding: 8px 12px; background: #141c18; }
+  .mobile-position-board { width: min(100%, 64dvh, 540px); max-width: 100%; margin: 2px auto 10px; }
+  .mobile-position-tools > div { padding: 10px 6px; }
+  /* Keep rank/file coordinates outside the cells; grow only editor artwork. */
+  .mobile-position-board [data-editor-index] img { width: 92%; height: 92%; }
+  .mobile-position-tools .analysis-tool-button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 8px; border: 1px solid #d1c09a24; border-radius: 10px; background: #ffffff04; font-size: 12px; color: #d3d6ca; }
+  .mobile-position-tools [aria-label] > button[aria-pressed] { min-height: 42px; }
+  .mobile-position-tools .mobile-position-palette { gap: 5px; }
+  .mobile-position-tools .mobile-position-palette button { padding: 2px; min-height: 42px; border-radius: 10px; }
+  .mobile-position-tools [data-mobile-editor-scroll] { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+  .mobile-position-tools .mobile-editor-jump {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; width: 100%; margin: 2px 0 12px; padding: 8px 10px;
+    border: 1px solid #b89b655c; border-radius: 11px;
+    background: linear-gradient(135deg, #222a29, #111819);
+    color: #e9d9b6; font-size: 14px; font-weight: 700;
+  }
+  .mobile-position-tools .mobile-editor-jump svg { flex: none; }
+  .mobile-position-tools .mobile-position-palette img { width: 38px; height: 38px; max-width: 96%; max-height: 96%; object-fit: contain; }
+  .mobile-position-tools .mobile-position-palette button[aria-pressed='true'] { border-color: #e9c986; background: #e9c98629; box-shadow: 0 0 0 1px #e9c98642 inset; }
+  .mobile-position-tools .mobile-editor-turn,
+  .mobile-position-tools .mobile-editor-castling,
+  .mobile-position-tools .mobile-editor-advanced { font-size: 15px; line-height: 1.45; color: #e0dfd2; }
+  .mobile-position-tools .mobile-editor-turn { min-height: 48px; font-weight: 650; }
+  .mobile-position-tools .mobile-editor-turn select { min-height: 44px; min-width: 112px; padding: 9px 12px; font-size: 15px; font-weight: 600; }
+  .mobile-position-tools .mobile-editor-castling legend { font-size: 15px; font-weight: 700; color: #e3dbcb; }
+  .mobile-position-tools .mobile-editor-castling label { min-height: 44px; gap: 9px; padding: 5px 2px; font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .mobile-position-tools .mobile-editor-castling input[type='checkbox'] { width: 21px; height: 21px; flex: none; accent-color: #c9a866; }
+  .mobile-position-tools .mobile-editor-advanced summary { display: flex; align-items: center; min-height: 44px; font-size: 15px; font-weight: 650; color: #e1dbc9; }
+  .mobile-position-tools .mobile-editor-advanced label { min-height: 44px; font-size: 14px; }
+  .mobile-position-tools .mobile-editor-advanced input { min-height: 40px; font-size: 14px; }
+  @media (prefers-reduced-motion: reduce) {
+    .mobile-position-tools [data-mobile-editor-scroll] { scroll-behavior: auto; }
+  }
+  .mobile-position-tools footer { padding: 12px; background: #101713; }
+  .mobile-position-tools footer > button { min-height: 44px; }
+  .mobile-position-tools footer p { max-height: 64px; overflow-y: auto; }
+  .mobile-analysis-header button:focus-visible, .mobile-analysis-details button:focus-visible,
+  .mobile-analysis-actions-dialog button:focus-visible, .mobile-position-tools button:focus-visible {
+    outline: 2px solid #e9c986; outline-offset: -2px;
+  }
+  .mobile-analysis-actions-dialog button:disabled, .mobile-analysis-details button:disabled,
+  .mobile-position-tools button:disabled { opacity: .4; }
+}
