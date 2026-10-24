@@ -784,6 +784,11 @@ io.on('connection', (socket) => {
       }
 
       const roomId = payload.roomId;
+      // Explicit invitations cannot be redeemed by another signed-in user.
+      const inviteTarget = inviteTargets.get(roomId);
+      if (inviteTarget && inviteTarget !== socket.data.userId) {
+        socket.emit('join_failed', { reason: 'invitation_not_for_you' }); return;
+      }
       const roomData = activeRooms.get(roomId);
       if (!durableGames.ready()) { socket.emit('join_failed', { reason: 'storage_unavailable' }); return; }
       if (socket.data.startingGame || socketToRoom.has(socket.id)) {
