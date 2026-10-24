@@ -203,7 +203,6 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
           {!!pendingTarget && <button type="button" className="text-xs underline underline-offset-4" onClick={() => {
             socket?.emit('cancel_matchmaking'); targetRef.current = null; roomRef.current = null; if (expiresRef.current) clearTimeout(expiresRef.current); setPendingTarget(null);
           }}>{tr('Einladung abbrechen', 'Отменить приглашение', 'Cancel invitation')}</button>}
-        </div>
       </div>
       {message && <p role="status" className="mt-2 text-xs text-amber-200">{message}</p>}
       {inbound && <div role="dialog" aria-label="Game invitation" className="mt-3 rounded-xl border border-amber-300/30 bg-amber-400/10 p-3">
