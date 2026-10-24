@@ -112,6 +112,7 @@ app.use(cors(corsOptions));
 
 // Independent read-only game sources; no socket or durable-game state access.
 app.use('/api/games', require('./src/games/routes').createGamesRouter());
+require('./src/games/twic/schedule').startTwicSchedule();
 
 app.get('/health', (req, res) => {
   const ok = durableGames.ready();

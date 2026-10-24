@@ -25,3 +25,10 @@ test('desktop and mobile expose Games and preserve saved games',()=>{
  const panel=read('../src/components/analysis/GamesLibraryPanel.tsx');const mobile=read('../src/components/analysis/MobileAnalysis.tsx');
  assert.match(panel,/<SavedGamesPanel/);assert.match(mobile,/games\.tabShort/);assert.match(mobile,/onGames/);
 });
+
+test('player searches submit explicitly and DB mode is gated by server status',()=>{
+ const panel=read('../src/components/analysis/GamesLibraryPanel.tsx');
+ assert.match(panel,/onSubmit={event => { event.preventDefault\(\); void searchPlayer\(\); }}/);
+ assert.match(panel,/value === 'db' \? status\?\.db/);
+ assert.match(panel,/games.attributionTwic/);assert.match(panel,/games.emptyDb/);assert.match(panel,/playerData.openings\[color\]/);
+});

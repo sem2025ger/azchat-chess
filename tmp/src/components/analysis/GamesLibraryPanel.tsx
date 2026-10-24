@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
-import { gamesRequest, GamesApiError, type GamesStatus, type MastersResult, type SourceGame, type UserGamesResult } from '../../services/gamesDatabase';
+import { gamesRequest, GamesApiError, type GamesStatus, type MastersResult, type SourceGame, type UserGamesResult, type DbGamesResult } from '../../services/gamesDatabase';
 import { analysisFromPgn, type AnalysisLoad } from '../../utils/analysisWorkspace';
 import SavedGamesPanel from './SavedGamesPanel';
 import type { AnalysisWords } from './copy';
@@ -21,7 +21,11 @@ export default function GamesLibraryPanel({ userId, language, words, fen, onLoad
 
 function SourceGamesPanel({ fen, onLoad }: { fen: string; onLoad: (analysis: AnalysisLoad, title: string, details: { white: string; black: string }) => void }) {
   const { t } = useLanguage();
-  const [mode, setMode] = useState<'position' | 'player'>('position');
+  const [mode, setMode] = useState<'position' | 'player' | 'db'>('position');
+  const [dbPlayer, setDbPlayer] = useState('');
+  const [onlyPosition, setOnlyPosition] = useState(false);
+  const [dbData, setDbData] = useState<DbGamesResult | null>(null);
+  const dbSearch = useRef('');
   const [username, setUsername] = useState('');
   const [playerData, setPlayerData] = useState<UserGamesResult | null>(null);
   const [status, setStatus] = useState<GamesStatus | null>(null);
@@ -34,16 +38,20 @@ function SourceGamesPanel({ fen, onLoad }: { fen: string; onLoad: (analysis: Ana
   const normalizedFen = fen.split(' ').slice(0, 4).join(' ');
   useEffect(() => () => openRequest.current?.abort(), []);
   useEffect(() => {
-    if (mode !== 'position') return;
+    const controller = new AbortController();
+    gamesRequest<GamesStatus>('/status', controller.signal).then(next => {
+      if (!controller.signal.aborted) { setStatus(next); if (!next.lichess && next.db) { setMode('db'); setLoading(false); } }
+    }).catch(reason => { if (!controller.signal.aborted) { setLoading(false); setError(reason instanceof GamesApiError ? reason : new GamesApiError('UPSTREAM_UNAVAILABLE')); } });
+    return () => controller.abort();
+  }, [retry]);
+  useEffect(() => {
+    if (mode !== 'position' || !status) return;
     const controller = new AbortController();
     setLoading(true); setError(null); setData(null);
     const timer = setTimeout(() => {
       void (async () => {
         try {
-          const next = await gamesRequest<GamesStatus>('/status', controller.signal);
-          if (controller.signal.aborted) return;
-          setStatus(next);
-          if (!next.lichess) throw new GamesApiError('FEATURE_DISABLED');
+          if (!status.lichess) throw new GamesApiError('FEATURE_DISABLED');
           const result = await gamesRequest<MastersResult>('/masters?' + new URLSearchParams({ fen: normalizedFen + ' 0 1' }), controller.signal);
           if (!controller.signal.aborted) setData(result);
         } catch (reason) { if (!controller.signal.aborted) setError(reason instanceof GamesApiError ? reason : new GamesApiError('UPSTREAM_UNAVAILABLE')); }
@@ -51,7 +59,7 @@ function SourceGamesPanel({ fen, onLoad }: { fen: string; onLoad: (analysis: Ana
       })();
     }, 400);
     return () => { clearTimeout(timer); controller.abort(); };
-  }, [normalizedFen, retry, mode]);
+  }, [normalizedFen, retry, mode, status]);
   const searchPlayer = async () => {
     if (!/^[A-Za-z0-9_-]{2,30}$/.test(username)) { setError(new GamesApiError('INVALID_USERNAME')); return; }
     const controller = new AbortController(); openRequest.current?.abort(); openRequest.current = controller;
@@ -62,12 +70,25 @@ function SourceGamesPanel({ fen, onLoad }: { fen: string; onLoad: (analysis: Ana
     } catch (reason) { if (!controller.signal.aborted) setError(reason instanceof GamesApiError ? reason : new GamesApiError('UPSTREAM_UNAVAILABLE')); }
     finally { if (!controller.signal.aborted) setLoading(false); }
   };
+  const searchDb = async (more = false) => {
+    if (!more && dbPlayer.trim().length < 3 && !onlyPosition) { setError(new GamesApiError('INVALID_QUERY')); return; }
+    const controller = new AbortController(); openRequest.current?.abort(); openRequest.current = controller;
+    const params = more ? new URLSearchParams(dbSearch.current) : new URLSearchParams({ ...(dbPlayer.trim() ? { player: dbPlayer.trim() } : {}), ...(onlyPosition ? { fen } : {}), limit: '20' });
+    if (!more) dbSearch.current = params.toString();
+    params.set('offset', String(more ? dbData?.games.length || 0 : 0));
+    setLoading(true); setError(null); if (!more) setDbData(null);
+    try {
+      const result = await gamesRequest<DbGamesResult>('/db/search?' + params, controller.signal);
+      if (!controller.signal.aborted) setDbData(previous => more && previous ? { ...result, games: [...previous.games, ...result.games] } : result);
+    } catch (reason) { if (!controller.signal.aborted) setError(reason instanceof GamesApiError ? reason : new GamesApiError('UPSTREAM_UNAVAILABLE')); }
+    finally { if (!controller.signal.aborted) setLoading(false); }
+  };
   const open = async (game: SourceGame) => {
     if (opening) return;
     const controller = new AbortController(); openRequest.current = controller;
     setOpening(true); setError(null);
     try {
-      const result = game.pgn ? { pgn: game.pgn } : await gamesRequest<{ pgn: string }>(`/masters/${game.id}/pgn`, controller.signal);
+      const result = game.pgn ? { pgn: game.pgn } : await gamesRequest<{ pgn: string }>(`/${mode === 'db' ? 'db' : 'masters'}/${game.id}/pgn`, controller.signal);
       const analysis = analysisFromPgn(result.pgn);
       if (!controller.signal.aborted) onLoad(analysis, `${game.white.name} — ${game.black.name}`, { white: game.white.name, black: game.black.name });
     } catch (reason) { if (!controller.signal.aborted) setError(reason instanceof GamesApiError ? reason : new GamesApiError('UPSTREAM_UNAVAILABLE')); }
@@ -75,12 +96,13 @@ function SourceGamesPanel({ fen, onLoad }: { fen: string; onLoad: (analysis: Ana
   };
   return <div className="flex min-h-0 min-w-0 flex-1 flex-col">
     <div className="shrink-0 space-y-3 p-3">
-      <div role="group" aria-label={t('games.sources')} className="flex gap-2">{(['position','player'] as const).map(value => <button type="button" key={value} aria-pressed={mode === value} onClick={() => { openRequest.current?.abort(); setMode(value); setLoading(value === 'position'); setError(null); setOpening(false); }} className={`min-h-10 min-w-0 flex-1 rounded-lg border px-2 text-xs ${mode === value ? 'border-amber-100/30 bg-amber-100/10 text-amber-100' : 'border-white/10 text-neutral-400'}`}>{t(`games.${value}`)}</button>)}</div>
+      <div role="group" aria-label={t('games.sources')} className="flex gap-2">{(['position','player','db'] as const).filter(value => value === 'db' ? status?.db : status?.lichess !== false).map(value => <button type="button" key={value} aria-pressed={mode === value} onClick={() => { openRequest.current?.abort(); setMode(value); setLoading(value === 'position'); setError(null); setOpening(false); }} className={`min-h-10 min-w-0 flex-1 rounded-lg border px-2 text-xs ${mode === value ? 'border-amber-100/30 bg-amber-100/10 text-amber-100' : 'border-white/10 text-neutral-400'}`}>{t(`games.${value}`)}</button>)}</div>
+      {mode === 'db' && <form className="space-y-2" onSubmit={event => { event.preventDefault(); void searchDb(); }}><input aria-label={t('games.playerName')} placeholder={t('games.playerName')} value={dbPlayer} maxLength={100} onChange={event => setDbPlayer(event.target.value)} className="min-h-10 w-full min-w-0 rounded-lg border border-white/15 bg-black/30 px-2 text-sm" /><label className="flex items-center gap-2 text-xs text-neutral-300"><input type="checkbox" checked={onlyPosition} onChange={event => setOnlyPosition(event.target.checked)} />{t('games.onlyPosition')}</label><p className="text-xs text-neutral-500">{t('games.dbInfo')}</p><button type="submit" disabled={loading || opening} className="min-h-10 rounded-lg bg-amber-200/15 px-4 text-xs text-amber-100 disabled:opacity-50">{t('games.search')}</button></form>}
       {mode === 'player' && <form className="flex min-w-0 gap-2" onSubmit={event => { event.preventDefault(); void searchPlayer(); }}><input value={username} onChange={event => setUsername(event.target.value)} maxLength={30} aria-label={t('games.username')} placeholder={t('games.username')} className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/30 px-2 text-sm" /><button type="submit" disabled={loading || opening} className="min-h-10 rounded-lg bg-amber-200/15 px-3 text-xs text-amber-100 disabled:opacity-50">{t('games.search')}</button></form>}
     </div>
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 text-xs" aria-busy={loading || opening}>
       {loading && <div role="status" className="animate-pulse space-y-3"><p>{t('games.loading')}</p>{[0,1,2].map(i => <div key={i} className="h-10 rounded-lg bg-white/5" />)}</div>}
-      {error && <div role="alert" className="mb-3 rounded-lg border border-red-300/25 p-3 text-red-200"><p>{t(`games.error.${error.code}`)}{error.retryAfter > 0 && ` · ${error.retryAfter} ${t('games.seconds')}`}</p><button type="button" className="mt-2 min-h-9 underline" onClick={() => mode === 'player' ? void searchPlayer() : setRetry(x => x + 1)}>{t('games.retry')}</button></div>}
+      {error && <div role="alert" className="mb-3 rounded-lg border border-red-300/25 p-3 text-red-200"><p>{t(`games.error.${error.code}`)}{error.retryAfter > 0 && ` · ${error.retryAfter} ${t('games.seconds')}`}</p><button type="button" className="mt-2 min-h-9 underline" onClick={() => mode === 'db' ? void searchDb() : mode === 'player' ? void searchPlayer() : setRetry(x => x + 1)}>{t('games.retry')}</button></div>}
       {mode === 'position' && !loading && !error && data && <>
         {!data.moves.length && !data.topGames.length && <p className="py-5 text-neutral-400">{t('games.emptyPosition')}</p>}
         <div className="space-y-2">{data.moves.map(move => <div key={move.uci} className="rounded-lg border border-white/10 p-2"><div className="mb-1 flex justify-between"><strong>{move.san}</strong><span>{move.games.toLocaleString()} {t('games.count')}</span></div><div className="flex h-2 overflow-hidden rounded" aria-label={`${t('game.white')} ${move.white}, ${t('games.draws')} ${move.draws}, ${t('game.black')} ${move.black}`}><span className="bg-neutral-100" style={{width:`${move.games ? move.white / move.games * 100 : 0}%`}} /><span className="bg-neutral-500" style={{width:`${move.games ? move.draws / move.games * 100 : 0}%`}} /><span className="bg-neutral-800" style={{width:`${move.games ? move.black / move.games * 100 : 0}%`}} /></div></div>)}</div>
@@ -94,7 +116,12 @@ function SourceGamesPanel({ fen, onLoad }: { fen: string; onLoad: (analysis: Ana
         {!playerData.games.length && <p className="py-5 text-neutral-400">{t('games.emptyPlayer')}</p>}
         <GameRows games={playerData.games} opening={opening} onOpen={open} />
       </>}
-      <p className="mt-5 border-t border-white/10 pt-3 text-neutral-400"><a href="https://lichess.org" target="_blank" rel="noopener noreferrer">{t(mode === 'position' ? 'games.attributionMasters' : 'games.attributionLichess')}</a></p>
+      {mode === 'db' && !loading && !error && dbData && <>
+        {!dbData.games.length && <p className="py-5 text-neutral-400">{t('games.emptyDb')}</p>}
+        <GameRows games={dbData.games} opening={opening} onOpen={open} />
+        {dbData.games.length < dbData.total && <button type="button" className="mt-3 min-h-10 w-full rounded-lg border border-white/15 text-amber-100" disabled={opening} onClick={() => void searchDb(true)}>{t('games.more')}</button>}
+      </>}
+      <p className="mt-5 border-t border-white/10 pt-3 text-neutral-400"><a href={mode === 'db' ? 'https://theweekinchess.com' : 'https://lichess.org'} target="_blank" rel="noopener noreferrer">{t(mode === 'db' ? 'games.attributionTwic' : mode === 'position' ? 'games.attributionMasters' : 'games.attributionLichess')}</a></p>
       {status && !status.lichess && <p className="mt-2 text-neutral-400">{t('games.disabled')}</p>}
     </div>
   </div>;

@@ -17,9 +17,11 @@ export async function gamesRequest<T>(path: string, signal: AbortSignal): Promis
   catch (error) { if (signal.aborted) throw error; throw new GamesApiError('UPSTREAM_UNAVAILABLE'); }
   let body;
   try { body = await response.json(); } catch { throw new GamesApiError('UPSTREAM_UNAVAILABLE'); }
-  if (!response.ok) throw new GamesApiError(body?.error?.code || 'UPSTREAM_UNAVAILABLE', Number(response.headers.get('Retry-After')) || 0);
+  if (!response.ok) throw new GamesApiError(['INVALID_FEN','INVALID_QUERY','INVALID_USERNAME','NOT_FOUND','FEATURE_DISABLED','UPSTREAM_RATE_LIMITED','UPSTREAM_AUTH_REQUIRED','UPSTREAM_UNAVAILABLE','INTERNAL'].includes(body?.error?.code) ? body.error.code : 'UPSTREAM_UNAVAILABLE', Number(response.headers.get('Retry-After')) || 0);
   return body as T;
 }
 
 export type UserGamesResult = { games: SourceGame[]; openings: { white: OpeningStat[]; black: OpeningStat[] } };
 export type OpeningStat = { eco: string; name: string; games: number; scorePct: number };
+
+export type DbGamesResult = { source: 'chessaz-db'; total: number; games: SourceGame[] };

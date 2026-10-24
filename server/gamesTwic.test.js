@@ -39,3 +39,9 @@ test('import skips malformed game, is idempotent and stops before oversized batc
  const second=await importIssue({issue:1,store,pgn});assert.equal(second.inserted,0);assert.equal(store.hashes.size,1);
  const small=fakeStore();await assert.rejects(importIssue({issue:1,store:small,pgn:synthetic,maxMb:0.001}),/DB_SIZE_LIMIT/);assert.equal(small.hashes.size,0);assert.equal(small.failed,true);
 });
+test('scheduler is disabled by default and does not overlap runs',async()=>{
+ const {startTwicSchedule}=require('./src/games/twic/schedule');let calls=0,active=0,peak=0;
+ const stopDisabled=startTwicSchedule({env:{},run:async()=>{calls++;}});stopDisabled();assert.equal(calls,0);
+ const stop=startTwicSchedule({env:{TWIC_IMPORT_ENABLED:'true',SUPABASE_URL:`https://${QA_REF}.supabase.co`},store:{},latest:async()=>1,intervalMs:2,run:async()=>{calls++;active++;peak=Math.max(peak,active);await new Promise(r=>setTimeout(r,10));active--;}});
+ await new Promise(r=>setTimeout(r,25));stop();await new Promise(r=>setTimeout(r,15));assert.ok(calls>=1);assert.equal(peak,1);
+});

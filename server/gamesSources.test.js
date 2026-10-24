@@ -78,3 +78,17 @@ test('NDJSON and per-colour opening scores use player perspective; malformed inp
 test('unknown player upstream 404 stays NOT_FOUND',async()=>{
  await assert.rejects(createLichessClient({fetchImpl:async()=>new Response('',{status:404})}).request('/api/games/user/unknown'),{code:'NOT_FOUND'});
 });
+test('database flag hides routes; enabled search forwards only validated parameters',async()=>{
+ await withApi({env:{}},async base=>{const r=await fetch(base+'/db/search?player=example');assert.equal(r.status,404);assert.equal((await r.json()).error.code,'FEATURE_DISABLED');});
+ let received;
+ await withApi({env:{GAMES_DB_ENABLED:'true'},store:{async search(args){received=args;return{source:'chessaz-db',total:0,games:[]};},async pgn(){return{pgn:'1. e4 e5 *'};}}},async base=>{
+  assert.equal((await(await fetch(base+'/status')).json()).db,true);
+  assert.equal((await fetch(base+'/db/search')).status,400);
+  const result=await fetch(base+'/db/search?player=M%C3%BCller&limit=20&offset=0');assert.equal(result.status,200);assert.deepEqual(received,{p_player:'muller',p_hash:null,p_limit:20,p_offset:0});
+  assert.equal((await fetch(base+'/db/search?player=ab')).status,400);assert.equal((await fetch(base+'/db/0/pgn')).status,400);
+ });
+});
+test('public PGN request does not require a token when upstream accepts anonymous access',async()=>{
+ const client=createLichessClient({fetchImpl:async()=>new Response('1. e4 e5 *')});
+ assert.equal(await client.request('/masters/pgn/aAbqI4ey',{explorer:true,requiresAuth:false}),'1. e4 e5 *');
+});
