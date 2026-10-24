@@ -7,7 +7,7 @@ export const translations: TranslationDictionary = {
   'nav.home': { en: 'Home', de: 'Startseite', ua: 'Головна', ru: 'Главная', az: 'Ana Səhifə', tr: 'Ana Sayfa' },
   'nav.play': { en: 'Play', de: 'Spielen', ua: 'Грати', ru: 'Играть', az: 'Oyna', tr: 'Oyna' },
   'nav.game': { en: 'Analysis', de: 'Analyse', ua: 'Аналіз', ru: 'Анализ', az: 'Analiz', tr: 'Analiz' },
-  'nav.chat': { en: 'Chat', de: 'Chat', ua: 'Чат', ru: 'Чат', az: 'Söhbət', tr: 'Sohbet' },
+  'nav.chat': { en: 'ChessAZ Deutsch', de: 'ChessAZ Deutsch', ua: 'ChessAZ Deutsch', ru: 'ChessAZ Deutsch', az: 'ChessAZ Deutsch', tr: 'ChessAZ Deutsch' },
   'nav.profile': { en: 'Profile', de: 'Profil', ua: 'Профіль', ru: 'Профиль', az: 'Profil', tr: 'Profil' },
   'nav.settings': { en: 'Settings', de: 'Einstellungen', ua: 'Налаштування', ru: 'Настройки', az: 'Ayarlar', tr: 'Ayarlar' },
 
