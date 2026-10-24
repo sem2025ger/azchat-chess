@@ -192,7 +192,7 @@ try {
   assert.ok(await evaluate("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 2')"), 'Worker calculates two lines, rather than hiding extra work');
   await waitFor("typeof window.__stockfishId === 'string' && window.__stockfishId.length > 0");
   const realEngineIdentity = await evaluate("window.__stockfishId");
-  assert.match(realEngineIdentity, /Stockfish\\s+19(?:\\b|\\D)/i, 'Official UCI id must identify the genuine Stockfish 19 engine');
+  assert.match(realEngineIdentity, /Stockfish\s+19\b/i, 'Official UCI id must identify the genuine Stockfish 19 engine');
   assert.ok(await evaluate("window.__stockfishWorkerUrls.some(url => url.endsWith('/stockfish-19-lite-single.js'))"), 'Analysis must load bundled Stockfish 19 worker');
   assert.equal(await evaluate("document.querySelector('.mobile-analysis-engine')?.textContent.trim()"), 'Stockfish 19', 'Engine label matches actual UCI version');
   console.log('PASS real Stockfish 19 UCI identity: ' + realEngineIdentity);
