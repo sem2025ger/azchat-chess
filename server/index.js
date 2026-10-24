@@ -127,27 +127,46 @@ let waitingQueue = []; // Array of socket objects
 // Only authenticated players on the Play screen opt in to presence.
 // No email addresses, access tokens or socket IDs are shared in the list.
 const lobbyPresence = new Map(); // socket.id -> authenticated userId
+const readyLobbySockets = new Set(); // explicit ready-to-play state
 const inviteTargets = new Map(); // pending roomId -> target userId
 const ALLOWED_TIME_CONTROLS = new Set(['1+0', '1+1', '2+1', '3+0', '3+2', '5+0', '10+0', '15+10', '30+0']);
 
 function getAvailableLobbySockets() {
   return [...lobbyPresence.entries()].flatMap(([id, userId]) => {
     const peer = io.sockets.sockets.get(id);
-    return peer?.connected && !socketToRoom.has(id) &&
+    return peer?.connected && readyLobbySockets.has(id) && !socketToRoom.has(id) &&
       !waitingQueue.some(s => s.id === id) && !peer.data?.startingGame
       ? [{ peer, userId }] : [];
   });
 }
 
 function broadcastLobbyPresence() {
-  const users = [...new Set(getAvailableLobbySockets().map(({ userId }) => userId))];
+  const onlineUsers = [...new Set([...lobbyPresence.entries()]
+    .filter(([id]) => io.sockets.sockets.get(id)?.connected)
+    .map(([, userId]) => userId))];
+  const readyUsers = [...new Set(getAvailableLobbySockets().map(({ userId }) => userId))];
   for (const [id] of lobbyPresence) {
     const peer = io.sockets.sockets.get(id);
-    if (peer?.connected) peer.emit('lobby_presence', { userIds: users.filter(uid => uid !== peer.data.userId) });
+    if (peer?.connected) peer.emit('lobby_presence', {
+      userIds: onlineUsers.filter(uid => uid !== peer.data.userId),
+      readyUserIds: readyUsers.filter(uid => uid !== peer.data.userId)
+    });
   }
 }
 
+function setLobbyReady(socket, ready) {
+  const id = socket.id;
+  const eligible = ready && lobbyPresence.has(id) &&
+    !socketToRoom.has(id) && !waitingQueue.some(s => s.id === id) &&
+    !socket.data?.startingGame;
+  if (eligible) readyLobbySockets.add(id);
+  else readyLobbySockets.delete(id);
+  socket.emit('lobby_ready_state', { ready: readyLobbySockets.has(id) });
+  broadcastLobbyPresence();
+}
+
 function unregisterLobbySocket(id) {
+  readyLobbySockets.delete(id);
   if (lobbyPresence.delete(id)) broadcastLobbyPresence();
 }
 
@@ -517,7 +536,17 @@ io.on('connection', (socket) => {
 
   socket.on('lobby_presence_enter', () => {
     lobbyPresence.set(socket.id, socket.data.userId);
-    broadcastLobbyPresence();
+    // Visitors in the Play lobby are ready by default, but playing
+    // or queued sockets cannot receive direct invitations.
+    setLobbyReady(socket, true);
+  });
+
+  socket.on('lobby_ready_set', (payload) => {
+    if (typeof payload?.ready !== 'boolean' || !socket.data?.limiter?.allow('lobby')) {
+      socket.emit('lobby_ready_state', { ready: readyLobbySockets.has(socket.id) });
+      return;
+    }
+    setLobbyReady(socket, payload.ready);
   });
 
   socket.on('lobby_presence_leave', () => unregisterLobbySocket(socket.id));
@@ -585,7 +614,7 @@ io.on('connection', (socket) => {
 
     socket.data.matchTimeControl = selectedTime;
     waitingQueue.push(socket);
-    broadcastLobbyPresence();
+    setLobbyReady(socket, false);
 
     // Pair players when at least 2 are waiting with distinct user IDs
     if (waitingQueue.length >= 2) {
@@ -655,7 +684,8 @@ io.on('connection', (socket) => {
         activeRooms.set(roomId, roomData);
         socketToRoom.set(player1.id, roomId);
         socketToRoom.set(player2.id, roomId);
-        broadcastLobbyPresence();
+        setLobbyReady(player1, false);
+        setLobbyReady(player2, false);
 
         console.log(`Match created: ${roomId} [${player1.id}=${colors[0]}, ${player2.id}=${colors[1]}]`);
 
@@ -764,7 +794,7 @@ io.on('connection', (socket) => {
 
     activeRooms.set(roomId, roomData);
     socketToRoom.set(socket.id, roomId);
-    broadcastLobbyPresence();
+    setLobbyReady(socket, false);
     socket.join(roomId);
 
     console.log(`Private match created: ${roomId} by ${socket.id}`);
@@ -849,7 +879,7 @@ io.on('connection', (socket) => {
       inviteTargets.delete(roomId);
       socketToRoom.set(socket.id, roomId);
       socket.join(roomId);
-      broadcastLobbyPresence();
+      setLobbyReady(socket, false);
 
       console.log(`Private match joined: ${roomId} [${creatorSocketId}=${creatorColor}, ${socket.id}=${emptyColor}]`);
 
@@ -1184,5 +1214,6 @@ module.exports = {
   durableGames,
   recoveryReady,
   lobbyPresence,
+  readyLobbySockets,
 };
 
