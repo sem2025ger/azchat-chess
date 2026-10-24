@@ -30,7 +30,6 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [inbound, setInbound] = useState<Invite | null>(null);
   const [pendingTarget, setPendingTarget] = useState<string | null>(null);
-  const [pendingRoom, setPendingRoom] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [visible, setVisible] = useState(false);
   const targetRef = useRef<string | null>(null);
@@ -62,14 +61,13 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
         return;
       }
       roomRef.current = data.roomId;
-      setPendingRoom(data.roomId);
       socket.emit('invite_lobby_player', { roomId: data.roomId, targetUserId: targetRef.current });
     };
     const onFail = () => {
       if (!targetRef.current) return;
       targetRef.current = null; roomRef.current = null;
       if (expiresRef.current) clearTimeout(expiresRef.current);
-      setPendingTarget(null); setPendingRoom(null);
+      setPendingTarget(null);
       setMessage(tr('Einladung fehlgeschlagen.', 'Приглашение не удалось.', 'Invitation failed.'));
       socket.emit('cancel_matchmaking');
     };
@@ -77,7 +75,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       if (!targetRef.current) return;
       targetRef.current = null; roomRef.current = null;
       if (expiresRef.current) clearTimeout(expiresRef.current);
-      setPendingTarget(null); setPendingRoom(null);
+      setPendingTarget(null);
       setMessage(tr('Einladung abgelehnt.', 'Приглашение отклонено.', 'Invitation declined.'));
       socket.emit('cancel_matchmaking');
     };
@@ -89,7 +87,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
     const onMatch = () => {
       targetRef.current = null; roomRef.current = null;
       if (expiresRef.current) clearTimeout(expiresRef.current);
-      setPendingTarget(null); setPendingRoom(null); setInbound(null);
+      setPendingTarget(null); setInbound(null);
     };
     socket.on('match_found', onMatch);
     return () => {
@@ -128,7 +126,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       if (!targetRef.current) return;
       if (roomRef.current) socket.emit('cancel_matchmaking');
       targetRef.current = null; roomRef.current = null;
-      setPendingTarget(null); setPendingRoom(null);
+      setPendingTarget(null);
       setMessage('Invitation expired.');
     }, 60000);
   };
@@ -152,7 +150,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-bold">{tr('Spieler online', 'Игроки онлайн', 'Online players')}</h2>
         <button type="button" className="rounded-lg border border-white/20 px-3 py-2 text-xs font-semibold hover:bg-white/10"
-          aria-pressed={visible} onClick={() => { if (visible && roomRef.current) socket?.emit('cancel_matchmaking'); targetRef.current = null; roomRef.current = null; if (expiresRef.current) clearTimeout(expiresRef.current); setVisible(v => !v); setPendingTarget(null); setPendingRoom(null); }}>
+          aria-pressed={visible} onClick={() => { if (visible && roomRef.current) socket?.emit('cancel_matchmaking'); targetRef.current = null; roomRef.current = null; if (expiresRef.current) clearTimeout(expiresRef.current); setVisible(v => !v); setPendingTarget(null); }}>
           {visible ? tr('Nicht sichtbar', 'Скрыться', 'Go invisible') : tr('Sichtbar werden', 'Показаться онлайн', 'Go visible')}
         </button>
       </div>
@@ -168,7 +166,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
             </div>
           ))}
           {!!pendingTarget && <button type="button" className="text-xs underline underline-offset-4" onClick={() => {
-            socket?.emit('cancel_matchmaking'); targetRef.current = null; roomRef.current = null; if (expiresRef.current) clearTimeout(expiresRef.current); setPendingTarget(null); setPendingRoom(null);
+            socket?.emit('cancel_matchmaking'); targetRef.current = null; roomRef.current = null; if (expiresRef.current) clearTimeout(expiresRef.current); setPendingTarget(null);
           }}>{tr('Einladung abbrechen', 'Отменить приглашение', 'Cancel invitation')}</button>}
         </div>
       )}
