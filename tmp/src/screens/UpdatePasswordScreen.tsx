@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { clubReturnTarget } from '../lib/authCallbackUrl';
 import { supabase } from '../services/supabase';
 import { useLanguage } from '../context/LanguageContext';
 import { Loader2 } from 'lucide-react';
@@ -7,6 +8,8 @@ import { Loader2 } from 'lucide-react';
 export default function UpdatePasswordScreen() {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const backTo = clubReturnTarget(searchParams.get('returnTo')) ?? '/profile';
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -95,14 +98,14 @@ export default function UpdatePasswordScreen() {
             </button>
 
             {successMsg && (
-              <button type="button" onClick={() => navigate('/profile')} className="w-full py-4 md:py-5 mt-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold text-lg border border-white/5 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
+              <button type="button" onClick={() => navigate(backTo)} className="w-full py-4 md:py-5 mt-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold text-lg border border-white/5 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
                 {t('auth.backToSignIn')}
               </button>
             )}
             
             {!successMsg && (
                <div className="mt-4 text-center">
-                 <button type="button" onClick={() => navigate('/profile')} className="text-sm text-neutral-500 hover:text-white transition-colors underline decoration-white/30 underline-offset-4">
+                 <button type="button" onClick={() => navigate(backTo)} className="text-sm text-neutral-500 hover:text-white transition-colors underline decoration-white/30 underline-offset-4">
                    {t('auth.backToSignIn')}
                  </button>
                </div>
