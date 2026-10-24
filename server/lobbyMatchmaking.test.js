@@ -68,6 +68,7 @@ test('lobby: matching respects chosen clocks and direct challenges restrict reci
     host.emit('lobby_presence_enter');
     recipient.emit('lobby_presence_enter');
     stranger.emit('lobby_presence_enter');
+    recipient.emit('lobby_ready_set', { ready: true });
     await presence;
     const created = once(host, 'private_room_created');
     host.emit('create_private_room', { timeControl: '3+2' });
