@@ -49,7 +49,16 @@ test('online lobby: private invitations and time-aware matchmaking', async () =>
     a.emit('invite_lobby_player', { roomId: unavailableId, targetUserId: 'b' });
     assert.equal((await denied).reason, 'player_unavailable');
     a.emit('cancel_matchmaking');
-    const readyAgain = next(a, 'lobby_presence');
+    const readyAgain = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Target did not become ready')), 4000);
+      const onPresence = event => {
+        if (!event.readyUserIds?.includes('b')) return;
+        clearTimeout(timer);
+        a.off('lobby_presence', onPresence);
+        resolve(event);
+      };
+      a.on('lobby_presence', onPresence);
+    });
     b.emit('lobby_ready_set', { ready: true });
     assert.deepEqual((await readyAgain).readyUserIds, ['b']);
 
