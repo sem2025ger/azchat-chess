@@ -8,6 +8,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { useSocket } from '../context/SocketContext';
 
 type Props = {
+  controlsHidden?: boolean;
+  openRef?: RefObject<(() => void) | null>;
   timeControl: string;
   onTimeChange: (value: string) => void;
   presets: Record<string, string[]>;
@@ -27,7 +29,7 @@ export default function MobileFriendTimeControl(props: Props) {
   return mobile ? <MobileControl {...props} /> : null;
 }
 
-function MobileControl({ timeControl, onTimeChange, presets, resetRef }: Props) {
+function MobileControl({ timeControl, onTimeChange, presets, resetRef, controlsHidden, openRef }: Props) {
   const { t } = useLanguage();
   const { socket, isConnected, authError } = useSocket();
   const { session, isLoading } = useAuth();
@@ -140,6 +142,12 @@ function MobileControl({ timeControl, onTimeChange, presets, resetRef }: Props) 
     };
   }, [mode]);
 
+  useEffect(() => {
+    if (!openRef) return;
+    openRef.current = () => { setError(null); setMode('invite'); };
+    return () => { openRef.current = null; };
+  }, [openRef]);
+
   const cancelInvitation = () => {
     if (requestPending.current || ownedRoom.current) socket?.emit('cancel_matchmaking');
     if (requestTimer.current) clearTimeout(requestTimer.current);
@@ -205,7 +213,7 @@ function MobileControl({ timeControl, onTimeChange, presets, resetRef }: Props) 
   const primaryClass = `${buttonClass} bg-gradient-to-r from-[#e3c77d] to-[#84d4c9] text-[#121b19] border-white/20`;
   return (
     <div className="md:hidden">
-      <div className="flex items-stretch gap-2">
+      <div className="flex items-stretch gap-2" hidden={controlsHidden} style={controlsHidden ? { display: 'none' } : undefined}>
         <button ref={timeButtonRef} type="button" disabled={creating || !!room} aria-label={t('invite.chooseTime')} aria-haspopup="dialog" aria-expanded={mode === 'time'}
           onClick={() => { setError(null); setMode('time'); }}
           className="flex-1 min-w-0 flex items-center justify-center gap-3 px-3 py-3 rounded-xl border border-white/5 bg-[#181818] active:bg-[#202020] touch-manipulation focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300">

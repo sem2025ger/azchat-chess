@@ -8,9 +8,10 @@ import { useAuth } from '../context/AuthContext';
 import { useThemeContext } from '../context/ThemeContext';
 import ChessBoard from '../components/ChessBoard';
 import MobileFriendTimeControl from '../components/MobileFriendTimeControl';
-import OnlineLobby, { toServerTimeControl } from '../components/OnlineLobby';
+import { toServerTimeControl } from '../components/OnlineLobby';
+import ArenaPlayPanel from '../components/ArenaPlayPanel';
 
-import { Shield, Zap, Users, Trophy, X, Loader2, Sparkles, Swords, Clock, ChevronDown, Copy, Check } from 'lucide-react';
+import { X, Loader2, Swords, Clock, Copy, Check } from 'lucide-react';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -33,7 +34,6 @@ export default function PlayScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
   const accentTheme: AccentTheme = 'gold';
-  const [isTimeExpanded, setIsTimeExpanded] = useState(false);
 
   const [isPrivateCreating, setIsPrivateCreating] = useState(false);
   const [privateRoomId, setPrivateRoomId] = useState<string | null>(null);
@@ -44,20 +44,13 @@ export default function PlayScreen() {
   const [searchParams] = useSearchParams();
   const hasAutoJoinedRef = useRef(false);
   const mobileInviteReset = useRef<(() => void) | null>(null);
+  const mobileFriendOpen = useRef<(() => void) | null>(null);
   const roomParam = searchParams.get('room');
 
   const navigate = useNavigate();
   const { socket, isConnected, authError } = useSocket();
   const { user, profile, session, isLoading: authIsLoading } = useAuth();
   const { boardTheme, confirmMobileMoves } = useThemeContext();
-
-  const openMobileSignIn = () => {
-    if (!window.matchMedia('(max-width: 767px)').matches) return false;
-    if (authIsLoading) return true;
-    const returnTo = roomParam ? `/play?room=${encodeURIComponent(roomParam)}` : '/play';
-    navigate(`/profile?returnTo=${encodeURIComponent(returnTo)}`);
-    return true;
-  };
 
   // Primary colors based on theme
   const accentColors = {
@@ -184,24 +177,11 @@ export default function PlayScreen() {
     Rapid: ['10 min.', '15 | 10', '30 min.'],
   };
 
-  const getCategory = (tc: string): string => {
-    for (const [cat, items] of Object.entries(timePresets)) {
-      if (items.includes(tc)) return cat;
-    }
-    return 'Blitz';
-  };
-
-  const categoryIcons: Record<string, React.ReactNode> = {
-    Bullet: <Zap size={14} className="text-orange-400" />,
-    Blitz:  <Sparkles size={14} className="text-yellow-400" />,
-    Rapid:  <Shield size={14} className="text-emerald-400" />,
-  };
-
   return (
     <div className="min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto relative pb-6 lg:pb-3 max-md:px-1">
       
 
-      <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_370px] 2xl:grid-cols-[minmax(0,1fr)_430px] gap-2 lg:gap-4 items-start justify-center flex-1 min-h-0 pt-0 lg:pt-0">
+      <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_370px] 2xl:grid-cols-[minmax(0,1fr)_430px] gap-2 lg:gap-4 items-start justify-center flex-1 min-h-0 max-lg:flex-none max-lg:min-h-fit pt-0 lg:pt-0">
 
         {/* ── Left Side: Chess Board ────────────────────────────── */}
         <div className="w-full flex flex-col gap-1 md:gap-1.5 animate-fade-in-up min-h-0">
@@ -322,171 +302,31 @@ export default function PlayScreen() {
         <div className="w-full flex flex-col animate-fade-in-right lg:h-full lg:justify-center lg:-ml-4">
           {/* Spacer: aligns panel top with board top */}
           <div className="h-0 md:h-[10px] shrink-0" />
-          <div className="bg-[#121212] rounded-[2rem] md:rounded-[2.5rem] border-[2px] border-transparent overflow-hidden flex flex-col relative group/panel border-b-[4px] border-black/40 panel-glow-cycle transition-all">
-            
-            {/* Dynamic Background Glow removed since panel-glow-cycle handles it */}
-
-
-            <div className="p-2 space-y-2 overflow-y-auto custom-scrollbar relative z-10">
-
-              {/* ── Collapsible Time Control Accordion ─────────────── */}
-              <div className="space-y-2">
-
-                <MobileFriendTimeControl
-                  timeControl={timeControl}
-                  onTimeChange={setTimeControl}
-                  presets={timePresets}
-                  resetRef={mobileInviteReset}
-                />
-
-                {/* Summary / Toggle Button */}
-                <button
-                  type="button"
-                  aria-expanded={isTimeExpanded}
-                  aria-label="Choose time control"
-                  onClick={() => setIsTimeExpanded(v => !v)}
-                  className={cx(
-                    "max-md:hidden w-full flex items-center justify-center gap-3 md:gap-4 px-3 py-3 md:px-4 md:py-4 xl:py-[19px] rounded-xl md:rounded-2xl border transition-all duration-200 group/tc active:scale-[0.98]",
-                    isTimeExpanded
-                      ? cx("bg-white/[0.04] border-white/10", accentColors[accentTheme].border)
-                      : "bg-[#181818] border-white/5 hover:border-white/10 hover:bg-[#1e1e1e]"
-                  )}
-                >
-                  {/* Category icon */}
-                  <div className={cx(
-                    "w-10 h-10 rounded-xl flex items-center justify-center border border-white/5 transition-all duration-300 shrink-0",
-                    isTimeExpanded ? "bg-white/[0.06]" : "bg-white/[0.03]"
-                  )}>
-                    {categoryIcons[getCategory(timeControl)]}
-                  </div>
-                  {/* Selected time + category label — centered */}
-                  <div className="flex flex-col items-center leading-none gap-1">
-                    <span className="text-xl xl:text-[1.4rem] font-black italic uppercase tracking-tight text-glow-cycle">
-                      {timeControl}
-                    </span>
-                    <span className="text-[0.6rem] font-black text-neutral-500 uppercase tracking-[0.2em]">
-                      {getCategory(timeControl)}
-                    </span>
-                  </div>
-                  <ChevronDown
-                    size={16}
-                    className={cx(
-                      "text-neutral-500 transition-transform duration-300 group-hover/tc:text-neutral-300 shrink-0",
-                      isTimeExpanded ? "rotate-180" : ""
-                    )}
-                  />
-                </button>
-
-                {/* Expanded Grid */}
-                {isTimeExpanded && (
-                  <div className="hidden md:block space-y-2 pt-1">
-                    {Object.entries(timePresets).map(([category, items]) => (
-                      <div key={category} className="space-y-1.5">
-                        <div className="flex items-center gap-1.5 px-0.5 opacity-50">
-                          <div className="w-4 h-4 flex items-center justify-center rounded-md bg-white/[0.03] border border-white/5">
-                            {category === 'Bullet' && <Zap size={10} className="text-orange-400" />}
-                            {category === 'Blitz' && <Sparkles size={10} className="text-yellow-400" />}
-                            {category === 'Rapid' && <Shield size={10} className="text-emerald-400" />}
-                          </div>
-                          <span className="text-[0.6rem] font-black text-glow-cycle uppercase tracking-[0.12em] italic">{category}</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {items.map(item => (
-                            <button
-                              key={item}
-                              onClick={() => { setTimeControl(item); setIsTimeExpanded(false); }}
-                              className={cx(
-                                "py-2 rounded-lg text-[0.72rem] font-black transition-all duration-150 border shadow-2xl relative group/btn overflow-hidden active:scale-95",
-                                timeControl === item
-                                  ? cx("bg-white/[0.06] text-white border-opacity-60 ring-1", accentColors[accentTheme].border, accentTheme === 'gold' ? 'ring-amber-500/20' : accentTheme === 'cyan' ? 'ring-cyan-500/20' : 'ring-violet-500/20')
-                                  : "bg-[#181818] border-white/5 text-neutral-500 hover:border-white/10 hover:text-neutral-300 hover:bg-[#1a1a1a]"
-                              )}
-                            >
-                              <div className={cx(
-                                "absolute inset-0 bg-gradient-to-br opacity-0 transition-opacity duration-300",
-                                accentColors[accentTheme].gradient,
-                                timeControl === item ? 'opacity-10' : 'group-hover/btn:opacity-5'
-                              )} />
-                              <span className={cx("relative z-10 tracking-tight italic uppercase", timeControl === item ? "text-glow-cycle" : "")}>{item}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-            </div>
-
-            {/* Compact, unobtrusive lobby controls sit between the clock and primary action. */}
-            <div className="relative z-10 px-2 pb-2">
-              <OnlineLobby timeControl={timeControl} />
-            </div>
-
-            {/* CTA Area */}
-            <div className="p-2 bg-black/60 border-t border-white/10 space-y-1.5 relative z-10 shadow-[0_-15px_30px_rgba(0,0,0,0.6)] backdrop-blur-md shrink-0">
-               <button
-                  onClick={() => {
-                    mobileInviteReset.current?.();
-                    if (!session) {
-                      if (openMobileSignIn()) return;
-                      setJoinError('Sign in required to play online.');
-                      setTimeout(() => setJoinError(null), 5000);
-                      return;
-                    }
-                    if (!socket || !isConnected) {
-                      setJoinError('Connection not ready. Please try again.');
-                      setTimeout(() => setJoinError(null), 5000);
-                      return;
-                    }
-                    setIsSearching(true);
-                    socket.emit('join_queue', { timeControl: toServerTimeControl(timeControl) });
-                  }}
-                  className={cx(
-                    "w-full py-2.5 xl:py-3.5 rounded-[2rem] relative overflow-hidden transition-all duration-[150ms] group/cta active:scale-[0.97] border border-white/20 btn-glow-cycle"
-                  )}
-               >
-                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/cta:opacity-100 transition-opacity duration-[150ms]" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
-                  <div className="relative z-10 flex items-center justify-center">
-                    <span className="text-shadow-cycle font-black text-base xl:text-lg italic tracking-tighter uppercase leading-none transform group-hover:scale-105 transition-transform duration-500">{t('play.startGame')}</span>
-                  </div>
-               </button>
-            </div>
-
-            {/* Footer Buttons */}
-            <div className="p-2 xl:min-h-[112px] xl:items-center grid grid-cols-2 gap-2 bg-black/40 border-t border-white/5 shrink-0 max-md:hidden">
-              <FooterActionBtn 
-                icon={<Users size={14} />} 
-                label={t('play.friend')} 
-                sublabel={t('play.directLink')} 
-                onClick={() => {
-                  if (!session) {
-                    if (openMobileSignIn()) return;
-                    setJoinError('Sign in required to play online.');
-                    setTimeout(() => setJoinError(null), 5000);
-                    return;
-                  }
-                  if (socket && isConnected) {
-                    setIsPrivateCreating(true);
-                    setPrivateRoomId(null);
-                    socket.emit('create_private_room', { timeControl: toServerTimeControl(timeControl) });
-                  } else {
-                    setJoinError("Connection not ready. Please try again.");
-                    setTimeout(() => setJoinError(null), 5000);
-                  }
-                }}
-              />
-              <FooterActionBtn 
-                icon={<Trophy size={14} />} 
-                label={t('play.tournaments')} 
-                sublabel={t('play.communityLabel')} 
-                disabled={true}
-              />
-            </div>
-
-          </div>
+          <MobileFriendTimeControl timeControl={timeControl} onTimeChange={setTimeControl} presets={timePresets} resetRef={mobileInviteReset} openRef={mobileFriendOpen} controlsHidden />
+          <ArenaPlayPanel
+            timeControl={timeControl}
+            onTimeChange={setTimeControl}
+            onStart={() => {
+              mobileInviteReset.current?.();
+              if (authIsLoading) return;
+              if (!session) { navigate('/profile?returnTo=%2Fplay'); return; }
+              if (!socket || !isConnected) { setJoinError('Connection not ready. Please try again.'); return; }
+              setIsSearching(true);
+              socket.emit('join_queue', { timeControl: toServerTimeControl(timeControl) });
+            }}
+            onFriend={() => {
+              if (window.matchMedia('(max-width: 767px)').matches) {
+                mobileFriendOpen.current?.();
+                return;
+              }
+              if (authIsLoading) return;
+              if (!session) { navigate('/profile?returnTo=%2Fplay'); return; }
+              if (!socket || !isConnected) { setJoinError('Connection not ready. Please try again.'); return; }
+              setIsPrivateCreating(true);
+              setPrivateRoomId(null);
+              socket.emit('create_private_room', { timeControl: toServerTimeControl(timeControl) });
+            }}
+          />
           {/* Spacer: matches user footer height so panel bottom aligns with board bottom */}
           <div className="h-0 md:h-[38px] shrink-0" />
         </div>
@@ -495,37 +335,4 @@ export default function PlayScreen() {
     </div>
   );
 }
-
-function FooterActionBtn({ icon, label, sublabel, onClick, disabled }: { icon: React.ReactNode, label: string, sublabel: string, onClick?: () => void, disabled?: boolean }) {
-  return (
-    <button
-      disabled={disabled}
-      aria-disabled={disabled ? "true" : undefined}
-      onClick={onClick}
-      className={cx(
-        "flex items-center gap-1.5 p-1.5 bg-white/[0.02] border border-white/5 rounded-xl transition-all duration-150 group/fbtn shadow-2xl text-left relative overflow-hidden xl:min-h-[59px]",
-        disabled
-          ? "cursor-not-allowed"
-          : "hover:bg-white/[0.05] hover:border-white/10 active:scale-95"
-      )}
-    >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
-      <div
-        className={cx(
-          "w-7 h-7 xl:w-10 xl:h-10 rounded-lg bg-white/5 flex items-center justify-center border border-white/5 shadow-xl relative z-10 shrink-0 transition-all duration-200",
-          disabled
-            ? "text-neutral-600"
-            : "text-neutral-500 group-hover/fbtn:scale-110 group-hover/fbtn:text-white group-hover/fbtn:bg-white/10"
-        )}
-      >
-        {icon}
-      </div>
-      <div className="flex flex-col overflow-hidden relative z-10">
-        <span className="text-[0.6rem] xl:text-[0.73rem] font-black uppercase tracking-[0.05em] italic truncate text-chess-gold">{label}</span>
-        <span className="text-[0.45rem] xl:text-[0.56rem] font-black uppercase tracking-[0.02em] mt-0.5 truncate text-chess-gold opacity-75">{sublabel}</span>
-      </div>
-    </button>
-  );
-}
-
 
