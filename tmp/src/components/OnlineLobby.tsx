@@ -18,7 +18,7 @@ export function toServerTimeControl(value: string): string {
 }
 
 /** Game invitations are opt-in on the Play screen, independently of being online. */
-export default function OnlineLobby({ timeControl }: { timeControl: string }) {
+export default function OnlineLobby({ timeControl, compact = false }: { timeControl: string; compact?: boolean }) {
   const { socket, isConnected } = useSocket();
   const { session, user } = useAuth();
   const { language } = useLanguage();
@@ -31,7 +31,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   const [inbound, setInbound] = useState<Invite | null>(null);
   const [pendingTarget, setPendingTarget] = useState<string | null>(null);
   const [message, setMessage] = useState('');
-  const [readyToPlay, setReadyToPlay] = useState(true);
+  const [readyToPlay, setReadyToPlay] = useState(() => sessionStorage.getItem('chessaz_lobby_ready') !== 'false');
   const [readyIds, setReadyIds] = useState<string[]>([]);
   const targetRef = useRef<string | null>(null);
   const roomRef = useRef<string | null>(null);
@@ -95,10 +95,11 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
       targetRef.current = null; roomRef.current = null;
       if (expiresRef.current) clearTimeout(expiresRef.current);
       setPendingTarget(null); setInbound(null);
+      sessionStorage.setItem('chessaz_lobby_ready', 'false');
       setReadyToPlay(false);
     };
     socket.on('match_found', onMatch);
-    socket.emit('lobby_presence_enter');
+    socket.emit('lobby_presence_enter', { ready: sessionStorage.getItem('chessaz_lobby_ready') !== 'false' });
     return () => {
       socket.emit('lobby_presence_leave');
       socket.off('lobby_presence', onPresence);
@@ -156,7 +157,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
   </section>;
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-[#131817] p-3 text-neutral-100" aria-label="Online players lobby">
+    <section id="chessaz-online-lobby" className="rounded-2xl border border-amber-300/25 bg-[#131817] p-3 text-neutral-100 shadow-[0_12px_32px_-20px_rgba(218,171,98,0.35)]" aria-label="Online players lobby">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-bold">{tr('Spielbereite Spieler', 'Игроки, готовые играть', 'Players ready to play')}</h2>
@@ -177,18 +178,19 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
               if (expiresRef.current) clearTimeout(expiresRef.current);
               setPendingTarget(null); setInbound(null);
             }
+            sessionStorage.setItem('chessaz_lobby_ready', String(nextReady));
             setReadyToPlay(nextReady);
           }}>
           {readyToPlay ? tr('Spielbereit', 'Готов играть', 'Ready to play') : tr('Nicht spielbereit', 'Не готов играть', 'Not ready to play')}
         </button>
       </div>
-      <p className="mt-2 text-xs text-neutral-400" role="status">
+      {!compact && <p className="mt-2 text-xs text-neutral-400" role="status">
         {readyToPlay
           ? tr('Du kannst Einladungen zum Spielen erhalten.', 'Ты доступен для приглашений на партию.', 'You can receive game invitations.')
           : tr('Du bleibst online sichtbar, erhältst aber keine neuen Spieleinladungen.', 'Ты виден в списке онлайн, но новые приглашения не приходят.', 'You remain visible online but cannot receive new game invitations.')}
-      </p>
-      <div className="mt-3 space-y-2">
-          <p className="text-xs text-neutral-400">{tr('Spieler sind online sichtbar, auch wenn sie nicht bereit sind. Herausfordern nur, wenn bereit.', 'Игроки видны в сети даже когда не готовы; вызвать можно только готовых.', 'Players remain visible online even if not ready; only ready players can be challenged.')}</p>
+      </p>}
+      <div className={`mt-3 space-y-2 ${compact ? 'max-h-40 overflow-y-auto' : ''}`}>
+          {!compact && <p className="text-xs text-neutral-400">{tr('Spieler sind online sichtbar, auch wenn sie nicht bereit sind. Herausfordern nur, wenn bereit.', 'Игроки видны в сети даже когда не готовы; вызвать можно только готовых.', 'Players remain visible online even if not ready; only ready players can be challenged.')}</p>}
           {available.length === 0 && <p className="text-xs text-neutral-400">{tr('Noch keine anderen Spieler verfügbar.', 'Других доступных игроков пока нет.', 'No other players available yet.')}</p>}
           {available.map(id => (
             <div key={id} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
