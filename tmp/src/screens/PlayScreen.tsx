@@ -419,8 +419,8 @@ export default function PlayScreen() {
 
             </div>
 
-            {/* Online players and readiness placed directly above the play action. */}
-            <div className="relative z-10 p-2">
+            {/* Compact, unobtrusive lobby controls sit between the clock and primary action. */}
+            <div className="relative z-10 px-2 pb-2">
               <OnlineLobby timeControl={timeControl} compact />
             </div>
 
