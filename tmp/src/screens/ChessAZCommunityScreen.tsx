@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { Globe, Users, MessageCircle, Trophy, Loader2, BarChart3, Info } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -278,7 +279,9 @@ export default function ChessAZCommunityScreen() {
       {!loading && club && !member && (
         <section className={`${surface} mt-5 flex items-center justify-between gap-4`}>
           <p className="text-sm text-neutral-300">{user ? t.membersOnly : t.login}</p>
-          {user && <button className={button} disabled={busy} onClick={membershipAction}>{t.join}</button>}
+          {user
+            ? <button className={button} disabled={busy} onClick={membershipAction}>{t.join}</button>
+            : <Link to="/profile" className={button}>{language === 'de' ? 'Anmelden' : language === 'ru' ? 'Войти' : 'Sign in'}</Link>}
         </section>
       )}
       {club && member && !loading && (
