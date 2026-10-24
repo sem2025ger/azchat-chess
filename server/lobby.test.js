@@ -40,7 +40,7 @@ test('online lobby: private invitations and time-aware matchmaking', async () =>
     const initialReady = next(a, 'lobby_presence');
     b.emit('lobby_ready_set', { ready: false });
     const notReady = await initialReady;
-    assert.deepEqual(notReady.userIds, ['b'], 'not-ready player stays online');
+    assert.deepEqual(notReady.userIds, [], 'not-ready player is hidden from opponent discovery');
     assert.deepEqual(notReady.readyUserIds, [], 'not-ready player is not challengeable');
     const unavailableRoom = next(a, 'private_room_created');
     a.emit('create_private_room', { timeControl: '3+2' });
