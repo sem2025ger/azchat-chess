@@ -180,3 +180,9 @@
   .mobile-analysis-actions-dialog button:disabled, .mobile-analysis-details button:disabled,
   .mobile-position-tools button:disabled { opacity: .4; }
 }
+
+/* Three complete tab labels beside the engine badge on narrow phones. */
+@media (max-width: 430px) {
+  .mobile-analysis-tabs button { padding-inline: 3px; font-size: 12px; white-space: nowrap; }
+  .mobile-analysis-engine { font-size: 12px; }
+}
