@@ -164,7 +164,7 @@ export default function ProfileScreen() {
     setAuthLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: authCallbackUrl(window.location.origin, '/update-password', Boolean(clubReturnTo))
+        redirectTo: authCallbackUrl(window.location.origin, '/update-password', Boolean(clubReturnTo), mobileReturnTo === '/play')
       });
       if (error) throw error;
       setAuthMessage(t('auth.resetEmailSent'));
