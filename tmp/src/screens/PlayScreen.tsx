@@ -421,7 +421,7 @@ export default function PlayScreen() {
 
             {/* Compact, unobtrusive lobby controls sit between the clock and primary action. */}
             <div className="relative z-10 px-2 pb-2">
-              <OnlineLobby timeControl={timeControl} compact />
+              <OnlineLobby timeControl={timeControl} />
             </div>
 
             {/* CTA Area */}
