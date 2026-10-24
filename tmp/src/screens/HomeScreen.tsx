@@ -5,6 +5,7 @@ import ChessBoard from '../components/ChessBoard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import OnlineLobby from '../components/OnlineLobby';
 
 export default function HomeScreen() {
   const { t } = useLanguage();
@@ -412,6 +413,10 @@ export default function HomeScreen() {
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.12] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
             <span className="relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
           </Link>
+        </div>
+        {/* Keep multiplayer readiness visible without hiding the established Chess Arena. */}
+        <div className="w-full">
+          <OnlineLobby timeControl="3 min." compact />
         </div>
       </div>
     </div>
