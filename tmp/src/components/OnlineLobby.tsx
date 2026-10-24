@@ -152,12 +152,11 @@ export default function OnlineLobby({ timeControl, compact = false }: { timeCont
     setInbound(null);
   };
 
-  if (!session) return <section className="rounded-xl border border-white/10 bg-neutral-900/70 p-3 text-xs text-neutral-400">
-    {tr('Melde dich an, um verfügbare Spieler zu sehen.', 'Войдите, чтобы увидеть игроков онлайн.', 'Sign in to see online players.')}
-  </section>;
-
   return (
     <section id="chessaz-online-lobby" className="rounded-2xl border border-amber-300/25 bg-[#131817] p-3 text-neutral-100 shadow-[0_12px_32px_-20px_rgba(218,171,98,0.35)]" aria-label="Online players lobby">
+      {!session && <p className="mb-2 rounded-lg border border-amber-300/20 bg-amber-300/5 px-3 py-2 text-xs text-amber-100">
+        {tr('Zum Spielen bitte anmelden. Der Bereitschaftsschalter wird nach der Anmeldung aktiv.', 'Войдите в профиль, чтобы управлять готовностью и приглашениями.', 'Sign in to enable readiness and invitations.')}
+      </p>}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-bold">{tr('Spielbereite Spieler', 'Игроки, готовые играть', 'Players ready to play')}</h2>
@@ -166,7 +165,7 @@ export default function OnlineLobby({ timeControl, compact = false }: { timeCont
           </span>
         </div>
         <button type="button" role="switch" aria-checked={readyToPlay}
-          disabled={!isConnected}
+          disabled={!isConnected || !session}
           className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${readyToPlay ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-200' : 'border-white/20 hover:bg-white/10'}`}
           onClick={() => {
             const nextReady = !readyToPlay;
