@@ -33,15 +33,12 @@ test('online lobby: private invitations and time-aware matchmaking', async () =>
     const aPresence = next(a,'lobby_presence');
     a.emit('lobby_presence_enter');
     assert.deepEqual((await aPresence).userIds, []);
-    const bPresence = next(a,'lobby_presence');
-    b.emit('lobby_presence_enter');
-    assert.deepEqual((await bPresence).userIds, ['b']);
-    // Both users enter the game lobby ready by default.
-    const initialReady = next(a, 'lobby_presence');
-    b.emit('lobby_ready_set', { ready: false });
-    const notReady = await initialReady;
-    assert.deepEqual(notReady.userIds, [], 'not-ready player is hidden from opponent discovery');
-    assert.deepEqual(notReady.readyUserIds, [], 'not-ready player is not challengeable');
+    const bPresence = next(a, 'lobby_presence');
+    // A forged ready flag on entry must not expose the account.
+    b.emit('lobby_presence_enter', { ready: true });
+    const notReady = await bPresence;
+    assert.deepEqual(notReady.userIds, [], 'new visitor is hidden until explicit opt-in');
+    assert.deepEqual(notReady.readyUserIds, [], 'new visitor cannot be challenged');
     const unavailableRoom = next(a, 'private_room_created');
     a.emit('create_private_room', { timeControl: '3+2' });
     const unavailableId = (await unavailableRoom).roomId;
@@ -61,6 +58,12 @@ test('online lobby: private invitations and time-aware matchmaking', async () =>
     });
     b.emit('lobby_ready_set', { ready: true });
     assert.deepEqual((await readyAgain).readyUserIds, ['b']);
+    const hiddenAgain = next(a, 'lobby_presence');
+    b.emit('lobby_ready_set', { ready: false });
+    assert.deepEqual((await hiddenAgain).readyUserIds, [], 'turning readiness off hides the player');
+    const shownAgain = next(a, 'lobby_presence');
+    b.emit('lobby_ready_set', { ready: true });
+    assert.deepEqual((await shownAgain).readyUserIds, ['b'], 'player reappears on explicit opt-in');
 
     const created = next(a,'private_room_created');
     a.emit('create_private_room', { timeControl: '3+2' });
