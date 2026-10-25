@@ -1624,3 +1624,41 @@
     overflow-y:auto;
   }
 }
+
+/* Desktop review: final approved graphite tone and compact action trigger. */
+@media (min-width:1024px) {
+  .desktop-analysis-screen > .desktop-analysis-panel {
+    background:linear-gradient(158deg,#141819 0%,#111516 55%,#0c0f10 100%)!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {
+    background:linear-gradient(160deg,#191d1e,#101415);
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > .analysis-engine-content {
+    background:linear-gradient(170deg,#171b1c,#0f1314)!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-move-scroll { background:#121617; }
+  .desktop-analysis-screen .analysis-engine-status .text-neutral-300 {
+    color:#ecebe7!important;
+    font-weight:700;
+  }
+  .desktop-analysis-screen .analysis-engine-status .text-neutral-500 {
+    color:#d1d1cd!important;
+  }
+  .desktop-analysis-screen .analysis-engine-status span[class*="rounded-full"] {
+    background:rgba(184,187,184,.12);
+    border:1px solid rgba(209,209,202,.15);
+  }
+  .desktop-analysis-screen .analysis-redesign-menu > summary {
+    min-width:46px;
+    width:46px;
+    min-height:40px;
+    padding:7px;
+    border-color:rgba(191,169,129,.48);
+    border-radius:12px;
+    background:linear-gradient(155deg,#292d30,#181c1f);
+  }
+  .desktop-analysis-screen .analysis-redesign-menu > summary:hover {
+    border-color:rgba(219,190,142,.72);
+    color:#f0e9dc;
+  }
+}
