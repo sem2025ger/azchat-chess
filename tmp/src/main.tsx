@@ -4,6 +4,15 @@ import type { RootOptions } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
+// Preserve the recovery intent if the auth provider falls back to its Site URL.
+// Route before React/Supabase mounts so URL fragments cannot be consumed first.
+const incomingFragment = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+const incomingQuery = new URLSearchParams(window.location.search);
+if (window.location.pathname !== '/update-password' &&
+  (incomingFragment.get('type') === 'recovery' || incomingQuery.get('type') === 'recovery')) {
+  window.history.replaceState(null, '', '/update-password' + window.location.search + window.location.hash);
+}
+
 function render(options?: RootOptions) {
   createRoot(document.getElementById('root')!, options).render(
     <StrictMode>
