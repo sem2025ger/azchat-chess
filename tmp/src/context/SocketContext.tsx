@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { supabase } from '../services/supabase';
 
 interface SocketContextType {
   socket: Socket | null;
@@ -25,6 +26,7 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   // Keep session in a ref so the auth callback reads the freshest access_token
   // without triggering a socket reconnect on every token refresh.
   const sessionRef = useRef(session);
+  const liveSocketRef = useRef<Socket | null>(null);
   useEffect(() => {
     sessionRef.current = session;
   }, [session]);
@@ -64,21 +66,38 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Disconnected from server');
     });
 
-    newSocket.on('connect_error', (err: Error) => {
+    let recoveryAttempted = false;
+    newSocket.on('connect_error', async (err: Error) => {
       setIsConnected(false);
       if (err.message === 'unauthorized') {
-        setAuthError('unauthorized');
-        // Do not auto-retry on auth failure to avoid spamming the server.
+        // A browser may still show a signed-in user after its socket token expired.
+        // Refresh once and retry with the new token; never bypass server validation.
+        if (!recoveryAttempted && sessionRef.current) {
+          recoveryAttempted = true;
+          newSocket.disconnect();
+          try {
+            const { data, error } = await supabase.auth.refreshSession();
+            if (!error && data.session && newSocket === liveSocketRef.current) {
+              sessionRef.current = data.session;
+              setAuthError(null);
+              newSocket.connect();
+              return;
+            }
+          } catch { /* A failed refresh still requires a normal sign-in. */ }
+        }
+        if (newSocket === liveSocketRef.current) setAuthError('unauthorized');
         newSocket.disconnect();
       } else {
         setAuthError(err.message);
       }
     });
 
+    liveSocketRef.current = newSocket;
     setSocket(newSocket);
     newSocket.connect();
 
     return () => {
+      if (liveSocketRef.current === newSocket) liveSocketRef.current = null;
       newSocket.disconnect();
       newSocket.close();
       setSocket(null);
