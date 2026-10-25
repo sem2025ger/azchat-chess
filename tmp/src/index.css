@@ -1662,3 +1662,48 @@
     color:#f0e9dc;
   }
 }
+
+/* Sidebar-matched neutral charcoal for approved desktop Analysis review. */
+@media (min-width:1024px) {
+  .desktop-analysis-screen > .desktop-analysis-panel {
+    background:linear-gradient(158deg,#1a1a19 0%,#151514 55%,#10110f 100%)!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {
+    background:linear-gradient(160deg,#1c1c1a,#131411);
+  }
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs {background:#181817;}
+  .desktop-analysis-screen .desktop-analysis-review-controls {background:#1b1b19;}
+  .desktop-analysis-screen .desktop-analysis-stockfish > .analysis-engine-content {
+    background:linear-gradient(170deg,#1c1c1a,#131412)!important;
+  }
+  .desktop-analysis-screen .analysis-engine-line {
+    background:linear-gradient(180deg,#242421,#191a18);
+  }
+  .desktop-analysis-screen .desktop-analysis-move-scroll {background:#191a18;}
+  .desktop-analysis-screen .desktop-analysis-move-table thead {background:#171816;}
+  .desktop-analysis-screen .desktop-analysis-move-table tbody tr>td:first-child {background:#181916;}
+  .desktop-analysis-screen .desktop-analysis-transport {
+    background:linear-gradient(180deg,#21211e,#171815)!important;
+  }
+  .desktop-analysis-screen .analysis-stockfish-name {
+    color:#f5f2e9!important;
+    font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+    font-size:14px!important;
+    font-weight:750!important;
+    letter-spacing:.005em;
+    line-height:1.4;
+    text-shadow:none;
+  }
+  .desktop-analysis-screen .analysis-stockfish-depth {
+    color:#e6ddce!important;
+    font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+    font-size:12px!important;
+    font-weight:600!important;
+    font-style:italic!important;
+    letter-spacing:.005em;
+    background:rgba(215,198,165,.12)!important;
+    border:1px solid rgba(207,188,148,.25)!important;
+    white-space:nowrap;
+    text-shadow:none;
+  }
+}
