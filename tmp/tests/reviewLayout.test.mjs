@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { reviewLayout } from '../src/utils/reviewLayout.ts';
 
-test('approved desktop reference keeps the 716px field, 760px frame, 574px panel and 51px gap', () => {
+test('approved desktop reference keeps the 692px field, 736px frame, 574px panel and 51px gap', () => {
   const layout = reviewLayout(1560, 880);
   assert.equal(layout.scale, 1);
-  assert.equal(layout.boardSize, 760);
-  assert.equal(layout.boardSize - 2 * (6 + 16), 716);
+  assert.equal(layout.boardSize, 736);
+  assert.equal(layout.boardSize - 2 * (6 + 16), 692);
   assert.equal(layout.panelWidth, 574);
   assert.equal(layout.columnGap, 51);
   assert.equal(66 + layout.boardColumn + layout.columnGap, 931);
@@ -20,7 +20,7 @@ test('smaller workspaces scale the approved composition without horizontal or ve
     assert.ok(66*s + layout.boardColumn + layout.columnGap + layout.panelWidth <= width);
     assert.ok(10*s + 36*s + layout.boardSize + 36*s <= height);
     assert.ok(Math.abs(layout.boardColumn - layout.boardSize - 54*s) < 1e-9);
-    assert.ok(Math.abs(layout.panelWidth / layout.boardSize - 574/760) < 1e-12);
+    assert.ok(Math.abs(layout.panelWidth / layout.boardSize - 574/736) < 1e-12);
   }
 });
 
