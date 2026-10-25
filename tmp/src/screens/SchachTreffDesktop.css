@@ -16,6 +16,11 @@
 .schach-treff .st-rooms button{width:100%;text-align:left;margin-bottom:28px}
 .schach-treff .st-chat{display:flex;flex-direction:column;height:calc(100dvh - 190px);min-height:440px}
 .schach-treff .st-messages{flex:1;min-height:0;overflow:auto;overflow-wrap:anywhere}
+.schach-treff .st-pin{margin:0 0 12px;padding:12px 14px;border:1px solid rgba(217,174,91,.28);border-radius:12px;background:#0E100F}
+.schach-treff .st-pin-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#D9AE5B;font-weight:600}
+.schach-treff .st-pin-title button{margin-left:auto}
+.schach-treff .st-pin p{margin:4px 0 0}
+.schach-treff .st-pin-form{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .schach-treff article{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.07)}
 .schach-treff .st-message-heading{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .schach-treff time,.schach-treff small{font-size:12px;color:#A8A293}
