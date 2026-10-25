@@ -23,7 +23,13 @@ export default function UpdatePasswordScreen() {
     let active = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (!active) return;
-      if (event === 'PASSWORD_RECOVERY') setRecoveryStatus('checking');
+      if (event === 'PASSWORD_RECOVERY') {
+        void supabase.auth.getUser().then(({ data, error }) => {
+          if (active) setRecoveryStatus(!error && data.user && hasPasswordRecoveryIntent() ? 'ready' : 'invalid');
+        }).catch(() => {
+          if (active) setRecoveryStatus('invalid');
+        });
+      }
       if (event === 'SIGNED_OUT') setRecoveryStatus('invalid');
     });
 
@@ -81,8 +87,8 @@ export default function UpdatePasswordScreen() {
             </h1>
           </div>
 
-          {recoveryStatus === 'invalid' && <p role="alert" className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">{t('auth.recoveryError')} — {t('auth.forgotPassword')}</p>}
-          {recoveryStatus === 'checking' && <p className="mb-4 text-center text-sm text-neutral-300">{t('auth.loading') || 'Checking recovery link...'}</p>}
+          {recoveryStatus === 'invalid' && !successMsg && <p role="alert" className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">{t('auth.recoveryLinkInvalid')}</p>}
+          {recoveryStatus === 'checking' && <p className="mb-4 text-center text-sm text-neutral-300">{t('auth.recoveryChecking')}</p>}
           {successMsg && <p role="status" className="mb-4 rounded-lg bg-emerald-500/10 p-3 text-emerald-300 text-center">{successMsg}</p>}
           {recoveryStatus === 'ready' && !successMsg && <form onSubmit={handleUpdate} className="space-y-3 md:space-y-6">
             <div className="space-y-1">
@@ -107,7 +113,7 @@ export default function UpdatePasswordScreen() {
                 value={confirmPassword} 
                 onChange={e => setConfirmPassword(e.target.value)} 
                 type="password" 
-                className="w-full px-5 py-4 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
+                className="w-full px-5 py-3 md:py-4 bg-neutral-950/70 border border-white/15 rounded-xl text-base md:text-lg text-white placeholder:text-neutral-600 focus:outline-none focus:border-chess-gold/60 focus:ring-2 focus:ring-chess-gold/20 transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0_1000px_rgba(0,0,0,0.55)] [&:-webkit-autofill]:![-webkit-text-fill-color:#ffffff] [&:-webkit-autofill]:caret-white [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[9999s]" 
               />
             </div>
 
@@ -117,23 +123,11 @@ export default function UpdatePasswordScreen() {
               </div>
             )}
 
-            {successMsg && (
-              <div className="text-center p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-lg mt-4">
-                {successMsg}
-              </div>
-            )}
-
             <button disabled={loading || !!successMsg || recoveryStatus !== 'ready'} type="submit" className="w-full py-3 md:py-5 mt-2 md:mt-4 bg-chess-gold/90 hover:bg-chess-gold disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-bold text-lg shadow-lg shadow-chess-gold/10 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
               {loading ? <Loader2 size={18} className="animate-spin" /> : null}
               {t('auth.updatePasswordButton')}
             </button>
 
-            {successMsg && (
-              <button type="button" onClick={() => navigate(backTo)} className="w-full py-4 md:py-5 mt-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-bold text-lg border border-white/5 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
-                {t('auth.backToSignIn')}
-              </button>
-            )}
-            
             {!successMsg && (
                <div className="mt-4 text-center">
                  <button type="button" onClick={() => navigate(backTo)} className="text-sm text-neutral-500 hover:text-white transition-colors underline decoration-white/30 underline-offset-4">
