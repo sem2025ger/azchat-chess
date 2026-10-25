@@ -26,9 +26,10 @@ test('username privacy migration: isolated PostgreSQL integration', { skip: !loc
     await admin.query('CREATE DATABASE "' + name + '"'); made = true;
     db = new Client({ connectionString: tmpUrl.toString() }); await db.connect();
     await db.query(`DO $$ BEGIN
-      IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon; END IF;
-      IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated; END IF;
-      IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role; END IF;
+      BEGIN CREATE ROLE anon; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+      BEGIN CREATE ROLE authenticated; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+      BEGIN CREATE ROLE service_role BYPASSRLS; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+      ALTER ROLE service_role BYPASSRLS;
     END $$;`);
     await db.query(`CREATE SCHEMA auth;
       CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, raw_user_meta_data jsonb);

@@ -25,6 +25,14 @@ async function until(work, timeout = 25000) {
 }
 
 test('isolated PostgreSQL and fresh-process crash recovery', { skip: !process.env.DURABLE_TEST_DATABASE_URL, timeout: 150000 }, async t => {
+  const { Client } = require('pg');
+  const seed = new Client({ connectionString: process.env.DURABLE_TEST_DATABASE_URL, connectionTimeoutMillis: 5000 });
+  await seed.connect();
+  await seed.query(`DO $$ BEGIN
+    BEGIN CREATE ROLE service_role NOBYPASSRLS; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+    ALTER ROLE service_role NOBYPASSRLS;
+  END $$`);
+  await seed.end();
   const { isolatedPostgres } = require('./test-support/durablePostgres.cjs');
   const db = await isolatedPostgres(process.env.DURABLE_TEST_DATABASE_URL);
   const processes = new Set(), sockets = new Set();
@@ -80,6 +88,7 @@ test('isolated PostgreSQL and fresh-process crash recovery', { skip: !process.en
       }
       const check = await db.pool.query(`SELECT relrowsecurity FROM pg_class WHERE oid='public.durable_games'::regclass`);
       assert.equal(check.rows[0].relrowsecurity, true);
+      assert.equal((await db.pool.query("SELECT rolbypassrls FROM pg_roles WHERE rolname='service_role'")).rows[0].rolbypassrls, true);
       assert.equal((await db.pool.query("SELECT count(*)::int AS n FROM pg_policies WHERE tablename='durable_games'")).rows[0].n,0);
     });
     proc = await launch();
