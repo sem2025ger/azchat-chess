@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { annotatedPgn, type PositionEvaluation } from '../../utils/positionMap';
-import { ClipboardCopy, Check, Share2, FileText, MoreHorizontal, RotateCcw, X, FolderOpen, Pencil, Plus, Minus } from 'lucide-react';
+import { ClipboardCopy, Share2, FileText, MoreHorizontal, RotateCcw, X, FolderOpen, Pencil, Plus, Minus } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { mobileAnalysisCopy } from './mobileAnalysisCopy';
 import { analysisCopy } from './copy';
 import { formatFullAnalysisReport } from '../../utils/fullAnalysisReport';
+import './desktopAnalysis.css';
 import type { EngineResult } from '../../utils/StockfishEngine';
 
 interface Props {
@@ -30,15 +31,25 @@ export default function AnalysisWorkspaceHeader({
 }: Props) {
   const { language, t } = useLanguage();
   const words = mobileAnalysisCopy[language];
+  const actionsId = useId();
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const actionsTrigger = useRef<HTMLButtonElement>(null);
+  const [actionsOpen, setActionsOpen] = useState(false);
+  const [actionsPosition, setActionsPosition] = useState({ top: 0, right: 12 });
   const dialogRef = useRef<HTMLDialogElement>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [copyError, setCopyError] = useState(false);
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
+    const closeActions = () => actionsRef.current?.hidePopover();
+    window.addEventListener('resize', closeActions);
+    window.addEventListener('scroll', closeActions, true);
     const closeOnDesktop = () => { if (media.matches) dialogRef.current?.close(); };
     media.addEventListener('change', closeOnDesktop);
     return () => {
+      window.removeEventListener('resize', closeActions);
+      window.removeEventListener('scroll', closeActions, true);
       media.removeEventListener('change', closeOnDesktop);
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
     };
@@ -118,13 +129,38 @@ export default function AnalysisWorkspaceHeader({
     </dialog>
   </>;
   return (
-    <header className="analysis-redesign-header" aria-label="Панель анализа партии">
+    <header className="analysis-redesign-header" aria-label={words.more}>
       <div className="analysis-redesign-actions">
-        <button type="button" onClick={exportPgn} disabled={!moveHistory.length} title="Копировать PGN с оценками рассчитанных позиций"><FileText size={14} />{copied === 'pgn' ? 'Скопировано' : 'PGN с оценками'}</button>
-        <button type="button" onClick={() => void copy('fen', currentFen)} title="Копировать FEN выбранной позиции">{copied === 'fen' ? <Check size={14}/> : <ClipboardCopy size={14}/>} FEN</button>
-        <button type="button" className="hidden lg:inline-flex" aria-pressed={editing} onClick={onEdit}>Редактор доски</button>
-        <button type="button" onClick={() => void share()} title="Поделиться ссылкой на страницу анализа"><Share2 size={14}/>{copied === 'share' ? 'Скопировано' : 'Поделиться'}</button>
-        <button type="button" className="analysis-redesign-reset" onClick={onNew} title="Начать новый анализ">Новый анализ</button>
+        <button ref={actionsTrigger} type="button" className="desktop-analysis-more"
+          aria-label={words.more} title={words.more} aria-expanded={actionsOpen}
+          aria-controls={actionsId} popoverTarget={actionsId}
+          onClick={() => {
+            if (!actionsOpen) { setCopyError(false); setCopied(null); }
+            const rect = actionsTrigger.current?.getBoundingClientRect();
+            if (rect) setActionsPosition({ top: rect.bottom + 8, right: Math.max(12, window.innerWidth - rect.right) });
+          }}>
+          <MoreHorizontal size={21} aria-hidden="true" />
+        </button>
+        <div id={actionsId} ref={actionsRef} popover="auto" role="group" aria-label={words.more}
+          className="desktop-analysis-actions-popover" style={actionsPosition}
+          onToggle={event => {
+            const open = event.newState === 'open';
+            setActionsOpen(open);
+            if (open) actionsRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+          }}>
+          <button type="button" onClick={() => void copy('fen', currentFen)}>
+            <ClipboardCopy size={16} aria-hidden="true" />{words.fen}
+          </button>
+          <button type="button" aria-pressed={editing} onClick={() => {
+            actionsRef.current?.hidePopover();
+            onEdit();
+          }}><Pencil size={16} aria-hidden="true" />{analysisCopy[language].editor}</button>
+          <button type="button" onClick={() => void share()}><Share2 size={16} aria-hidden="true" />{words.share}</button>
+          <button type="button" onClick={exportPgn} disabled={!moveHistory.length}>
+            <FileText size={16} aria-hidden="true" />{words.pgn}
+          </button>
+          <p role="status" className="desktop-analysis-copy-status">{copyError ? words.copyFailed : copied ? words.copied : ''}</p>
+        </div>
       </div>
     </header>
   );

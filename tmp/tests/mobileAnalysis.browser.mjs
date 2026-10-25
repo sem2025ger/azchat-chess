@@ -279,6 +279,35 @@ try {
   assert.ok(await evaluate("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 5')"), 'Desktop retains five-line engine support');
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#mobile-analysis-details')).display"), 'none', 'Mobile panel stays hidden on desktop');
   console.log('PASS desktop retains three/five-line controls');
+  assert.equal(await evaluate("document.querySelectorAll('.analysis-redesign-reset').length"), 0, 'No duplicate desktop reset');
+  assert.equal(await evaluate("document.querySelectorAll('.desktop-analysis-new-button').length"), 1, 'Lower New analysis remains');
+  await evaluate("document.querySelector('.desktop-analysis-more').click()");
+  await waitFor("!!document.querySelector('.desktop-analysis-actions-popover:popover-open')");
+  const menu = await evaluate(`(() => {
+    const menu=document.querySelector('.desktop-analysis-actions-popover:popover-open');
+    return {rect:menu.getBoundingClientRect().toJSON(), count:menu.querySelectorAll('button').length,
+      labels:[...menu.querySelectorAll('button')].map(b=>b.textContent),focused:menu.contains(document.activeElement)};
+  })()`);
+  assert.equal(menu.count, 4);
+  assert.deepEqual(menu.labels, ['Копировать FEN','Редактор доски','Поделиться позицией','Копировать PGN с оценками']);
+  assert.ok(menu.rect.right <= 1440 && menu.rect.bottom <= 900 && menu.rect.top >= 0, 'Menu stays in viewport and escapes panel clipping');
+  assert.ok(menu.focused, 'Keyboard focus enters actions');
+  await cdp('Input.dispatchKeyEvent', {type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+  await cdp('Input.dispatchKeyEvent', {type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+  await waitFor("!document.querySelector('.desktop-analysis-actions-popover:popover-open')");
+  assert.ok(await evaluate("document.activeElement === document.querySelector('.desktop-analysis-more')"), 'Escape returns focus to trigger');
+  const scores = await evaluate("[...document.querySelectorAll('.analysis-engine-score')].map(n=>{const s=getComputedStyle(n);return {color:s.color,shadow:s.textShadow,box:s.boxShadow,weight:s.fontWeight,width:n.getBoundingClientRect().width}})");
+  assert.ok(scores.every(s=>s.color==='rgb(203, 208, 214)' && s.shadow==='none' && s.box==='none' && s.weight==='600' && s.width===70), 'Neutral sharp tabular scores keep stable geometry');
+  await evaluate("document.querySelector('.desktop-analysis-more').click()");
+  await waitFor("!!document.querySelector('.desktop-analysis-actions-popover:popover-open')");
+  await evaluate("document.querySelector('.desktop-analysis-actions-popover:popover-open button[aria-pressed]').click()");
+  await waitFor("[...document.querySelectorAll('.desktop-analysis-panel button')].some(b=>b.textContent==='Анализировать позицию')");
+  assert.ok(await evaluate("!document.querySelector('.desktop-analysis-actions-popover:popover-open')"), 'Editor action closes menu');
+  assert.equal(await evaluate("[...document.querySelectorAll('.desktop-analysis-panel button')].filter(b=>b.textContent==='Анализировать позицию').length"), 1, 'Editor retains Analyze position');
+  await evaluate("[...document.querySelectorAll('.desktop-analysis-panel button')].find(b=>b.textContent==='Отмена').click()");
+  await waitFor("!!document.querySelector('.desktop-analysis-new-button')");
+  console.log('PASS desktop analysis disclosure, reset, editor, neutral scores and Escape focus');
+
   // Lobby layout is independent of game/analysis layout and needs no account.
   await cdp('Page.navigate', { url:'about:blank' });
   await waitFor("location.href === 'about:blank'");
