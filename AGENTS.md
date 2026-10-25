@@ -122,4 +122,6 @@ authorize mobile changes. Preserve the other layouts unless explicitly included.
 
 ## Schach-Treff v1 addition to 7. Lessons learned
 
+Supabase MCP apply_migration assigns its own version timestamp; record the actual version and reconcile it with the repository file name in the planned migration-repair PR.
+
 Supavisor session pooler ignores PGOPTIONS; to enforce read-only use BEGIN READ ONLY and verify SHOW transaction_read_only inside the same session.
