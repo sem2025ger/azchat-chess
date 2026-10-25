@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { clubReturnTarget } from '../lib/authCallbackUrl';
 import { supabase } from '../services/supabase';
@@ -17,12 +17,37 @@ export default function UpdatePasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [recoveryStatus, setRecoveryStatus] = useState<'checking' | 'ready' | 'invalid'>('checking');
+
+  useEffect(() => {
+    let active = true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!active) return;
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && window.location.hash.includes('type=recovery'))) {
+        setRecoveryStatus('ready');
+      } else if (event === 'SIGNED_OUT' && !session) {
+        setRecoveryStatus('invalid');
+      }
+    });
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active) return;
+      // A live password recovery session is required, not an arbitrary logged-in session.
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      if (session && params.get('type') === 'recovery') setRecoveryStatus('ready');
+      else setRecoveryStatus(previous => previous === 'ready' ? previous : 'invalid');
+    });
+    return () => { active = false; subscription.unsubscribe(); };
+  }, []);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
 
+    if (recoveryStatus !== 'ready') {
+      setErrorMsg(t('auth.recoveryError'));
+      return;
+    }
     if (password !== confirmPassword) {
       setErrorMsg(t('auth.passwordsDoNotMatch'));
       return;
@@ -54,6 +79,8 @@ export default function UpdatePasswordScreen() {
             </h1>
           </div>
 
+          {recoveryStatus === 'invalid' && <p role="alert" className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-200">{t('auth.recoveryError')} — {t('auth.forgotPassword')}</p>}
+          {recoveryStatus === 'checking' && <p className="mb-4 text-center text-sm text-neutral-300">{t('auth.loading')}</p>}
           <form onSubmit={handleUpdate} className="space-y-5 md:space-y-6">
             <div className="space-y-1">
               <label className="text-base font-semibold text-neutral-200 block mb-1">
@@ -93,7 +120,7 @@ export default function UpdatePasswordScreen() {
               </div>
             )}
 
-            <button disabled={loading || !!successMsg} type="submit" className="w-full py-4 md:py-5 mt-4 bg-chess-gold/90 hover:bg-chess-gold disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-bold text-lg shadow-lg shadow-chess-gold/10 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
+            <button disabled={loading || !!successMsg || recoveryStatus !== 'ready'} type="submit" className="w-full py-4 md:py-5 mt-4 bg-chess-gold/90 hover:bg-chess-gold disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-xl font-bold text-lg shadow-lg shadow-chess-gold/10 transition-colors active:scale-[0.99] flex items-center justify-center gap-2">
               {loading ? <Loader2 size={18} className="animate-spin" /> : null}
               {t('auth.updatePasswordButton')}
             </button>
