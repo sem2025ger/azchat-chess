@@ -34,6 +34,7 @@ export default function PlayScreen() {
   const [timeControl, setTimeControl] = useState('3 min.');
   const [isSearching, setIsSearching] = useState(false);
   const [waitingForSocket, setWaitingForSocket] = useState(false);
+  const [waitingForFriendSocket, setWaitingForFriendSocket] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
   const accentTheme: AccentTheme = 'gold';
 
@@ -187,9 +188,28 @@ export default function PlayScreen() {
     return () => clearTimeout(timer);
   }, [waitingForSocket]);
 
+  useEffect(() => {
+    if (!waitingForFriendSocket || !socket || !isConnected) return;
+    setWaitingForFriendSocket(false);
+    setIsPrivateCreating(true);
+    setPrivateRoomId(null);
+    socket.emit('create_private_room', { timeControl: toServerTimeControl(timeControl) });
+  }, [waitingForFriendSocket, socket, isConnected, timeControl]);
+
+  useEffect(() => {
+    if (!waitingForFriendSocket) return;
+    const timeout = setTimeout(() => {
+      setWaitingForFriendSocket(false);
+      setIsPrivateCreating(false);
+      setJoinError('Connection unavailable. Please try again shortly.');
+    }, 65000);
+    return () => clearTimeout(timeout);
+  }, [waitingForFriendSocket]);
+
   const cancelMatchmaking = () => {
     if (socket && isConnected) socket.emit('cancel_matchmaking');
     setWaitingForSocket(false);
+    setWaitingForFriendSocket(false);
     setIsSearching(false);
     setIsPrivateCreating(false);
     setIsJoiningPrivate(false);
@@ -362,7 +382,13 @@ export default function PlayScreen() {
               }
               if (authIsLoading) return;
               if (!session) { navigate('/profile?returnTo=%2Fplay'); return; }
-              if (!socket || !isConnected) { setJoinError('Connection not ready. Please try again.'); return; }
+              if (!socket || !isConnected) {
+                if (authError === 'unauthorized') { setJoinError('Session expired. Please sign in again.'); return; }
+                setWaitingForFriendSocket(true);
+                setIsPrivateCreating(true);
+                return;
+              }
+              setWaitingForFriendSocket(false);
               setIsPrivateCreating(true);
               setPrivateRoomId(null);
               socket.emit('create_private_room', { timeControl: toServerTimeControl(timeControl) });
