@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-const read = p => readFileSync(new URL(p, import.meta.url), 'utf8');
+const read = p => readFileSync(new URL(p, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 test('legacy community implementation remains byte-identical to approved main', () => {
-  const baseline = execFileSync('git', ['show', '4af51e5:tmp/src/screens/ChessAZCommunityScreen.tsx'], {encoding:'utf8'});
+  const baseline = execFileSync('git', ['show', '4af51e5:tmp/src/screens/ChessAZCommunityScreen.tsx'], {encoding:'utf8'}).replace(/\r\n/g, '\n');
   const current = read('../src/screens/ChessAZCommunityScreen.tsx');
   assert.equal(current.split('function LegacyCommunityScreen() {')[1], baseline.split('export default function ChessAZCommunityScreen() {')[1]);
   assert.match(current, /return desktop \? <SchachTreffDesktop \/> : <LegacyCommunityScreen \/>/);
@@ -12,7 +12,7 @@ test('legacy community implementation remains byte-identical to approved main', 
   for (const width of [360,390,430,768]) assert.equal(width >= 1024, false);
 });
 test('mobile navigation JSX is unchanged', () => {
-  const baseline = execFileSync('git', ['show', '4af51e5:tmp/src/components/Layout.tsx'], {encoding:'utf8'});
+  const baseline = execFileSync('git', ['show', '4af51e5:tmp/src/components/Layout.tsx'], {encoding:'utf8'}).replace(/\r\n/g, '\n');
   const current = read('../src/components/Layout.tsx');
   const nav = source => source.split('<nav data-mobile-app-nav')[1].split('</nav>')[0];
   assert.equal(nav(current), nav(baseline));
