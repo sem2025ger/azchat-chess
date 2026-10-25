@@ -1534,3 +1534,83 @@
     transform: none !important;
   }
 }
+
+
+/* Approved analysis refinement — desktop review only.
+   Confine toolbar, engine, notation and transport to one dark graphite frame. */
+@media (min-width:1024px) {
+  .desktop-analysis-screen > .desktop-analysis-panel {
+    overflow:hidden!important;
+    background:linear-gradient(158deg,#171b1b 0%,#141718 54%,#0e1112 100%)!important;
+    border:2px solid rgba(198,166,108,.50)!important;
+    box-shadow:inset 0 1px 0 rgba(248,223,171,.11),
+      inset 0 0 0 1px rgba(176,139,75,.10),
+      0 16px 38px rgba(0,0,0,.44)!important;
+    isolation:isolate;
+  }
+  .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {
+    position:relative;
+    z-index:31;
+    border-color:rgba(192,162,109,.24);
+    border-top:0;
+    border-left:0;
+    border-right:0;
+    border-radius:0;
+    background:linear-gradient(160deg,#1c2021,#121618);
+  }
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs {
+    background:#15191b;
+    border-color:rgba(188,164,122,.23);
+  }
+  .desktop-analysis-screen .desktop-analysis-review-controls {
+    background:#171b1d;
+    border-bottom:1px solid rgba(187,161,115,.16);
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish {
+    height:clamp(192px,38%,242px)!important;
+    max-height:none!important;
+    min-height:0!important;
+    flex:0 0 auto!important;
+    overflow:hidden!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > .analysis-engine-content {
+    background:linear-gradient(170deg,#1a1e20,#111516);
+  }
+  .desktop-analysis-screen .desktop-analysis-move-scroll {
+    min-height:0;
+    background:#15191a;
+  }
+  .desktop-analysis-screen .desktop-analysis-transport {
+    height:57px!important;
+    min-height:57px!important;
+    flex-shrink:0!important;
+    padding:5px 10px;
+    gap:15px;
+    background:linear-gradient(180deg,#1c2021,#141719)!important;
+    border-top:1px solid rgba(195,164,110,.31)!important;
+    box-shadow:inset 0 1px 0 rgba(241,224,188,.07)!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-transport > button {
+    min-width:44px!important;
+    width:44px;
+    min-height:43px!important;
+    height:43px;
+    padding:7px!important;
+    border-radius:12px!important;
+    border:1px solid rgba(196,167,112,.47)!important;
+    color:#dbd9d2!important;
+    background:linear-gradient(155deg,#30343a 0%,#23282b 55%,#1a1e21 100%)!important;
+    box-shadow:inset 0 1px 0 rgba(248,225,177,.16),
+      0 3px 9px rgba(0,0,0,.28)!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-transport > button:not(:disabled):hover {
+    border-color:rgba(224,186,122,.75)!important;
+    color:#f3ead7!important;
+    background:linear-gradient(155deg,#3a3a37,#25292b)!important;
+    box-shadow:inset 0 1px 0 rgba(248,225,177,.21),
+      0 4px 12px rgba(0,0,0,.29)!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-transport > button:disabled {
+    opacity:.37;
+  }
+}
