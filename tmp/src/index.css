@@ -1422,6 +1422,7 @@
    No board geometry or mobile styles are touched. */
 @media (min-width:1024px) {
   .desktop-analysis-screen .desktop-analysis-panel {
+    overflow:visible!important;
     border-color:rgba(158,151,138,.32)!important;
     box-shadow:inset 0 1px 0 rgba(228,226,219,.08),0 20px 44px rgba(0,0,0,.48)!important;
   }
