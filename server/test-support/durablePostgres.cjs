@@ -20,9 +20,10 @@ async function isolatedPostgres(connectionString) {
   url.pathname = '/' + database;
   const pool = new Pool({ connectionString: url.toString(), connectionTimeoutMillis: 5000, max: 8 });
   await pool.query(`DO $$ BEGIN
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon; END IF;
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated; END IF;
-    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role BYPASSRLS; END IF;
+    BEGIN CREATE ROLE anon; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+    BEGIN CREATE ROLE authenticated; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+    BEGIN CREATE ROLE service_role BYPASSRLS; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+    ALTER ROLE service_role BYPASSRLS;
   END $$;
   CREATE EXTENSION "uuid-ossp";
   CREATE TABLE public.profiles(id uuid PRIMARY KEY);
