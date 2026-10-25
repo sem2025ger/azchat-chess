@@ -18,9 +18,10 @@ test('Schach-Treff username availability RPC: isolated PostgreSQL and grants', {
     await admin.query('CREATE DATABASE "' + dbName + '"'); created=true;
     db = new Client({connectionString:tempUrl.toString()}); await db.connect();
     await db.query(`DO $$ BEGIN
-      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon; END IF;
-      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated; END IF;
-      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='service_role') THEN CREATE ROLE service_role; END IF;
+      BEGIN CREATE ROLE anon; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+      BEGIN CREATE ROLE authenticated; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+      BEGIN CREATE ROLE service_role BYPASSRLS; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
+      ALTER ROLE service_role BYPASSRLS;
     END $$;`);
     await db.query('CREATE TABLE public.profiles (id uuid PRIMARY KEY, username text UNIQUE NOT NULL)');
     await db.query("INSERT INTO public.profiles VALUES ('11111111-1111-4111-8111-111111111111','sonya25')");
