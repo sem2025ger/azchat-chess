@@ -10,7 +10,13 @@ export function authCallbackUrl(
 ): string {
   const current = new URL(currentOrigin);
   const isUniqueDeployment = /^chessaz-preview-workspace-(?!git-)[a-z0-9]{8,16}-semov20207-3068s-projects\.vercel\.app$/.test(current.hostname);
-  const origin = current.protocol === 'https:' && qaPreviewHost.test(current.hostname) && !isUniqueDeployment
+  // Recovery emails must not point to ephemeral deployment hosts:
+  // those URLs cannot be exhaustively listed in Supabase Auth's redirect allowlist.
+  // Use the stable QA hostname; preserve existing sign-in/registration callback behavior.
+  const stableRecoveryHost = path === '/update-password' &&
+    (qaPreviewHost.test(current.hostname) || current.hostname === 'chessaz-preview-workspace.vercel.app');
+  const origin = current.protocol === 'https:' &&
+    (stableRecoveryHost || (qaPreviewHost.test(current.hostname) && !isUniqueDeployment))
     ? 'https://chessaz-preview-workspace.vercel.app'
     : current.origin;
   const callback = new URL(path, origin);
