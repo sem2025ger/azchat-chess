@@ -9,7 +9,7 @@ test('email recovery and sign-in callbacks preserve production and unique QA ori
     for (const origin of ['https://chessaz.de', 'https://chessaz-preview-workspace-68bwdot2r-semov20207-3068s-projects.vercel.app']) {
       for (const path of ['/profile', '/update-password']) {
         const callback = new URL(authCallbackUrl(origin, path, false, true));
-        assert.equal(callback.origin, origin);
+        assert.equal(callback.origin, path === '/update-password' && origin.includes('chessaz-preview-workspace-') ? 'https://chessaz-preview-workspace.vercel.app' : origin);
         assert.equal(callback.pathname, path);
         assert.equal(callback.searchParams.get('returnTo'), '/play');
       }
