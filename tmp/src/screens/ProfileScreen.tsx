@@ -120,7 +120,7 @@ export default function ProfileScreen() {
         // Preflight is advisory: the server's signup trigger allocates the
         // authoritative final name under a transaction advisory lock.
         const requestedName = username.trim();
-        if (/[^A-Za-z0-9_]/.test(requestedName)) {
+        if (/[^A-Za-z0-9_]/.test(username)) {
           setErrorMsg(t('auth.usernameCharacters'));
           return;
         }
