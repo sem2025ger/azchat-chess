@@ -1761,3 +1761,28 @@
     flex-shrink:0;
   }
 }
+
+
+/* Keep the desktop Stockfish heading fully visible when engine depth appears. */
+@media (min-width:1024px) {
+  .desktop-analysis-screen .analysis-engine-status {
+    flex:0 0 auto!important;
+    height:auto!important;
+    min-height:49px!important;
+    max-height:none!important;
+    padding-top:4px!important;
+    padding-bottom:7px!important;
+    row-gap:5px!important;
+    overflow:visible!important;
+    align-content:center!important;
+  }
+  .desktop-analysis-screen .analysis-engine-status > div:first-child {
+    align-items:center!important;
+    min-height:28px;
+  }
+  .desktop-analysis-screen .analysis-stockfish-name {
+    display:inline-block;
+    white-space:nowrap;
+    vertical-align:middle;
+  }
+}
