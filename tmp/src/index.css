@@ -1481,3 +1481,56 @@
   .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {overflow:visible;}
   .desktop-analysis-screen .analysis-redesign-menu-list button[aria-pressed="true"] {background:#363a3d;color:#eee9de;}
 }
+
+
+/* Chess.com-inspired readable desktop analysis notation.
+   Typography only: preserves the approved board, PV slots and column geometry. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen .analysis-engine-score {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important;
+    font-size: 15px !important;
+    font-style: normal;
+    font-weight: 500 !important;
+    letter-spacing: -.015em;
+    line-height: 1.35 !important;
+    font-variant-numeric: tabular-nums;
+    text-shadow: none;
+  }
+  .desktop-analysis-screen .analysis-engine-moves {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important;
+    font-size: 13px !important;
+    font-style: normal;
+    font-weight: 500 !important;
+    letter-spacing: 0;
+    line-height: 1.5;
+    text-shadow: none;
+  }
+  .desktop-analysis-screen .analysis-engine-moves span {
+    font-weight: 500 !important;
+    text-shadow: none;
+  }
+  .desktop-analysis-screen .desktop-analysis-move-table tbody {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important;
+    font-size: 13px;
+    font-weight: 500 !important;
+    font-style: normal;
+    letter-spacing: 0;
+    line-height: 1.45;
+    text-shadow: none;
+  }
+  .desktop-analysis-screen .desktop-analysis-move-table tbody tr,
+  .desktop-analysis-screen .desktop-analysis-move-table tbody td,
+  .desktop-analysis-screen .desktop-analysis-move-table tbody td span {
+    font-weight: 500 !important;
+    text-shadow: none;
+  }
+  .desktop-analysis-screen .desktop-analysis-move-table tbody td:first-child {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important;
+    font-style: normal;
+    font-weight: 450 !important;
+    letter-spacing: 0;
+  }
+  .desktop-analysis-screen .desktop-analysis-move-table tbody td span {
+    transform: none !important;
+  }
+}
