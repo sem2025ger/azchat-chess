@@ -34,10 +34,20 @@ export default function SchachTreffDesktop() {
   useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, []);
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
   const refresh = useCallback(async () => {
-    const club = await supabase.from('chess_clubs').select('id,pinned_body,pinned_by').eq('slug', 'chessaz-deutsch').maybeSingle();
+    const club = await supabase.from('chess_clubs').select('id').eq('slug', 'chessaz-deutsch').maybeSingle();
     if (club.error) throw club.error;
     setClubId(club.data?.id ?? null);
-    setPin(club.data?.pinned_body ? { body: club.data.pinned_body, author: club.data.pinned_by } : null);
+    let pinnedAuthor: string | null = null;
+    if (club.data) {
+      const pinInfo = await supabase.from('chess_clubs').select('pinned_body,pinned_by').eq('id',club.data.id).maybeSingle();
+      if (pinInfo.error) {
+        const code = pinInfo.error.code;
+        if (['42703','PGRST204','PGRST205'].includes(code)) {
+          if (!warned.has('pin-migration')) { warned.add('pin-migration'); console.warn('Schach-Treff pin unavailable:', code); }
+          setPin(null);
+        } else throw pinInfo.error;
+      } else { pinnedAuthor = pinInfo.data?.pinned_by ?? null; setPin(pinInfo.data?.pinned_body ? { body: pinInfo.data.pinned_body, author: pinnedAuthor } : null); }
+    } else setPin(null);
     if (!user || !club.data) { setMember(false); setMessages([]); setProfiles([]); return; }
     const membership = await supabase.from('chess_club_members').select('user_id,role').eq('club_id', club.data.id).eq('user_id', user.id).maybeSingle();
     if (membership.error) throw membership.error;
@@ -50,7 +60,7 @@ export default function SchachTreffDesktop() {
     ]);
     if (feed.error) throw feed.error;
     if (members.error) throw members.error;
-    const ids = [...new Set([...members.data.map(m => m.user_id), ...feed.data.map(m => m.author_id), ...(club.data.pinned_by ? [club.data.pinned_by] : [])])];
+    const ids = [...new Set([...members.data.map(m => m.user_id), ...feed.data.map(m => m.author_id), ...(pinnedAuthor ? [pinnedAuthor] : [])])];
     const people = ids.length ? await supabase.from('profiles').select('id,username,rating_blitz,rating_rapid').in('id', ids) : { data: [], error: null };
     if (people.error) throw people.error;
     setProfiles(people.data ?? []); setRoster(members.data.map(m => m.user_id));
