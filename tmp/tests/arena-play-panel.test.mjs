@@ -14,7 +14,9 @@ test('arena renders chosen clock, four quick presets and opt-in readiness before
     const { LanguageProvider } = await server.ssrLoadModule('/src/context/LanguageContext.tsx');
     const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(LanguageProvider, null,
       createElement(Panel, { timeControl: '3 min.', onTimeChange() {}, onStart() {}, onFriend() {} }))));
-    assert.match(html, /CHESSAZ · ИГРОВАЯ АРЕНА/);
+    assert.doesNotMatch(html, /CHESSAZ · ИГРОВАЯ АРЕНА/);
+    assert.doesNotMatch(html, /\/pieces\/classic\/bP\.svg/);
+    assert.match(html, /class="arena-start-game"[^>]*><span>НАЧАТЬ ИГРУ<\/span>/);
     assert.equal((html.match(/aria-pressed=/g) || []).length, 4);
     assert.match(html, /aria-pressed="true">3 мин\./);
     assert.match(html, /role="switch" aria-checked="false"/);
