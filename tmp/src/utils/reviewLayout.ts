@@ -2,7 +2,7 @@
 export function reviewLayout(width: number, height: number) {
   // Reference is the approved HTML's 1560 x 880 workspace (excluding the sidebar).
   const scale = Math.max(0, Math.min(1, width / 1560, height / 880));
-  const boardSize = 760 * scale; // 716px playing field plus the 22px frame on each side.
+  const boardSize = 736 * scale; // Slightly smaller desktop frame; keep the board square and the surrounding composition proportional.
   const evaluationSpace = 54 * scale;
   const columnGap = 51 * scale;
   const panelWidth = 574 * scale;
