@@ -12,7 +12,7 @@ Status: **review-only PR; do not merge or apply to production until the owner ex
 ## Production procedure (OWNER ONLY, after separate approval)
 The correct target is Supabase **AZTR Chess**, project ref `kmwfvvliundhuovoakoa`. The QA ref `iukmpcytsuofqhxsumbu` must never be mistaken for production.
 
-Preconditions: snapshot/backups verified, exact production connection host/port from the Supabase dashboard, TLS root CA file verified, and the existing DPAPI-stored Postgres credential identified on the **owner's Windows computer**. Do **not** paste passwords, decrypted DPAPI data, connection strings, usernames, or full logs into chat or GitHub. We know of a QA credential under `%LOCALAPPDATA%\\ChessAZ-QA`; it is **NOT** proof of a production credential. Do not reuse it for production.
+Preconditions: Supabase Free has no automatic backups. The rollback source is private.username_backfill_log, written in the same transaction as the backfill, together with docs/email-free-usernames-revert.sql. Verify the exact production connection host/port from the Supabase dashboard, the TLS root CA file, and the existing DPAPI-stored Postgres credential identified on the **owner's Windows computer**. Do **not** paste passwords, decrypted DPAPI data, connection strings, usernames, or full logs into chat or GitHub. We know of a QA credential under `%LOCALAPPDATA%\\ChessAZ-QA`; it is **NOT** proof of a production credential. Do not reuse it for production.
 
 In Windows PowerShell, the owner should configure the following variables **locally** using the verified existing production environment (the values below are placeholders, not discovered secrets). Import the existing DPAPI credential with `Import-Clixml` *only if it is an existing CLIXML `PSCredential` created under the same Windows account.* Otherwise use the established secure local credential workflow; do not generate or store new secrets in the repository.
 
@@ -25,8 +25,23 @@ $pgDatabase = 'postgres'
 $caPath = '<VERIFIED_POSTGRES_CA_PEM_PATH>'
 $cred = Import-Clixml -LiteralPath $credentialPath
 if ($cred -isnot [pscredential]) { throw 'Expected existing DPAPI-protected PSCredential' }
-if ($pgHost -notmatch '^db\\.kmwfvvliundhuovoakoa\\.supabase\\.co$') {
-  throw 'Unverified production host: stop and use an independently verified host'
+# Fail closed: the host, username AND port must identify the production
+# database in exactly one of the approved connection modes.
+# The QA project ref must not occur in either host or database username.
+if ($pgHost -match 'iukmpcytsuofqhxsumbu' -or
+    $cred.UserName -match 'iukmpcytsuofqhxsumbu') {
+  throw 'QA project identified: never apply the production migration to QA'
+}
+$directHost = $pgHost -cmatch '^db\.kmwfvvliundhuovoakoa\.supabase\.co$'
+$sessionHost = $pgHost -cmatch '^aws-[0-9]+-eu-west-1\.pooler\.supabase\.com$'
+$directUser = $cred.UserName -ceq 'postgres'
+$sessionUser = $cred.UserName -ceq 'postgres.kmwfvvliundhuovoakoa'
+$portVerified = ([string]$pgPort) -ceq '5432'
+if (-not ($portVerified -and (
+    ($directHost -and $directUser) -or
+    ($sessionHost -and $sessionUser)
+  ))) {
+  throw 'Unverified production target (host, user or port): stop'
 }
 if (-not (Test-Path -LiteralPath $caPath)) { throw 'Missing trusted CA: stop' }
 $env:PGPASSWORD = $cred.GetNetworkCredential().Password
@@ -45,7 +60,7 @@ try {
 } finally { Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue }
 ```
 
-**Important:** The production database may use a Supabase pooler hostname rather than the `db.<ref>.supabase.co` hostname. If so, the strict host assertion above will deliberately abort. **Do not bypass the assertion without independently confirming the host, SNI/CA chain, user, port, and project ref from your existing production configuration.** The connection is intentionally not executable as-is: actual secret/host/CA paths have not been verified in this chat.
+**Important:** This guard accepts only the direct production host with user `postgres` or the production Supavisor Session pooler in `eu-west-1` with user `postgres.kmwfvvliundhuovoakoa`, always on port `5432`. It explicitly rejects the QA project ref. Independently verify the actual host, TLS name/CA chain, database user, port and project ref before executing. Never disable or bypass the guard; if the verified connection differs, stop for review. Actual credentials and CA paths have not been verified in this chat.
 
 Execute `docs/email-free-usernames-production-preflight.sql` read-only first, before authorization to apply the migration. After the owner authorizes and runs the migration, execute `docs/email-free-usernames-post-apply-check.sql` in the same verified connection with `ON_ERROR_STOP=1`. Expected after this 7-profile backfill:
 - `legacy_remaining = 0`
