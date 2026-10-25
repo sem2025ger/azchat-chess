@@ -125,8 +125,7 @@ export default function AnalysisWorkspaceHeader({
           onKeyDown={event => { if (event.key === 'Escape') { desktopMoreRef.current?.removeAttribute('open'); desktopMoreRef.current?.querySelector('summary')?.focus(); } }}
           onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) desktopMoreRef.current?.removeAttribute('open'); }}>
           <summary aria-label={words.more} title={words.more}>
-            <MoreHorizontal size={20} aria-hidden="true" />
-            <span>{words.more}</span>
+            <MoreHorizontal size={22} strokeWidth={2.1} aria-hidden="true" />
           </summary>
           <div className="analysis-redesign-menu-list">
             <button type="button" onClick={() => { desktopMoreRef.current?.removeAttribute('open'); exportPgn(); }}
