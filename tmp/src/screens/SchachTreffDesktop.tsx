@@ -13,6 +13,10 @@ const warned = new Set<string>();
 export default function SchachTreffDesktop() {
   const { user, isLoading } = useAuth();
   const [clubId, setClubId] = useState<string | null>(null);
+  const [pin, setPin] = useState<{ body: string; author: string | null } | null>(null);
+  const [canPin, setCanPin] = useState(false);
+  const [pinEdit, setPinEdit] = useState(false);
+  const [pinDraft, setPinDraft] = useState('');
   const [member, setMember] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -30,13 +34,15 @@ export default function SchachTreffDesktop() {
   useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, []);
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
   const refresh = useCallback(async () => {
-    const club = await supabase.from('chess_clubs').select('id').eq('slug', 'chessaz-deutsch').maybeSingle();
+    const club = await supabase.from('chess_clubs').select('id,pinned_body,pinned_by').eq('slug', 'chessaz-deutsch').maybeSingle();
     if (club.error) throw club.error;
     setClubId(club.data?.id ?? null);
+    setPin(club.data?.pinned_body ? { body: club.data.pinned_body, author: club.data.pinned_by } : null);
     if (!user || !club.data) { setMember(false); setMessages([]); setProfiles([]); return; }
-    const membership = await supabase.from('chess_club_members').select('user_id').eq('club_id', club.data.id).eq('user_id', user.id).maybeSingle();
+    const membership = await supabase.from('chess_club_members').select('user_id,role').eq('club_id', club.data.id).eq('user_id', user.id).maybeSingle();
     if (membership.error) throw membership.error;
     setMember(Boolean(membership.data));
+    setCanPin(['admin','moderator'].includes(membership.data?.role ?? ''));
     if (!membership.data) { setMessages([]); setProfiles([]); return; }
     const [feed, members] = await Promise.all([
       supabase.from('chess_club_messages').select('id,author_id,body,created_at').eq('club_id', club.data.id).order('created_at', { ascending: false }).limit(50),
@@ -44,7 +50,7 @@ export default function SchachTreffDesktop() {
     ]);
     if (feed.error) throw feed.error;
     if (members.error) throw members.error;
-    const ids = [...new Set([...members.data.map(m => m.user_id), ...feed.data.map(m => m.author_id)])];
+    const ids = [...new Set([...members.data.map(m => m.user_id), ...feed.data.map(m => m.author_id), ...(club.data.pinned_by ? [club.data.pinned_by] : [])])];
     const people = ids.length ? await supabase.from('profiles').select('id,username,rating_blitz,rating_rapid').in('id', ids) : { data: [], error: null };
     if (people.error) throw people.error;
     setProfiles(people.data ?? []); setRoster(members.data.map(m => m.user_id));
@@ -76,6 +82,11 @@ export default function SchachTreffDesktop() {
     if (!user || !clubId || !member || busy || !body.trim()) return;
     if (await perform(() => supabase.from('chess_club_messages').insert({ club_id: clubId, author_id: user.id, body: body.trim() }))) setBody('');
   }
+  async function savePin(event: FormEvent) {
+    event.preventDefault();
+    if (!clubId || !canPin || busy) return;
+    if (await perform(() => supabase.rpc('set_club_pin', { p_club_id: clubId, p_body: pinDraft }))) setPinEdit(false);
+  }
   function stamp(value: string) {
     const date = new Date(value), now = new Date(), yesterday = new Date(); yesterday.setDate(now.getDate() - 1);
     const time = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -90,7 +101,18 @@ export default function SchachTreffDesktop() {
     {error && <p role="alert">{error}</p>}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
     <div className="st-columns"><aside className="st-surface st-rooms"><h2>{t.rooms}</h2><button aria-current="page">{t.general}</button><h2>{t.clubs}</h2></aside>
-      <section className="st-surface st-chat"><h2>{t.general}</h2><div className="st-messages" aria-live="polite">
+      <section className="st-surface st-chat"><h2>{t.general}</h2>
+        {(pin || canPin) && <div className="st-pin">
+          <div className="st-pin-title">{t.pinned}{pin?.author && ' · '}{pin?.author ? profiles.find(p => p.id === pin.author)?.username ?? '' : ''}
+            {canPin && <button onClick={() => { setPinEdit(true); setPinDraft(pin?.body ?? ''); }}>{t.change}</button>}
+          </div>
+          {pinEdit ? <form onSubmit={savePin} className="st-pin-form">
+            <input aria-label={t.pinned} value={pinDraft} maxLength={500} onChange={e => setPinDraft(e.target.value)} />
+            <button disabled={busy}>{t.pinAction}</button>
+            <button type="button" onClick={() => setPinEdit(false)}>{t.cancel}</button>
+          </form> : pin && <p>{pin.body}</p>}
+        </div>}
+        <div className="st-messages" aria-live="polite">
         {!messages.length && !error && <p>{t.empty}</p>}{messages.map(message => {
           const author = profiles.find(p => p.id === message.author_id);
           return <article key={message.id}><div className="st-message-heading">{author && <button className="st-name" onClick={() => setPlayer(author)}>{author.username}</button>}<time dateTime={message.created_at}>{stamp(message.created_at)}</time></div><p>{message.body}</p></article>;
