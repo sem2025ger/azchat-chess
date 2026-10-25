@@ -124,3 +124,9 @@ migration history version mismatch for 20261025164000 → fix in the planned mig
 - Isolated PostgreSQL integration test `server/usernameAvailabilityDb.test.js`; both GitHub CI workflows green on `b88e5f8`.
 - QA project `iukmpcytsuofqhxsumbu`: RPC migration applied successfully, read-only smoke verified reserved=false, too_short=false, valid=true; anon/authenticated can invoke.
 - Phases 3–7 remain unfinished, and browser visual/multi-device proof is outstanding. Do not merge/deploy.
+
+## 2026-10-25 — STOP under authoritative section 8 (Phase 4)
+- Authoritative full specification saved verbatim at `docs/schach-treff-v1-spec.md` (commit `cc90293`).
+- Phase 3 pinned-message migration, desktop UI and PostgreSQL authorization test added in feature branch. Migration applied **only to ChessAZ Deutsch QA**; QA accepted it. Isolated pin authorization test passed in CI; Frontend CI passed, but full Server CI is **red** on two attempts: durableRecovery.test.js timed out waiting for match_found, with cascading failures. No claim of a green full suite.
+- Section 8 STOP: Phase 4 requires playable 5+3 and 10+5 chat challenges, but server/index.js ALLOWED_TIME_CONTROLS permits 3+2 and does NOT permit 5+3 or 10+5. Existing private-room start path rejects those controls. Implementing them changes the authorized game-flow/time-control handling rather than merely extracting an unchanged function. Cannot meet Phase 4 acceptance without crossing that protected boundary. Do not implement a second game engine or weaken tests.
+- Consequently Phases 4–7 were NOT implemented. Production/main/maintenance untouched. Resume only with explicit owner authorization to extend existing private-game time-control allowlist and preserve durable-game/clock behavior after reviewed regression tests.
