@@ -12,7 +12,7 @@ import { toServerTimeControl } from '../components/OnlineLobby';
 import ArenaPlayPanel from '../components/ArenaPlayPanel';
 import MobileOpponentSearchOverlay from '../components/MobileOpponentSearchOverlay';
 
-import { X, Loader2, Swords, Clock, Copy, Check } from 'lucide-react';
+import PlayWaitingContent from '../components/PlayWaitingContent';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -267,59 +267,25 @@ export default function PlayScreen() {
                 onCancel={cancelMatchmaking}
               />
             )}
-            {/* Keep the established desktop and private-room overlays unchanged. */}
+            {/* Existing desktop and private-room overlay visibility and behavior. */}
             {(isSearching || isPrivateCreating || isJoiningPrivate) && (
               <div className={isSearching ? "absolute inset-0 z-50 hidden md:flex items-center justify-center rounded-[2rem] overflow-hidden" : "absolute inset-0 z-50 flex items-center justify-center rounded-[2rem] overflow-hidden"}>
                 <div className="absolute inset-0 bg-black/95 backdrop-blur-3xl transition-all duration-700" />
-                <div className="relative z-10 flex flex-col items-center text-center p-4 animate-scale-up scale-75 lg:scale-90">
-                  <div className="w-20 h-20 mb-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative overflow-hidden group/loader shadow-2xl">
-                    <Loader2 size={40} className={cx("animate-spin-slow absolute opacity-20", accentColors[accentTheme].primary)} />
-                    <Swords size={28} className={cx("animate-bounce", accentColors[accentTheme].primary)} />
-                  </div>
-                  <h2 className="text-2xl font-black text-white uppercase italic skew-x-[-6deg] mb-1 tracking-tighter">
-                    {isSearching ? t('play.searching') : isJoiningPrivate ? "Joining private room..." : "Waiting for friend..."}
-                  </h2>
-                  <p className="text-neutral-500 text-[0.55rem] font-black uppercase tracking-[0.2em] mb-6 opacity-60 italic">
-                    {isSearching ? t('play.searchingDesc') : "Get ready for a great match"}
-                  </p>
-                  
-                  {isSearching && (
-                    <div className="bg-white/[0.03] px-8 py-3 rounded-xl border border-white/10 font-mono text-2xl font-bold text-white mb-6 shadow-inner flex items-center gap-2">
-                      <Clock size={16} className="text-neutral-600" />
-                      {formatTime(searchTime)}
-                    </div>
-                  )}
-                  
-                  {isPrivateCreating && privateRoomId && (
-                    <div className="bg-white/[0.03] px-4 py-3 rounded-xl border border-white/10 w-full max-w-[300px] mb-6 flex flex-col items-center gap-3">
-                      <span className="text-[0.6rem] font-black text-neutral-400 uppercase tracking-widest">Share this link:</span>
-                      <div className="flex items-center w-full gap-2 bg-black/40 border border-white/5 rounded-lg p-1">
-                        <input 
-                          readOnly 
-                          value={`${window.location.origin}/play?room=${privateRoomId}`}
-                          className="bg-transparent text-white text-[0.6rem] font-mono px-2 py-1 w-full outline-none truncate"
-                        />
-                        <button 
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/play?room=${privateRoomId}`);
-                            setCopiedLink(true);
-                            setTimeout(() => setCopiedLink(false), 2000);
-                          }}
-                          className="bg-white/10 hover:bg-white/20 p-1.5 rounded-md transition-colors shrink-0"
-                        >
-                          {copiedLink ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-white" />}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <button 
-                    onClick={cancelMatchmaking}
-                    className="flex items-center gap-2 px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 rounded-lg font-black text-[0.65rem] uppercase tracking-widest transition-all active:scale-95 shadow-2xl group/cancel"
-                  >
-                    <X size={14} className="group-hover:rotate-90 transition-transform" /> {t('play.cancel')}
-                  </button>
-                </div>
+                <PlayWaitingContent
+                  title={isSearching ? t('play.searching') : isJoiningPrivate ? 'Joining private room...' : 'Waiting for friend...'}
+                  description={isSearching ? t('play.searchingDesc') : 'Get ready for a great match'}
+                  elapsed={isSearching ? formatTime(searchTime) : undefined}
+                  inviteUrl={isPrivateCreating && privateRoomId ? `${window.location.origin}/play?room=${privateRoomId}` : undefined}
+                  copied={copiedLink}
+                  copyLabel={t(copiedLink ? 'invite.copied' : 'invite.copy')}
+                  cancelLabel={t('play.cancel')}
+                  onCopy={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/play?room=${privateRoomId}`);
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 2000);
+                  }}
+                  onCancel={cancelMatchmaking}
+                />
               </div>
             )}
 
