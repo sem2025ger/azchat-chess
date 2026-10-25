@@ -1,3 +1,4 @@
+import { useDesktop } from './schachTreff/useDesktop';
 import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
 import nightEarthStill from '../assets/night-earth-still.webp';
@@ -27,6 +28,7 @@ const languageActiveClass: Record<Language, string> = {
 
 export default function Layout() {
   const location = useLocation();
+  const desktop = useDesktop();
   const routeScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => scheduleNavigationPreload(location.pathname), [location.pathname]);
   // The scroll container stays mounted across routes. Do not preserve the Analysis
@@ -92,9 +94,9 @@ export default function Layout() {
           </div>
 
           <nav className="px-3 xl:px-5 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
-            <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow />
+            <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
-            <NavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} themeColor="theme-violet" />
+            <NavItem to="/chat" icon={<MessageSquare size={20} />} label={desktop ? 'Schach-Treff' : t('nav.chat')} themeColor="theme-violet" subtitle={desktop ? 'Für Deutschsprachige' : undefined} />
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
           </nav>
         </div>
@@ -135,7 +137,7 @@ export default function Layout() {
           </div>
 
           <div className="space-y-3">
-            <NavItem to="/settings" icon={<Settings size={24} />} label={t('nav.settings')} themeColor="theme-gold" alwaysGlow />
+            <NavItem to="/settings" icon={<Settings size={24} />} label={t('nav.settings')} themeColor="theme-gold" alwaysGlow={!desktop} />
           </div>
         </div>
       </aside>
@@ -170,7 +172,7 @@ export default function Layout() {
   );
 }
 
-function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean }) {
+function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false, subtitle }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean, subtitle?: string }) {
   const { pathname } = useLocation();
   const destination = to === '/home' && pathname === '/' ? '/' : to;
   return (
@@ -189,7 +191,9 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       }
     >
       <div className="w-8 flex justify-center shrink-0 group-hover:scale-110 transition-transform duration-150 motion-reduce:transition-none">{icon}</div>
-      <span className="ml-4 hidden xl:block italic truncate">{label}</span>
+      <span className={subtitle ? "ml-4 hidden xl:block normal-case tracking-normal" : "ml-4 hidden xl:block italic truncate"}>
+        {label}{subtitle && <span className="block text-xs font-normal text-[#A8A293]">{subtitle}</span>}
+      </span>
 
       {/* Active Indicator Dot */}
       <NavItemActiveDot />
