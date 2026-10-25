@@ -115,3 +115,12 @@ Counts and tested SQL will accompany Phase 2, not fabricated here.
 
 ## Open item — migration history
 migration history version mismatch for 20261025164000 → fix in the planned migration-repair PR. Production recorded version `20261025163216` with name `20261025164000_schach_treff_private_usernames`. Never reapply or rename in this milestone.
+
+## 2026-10-25 — rebase and Phase 2 evidence
+- Feature branch reconstructed on main `0a86f521` through a temporary branch, with feature ref updated using a lease against its previous SHA. No changes to main.
+- PR #113 merged, production username backfill verified 0 / 7 / 7. No production operations performed in this PR.
+- New Phase 2 migration `20261025173000_schach_treff_username_available.sql` creates advisory SECURITY DEFINER RPC with 3–30 character validation, matching reserved list, case-insensitive lookup and anon/authenticated EXECUTE grant.
+- Registration checks availability before signUp; signup trigger remains authoritative and race-safe.
+- Isolated PostgreSQL integration test `server/usernameAvailabilityDb.test.js`; both GitHub CI workflows green on `b88e5f8`.
+- QA project `iukmpcytsuofqhxsumbu`: RPC migration applied successfully, read-only smoke verified reserved=false, too_short=false, valid=true; anon/authenticated can invoke.
+- Phases 3–7 remain unfinished, and browser visual/multi-device proof is outstanding. Do not merge/deploy.
