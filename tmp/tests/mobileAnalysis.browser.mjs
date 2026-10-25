@@ -368,6 +368,36 @@ try {
   assert.equal(await evaluate("document.querySelectorAll('.mobile-arena-panel').length"), 0);
   assert.equal(await evaluate("document.querySelector('[role=switch]').getAttribute('aria-checked')"), 'false');
   console.log('PASS compact desktop arena, grouped clocks and opt-in readiness');
+  for (const [width, height] of [[1440, 900], [1366, 768], [1280, 650]]) {
+    await cdp('Emulation.setDeviceMetricsOverride', { mobile:false, width, height, deviceScaleFactor:1 });
+    const geometry = await evaluate(`(() => {
+      const board = document.querySelector('.play-lobby-board');
+      const panel = document.querySelector('.arena-play-panel');
+      const grid = document.querySelector('.play-lobby-screen > .grid');
+      const rects = () => ({board:board.getBoundingClientRect().toJSON(),panel:panel.getBoundingClientRect().toJSON()});
+      const shifted = rects();
+      grid.style.paddingTop = '0px';
+      const original = rects();
+      grid.style.removeProperty('padding-top');
+      return {shifted,original,fontSize:parseFloat(getComputedStyle(document.querySelector('.arena-time-value')).fontSize),
+        fontWeight:Number(getComputedStyle(document.querySelector('.arena-time-value')).fontWeight)};
+    })()`);
+    for (const target of ['board', 'panel']) {
+      assert.ok(Math.abs(geometry.shifted[target].top - geometry.original[target].top - 16) < 1,
+        'Board and controls receive the same modest desktop offset: ' + JSON.stringify(geometry));
+      assert.equal(geometry.shifted[target].width, geometry.original[target].width);
+      assert.equal(geometry.shifted[target].height, geometry.original[target].height);
+    }
+    assert.ok(geometry.fontSize >= 20 && geometry.fontSize <= 26 && geometry.fontWeight <= 700,
+      'Selected time remains readable with a restrained size and weight');
+    await evaluate("document.querySelector('.arena-selected-time').click()");
+    const options = await evaluate("[...document.querySelectorAll('.arena-time-options button')].map(b=>b.getBoundingClientRect().toJSON())");
+    assert.equal(options.length, 9);
+    assert.ok(options.every(b => b.height >= 44 && b.top >= 0 && b.bottom <= height),
+      'All clock controls remain usable on short desktop screens: ' + JSON.stringify({width,height,options}));
+    await evaluate("document.querySelector('.arena-selected-time').click()");
+  }
+  console.log('PASS modest shared desktop offset, unchanged board size and compact time typography');
  } catch (error) {
   // Print the actual failing assertion before cleanup; a stuck child must not
   // mask it behind the outer watchdog's generic timeout.
