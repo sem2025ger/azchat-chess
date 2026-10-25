@@ -102,3 +102,24 @@ authorize mobile changes. Preserve the other layouts unless explicitly included.
 # 7. Lessons learned
 
 - YYYY-MM-DD — <observed failure> — <preventive rule> — <PR/commit>
+
+## Schach-Treff v1 additions to 6. Approved decisions
+
+- 2026-10-25 — Schach-Treff visual changes are desktop-only at lg (1024px).
+  Preserve existing mobile/tablet rendering, navigation and composer. Database,
+  socket behavior and signup validation are shared. Owner-approved milestone.
+- Desktop name Schach-Treff and sidebar subline Für Deutschsprachige are fixed;
+  one active sidebar item. German-only desktop copy lives in one object. Gold
+  Bodoni Moda header, subtle specified shadow, strict dark classic palette,
+  local fonts and no unrelated sidebar changes (D1–D5).
+- Challenges require authenticated members, target membership, at most three open
+  offers, ten-minute expiry and atomic single-winner acceptance via the existing
+  game path. Rated semantics remain blocked pending the status report decision.
+- City/club are optional opt-in fields. Never derive usernames from email.
+  Metadata-only username migration precedes merge; UI does not strip suffixes.
+  Revert logs stay private with no anon/authenticated/service_role grants.
+  Production is read-only for agents; no deployment/settings/maintenance changes.
+
+## Schach-Treff v1 addition to 7. Lessons learned
+
+Supavisor session pooler ignores PGOPTIONS; to enforce read-only use BEGIN READ ONLY and verify SHOW transaction_read_only inside the same session.
