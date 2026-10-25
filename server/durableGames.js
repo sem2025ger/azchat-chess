@@ -400,7 +400,7 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
               || match.black_id !== row.state.userIds.b || match.status !== 'completed') throw new DurableError();
             const game = new Chess(match.initial_fen);
             if (match.pgn) game.loadPgn(match.pgn);
-            socket.emit('reconnect_success', { roomId, color, fen: game.fen(), history: game.history(),
+            socket.emit('reconnect_success', { roomId, color, playerIds: { w: match.white_id, b: match.black_id }, fen: game.fen(), history: game.history(),
               initialFen: match.initial_fen, status: 'ended', outcome: row.state.outcome, whiteTime: 0, blackTime: 0 });
             notifySocketEnded(socket, roomId, row.state.outcome); return;
           }
@@ -432,7 +432,7 @@ function createDurableGames({ store, enabled = false, rooms, socketToRoom, io,
         }
         room.players[color] = socket.id; room.socketIds.add(socket.id);
         socketToRoom.set(socket.id, roomId); socket.join(roomId);
-        socket.emit('reconnect_success', { ...update(room), color });
+        socket.emit('reconnect_success', { ...update(room), color, playerIds: { ...room.userIds } });
         if (room.status === 'ended') notifySocketEnded(socket, roomId, room.outcome);
         else {
           io.to(roomId).emit('player_reconnected', { roomId, color });

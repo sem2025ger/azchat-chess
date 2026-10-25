@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../../utils/displayPlayerName';
 import { useState } from 'react';
 import { Activity, ArrowRight, BookOpen, Calendar, ChevronDown, Clock, Crown, Flag, Lock, LogOut, MapPin, MoreHorizontal, Play, Settings, Shield, Sparkles, Swords, Target, Trophy, Zap } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -37,7 +38,7 @@ export default function MobilePlayerPassport({ desktop = false, username, role, 
   const selected = modes.find(item => item.id === mode) || modes[0];
   const total = performance.wins + performance.draws + performance.losses;
   const joinedYear = joinedAt && !Number.isNaN(Date.parse(joinedAt)) ? new Date(joinedAt).getFullYear() : null;
-  const name = username.trim() || 'Guest';
+  const name = displayPlayerName(username, 'Guest');
   const metrics = [
     { title: words.open, Icon:BookOpen }, { title: words.tactics, Icon:Target },
     { title: words.endgame, Icon:Flag }, { title: words.time, Icon:Clock },
@@ -157,7 +158,7 @@ export default function MobilePlayerPassport({ desktop = false, username, role, 
             {(expanded?recentGames:recentGames.slice(0,3)).map((game,i)=>(
               <div key={i} className="min-w-0 flex items-center gap-3 p-3 bg-[#151e19] border border-white/[0.075] rounded-[16px]">
                 <span className={'shrink-0 w-[52px] min-h-10 rounded-xl flex items-center justify-center text-[9px] font-extrabold ' + (game.result==='win'?'bg-[#235340] text-[#a7edc1]':game.result==='loss'?'bg-[#522f36] text-[#ffc2cb]':'bg-[#3a423d] text-[#e8f0e9]')}>{game.result==='win'?words.win:game.result==='loss'?words.loss:words.draw}</span>
-                <div className="flex-1 min-w-0"><p className="truncate font-bold text-[13px]" title={game.opp}>{words.vs} {game.opp}</p><p className="text-[11px] text-[#9db1a6] mt-1">{game.date}</p></div>
+                <div className="flex-1 min-w-0"><p className="truncate font-bold text-[13px]" title={displayPlayerName(game.opp)}>{words.vs} {displayPlayerName(game.opp)}</p><p className="text-[11px] text-[#9db1a6] mt-1">{game.date}</p></div>
                 <span className="shrink-0 px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/[0.06] font-semibold text-[11px] text-[#dce7dd]">{game.type}</span>
               </div>
             ))}

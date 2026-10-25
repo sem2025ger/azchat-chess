@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../utils/displayPlayerName';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
@@ -121,7 +122,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
     let cancelled = false;
     void supabase.from('profiles').select('id,username').in('id', ids).then(({ data, error }) => {
       if (!cancelled && !error) {
-        setProfiles(Object.fromEntries(((data ?? []) as Profile[]).map(p => [p.id, p.username])));
+        setProfiles(Object.fromEntries(((data ?? []) as Profile[]).map(p => [p.id, displayPlayerName(p.username)])));
       }
     });
     return () => { cancelled = true; };

@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../utils/displayPlayerName';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Globe, Users, MessageCircle, Trophy, Loader2, BarChart3, Info } from 'lucide-react';
@@ -174,7 +175,7 @@ export default function ChessAZCommunityScreen() {
     const ids = [...new Set(nextMessages.map(m => m.author_id))];
     if (ids.length) {
       const { data } = await supabase.from('profiles').select('id,username').in('id', ids);
-      setNames(Object.fromEntries((data ?? []).map(p => [p.id, p.username])));
+      setNames(Object.fromEntries((data ?? []).map(p => [p.id, displayPlayerName(p.username)])));
     } else {
       setNames({});
     }
@@ -407,7 +408,7 @@ export default function ChessAZCommunityScreen() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{members.map(m => {
               const p = memberProfiles.find(x => x.id === m.user_id);
               return <article key={m.user_id} className="rounded-xl border border-white/10 bg-black/30 p-4">
-                <p className="truncate font-semibold">{p?.username ?? (language === 'de' ? 'Spieler' : language === 'ru' ? 'Игрок' : 'Player')}</p>
+                <p className="truncate font-semibold">{displayPlayerName(p?.username, language === 'de' ? 'Spieler' : language === 'ru' ? 'Игрок' : 'Player')}</p>
                 <p className="mt-1 text-xs text-neutral-400">{m.role}{p?.country_code ? ` · ${p.country_code}` : ''}</p>
                 <p className="mt-2 text-xs text-neutral-400">{new Date(m.joined_at).toLocaleDateString(language === 'de' ? 'de-DE' : 'ru-RU')}</p>
               </article>;
@@ -418,7 +419,7 @@ export default function ChessAZCommunityScreen() {
             <p className="mb-4 text-sm text-neutral-400">{language === 'de' ? 'Gespeicherte Profilratings. Keine Turnierergebnisse. 1200 kann ein Startwert sein.' : language === 'ru' ? 'Сохранённые рейтинги профилей, не результаты турниров. 1200 может быть стартовым значением.' : 'Saved player ratings, not tournament results. 1200 may be a starting value.'}</p>
             <div role="group" aria-label="Time control" className="mb-4 flex gap-2">{(['blitz','rapid','bullet'] as const).map(m => <button type="button" key={m} aria-pressed={ratingMode===m} onClick={() => setRatingMode(m)} className={`rounded-lg px-4 py-2 text-sm ${m===ratingMode ? 'bg-amber-400 font-bold text-neutral-950' : 'border border-white/15 text-neutral-300'}`}>{m[0].toUpperCase()+m.slice(1)}</button>)}</div>
             {!memberProfiles.length && <p className="text-neutral-400">{language === 'de' ? 'Noch keine Wertungen.' : language === 'ru' ? 'Нет участников для рейтинга.' : 'No ranked members yet.'}</p>}
-            <div className="divide-y divide-white/10 rounded-xl border border-white/10">{memberProfiles.filter(p => p[`rating_${ratingMode}`] != null).sort((a,b) => (b[`rating_${ratingMode}`] ?? 0)-(a[`rating_${ratingMode}`] ?? 0)||a.username.localeCompare(b.username)).map((p,i) => <div key={p.id} className="flex items-center gap-3 p-4"><span className="w-8 font-bold text-amber-200">{i+1}</span><span className="min-w-0 flex-1 truncate">{p.username}</span><strong className="tabular-nums">{p[`rating_${ratingMode}`]}</strong></div>)}</div>
+            <div className="divide-y divide-white/10 rounded-xl border border-white/10">{memberProfiles.filter(p => p[`rating_${ratingMode}`] != null).sort((a,b) => (b[`rating_${ratingMode}`] ?? 0)-(a[`rating_${ratingMode}`] ?? 0)||a.username.localeCompare(b.username)).map((p,i) => <div key={p.id} className="flex items-center gap-3 p-4"><span className="w-8 font-bold text-amber-200">{i+1}</span><span className="min-w-0 flex-1 truncate">{displayPlayerName(p.username)}</span><strong className="tabular-nums">{p[`rating_${ratingMode}`]}</strong></div>)}</div>
             <p className="mt-4 text-xs text-neutral-400">{language === 'de' ? 'Teilansicht: bis zu 200 Clubmitglieder.' : language === 'ru' ? 'Частичный список: до 200 членов клуба.' : 'Partial list: up to 200 club members.'}</p>
           </section>
           <section id="club-panel-about" role="tabpanel" aria-labelledby="club-tab-about" hidden={activeTab !== 'about'} className={`${surface} ${activeTab !== 'about' ? 'hidden' : ''}`}>

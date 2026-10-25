@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../../utils/displayPlayerName';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, History, RefreshCw } from 'lucide-react';
@@ -39,8 +40,8 @@ export default function SavedGamesPanel({ userId, words, language, onLoad }: {
     try {
       const analysis = await fetchAnalysisGame(userId, game.id, request.signal);
       if (!request.signal.aborted) {
-        const white = game.white_profile?.username || words.guest;
-        const black = game.black_profile?.username || words.guest;
+        const white = displayPlayerName(game.white_profile?.username, words.guest);
+        const black = displayPlayerName(game.black_profile?.username, words.guest);
         onLoad(analysis, `${white} — ${black}`, { white, black, timeControl: game.time_control || undefined });
       }
     } catch { if (!request.signal.aborted) setError('game'); }
@@ -60,7 +61,7 @@ export default function SavedGamesPanel({ userId, words, language, onLoad }: {
         const outcome = game.result === '1/2-1/2' ? 'draw' : (game.result === '1-0') === (color === 'w') ? 'win' : 'loss';
         const date = new Date(game.completed_at);
         return <button key={game.id} type="button" onClick={() => void open(game)} disabled={!!opening} className="group w-full rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-left transition-colors hover:border-amber-200/30 hover:bg-amber-200/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200 disabled:opacity-50">
-          <div className="flex items-center justify-between gap-2"><span className="min-w-0 truncate text-sm font-bold text-neutral-200">{(color === 'w' ? game.black_profile : game.white_profile)?.username || words.guest}</span><span className={`text-[11px] font-bold ${outcome === 'win' ? 'text-emerald-300' : outcome === 'loss' ? 'text-red-300' : 'text-neutral-400'}`}>{words[outcome]}</span></div>
+          <div className="flex items-center justify-between gap-2"><span className="min-w-0 truncate text-sm font-bold text-neutral-200">{displayPlayerName((color === 'w' ? game.black_profile : game.white_profile)?.username, words.guest)}</span><span className={`text-[11px] font-bold ${outcome === 'win' ? 'text-emerald-300' : outcome === 'loss' ? 'text-red-300' : 'text-neutral-400'}`}>{words[outcome]}</span></div>
           <div className="mt-1.5 flex items-center gap-2 text-[11px] text-neutral-500"><span>{color === 'w' ? words.white : words.black}</span><span>·</span><span>{game.time_control}</span><span className="ml-auto">{Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString(language === 'ua' ? 'uk' : language, { day:'numeric', month:'short', year:'numeric' })}</span></div>
           <div className="mt-2 flex items-center gap-1 text-[11px] font-semibold text-amber-200/70">{opening === game.id ? words.loading : words.open}<ChevronRight size={13} /></div>
         </button>;

@@ -59,6 +59,38 @@ function terminalFixture() {
   return { at, ownerId, roomId, room, white, black, rooms, socketToRoom, io };
 }
 
+test('authorized reconnect supplies participant display lookup identities without admitting outsiders', async () => {
+  const f = terminalFixture();
+  const manager = createDurableGames(options({ ownerId:f.ownerId }, { ...f, now:() => f.at }));
+  await manager.reconnect(f.white, f.roomId);
+  const reply = f.white.events.find(event => event.name === 'reconnect_success');
+  assert.deepEqual(reply.data.playerIds, f.room.userIds);
+  assert.notEqual(reply.data.playerIds, f.room.userIds, 'Metadata must be a copy of authoritative identity data');
+  assert.equal(f.room.game.history().length, 0);
+  const stranger = client('stranger');
+  await manager.reconnect(stranger, f.roomId);
+  assert.equal(stranger.events.some(event => event.name === 'reconnect_success'), false);
+  assert.equal(stranger.events.find(event => event.name === 'reconnect_failed').data.reason, 'not_a_player');
+});
+
+test('completed-game restoration supplies the same identities only after participant validation', async () => {
+  const f = terminalFixture();
+  const row = { ...f.room.durableRow, result_saved:true,
+    state:{ status:'ended', userIds:f.room.userIds, outcome:{ reason:'draw', result:'1/2-1/2' } } };
+  const manager = createDurableGames(options({
+    read:async () => row,
+    completedMatch:async () => ({ source_room_id:f.roomId, white_id:f.room.userIds.w, black_id:f.room.userIds.b,
+      status:'completed', initial_fen:f.room.initialFen, pgn:'' }),
+  }, { ...f, rooms:new Map() }));
+  await manager.reconnect(f.white, f.roomId);
+  const reply = f.white.events.find(event => event.name === 'reconnect_success');
+  assert.equal(reply.data.status, 'ended');
+  assert.deepEqual(reply.data.playerIds, f.room.userIds);
+  const stranger = client('stranger');
+  await manager.reconnect(stranger, f.roomId);
+  assert.equal(stranger.events.some(event => event.name === 'reconnect_success'), false);
+});
+
 test('review: lost terminal acknowledgement recovers game_over for BOTH players once per connection', async () => {
   const f = terminalFixture(); let saved, release;
   const manager = createDurableGames(options({ ownerId: f.ownerId,

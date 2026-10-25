@@ -412,6 +412,7 @@ function reconnectPlayerToRoom(roomId, playerColor, newSocket) {
   const payload = {
     roomId,
     color: playerColor,
+    playerIds: { ...room.userIds },
     fen: room.game.fen(),
     history: room.game.history(),
     whiteTime,

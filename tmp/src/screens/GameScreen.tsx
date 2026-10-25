@@ -25,6 +25,8 @@ import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '
 import { analysisMovePairs, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
 import { analysisCopy } from '../components/analysis/copy';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
+import { displayPlayerName } from '../utils/displayPlayerName';
+import { fetchPlayerNames, readPlayerIds, type PlayerIds } from '../services/playerNames';
 const SavedGamesPanel = lazy(() => import('../components/analysis/SavedGamesPanel'));
 const PositionTools = lazy(() => import('../components/analysis/PositionTools'));
 const EditorBoard = lazy(() => import('../components/analysis/EditorBoard'));
@@ -165,6 +167,19 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [syncedRoom, setSyncedRoom] = useState<string | null>(null);
   const playerColor: 'w' | 'b' = serverColor?.roomId === roomId ? serverColor.color : mode === 'live' && requestedColor === 'b' ? 'b' : 'w';
   const isMultiplayer = mode === 'live' && Boolean(roomId);
+  const [roomPlayers, setRoomPlayers] = useState<{ roomId: string; ids: PlayerIds } | null>(null);
+  const [roomNames, setRoomNames] = useState<{ roomId: string; w: string; b: string } | null>(null);
+  const visibleRoomNames = roomNames?.roomId === roomId ? roomNames : null;
+  const selfName = displayPlayerName(profile?.username || user?.user_metadata?.username, words.guest);
+  const opponentName = displayPlayerName(visibleRoomNames?.[playerColor === 'w' ? 'b' : 'w'], t('play.opponent'));
+  useEffect(() => {
+    if (!isMultiplayer || !roomPlayers || roomPlayers.roomId !== roomId) return;
+    const request = new AbortController();
+    void fetchPlayerNames(roomPlayers.ids, request.signal).then(names => {
+      if (!request.signal.aborted) setRoomNames({ roomId: roomPlayers.roomId, ...names });
+    }).catch(() => { /* A profile failure must never interrupt the game. */ });
+    return () => request.abort();
+  }, [isMultiplayer, roomId, roomPlayers]);
 
   // Match the desktop analysis panel's outer height to the actual chessboard frame.
   // ResizeObserver keeps this accurate when viewport dimensions or board sizing change.
@@ -394,6 +409,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
       if (!isCurrentRoomEvent(data)) return;
       const snapshot = decodeLiveSnapshot(data);
       if (!snapshot) return;
+      const ids = readPlayerIds(data.playerIds);
+      if (ids) setRoomPlayers(previous => previous?.roomId === roomId && previous.ids.w === ids.w && previous.ids.b === ids.b ? previous : { roomId, ids });
       timeoutManagerRef.current.clear('reconnectRedirect');
       timeoutManagerRef.current.clear('disconnectNotice');
       setDisconnectNotice(null);
@@ -1104,8 +1121,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
             <div className="desktop-analysis-player-top hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
               <div className="flex min-w-0 items-center gap-2">
                 <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-500", playerColor === 'w' ? "bg-neutral-950" : "bg-[#f5f2e8]")} />
-                <span className="min-w-0 truncate font-semibold text-neutral-200" title={playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white}>
-                  {playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white}
+                <span className="min-w-0 truncate font-semibold text-neutral-200" title={displayPlayerName(playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white)}>
+                  {displayPlayerName(playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white)}
                 </span>
               </div>
               {loadedGameDetails?.timeControl && (
@@ -1122,13 +1139,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
             !isMultiplayer && "hidden md:flex",
             mode === 'review' && "lg:hidden"
           )}>
-            <div className="flex items-center gap-2.5">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5 pr-2">
               <div className="relative w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 ring-1 ring-black flex items-center justify-center">
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-[2px] border-[#161512] animate-pulse" />
               </div>
-              <div className="hidden sm:block">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-black text-white text-xs tracking-tight italic">Opponent</span>
+                  <span className="truncate font-black text-white text-xs tracking-tight italic">{isMultiplayer ? opponentName : displayPlayerName(playerColor === 'w' ? loadedGameDetails?.black : loadedGameDetails?.white, words.guest)}</span>
                 </div>
                 <div className="text-[0.55rem] text-neutral-500 font-bold uppercase tracking-[0.2em] mt-0.5 opacity-60 leading-none">UNRATED</div>
               </div>
@@ -1210,7 +1227,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             !isMultiplayer && "hidden md:flex",
             mode === 'review' && "lg:hidden"
           )}>
-            <div className="flex items-center gap-2.5">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5 pr-2">
               <div className="relative group/avatar">
                 <div className="w-8 h-8 bg-neutral-900 rounded-lg flex items-center justify-center overflow-hidden shadow-2xl border border-chess-gold/30 ring-1 ring-black group-hover/avatar:ring-chess-gold transition-all duration-500">
                   {playerFlag ? (
@@ -1228,9 +1245,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 </div>
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-[2px] border-[#161512] shadow-xl animate-pulse" />
               </div>
-              <div className="hidden sm:block">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-black text-white text-xs tracking-tight italic">{profile?.username || user?.user_metadata?.username || 'Guest'}</span>
+                  <span className="truncate font-black text-white text-xs tracking-tight italic">{isMultiplayer ? selfName : displayPlayerName(playerColor === 'w' ? loadedGameDetails?.white : loadedGameDetails?.black, selfName)}</span>
                   {profile?.role && <span className="bg-chess-gold/20 text-chess-gold text-[0.45rem] px-1 py-0.5 rounded font-black uppercase ring-1 ring-chess-gold/40 shadow-[0_0_20px_rgba(223,176,98,0.35)] border border-chess-gold/20 tracking-widest">{profile?.role}</span>}
                 </div>
               </div>
@@ -1243,8 +1260,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
           {mode === 'review' && (
             <div className="desktop-analysis-review-player-bottom hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
               <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-400", playerColor === 'w' ? "bg-[#f5f2e8]" : "bg-neutral-950")} />
-              <span className="min-w-0 truncate font-semibold text-neutral-200" title={playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black}>
-                {playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black}
+              <span className="min-w-0 truncate font-semibold text-neutral-200" title={displayPlayerName(playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black)}>
+                {displayPlayerName(playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black)}
               </span>
             </div>
           )}

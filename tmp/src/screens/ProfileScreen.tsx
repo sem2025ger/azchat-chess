@@ -1,3 +1,4 @@
+import { displayPlayerName } from '../utils/displayPlayerName';
 import { useState, useEffect } from 'react';
 import MobilePlayerPassport from '../components/profile/MobilePlayerPassport';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -70,7 +71,7 @@ export default function ProfileScreen() {
             const isWhite = m.white_id === user.id;
             const res = getMatchResultForPlayer(m, user.id);
             const oppProfile = isWhite ? m.black_profile : m.white_profile;
-            const oppName = oppProfile?.username || (isWhite ? m.black_id?.slice(0, 6) || 'Guest' : m.white_id?.slice(0, 6) || 'Guest');
+            const oppName = displayPlayerName(oppProfile?.username, 'Guest');
             
             return { 
               result: res, 
@@ -343,7 +344,7 @@ export default function ProfileScreen() {
     return (
       <MobilePlayerPassport
         desktop={showDesktopPassport}
-        username={profile?.username || user?.user_metadata?.username || 'Guest'}
+        username={displayPlayerName(profile?.username || user?.user_metadata?.username, 'Guest')}
         role={profile?.role}
         countryCode={profile?.countryCode}
         joinedAt={profile?.createdAt ?? profile?.created_at}
@@ -388,7 +389,7 @@ export default function ProfileScreen() {
             <div className="flex flex-col md:items-start items-start gap-1 max-md:min-w-0 max-md:w-full">
               <div className="flex items-center gap-3 max-md:min-w-0 max-md:flex-wrap max-md:gap-1.5">
                 <h1 className="text-2xl md:text-3xl font-black text-white italic tracking-tighter drop-shadow-xl line-clamp-1 max-md:line-clamp-none max-md:text-lg max-md:leading-tight max-md:[overflow-wrap:anywhere]">
-                  {profile?.username || user?.user_metadata?.username || 'Guest'}
+                  {displayPlayerName(profile?.username || user?.user_metadata?.username, 'Guest')}
                 </h1>
                 {profile?.role && (
                   <span className="bg-chess-gold/20 border border-chess-gold/30 text-chess-gold font-black text-[0.6rem] px-2.5 py-0.5 rounded-lg uppercase tracking-widest shadow-md max-md:text-[11px] max-md:tracking-normal max-md:[overflow-wrap:anywhere]">
