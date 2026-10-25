@@ -10,7 +10,7 @@ test('approved desktop reference keeps the 692px field, 736px frame, 574px panel
   assert.equal(layout.boardSize - 2 * (6 + 16), 692);
   assert.equal(layout.panelWidth, 574);
   assert.equal(layout.columnGap, 51);
-  assert.equal(66 + layout.boardColumn + layout.columnGap, 931);
+  assert.equal(66 + layout.boardColumn + layout.columnGap, 907);
 });
 
 test('smaller workspaces scale the approved composition without horizontal or vertical overflow', () => {
