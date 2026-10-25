@@ -1707,3 +1707,57 @@
     text-shadow:none;
   }
 }
+
+/* Compact review toolbar and sidebar-dark matched desktop analysis surfaces. */
+@media (min-width:1024px) {
+  .desktop-analysis-screen > .desktop-analysis-panel {
+    background:linear-gradient(155deg,#151614 0%,#111210 54%,#0d0e0d 100%)!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {
+    background:linear-gradient(160deg,#171816,#111210);
+  }
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs {background:#141512;}
+  .desktop-analysis-screen .desktop-analysis-review-controls {
+    height:40px!important;
+    min-height:40px!important;
+    justify-content:flex-end!important;
+    background:#141512;
+  }
+  .desktop-analysis-screen .desktop-analysis-stockfish > .analysis-engine-content {
+    background:linear-gradient(170deg,#171916,#101210)!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-move-scroll {background:#151713;}
+  .desktop-analysis-screen .analysis-engine-status {
+    align-items:center!important;
+    flex-basis:49px!important;
+    height:49px!important;
+    min-height:49px!important;
+    max-height:49px!important;
+    padding-bottom:4px!important;
+  }
+  .desktop-analysis-screen .analysis-engine-status > div:first-child {
+    display:flex;
+    align-items:center;
+    flex-wrap:nowrap;
+    gap:9px;
+    min-width:0;
+  }
+  .desktop-analysis-screen .analysis-stockfish-name {
+    font-size:15px!important;
+    line-height:1.3!important;
+    flex-shrink:0;
+  }
+  .desktop-analysis-screen .analysis-stockfish-depth {
+    display:inline-flex;
+    align-items:center;
+    line-height:1.25!important;
+    flex-shrink:0;
+  }
+  .desktop-analysis-screen .analysis-depth-action {
+    display:inline-flex;
+    align-items:center;
+    line-height:1.25;
+    min-height:26px;
+    flex-shrink:0;
+  }
+}
