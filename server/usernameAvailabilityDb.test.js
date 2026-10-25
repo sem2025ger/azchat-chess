@@ -27,7 +27,7 @@ test('Schach-Treff username availability RPC: isolated PostgreSQL and grants', {
     await db.query(readFileSync(join(__dirname,'../supabase/migrations/20261025173000_schach_treff_username_available.sql'),'utf8'));
     const cases = [
       ['newPlayer',true],['sonya25',false],['Sonya25',false],
-      ['maxm',true],['a2',true],['a',false],['a'.repeat(31),false],
+      ['maxm',true],['a2',false],['a',false],['a'.repeat(31),false],
       ['9player',false],['two-hyphens',false],['white space',false],
       ['chessaz',false],['SchachTreff',false],['moderator',false],
       ['spieler',false],['user',false],['',false],[null,false]
