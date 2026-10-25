@@ -38,7 +38,7 @@ function DesktopArenaPlayPanel({ timeControl, onTimeChange, onStart, onFriend }:
       <div className="arena-panel-main">
         <h2 className="arena-panel-heading">CHESSAZ · {text('ИГРОВАЯ АРЕНА', 'SPIELARENA', 'PLAY ARENA', 'OYUN ARENASI')}</h2>
         <button className="arena-selected-time" type="button" aria-expanded={expanded} onClick={() => setExpanded(v => !v)} aria-label={t('invite.chooseTime')}>
-          {timeLabel(timeControl)}<ChevronDown size={18} aria-hidden="true" />
+          <span className="arena-time-value">{timeLabel(timeControl)}</span><ChevronDown size={18} aria-hidden="true" />
         </button>
         <p className="arena-time-caption">{text('КОНТРОЛЬ ВРЕМЕНИ', 'ZEITKONTROLLE', 'TIME CONTROL', 'VAXT NƏZARƏTİ')}</p>
         <div className="arena-quick-times">
