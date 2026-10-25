@@ -4,13 +4,13 @@ import { readFileSync } from 'node:fs';
 
 const read = file => readFileSync(new URL(file, import.meta.url), 'utf8');
 
-test('recovery fallback routes before React initializes; maintenance still blocks unrelated routes', () => {
+test('recovery fallback routes before React initializes; maintenance blocks all app routes', () => {
   const main = read('../src/main.tsx');
   const app = read('../src/App.tsx');
   assert.ok(main.indexOf("incomingFragment.get('type') === 'recovery'") < main.indexOf("function render("));
   assert.match(main, /history\.replaceState\(null, '', '\/update-password'/);
-  assert.match(app, /window\.location\.pathname === '\/update-password'/);
-  assert.match(app, /VITE_MAINTENANCE_MODE === 'true' && !isRecoveryRoute/);
+  assert.match(app, /VITE_MAINTENANCE_MODE === 'true'/);
+  assert.doesNotMatch(app, /!isRecoveryRoute/);
 });
 
 test('password change requires recovery session and always shows error when link invalid', () => {
