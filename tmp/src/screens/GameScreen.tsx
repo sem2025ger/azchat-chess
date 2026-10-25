@@ -1383,12 +1383,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           {mode === 'review' && (
             // Never add/remove controls as a historic move is selected: reflow used
             // to shift the Stockfish panel when stepping onto/off the last move.
-            <div className="desktop-analysis-review-controls flex h-12 shrink-0 flex-nowrap items-center justify-between gap-1.5 px-3">
-              <span className={cx("min-w-0 flex-1 truncate text-xs text-neutral-400", viewMoveIndex === -1 && "invisible")} aria-hidden={viewMoveIndex === -1}>{t('game.analysis.reviewing')}</span>
-              <button type="button" onClick={() => setViewMoveIndex(-1)} disabled={viewMoveIndex === -1} tabIndex={viewMoveIndex === -1 ? -1 : 0}
-                aria-hidden={viewMoveIndex === -1} className={cx("h-9 shrink-0 whitespace-nowrap rounded-lg px-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-500/10", viewMoveIndex === -1 && "invisible")}>
-                {t('game.analysis.resume')}
-              </button>
+            <div className="desktop-analysis-review-controls flex h-10 shrink-0 flex-nowrap items-center justify-end gap-1.5 px-3">
               <button type="button" onClick={startNewAnalysis} className="desktop-analysis-new-button flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 px-2 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
                 <RotateCcw size={14} aria-hidden="true" />
                 {t('game.analysis.new')}
