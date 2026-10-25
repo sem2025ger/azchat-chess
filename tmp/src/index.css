@@ -1417,3 +1417,66 @@
 @media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
   .desktop-analysis-screen .analysis-engine-score { transition: none; }
 }
+
+/* Desktop Analysis refinement: calm graphite palette and compact actions menu.
+   No board geometry or mobile styles are touched. */
+@media (min-width:1024px) {
+  .desktop-analysis-screen .desktop-analysis-panel {
+    border-color:rgba(158,151,138,.32)!important;
+    box-shadow:inset 0 1px 0 rgba(228,226,219,.08),0 20px 44px rgba(0,0,0,.48)!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {
+    background:linear-gradient(130deg,#24262a,#17191c);
+    border-color:rgba(152,155,158,.25);
+    box-shadow:inset 0 1px 0 rgba(230,233,232,.07),0 8px 24px rgba(0,0,0,.22);
+    justify-content:flex-end;
+  }
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs > button,
+  .desktop-analysis-screen .desktop-analysis-new-button,
+  .desktop-analysis-screen .desktop-analysis-transport > button {
+    border-color:rgba(153,154,151,.38)!important;
+    color:#d1d0cd;
+    box-shadow:inset 0 1px 0 rgba(230,231,229,.12),0 5px 12px rgba(0,0,0,.28);
+  }
+  .desktop-analysis-screen .desktop-analysis-workspace-tabs > button[aria-pressed="true"] {
+    border-color:rgba(194,177,145,.55)!important;
+    color:#deddd8;
+    background:linear-gradient(180deg,#34363a,#23262a)!important;
+    box-shadow:inset 0 1px 0 rgba(246,244,237,.15),0 3px 12px rgba(0,0,0,.28);
+  }
+  .desktop-analysis-screen .analysis-engine-moves { color:#d2d3d2; }
+  .desktop-analysis-screen .analysis-engine-score {
+    border-color:rgba(163,161,154,.46)!important;
+    background:linear-gradient(155deg,#303439,#20252a,#171b20)!important;
+    color:#e0dfd8!important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 3px 10px rgba(0,0,0,.2);
+  }
+  .desktop-analysis-screen .analysis-redesign-menu { position:relative; }
+  .desktop-analysis-screen .analysis-redesign-menu > summary {
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;
+    padding:8px 13px;border:1px solid rgba(171,171,167,.38);border-radius:10px;
+    background:linear-gradient(160deg,#34363a,#202227);
+    color:#dfdfdc;font:600 13px/1.35 Inter,Arial,sans-serif;
+    cursor:pointer;list-style:none;letter-spacing:.015em;
+  }
+  .desktop-analysis-screen .analysis-redesign-menu > summary::-webkit-details-marker { display:none; }
+  .desktop-analysis-screen .analysis-redesign-menu > summary:focus-visible,
+  .desktop-analysis-screen .analysis-redesign-menu-list button:focus-visible {
+    outline:2px solid #c7b692;outline-offset:2px;
+  }
+  .desktop-analysis-screen .analysis-redesign-menu-list {
+    position:absolute;z-index:80;right:0;top:calc(100% + 8px);width:220px;
+    display:flex;flex-direction:column;gap:4px;padding:7px;
+    border:1px solid rgba(165,164,156,.37);border-radius:13px;
+    background:#222529;box-shadow:0 18px 38px rgba(0,0,0,.5);
+  }
+  .desktop-analysis-screen .analysis-redesign-menu-list button {
+    display:flex;align-items:center;gap:10px;width:100%;min-height:39px;padding:9px 10px;
+    text-align:left;border-radius:8px;color:#d4d6d4;font:600 12px/1.4 Inter,Arial,sans-serif;
+  }
+  .desktop-analysis-screen .analysis-redesign-menu-list button:hover {background:#363a3d;color:#f2f2ed;}
+  .desktop-analysis-screen .analysis-redesign-menu-list button:disabled {opacity:.4;cursor:not-allowed;}
+  .desktop-analysis-screen .analysis-redesign-copy-status {margin:0 8px;color:#b8b7b1;font-size:11px;}
+  .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {overflow:visible;}
+  .desktop-analysis-screen .analysis-redesign-menu-list button[aria-pressed="true"] {background:#363a3d;color:#eee9de;}
+}
