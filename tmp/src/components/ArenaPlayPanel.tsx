@@ -36,7 +36,6 @@ function DesktopArenaPlayPanel({ timeControl, onTimeChange, onStart, onFriend }:
   return (
     <section className="arena-play-panel" aria-label={text('Игровая арена', 'Spielarena', 'Play arena', 'Oyun arenası')}>
       <div className="arena-panel-main">
-        <h2 className="arena-panel-heading">CHESSAZ · {text('ИГРОВАЯ АРЕНА', 'SPIELARENA', 'PLAY ARENA', 'OYUN ARENASI')}</h2>
         <button className="arena-selected-time" type="button" aria-expanded={expanded} onClick={() => setExpanded(v => !v)} aria-label={t('invite.chooseTime')}>
           <span className="arena-time-value">{timeLabel(timeControl)}</span><ChevronDown size={18} aria-hidden="true" />
         </button>
@@ -49,7 +48,7 @@ function DesktopArenaPlayPanel({ timeControl, onTimeChange, onStart, onFriend }:
         </div>}
         <OnlineLobby timeControl={timeControl} />
         <button type="button" className="arena-start-game" onClick={onStart}>
-          <img src="/pieces/classic/bP.svg" alt="" aria-hidden="true" />{t('play.startGame')}
+          <span>{t('play.startGame')}</span>
         </button>
       </div>
       <div className="arena-panel-footer">
