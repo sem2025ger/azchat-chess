@@ -35,7 +35,11 @@ function RecoveryRedirect() {
 
 // Keep the public maintenance gate active for production until separately authorized.
 function App() {
-  if (import.meta.env.VITE_MAINTENANCE_MODE === 'true' && window.location.pathname !== '/update-password') {
+  const recoveryHash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const recoveryQuery = new URLSearchParams(window.location.search);
+  const isRecoveryRoute = window.location.pathname === '/update-password' ||
+    recoveryHash.get('type') === 'recovery' || recoveryQuery.get('type') === 'recovery';
+  if (import.meta.env.VITE_MAINTENANCE_MODE === 'true' && !isRecoveryRoute) {
     return <MaintenancePage />;
   }
 
