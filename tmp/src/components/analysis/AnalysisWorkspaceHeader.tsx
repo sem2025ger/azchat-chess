@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { annotatedPgn, type PositionEvaluation } from '../../utils/positionMap';
-import { ClipboardCopy, Check, Share2, FileText, MoreHorizontal, RotateCcw, X, FolderOpen, Pencil, Plus, Minus } from 'lucide-react';
+import { ClipboardCopy, Share2, FileText, MoreHorizontal, RotateCcw, X, FolderOpen, Pencil, Plus, Minus } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { mobileAnalysisCopy } from './mobileAnalysisCopy';
 import { analysisCopy } from './copy';
@@ -31,6 +31,7 @@ export default function AnalysisWorkspaceHeader({
   const { language, t } = useLanguage();
   const words = mobileAnalysisCopy[language];
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const desktopMoreRef = useRef<HTMLDetailsElement>(null);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [copyError, setCopyError] = useState(false);
@@ -118,13 +119,30 @@ export default function AnalysisWorkspaceHeader({
     </dialog>
   </>;
   return (
-    <header className="analysis-redesign-header" aria-label="Панель анализа партии">
+    <header className="analysis-redesign-header" aria-label={t('game.analysis.title')}>
       <div className="analysis-redesign-actions">
-        <button type="button" onClick={exportPgn} disabled={!moveHistory.length} title="Копировать PGN с оценками рассчитанных позиций"><FileText size={14} />{copied === 'pgn' ? 'Скопировано' : 'PGN с оценками'}</button>
-        <button type="button" onClick={() => void copy('fen', currentFen)} title="Копировать FEN выбранной позиции">{copied === 'fen' ? <Check size={14}/> : <ClipboardCopy size={14}/>} FEN</button>
-        <button type="button" className="hidden lg:inline-flex" aria-pressed={editing} onClick={onEdit}>Редактор доски</button>
-        <button type="button" onClick={() => void share()} title="Поделиться ссылкой на страницу анализа"><Share2 size={14}/>{copied === 'share' ? 'Скопировано' : 'Поделиться'}</button>
-        <button type="button" className="analysis-redesign-reset" onClick={onNew} title="Начать новый анализ">Новый анализ</button>
+        <details ref={desktopMoreRef} className="analysis-redesign-menu"
+          onKeyDown={event => { if (event.key === 'Escape') { desktopMoreRef.current?.removeAttribute('open'); desktopMoreRef.current?.querySelector('summary')?.focus(); } }}
+          onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) desktopMoreRef.current?.removeAttribute('open'); }}>
+          <summary aria-label={words.more} title={words.more}>
+            <MoreHorizontal size={20} aria-hidden="true" />
+            <span>{words.more}</span>
+          </summary>
+          <div className="analysis-redesign-menu-list">
+            <button type="button" onClick={() => { desktopMoreRef.current?.removeAttribute('open'); exportPgn(); }}
+              disabled={!moveHistory.length}><FileText size={17} aria-hidden="true" />{words.pgn}</button>
+            <button type="button" onClick={() => { desktopMoreRef.current?.removeAttribute('open'); void copy('fen', currentFen); }}>
+              <ClipboardCopy size={17} aria-hidden="true" />{words.fen}</button>
+            <button type="button" aria-pressed={editing}
+              onClick={() => { desktopMoreRef.current?.removeAttribute('open'); onEdit(); }}>
+              <Pencil size={17} aria-hidden="true" />{words.editor}</button>
+            <button type="button" onClick={() => { desktopMoreRef.current?.removeAttribute('open'); void share(); }}>
+              <Share2 size={17} aria-hidden="true" />{words.share}</button>
+            <p role="status" className="analysis-redesign-copy-status">
+              {copyError ? words.copyFailed : copied ? words.copied : ''}
+            </p>
+          </div>
+        </details>
       </div>
     </header>
   );
