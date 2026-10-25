@@ -139,7 +139,7 @@ PHASE 3 — Pinned message
 PHASE 4 — Challenges from chat + player card
   Migration:
   - public.chess_club_challenges:
-    - columns: id uuid PK, club_id FK, message_id FK chess_club_messages UNIQUE, created_by, target_user_id NULL, time_control CHECK in ('3+2','5+3','10+5'), status CHECK in ('open','accepted','expired','cancelled'), accepted_by NULL, room_id NULL, created_at, expires_at (= created_at + 10 min);
+    - columns: id uuid PK, club_id FK, message_id FK chess_club_messages UNIQUE, created_by, target_user_id NULL, time_control CHECK in ('3+2','5+0','10+0'), status CHECK in ('open','accepted','expired','cancelled'), accepted_by NULL, room_id NULL, created_at, expires_at (= created_at + 10 min);
     - RLS: club members SELECT; no client INSERT/UPDATE/DELETE.
   - chess_club_messages gains kind text NOT NULL DEFAULT 'text' CHECK in ('text','challenge').
   - The CURRENT MOBILE screen must render a challenge message as plain text, e.g. "Herausforderung 3+2 von <name>". Test this.
@@ -159,7 +159,7 @@ PHASE 4 — Challenges from chat + player card
   Desktop UI:
   - "Herausfordern" (composer) opens a dialog:
     - "Offen für alle" | "Bestimmter Spieler" (member picker);
-    - Bedenkzeit 3+2 / 5+3 / 10+5;
+    - Bedenkzeit 3+2 / 5+0 / 10+0;
     - "Herausforderung senden".
   - "Herausfordern" under a message or in the player card preselects that player.
   - Challenge card in the timeline:
@@ -312,3 +312,10 @@ A11 All tests/builds green; audit passes; nothing applied to production.
    - when to bring Schach-Treff to mobile;
    - the Datenschutzerklärung additions (city/club opt-in, invite links, position submissions);
    - the migration-history mismatch from PR #113.
+
+============================================================
+11. OWNER CORRECTION — 2026-10-25 (supersedes Phase 4 controls)
+============================================================
+- No modifications to server game engine or ALLOWED_TIME_CONTROLS.
+- Challenge times ONLY 3+2 (Blitz), 5+0 (Blitz), 10+0 (Schnell). Validate membership of both the three-value challenge list and the existing server allowlist.
+- durableRecovery.test.js also reproduces a failure on clean main locally per owner. Test DB integration processes may interfere when run concurrently: verify against main CI evidence and use serial runner for PostgreSQL integration and durable recovery tests if hypothesis confirmed. Never weaken test, assertion or timeout.
