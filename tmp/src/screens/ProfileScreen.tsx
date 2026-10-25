@@ -117,11 +117,24 @@ export default function ProfileScreen() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        // Preflight is advisory: the server's signup trigger allocates the
+        // authoritative final name under a transaction advisory lock.
+        const requestedName = username.trim();
+        if (!/^[A-Za-z][A-Za-z0-9_]{2,29}$/.test(requestedName)) {
+          setErrorMsg('Benutzername: 3–30 Zeichen, beginnend mit einem Buchstaben. Erlaubt sind A–Z, 0–9 und _.');
+          return;
+        }
+        const { data: available, error: checkError } = await supabase.rpc('username_available', { p_name: requestedName });
+        if (checkError) throw checkError;
+        if (!available) {
+          setErrorMsg('Dieser Benutzername ist reserviert oder bereits vergeben. Bitte wähle einen anderen.');
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { username },
+            data: { username: requestedName },
             emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play')
           }
         });
