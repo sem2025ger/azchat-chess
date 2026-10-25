@@ -1,3 +1,5 @@
+import { useDesktop } from '../components/schachTreff/useDesktop';
+import SchachTreffDesktop from './SchachTreffDesktop';
 import { displayPlayerName } from '../utils/displayPlayerName';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
@@ -78,6 +80,11 @@ const ru: Words = {
 };
 
 export default function ChessAZCommunityScreen() {
+  const desktop = useDesktop();
+  return desktop ? <SchachTreffDesktop /> : <LegacyCommunityScreen />;
+}
+
+function LegacyCommunityScreen() {
   const { language } = useLanguage();
   const t = language === 'de' ? de : language === 'ru' ? ru : en;
   const { user, isLoading: authLoading } = useAuth();
