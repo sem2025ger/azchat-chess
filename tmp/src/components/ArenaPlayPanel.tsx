@@ -1,5 +1,5 @@
-import { useState, useSyncExternalStore } from 'react';
-import { ChevronDown, Club, Crown } from 'lucide-react';
+import { useRef, useState, useSyncExternalStore } from 'react';
+import { ChevronDown, Club, Crown, Shield, Sparkles, Zap } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import OnlineLobby from './OnlineLobby';
 import MobileArenaPlayPanel from './MobileArenaPlayPanel';
@@ -11,8 +11,11 @@ export type ArenaPlayPanelProps = {
   onStart: () => void;
   onFriend: () => void;
 };
-const quickTimes = ['1 min.', '3 min.', '5 min.', '10 min.'];
-const otherTimes = ['1 | 1', '2 | 1', '3 | 2', '15 | 10', '30 min.'];
+const timeGroups = {
+  Bullet: ['1 min.', '1 | 1', '2 | 1'],
+  Blitz: ['3 min.', '3 | 2', '5 min.'],
+  Rapid: ['10 min.', '15 | 10', '30 min.'],
+};
 
 const mobileQuery = '(max-width: 767px)';
 function subscribeToViewport(update: () => void) {
@@ -30,22 +33,28 @@ export default function ArenaPlayPanel(props: ArenaPlayPanelProps) {
 function DesktopArenaPlayPanel({ timeControl, onTimeChange, onStart, onFriend }: ArenaPlayPanelProps) {
   const { language, t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
+  const timeButton = useRef<HTMLButtonElement>(null);
+  const category = Object.entries(timeGroups).find(([, values]) => values.includes(timeControl))?.[0] || 'Blitz';
+  const groupLabel = (name: string) => name === 'Rapid' && language === 'de' ? 'Schnellschach' : name;
   const text = (ru: string, de: string, en: string, az: string) =>
     language === 'ru' ? ru : language === 'de' ? de : language === 'az' ? az : en;
   const timeLabel = (value: string) => value.replace('min.', language === 'ru' || language === 'ua' ? 'мин.' : language === 'az' || language === 'tr' ? 'dəq.' : 'min.');
   return (
     <section className="arena-play-panel" aria-label={text('Игровая арена', 'Spielarena', 'Play arena', 'Oyun arenası')}>
       <div className="arena-panel-main">
-        <button className="arena-selected-time" type="button" aria-expanded={expanded} onClick={() => setExpanded(v => !v)} aria-label={t('invite.chooseTime')}>
-          <span className="arena-time-value">{timeLabel(timeControl)}</span><ChevronDown size={18} aria-hidden="true" />
-        </button>
-        <p className="arena-time-caption">{text('КОНТРОЛЬ ВРЕМЕНИ', 'ZEITKONTROLLE', 'TIME CONTROL', 'VAXT NƏZARƏTİ')}</p>
-        <div className="arena-quick-times">
-          {quickTimes.map(value => <button key={value} type="button" aria-pressed={timeControl === value} onClick={() => onTimeChange(value)}>{timeLabel(value)}</button>)}
+        <div className="arena-time-picker" onKeyDown={event => { if (expanded && event.key === 'Escape') { setExpanded(false); timeButton.current?.focus(); } }}>
+          <button ref={timeButton} className="arena-selected-time" type="button" aria-expanded={expanded} aria-controls="arena-time-options" onClick={() => setExpanded(v => !v)} aria-label={`${t('invite.chooseTime')}: ${timeLabel(timeControl)}, ${groupLabel(category)}`}>
+            <Sparkles className="arena-time-emblem" size={22} aria-hidden="true" />
+            <span className="arena-time-summary"><span className="arena-time-value">{timeLabel(timeControl)}</span><small>{groupLabel(category)}</small></span>
+            <ChevronDown className={expanded ? 'arena-time-chevron is-expanded' : 'arena-time-chevron'} size={18} aria-hidden="true" />
+          </button>
+          {expanded && <div className="arena-time-groups" id="arena-time-options">
+            {Object.entries(timeGroups).map(([name, values]) => <section key={name} className={`arena-time-group arena-time-group--${name.toLowerCase()}`} aria-label={groupLabel(name)}>
+              <h3>{name === 'Bullet' ? <Zap size={14} aria-hidden="true" /> : name === 'Blitz' ? <Sparkles size={14} aria-hidden="true" /> : <Shield size={14} aria-hidden="true" />}{groupLabel(name)}</h3>
+              <div className="arena-time-options">{values.map(value => <button key={value} type="button" aria-pressed={timeControl === value} onClick={() => { onTimeChange(value); setExpanded(false); timeButton.current?.focus(); }}>{timeLabel(value)}</button>)}</div>
+            </section>)}
+          </div>}
         </div>
-        {expanded && <div className="arena-other-times">
-          {otherTimes.map(value => <button key={value} type="button" aria-pressed={timeControl === value} onClick={() => { onTimeChange(value); setExpanded(false); }}>{timeLabel(value)}</button>)}
-        </div>}
         <OnlineLobby timeControl={timeControl} />
         <button type="button" className="arena-start-game" onClick={onStart}>
           <span>{t('play.startGame')}</span>

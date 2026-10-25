@@ -347,10 +347,27 @@ try {
   await cdp('Emulation.setDeviceMetricsOverride', { mobile:false, width:1440, height:900, deviceScaleFactor:1 });
   await cdp('Page.navigate', { url:base + '/play?desktop-qa=arena' });
   await waitFor("!!document.querySelector('.arena-play-panel .online-lobby')");
-  assert.equal(await evaluate("document.querySelectorAll('.arena-quick-times button').length"), 4);
+  assert.equal(await evaluate("document.querySelectorAll('.arena-quick-times button').length"), 0);
+  assert.equal(await evaluate("document.querySelector('.arena-time-summary small').textContent"), 'Blitz');
+  assert.equal(await evaluate("document.querySelector('.play-lobby-screen').textContent.includes('GUEST')"), false, 'No player labels before a match');
+  for (const [value, label, mode] of [['1 мин.', '1 мин.', 'Bullet'], ['3 | 2', '3 | 2', 'Blitz'], ['10 мин.', '10 мин.', 'Rapid']]) {
+    await evaluate("document.querySelector('.arena-selected-time').click()");
+    await waitFor("document.querySelectorAll('.arena-time-options button').length === 9");
+    const options = await evaluate("[...document.querySelectorAll('.arena-time-options button')].map(b=>b.getBoundingClientRect().toJSON())");
+    assert.ok(options.every(b=>b.height>=44 && b.top>=0 && b.bottom<=900), 'All nine clock choices fit without internal scrolling');
+    assert.equal(await evaluate("document.querySelectorAll('.arena-time-group').length"), 3);
+    await evaluate(`([...document.querySelectorAll('.arena-time-options button')].find(b=>b.textContent===${JSON.stringify(value)})).click()`);
+    await waitFor("!document.querySelector('.arena-time-groups')");
+    assert.equal(await evaluate("document.querySelector('.arena-time-value').textContent"), label);
+    assert.equal(await evaluate("document.querySelector('.arena-time-summary small').textContent"), mode);
+    assert.equal(await evaluate("document.activeElement === document.querySelector('.arena-selected-time')"), true);
+  }
+  await evaluate("document.querySelector('.arena-selected-time').click()");
+  await evaluate("document.querySelector('.arena-selected-time').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
+  await waitFor("!document.querySelector('.arena-time-groups')");
   assert.equal(await evaluate("document.querySelectorAll('.mobile-arena-panel').length"), 0);
   assert.equal(await evaluate("document.querySelector('[role=switch]').getAttribute('aria-checked')"), 'false');
-  console.log('PASS desktop golden arena and opt-in readiness preserved');
+  console.log('PASS compact desktop arena, grouped clocks and opt-in readiness');
  } catch (error) {
   // Print the actual failing assertion before cleanup; a stuck child must not
   // mask it behind the outer watchdog's generic timeout.

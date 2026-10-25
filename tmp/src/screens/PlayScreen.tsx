@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
@@ -14,21 +12,6 @@ import MobileOpponentSearchOverlay from '../components/MobileOpponentSearchOverl
 
 import PlayWaitingContent from '../components/PlayWaitingContent';
 
-function cx(...inputs: (string | undefined | null | false)[]) {
-  return twMerge(clsx(inputs));
-}
-
-type AccentTheme = 'gold' | 'cyan' | 'violet';
-
-function countryCodeToFlag(code: string): string | null {
-  const normalized = code.trim().toUpperCase();
-  if (!/^[A-Z]{2}$/.test(normalized)) return null;
-  return normalized
-    .split('')
-    .map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65))
-    .join('');
-}
-
 export default function PlayScreen() {
   const { t } = useLanguage();
   const [timeControl, setTimeControl] = useState('3 min.');
@@ -36,7 +19,6 @@ export default function PlayScreen() {
   const [waitingForSocket, setWaitingForSocket] = useState(false);
   const [waitingForFriendSocket, setWaitingForFriendSocket] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
-  const accentTheme: AccentTheme = 'gold';
 
   const [isPrivateCreating, setIsPrivateCreating] = useState(false);
   const [privateRoomId, setPrivateRoomId] = useState<string | null>(null);
@@ -52,39 +34,8 @@ export default function PlayScreen() {
 
   const navigate = useNavigate();
   const { socket, isConnected, authError } = useSocket();
-  const { user, profile, session, isLoading: authIsLoading } = useAuth();
+  const { session, isLoading: authIsLoading } = useAuth();
   const { boardTheme, confirmMobileMoves } = useThemeContext();
-
-  // Primary colors based on theme
-  const accentColors = {
-    gold: {
-      primary: 'text-amber-400',
-      bg: 'bg-amber-400',
-      border: 'border-amber-400/50',
-      shadow: 'shadow-amber-400/20',
-      gradient: 'from-amber-400 via-yellow-500 to-amber-600',
-      glow: 'after:bg-amber-400/20',
-      dot: 'bg-[#dfb062]'
-    },
-    cyan: {
-      primary: 'text-cyan-400',
-      bg: 'bg-cyan-400',
-      border: 'border-cyan-400/50',
-      shadow: 'shadow-cyan-400/20',
-      gradient: 'from-cyan-400 via-cyan-500 to-cyan-600',
-      glow: 'after:bg-cyan-400/20',
-      dot: 'bg-cyan-400'
-    },
-    violet: {
-      primary: 'text-violet-400',
-      bg: 'bg-violet-400',
-      border: 'border-violet-400/50',
-      shadow: 'shadow-violet-400/20',
-      gradient: 'from-violet-400 via-purple-500 to-violet-600',
-      glow: 'after:bg-violet-400/20',
-      dot: 'bg-violet-400'
-    }
-  };
 
   // User preferences applied automatically via ThemeContext
 
@@ -238,19 +189,6 @@ export default function PlayScreen() {
 
         {/* ── Left Side: Chess Board ────────────────────────────── */}
         <div className="w-full flex flex-col gap-1 md:gap-1.5 animate-fade-in-up min-h-0">
-          {/* Opponent Info */}
-          <div className="flex items-center gap-2 px-1 shrink-0">
-            <div className="w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 flex items-center justify-center text-base shadow-2xl relative text-neutral-500">
-               ?
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2 leading-none">
-                <span className="font-black text-white text-xs italic tracking-tighter uppercase">{t('play.opponent')}</span>
-              </div>
-              <span className="text-[0.45rem] text-neutral-600 font-bold uppercase tracking-[0.2em] italic mt-0.5">{t('play.waiting')}</span>
-            </div>
-          </div>
-
           <div className="relative group/board flex-1 flex flex-col min-h-0 justify-center">
             {joinError && (
               <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[60] bg-red-500/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl backdrop-blur-md animate-fade-in text-center pointer-events-none whitespace-nowrap">
@@ -297,29 +235,10 @@ export default function PlayScreen() {
             </div>
           </div>
 
-          {/* User Info */}
-          <div className="flex items-center gap-2 px-1 opacity-60 hover:opacity-100 transition-opacity shrink-0">
-            <div className="w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 flex items-center justify-center text-base shadow-2xl relative">
-              {profile?.countryCode && countryCodeToFlag(profile.countryCode) ? (
-                <span aria-label={profile.countryCode}>{countryCodeToFlag(profile.countryCode)}</span>
-              ) : (
-                <span className="text-neutral-500" aria-label="Country not specified">●</span>
-              )}
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2 leading-none">
-                <span className="font-black text-white text-xs italic tracking-tighter uppercase">{profile?.username || user?.user_metadata?.username || 'Guest'}</span>
-                <span className={cx("bg-opacity-20 text-[0.4rem] px-1 py-0.5 rounded-sm font-black uppercase tracking-[0.15em] border", accentColors[accentTheme].bg, accentColors[accentTheme].primary, accentColors[accentTheme].border)}>YOU</span>
-              </div>
-              <span className="text-[0.45rem] text-neutral-600 font-bold uppercase tracking-[0.2em] italic mt-0.5">{(profile?.username || user?.user_metadata?.username) ? t('play.playerMode') : t('play.guestMode')}</span>
-            </div>
-          </div>
         </div>
 
         {/* ── Right Side: Control Panel ────────────────────────── */}
-        <div className="w-full flex flex-col animate-fade-in-right lg:h-full lg:justify-center lg:-ml-4">
-          {/* Spacer: aligns panel top with board top */}
-          <div className="h-0 md:h-[10px] shrink-0" />
+        <div className="w-full flex flex-col animate-fade-in-right lg:min-h-[min(630px,calc(100dvh-120px))] lg:justify-center lg:-ml-4">
           <MobileFriendTimeControl timeControl={timeControl} onTimeChange={setTimeControl} presets={timePresets} resetRef={mobileInviteReset} openRef={mobileFriendOpen} controlsHidden />
           <ArenaPlayPanel
             timeControl={timeControl}
@@ -360,8 +279,6 @@ export default function PlayScreen() {
               socket.emit('create_private_room', { timeControl: toServerTimeControl(timeControl) });
             }}
           />
-          {/* Spacer: matches user footer height so panel bottom aligns with board bottom */}
-          <div className="h-0 md:h-[38px] shrink-0" />
         </div>
       </div>
 

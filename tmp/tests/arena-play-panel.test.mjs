@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { createServer } from 'vite';
 
-test('arena renders chosen clock, four quick presets and opt-in readiness before the primary action', async () => {
+test('desktop arena shows chosen clock and mode without quick presets, preserving opt-in readiness', async () => {
   const storage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: key => key === 'app-language' ? 'ru' : null } });
   const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
@@ -17,13 +17,21 @@ test('arena renders chosen clock, four quick presets and opt-in readiness before
     assert.doesNotMatch(html, /CHESSAZ · ИГРОВАЯ АРЕНА/);
     assert.doesNotMatch(html, /\/pieces\/classic\/bP\.svg/);
     assert.match(html, /class="arena-start-game"[^>]*><span>НАЧАТЬ ИГРУ<\/span>/);
-    assert.equal((html.match(/aria-pressed=/g) || []).length, 4);
-    assert.match(html, /aria-pressed="true">3 мин\./);
+    assert.equal((html.match(/aria-pressed=/g) || []).length, 0);
+    assert.match(html, /arena-time-value[^>]*>3 мин\./);
+    assert.match(html, /<small>Blitz<\/small>/);
+    assert.doesNotMatch(html, /arena-quick-times|КОНТРОЛЬ ВРЕМЕНИ/);
     assert.match(html, /role="switch" aria-checked="false"/);
     assert.match(html, /aria-checked="false"[^>]*disabled=""/);
     assert.ok(html.indexOf('Выбрать соперника') < html.indexOf('НАЧАТЬ ИГРУ'));
     assert.match(html, /ИГРА С ДРУГОМ/);
     assert.match(html, /disabled=""[^>]*>.*ТУРНИРЫ · СКОРО/);
+    for (const [timeControl, category] of [['1 min.','Bullet'],['1 | 1','Bullet'],['2 | 1','Bullet'],['3 min.','Blitz'],['3 | 2','Blitz'],['5 min.','Blitz'],['10 min.','Rapid'],['15 | 10','Rapid'],['30 min.','Rapid']]) {
+      const chosen = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(LanguageProvider, null,
+        createElement(Panel, { timeControl, onTimeChange() {}, onStart() {}, onFriend() {} }))));
+      assert.ok(chosen.includes(`<small>${category}</small>`));
+      assert.ok(chosen.includes(timeControl.replace('min.', 'мин.')));
+    }
   } finally {
     await server.close();
     if (storage) Object.defineProperty(globalThis, 'localStorage', storage);
