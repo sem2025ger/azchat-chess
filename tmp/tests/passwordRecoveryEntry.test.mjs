@@ -16,7 +16,12 @@ test('recovery fallback routes before React initializes; maintenance still block
 test('password change requires recovery session and always shows error when link invalid', () => {
   const s = read('../src/screens/UpdatePasswordScreen.tsx');
   assert.match(s, /event === 'PASSWORD_RECOVERY'/);
+  assert.match(s, /hasPasswordRecoveryIntent\(\)/);
+  assert.match(s, /supabase\.auth\.getUser\(\)/);
+  assert.match(s, /clearPasswordRecoveryIntent\(\)/);
+  assert.match(s, /navigate\(backTo, \{ replace: true \}\)/);
   assert.match(s, /if \(recoveryStatus !== 'ready'\)/);
   assert.match(s, /disabled=\{loading \|\| !!successMsg \|\| recoveryStatus !== 'ready'\}/);
   assert.match(s, /supabase\.auth\.updateUser\(\{ password \}\)/);
+  assert.match(s, /max-md:p-4 max-md:rounded-2xl/);
 });
