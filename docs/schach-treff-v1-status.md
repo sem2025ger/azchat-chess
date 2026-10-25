@@ -112,3 +112,6 @@ Counts and tested SQL will accompany Phase 2, not fabricated here.
 - The owner waived a further QA reset and explicitly prohibited production writes without separate authorization.
 - Production read-only preflight yielded 7 legacy usernames, 0 fallback usernames and 0 collisions. No migration has been applied to production.
 - The implementation status of Schach-Treff Phase 1 and Phases 2–7 is otherwise unchanged; this PR remains draft.
+
+## Open item — migration history
+migration history version mismatch for 20261025164000 → fix in the planned migration-repair PR. Production recorded version `20261025163216` with name `20261025164000_schach_treff_private_usernames`. Never reapply or rename in this milestone.
