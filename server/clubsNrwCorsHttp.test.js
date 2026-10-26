@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test');
 const assert=require('node:assert/strict');
+process.env.NODE_ENV='test';
 process.env.CLUBS_NRW_ENABLED='true';
 const upstream=globalThis.fetch;
 globalThis.fetch=async()=>new Response('<rss><channel><item><title>Schachnachrichten</title><link>https://sbboblog.wordpress.com/2026/10/news/</link></item></channel></rss>',{status:200});
