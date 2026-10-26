@@ -2,6 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSpielerApi, spielerEnabled, openSpielerAnalysis } from '../src/services/spieler.ts';
 import { loadAnalysisSession, saveAnalysisSession } from '../src/utils/analysisSession.ts';
+import { createServer } from 'vite';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import fixture from '../../server/test-support/spielerFixture.cjs';
+test('player card renders the imported FIDE rating and list date; club has no imported default',async()=>{
+ const server=await createServer({optimizeDeps:{noDiscovery:true,include:[]},server:{middlewareMode:true,hmr:false},appType:'custom'});
+ try{const {default:Card}=await server.ssrLoadModule('/src/components/spieler/SpielerCard.tsx');const imported=fixture.acceptance();
+  const html=renderToStaticMarkup(createElement(Card,{player:{...imported,club:null}}));
+  assert.ok(html.includes(String(imported.fide_rating)));assert.ok(html.includes('FIDE, Stand: '+imported.source_date));
+  assert.match(html,/<dt>Verein<\/dt><dd>—<\/dd>/);assert.match(html,/<dt>DWZ<\/dt><dd>—<\/dd>/);
+  assert.match(renderToStaticMarkup(createElement(Card,{player:{...imported,club:'My voluntary club'}})),/My voluntary club/);
+ }finally{await server.close();}
+});
 test('Spieler flag defaults off and only literal true enables it',()=>{for(const value of [undefined,false,true,'false','1','TRUE'])assert.equal(spielerEnabled(value),false);assert.equal(spielerEnabled('true'),true);});
 test('API safely encodes surname/nickname and never accepts caller-controlled identity',async()=>{
  const calls=[];const api=createSpielerApi('https://qa.example',async(url,options)=>{calls.push({url:String(url),options});return new Response(JSON.stringify(options.method==='POST'?{status:'pending'}:{players:[]}));});

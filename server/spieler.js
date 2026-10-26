@@ -42,8 +42,10 @@ function installSpieler(app,{enabled=false,client=null,verifyToken=async()=>null
   const identity=await verifyToken(header.slice(7));
   if(!identity?.id)return res.status(401).json({code:'authentication_required'});
   // Reject caller-supplied actor, verification status and personal data.
-  if(req.body&&Object.keys(req.body).length)return res.status(400).json({code:'invalid_body'});
-  const r=await client.rpc('spieler_request',{p_action:req.params.action,p_actor:identity.id,p_fide:req.params.id}).abortSignal(AbortSignal.timeout(8000));
+  const keys=Object.keys(req.body||{}),club=req.body?.club;
+  if(keys.some(k=>k!=='club')||(req.params.action!=='claim'&&keys.length)||
+   (club!==undefined&&(typeof club!=='string'||club.trim().length>120||/[\x00-\x1f\x7f]/.test(club))))return res.status(400).json({code:'invalid_body'});
+  const r=await client.rpc('spieler_request',{p_action:req.params.action,p_actor:identity.id,p_fide:req.params.id,p_club:req.params.action==='claim'&&typeof club==='string'?club.trim():null}).abortSignal(AbortSignal.timeout(8000));
   if(r.error)return res.status(r.error.code==='23514'?409:503).json({code:r.error.code==='23514'?'claim_exists':'temporarily_unavailable'});
   res.json(r.data);
  }));

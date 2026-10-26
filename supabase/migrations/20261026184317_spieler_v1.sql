@@ -6,7 +6,6 @@ CREATE TABLE public.spieler_players (
  federation text NOT NULL CHECK(federation ~ '^[A-Z]{3}$'),
  title text CHECK(title IN ('GM','IM','FM','CM','WGM','WIM','WFM','WCM')),
  fide_rating integer CHECK(fide_rating BETWEEN 100 AND 4000),
- club text CHECK(char_length(club)<=120),
  source_date date NOT NULL,
  source_url text NOT NULL CHECK(source_url ~ '^https://ratings[.]fide[.]com/'),
  updated_at timestamptz NOT NULL DEFAULT now()
@@ -16,6 +15,7 @@ CREATE TABLE public.spieler_claims (
  user_id uuid PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
  fide_id bigint NOT NULL REFERENCES public.spieler_players(fide_id) ON DELETE CASCADE,
  status text NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','verified','rejected')),
+ club text CHECK(char_length(club)<=120),
  created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE UNIQUE INDEX spieler_verified_owner_idx ON public.spieler_claims(fide_id) WHERE status='verified';
@@ -51,7 +51,9 @@ CREATE POLICY spieler_opt_out_owner_read ON public.spieler_opt_out FOR SELECT TO
 CREATE FUNCTION public.spieler_search(p_surname text DEFAULT NULL,p_id bigint DEFAULT NULL)
  RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path='' AS $fn$
  SELECT coalesce(jsonb_agg(to_jsonb(p)),'[]'::jsonb) FROM (
- SELECT fide_id,name,surname,federation,title,fide_rating,club,source_date,source_url
+ SELECT fide_id,name,surname,federation,title,fide_rating,
+ (SELECT c.club FROM public.spieler_claims c WHERE c.fide_id=s.fide_id AND c.status='verified') AS club,
+ source_date,source_url
  FROM public.spieler_players s WHERE
  ((p_id IS NOT NULL AND fide_id=p_id) OR (p_id IS NULL AND char_length(btrim(p_surname)) BETWEEN 2 AND 100
  AND lower(surname) LIKE replace(replace(replace(lower(btrim(p_surname)),'\','\\'),'%','\%'),'_','\_')||'%' ESCAPE '\'))
@@ -59,7 +61,7 @@ CREATE FUNCTION public.spieler_search(p_surname text DEFAULT NULL,p_id bigint DE
  ORDER BY lower(surname),name,fide_id LIMIT 25
  ) p;
 $fn$;
-CREATE FUNCTION public.spieler_request(p_action text,p_actor uuid,p_fide bigint)
+CREATE FUNCTION public.spieler_request(p_action text,p_actor uuid,p_fide bigint,p_club text DEFAULT NULL)
  RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $fn$
 DECLARE answer text;
 BEGIN
@@ -67,8 +69,10 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.spieler_players WHERE fide_id=p_fide) THEN RAISE EXCEPTION 'not_found' USING ERRCODE='22023'; END IF;
  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_actor::text,23));
  IF p_action='claim' THEN
+  IF p_club IS NOT NULL AND (char_length(btrim(p_club))>120 OR p_club ~ '[[:cntrl:]]') THEN RAISE EXCEPTION 'invalid_club' USING ERRCODE='22023'; END IF;
   IF EXISTS(SELECT 1 FROM public.spieler_claims WHERE user_id=p_actor AND fide_id<>p_fide) THEN RAISE EXCEPTION 'claim_exists' USING ERRCODE='23514'; END IF;
-  INSERT INTO public.spieler_claims(user_id,fide_id) VALUES(p_actor,p_fide) ON CONFLICT(user_id) DO NOTHING;
+  INSERT INTO public.spieler_claims(user_id,fide_id,club) VALUES(p_actor,p_fide,nullif(btrim(p_club),''))
+   ON CONFLICT(user_id) DO UPDATE SET club=excluded.club;
   SELECT status INTO answer FROM public.spieler_claims WHERE user_id=p_actor;
  ELSIF p_action='hide' THEN
   answer:=CASE WHEN EXISTS(SELECT 1 FROM public.spieler_claims WHERE user_id=p_actor AND fide_id=p_fide AND status='verified') THEN 'approved' ELSE 'pending' END;
@@ -78,6 +82,6 @@ BEGIN
  ELSE RAISE EXCEPTION 'invalid_action' USING ERRCODE='22023'; END IF;
  RETURN jsonb_build_object('status',answer);
 END $fn$;
-REVOKE ALL ON FUNCTION public.spieler_search(text,bigint),public.spieler_request(text,uuid,bigint) FROM PUBLIC,anon,authenticated;
-GRANT EXECUTE ON FUNCTION public.spieler_search(text,bigint),public.spieler_request(text,uuid,bigint) TO service_role;
+REVOKE ALL ON FUNCTION public.spieler_search(text,bigint),public.spieler_request(text,uuid,bigint,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.spieler_search(text,bigint),public.spieler_request(text,uuid,bigint,text) TO service_role;
 COMMIT;

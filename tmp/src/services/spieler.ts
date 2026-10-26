@@ -36,8 +36,12 @@ export function createSpielerApi(base: string, fetchImpl: typeof fetch = fetch) 
       if (!/^[1-9]\d{0,9}$/.test(id)) throw new SpielerError('invalid_query');
       return request(id + '/games?' + new URLSearchParams({ source, nickname }), signal);
     },
-    action: async (id: string, action: 'claim' | 'hide', token: string, signal: AbortSignal): Promise<{ status: string }> => {
+    action: async (id: string, action: 'claim' | 'hide', token: string, signal: AbortSignal, club?: string): Promise<{ status: string }> => {
       if (!/^[1-9]\d{0,9}$/.test(id) || !token) throw new SpielerError('authentication_required');
+      if (action === 'claim' && club !== undefined) {
+        const response = await fetchImpl(new URL('/api/spieler/' + id + '/claim', url), { signal, method: 'POST', cache: 'no-store', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ club }) });
+        const value = await response.json(); if (!response.ok) throw new SpielerError(value.code || 'temporarily_unavailable'); return value;
+      }
       return request(id + '/' + action, signal, token);
     },
   };

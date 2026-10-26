@@ -2,7 +2,6 @@
 'use strict';
 // Official, manually downloaded/unzipped FIDE XML only. No page scraping.
 const fs=require('node:fs');
-const {createClient}=require('@supabase/supabase-js');
 const QA='iukmpcytsuofqhxsumbu';
 function assertTarget(target,url){
  let u;try{u=new URL(url);}catch{throw Error('Local or QA Supabase URL required');}
@@ -30,21 +29,20 @@ async function* officialPlayers(stream,date){
  }
  if(buffer.includes('<player>'))throw Error('Truncated XML');
 }
-async function importFideGer({stream,target,url,date,include=[],clubs={},client=null}){
+async function importFideGer({stream,target,url,date,include=[],client=null}){
  assertTarget(target,url);const ids=new Set(include.map(String));if([...ids].some(id=>! /^[1-9]\d{0,9}$/.test(id)))throw Error('Invalid included FIDE ID');
  const players=[];for await(const p of officialPlayers(stream,date)){if(p.federation!=='GER'&&!ids.has(p.fide_id))continue;
-  if(clubs[p.fide_id]){if(typeof clubs[p.fide_id]!=='string'||clubs[p.fide_id].length>120)throw Error('Invalid voluntary club');p.club=clubs[p.fide_id];}players.push(p);}
+  players.push(p);}
  if(!players.length)throw Error('No matching official FIDE records');
  if(client)for(let i=0;i<players.length;i+=500){const r=await client.from('spieler_players').upsert(players.slice(i,i+500),{onConflict:'fide_id'});if(r.error)throw Error('QA import write failed');}
  return players;
 }
 async function main(){
- const options={};for(const arg of process.argv.slice(2)){const m=arg.match(/^--([a-z-]+)=(.+)$/);if(m)options[m[1]]=m[2];else if(arg==='--apply')options.apply=true;else throw Error('Use --file=XML --target=local|qa --date=YYYY-MM-DD [--include=ID,...] [--clubs=JSON] [--out=JSON] [--apply]');}
+ const options={};for(const arg of process.argv.slice(2)){const m=arg.match(/^--([a-z-]+)=(.+)$/);if(m&&['file','target','date','include','out'].includes(m[1]))options[m[1]]=m[2];else if(arg==='--apply')options.apply=true;else throw Error('Use --file=XML --target=local|qa --date=YYYY-MM-DD [--include=ID,...] [--out=JSON] [--apply]');}
  const url=process.env.SUPABASE_URL||'';assertTarget(options.target,url);
- const clubs=options.clubs?JSON.parse(fs.readFileSync(options.clubs,'utf8')):{};
  if(options.apply&&!process.env.SUPABASE_SERVICE_KEY)throw Error('Server-only import credential required');
- const client=options.apply?createClient(url,process.env.SUPABASE_SERVICE_KEY,{auth:{persistSession:false,autoRefreshToken:false}}):null;
- const players=await importFideGer({stream:fs.createReadStream(options.file,{encoding:'utf8'}),target:options.target,url,date:options.date,include:(options.include||'').split(',').filter(Boolean),clubs,client});
+ const client=options.apply?require('@supabase/supabase-js').createClient(url,process.env.SUPABASE_SERVICE_KEY,{auth:{persistSession:false,autoRefreshToken:false}}):null;
+ const players=await importFideGer({stream:fs.createReadStream(options.file,{encoding:'utf8'}),target:options.target,url,date:options.date,include:(options.include||'').split(',').filter(Boolean),client});
  if(options.out)fs.writeFileSync(options.out,JSON.stringify(players));
  console.log(JSON.stringify({target:options.target,project_ref:options.target==='qa'?QA:'local',records:players.length,applied:!!client}));
 }
