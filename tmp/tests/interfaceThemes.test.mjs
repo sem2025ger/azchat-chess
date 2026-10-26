@@ -56,6 +56,15 @@ test('saved interface themes survive initialization and remain selectable with r
   }
 });
 
+test('Restore Defaults uses the same Soft Graphite baseline as first visit', () => {
+  const screen = readFileSync(new URL('../src/screens/SettingsScreen.tsx', import.meta.url), 'utf8');
+  const context = readFileSync(new URL('../src/context/ThemeContext.tsx', import.meta.url), 'utf8');
+  const restore = screen.split('const handleRestoreDefaults = () => {')[1]?.split('\n  };')[0] || '';
+  assert.match(restore, /setBackground\('Soft Graphite'\)/);
+  assert.match(context, /return 'Soft Graphite';/);
+  assert.match(context, /localStorage.getItem\('chess_background'\)/);
+});
+
 test('restore defaults uses a bold high-contrast label and a visible keyboard focus indicator', () => {
   const css = postcss.parse(readFileSync(new URL('../src/screens/SettingsTypography.css', import.meta.url), 'utf8'));
   const style = {};
