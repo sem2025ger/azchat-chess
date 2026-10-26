@@ -16,6 +16,7 @@ const ChatScreen = lazy(routeLoaders.chat);
 const ProfileScreen = lazy(routeLoaders.profile);
 const SettingsScreen = lazy(routeLoaders.settings);
 const UpdatePasswordScreen = lazy(routeLoaders.updatePassword);
+const ClubsNRWScreen = lazy(routeLoaders.clubsNrw);
 
 // Keep the public maintenance gate active for production until separately authorized.
 function App() {
@@ -41,6 +42,8 @@ function App() {
                     <Route path="profile" element={<ProfileScreen />} />
                     <Route path="settings" element={<SettingsScreen />} />
                     <Route path="update-password" element={<UpdatePasswordScreen />} />
+                    {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Route path="clubs-nrw" element={<ClubsNRWScreen />} />}
+                    {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Route path="clubs-nrw/:slug" element={<ClubsNRWScreen />} />}
                   </Route>
                 </Routes>
             </BrowserRouter>

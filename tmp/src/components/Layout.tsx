@@ -3,7 +3,7 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } fr
 import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
 import nightEarthStill from '../assets/night-earth-still.webp';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, Grid, MessageSquare, User, Settings, Circle } from 'lucide-react';
+import { Home, Grid, MessageSquare, User, Settings, Circle, MapPin } from 'lucide-react';
 import { premiumInterfaceThemes } from '../lib/interfaceThemes';
 import { useThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -97,6 +97,7 @@ export default function Layout() {
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={desktop ? 'Schach-Treff' : t('nav.chat')} themeColor="theme-violet" subtitle={desktop ? 'Für Deutschsprachige' : undefined} />
+            {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/clubs-nrw" icon={<MapPin size={20} />} label="Bochum & NRW" themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
           </nav>
         </div>

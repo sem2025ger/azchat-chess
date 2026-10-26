@@ -76,6 +76,7 @@ async function verifyTokenProxy(token) {
 }
 
 const app = express();
+if (process.env.CLUBS_NRW_ENABLED === 'true') app.get('/api/clubs-nrw/news', createNewsHandler());
 const server = http.createServer(app);
 
 const PORT = process.env.PORT || 4000;
