@@ -7,6 +7,7 @@ import '@fontsource/bodoni-moda/latin-600.css';
 import './SchachTreffDesktop.css';
 import { ChallengeProvider, ChallengeButton, ChallengeMessage } from '../components/schachTreff/Challenges';
 import PlayerSummary from '../components/schachTreff/PlayerSummary';
+import ClubRooms, { RoomTitle } from '../components/schachTreff/ClubRooms';
 
 type Profile = { id: string; username: string };
 type Message = { id: string; author_id: string; body: string; created_at: string };
@@ -37,7 +38,9 @@ export default function SchachTreffDesktop() {
   useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, []);
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
   const refresh = useCallback(async () => {
-    const club = await supabase.from('chess_clubs').select('id').eq('slug', 'chessaz-deutsch').maybeSingle();
+    const requested = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('club');
+    const query = supabase.from('chess_clubs').select('id');
+    const club = await (requested && /^[0-9a-f-]{36}$/i.test(requested) ? query.eq('id',requested) : query.eq('slug','chessaz-deutsch')).maybeSingle();
     if (club.error) throw club.error;
     setClubId(club.data?.id ?? null);
     let pinnedAuthor: string | null = null;
@@ -117,8 +120,8 @@ export default function SchachTreffDesktop() {
     </div></header>
     {error && <p role="alert">{error}</p>}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
-    <div className="st-columns"><aside className="st-surface st-rooms"><h2>{t.rooms}</h2><button aria-current="page">{t.general}</button><h2>{t.clubs}</h2></aside>
-      <section className="st-surface st-chat"><h2>{t.general}</h2>
+    <div className="st-columns"><aside className="st-surface st-rooms"><h2>{t.rooms}</h2><a href="/chat">{t.general}</a><h2>{t.clubs}</h2><ClubRooms currentClubId={clubId} /></aside>
+      <section className="st-surface st-chat"><h2><RoomTitle clubId={clubId} /></h2>
         {pinAvailable && (pin || canPin) && <div className="st-pin">
           <div className="st-pin-title">{t.pinned}{pin?.author && ' · '}{pin?.author ? profiles.find(p => p.id === pin.author)?.username ?? '' : ''}
             {canPin && <button onClick={() => { setPinEdit(true); setPinDraft(pin?.body ?? ''); }}>{t.change}</button>}
