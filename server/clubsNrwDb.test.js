@@ -47,7 +47,7 @@ test('NRW real PostgreSQL permissions, roster, club editors and duel gate (isola
   });
   await t.test('duels only proposals, no match or game table write',async()=>{
    await as('authenticated','bob','INSERT INTO public.clubs_nrw_duels(home_club_id,away_club_id,title,created_by) VALUES($1,$2,$3,$4)',[club.id,other.id,'Freundschaftsduell',ids.bob]);
-   await assert.rejects(()=>as('authenticated','bob',"INSERT INTO public.clubs_nrw_duels(home_club_id,away_club_id,title,status,created_by) VALUES($1,$2,$3,'active',$4)",[club.id,other.id,'Aktives Spiel',ids.bob]),e=>e?.code==='23514');
+   await assert.rejects(()=>as('authenticated','bob',"INSERT INTO public.clubs_nrw_duels(home_club_id,away_club_id,title,status,created_by) VALUES($1,$2,$3,'active',$4)",[club.id,other.id,'Aktives Spiel',ids.bob]),e=>e?.code==='42501');
    const t1=await admin('SELECT count(*)::int AS n FROM public.clubs_nrw_duels');assert.equal(t1.rows[0].n,1);
   });
   await t.test('room links fail closed without PR #126 kind=room',async()=>{
