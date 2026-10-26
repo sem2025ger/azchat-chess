@@ -1,17 +1,24 @@
 'use strict';
-const test=require('node:test');const assert=require('node:assert/strict');
+const test=require('node:test');
+const assert=require('node:assert/strict');
+process.env.CLUBS_NRW_ENABLED='true';
+const upstream=globalThis.fetch;
+globalThis.fetch=async()=>new Response('<rss><channel><item><title>Schachnachrichten</title><link>https://sbboblog.wordpress.com/2026/10/news/</link></item></channel></rss>',{status:200});
 const {app,server,io,timeoutWatchdog}=require('./index');
-test('real HTTP application: CORS whitelist for clubs news',async()=>{
- const prior=process.env.CLUBS_NRW_ENABLED;
- // The route is registered at boot, so CI must run this test with its enabled fixture.
- // In a disabled build assert 404 remains gated; HTTP must still respect same CORS.
- await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
- try {
-  const url='http://127.0.0.1:'+server.address().port+'/api/clubs-nrw/news';
-  const allowed=await fetch(url,{headers:{Origin:'https://chessaz.de'}});
-  assert.equal(allowed.headers.get('access-control-allow-origin'),'https://chessaz.de');
-  const foreign=await fetch(url,{headers:{Origin:'https://evil.example'}});
-  assert.equal(foreign.headers.get('access-control-allow-origin'),null);
-  assert.equal(foreign.status,404); // Default-off test mode: endpoint cannot fetch RSS.
- } finally { await new Promise(resolve=>io.close(resolve)); if(server.listening)await new Promise(resolve=>server.close(resolve));clearInterval(timeoutWatchdog); }
+globalThis.fetch=upstream;
+test('real HTTP: news is CORS-allowed only for approved origin',async()=>{
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try{
+    const url='http://127.0.0.1:'+server.address().port+'/api/clubs-nrw/news';
+    const good=await fetch(url,{headers:{Origin:'https://chessaz.de'}});
+    assert.equal(good.status,200);
+    assert.equal(good.headers.get('access-control-allow-origin'),'https://chessaz.de');
+    const bad=await fetch(url,{headers:{Origin:'https://foreign.example'}});
+    assert.equal(bad.status,200);
+    assert.equal(bad.headers.get('access-control-allow-origin'),null);
+  }finally{
+    await new Promise(resolve=>io.close(resolve));
+    if(server.listening)await new Promise(resolve=>server.close(resolve));
+    clearInterval(timeoutWatchdog);
+  }
 });
