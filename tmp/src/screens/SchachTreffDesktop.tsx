@@ -6,7 +6,7 @@ import { copy as t } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
 import './SchachTreffDesktop.css';
 
-type Profile = { id: string; username: string; rating_blitz: number | null; rating_rapid: number | null };
+type Profile = { id: string; username: string };
 type Message = { id: string; author_id: string; body: string; created_at: string };
 type Panel = 'tournaments' | 'members' | 'ranking' | 'about';
 const warned = new Set<string>();
@@ -61,7 +61,7 @@ export default function SchachTreffDesktop() {
     if (feed.error) throw feed.error;
     if (members.error) throw members.error;
     const ids = [...new Set([...members.data.map(m => m.user_id), ...feed.data.map(m => m.author_id), ...(pinnedAuthor ? [pinnedAuthor] : [])])];
-    const people = ids.length ? await supabase.from('profiles').select('id,username,rating_blitz,rating_rapid').in('id', ids) : { data: [], error: null };
+    const people = ids.length ? await supabase.from('profiles').select('id,username').in('id', ids) : { data: [], error: null };
     if (people.error) throw people.error;
     setProfiles(people.data ?? []); setRoster(members.data.map(m => m.user_id));
     setMessages([...feed.data].reverse());
@@ -132,7 +132,7 @@ export default function SchachTreffDesktop() {
     <dialog ref={dialog} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
       <button className="st-close" onClick={() => { setPanel(null); setPlayer(null); }}>{t.close}</button>
       {/* Genuine ratings will be introduced by the future Glicko-2 task; do not display stored placeholder values here. */}
-      {player ? <><h2>{player.username}</h2><p>{t.noLocation}</p><dl><dt>{t.blitz}</dt><dd>—</dd><dt>{t.rapid}</dt><dd>—</dd></dl></> : panel === 'tournaments' ? <><h2 className="st-display">{t.tournamentTitle}</h2><p>{t.tournamentText}</p><button aria-pressed={notify} onClick={() => setNotify(!notify)}>{notify ? t.notified : t.notify}</button></> : panel === 'about' ? <><h2>{t.about}</h2><p>{t.aboutText}</p></> : panel && <><h2>{t[panel]}</h2>{!members.length && !error && <p>{t.noMembers}</p>}{(panel === 'ranking' ? [...members].filter(p => p.rating_blitz !== null).sort((a, b) => (b.rating_blitz ?? 0) - (a.rating_blitz ?? 0)) : members).map(p => <div className="st-member" key={p.id}><button className="st-name" onClick={() => setPlayer(p)}>{p.username}</button>{panel === 'ranking' && <span>{p.rating_blitz}</span>}</div>)}</>}
+      {player ? <><h2>{player.username}</h2><p>{t.noLocation}</p><dl><dt>{t.blitz}</dt><dd>—</dd><dt>{t.rapid}</dt><dd>—</dd></dl></> : panel === 'tournaments' ? <><h2 className="st-display">{t.tournamentTitle}</h2><p>{t.tournamentText}</p><button aria-pressed={notify} onClick={() => setNotify(!notify)}>{notify ? t.notified : t.notify}</button></> : panel === 'about' ? <><h2>{t.about}</h2><p>{t.aboutText}</p></> : panel === 'ranking' ? <><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></> : panel && <><h2>{t[panel]}</h2>{!members.length && !error && <p>{t.noMembers}</p>}{members.map(p => <div className="st-member" key={p.id}><button className="st-name" onClick={() => setPlayer(p)}>{p.username}</button></div>)}</>}
     </dialog>
   </section>;
 }

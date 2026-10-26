@@ -29,3 +29,10 @@ test('desktop player card renders — unconditionally and never shows stored pla
   assert.ok(cardBranch.includes('<dl><dt>{t.blitz}</dt><dd>—</dd><dt>{t.rapid}</dt><dd>—</dd></dl>'));
   assert.doesNotMatch(cardBranch, /rating_blitz|rating_rapid|1200|1500/);
 });
+test('desktop ranking shows the upcoming-rating note without rating data or member ordering', () => {
+  const current = read('../src/screens/SchachTreffDesktop.tsx');
+  assert.doesNotMatch(current, /rating_blitz|rating_rapid/);
+  const rankingBranch = current.split("panel === 'ranking' ? ")[1]?.split(' : panel && ')[0] ?? '';
+  assert.equal(rankingBranch, '<><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></>');
+  assert.match(read('../src/components/schachTreff/copy.ts'), /rankingSoon: 'Rangliste folgt mit der Elo-Wertung'/);
+});
