@@ -111,6 +111,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+// Spieler reads/requests share the existing HTTP origin policy; no game wiring.
+require('./spieler').installSpielerFromEnv(app,verifyTokenProxy);
 
 app.get('/health', (req, res) => {
   const ok = durableGames.ready();

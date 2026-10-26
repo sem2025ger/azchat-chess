@@ -98,6 +98,7 @@ export default function Layout() {
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={desktop ? 'Schach-Treff' : t('nav.chat')} themeColor="theme-violet" subtitle={desktop ? 'Für Deutschsprachige' : undefined} />
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
+            {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label="Spieler" themeColor="theme-blue" />}
           </nav>
         </div>
 
