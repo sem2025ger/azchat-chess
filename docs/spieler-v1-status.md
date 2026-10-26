@@ -34,6 +34,12 @@ node server/scripts/importFideGer.js --file=/path/standard_rating_list.xml \
 
 ## Verification / hosted state
 
-Pending the corrected code's green full CI before any hosted migration or import. New migration `20261026184317_spieler_v1.sql` is unapplied on hosted QA; its recorded QA version will be documented after application. No historical migration is edited. Real PostgreSQL tests must have zero skips in CI. Local build/typecheck/lint and focused tests are being repeated after the correction.
+Corrected code commit `256e731dcfbb3d3690ea3a0501dd157d189c6012` passed Server CI 157/157 and Frontend CI 136/136, zero failures/skips. Real PostgreSQL directory/RLS tests ran. Typecheck/build and existing real-browser mobile regression passed; lint zero errors / 57 existing warnings.
+
+After those green checks, exact reviewed migration `20261026184317_spieler_v1.sql` was applied only to QA `iukmpcytsuofqhxsumbu`, recorded version **20261026190900 / spieler_v1**. It is now applied and immutable. No historical migration or migration history was changed.
+
+The importer dry-run output was transported through the authorized Supabase connector into QA in 37 bounded batches. All **36,687** records were confirmed in QA. Search Huseynov finds FM Huseynov, Sabir, FIDE ID 13404431; rating and list date exactly equal the actual imported XML record (2371, 2026-10-25), with club NULL. No club column exists in the raw imported catalog.
+
+`docs/spieler-v1-qa-regression.sql` passed on hosted QA using a completely rolled-back transaction and two existing QA actor IDs, without creating auth users/sessions/tokens. Assertions cover own/outsider RLS, denied raw/RPC access, no self-approval, private pending club, verified voluntary club, and opt-out filtering for surname and ID. A fresh post-rollback read confirmed zero claim and opt-out rows, with all 36,687 imported players preserved. Security advisors add only the intended informational RLS-without-policy notices for the two server-only tables; browser grants are revoked. These directory checks do not claim hosted game recovery acceptance.
 
 Preview target is only chessaz-preview-workspace, never azchat-chess/production and never promote. Flags stay off by default; QA backend deployment or enabling runtime flags is not part of the requested preview build. Hosted durable-game acceptance remains postponed and cannot be substituted by these directory checks. PR #126 remains Draft and Squash and merge only.
