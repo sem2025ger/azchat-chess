@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 import postcss from 'postcss';
 
 const legacy = ['Void Black', 'Deep Space', 'Velvet Gold', 'Champagne Light', 'Coffee Brown', 'Walnut Dark', 'Emerald Night', 'Royal Blue', 'Royal Violet', 'Obsidian Gold'];
-const added = ['Slate Blue', 'Sage Stone', 'Warm Taupe', 'Amethyst Mist'];
+const added = ['Warm Graphite', 'Slate Blue', 'Sage Stone', 'Warm Taupe', 'Amethyst Mist'];
 const luminance = hex => {
   const rgb = hex.replace('#', '').match(/../g).map(x => parseInt(x, 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
   return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
@@ -89,8 +89,9 @@ test('the four optional palettes retain their hues at half the original lightnes
   const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
     const { premiumInterfaceThemes } = await server.ssrLoadModule('/src/lib/interfaceThemes.ts');
-    assert.deepEqual(premiumInterfaceThemes.map(theme => theme.id), Object.keys(original));
-    for (const theme of premiumInterfaceThemes) {
+    const originalThemes = premiumInterfaceThemes.filter(theme => theme.id in original);
+    assert.deepEqual(originalThemes.map(theme => theme.id), Object.keys(original));
+    for (const theme of originalThemes) {
       const colors = theme.gradient.match(/#[a-f0-9]{6}/g);
       assert.deepEqual(theme.class.match(/#[a-f0-9]{6}/g), colors, 'swatches and applied background agree');
       colors.forEach((color, stop) => {

@@ -211,7 +211,6 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
             <CircleCheck size={14} aria-hidden="true" />
             {tr('Spielbereite Gegner', 'Готовы к игре', 'Ready opponents')}
           </div>
-          {!isConnected && <p role="status" className="text-xs text-neutral-400">{tr('Keine Serververbindung', 'Нет соединения с сервером', 'Server unavailable')}</p>}
           {isConnected && available.length === 0 && <p className="text-xs text-neutral-400">{tr('Noch keine spielbereiten Gegner.', 'Пока нет готовых соперников.', 'No ready opponents right now.')}</p>}
           <div className="max-h-44 space-y-1.5 overflow-y-auto">
             {isConnected && available.map(id => (
@@ -235,9 +234,7 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
           }}>{tr('Einladung abbrechen', 'Отменить приглашение', 'Cancel invitation')}</button>}
         </div>
       )}
-      <div className="online-lobby-connection-status">
-        {session && !isConnected && <p role="status" className="mt-1 px-1 text-[11px] text-amber-200">{tr('Verbindung zum Spielserver fehlt.', 'Нет подключения к игровому серверу.', 'Game server connection unavailable.')}</p>}
-      </div>
+      <div className="online-lobby-connection-status" aria-hidden="true" />
       {message && <p role="status" className="mt-2 px-1 text-xs text-amber-200">{message}</p>}
       {inbound && <div role="dialog" aria-label="Game invitation" className="mt-2 rounded-xl border border-amber-300/30 bg-amber-400/10 p-3">
         <p className="text-xs font-semibold text-neutral-100">{tr('Spieleinladung von', 'Вызов от', 'Invitation from')} {profiles[inbound.fromUserId] || tr('Spieler', 'игрока', 'player')} · {inbound.timeControl}</p>
