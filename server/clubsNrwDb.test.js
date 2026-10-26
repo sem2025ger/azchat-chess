@@ -41,6 +41,7 @@ test('NRW real PostgreSQL permissions, roster, club editors and duel gate (isola
    const when='2026-11-06T18:00:00Z';
    await as('authenticated','bob','INSERT INTO public.clubs_nrw_calendar(club_id,title,starts_at,created_by,updated_by) VALUES($1,$2,$3,$4,$4)',[club.id,'Freitagsturnier',when,ids.bob]);
    const allowed=await as('authenticated','alice','SELECT * FROM public.clubs_nrw_calendar');assert.equal(allowed.rowCount,1);
+   await assert.rejects(()=>as('authenticated','bob','UPDATE public.clubs_nrw_calendar SET created_by=$1 WHERE club_id=$2',[ids.eve,club.id]),e=>e?.code==='42501');
    await assert.rejects(()=>as('authenticated','eve','INSERT INTO public.clubs_nrw_calendar(club_id,title,starts_at,created_by,updated_by) VALUES($1,$2,$3,$4,$4)',[club.id,'Foreign event',when,ids.eve]),e=>e?.code==='42501');
    await assert.rejects(()=>as('authenticated','bob','INSERT INTO public.clubs_nrw_league_rows(club_id,season,league,team,place,updated_by) VALUES($1,$2,$3,$4,1,$5)',[club.id,'2026/27','Verbandsliga','Team Blau',ids.bob]),e=>e?.code==='42501');
    await as('authenticated','alice','INSERT INTO public.clubs_nrw_league_rows(club_id,season,league,team,place,updated_by) VALUES($1,$2,$3,$4,1,$5)',[club.id,'2026/27','Verbandsliga','Team Blau',ids.alice]);

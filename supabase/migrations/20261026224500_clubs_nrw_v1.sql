@@ -133,4 +133,28 @@ CREATE POLICY nrw_duel_update ON public.clubs_nrw_duels FOR UPDATE TO authentica
 INSERT INTO public.clubs_nrw(slug,name,city,website_url,source_url,published) VALUES
  ('bochumer-sv-02','Bochumer Schachverein 02','Bochum','https://bochumersv02.de','https://ergebnisdienst.svr-schach.de/index.php/vereine?saison=0&view=vereinsliste',true),
  ('sg-bochum-1931','Schachgesellschaft Bochum 1931','Bochum',NULL,'https://ergebnisdienst.svr-schach.de/index.php/vereine?saison=0&view=vereinsliste',true);
+
+-- Prevent editor forgery of authorship and cross-club reassignment after INSERT.
+CREATE FUNCTION public.clubs_nrw_immutable_identity_guard() RETURNS trigger
+ LANGUAGE plpgsql SECURITY INVOKER SET search_path='' AS $$
+ BEGIN
+  IF TG_OP='UPDATE' AND (
+    (pg_catalog.to_jsonb(NEW)->>'club_id' IS DISTINCT FROM pg_catalog.to_jsonb(OLD)->>'club_id')
+    OR (TG_TABLE_NAME='clubs_nrw_calendar' AND pg_catalog.to_jsonb(NEW)->>'created_by' IS DISTINCT FROM pg_catalog.to_jsonb(OLD)->>'created_by')
+    OR (TG_TABLE_NAME='clubs_nrw_duels' AND (
+       pg_catalog.to_jsonb(NEW)->>'home_club_id' IS DISTINCT FROM pg_catalog.to_jsonb(OLD)->>'home_club_id'
+       OR pg_catalog.to_jsonb(NEW)->>'away_club_id' IS DISTINCT FROM pg_catalog.to_jsonb(OLD)->>'away_club_id'
+       OR pg_catalog.to_jsonb(NEW)->>'created_by' IS DISTINCT FROM pg_catalog.to_jsonb(OLD)->>'created_by'))
+  ) THEN
+   RAISE EXCEPTION 'immutable_record_identity' USING ERRCODE='42501';
+  END IF;
+  RETURN NEW;
+ END $$;
+REVOKE ALL ON FUNCTION public.clubs_nrw_immutable_identity_guard() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER clubs_nrw_calendar_identity BEFORE UPDATE ON public.clubs_nrw_calendar
+ FOR EACH ROW EXECUTE FUNCTION public.clubs_nrw_immutable_identity_guard();
+CREATE TRIGGER clubs_nrw_league_identity BEFORE UPDATE ON public.clubs_nrw_league_rows
+ FOR EACH ROW EXECUTE FUNCTION public.clubs_nrw_immutable_identity_guard();
+CREATE TRIGGER clubs_nrw_duel_identity BEFORE UPDATE ON public.clubs_nrw_duels
+ FOR EACH ROW EXECUTE FUNCTION public.clubs_nrw_immutable_identity_guard();
 COMMIT;
