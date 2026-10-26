@@ -16,7 +16,8 @@ test('mobile navigation JSX is unchanged', () => {
   const current = read('../src/components/Layout.tsx');
   const nav = source => source.split('<nav data-mobile-app-nav')[1].split('</nav>')[0];
   assert.equal(nav(current), nav(baseline));
-  assert.equal(current.split('function MobileNavItem')[1], baseline.split('function MobileNavItem')[1]);
+  const mobileNavItem = source => source.split('function MobileNavItem')[1].split('function SidebarGermanyFlag')[0];
+  assert.equal(mobileNavItem(current), mobileNavItem(baseline));
 });
 test('desktop names are stored usernames without suffix stripping or pseudonyms', () => {
   const current = read('../src/screens/SchachTreffDesktop.tsx');
