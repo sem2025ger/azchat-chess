@@ -25,3 +25,30 @@ Branch `feat/clubs-nrw-v1`, base main. No production, no new games, no game resu
 ## Implementation limitations
 
 Feature is strictly opt-in; default-off UI and RSS route. Initial calendar and league lists are empty: club admins input values by hand. No public directory of private room members. Existing ChessAZ Deutsch tournaments and PR #126 room code are not changed. The draft PR must remain unmerged. Report and STOP.
+
+## Owner-only club role assignment (QA)
+
+Run these statements in the Supabase **QA SQL editor** using the privileged database administrator/service role, never from the browser. Verify the account UUID in `public.profiles` and the intended `club_id` first. Replace UUID placeholders and execute each command separately. Never expose a service-role secret to the frontend.
+
+```sql
+-- Look up the target club; confirm the exact ID before granting access.
+SELECT id, name, city FROM public.clubs_nrw WHERE slug = 'bochumer-sv-02';
+-- Look up the account by a trusted user ID supplied by the owner.
+SELECT id, username FROM public.profiles WHERE id = '<USER_UUID>'::uuid;
+-- Assign one of 'owner', 'admin', 'moderator'. Existing roles are replaced.
+INSERT INTO public.clubs_nrw_roles (club_id, user_id, role)
+VALUES ('<CLUB_UUID>'::uuid, '<USER_UUID>'::uuid, 'moderator')
+ON CONFLICT (club_id, user_id) DO UPDATE SET role = EXCLUDED.role;
+-- Verify the assigned permission.
+SELECT club_id, user_id, role FROM public.clubs_nrw_roles
+WHERE club_id = '<CLUB_UUID>'::uuid AND user_id = '<USER_UUID>'::uuid;
+-- Revoke any role for this specific club/account only.
+DELETE FROM public.clubs_nrw_roles
+WHERE club_id = '<CLUB_UUID>'::uuid AND user_id = '<USER_UUID>'::uuid;
+```
+
+Access matrix: owner/admin/moderator may maintain calendar entries; owner/admin may maintain league rows. A role in the NRW directory does **not** grant access to PR #126 closed rooms. Grant and revoke operations are privileged-only; audit the targeted IDs and resulting row before leaving the SQL editor.
+
+## Spieler integration and merge order
+
+Merge/deploy **PR #127 before PR #128**, then apply the separate forward-only Spieler-to-NRW-club FK migration included in PR #128. The original free-text claim club is retained as `club_legacy` for migration safety and is never displayed as an unverified public association. The selected NRW club ID is nullable and must reference the curated `clubs_nrw` directory. Existing claims are not automatically matched to clubs by their legacy text.
