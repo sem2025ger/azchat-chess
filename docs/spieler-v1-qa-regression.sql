@@ -48,11 +48,13 @@ BEGIN
  PERFORM spieler_admin.review('claim',current_setting('spieler.qa_actor')::uuid,13404431,'approve');
  IF (SELECT value->>'club' FROM jsonb_array_elements(public.spieler_search(NULL,13404431)) p(value)) IS DISTINCT FROM 'QA voluntary club' THEN RAISE EXCEPTION 'Verified voluntary club missing'; END IF;
  PERFORM public.spieler_request('hide',current_setting('spieler.qa_actor')::uuid,13404431);
- PERFORM spieler_admin.review('hide',current_setting('spieler.qa_actor')::uuid,13404431,'confirm');
- IF NOT EXISTS(SELECT 1 FROM public.spieler_opt_out WHERE user_id=current_setting('spieler.qa_actor')::uuid AND status='approved' AND reviewed_at IS NOT NULL) THEN RAISE EXCEPTION 'Hide confirmation failed'; END IF;
+ -- Verified self-hide is immediate/exempt; test owner confirmation with an unverified actor.
+ PERFORM public.spieler_request('hide',current_setting('spieler.qa_outsider')::uuid,13404431);
+ PERFORM spieler_admin.review('hide',current_setting('spieler.qa_outsider')::uuid,13404431,'confirm');
+ IF NOT EXISTS(SELECT 1 FROM public.spieler_opt_out WHERE user_id=current_setting('spieler.qa_outsider')::uuid AND status='approved' AND reviewed_at IS NOT NULL) THEN RAISE EXCEPTION 'Hide confirmation failed'; END IF;
  IF public.spieler_search(NULL,13404431)<>'[]'::jsonb THEN RAISE EXCEPTION 'Direct ID bypasses opt-out'; END IF;
  IF EXISTS(SELECT 1 FROM jsonb_array_elements(public.spieler_search('Huseynov')) p(value) WHERE value->>'fide_id'='13404431') THEN RAISE EXCEPTION 'Search bypasses opt-out'; END IF;
- IF (SELECT count(*) FROM spieler_admin.review_events WHERE user_id=current_setting('spieler.qa_actor')::uuid)<>4 THEN RAISE EXCEPTION 'Review events missing'; END IF;
+ IF (SELECT count(*) FROM spieler_admin.review_events WHERE user_id IN (current_setting('spieler.qa_actor')::uuid,current_setting('spieler.qa_outsider')::uuid))<>4 THEN RAISE EXCEPTION 'Review events missing'; END IF;
 END $check$;
 RESET ROLE;
 SET LOCAL ROLE anon;

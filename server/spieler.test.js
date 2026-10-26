@@ -77,3 +77,26 @@ test('an unverified hide immediately makes search, card and games unavailable',a
  assert.equal((await fetch(base+'/13404431',{headers})).status,404);
  assert.equal((await fetch(base+'/13404431/games?source=lichess&nickname=nick',{headers})).status,404);assert.equal(providerCalls,0);
 });
+test('coarse IP budget runs before verification and bounds invalid-token calls despite rotation',async t=>{
+ let calls=0,time=0;const base=await fixture(t,{enabled:true,now:()=>time,client:{},verifyToken:async token=>{calls++;if(token.endsWith('0'))throw Error('invalid token');return null;}});
+ const get=(ip,n)=>fetch(base+'/search?q=Huseynov',{headers:{'X-Forwarded-For':ip,Authorization:'Bearer invalid-'+n}});
+ for(let i=0;i<300;i++){const r=await get('198.51.100.10',i);assert.equal(r.status,i<60?401:429);}
+ assert.equal(calls,120,'never verify more than the coarse IP allowance');
+ assert.equal((await get('203.0.113.9, 198.51.100.10',301)).status,429);assert.equal(calls,120,'forged extra hop cannot reopen the pre-limit');
+ assert.equal((await get('198.51.100.11',302)).status,401);assert.equal(calls,121,'other real IP has its own pre-limit');
+ time=60000;assert.equal((await get('198.51.100.10',303)).status,401);assert.equal(calls,122,'next minute permits verification again');
+});
+test('all tokens at one IP share the pre-limit even when valid accounts are rotated',async t=>{
+ let calls=0;const base=await fixture(t,{enabled:true,client:{rpc:()=>({abortSignal:async()=>({data:[]})})},verifyToken:async token=>{calls++;return {id:token};}});
+ for(let i=0;i<120;i++)assert.equal((await fetch(base+'/search?q=Huseynov',{headers:{...headers,Authorization:'Bearer account-'+i,'X-Forwarded-For':'198.51.100.20'}})).status,200);
+ assert.equal((await fetch(base+'/search?q=Huseynov',{headers:{...headers,'X-Forwarded-For':'198.51.100.20'}})).status,429);assert.equal(calls,120);
+});
+test('a committed queued hide result becomes HTTP 409 hide_limit and does not remove the card',async t=>{
+ let stored=false;const client={rpc(name){return {abortSignal:async()=>{
+  if(name==='spieler_request'){stored=true;return {data:{status:'pending_owner_review',code:'hide_limit'}};}
+  return {data:[card]};
+ }}}};
+ const base=await fixture(t,{enabled:true,client});
+ const r=await fetch(base+'/13404431/hide',{method:'POST',headers});assert.equal(r.status,409);assert.deepEqual(await r.json(),{status:'pending_owner_review',code:'hide_limit'});assert.equal(stored,true);
+ assert.equal((await fetch(base+'/13404431',{headers})).status,200);assert.equal((await (await fetch(base+'/search?q=Huseynov',{headers})).json()).players.length,1);
+});

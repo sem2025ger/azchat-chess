@@ -17,6 +17,7 @@ test('Spieler real PostgreSQL: immediate hiding, owner review, RLS and immutable
   // Legacy pending requests are suppressed by the forward migration as well.
   await db.pool.query("insert into public.spieler_opt_out(user_id,fide_id,status) values($1,13404431,'pending')",[a]);
   await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations/20261026201936_spieler_review_privacy.sql'),'utf8'));
+  await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations/20261026210344_spieler_hide_abuse_limits.sql'),'utf8'));
   assert.deepEqual((await search()).rows[0].value,[]);
   assert.equal((await review(a,'hide','restore')).rows[0].value.status,'restored');
   const p=(await search()).rows[0].value[0];assert.equal(p.name,'Huseynov, Sabir');assert.equal(p.title,'FM');assert.equal(p.fide_rating,sample.fide_rating);assert.equal(p.source_date,sample.source_date);assert.equal(p.club,null);
@@ -63,5 +64,41 @@ test('Spieler real PostgreSQL: immediate hiding, owner review, RLS and immutable
   await assert.rejects(as('service_role',null,'delete from spieler_admin.review_events'),e=>e.code==='42501');
   assert.deepEqual((await as('service_role',null,"select public.spieler_search('%') as value")).rows[0].value,[],'wildcards cannot enumerate the catalog');
   const rls=await db.pool.query("select count(*)::int as n from pg_class where relname in ('spieler_players','spieler_claims','spieler_opt_out','spieler_twic_games','review_events') and relrowsecurity");assert.equal(rls.rows[0].n,5);
+ }finally{await db.close();}
+});
+
+test('Spieler real PostgreSQL: fourth hide queues visibly, verified self-hide is exempt and concurrent requests respect three slots',{skip:!process.env.DURABLE_TEST_DATABASE_URL,timeout:30000},async()=>{
+ const db=await isolatedPostgres(process.env.DURABLE_TEST_DATABASE_URL),a='11111111-1111-4111-8111-111111111111',b='22222222-2222-4222-8222-222222222222',ids=Array.from({length:8},(_,i)=>50000001+i);
+ async function rpc(sql,args=[]){const c=await db.pool.connect();try{await c.query('BEGIN');await c.query('SET LOCAL ROLE service_role');const r=await c.query(sql,args);await c.query('COMMIT');return r.rows[0]?.value;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}}
+ const hide=(who,id)=>rpc("select public.spieler_request('hide',$1,$2) as value",[who,id]);
+ const review=(kind,who,id,decision)=>rpc('select spieler_admin.review($1,$2,$3,$4) as value',[kind,who,id,decision]);
+ const card=id=>rpc('select public.spieler_search(null,$1) as value',[id]);
+ const count=async who=>(await db.pool.query("select count(*)::int as n from public.spieler_opt_out where user_id=$1 and status='hidden_pending_review'",[who])).rows[0].n;
+ try{
+  await db.pool.query("CREATE SCHEMA auth;GRANT USAGE ON SCHEMA auth TO authenticated;CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;GRANT SELECT ON public.profiles TO service_role;");
+  for(const file of ['20261026184317_spieler_v1.sql','20261026201936_spieler_review_privacy.sql'])await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations',file),'utf8'));
+  for(const id of ids)await db.pool.query('INSERT INTO public.spieler_players(fide_id,name,surname,federation,title,fide_rating,source_date,source_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[id,'Hidecap, Player '+id,'Hidecap',sample.federation,sample.title,sample.fide_rating,sample.source_date,sample.source_url]);
+  // Existing pending hides are also brought within the allowance by migration.
+  for(const id of ids.slice(0,4))await hide(b,id);
+  await rpc("select public.spieler_request('claim',$1,$2) as value",[b,ids[4]]);await review('claim',b,ids[4],'approve');await hide(b,ids[4]);
+  await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations/20261026210344_spieler_hide_abuse_limits.sql'),'utf8'));
+  assert.equal(await count(b),3);assert.equal((await card(ids[3])).length,1,'legacy fourth unverified hide is queued without suppression');
+  assert.equal((await hide(b,ids[4])).status,'approved');assert.equal(await count(b),3,'legacy verified self-hide is exempt');
+  await db.pool.query('delete from public.spieler_opt_out;delete from public.spieler_claims;delete from spieler_admin.review_events');
+  for(const id of ids.slice(0,3)){assert.equal((await hide(a,id)).status,'hidden_pending_review');assert.deepEqual(await card(id),[]);}
+  assert.equal((await hide(a,ids[0])).status,'hidden_pending_review');assert.equal(await count(a),3,'retry does not consume another slot');
+  assert.deepEqual(await hide(a,ids[3]),{status:'pending_owner_review',code:'hide_limit'});
+  assert.equal((await card(ids[3])).length,1,'fourth hide does not hide the player card');
+  assert.ok((await rpc("select public.spieler_search('Hidecap') as value")).some(p=>Number(p.fide_id)===ids[3]),'fourth player stays in search');
+  const queued=await db.pool.query('select status,created_at from public.spieler_opt_out where user_id=$1 and fide_id=$2',[a,ids[3]]);assert.equal(queued.rows[0].status,'pending_owner_review','409 result does not roll back the stored request');
+  await hide(a,ids[3]);const repeated=await db.pool.query('select created_at from public.spieler_opt_out where user_id=$1 and fide_id=$2',[a,ids[3]]);assert.equal(repeated.rows[0].created_at.getTime(),queued.rows[0].created_at.getTime(),'retry preserves the owner review deadline');
+  await rpc("select public.spieler_request('claim',$1,$2) as value",[a,ids[4]]);await review('claim',a,ids[4],'approve');
+  assert.equal((await hide(a,ids[4])).status,'approved','verified own card always hides immediately');assert.deepEqual(await card(ids[4]),[]);assert.equal(await count(a),3,'verified own hide does not consume the three slots');
+  await review('hide',a,ids[3],'confirm');assert.deepEqual(await card(ids[3]),[],'owner can confirm queued hide');
+  await review('hide',a,ids[3],'restore');assert.equal((await card(ids[3])).length,1);
+  assert.equal((await hide(a,ids[3])).code,'hide_limit');await review('hide',a,ids[3],'restore');assert.equal((await card(ids[3])).length,1,'owner can restore a queued request without ever hiding it');
+  await review('hide',a,ids[0],'restore');assert.equal((await hide(a,ids[3])).status,'hidden_pending_review');assert.equal(await count(a),3,'restoration releases a slot');
+  const concurrent=await Promise.all(ids.map(id=>hide(b,id)));assert.equal(concurrent.filter(r=>r.status==='hidden_pending_review').length,3);assert.equal(concurrent.filter(r=>r.code==='hide_limit').length,5);assert.equal(await count(b),3,'actor lock prevents parallel overbooking across FIDE IDs');
+  assert.equal((await db.pool.query('select count(*)::int as n from public.spieler_opt_out where user_id=$1',[b])).rows[0].n,8,'all parallel requests are retained for review');
  }finally{await db.close();}
 });

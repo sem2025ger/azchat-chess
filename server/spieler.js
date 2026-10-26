@@ -6,18 +6,21 @@ const FIDE_ID=/^[1-9]\d{0,9}$/;
 function installSpieler(app,{enabled=false,client=null,verifyToken=async()=>null,games=null,now=Date.now}={}) {
  // Scope Render's exactly-one-hop policy to Spieler, without changing the
  // parent application's other HTTP routes or any socket/game identity logic.
- const router=express(),budgets=new Map();
+ const router=express(),budgets=new Map(),preBudgets=new Map();
  router.set('trust proxy',1);
  const wrap=handler=>(req,res,next)=>Promise.resolve(handler(req,res,next)).catch(()=>{if(!res.headersSent)res.status(503).json({code:'temporarily_unavailable'});});
- function limited(key){
+ function limited(key,maximum=60,entries=budgets){
   const time=now();
-  if(budgets.size>=1000)for(const [id,b]of budgets)if(time-b.start>=60000)budgets.delete(id);
-  let b=budgets.get(key);if(!b||time-b.start>=60000){if(!b&&budgets.size>=1000)return true;b={start:time,count:0};budgets.set(key,b);}
-  return ++b.count>60;
+  if(entries.size>=1000)for(const [id,b]of entries)if(time-b.start>=60000)entries.delete(id);
+  let b=entries.get(key);if(!b||time-b.start>=60000){if(!b&&entries.size>=1000)return true;b={start:time,count:0};entries.set(key,b);}
+  return ++b.count>maximum;
  }
  router.use((req,res,next)=>{
   res.set('Cache-Control','no-store');
   if(!enabled)return res.status(404).json({code:'feature_disabled'});
+  // Coarse real-client-IP guard runs before token parsing/verification. Both
+  // valid and invalid tokens share this budget; rotating tokens cannot bypass it.
+  if(limited(req.ip||'unknown',120,preBudgets))return res.status(429).json({code:'rate_limit'});
   next();
  });
  router.use(wrap(async(req,res,next)=>{
@@ -61,6 +64,9 @@ function installSpieler(app,{enabled=false,client=null,verifyToken=async()=>null
    (club!==undefined&&(typeof club!=='string'||club.trim().length>120||/[\x00-\x1f\x7f]/.test(club))))return res.status(400).json({code:'invalid_body'});
   const r=await client.rpc('spieler_request',{p_action:req.params.action,p_actor:req.spielerUserId,p_fide:req.params.id,p_club:req.params.action==='claim'&&typeof club==='string'?club.trim():null}).abortSignal(AbortSignal.timeout(8000));
   if(r.error)return res.status(r.error.code==='23514'?409:503).json({code:r.error.code==='23514'?'claim_exists':'temporarily_unavailable'});
+  // Return a committed result: an SQL exception here would roll back the
+  // queued request that must remain available for the owner's review.
+  if(r.data?.code==='hide_limit')return res.status(409).json(r.data);
   res.json(r.data);
  }));
  router.use((error,req,res,next)=>{if(res.headersSent)return next(error);res.status(400).json({code:'invalid_request'});});

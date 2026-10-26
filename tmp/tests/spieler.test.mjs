@@ -46,3 +46,8 @@ test('nickname game provenance visibly labels each provider account as unverifie
   assert.doesNotMatch(renderToStaticMarkup(createElement(Label,{source:'lichess',nickname:'<script>bad</script>'})),/<script>/);
  }finally{await server.close();}
 });
+
+test('a queued hide conflict stays an error and is never treated as a successful immediate hide',async()=>{
+ let calls=0;const api=createSpielerApi('https://qa.example',async()=>{calls++;return new Response(JSON.stringify({code:'hide_limit',status:'pending_owner_review'}),{status:409});});
+ await assert.rejects(api.action('13404431','hide','test-only',new AbortController().signal),e=>e.code==='hide_limit');assert.equal(calls,1,'do not retry or infer successful hiding on a persisted conflict');
+});
