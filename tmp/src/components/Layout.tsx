@@ -77,14 +77,14 @@ export default function Layout() {
 
           <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
-              <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.875rem] xl:leading-[1.8rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
+              <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[2rem] xl:leading-[1.8rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
                 Chessaz.De
               </span>
               <div
                 role="img"
                 aria-label="Germany • Azerbaijan"
                 title="Germany • Azerbaijan"
-                className="mt-6 hidden xl:flex items-center justify-center gap-2 w-fit xl:ml-[4px] min-h-[52px] xl:-translate-x-[2px] px-2 py-[6px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
+                className="mt-6 hidden xl:flex items-center justify-center gap-[9px] w-fit xl:ml-[4px] min-h-[58px] xl:-translate-x-[2px] px-[10px] py-[7px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
               >
                 <SidebarGermanyFlag />
                 <NightEarthGlobe />
@@ -253,12 +253,12 @@ function SidebarGermanyFlag() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="42"
-      height="28"
+      width="46"
+      height="31"
       viewBox="0 0 5 3"
       preserveAspectRatio="none"
       aria-hidden="true"
-      className="w-[42px] h-7 rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
+      className="w-[46px] h-[31px] rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
     >
       <rect width="5" height="3" y="0" x="0" fill="#0B0C10" />
       <rect width="5" height="2" y="1" x="0" fill="#D00" />
@@ -271,11 +271,11 @@ function SidebarAzerbaijanFlag() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="42"
-      height="28"
+      width="46"
+      height="31"
       viewBox="150 0 900 600"
       aria-hidden="true"
-      className="w-[42px] h-7 rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
+      className="w-[46px] h-[31px] rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
     >
       <rect width="1200" height="200" fill="#00b5e2" />
       <rect width="1200" height="200" y="200" fill="#ef3340" />
@@ -321,22 +321,22 @@ function NightEarthGlobe() {
   ] as const;
 
   return (
-    <span aria-hidden="true" className="relative flex h-[50px] w-[50px] shrink-0 translate-y-[2px] items-center justify-center">
+    <span aria-hidden="true" className="relative flex h-[54px] w-[54px] shrink-0 translate-y-[2px] items-center justify-center">
       <span className="pointer-events-none absolute -inset-[5px] rounded-full bg-[radial-gradient(circle,rgba(158,141,108,0.10)_12%,rgba(71,100,118,0.035)_60%,transparent_76%)] blur-[3px]" />
-      <span className="relative block h-[50px] w-[50px] overflow-hidden rounded-full ring-1 ring-[#B9A98C]/20 shadow-[0_0_11px_rgba(124,116,108,0.18)]">
+      <span className="relative block h-[54px] w-[54px] overflow-hidden rounded-full ring-1 ring-[#B9A98C]/20 shadow-[0_0_11px_rgba(124,116,108,0.18)]">
         {animate ? (
           <video
             src={nightEarthAnimation}
             poster={nightEarthStill}
             autoPlay muted loop playsInline
-            width="50" height="50"
+            width="54" height="54"
             className="h-full w-full object-cover [filter:brightness(1.27)_contrast(1.15)_saturate(1.05)]"
           />
         ) : (
           <img
             src={nightEarthStill}
             alt=""
-            width="50" height="50"
+            width="54" height="54"
             className="h-full w-full object-cover [filter:brightness(1.27)_contrast(1.15)_saturate(1.05)]"
           />
         )}

@@ -42,7 +42,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (saved === 'Velvet Gold Background') return 'Velvet Gold';
     const validThemes = ['Void Black', 'Deep Space', 'Velvet Gold', 'Champagne Light', 'Coffee Brown', 'Walnut Dark', 'Emerald Night', 'Royal Blue', 'Royal Violet', 'Obsidian Gold'];
     if (saved && (validThemes.includes(saved) || premiumInterfaceThemes.some(theme => theme.id === saved))) return saved as BackgroundTheme;
-    return 'Void Black';
+    return 'Soft Graphite';
   });
   
   const [pieceTheme, setPieceTheme] = useState<PieceTheme>(() => {

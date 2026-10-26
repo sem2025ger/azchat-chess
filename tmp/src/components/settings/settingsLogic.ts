@@ -37,6 +37,7 @@ const VALUE_TERMS: Record<string, string> = {
   'Royal Blue': 'синий blue blau',
   'Royal Violet': 'фиолетовый purple violett mor',
   'Obsidian Gold': 'обсидиан золото золотой gold',
+  'Soft Graphite': 'мягкий графит soft graphite графит серый grau weich boz yumşaq',
   'Slate Blue': 'синий серый сланец blau grau mavi boz',
   'Sage Stone': 'шалфей зелёный зеленый salbei grün yaşıl yeşil',
   'Warm Taupe': 'тёплый теплый коричневый серый warm braun grau qəhvəyi kahverengi',

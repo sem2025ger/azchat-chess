@@ -1,5 +1,10 @@
 /** Optional muted dark interface palettes (approximately 50% lower HSL lightness). Existing themes remain unchanged. */
 export const PREMIUM_INTERFACE_THEMES = {
+  // Owner-approved preview palette: muted warm graphite.
+  'Soft Graphite': {
+    className: 'bg-[#1d1d1a]',
+    gradient: 'linear-gradient(145deg, #1d1d1a, #1d1d1a)',
+  },
   'Slate Blue': {
     className: 'bg-gradient-to-br from-[#2a343e] via-[#232d38] to-[#1e2631]',
     gradient: 'linear-gradient(145deg, #2a343e, #232d38 52%, #1e2631)',
