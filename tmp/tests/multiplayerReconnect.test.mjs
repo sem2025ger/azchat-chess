@@ -22,8 +22,9 @@ test('desktop friend game waits for socket connectivity with bounded cancellatio
   assert.match(play, /65000/);
 });
 
-test('graphite palette remains limited to desktop arena panel styling', () => {
-  assert.match(css, /background:linear-gradient\(160deg,#282a2e,#1a1c20\)/);
-  assert.match(css, /background:linear-gradient\(155deg,#292b2f,#1b1e21\)/);
+test('warm sidebar palette remains limited to desktop arena panel styling', () => {
+  assert.match(css, /background:linear-gradient\(#11110f,#11110f\) padding-box/);
+  assert.match(css, /background:linear-gradient\(160deg,#24231f,#191916\)/);
+  assert.match(css, /background:linear-gradient\(155deg,#24231f,#191916\)/);
   assert.match(css, /#424b4d 52%/);
 });
