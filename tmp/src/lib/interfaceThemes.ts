@@ -1,5 +1,9 @@
 /** Optional muted dark interface palettes (approximately 50% lower HSL lightness). Existing themes remain unchanged. */
 export const PREMIUM_INTERFACE_THEMES = {
+  'Soft Graphite': {
+    className: 'bg-[#1d1d1a]',
+    gradient: 'linear-gradient(145deg, #1d1d1a, #1d1d1a)',
+  },
   'Dark Graphite': {
     className: 'bg-[#1b1b19]',
     gradient: 'linear-gradient(145deg, #1b1b19, #1b1b19)',

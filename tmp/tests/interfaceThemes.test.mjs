@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 import postcss from 'postcss';
 
 const legacy = ['Void Black', 'Deep Space', 'Velvet Gold', 'Champagne Light', 'Coffee Brown', 'Walnut Dark', 'Emerald Night', 'Royal Blue', 'Royal Violet', 'Obsidian Gold'];
-const added = ['Dark Graphite', 'Deep Graphite', 'Warm Graphite', 'Slate Blue', 'Sage Stone', 'Warm Taupe', 'Amethyst Mist'];
+const added = ['Soft Graphite', 'Dark Graphite', 'Deep Graphite', 'Warm Graphite', 'Slate Blue', 'Sage Stone', 'Warm Taupe', 'Amethyst Mist'];
 const luminance = hex => {
   const rgb = hex.replace('#', '').match(/../g).map(x => parseInt(x, 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
   return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;

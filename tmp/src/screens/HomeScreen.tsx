@@ -211,11 +211,11 @@ export default function HomeScreen() {
             filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.85)) drop-shadow(0 -1px 0 rgba(255, 222, 146, 0.13));
             background-image: linear-gradient(
               180deg,
-              #FFF1BA 0%,
-              #F0D38E 26%,
-              #CD923D 57%,
-              #F3CE79 77%,
-              #A46A29 100%
+              #E9E0C9 0%,
+              #D9C9A5 26%,
+              #B69C72 57%,
+              #DDC9A0 77%,
+              #947D5D 100%
             );
             background-size: 220% 100%;
             background-position: 0% 50%;
