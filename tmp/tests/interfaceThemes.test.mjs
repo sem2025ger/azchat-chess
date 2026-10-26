@@ -109,9 +109,9 @@ test('the four optional palettes retain their hues at half the original lightnes
 test('desktop sidebar and Chess Arena polish preserve the existing globe animation', () => {
   const layout = readFileSync(new URL('../src/components/Layout.tsx', import.meta.url), 'utf8');
   const home = readFileSync(new URL('../src/screens/HomeScreen.tsx', import.meta.url), 'utf8');
-  assert.match(layout, /xl:text-\\[2rem\\]/);
-  assert.match(layout, /h-\\[54px\\] w-\\[54px\\]/);
-  assert.match(layout, /w-\\[46px\\] h-\\[31px\\]/);
+  assert.ok(layout.includes('xl:text-[2rem]'));
+  assert.ok(layout.includes('h-[54px] w-[54px]'));
+  assert.ok(layout.includes('w-[46px] h-[31px]'));
   assert.match(layout, /autoPlay muted loop playsInline/);
   assert.doesNotMatch(layout, /playbackRate/);
   assert.match(home, /#D9D6CF 39%/);
