@@ -28,7 +28,14 @@ function createNewsHandler({fetcher=fetch,now=Date.now}={}) {
    const timeout=setTimeout(()=>controller.abort(),5000);
    try{const r=await fetcher(RSS_URL,{signal:controller.signal,redirect:'error',headers:{Accept:'application/rss+xml,application/xml'}});
     if(!r.ok||Number(r.headers?.get('content-length')||0)>250000)throw new Error('feed_unavailable');
-    const xml=await r.text();cached={until:now()+900000,items:parseRss(xml)};}
+    const chunks=[];let size=0;
+    if(!r.body || typeof r.body.getReader!=='function') throw new Error('feed_unavailable');
+    const reader=r.body.getReader();
+    try { while(true) { const {done,value}=await reader.read(); if(done) break;
+      size+=value.byteLength; if(size>250000) throw new Error('feed_too_large'); chunks.push(value);
+    } } finally { if(size>250000) await reader.cancel().catch(()=>{}); reader.releaseLock(); }
+    const xml=new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks.map(x=>Buffer.from(x))));
+    cached={until:now()+900000,items:parseRss(xml)};}
    catch{cached={until:now()+60000,items:[]};}
    finally{clearTimeout(timeout);}
   })().finally(()=>{inflight=null;});
