@@ -374,7 +374,7 @@ export default function SettingsScreen() {
           <div className="settings-options-column col-span-7 flex flex-col justify-between gap-2 xl:gap-3 pr-0 xl:pr-2 min-h-0 h-full">
             {/* Row 1: Board Appearance */}
             <div id="settings-section-board" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
-              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
+              <section className="settings-preview-matched-surface bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <Palette size={16} className="text-chess-gold" /> {t('settings.boardAppearance')}
                 </h2>
@@ -401,7 +401,7 @@ export default function SettingsScreen() {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 xl:gap-4">
               {/* Piece Styles */}
               <div id="settings-section-pieces" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
-                <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
+                <section className="settings-preview-matched-surface bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                   <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                     <Monitor size={16} className="text-chess-active" /> {t('settings.pieceStyles')}
                   </h2>
@@ -421,7 +421,7 @@ export default function SettingsScreen() {
 
               {/* Sound Themes */}
               <div id="settings-section-sound" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
-                <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full flex flex-col">
+                <section className="settings-preview-matched-surface bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full flex flex-col">
                   <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                     <Volume2 size={16} className="text-neutral-400" /> {t('settings.soundThemes')}
                   </h2>
@@ -436,7 +436,7 @@ export default function SettingsScreen() {
 
             {/* Row 3: Background Theme */}
             <div id="settings-section-background" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
-              <section className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
+              <section className="settings-preview-matched-surface bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <LayoutIcon size={16} className="text-purple-400" /> {t('settings.interfaceTheme')}
                 </h2>
@@ -453,7 +453,7 @@ export default function SettingsScreen() {
 
           <div className="settings-preview-column col-span-5 relative h-full min-h-0">
             <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl h-full">
-              <div className="bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 xl:p-5 flex flex-col items-center gap-3 xl:gap-4 h-full">
+              <div className="settings-preview-matched-surface bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 xl:p-5 flex flex-col items-center gap-3 xl:gap-4 h-full">
                 <div className="relative flex items-center justify-center min-h-[44px] w-full shrink-0">
                   <span className={cx("absolute left-0 max-w-[80px] text-[0.6rem] font-black text-emerald-400 uppercase tracking-wider leading-tight transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
                     {t('settings.saved')} ✓

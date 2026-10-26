@@ -261,3 +261,11 @@
     scrollbar-gutter: stable;
   }
 }
+
+/* Desktop Settings: the four option cards and Live Preview use one opaque neutral surface.
+   Removing translucency prevents the blue decorative backdrop tinting only some panels. */
+@media (min-width: 1024px) {
+  .settings-fixed-workspace .settings-preview-matched-surface {
+    background-color: #171717;
+  }
+}
