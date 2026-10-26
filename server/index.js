@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 const { Chess } = require('chess.js');
 const crypto = require('crypto');
 const cors = require('cors');
+const { createNewsHandler } = require('./clubsNrwNews');
 const { createClient } = require('@supabase/supabase-js');
 const { createSocketAuthMiddleware } = require('./socketAuth');
 const { createMatchPersistenceFromEnv, persistRoomCompletedMatch } = require('./matchPersistence');
