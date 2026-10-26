@@ -36,3 +36,54 @@ test('desktop ranking shows the upcoming-rating note without rating data or memb
   assert.equal(rankingBranch, '<><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></>');
   assert.match(read('../src/components/schachTreff/copy.ts'), /rankingSoon: 'Rangliste folgt mit der Elo-Wertung'/);
 });
+
+test('missing pin migration disables admin/moderator controls while chat still loads', async () => {
+  const current = read('../src/screens/SchachTreffDesktop.tsx');
+  const refreshBody = current.split('const refresh = useCallback(async () => {')[1].split('}, [user]);')[0]
+    .replace('let pinnedAuthor: string | null', 'let pinnedAuthor');
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  for (const code of ['42703', 'PGRST204', 'PGRST205', null]) {
+    for (const role of ['admin', 'moderator', 'member']) {
+      const state = {};
+      const calls = [];
+      const setters = [...new Set(current.match(/set[A-Z]\w+(?=\()/g))];
+      const supabase = { from(table) {
+        let columns;
+        const query = {
+          select(value) { columns = value; return query; },
+          eq() { return query; }, order() { return query; }, limit() { return query; }, in() { return query; },
+          maybeSingle() { return query; },
+          then(resolve) {
+            calls.push([table, columns]);
+            if (table === 'chess_clubs') return resolve(columns === 'id' ? { data: { id: 'club' } } : code ? { error: { code } } : { data: { pinned_body: 'Pinned', pinned_by: 'user' } });
+            if (table === 'chess_club_members') return resolve({ data: columns.includes('role') ? { user_id: 'user', role } : [{ user_id: 'user' }] });
+            if (table === 'chess_club_messages') return resolve({ data: [{ id: 'message', author_id: 'user', body: 'Chat works' }] });
+            return resolve({ data: [{ id: 'user', username: 'Player' }] });
+          },
+        };
+        return query;
+      } };
+      await new AsyncFunction('supabase', 'user', 'warned', 'console', ...setters, refreshBody)(
+        supabase, { id: 'user' }, new Set(), { warn() {} },
+        ...setters.map(name => value => { state[name] = value; }),
+      );
+      assert.equal(state.setPinAvailable, code === null);
+      assert.equal(state.setCanPin, code === null && role !== 'member');
+      assert.equal(state.setMessages[0].body, 'Chat works');
+      assert.ok(calls.some(([table]) => table === 'chess_club_messages'));
+      if (code) { assert.equal(state.setPin, null); assert.equal(state.setPinEdit, false); }
+    }
+  }
+  assert.match(current, /\{pinAvailable && \(pin \|\| canPin\) &&/);
+});
+
+test('saving a pin cannot call the RPC when its migration is unavailable', async () => {
+  const current = read('../src/screens/SchachTreffDesktop.tsx');
+  const saveBody = current.split('async function savePin(event: FormEvent) {')[1].split('\n  function stamp')[0].replace(/\n  }\s*$/, '');
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  let attempted = false;
+  await new AsyncFunction('event', 'clubId', 'pinAvailable', 'canPin', 'busy', 'perform', saveBody)(
+    { preventDefault() {} }, 'club', false, true, false, () => { attempted = true; },
+  );
+  assert.equal(attempted, false);
+});
