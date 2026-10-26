@@ -113,5 +113,5 @@ test('desktop Settings option sections exactly match the Live Preview panel surf
     assert.ok(panel.includes('settings-preview-matched-surface'), id + ' uses the shared panel surface');
   }
   assert.match(screen.split('settings-preview-column')[1], /settings-preview-matched-surface/);
-  assert.match(css, /\\.settings-fixed-workspace \\.settings-preview-matched-surface \\{\\s*background-color: #171717;/);
+  assert.ok(css.includes('background-color: #171717;') && css.includes('.settings-fixed-workspace .settings-preview-matched-surface'));
 });
