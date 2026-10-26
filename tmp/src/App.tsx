@@ -7,10 +7,11 @@ import { SocketProvider } from './context/SocketContext';
 import Layout from './components/Layout';
 import MaintenancePage from './components/MaintenancePage';
 import { routeLoaders } from './routeLoaders';
+import PlayRoute from './screens/PlayRoute';
 
 // Lazy-loaded Screens for code-splitting and fast initial load
 const HomeScreen = lazy(routeLoaders.home);
-const PlayRoute = lazy(routeLoaders.play);
+// Render the lobby with the shell; the live game in PlayRoute stays lazy.
 const GameRoute = lazy(routeLoaders.game);
 const ChatScreen = lazy(routeLoaders.chat);
 const ProfileScreen = lazy(routeLoaders.profile);

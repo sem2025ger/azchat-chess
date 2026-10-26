@@ -1,3 +1,5 @@
+import PlayRoute from './screens/PlayRoute';
+
 function cacheImport<T>(load: () => Promise<T>) {
   let pending: Promise<T> | undefined;
   return () => {
@@ -12,7 +14,7 @@ function cacheImport<T>(load: () => Promise<T>) {
 // React.lazy and navigation prefetch share the same in-flight import.
 export const routeLoaders = {
   home: cacheImport(() => import('./screens/HomeScreen')),
-  play: cacheImport(() => import('./screens/PlayRoute')),
+  play: cacheImport(() => Promise.resolve({ default: PlayRoute })),
   game: cacheImport(() => import('./screens/GameRoute')),
   chat: cacheImport(() => import('./screens/ChatScreen')),
   profile: cacheImport(() => import('./screens/ProfileScreen')),
