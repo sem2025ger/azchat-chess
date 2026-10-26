@@ -59,7 +59,7 @@ test('Spieler real PostgreSQL: immediate hiding, owner review, RLS and immutable
   await assert.rejects(review('33333333-3333-4333-8333-333333333333','claim','approve'),e=>e.code==='22023');
   await request(a,'hide');await request(b,'hide');await review(a,'hide','restore');assert.deepEqual((await id()).rows[0].value,[],'restoring one request cannot override another active suppression');
   await review(b,'hide','restore');assert.equal((await id()).rows[0].value.length,1);
-  const events=await as('service_role',null,'select kind,decision,previous_status,new_status,reviewed_at from spieler_admin.review_events');assert.ok(events.rows.length>=10);assert.ok(events.rows.every(e=>e.reviewed_at&&e.previous_status&&e.new_status));
+  const events=await as('service_role',null,'select kind,decision,previous_status,new_status,reviewed_at from spieler_admin.review_events');assert.equal(events.rows.length,8);assert.ok(events.rows.every(e=>e.reviewed_at&&e.previous_status&&e.new_status));
   await assert.rejects(as('service_role',null,'delete from spieler_admin.review_events'),e=>e.code==='42501');
   assert.deepEqual((await as('service_role',null,"select public.spieler_search('%') as value")).rows[0].value,[],'wildcards cannot enumerate the catalog');
   const rls=await db.pool.query("select count(*)::int as n from pg_class where relname in ('spieler_players','spieler_claims','spieler_opt_out','spieler_twic_games','review_events') and relrowsecurity");assert.equal(rls.rows[0].n,5);
