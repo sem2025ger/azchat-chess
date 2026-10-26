@@ -8,6 +8,8 @@
 .schach-treff button,.schach-treff input,.schach-treff a{min-height:44px;border-radius:12px;padding:10px 12px}
 .schach-treff button{border:1px solid rgba(255,255,255,.07);color:#D9AE5B;background:#0E100F}
 .schach-treff button:hover{color:#F0CF86;border-color:#D9AE5B}
+.schach-treff .st-header-actions{display:flex;align-items:center;gap:8px}
+.schach-treff .st-review-language{font-size:12px;color:#A8A293}
 .schach-treff button:disabled{opacity:.5;cursor:not-allowed}
 .schach-treff :focus-visible{outline:2px solid #D9AE5B;outline-offset:3px}
 .schach-treff p{line-height:1.6;overflow-wrap:anywhere}

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
-import { copy as t } from '../components/schachTreff/copy';
+import { copy, russianCopy } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
 import './SchachTreffDesktop.css';
 
@@ -11,6 +11,9 @@ type Message = { id: string; author_id: string; body: string; created_at: string
 type Panel = 'tournaments' | 'members' | 'ranking' | 'about';
 const warned = new Set<string>();
 export default function SchachTreffDesktop() {
+  const [reviewRussian, setReviewRussian] = useState(false);
+  const t = reviewRussian ? russianCopy : copy;
+  const locale = reviewRussian ? 'ru-RU' : 'de-DE';
   const { user, isLoading } = useAuth();
   const [clubId, setClubId] = useState<string | null>(null);
   const [pin, setPin] = useState<{ body: string; author: string | null } | null>(null);
@@ -24,7 +27,7 @@ export default function SchachTreffDesktop() {
   const [roster, setRoster] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
   const [body, setBody] = useState('');
   const [menu, setMenu] = useState(false);
@@ -32,7 +35,7 @@ export default function SchachTreffDesktop() {
   const [player, setPlayer] = useState<Profile | null>(null);
   const [notify, setNotify] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, []);
+  useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, [t.title]);
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
   const refresh = useCallback(async () => {
     const club = await supabase.from('chess_clubs').select('id').eq('slug', 'chessaz-deutsch').maybeSingle();
@@ -73,13 +76,13 @@ export default function SchachTreffDesktop() {
   useEffect(() => {
     let active = true;
     const update = async () => {
-      try { await refresh(); if (active) setError(''); }
+      try { await refresh(); if (active) setError(false); }
       catch (e) {
         const code = (e as { code?: string }).code;
         if (active && code && ['PGRST205', '42P01'].includes(code)) {
           setMissing(true);
           if (!warned.has(code)) { warned.add(code); console.warn('Schach-Treff unavailable:', code); }
-        } else if (active) setError(t.error);
+        } else if (active) setError(true);
       } finally { if (active) setLoading(false); }
     };
     if (!isLoading) void update();
@@ -87,9 +90,9 @@ export default function SchachTreffDesktop() {
     return () => { active = false; window.clearInterval(timer); };
   }, [refresh, isLoading]);
   async function perform(action: () => PromiseLike<{ error: unknown }>) {
-    setBusy(true); setError('');
+    setBusy(true); setError(false);
     try { const result = await action(); if (result.error) throw result.error; await refresh(); return true; }
-    catch { setError(t.error); return false; } finally { setBusy(false); }
+    catch { setError(true); return false; } finally { setBusy(false); }
   }
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -103,16 +106,18 @@ export default function SchachTreffDesktop() {
   }
   function stamp(value: string) {
     const date = new Date(value), now = new Date(), yesterday = new Date(); yesterday.setDate(now.getDate() - 1);
-    const time = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    return date.toDateString() === now.toDateString() ? time : date.toDateString() === yesterday.toDateString() ? `${t.yesterday} ${time}` : `${date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${time}`;
+    const time = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    return date.toDateString() === now.toDateString() ? time : date.toDateString() === yesterday.toDateString() ? `${t.yesterday} ${time}` : `${date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' })} ${time}`;
   }
   if (missing) return null;
   const members = profiles.filter(p => roster.includes(p.id));
-  return <section className="schach-treff" lang="de" data-schach-treff-desktop>
-    <header><h1>{t.title}</h1><div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
+  return <section className="schach-treff" lang={reviewRussian ? 'ru' : 'de'} data-schach-treff-desktop>
+    <header><h1>{t.title}</h1><div className="st-header-actions">
+      <button type="button" className="st-review-language" lang={reviewRussian ? 'de' : 'ru'} aria-label={t.reviewLanguageLabel} aria-pressed={reviewRussian} title={t.reviewLanguageHint} onClick={() => setReviewRussian(!reviewRussian)}>{t.reviewLanguage}</button>
+      <div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
       {menu && <nav aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}</nav>}
-    </div></header>
-    {error && <p role="alert">{error}</p>}
+    </div></div></header>
+    {error && <p role="alert">{t.error}</p>}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
     <div className="st-columns"><aside className="st-surface st-rooms"><h2>{t.rooms}</h2><button aria-current="page">{t.general}</button><h2>{t.clubs}</h2></aside>
       <section className="st-surface st-chat"><h2>{t.general}</h2>

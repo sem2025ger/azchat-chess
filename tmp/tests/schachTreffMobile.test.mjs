@@ -2,7 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { stripTypeScriptTypes } from 'node:module';
 const read = p => readFileSync(new URL(p, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+test('temporary Russian review copy covers every German interface label', async () => {
+  const source = stripTypeScriptTypes(read('../src/components/schachTreff/copy.ts'));
+  const { copy, russianCopy } = await import('data:text/javascript,' + encodeURIComponent(source));
+  assert.deepEqual(Object.keys(russianCopy).sort(), Object.keys(copy).sort());
+  for (const key of Object.keys(copy)) {
+    assert.ok(russianCopy[key].trim(), `Russian text is required for ${key}`);
+    if (key !== 'title') assert.notEqual(russianCopy[key], copy[key], `${key} must switch language`);
+  }
+  assert.equal(copy.general, 'Allgemein');
+  assert.equal(russianCopy.general, 'Общий чат');
+  assert.equal(copy.reviewLanguage, 'Русский');
+  assert.equal(russianCopy.reviewLanguage, 'Deutsch');
+});
 test('legacy community implementation remains byte-identical to approved main', () => {
   const baseline = execFileSync('git', ['show', '4af51e5:tmp/src/screens/ChessAZCommunityScreen.tsx'], {encoding:'utf8'}).replace(/\r\n/g, '\n');
   const current = read('../src/screens/ChessAZCommunityScreen.tsx');
