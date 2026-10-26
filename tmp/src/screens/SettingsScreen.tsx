@@ -81,7 +81,8 @@ export default function SettingsScreen() {
     setBoardTheme('Classic Wood');
     setPieceTheme('neo');
     setSoundTheme('Default');
-    setBackground('Void Black');
+    // Keep Restore Defaults consistent with the approved initial interface theme.
+    setBackground('Soft Graphite');
     setConfirmMobileMoves(false);
     triggerSaved();
   };
