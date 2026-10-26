@@ -15,6 +15,7 @@ export default function SchachTreffDesktop() {
   const [clubId, setClubId] = useState<string | null>(null);
   const [pin, setPin] = useState<{ body: string; author: string | null } | null>(null);
   const [canPin, setCanPin] = useState(false);
+  const [pinAvailable, setPinAvailable] = useState(false);
   const [pinEdit, setPinEdit] = useState(false);
   const [pinDraft, setPinDraft] = useState('');
   const [member, setMember] = useState(false);
@@ -38,6 +39,7 @@ export default function SchachTreffDesktop() {
     if (club.error) throw club.error;
     setClubId(club.data?.id ?? null);
     let pinnedAuthor: string | null = null;
+    let pinMigrationAvailable = false;
     if (club.data) {
       const pinInfo = await supabase.from('chess_clubs').select('pinned_body,pinned_by').eq('id',club.data.id).maybeSingle();
       if (pinInfo.error) {
@@ -45,14 +47,16 @@ export default function SchachTreffDesktop() {
         if (['42703','PGRST204','PGRST205'].includes(code)) {
           if (!warned.has('pin-migration')) { warned.add('pin-migration'); console.warn('Schach-Treff pin unavailable:', code); }
           setPin(null);
+          setPinEdit(false);
         } else throw pinInfo.error;
-      } else { pinnedAuthor = pinInfo.data?.pinned_by ?? null; setPin(pinInfo.data?.pinned_body ? { body: pinInfo.data.pinned_body, author: pinnedAuthor } : null); }
+      } else { pinMigrationAvailable = true; pinnedAuthor = pinInfo.data?.pinned_by ?? null; setPin(pinInfo.data?.pinned_body ? { body: pinInfo.data.pinned_body, author: pinnedAuthor } : null); }
     } else setPin(null);
-    if (!user || !club.data) { setMember(false); setMessages([]); setProfiles([]); return; }
+    setPinAvailable(pinMigrationAvailable);
+    if (!user || !club.data) { setCanPin(false); setMember(false); setMessages([]); setProfiles([]); return; }
     const membership = await supabase.from('chess_club_members').select('user_id,role').eq('club_id', club.data.id).eq('user_id', user.id).maybeSingle();
     if (membership.error) throw membership.error;
     setMember(Boolean(membership.data));
-    setCanPin(['admin','moderator'].includes(membership.data?.role ?? ''));
+    setCanPin(pinMigrationAvailable && ['admin','moderator'].includes(membership.data?.role ?? ''));
     if (!membership.data) { setMessages([]); setProfiles([]); return; }
     const [feed, members] = await Promise.all([
       supabase.from('chess_club_messages').select('id,author_id,body,created_at').eq('club_id', club.data.id).order('created_at', { ascending: false }).limit(50),
@@ -94,7 +98,7 @@ export default function SchachTreffDesktop() {
   }
   async function savePin(event: FormEvent) {
     event.preventDefault();
-    if (!clubId || !canPin || busy) return;
+    if (!clubId || !pinAvailable || !canPin || busy) return;
     if (await perform(() => supabase.rpc('set_club_pin', { p_club_id: clubId, p_body: pinDraft }))) setPinEdit(false);
   }
   function stamp(value: string) {
@@ -112,7 +116,7 @@ export default function SchachTreffDesktop() {
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
     <div className="st-columns"><aside className="st-surface st-rooms"><h2>{t.rooms}</h2><button aria-current="page">{t.general}</button><h2>{t.clubs}</h2></aside>
       <section className="st-surface st-chat"><h2>{t.general}</h2>
-        {(pin || canPin) && <div className="st-pin">
+        {pinAvailable && (pin || canPin) && <div className="st-pin">
           <div className="st-pin-title">{t.pinned}{pin?.author && ' · '}{pin?.author ? profiles.find(p => p.id === pin.author)?.username ?? '' : ''}
             {canPin && <button onClick={() => { setPinEdit(true); setPinDraft(pin?.body ?? ''); }}>{t.change}</button>}
           </div>
