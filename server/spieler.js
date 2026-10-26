@@ -4,20 +4,37 @@ const { createClient } = require('@supabase/supabase-js');
 const { GamesProvider } = require('./spielerGamesProvider');
 const FIDE_ID=/^[1-9]\d{0,9}$/;
 function installSpieler(app,{enabled=false,client=null,verifyToken=async()=>null,games=null,now=Date.now}={}) {
- const router=express.Router(),budgets=new Map();
- // Deliberately use the transport peer rather than trusting arbitrary forwarding
- // headers. A future proxy policy needs its own approved IP verification.
+ // Scope Render's exactly-one-hop policy to Spieler, without changing the
+ // parent application's other HTTP routes or any socket/game identity logic.
+ const router=express(),budgets=new Map();
+ router.set('trust proxy',1);
+ const wrap=handler=>(req,res,next)=>Promise.resolve(handler(req,res,next)).catch(()=>{if(!res.headersSent)res.status(503).json({code:'temporarily_unavailable'});});
+ function limited(key){
+  const time=now();
+  if(budgets.size>=1000)for(const [id,b]of budgets)if(time-b.start>=60000)budgets.delete(id);
+  let b=budgets.get(key);if(!b||time-b.start>=60000){if(!b&&budgets.size>=1000)return true;b={start:time,count:0};budgets.set(key,b);}
+  return ++b.count>60;
+ }
  router.use((req,res,next)=>{
   res.set('Cache-Control','no-store');
   if(!enabled)return res.status(404).json({code:'feature_disabled'});
-  const key=req.socket.remoteAddress||'unknown',time=now();
-  if(budgets.size>=1000)for(const [id,b]of budgets)if(time-b.start>=60000)budgets.delete(id);
-  let b=budgets.get(key);if(!b||time-b.start>=60000){if(!b&&budgets.size>=1000)return res.status(429).json({code:'rate_limit'});b={start:time,count:0};budgets.set(key,b);}
-  if(++b.count>60)return res.status(429).json({code:'rate_limit'});
-  if(!client)return res.status(503).json({code:'storage_unavailable'});next();
+  next();
  });
+ router.use(wrap(async(req,res,next)=>{
+  const header=req.headers.authorization||'';
+  let identity=null;
+  if(/^Bearer [^\s]+$/.test(header)&&header.length<=8192){try{identity=await verifyToken(header.slice(7));}catch{/* Invalid/expired identity fails closed. */}}
+  // Express selects the rightmost forwarded address at one trusted hop, never
+  // an attacker-prepended leftmost value. A user cannot rotate IPs/tokens to
+  // reset their own verified account's budget.
+  const key=identity?.id?'user:'+identity.id:'ip:'+(req.ip||'unknown');
+  if(limited(key))return res.status(429).json({code:'rate_limit'});
+  if(!identity?.id)return res.status(401).json({code:'authentication_required'});
+  req.spielerUserId=identity.id;
+  if(!client)return res.status(503).json({code:'storage_unavailable'});
+  next();
+ }));
  router.use(express.json({limit:'2kb'}));
- const wrap=handler=>(req,res)=>Promise.resolve(handler(req,res)).catch(()=>{if(!res.headersSent)res.status(503).json({code:'temporarily_unavailable'});});
  const rpc=async(name,args)=>{const r=await client.rpc(name,args).abortSignal(AbortSignal.timeout(8000));if(r.error)throw Error('storage_unavailable');return r.data;};
  const player=async id=>{if(!FIDE_ID.test(id))return null;const rows=await rpc('spieler_search',{p_id:id});return rows?.[0]||null;};
  router.get('/search',wrap(async(req,res)=>{
@@ -38,14 +55,11 @@ function installSpieler(app,{enabled=false,client=null,verifyToken=async()=>null
  }));
  router.post('/:id/:action',wrap(async(req,res)=>{
   if(!['claim','hide'].includes(req.params.action)||!FIDE_ID.test(req.params.id))return res.status(400).json({code:'invalid_action'});
-  const header=req.headers.authorization||'';if(!/^Bearer [^\s]+$/.test(header)||header.length>8192)return res.status(401).json({code:'authentication_required'});
-  const identity=await verifyToken(header.slice(7));
-  if(!identity?.id)return res.status(401).json({code:'authentication_required'});
   // Reject caller-supplied actor, verification status and personal data.
   const keys=Object.keys(req.body||{}),club=req.body?.club;
   if(keys.some(k=>k!=='club')||(req.params.action!=='claim'&&keys.length)||
    (club!==undefined&&(typeof club!=='string'||club.trim().length>120||/[\x00-\x1f\x7f]/.test(club))))return res.status(400).json({code:'invalid_body'});
-  const r=await client.rpc('spieler_request',{p_action:req.params.action,p_actor:identity.id,p_fide:req.params.id,p_club:req.params.action==='claim'&&typeof club==='string'?club.trim():null}).abortSignal(AbortSignal.timeout(8000));
+  const r=await client.rpc('spieler_request',{p_action:req.params.action,p_actor:req.spielerUserId,p_fide:req.params.id,p_club:req.params.action==='claim'&&typeof club==='string'?club.trim():null}).abortSignal(AbortSignal.timeout(8000));
   if(r.error)return res.status(r.error.code==='23514'?409:503).json({code:r.error.code==='23514'?'claim_exists':'temporarily_unavailable'});
   res.json(r.data);
  }));

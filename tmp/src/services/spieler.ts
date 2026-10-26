@@ -16,33 +16,34 @@ export class SpielerError extends Error {
 export function createSpielerApi(base: string, fetchImpl: typeof fetch = fetch) {
   const url = new URL(base);
   if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))) throw new SpielerError('configuration');
-  async function request(path: string, signal: AbortSignal, token?: string) {
+  async function request(path: string, token: string, signal: AbortSignal, body?: object) {
+    if (!token) throw new SpielerError('authentication_required');
     const response = await fetchImpl(new URL('/api/spieler/' + path, url), {
-      signal, method: token ? 'POST' : 'GET', cache: 'no-store',
-      headers: token ? { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' } : undefined,
-      body: token ? '{}' : undefined,
+      signal, method: body ? 'POST' : 'GET', cache: 'no-store',
+      headers: { Authorization: 'Bearer ' + token, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
     });
     const value = await response.json();
     if (!response.ok) throw new SpielerError(typeof value.code === 'string' ? value.code : 'temporarily_unavailable');
     return value;
   }
   return {
-    search: async (surname: string, signal: AbortSignal): Promise<SpielerPlayer[]> => {
-      const value = await request('search?' + new URLSearchParams({ q: surname }), signal);
+    search: async (surname: string, token: string, signal: AbortSignal): Promise<SpielerPlayer[]> => {
+      const value = await request('search?' + new URLSearchParams({ q: surname }), token, signal);
       if (!Array.isArray(value.players)) throw new SpielerError('temporarily_unavailable');
       return value.players;
     },
-    games: async (id: string, source: string, nickname: string, signal: AbortSignal): Promise<SpielerGames> => {
+    card: async (id: string, token: string, signal: AbortSignal): Promise<SpielerPlayer> => {
       if (!/^[1-9]\d{0,9}$/.test(id)) throw new SpielerError('invalid_query');
-      return request(id + '/games?' + new URLSearchParams({ source, nickname }), signal);
+      return (await request(id, token, signal)).player;
+    },
+    games: async (id: string, source: string, nickname: string, token: string, signal: AbortSignal): Promise<SpielerGames> => {
+      if (!/^[1-9]\d{0,9}$/.test(id)) throw new SpielerError('invalid_query');
+      return request(id + '/games?' + new URLSearchParams({ source, nickname }), token, signal);
     },
     action: async (id: string, action: 'claim' | 'hide', token: string, signal: AbortSignal, club?: string): Promise<{ status: string }> => {
       if (!/^[1-9]\d{0,9}$/.test(id) || !token) throw new SpielerError('authentication_required');
-      if (action === 'claim' && club !== undefined) {
-        const response = await fetchImpl(new URL('/api/spieler/' + id + '/claim', url), { signal, method: 'POST', cache: 'no-store', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ club }) });
-        const value = await response.json(); if (!response.ok) throw new SpielerError(value.code || 'temporarily_unavailable'); return value;
-      }
-      return request(id + '/' + action, signal, token);
+      return request(id + '/' + action, token, signal, action === 'claim' && club !== undefined ? { club } : {});
     },
   };
 }
