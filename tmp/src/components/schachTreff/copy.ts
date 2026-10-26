@@ -1,4 +1,17 @@
 export const copy = {
+  challenge: 'Herausforderung', challengeAction: 'Herausfordern', challengeKind: 'Art der Herausforderung',
+  openChallenge: 'Offen für alle', personalChallenge: 'Persönliche Herausforderung', openOffer: 'Offene Herausforderung',
+  targetPlayer: 'Bestimmter Spieler', choosePlayer: 'Spieler auswählen', timeControl: 'Bedenkzeit',
+  sendChallenge: 'Herausforderung senden', game: 'Partie', accept: 'Annehmen', expired: 'Abgelaufen', cancelled: 'Abgebrochen',
+  waitingOpponent: 'Wartet auf Gegner', gameStarting: 'Partie startet …', gameStarted: 'Partie gestartet',
+  games: 'Partien', lastGames: 'Letzte Partien', noGames: 'Noch keine abgeschlossenen Partien.',
+  challengeErrors: {
+    not_allowed: 'Diese Aktion ist nicht erlaubt.', not_member: 'Beide Spieler müssen Mitglieder des Raums sein.',
+    expired: 'Die Herausforderung ist abgelaufen.', already_taken: 'Diese Herausforderung ist nicht mehr verfügbar.',
+    challenge_limit: 'Du kannst höchstens drei offene Herausforderungen haben.', invalid_time_control: 'Diese Bedenkzeit ist nicht verfügbar.',
+    creator_offline: 'Der Herausforderer ist nicht mehr online.', player_unavailable: 'Ein Spieler ist gerade nicht verfügbar.',
+    rate_limit_exceeded: 'Bitte warte kurz und versuche es erneut.', storage_unavailable: 'Die Partie kann gerade nicht sicher gestartet werden.',
+  },
   pinned: 'Angeheftet', change: 'Ändern', pinAction: 'Anheften', cancel: 'Abbrechen',
   title: 'Schach-Treff', more: 'Weitere Bereiche', rooms: 'Räume', general: 'Allgemein', clubs: 'Meine Vereine',
   tournaments: 'Turniere', soon: 'bald', members: 'Mitglieder', ranking: 'Rangliste', about: 'Über uns',

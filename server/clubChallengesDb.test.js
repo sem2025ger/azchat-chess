@@ -1,0 +1,42 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {readFileSync}=require('node:fs');const {join}=require('node:path');
+const {isolatedPostgres}=require('./test-support/durablePostgres.cjs');
+const url=process.env.DURABLE_TEST_DATABASE_URL;
+test('club challenges: real PostgreSQL atomicity, limits, target membership and grants',{skip:!url,timeout:30000},async()=>{
+ const db=await isolatedPostgres(url);const a='11111111-1111-4111-8111-111111111111',b='22222222-2222-4222-8222-222222222222',c='33333333-3333-4333-8333-333333333333',d='44444444-4444-4444-8444-444444444444';
+ async function as(role,user,sql,params=[]){const client=await db.pool.connect();try{await client.query('BEGIN');await client.query('SET LOCAL ROLE '+role);await client.query("SELECT set_config('request.jwt.claim.sub',$1,true)",[user??'']);const result=await client.query(sql,params);await client.query('COMMIT');return result;}catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}}
+ const act=(action,actor,club,challenge=null,time=null,target=null)=>as('service_role',null,'SELECT public.club_challenge_action($1,$2,$3,$4,$5,$6) AS result',[action,actor,club,challenge,time,target]).then(r=>r.rows[0].result);
+ try{
+  await db.pool.query(`ALTER TABLE public.profiles ADD COLUMN username text;
+   UPDATE public.profiles SET username='Player'||left(id::text,8);
+   INSERT INTO public.profiles(id,username) VALUES('${c}','Third'),('${d}','Outsider');
+   CREATE SCHEMA auth;GRANT USAGE ON SCHEMA auth TO authenticated;
+   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
+  await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations/20261021000000_chessaz_deutsch_community_foundation.sql'),'utf8'));
+  await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations/20261026140945_schach_treff_challenges.sql'),'utf8'));
+  const club=(await db.pool.query("SELECT id FROM public.chess_clubs WHERE slug='chessaz-deutsch'")).rows[0].id;
+  for(const user of [a,b,c])await db.pool.query('INSERT INTO public.chess_club_members(club_id,user_id) VALUES($1,$2)',[club,user]);
+  const made=await act('create',a,club,null,'3+2');assert.equal(made.ok,true);
+  const replies=await Promise.all([act('accept',b,club,made.challenge.id),act('accept',c,club,made.challenge.id)]);
+  assert.equal(replies.filter(x=>x.ok).length,1);assert.equal(replies.find(x=>!x.ok).code,'already_taken');
+  const targeted=await act('create',a,club,null,'5+0',b);
+  await assert.rejects(act('accept',c,club,targeted.challenge.id),/not_allowed/);
+  await assert.rejects(act('create',a,club,null,'5+0',d),/not_member/);
+  await assert.rejects(act('create',d,club,null,'5+0'),/not_member/);
+  await assert.rejects(act('cancel',b,club,targeted.challenge.id),/not_allowed/);
+  await act('cancel',a,club,targeted.challenge.id);
+  const expired=await act('create',a,club,null,'10+0');
+  await db.pool.query("UPDATE public.chess_club_challenges SET created_at=now()-interval '11 minutes',expires_at=now()-interval '1 minute' WHERE id=$1",[expired.challenge.id]);
+  assert.equal((await act('accept',b,club,expired.challenge.id)).code,'expired');
+  const many=await Promise.allSettled(Array.from({length:5},()=>act('create',a,club,null,'3+2')));
+  assert.equal(many.filter(x=>x.status==='fulfilled').length,3);
+  assert.equal(many.filter(x=>x.status==='rejected'&&/challenge_limit/.test(x.reason.message)).length,2);
+  assert.equal((await as('authenticated',d,'SELECT count(*)::int AS n FROM public.chess_club_challenges')).rows[0].n,0);
+  await assert.rejects(as('authenticated',a,"SELECT public.club_challenge_action('watch',$1,$2)",[a,club]),e=>e.code==='42501');
+  await assert.rejects(as('authenticated',a,"INSERT INTO public.chess_club_messages(club_id,author_id,body,kind) VALUES($1,$2,'Fake','challenge')",[club,a]),e=>e.code==='42501');
+  const summary=(await as('authenticated',a,'SELECT public.club_player_summary($1) AS value',[b])).rows[0].value;
+  assert.equal(summary.completed_games,0);assert.deepEqual(summary.last_games,[]);
+  await assert.rejects(as('anon',null,'SELECT public.club_player_summary($1)',[b]),e=>e.code==='42501');
+ }finally{await db.close();}
+});
