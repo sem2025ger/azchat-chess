@@ -59,8 +59,10 @@ try {
   await new Promise((done, fail) => { ws.addEventListener('open', done, { once:true }); ws.addEventListener('error', fail, { once:true }); });
   let id = 0;
   const pending = new Map();
+  const fontRequests = [];
   ws.addEventListener('message', ({ data }) => {
     const message = JSON.parse(data);
+    if (message.method === 'Network.requestWillBeSent') fontRequests.push(message.params.request.url);
     const handler = pending.get(message.id);
     if (!handler) return;
     pending.delete(message.id);
@@ -91,6 +93,7 @@ try {
     throw Error('UI timeout: ' + expression + '; ' + state);
   };
   await cdp('Page.enable');
+  await cdp('Network.enable');
   await cdp('Page.addScriptToEvaluateOnNewDocument', { source:`
     localStorage.setItem('app-language','ru');localStorage.setItem('chess_sound','Muted / Off');
     window.__engineCommands = [];
@@ -142,6 +145,13 @@ try {
     const url = `${base}/game?mobile-qa=${width}`;
     await cdp('Page.navigate', { url });
     await waitFor(`location.href === ${JSON.stringify(url)} && !!document.querySelector('[data-mobile-analysis-header]')`);
+    assert.ok(await evaluate(`(async () => {
+      for (const weight of [300,400,500,600,700,800,900]) {
+        const faces = await document.fonts.load(weight + ' 16px Inter', 'Deutsch äöüß Azərbaycan ƏəİıŞşĞğ Русский Українська');
+        if (faces.length < 3 || faces.some(face => face.status !== 'loaded')) return false;
+      }
+      return true;
+    })()`), 'All Inter weights and supported language subsets load on mobile');
     const bounds = await evaluate(`(() => {
       const rect = selector => document.querySelector(selector).getBoundingClientRect().toJSON();
       return { width:innerWidth, scrollWidth:document.documentElement.scrollWidth,
@@ -398,6 +408,12 @@ try {
     await evaluate("document.querySelector('.arena-selected-time').click()");
   }
   console.log('PASS modest shared desktop offset, unchanged board size and compact time typography');
+  assert.equal(fontRequests.filter(url => /fonts\.(googleapis|gstatic)\.com/.test(url)).length, 0,
+    'No Google Fonts requests on desktop or mobile');
+  const localInter = fontRequests.filter(url => /inter-.*\.woff2/.test(url));
+  assert.ok(localInter.length >= 21 && localInter.every(url => url.startsWith(base + '/assets/')),
+    'Inter weights and Latin/Cyrillic subsets are served by the application origin');
+  console.log('PASS local Inter weights 300–900 and Latin/Cyrillic subsets; zero Google Fonts requests');
  } catch (error) {
   // Print the actual failing assertion before cleanup; a stuck child must not
   // mask it behind the outer watchdog's generic timeout.
