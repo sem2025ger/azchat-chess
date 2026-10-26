@@ -2,7 +2,7 @@ export const copy = {
   createClub: 'Verein erstellen', clubName: 'Name des Vereins', createRoom: 'Raum erstellen',
   copyLink: 'Link kopieren', linkCopied: 'Link kopiert', inviteLink: 'Einladungslink', inviteReady: 'Dein Einladungslink ist bereit.',
   openChat: 'Chat öffnen', mobileRoomNotice: 'Vereinsräume sind vorerst in der Desktop-Version verfügbar.',
-  roomErrors: { not_allowed: 'Diese Aktion ist nicht erlaubt.', invalid_room_name: 'Der Name muss 3–60 Zeichen lang sein.',
+  roomErrors: { invite_limit: 'Dieser Raum hat bereits zehn aktive Einladungen.', not_allowed: 'Diese Aktion ist nicht erlaubt.', invalid_room_name: 'Der Name muss 3–60 Zeichen lang sein.',
     room_limit: 'Du kannst höchstens zwei Vereinsräume erstellen.', invite_invalid: 'Dieser Einladungslink ist ungültig.',
     invite_expired: 'Dieser Einladungslink ist abgelaufen.', invite_used: 'Dieser Einladungslink wurde bereits vollständig verwendet.' },
   challenge: 'Herausforderung', challengeAction: 'Herausfordern', challengeKind: 'Art der Herausforderung',

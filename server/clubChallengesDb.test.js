@@ -15,6 +15,7 @@ test('club challenges: real PostgreSQL atomicity, limits, target membership and 
    CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
   await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations/20261021000000_chessaz_deutsch_community_foundation.sql'),'utf8'));
   await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations/20261026140945_schach_treff_challenges.sql'),'utf8'));
+  await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations/20261026145050_schach_treff_summary_and_challenge_recovery.sql'),'utf8'));
   const club=(await db.pool.query("SELECT id FROM public.chess_clubs WHERE slug='chessaz-deutsch'")).rows[0].id;
   for(const user of [a,b,c])await db.pool.query('INSERT INTO public.chess_club_members(club_id,user_id) VALUES($1,$2)',[club,user]);
   const made=await act('create',a,club,null,'3+2');assert.equal(made.ok,true);
@@ -29,6 +30,15 @@ test('club challenges: real PostgreSQL atomicity, limits, target membership and 
   const expired=await act('create',a,club,null,'10+0');
   await db.pool.query("UPDATE public.chess_club_challenges SET created_at=now()-interval '11 minutes',expires_at=now()-interval '1 minute' WHERE id=$1",[expired.challenge.id]);
   assert.equal((await act('accept',b,club,expired.challenge.id)).code,'expired');
+  const stale=await act('create',b,club,null,'3+2');
+  await act('accept',c,club,stale.challenge.id);
+  await db.pool.query("UPDATE public.chess_club_challenges SET accepted_at=now()-interval '3 minutes' WHERE id=$1",[stale.challenge.id]);
+  await act('watch',a,club);
+  assert.equal((await db.pool.query('SELECT status FROM public.chess_club_challenges WHERE id=$1',[stale.challenge.id])).rows[0].status,'expired');
+  const live=await act('create',b,club,null,'3+2');await act('accept',c,club,live.challenge.id);
+  await db.pool.query("UPDATE public.chess_club_challenges SET accepted_at=now()-interval '3 minutes',room_id=gen_random_uuid() WHERE id=$1",[live.challenge.id]);
+  await act('watch',a,club);
+  assert.equal((await db.pool.query('SELECT status FROM public.chess_club_challenges WHERE id=$1',[live.challenge.id])).rows[0].status,'accepted');
   const many=await Promise.allSettled(Array.from({length:5},()=>act('create',a,club,null,'3+2')));
   assert.equal(many.filter(x=>x.status==='fulfilled').length,3);
   assert.equal(many.filter(x=>x.status==='rejected'&&/challenge_limit/.test(x.reason.message)).length,2);
@@ -38,5 +48,7 @@ test('club challenges: real PostgreSQL atomicity, limits, target membership and 
   const summary=(await as('authenticated',a,'SELECT public.club_player_summary($1) AS value',[b])).rows[0].value;
   assert.equal(summary.completed_games,0);assert.deepEqual(summary.last_games,[]);
   await assert.rejects(as('anon',null,'SELECT public.club_player_summary($1)',[b]),e=>e.code==='42501');
+  await assert.rejects(as('authenticated',d,'SELECT public.club_player_summary($1)',[b]),e=>e.code==='42501');
+  assert.equal((await as('authenticated',d,'SELECT public.club_player_summary($1) AS value',[d])).rows[0].value.completed_games,0,'self summary remains allowed');
  }finally{await db.close();}
 });

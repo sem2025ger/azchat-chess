@@ -608,9 +608,9 @@ function createPrivateRoom(socket, payload) {
     socket.emit('private_room_created', { roomId, timeControl: selectedTime });
   }
 
-async function joinPrivateRoom(socket, payload) {
+async function joinPrivateRoom(socket, payload, limiterChecked = false) {
     try {
-      if (!socket.data?.limiter?.allow('lobby')) {
+      if (!limiterChecked && !socket.data?.limiter?.allow('lobby')) {
         socket.emit('rate_limit_exceeded', { action: 'join_private_room' });
         return;
       }
@@ -708,12 +708,7 @@ async function joinPrivateRoom(socket, payload) {
     }
   }
 
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-  socket.data = socket.data || {};
-  socket.data.limiter = createSocketRateLimiter();
-  registerClubChallenges(socket, { client: clubClient, io, allowedTimeControls: ALLOWED_TIME_CONTROLS,
-    async startGame(creator, opponent, timeControl) {
+async function startClubChallengeGame(creator, opponent, timeControl) {
       if (!creator.connected || !opponent.connected || socketToRoom.has(creator.id) || socketToRoom.has(opponent.id) ||
           waitingQueue.some(peer => [creator.data.userId,opponent.data.userId].includes(peer.data?.userId))) {
         throw Object.assign(new Error('player_unavailable'),{reason:'player_unavailable'});
@@ -722,14 +717,21 @@ io.on('connection', (socket) => {
       const roomId = socketToRoom.get(creator.id);
       if (!roomId || activeRooms.get(roomId)?.status !== 'pending') throw Object.assign(new Error('storage_unavailable'),{reason:'storage_unavailable'});
       inviteTargets.set(roomId,opponent.data.userId);
-      await joinPrivateRoom(opponent,{roomId});
+      await joinPrivateRoom(opponent,{roomId},true);
       if (activeRooms.get(roomId)?.status !== 'active') {
         const pending = activeRooms.get(roomId);
         if (pending?.status === 'pending') cleanupRoom(roomId,pending);
         throw Object.assign(new Error('storage_unavailable'),{reason:'storage_unavailable'});
       }
       return roomId;
-    },
+}
+
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  socket.data = socket.data || {};
+  socket.data.limiter = createSocketRateLimiter();
+  registerClubChallenges(socket, { client: clubClient, io, allowedTimeControls: ALLOWED_TIME_CONTROLS,
+    startGame: startClubChallengeGame,
   });
 
 
@@ -1240,6 +1242,7 @@ module.exports = {
   rejectGameAction,
   getActivePlayerActionContext,
   durableGames,
+  startClubChallengeGame,
   recoveryReady,
   lobbyPresence,
   readyLobbySockets,

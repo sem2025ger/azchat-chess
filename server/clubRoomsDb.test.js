@@ -9,7 +9,7 @@ test('private rooms: membership isolation, hashed/expiring/quota invites and roo
  try{
   await db.pool.query(`INSERT INTO public.profiles(id) VALUES('${c}');CREATE SCHEMA extensions;CREATE EXTENSION pgcrypto WITH SCHEMA extensions;
    CREATE SCHEMA auth;GRANT USAGE ON SCHEMA auth TO authenticated;CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;`);
-  for(const file of ['20261021000000_chessaz_deutsch_community_foundation.sql','20261026142707_schach_treff_private_rooms.sql'])await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations',file),'utf8'));
+  for(const file of ['20261021000000_chessaz_deutsch_community_foundation.sql','20261026142707_schach_treff_private_rooms.sql','20261026145100_schach_treff_invite_limits.sql'])await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations',file),'utf8'));
   const room=(await as('authenticated',a,"SELECT public.create_club_room('Private test room') AS id")).rows[0].id;
   await as('authenticated',a,"INSERT INTO public.chess_club_messages(club_id,author_id,body) VALUES($1,$2,'Members only')",[room,a]);
   assert.equal((await as('authenticated',b,'SELECT count(*)::int AS n FROM public.chess_clubs WHERE id=$1',[room])).rows[0].n,0);
@@ -32,6 +32,10 @@ test('private rooms: membership isolation, hashed/expiring/quota invites and roo
   await assert.rejects(as('authenticated',c,"SELECT public.join_club_by_invite('invalid')"),/invite_invalid/);
   const rooms=await Promise.allSettled(Array.from({length:3},()=>as('authenticated',a,"SELECT public.create_club_room('Another room')")));
   assert.equal(rooms.filter(x=>x.status==='fulfilled').length,1);assert.equal(rooms.filter(x=>x.status==='rejected'&&/room_limit/.test(x.reason.message)).length,2);
+  const cappedRoom=(await as('authenticated',b,"SELECT public.create_club_room('Invitation cap room') AS id")).rows[0].id;
+  const links=await Promise.allSettled(Array.from({length:12},()=>as('authenticated',b,'SELECT public.create_club_invite($1)',[cappedRoom])));
+  assert.equal(links.filter(x=>x.status==='fulfilled').length,10);
+  assert.equal(links.filter(x=>x.status==='rejected'&&/invite_limit/.test(x.reason.message)).length,2);
   const mobile=(await as('authenticated',b,"SELECT count(*)::int AS n FROM public.chess_clubs WHERE slug='chessaz-deutsch'")).rows[0].n;
   assert.equal(mobile,1,'legacy mobile lookup still resolves only its fixed community slug');
  }finally{await db.close();}

@@ -28,7 +28,12 @@ export function ChallengeProvider({ clubId, me, people, enabled, children }: { c
   },[clubId,enabled]);
   useEffect(() => {
     void load();
-    const timer=window.setInterval(() => { if (!document.hidden) void load(); },12000);
+    const poll=() => {
+      if (document.hidden) return;
+      if (enabled && clubId && isConnected && socket) socket.timeout(8000).emit('club_challenge_watch',{clubId},() => { void load(); });
+      else void load();
+    };
+    const timer=window.setInterval(poll,12000);
     const changed=(event: { clubId?: string }) => { if (event.clubId===clubId) void load(); };
     const found=(event: { roomId?: string; color?: string }) => {
       if (typeof event.roomId==='string' && /^[0-9a-f-]{36}$/i.test(event.roomId) && ['w','b'].includes(event.color ?? '')) navigate(`/play?roomId=${event.roomId}&color=${event.color}`);
