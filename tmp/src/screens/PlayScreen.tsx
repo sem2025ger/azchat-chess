@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, type CSSProperties } from 'react';
+import { playLobbyBoardSize } from '../utils/playLobbyBoardSize';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
@@ -13,6 +14,27 @@ import MobileOpponentSearchOverlay from '../components/MobileOpponentSearchOverl
 import PlayWaitingContent from '../components/PlayWaitingContent';
 
 export default function PlayScreen() {
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const [desktopBoardSize, setDesktopBoardSize] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      if (!window.matchMedia('(min-width: 1024px)').matches) return;
+      const next = playLobbyBoardSize(workspace.clientWidth, workspace.clientHeight);
+      setDesktopBoardSize(previous => previous === next ? previous : next);
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(workspace);
+    window.addEventListener('resize', measure);
+    measure();
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+
   const { t } = useLanguage();
   const [timeControl, setTimeControl] = useState('3 min.');
   const [isSearching, setIsSearching] = useState(false);
@@ -182,7 +204,7 @@ export default function PlayScreen() {
   };
 
   return (
-    <div className="play-lobby-screen min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto relative pb-6 lg:pb-3 max-md:px-1">
+    <div ref={workspaceRef} style={desktopBoardSize === null ? undefined : { '--play-lobby-board-size': `${desktopBoardSize}px` } as CSSProperties} className="play-lobby-screen min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto relative pb-6 lg:pb-3 max-md:px-1">
       
 
       <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_370px] 2xl:grid-cols-[minmax(0,1fr)_430px] gap-2 lg:gap-4 items-start justify-center flex-1 min-h-0 max-lg:flex-none max-lg:min-h-fit pt-0 lg:pt-4">
@@ -228,7 +250,7 @@ export default function PlayScreen() {
             )}
 
             <div 
-              className="play-lobby-board w-full aspect-square bg-neutral-900 rounded-[2rem] border-[6px] border-neutral-800/50 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-white/10 relative transition-all duration-700 group-hover/board:border-neutral-800 self-center max-w-[94vw] sm:max-w-[560px] lg:max-w-[min(630px,calc(100dvh-120px))] max-md:max-w-none max-md:border-2 max-md:rounded-xl"
+              className="play-lobby-board w-full aspect-square bg-neutral-900 rounded-[2rem] border-[6px] border-neutral-800/50 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-white/10 relative transition-all duration-700 group-hover/board:border-neutral-800 self-center max-w-[94vw] sm:max-w-[560px] lg:max-w-[var(--play-lobby-board-size,630px)] max-md:max-w-none max-md:border-2 max-md:rounded-xl"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
               <ChessBoard confirmMovesMobile={confirmMobileMoves} overrideBoardTheme={boardTheme} className="border-none p-0 bg-transparent shadow-none max-md:[&_[draggable]_img]:scale-110" />
@@ -238,7 +260,7 @@ export default function PlayScreen() {
         </div>
 
         {/* ── Right Side: Control Panel ────────────────────────── */}
-        <div className="w-full flex flex-col animate-fade-in-right lg:min-h-[min(630px,calc(100dvh-120px))] lg:justify-center lg:-ml-4">
+        <div className="w-full flex flex-col animate-fade-in-right lg:min-h-[var(--play-lobby-board-size,630px)] lg:justify-center lg:-ml-4">
           <MobileFriendTimeControl timeControl={timeControl} onTimeChange={setTimeControl} presets={timePresets} resetRef={mobileInviteReset} openRef={mobileFriendOpen} controlsHidden />
           <ArenaPlayPanel
             timeControl={timeControl}
