@@ -1,0 +1,57 @@
+name: Frontend CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tmp
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          # Regression tests compare the approved mobile baseline against main.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.19.0
+          cache: npm
+          cache-dependency-path: tmp/package-lock.json
+
+      # Match Production's peer-dependency policy while freezing the lockfile.
+      # lucide-react 0.360.0 declares React <=18; this app uses React 19.2.4.
+      - name: Install frozen dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Production build
+        run: npm run build
+
+      - name: Frontend tests
+        run: npm test
+
+      - name: Mobile analysis browser regression
+        # Provide a valid session bus instead of inheriting runner-specific D-Bus state.
+        run: dbus-run-session -- node tests/mobileAnalysis.browser.mjs
+
+      - name: Lint
+        run: npm run lint

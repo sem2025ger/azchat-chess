@@ -1,0 +1,288 @@
+import { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSocket } from '../context/SocketContext';
+import { useAuth } from '../context/AuthContext';
+import { useThemeContext } from '../context/ThemeContext';
+import ChessBoard from '../components/ChessBoard';
+import MobileFriendTimeControl from '../components/MobileFriendTimeControl';
+import { toServerTimeControl } from '../components/OnlineLobby';
+import ArenaPlayPanel from '../components/ArenaPlayPanel';
+import MobileOpponentSearchOverlay from '../components/MobileOpponentSearchOverlay';
+
+import PlayWaitingContent from '../components/PlayWaitingContent';
+
+export default function PlayScreen() {
+  const { t } = useLanguage();
+  const [timeControl, setTimeControl] = useState('3 min.');
+  const [isSearching, setIsSearching] = useState(false);
+  const [waitingForSocket, setWaitingForSocket] = useState(false);
+  const [waitingForFriendSocket, setWaitingForFriendSocket] = useState(false);
+  const [searchTime, setSearchTime] = useState(0);
+
+  const [isPrivateCreating, setIsPrivateCreating] = useState(false);
+  const [privateRoomId, setPrivateRoomId] = useState<string | null>(null);
+  const [isJoiningPrivate, setIsJoiningPrivate] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
+  
+  const [searchParams] = useSearchParams();
+  const hasAutoJoinedRef = useRef(false);
+  const mobileInviteReset = useRef<(() => void) | null>(null);
+  const mobileFriendOpen = useRef<(() => void) | null>(null);
+  const roomParam = searchParams.get('room');
+
+  const navigate = useNavigate();
+  const { socket, isConnected, authError } = useSocket();
+  const { session, isLoading: authIsLoading } = useAuth();
+  const { boardTheme, confirmMobileMoves } = useThemeContext();
+
+  // User preferences applied automatically via ThemeContext
+
+  useEffect(() => {
+    if (!socket) return;
+    const onMatchFound = (data: any) => {
+      setIsSearching(false);
+      setWaitingForSocket(false);
+      setIsPrivateCreating(false);
+      setIsJoiningPrivate(false);
+      navigate(`/play?roomId=${data.roomId}&color=${data.color}`);
+    };
+    
+    const onPrivateRoomCreated = (data: { roomId: string }) => {
+      setPrivateRoomId(data.roomId);
+    };
+    
+    const onJoinFailed = (data: { reason: string }) => {
+      setIsJoiningPrivate(false);
+      if (data.reason === 'storage_unavailable') {
+        setIsSearching(false);
+        setIsPrivateCreating(false);
+        setJoinError('Game storage is unavailable. Please try again shortly.');
+      }
+      else if (data.reason === 'room_not_found') setJoinError("Room not found or expired.");
+      else if (data.reason === 'room_full') setJoinError("This room is already full.");
+      else if (data.reason === 'already_in_room') setJoinError("You are already in this room.");
+      else setJoinError("Failed to join room.");
+      
+      setTimeout(() => setJoinError(null), 5000);
+    };
+
+    socket.on('match_found', onMatchFound);
+    socket.on('private_room_created', onPrivateRoomCreated);
+    socket.on('join_failed', onJoinFailed);
+    
+    return () => { 
+      socket.off('match_found', onMatchFound); 
+      socket.off('private_room_created', onPrivateRoomCreated);
+      socket.off('join_failed', onJoinFailed);
+    };
+  }, [socket, navigate]);
+
+  useEffect(() => {
+    if (!roomParam || hasAutoJoinedRef.current) return;
+    if (authIsLoading && window.matchMedia('(max-width: 767px)').matches) return;
+    if (!session) {
+      hasAutoJoinedRef.current = true;
+      if (window.matchMedia('(max-width: 767px)').matches) {
+        navigate(`/profile?returnTo=${encodeURIComponent(`/play?room=${encodeURIComponent(roomParam)}`)}`);
+        return;
+      }
+      setJoinError('Sign in required to join a private room.');
+      setTimeout(() => setJoinError(null), 5000);
+      return;
+    }
+    if (socket && isConnected) {
+      hasAutoJoinedRef.current = true;
+      setIsJoiningPrivate(true);
+      socket.emit('join_private_room', { roomId: roomParam });
+    }
+  }, [roomParam, socket, isConnected, session, authIsLoading, navigate]);
+
+  useEffect(() => {
+    if (authError === 'unauthorized') {
+      setJoinError('Session expired. Please sign in again.');
+      setIsSearching(false);
+      setWaitingForSocket(false);
+      setIsPrivateCreating(false);
+      setIsJoiningPrivate(false);
+      const timer = setTimeout(() => setJoinError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [authError]);
+
+  useEffect(() => {
+    let interval: any;
+    if (isSearching) {
+      interval = setInterval(() => setSearchTime(prev => prev + 1), 1000);
+    } else {
+      setSearchTime(0);
+    }
+    return () => clearInterval(interval);
+  }, [isSearching]);
+
+  // A sleeping multiplayer backend can take time to establish its first WebSocket.
+  // Queue exactly once after connection, unless the player cancels or times out.
+  useEffect(() => {
+    if (!waitingForSocket || !isConnected || !socket) return;
+    setWaitingForSocket(false);
+    socket.emit('join_queue', { timeControl: toServerTimeControl(timeControl) });
+  }, [waitingForSocket, isConnected, socket, timeControl]);
+
+  useEffect(() => {
+    if (!waitingForSocket) return;
+    const timer = setTimeout(() => {
+      setWaitingForSocket(false);
+      setIsSearching(false);
+      setJoinError('Connection unavailable. Please try again shortly.');
+    }, 65000);
+    return () => clearTimeout(timer);
+  }, [waitingForSocket]);
+
+  useEffect(() => {
+    if (!waitingForFriendSocket || !socket || !isConnected) return;
+    setWaitingForFriendSocket(false);
+    setIsPrivateCreating(true);
+    setPrivateRoomId(null);
+    socket.emit('create_private_room', { timeControl: toServerTimeControl(timeControl) });
+  }, [waitingForFriendSocket, socket, isConnected, timeControl]);
+
+  useEffect(() => {
+    if (!waitingForFriendSocket) return;
+    const timeout = setTimeout(() => {
+      setWaitingForFriendSocket(false);
+      setIsPrivateCreating(false);
+      setJoinError('Connection unavailable. Please try again shortly.');
+    }, 65000);
+    return () => clearTimeout(timeout);
+  }, [waitingForFriendSocket]);
+
+  const cancelMatchmaking = () => {
+    if (socket && isConnected) socket.emit('cancel_matchmaking');
+    setWaitingForSocket(false);
+    setWaitingForFriendSocket(false);
+    setIsSearching(false);
+    setIsPrivateCreating(false);
+    setIsJoiningPrivate(false);
+    setPrivateRoomId(null);
+    setJoinError(null);
+    setCopiedLink(false);
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  const timePresets = {
+    Bullet: ['1 min.', '1 | 1', '2 | 1'],
+    Blitz: ['3 min.', '3 | 2', '5 min.'],
+    Rapid: ['10 min.', '15 | 10', '30 min.'],
+  };
+
+  return (
+    <div className="play-lobby-screen min-h-full lg:h-full w-full bg-transparent flex flex-col items-center justify-start lg:justify-center p-2 lg:p-3 overflow-y-auto relative pb-6 lg:pb-3 max-md:px-1">
+      
+
+      <div className="w-full max-w-[1500px] grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_370px] 2xl:grid-cols-[minmax(0,1fr)_430px] gap-2 lg:gap-4 items-start justify-center flex-1 min-h-0 max-lg:flex-none max-lg:min-h-fit pt-0 lg:pt-4">
+
+        {/* ── Left Side: Chess Board ────────────────────────────── */}
+        <div className="w-full flex flex-col gap-1 md:gap-1.5 animate-fade-in-up min-h-0">
+          <div className="relative group/board flex-1 flex flex-col min-h-0 justify-center">
+            {joinError && (
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[60] bg-red-500/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl backdrop-blur-md animate-fade-in text-center pointer-events-none whitespace-nowrap">
+                {joinError}
+              </div>
+            )}
+            {/* Search on phones has its own typography and visual hierarchy. */}
+            {isSearching && (
+              <MobileOpponentSearchOverlay
+                title={t('play.searching')}
+                description={t('play.searchingDesc')}
+                elapsed={formatTime(searchTime)}
+                cancelLabel={t('play.cancel')}
+                onCancel={cancelMatchmaking}
+              />
+            )}
+            {/* Existing desktop and private-room overlay visibility and behavior. */}
+            {(isSearching || isPrivateCreating || isJoiningPrivate) && (
+              <div className={isSearching ? "absolute inset-0 z-50 hidden md:flex items-center justify-center rounded-[2rem] overflow-hidden" : "absolute inset-0 z-50 flex items-center justify-center rounded-[2rem] overflow-hidden"}>
+                <div className="absolute inset-0 bg-black/95 backdrop-blur-3xl transition-all duration-700" />
+                <PlayWaitingContent
+                  title={isSearching ? t('play.searching') : isJoiningPrivate ? 'Joining private room...' : 'Waiting for friend...'}
+                  description={isSearching ? t('play.searchingDesc') : 'Get ready for a great match'}
+                  elapsed={isSearching ? formatTime(searchTime) : undefined}
+                  inviteUrl={isPrivateCreating && privateRoomId ? `${window.location.origin}/play?room=${privateRoomId}` : undefined}
+                  copied={copiedLink}
+                  copyLabel={t(copiedLink ? 'invite.copied' : 'invite.copy')}
+                  cancelLabel={t('play.cancel')}
+                  onCopy={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/play?room=${privateRoomId}`);
+                    setCopiedLink(true);
+                    setTimeout(() => setCopiedLink(false), 2000);
+                  }}
+                  onCancel={cancelMatchmaking}
+                />
+              </div>
+            )}
+
+            <div 
+              className="play-lobby-board w-full aspect-square bg-neutral-900 rounded-[2rem] border-[6px] border-neutral-800/50 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8)] overflow-hidden ring-1 ring-white/10 relative transition-all duration-700 group-hover/board:border-neutral-800 self-center max-w-[94vw] sm:max-w-[560px] lg:max-w-[min(630px,calc(100dvh-120px))] max-md:max-w-none max-md:border-2 max-md:rounded-xl"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
+              <ChessBoard confirmMovesMobile={confirmMobileMoves} overrideBoardTheme={boardTheme} className="border-none p-0 bg-transparent shadow-none max-md:[&_[draggable]_img]:scale-110" />
+            </div>
+          </div>
+
+        </div>
+
+        {/* ── Right Side: Control Panel ────────────────────────── */}
+        <div className="w-full flex flex-col animate-fade-in-right lg:min-h-[min(630px,calc(100dvh-120px))] lg:justify-center lg:-ml-4">
+          <MobileFriendTimeControl timeControl={timeControl} onTimeChange={setTimeControl} presets={timePresets} resetRef={mobileInviteReset} openRef={mobileFriendOpen} controlsHidden />
+          <ArenaPlayPanel
+            timeControl={timeControl}
+            onTimeChange={setTimeControl}
+            onStart={() => {
+              mobileInviteReset.current?.();
+              if (authIsLoading) return;
+              if (!session) { navigate('/profile?returnTo=%2Fplay'); return; }
+              if (!socket || !isConnected) {
+                if (authError === 'unauthorized') {
+                  setJoinError('Session expired. Please sign in again.');
+                  return;
+                }
+                setWaitingForSocket(true);
+                setIsSearching(true);
+                return;
+              }
+              setWaitingForSocket(false);
+              setIsSearching(true);
+              socket.emit('join_queue', { timeControl: toServerTimeControl(timeControl) });
+            }}
+            onFriend={() => {
+              if (window.matchMedia('(max-width: 767px)').matches) {
+                mobileFriendOpen.current?.();
+                return;
+              }
+              if (authIsLoading) return;
+              if (!session) { navigate('/profile?returnTo=%2Fplay'); return; }
+              if (!socket || !isConnected) {
+                if (authError === 'unauthorized') { setJoinError('Session expired. Please sign in again.'); return; }
+                setWaitingForFriendSocket(true);
+                setIsPrivateCreating(true);
+                return;
+              }
+              setWaitingForFriendSocket(false);
+              setIsPrivateCreating(true);
+              setPrivateRoomId(null);
+              socket.emit('create_private_room', { timeControl: toServerTimeControl(timeControl) });
+            }}
+          />
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
