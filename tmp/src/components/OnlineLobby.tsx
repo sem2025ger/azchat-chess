@@ -235,7 +235,9 @@ export default function OnlineLobby({ timeControl }: { timeControl: string }) {
           }}>{tr('Einladung abbrechen', 'Отменить приглашение', 'Cancel invitation')}</button>}
         </div>
       )}
-      {session && !isConnected && <p role="status" className="mt-1 px-1 text-[11px] text-amber-200">{tr('Verbindung zum Spielserver fehlt.', 'Нет подключения к игровому серверу.', 'Game server connection unavailable.')}</p>}
+      <div className="online-lobby-connection-status">
+        {session && !isConnected && <p role="status" className="mt-1 px-1 text-[11px] text-amber-200">{tr('Verbindung zum Spielserver fehlt.', 'Нет подключения к игровому серверу.', 'Game server connection unavailable.')}</p>}
+      </div>
       {message && <p role="status" className="mt-2 px-1 text-xs text-amber-200">{message}</p>}
       {inbound && <div role="dialog" aria-label="Game invitation" className="mt-2 rounded-xl border border-amber-300/30 bg-amber-400/10 p-3">
         <p className="text-xs font-semibold text-neutral-100">{tr('Spieleinladung von', 'Вызов от', 'Invitation from')} {profiles[inbound.fromUserId] || tr('Spieler', 'игрока', 'player')} · {inbound.timeControl}</p>

@@ -157,6 +157,30 @@ try {
   await evaluate("[...document.querySelectorAll('.arena-time-options button')].find(button=>button.textContent==='5 min.').click()");
   assert.equal(await evaluate("document.querySelector('.arena-time-value').textContent"), '5 min.');
   console.log('PASS time selection remains interactive');
+  // Reproduce the restored-session -> connecting -> connected status row.
+  // Network-free geometry coverage: the real status wrapper remains mounted
+  // while its conditional message appears and disappears.
+  for (const [width,height] of [[1024,768],[1366,768],[1440,900],[1920,1080]]) {
+    await cdp('Emulation.setDeviceMetricsOverride', {mobile:false,width,height,deviceScaleFactor:1});
+    await cdp('Page.navigate', {url:base+'/play?connection-qa='+width});
+    await checkFrames('connection baseline '+width);
+    const geometry = () => evaluate(`['.arena-play-panel','.arena-start-game','.play-lobby-board'].map(selector=>{
+      const {x,y,width,height}=document.querySelector(selector).getBoundingClientRect();return {x,y,width,height};
+    })`);
+    const before = await geometry();
+    for (const message of ['Нет подключения к игровому серверу.','Verbindung zum Spielserver fehlt.','Game server connection unavailable.']) {
+      await evaluate(`(() => {
+        const slot=document.querySelector('.arena-play-panel .online-lobby-connection-status');
+        if(!slot) throw Error('Missing persistent connection-status row');
+        const p=document.createElement('p');p.setAttribute('role','status');p.className='mt-1 px-1 text-[11px] text-amber-200';p.textContent=${JSON.stringify(message)};slot.append(p);
+      })()`);
+      assert.deepEqual(await geometry(),before,'Connecting status must not resize or move the panel, start button or board');
+      assert.equal(await evaluate(`(() => {const p=document.querySelector('.online-lobby-connection-status p');return p.scrollHeight>p.clientHeight || p.getBoundingClientRect().bottom>p.parentElement.getBoundingClientRect().bottom+0.75})()`),false,'Status must fit its reserved row');
+      await evaluate("document.querySelector('.online-lobby-connection-status').replaceChildren()");
+      assert.deepEqual(await geometry(),before,'Connected status must not shrink the panel');
+    }
+    console.log('PASS restoring/connecting/connected panel geometry '+width);
+  }
 } finally {
   clearTimeout(deadline);
   ws?.close();
