@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 import postcss from 'postcss';
 
 const legacy = ['Void Black', 'Deep Space', 'Velvet Gold', 'Champagne Light', 'Coffee Brown', 'Walnut Dark', 'Emerald Night', 'Royal Blue', 'Royal Violet', 'Obsidian Gold'];
-const added = ['Slate Blue', 'Sage Stone', 'Warm Taupe', 'Amethyst Mist'];
+const added = ['Soft Graphite', 'Slate Blue', 'Sage Stone', 'Warm Taupe', 'Amethyst Mist'];
 const luminance = hex => {
   const rgb = hex.replace('#', '').match(/../g).map(x => parseInt(x, 16) / 255).map(v => v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
   return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
@@ -47,7 +47,7 @@ test('saved interface themes survive initialization and remain selectable with r
         assert.equal(findSettings([{ kind: 'background', label: name, value: name }], name, { background: 'Интерфейс' })[0]?.value, name);
       } else assert.ok(!html.includes('data-premium-theme='), 'old themes retain approved mobile Settings palette');
     }
-    for (const [old, expected] of [['Standard', 'Void Black'], ['Game Room', 'Deep Space'], ['Velvet Gold Background', 'Velvet Gold'], ['unknown', 'Void Black'], [null, 'Void Black']]) {
+    for (const [old, expected] of [['Standard', 'Void Black'], ['Game Room', 'Deep Space'], ['Velvet Gold Background', 'Velvet Gold'], ['unknown', 'Soft Graphite'], [null, 'Soft Graphite']]) {
       saved = old; render(Layout); assert.equal(observed, expected);
     }
   } finally {
@@ -89,8 +89,9 @@ test('the four optional palettes retain their hues at half the original lightnes
   const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
     const { premiumInterfaceThemes } = await server.ssrLoadModule('/src/lib/interfaceThemes.ts');
-    assert.deepEqual(premiumInterfaceThemes.map(theme => theme.id), Object.keys(original));
-    for (const theme of premiumInterfaceThemes) {
+    const originalThemes = premiumInterfaceThemes.filter(theme => theme.id in original);
+    assert.deepEqual(originalThemes.map(theme => theme.id), Object.keys(original));
+    for (const theme of originalThemes) {
       const colors = theme.gradient.match(/#[a-f0-9]{6}/g);
       assert.deepEqual(theme.class.match(/#[a-f0-9]{6}/g), colors, 'swatches and applied background agree');
       colors.forEach((color, stop) => {
@@ -102,4 +103,17 @@ test('the four optional palettes retain their hues at half the original lightnes
       });
     }
   } finally { await server.close(); }
+});
+
+// Static guard: protect the agreed sidebar sizing and unchanged video rotation behavior.
+test('desktop sidebar and Chess Arena polish preserve the existing globe animation', () => {
+  const layout = readFileSync(new URL('../src/components/Layout.tsx', import.meta.url), 'utf8');
+  const home = readFileSync(new URL('../src/screens/HomeScreen.tsx', import.meta.url), 'utf8');
+  assert.match(layout, /xl:text-\\[2rem\\]/);
+  assert.match(layout, /h-\\[54px\\] w-\\[54px\\]/);
+  assert.match(layout, /w-\\[46px\\] h-\\[31px\\]/);
+  assert.match(layout, /autoPlay muted loop playsInline/);
+  assert.doesNotMatch(layout, /playbackRate/);
+  assert.match(home, /#D9D6CF 39%/);
+  assert.match(home, /#947D5D 100%/);
 });
