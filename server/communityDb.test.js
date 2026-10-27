@@ -52,7 +52,7 @@ test('ChessAZ Deutsch PostgreSQL migration and RLS integration (isolated)', { sk
     created = true;
     setup = new Client({ connectionString });
     await setup.connect();
-    await setup.query("DO $$ BEGIN BEGIN CREATE ROLE authenticated; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END; BEGIN CREATE ROLE anon; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END; END $$");
+    await setup.query("DO $$ BEGIN BEGIN CREATE ROLE anon; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END; BEGIN CREATE ROLE authenticated; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END; END $$");
     await setup.query("CREATE SCHEMA auth; GRANT USAGE ON SCHEMA auth TO authenticated; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$; GRANT EXECUTE ON FUNCTION auth.uid() TO authenticated;");
     await setup.query('GRANT USAGE ON SCHEMA public TO anon, authenticated; CREATE TABLE public.profiles(id uuid PRIMARY KEY);');
     for (const id of Object.values(ids)) {

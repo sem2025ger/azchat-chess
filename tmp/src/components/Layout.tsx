@@ -99,6 +99,7 @@ export default function Layout() {
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={desktop ? 'Schach-Treff' : t('nav.chat')} themeColor="theme-violet" subtitle={desktop ? 'Für Deutschsprachige' : undefined} />
             {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/clubs-nrw" icon={<MapPin size={20} />} label="Bochum & NRW" themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
+            {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label="Spieler" themeColor="theme-blue" />}
           </nav>
         </div>
 
