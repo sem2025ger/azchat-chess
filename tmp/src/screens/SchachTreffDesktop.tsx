@@ -110,7 +110,7 @@ export default function SchachTreffDesktop() {
   if (missing) return null;
   const members = profiles.filter(p => roster.includes(p.id));
   return <section className="schach-treff" lang="de" data-schach-treff-desktop>
-    <header><h1>{t.title}</h1><div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
+    <header><h1>{t.title}</h1><Link className="st-region-entry" to="/region/nrw" aria-label="NRW-Regionalübersicht öffnen">NRW ↗</Link><div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
       {menu && <nav aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}</nav>}
     </div></header>
     {error && <p role="alert">{error}</p>}
