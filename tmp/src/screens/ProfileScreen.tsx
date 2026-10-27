@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { calculateMatchStats, getMatchResultForPlayer } from '../utils/profileContract';
-import { authCallbackUrl, clubReturnTarget } from '../lib/authCallbackUrl';
+import { authCallbackUrl, clubReturnTarget, inviteReturnTarget, inviteAuthCallbackUrl } from '../lib/authCallbackUrl';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -39,7 +39,8 @@ export default function ProfileScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedReturn = searchParams.get('returnTo');
-  const clubReturnTo = clubReturnTarget(requestedReturn);
+  const inviteReturnTo = inviteReturnTarget(requestedReturn);
+  const clubReturnTo = clubReturnTarget(requestedReturn) ?? inviteReturnTo;
   const mobileReturnTo = requestedReturn === '/play' || requestedReturn?.startsWith('/play?room=') || requestedReturn?.startsWith('/play?invite=1&tc=')
     ? requestedReturn
     : null;
@@ -139,7 +140,8 @@ export default function ProfileScreen() {
           password,
           options: {
             data: { username: requestedName },
-            emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play')
+            emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play'),
+            ...(inviteReturnTo ? { emailRedirectTo: inviteAuthCallbackUrl(window.location.origin, '/profile', inviteReturnTo) } : {})
           }
         });
         if (error) throw error;
@@ -182,7 +184,8 @@ export default function ProfileScreen() {
     setAuthLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: authCallbackUrl(window.location.origin, '/update-password', Boolean(clubReturnTo), mobileReturnTo === '/play')
+        redirectTo: authCallbackUrl(window.location.origin, '/update-password', Boolean(clubReturnTo), mobileReturnTo === '/play'),
+        ...(inviteReturnTo ? { redirectTo: inviteAuthCallbackUrl(window.location.origin, '/update-password', inviteReturnTo) } : {})
       });
       if (error) throw error;
       setAuthMessage(t('auth.resetEmailSent'));
@@ -208,7 +211,8 @@ export default function ProfileScreen() {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play') }
+        options: { emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play'),
+            ...(inviteReturnTo ? { emailRedirectTo: inviteAuthCallbackUrl(window.location.origin, '/profile', inviteReturnTo) } : {}) }
       });
       if (error) throw error;
       setAuthMessage(t('auth.magicLinkSent'));

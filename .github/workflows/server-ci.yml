@@ -20,6 +20,7 @@ permissions:
 jobs:
   server:
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     services:
       postgres:
         image: postgres:17
@@ -55,6 +56,7 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Run server tests
+        timeout-minutes: 5
         run: npm test
 
       - name: Audit production dependencies
