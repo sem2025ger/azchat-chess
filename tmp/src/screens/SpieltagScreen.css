@@ -1,0 +1,11 @@
+.spieltag-page { width:100%;max-width:960px;margin:0 auto;padding:24px;color:#ece9e4;display:grid;gap:18px; }
+.spieltag-page h1 { font-size:2rem;font-weight:700; }.spieltag-page h2 { font-size:1.25rem;font-weight:600; }.spieltag-page h3 { font-weight:600; }
+.spieltag-card,.spieltag-form { padding:18px;border:1px solid #ffffff26;border-radius:14px;background:#ffffff06; }
+.spieltag-form { display:grid;gap:12px; }.spieltag-page label { display:grid;gap:6px; }
+.spieltag-page input,.spieltag-page select,.spieltag-page textarea { min-width:0;width:100%;padding:10px;border:1px solid #ffffff40;border-radius:8px;background:#262626;color:#f5f5f5; }
+.spieltag-page button { min-height:40px;padding:8px 12px;border:1px solid #ffffff40;border-radius:8px; }.spieltag-page button:disabled { opacity:.45; }
+.spieltag-page :is(button,input,select,textarea):focus-visible { outline:2px solid #e8c777;outline-offset:3px; }
+.spieltag-actions,.spieltag-tabs { display:flex;flex-wrap:wrap;gap:8px; }.spieltag-tabs { margin:18px 0; }.spieltag-tabs [aria-selected=true] { border-color:#e8c777;color:#e8c777;background:#e8c77710; }
+.spieltag-boards { display:grid;gap:10px;margin:12px 0; }.spieltag-boards li { display:grid;gap:8px;padding:12px;border:1px solid #ffffff20;border-radius:8px;overflow-wrap:anywhere; }
+.spieltag-page .spieltag-link { text-align:left;text-decoration:underline;color:#e8c777;justify-self:start; }.spieltag-notes p { white-space:pre-wrap;overflow-wrap:anywhere; }
+@media(max-width:600px) { .spieltag-page { padding:16px; }.spieltag-tabs button { flex:1;font-size:.85rem; }.spieltag-card,.spieltag-form { padding:12px; } }
