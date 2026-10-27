@@ -219,27 +219,22 @@
   }
 }
 
-/* Metallic sheen is on the king silhouette, not the .de letters. */
-.sidebar-king-metallic {
-  background-image: linear-gradient(112deg,
-    #24355E 0%, #5276B5 17%, #C7D8F0 32%,
-    #35466C 46%, #7862A5 61%, #CDD2E7 77%,
-    #51436F 89%, #273C70 100%);
-  background-size: 190% 100%;
-  background-position: 50% 50%;
-  -webkit-mask: url('/brand/sidebar-king.svg') center / 100% 100% no-repeat;
-  mask: url('/brand/sidebar-king.svg') center / 100% 100% no-repeat;
-  animation: sidebarKingSheen 7s ease-in-out infinite alternate;
-  opacity: .8;
+/* Reference-matched silver wordmark and chromatic premium .de. */
+.sidebar-brand-silver {
+  background: linear-gradient(180deg, #fcfdff 0%, #e5e8ee 30%, #a4a9b4 65%, #eff1f4 90%, #8f97a4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #d7dce4;
 }
-@keyframes sidebarKingSheen {
-  from { background-position: 0% 50%; }
-  to { background-position: 100% 50%; }
+.sidebar-brand-de {
+  background-image: linear-gradient(110deg, #2b91e7 0%, #63d9ff 16%, #c0f5ff 32%, #547bc7 45%, #9e67d5 58%, #f5bde6 72%, #e4a75f 83%, #8360e0 100%);
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #9a83de;
 }
-@media (prefers-reduced-motion: reduce) {
-  .sidebar-king-metallic { animation: none; background-position: 50% 50%; }
-}
-
 /* Text Shadow Cycle for Start Game button */
 .text-shadow-cycle {
   animation: none;
