@@ -222,10 +222,10 @@
 /* Subtle metallic motion is scoped to the sidebar's .de brand suffix. */
 .sidebar-de-metallic {
   background-image: linear-gradient(112deg,
-    #437BD9 0%, #6ECFFF 17%, #F5F8FF 33%,
-    #91B6E8 47%, #C4A3EA 61%, #F0EEFF 76%,
-    #A69DE5 87%, #5D6CCF 100%);
-  background-size: 160% 100%;
+    #24355E 0%, #5276B5 17%, #C7D8F0 32%,
+    #35466C 46%, #7862A5 61%, #CDD2E7 77%,
+    #51436F 89%, #273C70 100%);
+  background-size: 190% 100%;
   background-position: 50% 50%;
   background-clip: text;
   -webkit-background-clip: text;
