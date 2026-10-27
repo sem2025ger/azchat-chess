@@ -6,6 +6,9 @@ import { supabase } from '../services/supabase';
 import { copy as t } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
 import './SchachTreffDesktop.css';
+import { ChallengeProvider, ChallengeButton, ChallengeMessage } from '../components/schachTreff/Challenges';
+import PlayerSummary from '../components/schachTreff/PlayerSummary';
+import ClubRooms, { RoomTitle } from '../components/schachTreff/ClubRooms';
 
 type Profile = { id: string; username: string };
 type Message = { id: string; author_id: string; body: string; created_at: string };
@@ -36,7 +39,9 @@ export default function SchachTreffDesktop() {
   useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, []);
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
   const refresh = useCallback(async () => {
-    const club = await supabase.from('chess_clubs').select('id').eq('slug', 'chessaz-deutsch').maybeSingle();
+    const requested = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('club');
+    const query = supabase.from('chess_clubs').select('id');
+    const club = await (requested && /^[0-9a-f-]{36}$/i.test(requested) ? query.eq('id',requested) : query.eq('slug','chessaz-deutsch')).maybeSingle();
     if (club.error) throw club.error;
     setClubId(club.data?.id ?? null);
     let pinnedAuthor: string | null = null;
@@ -110,13 +115,14 @@ export default function SchachTreffDesktop() {
   if (missing) return null;
   const members = profiles.filter(p => roster.includes(p.id));
   return <section className="schach-treff" lang="de" data-schach-treff-desktop>
+    <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member}>
     <header><h1>{t.title}</h1><div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
       {menu && <nav aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}</nav>}
     </div></header>
     {error && <p role="alert">{error}</p>}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
-    <div className="st-columns"><aside className="st-surface st-rooms"><h2>{t.rooms}</h2><button aria-current="page">{t.general}</button><h2>{t.clubs}</h2></aside>
-      <section className="st-surface st-chat"><h2>{t.general}</h2>
+    <div className="st-columns"><aside className="st-surface st-rooms"><h2>{t.rooms}</h2><a href="/chat">{t.general}</a><h2>{t.clubs}</h2><ClubRooms currentClubId={clubId} /></aside>
+      <section className="st-surface st-chat"><h2><RoomTitle clubId={clubId} /></h2>
         {pinAvailable && (pin || canPin) && <div className="st-pin">
           <div className="st-pin-title">{t.pinned}{pin?.author && ' · '}{pin?.author ? profiles.find(p => p.id === pin.author)?.username ?? '' : ''}
             {canPin && <button onClick={() => { setPinEdit(true); setPinDraft(pin?.body ?? ''); }}>{t.change}</button>}
@@ -130,14 +136,15 @@ export default function SchachTreffDesktop() {
         <div className="st-messages" aria-live="polite">
         {!messages.length && !error && <p>{t.empty}</p>}{messages.map(message => {
           const author = profiles.find(p => p.id === message.author_id);
-          return <article key={message.id}><div className="st-message-heading">{author && <button className="st-name" onClick={() => setPlayer(author)}>{author.username}</button>}<time dateTime={message.created_at}>{stamp(message.created_at)}</time></div><p>{message.body}</p></article>;
-        })}</div><form onSubmit={send}><input aria-label={t.placeholder} placeholder={t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required /><button disabled={busy || !body.trim()}>{t.send}</button></form></section>
+          return <article key={message.id}><div className="st-message-heading">{author && <button className="st-name" onClick={() => setPlayer(author)}>{author.username}</button>}<time dateTime={message.created_at}>{stamp(message.created_at)}</time></div><ChallengeMessage messageId={message.id} body={message.body} />{message.author_id !== user?.id && <ChallengeButton targetUserId={message.author_id} />}</article>;
+        })}</div><form onSubmit={send}><ChallengeButton /><input aria-label={t.placeholder} placeholder={t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required /><button disabled={busy || !body.trim()}>{t.send}</button></form></section>
       <aside className="st-right" />
     </div>}
     <dialog ref={dialog} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
       <button className="st-close" onClick={() => { setPanel(null); setPlayer(null); }}>{t.close}</button>
       {/* Genuine ratings will be introduced by the future Glicko-2 task; do not display stored placeholder values here. */}
-      {player ? <><h2>{player.username}</h2><p>{t.noLocation}</p><dl><dt>{t.blitz}</dt><dd>—</dd><dt>{t.rapid}</dt><dd>—</dd></dl><VorbereitungLink onClick={()=>{setPlayer(null);setPanel(null);}}/></> : panel === 'tournaments' ? <><h2 className="st-display">{t.tournamentTitle}</h2><p>{t.tournamentText}</p><button aria-pressed={notify} onClick={() => setNotify(!notify)}>{notify ? t.notified : t.notify}</button></> : panel === 'about' ? <><h2>{t.about}</h2><p>{t.aboutText}</p></> : panel === 'ranking' ? <><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></> : panel && <><h2>{t[panel]}</h2>{!members.length && !error && <p>{t.noMembers}</p>}{members.map(p => <div className="st-member" key={p.id}><button className="st-name" onClick={() => setPlayer(p)}>{p.username}</button></div>)}</>}
+      {player ? <><PlayerSummary userId={player.id}><h2>{player.username}</h2><p>{t.noLocation}</p><dl><dt>{t.blitz}</dt><dd>—</dd><dt>{t.rapid}</dt><dd>—</dd></dl></PlayerSummary><ChallengeButton targetUserId={player.id} beforeOpen={() => setPlayer(null)} /><VorbereitungLink onClick={()=>{setPlayer(null);setPanel(null);}}/></> : panel === 'tournaments' ? <><h2 className="st-display">{t.tournamentTitle}</h2><p>{t.tournamentText}</p><button aria-pressed={notify} onClick={() => setNotify(!notify)}>{notify ? t.notified : t.notify}</button></> : panel === 'about' ? <><h2>{t.about}</h2><p>{t.aboutText}</p></> : panel === 'ranking' ? <><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></> : panel && <><h2>{t[panel]}</h2>{!members.length && !error && <p>{t.noMembers}</p>}{members.map(p => <div className="st-member" key={p.id}><button className="st-name" onClick={() => setPlayer(p)}>{p.username}</button></div>)}</>}
     </dialog>
+    </ChallengeProvider>
   </section>;
 }

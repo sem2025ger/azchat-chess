@@ -40,3 +40,20 @@
 .schach-treff [role=alert]{border:1px solid #D9AE5B;padding:12px;margin-bottom:16px}
 }
 @media(min-width:1280px){.schach-treff .st-columns{grid-template-columns:200px minmax(0,1fr) 260px}}
+
+@media(min-width:1024px){
+.schach-treff .st-challenge-card{padding:12px;border:1px solid rgba(217,174,91,.3);border-radius:12px;background:#0E100F}
+.schach-treff .st-mono{font-family:ui-monospace,monospace}
+.schach-treff dialog form{flex-direction:column}
+.schach-treff dialog label{display:flex;align-items:center;gap:8px;min-height:44px}
+.schach-treff dialog input[type=radio]{width:auto}
+.schach-treff select{min-height:44px;max-width:100%;background:#0E100F;color:#F2EEE3;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px}
+.schach-treff fieldset{border:0}
+}
+
+@media(min-width:1024px){
+.schach-treff .st-room-list>a{display:block;overflow-wrap:anywhere;margin:4px 0}
+.schach-treff .st-room-list>[aria-current=page]{border:1px solid #D9AE5B}
+.schach-treff .st-create-room{border-style:dashed;width:100%}
+.schach-treff .st-room-list form{flex-direction:column}
+}
