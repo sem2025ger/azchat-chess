@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, CalendarDays, Radio, Newspaper, ShieldCheck, MapPin, Trophy, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
+import NationwideChatRail from '../components/schachTreff/NationwideChatRail';
 import './RegionOverview.css';
 
 type Club = { id:string; slug:string; name:string; city:string };
@@ -134,13 +135,7 @@ export default function RegionOverview(){
     {(!detail||detail==='news')&&<Tile section="news" icon={<Newspaper size={19}/>} count={news.length?String(news.length):undefined}>{content.news}</Tile>}
     {(!detail||detail==='live')&&<Tile section="live" icon={<Radio size={19}/>} >{content.live}</Tile>}
    </div>
-   <aside className="nrw-chat-rail" aria-label="Deutschlandweiter Chat">
-    <div className="nrw-chat-dot"><MessageSquare size={22} aria-hidden="true"/></div>
-    <h2>Schach-Treff</h2>
-    <p>Der gemeinsame Chat und Spieler-Herausforderungen bleiben deutschlandweit.</p>
-    <Link to="/chat">Chat öffnen <ArrowUpRight size={16} aria-hidden="true"/></Link>
-    <small>Unabhängig von der Region</small>
-   </aside>
+   <NationwideChatRail />
   </div>
  </div>;
 }
