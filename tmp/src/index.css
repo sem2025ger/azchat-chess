@@ -235,17 +235,17 @@
   -webkit-text-fill-color: transparent;
   color: #9a83de;
 }
-/* Subtle premium sweep on the existing king asset; preserve all underlying pixels. */
+/* Enhanced premium sweep on the unchanged king asset; preserve underlying silver and gold. */
 .sidebar-king-sheen {
-  background: linear-gradient(110deg, transparent 30%, rgba(194,219,251,.05) 41%, rgba(233,237,255,.2) 49%, rgba(222,192,136,.11) 55%, transparent 65%);
+  background: linear-gradient(110deg, transparent 15%, rgba(121,173,238,.18) 30%, rgba(176,221,255,.36) 40%, rgba(250,249,245,.56) 49%, rgba(229,196,143,.40) 57%, rgba(158,131,208,.20) 66%, transparent 82%);
   background-size: 230% 100%;
   -webkit-mask: url('/brand/sidebar-king.svg') center / 100% 100% no-repeat;
   mask: url('/brand/sidebar-king.svg') center / 100% 100% no-repeat;
   animation: sidebarKingSoftSheen 9s ease-in-out infinite;
 }
 @keyframes sidebarKingSoftSheen {
-  0%, 22% { background-position: 100% 50%; }
-  70%, 100% { background-position: 0% 50%; }
+  0%, 100% { background-position: 100% 50%; }
+  50% { background-position: 0% 50%; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sidebar-king-sheen { animation: none; background-position: 50% 50%; }
