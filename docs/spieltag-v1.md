@@ -19,6 +19,8 @@ The HTTP API verifies the existing bearer identity, then uses a **request-specif
 
 ## Flags and configuration
 
+The board SELECT policy explicitly checks the caller's authoritative team membership in addition to the parent match RLS. An isolated PostgreSQL regression deliberately broadens the parent-read policy and proves that outsider/other-team board reads remain denied; the parent policy is then restored. This prevents future parent-policy changes from exposing internal lineups or results.
+
 - Backend: `SPIELTAG_ENABLED=true`; frontend: `VITE_SPIELTAG_ENABLED=true`. Both default OFF; no flags were enabled by this milestone. The navigation link is desktop-only, following Spieler; the route itself is responsive.
 - API needs `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` or `SUPABASE_ANON_KEY` (a public key, never a service secret). `VITE_SERVER_URL` must point at the intended QA backend. Missing configuration fails closed. No new environment values or deployed services are changed by this PR.
 - Optional card buttons additionally require `VITE_SPIELER_V1_ENABLED=true`, and the existing backend Spieler feature must be enabled for card requests to succeed. Spieltag remains usable with manual names if Spieler is disabled.

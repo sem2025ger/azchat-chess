@@ -69,7 +69,8 @@ CREATE POLICY spieltag_match_update ON public.spieltag_matches FOR UPDATE TO aut
 CREATE POLICY spieltag_match_delete ON public.spieltag_matches FOR DELETE TO authenticated
  USING(EXISTS(SELECT 1 FROM public.spieltag_team_members m WHERE m.team_id=spieltag_matches.team_id AND m.user_id=(SELECT auth.uid()) AND m.role='captain'));
 CREATE POLICY spieltag_board_read ON public.spieltag_boards FOR SELECT TO authenticated
- USING(EXISTS(SELECT 1 FROM public.spieltag_matches g WHERE g.id=match_id));
+ USING(EXISTS(SELECT 1 FROM public.spieltag_matches g JOIN public.spieltag_team_members m ON m.team_id=g.team_id
+ WHERE g.id=match_id AND m.user_id=(SELECT auth.uid())));
 CREATE POLICY spieltag_board_insert ON public.spieltag_boards FOR INSERT TO authenticated
  WITH CHECK(EXISTS(SELECT 1 FROM public.spieltag_matches g JOIN public.spieltag_team_members m ON m.team_id=g.team_id
  WHERE g.id=match_id AND m.user_id=(SELECT auth.uid()) AND m.role='captain'));

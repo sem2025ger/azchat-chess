@@ -58,6 +58,18 @@ test('Spieltag real PostgreSQL: ordered dependencies, authoritative team privacy
    await assert.rejects(as(captain,'DELETE FROM public.spieltag_team_members WHERE user_id=$1',[member]),e=>e.code==='42501');
    await assert.rejects(as(captain,"INSERT INTO public.spieltag_teams(club_id,name) VALUES($1,'Forged')",[clubs[0].id]),e=>e.code==='42501');
   });
+  await t.test('boards independently require membership even if a future parent-read policy is broadened',async()=>{
+   const {rows:[policy]}=await db.pool.query("SELECT pg_get_expr(polqual,polrelid) AS expression FROM pg_policy WHERE polname='spieltag_match_read' AND polrelid='public.spieltag_matches'::regclass");
+   // Disposable database only: deliberately broaden the parent policy to prove
+   // the child table has its own membership boundary, then restore it exactly.
+   await db.pool.query('ALTER POLICY spieltag_match_read ON public.spieltag_matches USING(true)');
+   try{
+    assert.equal((await as(outsider,'SELECT * FROM public.spieltag_matches WHERE id=$1',[match.id])).rowCount,1,'fixture actually broadens the parent');
+    assert.equal((await as(outsider,'SELECT * FROM public.spieltag_boards WHERE match_id=$1',[match.id])).rowCount,0);
+    assert.equal((await as(otherCaptain,'SELECT * FROM public.spieltag_boards WHERE match_id=$1',[match.id])).rowCount,0);
+    assert.equal((await as(member,'SELECT * FROM public.spieltag_boards WHERE match_id=$1',[match.id])).rowCount,1);
+   }finally{await db.pool.query('ALTER POLICY spieltag_match_read ON public.spieltag_matches USING('+policy.expression+')');}
+  });
   await t.test('only captain can write own schedules, boards, results and notes; foreign IDs fail closed',async()=>{
    for(const who of [member,outsider,otherCaptain]){
     await assert.rejects(insertMatch(who),e=>e.code==='42501');
