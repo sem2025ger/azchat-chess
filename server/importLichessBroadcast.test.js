@@ -72,3 +72,24 @@ test('CLI reports safe failure stage and allowlisted code, never provider secret
  assert.equal(safeFailure({code:secret,cause:{code:'SELF_SIGNED_CERT_IN_CHAIN'}},'database_connect').code,'SELF_SIGNED_CERT_IN_CHAIN');
  assert.equal(safeFailure({message:secret,code:secret},'database_connect').code,'UNCLASSIFIED');
 });
+
+test('Supabase CA and strict TLS survive pg connection-string parsing',()=>{
+ const {databaseConfig}=require('./scripts/importLichessBroadcast');
+ const {Client}=require('pg');
+ const {X509Certificate}=require('node:crypto');
+ const fs=require('node:fs'),path=require('node:path');
+ const ca=fs.readFileSync(path.join(__dirname,'certs/supabase-root-ca.crt'),'utf8');
+ const cert=new X509Certificate(ca);
+ assert.equal(cert.ca,true);assert.ok(cert.subject.includes('Supabase Root 2021 CA'));
+ assert.equal(cert.verify(cert.publicKey),true);
+ for(const suffix of ['', '?sslmode=require','?sslmode=verify-full']){
+  const config=databaseConfig('postgresql://postgres.iukmpcytsuofqhxsumbu:fixture%40pass@aws-0-eu-central-1.pooler.supabase.com:5432/postgres'+suffix);
+  const client=new Client(config);
+  assert.equal(config.ssl.ca,ca);assert.equal(config.ssl.rejectUnauthorized,true);
+  assert.equal(client.connectionParameters.ssl.ca,ca);
+  assert.equal(client.connectionParameters.ssl.rejectUnauthorized,true);
+  assert.equal(client.connectionParameters.ssl.checkServerIdentity,undefined);
+  assert.equal(client.connectionParameters.password,'fixture@pass');
+ }
+ assert.throws(()=>databaseConfig('postgresql://postgres:fixture@db.iukmpcytsuofqhxsumbu.supabase.co/postgres?sslmode=disable'));
+});

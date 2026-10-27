@@ -41,6 +41,17 @@ function guardDatabaseUrl(connectionString){
  if(u.searchParams.has('sslmode')&&!['require','verify-full'].includes(u.searchParams.get('sslmode')))throw Error('TLS required');
  return true;
 }
+function databaseConfig(connectionString){
+ guardDatabaseUrl(connectionString);
+ // pg lets URI sslmode replace the entire ssl object. Validate first, then
+ // remove that option so the pinned CA and strict verification cannot be lost.
+ const url=new URL(connectionString);
+ url.searchParams.delete('sslmode');
+ return {connectionString:url.toString(),ssl:{
+  ca:fs.readFileSync(path.join(__dirname,'../certs/supabase-root-ca.crt'),'utf8'),
+  rejectUnauthorized:true
+ },connectionTimeoutMillis:15000};
+}
 function validateArgs(argv){
  const args={};
  for(const arg of argv){
@@ -152,7 +163,7 @@ async function main({argv=process.argv.slice(2),env=process.env,ClientImpl=Clien
   const connectionString=env.QA_DATABASE_URL||'';
   guardDatabaseUrl(connectionString);
   phase='database_connect';
-  db=new ClientImpl({connectionString,ssl:{rejectUnauthorized:true},connectionTimeoutMillis:15000});
+  db=new ClientImpl(databaseConfig(connectionString));
   await db.connect();
   phase='month_processing';
   const result=await run({month:args.month,dir:args.dir,target:args.target,url,db,apply:!!args.apply,
@@ -164,4 +175,4 @@ async function main({argv=process.argv.slice(2),env=process.env,ClientImpl=Clien
 }
 if(require.main===module)main().then(ok=>{if(!ok)process.exitCode=1;});
 module.exports={QA,MAX_DB_BYTES,BATCH_SIZE,INSERT_SQL,guardDatabaseUrl,validateArgs,
- databaseBytes,batchReservation,validateRow,upsertBatch,buildFilter,runMonth,safeFailure,main};
+ databaseBytes,batchReservation,validateRow,upsertBatch,buildFilter,runMonth,safeFailure,main,databaseConfig};
