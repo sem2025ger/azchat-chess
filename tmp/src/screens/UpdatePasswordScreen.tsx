@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { clubReturnTarget } from '../lib/authCallbackUrl';
+import { clubReturnTarget, inviteReturnTarget } from '../lib/authCallbackUrl';
 import { supabase, hasPasswordRecoveryIntent, clearPasswordRecoveryIntent } from '../services/supabase';
 import { useLanguage } from '../context/LanguageContext';
 import { Loader2 } from 'lucide-react';
@@ -10,7 +10,7 @@ export default function UpdatePasswordScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedReturn = searchParams.get('returnTo');
-  const backTo = requestedReturn === '/play' ? '/play' : (clubReturnTarget(requestedReturn) ?? '/profile');
+  const backTo = requestedReturn === '/play' ? '/play' : (clubReturnTarget(requestedReturn) ?? inviteReturnTarget(requestedReturn) ?? '/profile');
   
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

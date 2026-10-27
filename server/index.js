@@ -13,10 +13,12 @@ const { createMatchPersistenceFromEnv, persistRoomCompletedMatch } = require('./
 const { createSocketRateLimiter } = require('./rateLimiter');
 const { createDurableStoreFromEnv } = require('./durableStore');
 const { createDurableGames } = require('./durableGames');
+const { registerClubChallenges } = require('./clubChallenges');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const clubClient = SUPABASE_URL && SUPABASE_SERVICE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } }) : null;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   if (process.env.NODE_ENV !== 'test') {
@@ -536,10 +538,207 @@ function getActivePlayerActionContext(socket, roomId, action) {
   return { room, playerColor };
 }
 
+function createPrivateRoom(socket, payload) {
+    if (!socket.data?.limiter?.allow('lobby')) {
+      socket.emit('rate_limit_exceeded', { action: 'create_private_room' });
+      return;
+    }
+    if (!durableGames.ready()) { socket.emit('join_failed', { reason: 'storage_unavailable' }); return; }
+    if (socket.data.startingGame) return;
+
+    const existingRoomId = socketToRoom.get(socket.id);
+    if (existingRoomId) {
+      const existingRoom = activeRooms.get(existingRoomId);
+      if (existingRoom) {
+        if (existingRoom.isPrivate === true && existingRoom.status === 'pending' && (existingRoom.players.w === socket.id || existingRoom.players.b === socket.id)) {
+          socket.emit('private_room_created', { roomId: existingRoomId, timeControl: existingRoom.timeControl });
+          return;
+        } else {
+          socket.emit('join_failed', { reason: "already_in_room" });
+          return;
+        }
+      } else {
+        socketToRoom.delete(socket.id);
+      }
+    }
+
+    // Only the new mobile invitation sends a time control. Legacy callers retain 10+0.
+    const requestedTime = payload?.timeControl;
+    if (requestedTime !== undefined && !ALLOWED_TIME_CONTROLS.has(requestedTime)) {
+      socket.emit('join_failed', { reason: 'invalid_time_control' });
+      return;
+    }
+    const selectedTime = requestedTime ?? '10+0';
+    const [minutes, increment] = selectedTime.split('+').map(Number);
+    const roomId = crypto.randomUUID();
+    const isWhite = Math.random() > 0.5;
+    const initialTime = minutes * 60;
+
+    const roomData = {
+      roomId,
+      game: new Chess(),
+      isPrivate: true,
+      status: 'pending',
+      drawOfferBy: null,
+      startedAt: null,
+      timeControl: selectedTime,
+      initialTime,
+      increment,
+      initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      whiteTimeMs: initialTime * 1000,
+      blackTimeMs: initialTime * 1000,
+      lastMoveTimestamp: null,
+      persisted: false,
+      socketIds: new Set([socket.id]),
+      disconnects: {
+        w: { timer: null, disconnectedAt: null },
+        b: { timer: null, disconnectedAt: null },
+      },
+      userIds: {
+        w: isWhite ? socket.data.userId : null,
+        b: isWhite ? null : socket.data.userId,
+      },
+      players: {
+        w: isWhite ? socket.id : null,
+        b: isWhite ? null : socket.id,
+      },
+    };
+
+    activeRooms.set(roomId, roomData);
+    socketToRoom.set(socket.id, roomId);
+    setLobbyReady(socket, false);
+    socket.join(roomId);
+
+    console.log(`Private match created: ${roomId} by ${socket.id}`);
+    socket.emit('private_room_created', { roomId, timeControl: selectedTime });
+  }
+
+async function joinPrivateRoom(socket, payload, limiterChecked = false) {
+    try {
+      if (!limiterChecked && !socket.data?.limiter?.allow('lobby')) {
+        socket.emit('rate_limit_exceeded', { action: 'join_private_room' });
+        return;
+      }
+
+      if (!payload || typeof payload !== 'object' || !payload.roomId || typeof payload.roomId !== 'string') {
+        socket.emit('join_failed', { reason: "room_not_found" });
+        return;
+      }
+
+      const roomId = payload.roomId;
+      // Explicit invitations cannot be redeemed by another signed-in user.
+      const inviteTarget = inviteTargets.get(roomId);
+      if (inviteTarget && inviteTarget !== socket.data.userId) {
+        socket.emit('join_failed', { reason: 'invitation_not_for_you' }); return;
+      }
+      const roomData = activeRooms.get(roomId);
+      if (!durableGames.ready()) { socket.emit('join_failed', { reason: 'storage_unavailable' }); return; }
+      if (socket.data.startingGame || socketToRoom.has(socket.id)) {
+        socket.emit('join_failed', { reason: 'already_in_room' }); return;
+      }
+
+      if (!roomData || !roomData.isPrivate) {
+        socket.emit('join_failed', { reason: "room_not_found" });
+        return;
+      }
+
+      if (roomData.status !== 'pending' || (roomData.players.w && roomData.players.b)) {
+        socket.emit('join_failed', { reason: "room_full" });
+        return;
+      }
+
+      if (roomData.players.w === socket.id || roomData.players.b === socket.id) {
+        socket.emit('join_failed', { reason: "already_in_room" });
+        return;
+      }
+
+      // Prevent same user from playing against themselves in private room
+      const creatorColor = roomData.players.w ? 'w' : 'b';
+      if (roomData.userIds[creatorColor] && roomData.userIds[creatorColor] === socket.data?.userId) {
+        socket.emit('join_failed', { reason: "already_in_room" });
+        return;
+      }
+
+      const emptyColor = roomData.players.w === null ? 'w' : 'b';
+      const creatorSocketId = roomData.players[creatorColor];
+
+      roomData.players[emptyColor] = socket.id;
+      if (!roomData.socketIds) roomData.socketIds = new Set();
+      roomData.socketIds.add(socket.id);
+      roomData.userIds[emptyColor] = socket.data.userId;
+      roomData.startedAt = new Date().toISOString();
+      roomData.status = 'active';
+      roomData.drawOfferBy = null;
+      roomData.whiteTimeMs = roomData.initialTime * 1000;
+      roomData.blackTimeMs = roomData.initialTime * 1000;
+      roomData.lastMoveTimestamp = Date.now();
+
+      // Reserve both identities while creation is in flight. No start is announced
+      // until the single database transition has been acknowledged.
+      roomData.status = 'starting';
+      socket.data.startingGame = true;
+      try {
+        const startedRoom = { ...roomData, status: 'active' };
+        await durableGames.start(startedRoom);
+        Object.assign(roomData, startedRoom);
+      } catch {
+        cleanupRoom(roomId, roomData);
+        io.to(creatorSocketId).emit('join_failed', { reason: 'storage_unavailable' });
+        socket.emit('join_failed', { reason: 'storage_unavailable' }); return;
+      } finally { socket.data.startingGame = false; }
+      roomData.status = 'active';
+
+      inviteTargets.delete(roomId);
+      socketToRoom.set(socket.id, roomId);
+      socket.join(roomId);
+      setLobbyReady(socket, false);
+
+      console.log(`Private match joined: ${roomId} [${creatorSocketId}=${creatorColor}, ${socket.id}=${emptyColor}]`);
+
+      io.to(creatorSocketId).emit('match_found', { roomId, color: creatorColor });
+      socket.emit('match_found', { roomId, color: emptyColor });
+
+      io.to(roomId).emit('game_start', {
+        whiteTime: roomData.initialTime,
+        blackTime: roomData.initialTime,
+      });
+      if (roomData.durable) {
+        for (const color of ['w', 'b']) if (!io.sockets.sockets.get(roomData.players[color])?.connected) {
+          void durableGames.disconnect(roomId, color, roomData.players[color]);
+        }
+      }
+    } catch (e) {
+      console.error("Error joining private room:", e);
+      socket.emit('join_failed', { reason: "room_not_found" });
+    }
+  }
+
+async function startClubChallengeGame(creator, opponent, timeControl) {
+      if (!creator.connected || !opponent.connected || socketToRoom.has(creator.id) || socketToRoom.has(opponent.id) ||
+          waitingQueue.some(peer => [creator.data.userId,opponent.data.userId].includes(peer.data?.userId))) {
+        throw Object.assign(new Error('player_unavailable'),{reason:'player_unavailable'});
+      }
+      createPrivateRoom(creator,{timeControl});
+      const roomId = socketToRoom.get(creator.id);
+      if (!roomId || activeRooms.get(roomId)?.status !== 'pending') throw Object.assign(new Error('storage_unavailable'),{reason:'storage_unavailable'});
+      inviteTargets.set(roomId,opponent.data.userId);
+      await joinPrivateRoom(opponent,{roomId},true);
+      if (activeRooms.get(roomId)?.status !== 'active') {
+        const pending = activeRooms.get(roomId);
+        if (pending?.status === 'pending') cleanupRoom(roomId,pending);
+        throw Object.assign(new Error('storage_unavailable'),{reason:'storage_unavailable'});
+      }
+      return roomId;
+}
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   socket.data = socket.data || {};
   socket.data.limiter = createSocketRateLimiter();
+  registerClubChallenges(socket, { client: clubClient, io, allowedTimeControls: ALLOWED_TIME_CONTROLS,
+    startGame: startClubChallengeGame,
+  });
+
 
   socket.on('lobby_presence_enter', () => {
     lobbyPresence.set(socket.id, socket.data.userId);
@@ -733,180 +932,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('create_private_room', (payload) => {
-    if (!socket.data?.limiter?.allow('lobby')) {
-      socket.emit('rate_limit_exceeded', { action: 'create_private_room' });
-      return;
-    }
-    if (!durableGames.ready()) { socket.emit('join_failed', { reason: 'storage_unavailable' }); return; }
-    if (socket.data.startingGame) return;
+  socket.on('create_private_room', payload => createPrivateRoom(socket, payload));
 
-    const existingRoomId = socketToRoom.get(socket.id);
-    if (existingRoomId) {
-      const existingRoom = activeRooms.get(existingRoomId);
-      if (existingRoom) {
-        if (existingRoom.isPrivate === true && existingRoom.status === 'pending' && (existingRoom.players.w === socket.id || existingRoom.players.b === socket.id)) {
-          socket.emit('private_room_created', { roomId: existingRoomId, timeControl: existingRoom.timeControl });
-          return;
-        } else {
-          socket.emit('join_failed', { reason: "already_in_room" });
-          return;
-        }
-      } else {
-        socketToRoom.delete(socket.id);
-      }
-    }
-
-    // Only the new mobile invitation sends a time control. Legacy callers retain 10+0.
-    const requestedTime = payload?.timeControl;
-    if (requestedTime !== undefined && !ALLOWED_TIME_CONTROLS.has(requestedTime)) {
-      socket.emit('join_failed', { reason: 'invalid_time_control' });
-      return;
-    }
-    const selectedTime = requestedTime ?? '10+0';
-    const [minutes, increment] = selectedTime.split('+').map(Number);
-    const roomId = crypto.randomUUID();
-    const isWhite = Math.random() > 0.5;
-    const initialTime = minutes * 60;
-
-    const roomData = {
-      roomId,
-      game: new Chess(),
-      isPrivate: true,
-      status: 'pending',
-      drawOfferBy: null,
-      startedAt: null,
-      timeControl: selectedTime,
-      initialTime,
-      increment,
-      initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-      whiteTimeMs: initialTime * 1000,
-      blackTimeMs: initialTime * 1000,
-      lastMoveTimestamp: null,
-      persisted: false,
-      socketIds: new Set([socket.id]),
-      disconnects: {
-        w: { timer: null, disconnectedAt: null },
-        b: { timer: null, disconnectedAt: null },
-      },
-      userIds: {
-        w: isWhite ? socket.data.userId : null,
-        b: isWhite ? null : socket.data.userId,
-      },
-      players: {
-        w: isWhite ? socket.id : null,
-        b: isWhite ? null : socket.id,
-      },
-    };
-
-    activeRooms.set(roomId, roomData);
-    socketToRoom.set(socket.id, roomId);
-    setLobbyReady(socket, false);
-    socket.join(roomId);
-
-    console.log(`Private match created: ${roomId} by ${socket.id}`);
-    socket.emit('private_room_created', { roomId, timeControl: selectedTime });
-  });
-
-  socket.on('join_private_room', async (payload) => {
-    try {
-      if (!socket.data?.limiter?.allow('lobby')) {
-        socket.emit('rate_limit_exceeded', { action: 'join_private_room' });
-        return;
-      }
-
-      if (!payload || typeof payload !== 'object' || !payload.roomId || typeof payload.roomId !== 'string') {
-        socket.emit('join_failed', { reason: "room_not_found" });
-        return;
-      }
-
-      const roomId = payload.roomId;
-      // Explicit invitations cannot be redeemed by another signed-in user.
-      const inviteTarget = inviteTargets.get(roomId);
-      if (inviteTarget && inviteTarget !== socket.data.userId) {
-        socket.emit('join_failed', { reason: 'invitation_not_for_you' }); return;
-      }
-      const roomData = activeRooms.get(roomId);
-      if (!durableGames.ready()) { socket.emit('join_failed', { reason: 'storage_unavailable' }); return; }
-      if (socket.data.startingGame || socketToRoom.has(socket.id)) {
-        socket.emit('join_failed', { reason: 'already_in_room' }); return;
-      }
-
-      if (!roomData || !roomData.isPrivate) {
-        socket.emit('join_failed', { reason: "room_not_found" });
-        return;
-      }
-
-      if (roomData.status !== 'pending' || (roomData.players.w && roomData.players.b)) {
-        socket.emit('join_failed', { reason: "room_full" });
-        return;
-      }
-
-      if (roomData.players.w === socket.id || roomData.players.b === socket.id) {
-        socket.emit('join_failed', { reason: "already_in_room" });
-        return;
-      }
-
-      // Prevent same user from playing against themselves in private room
-      const creatorColor = roomData.players.w ? 'w' : 'b';
-      if (roomData.userIds[creatorColor] && roomData.userIds[creatorColor] === socket.data?.userId) {
-        socket.emit('join_failed', { reason: "already_in_room" });
-        return;
-      }
-
-      const emptyColor = roomData.players.w === null ? 'w' : 'b';
-      const creatorSocketId = roomData.players[creatorColor];
-
-      roomData.players[emptyColor] = socket.id;
-      if (!roomData.socketIds) roomData.socketIds = new Set();
-      roomData.socketIds.add(socket.id);
-      roomData.userIds[emptyColor] = socket.data.userId;
-      roomData.startedAt = new Date().toISOString();
-      roomData.status = 'active';
-      roomData.drawOfferBy = null;
-      roomData.whiteTimeMs = roomData.initialTime * 1000;
-      roomData.blackTimeMs = roomData.initialTime * 1000;
-      roomData.lastMoveTimestamp = Date.now();
-
-      // Reserve both identities while creation is in flight. No start is announced
-      // until the single database transition has been acknowledged.
-      roomData.status = 'starting';
-      socket.data.startingGame = true;
-      try {
-        const startedRoom = { ...roomData, status: 'active' };
-        await durableGames.start(startedRoom);
-        Object.assign(roomData, startedRoom);
-      } catch {
-        cleanupRoom(roomId, roomData);
-        io.to(creatorSocketId).emit('join_failed', { reason: 'storage_unavailable' });
-        socket.emit('join_failed', { reason: 'storage_unavailable' }); return;
-      } finally { socket.data.startingGame = false; }
-      roomData.status = 'active';
-
-      inviteTargets.delete(roomId);
-      socketToRoom.set(socket.id, roomId);
-      socket.join(roomId);
-      setLobbyReady(socket, false);
-
-      console.log(`Private match joined: ${roomId} [${creatorSocketId}=${creatorColor}, ${socket.id}=${emptyColor}]`);
-
-      io.to(creatorSocketId).emit('match_found', { roomId, color: creatorColor });
-      socket.emit('match_found', { roomId, color: emptyColor });
-
-      io.to(roomId).emit('game_start', {
-        whiteTime: roomData.initialTime,
-        blackTime: roomData.initialTime,
-      });
-      if (roomData.durable) {
-        for (const color of ['w', 'b']) if (!io.sockets.sockets.get(roomData.players[color])?.connected) {
-          void durableGames.disconnect(roomId, color, roomData.players[color]);
-        }
-      }
-    } catch (e) {
-      console.error("Error joining private room:", e);
-      socket.emit('join_failed', { reason: "room_not_found" });
-    }
-  });
+  socket.on('join_private_room', payload => void joinPrivateRoom(socket, payload));
 
   socket.on('resign_game', (payload) => {
     if (activeRooms.get(payload?.roomId)?.durable) { void durableGames.action(socket, 'resign_game', payload); return; }
@@ -1219,6 +1247,7 @@ module.exports = {
   rejectGameAction,
   getActivePlayerActionContext,
   durableGames,
+  startClubChallengeGame,
   recoveryReady,
   lobbyPresence,
   readyLobbySockets,

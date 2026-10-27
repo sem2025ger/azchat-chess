@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import Layout from './components/Layout';
 import MaintenancePage from './components/MaintenancePage';
+const ClubInviteScreen = lazy(() => import('./screens/ClubInviteScreen'));
 import { routeLoaders } from './routeLoaders';
 
 // Lazy-loaded Screens for code-splitting and fast initial load
@@ -41,6 +42,7 @@ function App() {
                     <Route path="play" element={<PlayRoute />} />
                     <Route path="game" element={<GameRoute />} />
                     <Route path="chat" element={<ChatScreen />} />
+                    <Route path="schach-treff/einladung/:token" element={<ClubInviteScreen />} />
                     <Route path="profile" element={<ProfileScreen />} />
                     <Route path="settings" element={<SettingsScreen />} />
                     {import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <Route path="spieler" element={<SpielerScreen />} />}
