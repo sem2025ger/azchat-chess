@@ -7,7 +7,7 @@ import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 const fixture=String.raw`
-import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import Screen from '/src/screens/SpieltagScreen.tsx';
+import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import Screen from '/src/screens/SpieltagScreen.tsx';import{MemoryRouter}from'react-router-dom';
 window.fixtureSession={access_token:'captain-test-only'};window.fixtureCalls=[];
 const team='11111111-1111-4111-8111-111111111111',match='22222222-2222-4222-8222-222222222222';
 let matches=[],boards=[];const native=window.fetch;
@@ -27,7 +27,7 @@ window.fetch=async(url,options={})=>{
  else data={matches};
  return new Response(JSON.stringify(data),{status:options.method==='POST'?201:200,headers:{'content-type':'application/json'}});
 };
-function App(){return <Screen/>;}window.changeSession=value=>{window.fixtureSession=value?{access_token:value}:null;window.dispatchEvent(new Event('fixture-auth'));};
+function App(){return <MemoryRouter><Screen/></MemoryRouter>;}window.changeSession=value=>{window.fixtureSession=value?{access_token:value}:null;window.dispatchEvent(new Event('fixture-auth'));};
 createRoot(document.getElementById('root')).render(<App/>);
 `;
 const plugin={name:'spieltag-browser-fixtures',enforce:'pre',
@@ -54,7 +54,7 @@ try{
  ws.addEventListener('message',({data})=>{const m=JSON.parse(data);if(m.method==='Runtime.exceptionThrown')exceptions.push(m.params.exceptionDetails.text);const p=pending.get(m.id);if(p){pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result);}});
  const cdp=(method,params={})=>new Promise((resolve,reject)=>{const request=++id,timer=setTimeout(()=>{pending.delete(request);reject(Error('CDP timeout '+method));},15000);pending.set(request,{resolve,reject,timer});ws.send(JSON.stringify({id:request,method,params}));});
  const evaluate=async expression=>{const r=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value;};
- const wait=async expression=>{for(let i=0;i<200;i++){if(await evaluate(expression))return;await pause();}throw Error('UI wait failed: '+expression+'\n'+await evaluate('document.body.innerText'));};
+ const wait=async expression=>{for(let i=0;i<200;i++){if(await evaluate("Boolean(document.body && ("+expression+"))"))return;await pause();}throw Error('UI wait failed: '+expression+'\n'+await evaluate('document.body.innerText'));};
  const click=label=>evaluate(`(()=>{const el=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)});if(!el)throw Error('Button missing');el.click();})()`);
  const fill=(label,value)=>evaluate(`(()=>{const l=[...document.querySelectorAll('label')].find(l=>l.textContent.startsWith(${JSON.stringify(label)}));const el=l?.querySelector('input,textarea,select');if(!el)throw Error('Input missing');const proto=el instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:el instanceof HTMLSelectElement?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(el,${JSON.stringify(value)});el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));})()`);
  await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Page.navigate',{url:base+'spieltag-fixture'});
