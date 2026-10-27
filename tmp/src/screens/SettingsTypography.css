@@ -269,3 +269,28 @@
     background-color: #171717;
   }
 }
+
+/* Desktop option labels only: a modest readability increase for the four Settings cards.
+   Headings, the Live HD Preview, chessboard and mobile layout stay unchanged. */
+@media (min-width: 1024px) {
+  .settings-fixed-workspace #settings-section-board button > span {
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+  .settings-fixed-workspace #settings-section-pieces button > span {
+    font-size: 11px;
+    line-height: 1.25;
+    overflow-wrap: break-word;
+  }
+  .settings-fixed-workspace #settings-section-sound button {
+    font-size: 12px;
+    line-height: 1.25;
+  }
+  .settings-fixed-workspace #settings-section-background button {
+    font-size: 11.5px;
+    line-height: 1.25;
+    overflow-wrap: break-word;
+  }
+}
