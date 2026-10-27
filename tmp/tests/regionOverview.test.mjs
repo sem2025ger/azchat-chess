@@ -28,3 +28,15 @@ test('NRW dashboard sources are scoped and transparent about unavailable data',(
  assert.match(region,/if\(!validRegion\)/);
  assert.match(region,/to=\{'\/clubs-nrw\/'/);
 });
+
+test('regional rail reuses the national room and guards membership',()=>{
+ const rail=read('src/components/schachTreff/NationwideChatRail.tsx');
+ assert.match(region,/NationwideChatRail/);
+ assert.match(rail,/NATIONAL_ROOM_SLUG = 'chessaz-deutsch'/);
+ assert.match(rail,/\.eq\('club_id',id\)/);
+ assert.match(rail,/if\(!joined\)/);
+ assert.match(rail,/if\(!userId\|\|!clubId\|\|!member\|\|busy/);
+ assert.match(rail,/maxLength=\{1200\}/);
+ assert.match(rail,/key=\{user\?\.id \?\? 'guest'\}/);
+ assert.doesNotMatch(rail,/service_role|SUPABASE_SERVICE|bypassRls/);
+});
