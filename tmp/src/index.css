@@ -219,29 +219,25 @@
   }
 }
 
-/* Subtle metallic motion is scoped to the sidebar's .de brand suffix. */
-.sidebar-de-metallic {
+/* Metallic sheen is on the king silhouette, not the .de letters. */
+.sidebar-king-metallic {
   background-image: linear-gradient(112deg,
     #24355E 0%, #5276B5 17%, #C7D8F0 32%,
     #35466C 46%, #7862A5 61%, #CDD2E7 77%,
     #51436F 89%, #273C70 100%);
   background-size: 190% 100%;
   background-position: 50% 50%;
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  animation: sidebarDeSheen 7s ease-in-out infinite alternate;
+  -webkit-mask: url('/brand/sidebar-king.svg') center / 100% 100% no-repeat;
+  mask: url('/brand/sidebar-king.svg') center / 100% 100% no-repeat;
+  animation: sidebarKingSheen 7s ease-in-out infinite alternate;
+  opacity: .8;
 }
-@keyframes sidebarDeSheen {
+@keyframes sidebarKingSheen {
   from { background-position: 0% 50%; }
   to { background-position: 100% 50%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sidebar-de-metallic {
-    animation: none;
-    background-position: 50% 50%;
-  }
+  .sidebar-king-metallic { animation: none; background-position: 50% 50%; }
 }
 
 /* Text Shadow Cycle for Start Game button */
