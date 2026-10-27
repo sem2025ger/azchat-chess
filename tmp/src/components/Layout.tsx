@@ -97,7 +97,7 @@ export default function Layout() {
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label={desktop ? 'Schach-Treff' : t('nav.chat')} themeColor="theme-violet" subtitle={desktop ? 'Für Deutschsprachige' : undefined} />
-            {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/clubs-nrw" icon={<MapPin size={20} />} label="Bochum & NRW" themeColor="theme-gold" />}
+            {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW" themeColor="theme-gold" />}
             {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label="Spieltag" themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
             {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label="Spieler" themeColor="theme-blue" />}
