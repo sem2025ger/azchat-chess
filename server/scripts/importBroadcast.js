@@ -4,7 +4,7 @@
 // the existing importer. CC BY-SA 4.0, as specifically stated for broadcasts.
 const fs=require('node:fs'),fsp=require('node:fs/promises'),path=require('node:path');
 const {createHash}=require('node:crypto'),{Readable,Transform}=require('node:stream'),{pipeline}=require('node:stream/promises');
-const {createZstdDecompress}=require('node:zlib');const readline=require('node:readline');
+const {spawn}=require('node:child_process');const readline=require('node:readline');
 const {assertTarget}=require('./importFideGer');
 const {fullNameKey}=require('../../shared/playerNames.mjs');
 const LICENSE='https://creativecommons.org/licenses/by-sa/4.0/';
@@ -81,9 +81,21 @@ async function stageMonth({month,dir,target,url,fetchImpl=fetch,filter}){
  assertTarget(target,url);const archive=await officialArchive(month,dir,fetchImpl),out=path.join(dir,month+'.jsonl');
  const reportFile=path.join(dir,month+'.report.json');
  if(fs.existsSync(reportFile)&&fs.existsSync(out)){const prior=JSON.parse(await fsp.readFile(reportFile,'utf8'));if(prior.parser_version===FILTER_FORMAT&&prior.filter_sha256===filter.sha256&&prior.sha256===archive.sha256&&prior.staged_sha256){const hash=createHash('sha256');for await(const chunk of fs.createReadStream(out))hash.update(chunk);if(hash.digest('hex')===prior.staged_sha256)return prior;}}
- const partial=out+'.partial',hash=createHash('sha256'),output=fs.createWriteStream(partial),stream=fs.createReadStream(archive.file).pipe(createZstdDecompress());let seen=0,accepted=0,rejected=0,excluded=0;
+ const partial=out+'.partial',hash=createHash('sha256'),output=fs.createWriteStream(partial);
+ // Node's experimental Zstd stream can reject valid official Lichess frames.
+ // Use the system Zstandard decoder; do not shell-execute the archive path.
+ const decoder=spawn('zstd',['--decompress','--stdout','--',archive.file],{stdio:['ignore','pipe','ignore']});
+ const completed=new Promise((resolve,reject)=>{
+  decoder.once('error',reject);
+  decoder.once('close',(code,signal)=>code===0?resolve():reject(Error('Zstandard archive decode failed')));
+ });
+ const stream=decoder.stdout;let seen=0,accepted=0,rejected=0,excluded=0;
  try{for await(const pgn of streamGames(stream)){seen++;if(!filter.eligible(pgn)){excluded++;continue;}try{const row=broadcastRow(pgn,month),line=JSON.stringify(row)+'\n';hash.update(line);if(!output.write(line))await new Promise(r=>output.once('drain',r));accepted++;}catch{rejected++;}
   if(seen%10000===0)console.log(JSON.stringify({month,seen,accepted,rejected}));}
+  await completed;
+ }catch(e){
+  decoder.kill();await completed.catch(()=>{});
+  await fsp.rm(partial,{force:true});throw e;
  }finally{await new Promise((r,j)=>{output.once('error',j);output.end(r);});}
  await fsp.rename(partial,out);
  const report={parser_version:FILTER_FORMAT,filter_sha256:filter.sha256,excluded,month,source_url:archive.url,sha256:archive.sha256,staged_sha256:hash.digest('hex'),license_url:LICENSE,seen,accepted,rejected,staged_file:out};await fsp.writeFile(reportFile+'.partial',JSON.stringify(report,null,2));await fsp.rename(reportFile+'.partial',reportFile);return report;
