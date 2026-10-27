@@ -25,7 +25,7 @@ BEGIN
  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_actor::text,23));
  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_fide::text,24));
  IF p_action='claim' THEN
-  IF p_club IS NOT NULL AND p_club !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+  IF p_club IS NOT NULL AND btrim(p_club) <> '' AND p_club !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
   IF EXISTS(SELECT 1 FROM public.spieler_claims WHERE user_id=p_actor AND fide_id<>p_fide) THEN RAISE EXCEPTION 'claim_exists' USING ERRCODE='23514'; END IF;
   INSERT INTO public.spieler_claims(user_id,fide_id,club_id) VALUES(p_actor,p_fide,selected_club)
    ON CONFLICT(user_id) DO UPDATE SET
@@ -56,7 +56,7 @@ BEGIN
  -- A returned conflict code preserves the INSERT; raising would roll it back.
  RETURN jsonb_build_object('status',answer)||CASE WHEN answer='pending_owner_review' THEN jsonb_build_object('code','hide_limit') ELSE '{}'::jsonb END;
 END $fn$; THEN RAISE EXCEPTION 'invalid_club' USING ERRCODE='22023'; END IF;
-  selected_club:=p_club::uuid;
+  selected_club:=nullif(btrim(p_club),'')::uuid;
   IF selected_club IS NOT NULL AND NOT EXISTS(SELECT 1 FROM public.clubs_nrw WHERE id=selected_club AND published) THEN RAISE EXCEPTION 'invalid_club' USING ERRCODE='22023'; END IF;
   IF EXISTS(SELECT 1 FROM public.spieler_claims WHERE user_id=p_actor AND fide_id<>p_fide) THEN RAISE EXCEPTION 'claim_exists' USING ERRCODE='23514'; END IF;
   INSERT INTO public.spieler_claims(user_id,fide_id,club) VALUES(p_actor,p_fide,nullif(btrim(p_club),''))
