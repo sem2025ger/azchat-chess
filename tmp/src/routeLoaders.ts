@@ -20,6 +20,7 @@ export const routeLoaders = {
   updatePassword: cacheImport(() => import('./screens/UpdatePasswordScreen')),
   clubsNrw: cacheImport(() => import('./screens/ClubsNRWScreen')),
   spieltag: cacheImport(() => import('./screens/SpieltagScreen')),
+  vorbereitung: cacheImport(() => import('./screens/VorbereitungScreen')),
 };
 
 const destinations: Record<string, () => Promise<unknown>> = {
@@ -32,6 +33,7 @@ const destinations: Record<string, () => Promise<unknown>> = {
   '/settings': routeLoaders.settings,
   '/clubs-nrw': routeLoaders.clubsNrw,
   '/spieltag': routeLoaders.spieltag,
+  '/vorbereitung': routeLoaders.vorbereitung,
 };
 
 export function prefetchRoute(path: string) {

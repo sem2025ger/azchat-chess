@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { copy as t } from '../components/schachTreff/copy';
@@ -136,7 +137,7 @@ export default function SchachTreffDesktop() {
     <dialog ref={dialog} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
       <button className="st-close" onClick={() => { setPanel(null); setPlayer(null); }}>{t.close}</button>
       {/* Genuine ratings will be introduced by the future Glicko-2 task; do not display stored placeholder values here. */}
-      {player ? <><h2>{player.username}</h2><p>{t.noLocation}</p><dl><dt>{t.blitz}</dt><dd>—</dd><dt>{t.rapid}</dt><dd>—</dd></dl></> : panel === 'tournaments' ? <><h2 className="st-display">{t.tournamentTitle}</h2><p>{t.tournamentText}</p><button aria-pressed={notify} onClick={() => setNotify(!notify)}>{notify ? t.notified : t.notify}</button></> : panel === 'about' ? <><h2>{t.about}</h2><p>{t.aboutText}</p></> : panel === 'ranking' ? <><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></> : panel && <><h2>{t[panel]}</h2>{!members.length && !error && <p>{t.noMembers}</p>}{members.map(p => <div className="st-member" key={p.id}><button className="st-name" onClick={() => setPlayer(p)}>{p.username}</button></div>)}</>}
+      {player ? <><h2>{player.username}</h2><p>{t.noLocation}</p><dl><dt>{t.blitz}</dt><dd>—</dd><dt>{t.rapid}</dt><dd>—</dd></dl><VorbereitungLink onClick={()=>{setPlayer(null);setPanel(null);}}/></> : panel === 'tournaments' ? <><h2 className="st-display">{t.tournamentTitle}</h2><p>{t.tournamentText}</p><button aria-pressed={notify} onClick={() => setNotify(!notify)}>{notify ? t.notified : t.notify}</button></> : panel === 'about' ? <><h2>{t.about}</h2><p>{t.aboutText}</p></> : panel === 'ranking' ? <><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></> : panel && <><h2>{t[panel]}</h2>{!members.length && !error && <p>{t.noMembers}</p>}{members.map(p => <div className="st-member" key={p.id}><button className="st-name" onClick={() => setPlayer(p)}>{p.username}</button></div>)}</>}
     </dialog>
   </section>;
 }

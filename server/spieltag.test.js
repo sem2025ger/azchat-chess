@@ -61,6 +61,18 @@ test('Spieltag preserves RLS denial, empty foreign updates and private storage d
   assert.equal(r.status,status);assert.deepEqual(await r.json(),{code});
  }
 });
+test('Vorbereitung board nickname attachment is separately gated and strictly allowlisted, RLS errors preserved',async t=>{
+ const db=database({data:[{match_id:match,board_number:1,opponent_lichess_username:'target'}]});
+ const disabled=await fixture(t,{enabled:true,clientForToken:()=>db});
+ const send=(base,value)=>fetch(base+'/matches/'+match+'/boards/1/lichess',{method:'PATCH',headers,body:JSON.stringify(value)});
+ assert.equal((await send(disabled,{username:'target'})).status,404);assert.equal(db.calls.length,0);
+ const enabled=await fixture(t,{enabled:true,preparationEnabled:true,clientForToken:()=>db});
+ assert.equal((await send(enabled,{username:'TARGET'})).status,200);assert.equal(db.calls[0].update[0][0].opponent_lichess_username,'target');
+ for(const value of [{username:'https://evil'},{username:'target',verified:true},{username:'target',user_id:actor},{}])assert.equal((await send(enabled,value)).status,400);
+ assert.equal((await send(enabled,{username:null})).status,200);assert.equal(db.calls.at(-1).update[0][0].opponent_lichess_username,null);
+ const denied=await fixture(t,{enabled:true,preparationEnabled:true,clientForToken:()=>database({error:{code:'42501'}})});
+ assert.equal((await send(denied,{username:'target'})).status,403);
+});
 test('Spieltag bounds invalid-token verification before auth and account budgets across token/IP rotation',async t=>{
  let calls=0;const base=await fixture(t,{enabled:true,verifyToken:async()=>{calls++;return null;},clientForToken:()=>database()});
  for(let i=0;i<121;i++)assert.equal((await fetch(base+'/teams',{headers:{Authorization:'Bearer rotated-'+i,'X-Forwarded-For':'198.51.100.7'}})).status,i<120?401:429);

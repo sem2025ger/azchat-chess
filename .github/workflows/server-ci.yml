@@ -9,6 +9,7 @@ on:
       - main
       - feat/spieler-v1
       - feat/clubs-nrw-v1
+      - feat/spieltag-v1
   workflow_dispatch:
 
 permissions:

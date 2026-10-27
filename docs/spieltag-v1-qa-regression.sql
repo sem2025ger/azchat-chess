@@ -25,7 +25,7 @@ BEGIN
  PERFORM set_config('spieltag.qa_match',match::text,true);
  INSERT INTO public.spieltag_boards(match_id,board_number,home_name,opponent_name,opponent_fide_id)
  VALUES(match,1,'QA Aufstellung','QA Gegner',13404431);
- UPDATE public.spieltag_boards SET result='1/2-1/2' WHERE match_id=match;
+ UPDATE public.spieltag_boards SET result='1/2-1/2',opponent_lichess_username='qa_target' WHERE match_id=match;
  UPDATE public.spieltag_matches SET notes='QA kurze Notiz',updated_by=actor WHERE id=match;
  BEGIN
   INSERT INTO public.spieltag_matches(team_id,round_label,opponent_name,starts_at,created_by,updated_by)
@@ -42,11 +42,13 @@ DECLARE actor uuid:=current_setting('spieltag.qa_member')::uuid; match uuid:=cur
 BEGIN
  PERFORM set_config('request.jwt.claim.sub',actor::text,true);
  IF NOT EXISTS(SELECT 1 FROM public.spieltag_matches WHERE id=match AND notes='QA kurze Notiz')
- OR NOT EXISTS(SELECT 1 FROM public.spieltag_boards WHERE match_id=match AND result='1/2-1/2') THEN RAISE EXCEPTION 'Member read failed'; END IF;
+ OR NOT EXISTS(SELECT 1 FROM public.spieltag_boards WHERE match_id=match AND result='1/2-1/2' AND opponent_lichess_username='qa_target') THEN RAISE EXCEPTION 'Member read failed'; END IF;
  UPDATE public.spieltag_matches SET notes='Forbidden member edit',updated_by=actor WHERE id=match;
  GET DIAGNOSTICS affected=ROW_COUNT;IF affected<>0 THEN RAISE EXCEPTION 'Member write allowed'; END IF;
  BEGIN INSERT INTO public.spieltag_boards(match_id,board_number,home_name) VALUES(match,2,'Forbidden');
   RAISE EXCEPTION 'Member board write allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+ UPDATE public.spieltag_boards SET opponent_lichess_username='forged' WHERE match_id=match;
+ GET DIAGNOSTICS affected=ROW_COUNT;IF affected<>0 THEN RAISE EXCEPTION 'Member nickname edit allowed'; END IF;
  BEGIN UPDATE public.spieltag_team_members SET role='captain' WHERE user_id=actor;
   RAISE EXCEPTION 'Self promotion allowed'; EXCEPTION WHEN insufficient_privilege THEN NULL; END;
  PERFORM set_config('request.jwt.claim.sub',gen_random_uuid()::text,true);
@@ -69,7 +71,7 @@ BEGIN
  BEGIN PERFORM id FROM public.spieltag_matches;RAISE EXCEPTION 'Anonymous table access allowed';EXCEPTION WHEN insufficient_privilege THEN NULL;END;
 END $anon$;
 RESET ROLE;
-SELECT jsonb_build_object('captain_schedule_lineup_results_notes',true,'member_read_only',true,
+SELECT jsonb_build_object('captain_schedule_lineup_results_notes',true,'member_read_only',true,'lichess_nickname_private_captain_only',true,
  'foreign_team_denied',true,'outsider_direct_id_and_child_rows_hidden',true,'self_promotion_denied',true,
  'identity_immutable',true,'revocation_immediate',true,'anon_denied',true,'rollback',true) AS verified;
 ROLLBACK;

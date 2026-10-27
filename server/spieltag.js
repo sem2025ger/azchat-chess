@@ -34,7 +34,7 @@ function userClientFactory(env, factory = createClient) {
   return token => factory(env.SUPABASE_URL, key, { accessToken: async () => token,
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 }
-function installSpieltag(app, { enabled = false, verifyToken = async () => null, clientForToken = null, now = Date.now } = {}) {
+function installSpieltag(app, { enabled = false, preparationEnabled = false, verifyToken = async () => null, clientForToken = null, now = Date.now } = {}) {
   const router = express(), budgets = new Map();
   router.set('trust proxy',1);
   const wrap = fn => (req,res,next) => Promise.resolve(fn(req,res,next)).catch(error => {
@@ -115,6 +115,13 @@ function installSpieltag(app, { enabled = false, verifyToken = async () => null,
     const boards=await run(query.select('*'),res);
     if (boards) res.status(boards.length?(method==='post'?201:200):404).json(boards.length?{boards}:{code:'not_found'});
   }));
+  router.patch('/matches/:match/boards/:board/lichess',wrap(async(req,res)=>{
+    if(!preparationEnabled)return res.status(404).json({code:'feature_disabled'});
+    fields(req.body,['username']);const value=req.body.username;
+    if(value!==null&&(typeof value!=='string'||!/^[A-Za-z0-9_-]{2,30}$/.test(value)))invalid();
+    const boards=await run(req.spieltagDb.from('spieltag_boards').update({opponent_lichess_username:value===null?null:value.toLowerCase()}).eq('match_id',req.params.match).eq('board_number',Number(req.params.board)).select('*'),res);
+    if(boards)res.status(boards.length?200:404).json(boards.length?{boards}:{code:'not_found'});
+  }));
   router.delete('/matches/:match/boards/:board',wrap(async(req,res) => {
     const rows=await run(req.spieltagDb.from('spieltag_boards').delete().eq('match_id',req.params.match).eq('board_number',Number(req.params.board)).select('board_number'),res);
     if (rows) res.status(rows.length?200:404).json(rows.length?{deleted:true}:{code:'not_found'});
@@ -123,6 +130,6 @@ function installSpieltag(app, { enabled = false, verifyToken = async () => null,
   app.use('/api/spieltag',router);return router;
 }
 function installSpieltagFromEnv(app,verifyToken,env=process.env) {
-  return installSpieltag(app,{enabled:env.SPIELTAG_ENABLED==='true',verifyToken,clientForToken:userClientFactory(env)});
+  return installSpieltag(app,{enabled:env.SPIELTAG_ENABLED==='true',preparationEnabled:env.VORBEREITUNG_ENABLED==='true',verifyToken,clientForToken:userClientFactory(env)});
 }
 module.exports={installSpieltag,installSpieltagFromEnv,userClientFactory};

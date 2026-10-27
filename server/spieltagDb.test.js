@@ -21,7 +21,7 @@ test('Spieltag real PostgreSQL: ordered dependencies, authoritative team privacy
   await db.pool.query('INSERT INTO public.profiles(id) VALUES($1),($2)',[outsider,otherCaptain]);
   for(const file of ['20261021000000_chessaz_deutsch_community_foundation.sql','20261026184317_spieler_v1.sql',
    '20261026201936_spieler_review_privacy.sql','20261026210344_spieler_hide_abuse_limits.sql',
-   '20261026224500_clubs_nrw_v1.sql','20261027001000_spieler_clubs_nrw_fk.sql','20261027003816_spieltag_v1.sql']){
+   '20261026224500_clubs_nrw_v1.sql','20261027001000_spieler_clubs_nrw_fk.sql','20261027003816_spieltag_v1.sql','20261027015306_vorbereitung_v1.sql']){
    await db.pool.query(readFileSync(join(__dirname,'../supabase/migrations',file),'utf8'));
   }
   await db.pool.query('INSERT INTO public.spieler_players(fide_id,name,surname,federation,title,fide_rating,source_date,source_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',
@@ -99,6 +99,16 @@ test('Spieltag real PostgreSQL: ordered dependencies, authoritative team privacy
    await assert.rejects(as(captain,'UPDATE public.spieltag_matches SET notes=$1 WHERE id=$2',['x'.repeat(1001),match.id]),e=>e.code==='23514');
    assert.equal((await db.pool.query('SELECT count(*)::int AS n FROM public.matches')).rows[0].n,0);
    assert.equal((await db.pool.query('SELECT count(*)::int AS n FROM public.clubs_nrw_league_rows')).rows[0].n,0);
+  });
+  await t.test('captain attaches an unverified Lichess name; members read but cannot edit, outsiders cannot read it',async()=>{
+   await as(captain,'UPDATE public.spieltag_boards SET opponent_lichess_username=$1 WHERE match_id=$2',['target_user',match.id]);
+   await as(captain,"UPDATE public.spieltag_boards SET result='1-0' WHERE match_id=$1",[match.id]);
+   assert.equal((await as(member,'SELECT opponent_lichess_username FROM public.spieltag_boards WHERE match_id=$1',[match.id])).rows[0].opponent_lichess_username,'target_user');
+   for(const who of [member,outsider,otherCaptain])assert.equal((await as(who,"UPDATE public.spieltag_boards SET opponent_lichess_username='forged' WHERE match_id=$1 RETURNING match_id",[match.id])).rowCount,0);
+   assert.equal((await as(outsider,'SELECT opponent_lichess_username FROM public.spieltag_boards WHERE match_id=$1',[match.id])).rowCount,0);
+   await assert.rejects(as(captain,"UPDATE public.spieltag_boards SET opponent_lichess_username='https://evil' WHERE match_id=$1",[match.id]),e=>e.code==='23514');
+   await as(captain,'UPDATE public.spieltag_boards SET opponent_lichess_username=NULL WHERE match_id=$1',[match.id]);
+   assert.equal((await as(member,'SELECT opponent_lichess_username FROM public.spieltag_boards WHERE match_id=$1',[match.id])).rows[0].opponent_lichess_username,null);
   });
   await t.test('revocation immediately removes all reads and captain writes; service-only cleanup cascades',async()=>{
    await db.pool.query('DELETE FROM public.spieltag_team_members WHERE team_id=$1 AND user_id=$2',[team.id,captain]);

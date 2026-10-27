@@ -83,6 +83,7 @@ function SpieltagWorkspace({token}: {token: string}) {
         <SpieltagMatchView key={match.id} match={match} boards={boards} captain={!!captain} busy={busy||loading} spielerAvailable={import.meta.env.VITE_SPIELER_V1_ENABLED==='true'} onCard={id=>void openCard(id)} onEdit={setBoardEdit}
           onDelete={b=>{if(!window.confirm('Brett '+b.board_number+' aus dieser Aufstellung entfernen?'))return;void mutate(async signal=>{await api().deleteBoard(match.id,b.board_number,signal);if(!signal.aborted)setRefresh(n=>n+1);});}}
           onResult={(b,result)=>void mutate(async signal=>{const rows=await api().saveBoard(match.id,b.board_number,true,{...boardInput(b),result},signal);if(!signal.aborted)setBoards(old=>old.map(x=>x.board_number===b.board_number?rows[0]:x));})}
+          onLichess={(b,username)=>void mutate(async signal=>{const rows=await api().saveLichess(match.id,b.board_number,username,signal);if(!signal.aborted)setBoards(old=>old.map(x=>x.board_number===b.board_number?rows[0]:x));})}
           onNotes={notes=>void mutate(async signal=>{const rows=await api().saveMatch(teamId,match.id,{...scheduleFromMatch(match),notes},signal);if(!signal.aborted)setMatches(old=>old.map(x=>x.id===match.id?rows[0]:x));})}/>
       </>}
     </>}

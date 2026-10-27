@@ -1,0 +1,10 @@
+import {analysePreparation,type PreparationGame,type PreparationFilters} from '../../../../shared/vorbereitung.mjs';
+export default function VorbereitungResults({games,filters,onAnalyse}:{games:PreparationGame[];filters:PreparationFilters;onAnalyse:(pgn:string)=>void}){
+ const result=analysePreparation(games,filters);
+ return <><p>{result.games.length} passende Partien · {games.length} geladene Partien</p>
+  {!result.games.length&&<p role="status">{filters.variation?.trim()?'Keine Partien in dieser Variante':'Keine Partien für diese Filter'}</p>}
+  <div className="vorbereitung-colors">{(['white','black']as const).map(color=>{const s=result.byColor[color];return <section key={color}><h2>{color==='white'?'Mit Weiß':'Mit Schwarz'}</h2><p>{s.games} Partien · Siege {s.winPct}% · Remis {s.drawPct}% · Niederlagen {s.lossPct}%</p></section>;})}</div>
+  <div className="vorbereitung-table"><table><caption>Eröffnungen nach Farbe · Ergebnisse aus Sicht des Lichess-Kontos</caption><thead><tr><th>Farbe</th><th>Eröffnung / ECO</th><th>Partien</th><th>Sieg %</th><th>Remis %</th><th>Niederlage %</th></tr></thead><tbody>{result.openings.map(o=><tr key={o.color+o.eco+o.opening}><td>{o.color==='white'?'Weiß':'Schwarz'}</td><td>{o.eco||'—'} · {o.opening}</td><td>{o.games}</td><td>{o.winPct}%</td><td>{o.drawPct}%</td><td>{o.lossPct}%</td></tr>)}</tbody></table></div>
+  <ol className="vorbereitung-games">{result.games.map(g=><li key={g.id}><strong>{g.white} – {g.black}</strong><p>{g.result} · {g.date} · {g.color==='white'?'Weiß':'Schwarz'} · {g.speed} · {g.timeControl}</p><p>{g.eco||'—'} · {g.opening}</p><button type="button" onClick={()=>onAnalyse(g.pgn)}>In ChessAZ analysieren</button></li>)}</ol>
+ </>;
+}

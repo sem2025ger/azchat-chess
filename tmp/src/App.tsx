@@ -18,6 +18,7 @@ const SettingsScreen = lazy(routeLoaders.settings);
 const UpdatePasswordScreen = lazy(routeLoaders.updatePassword);
 const ClubsNRWScreen = lazy(routeLoaders.clubsNrw);
 const SpieltagScreen = lazy(routeLoaders.spieltag);
+const VorbereitungScreen = lazy(routeLoaders.vorbereitung);
 const SpielerScreen = lazy(() => import('./screens/SpielerScreen'));
 
 // Keep the public maintenance gate active for production until separately authorized.
@@ -46,6 +47,7 @@ function App() {
                     {import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <Route path="spieler" element={<SpielerScreen />} />}
                     <Route path="update-password" element={<UpdatePasswordScreen />} />
                     {import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <Route path="spieltag" element={<SpieltagScreen />} />}
+                    {import.meta.env.VITE_VORBEREITUNG_ENABLED === 'true' && <Route path="vorbereitung" element={<VorbereitungScreen />} />}
                     {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Route path="clubs-nrw" element={<ClubsNRWScreen />} />}
                     {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Route path="clubs-nrw/:slug" element={<ClubsNRWScreen />} />}
                   </Route>

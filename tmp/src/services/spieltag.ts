@@ -3,7 +3,7 @@ export type SpieltagClub = { id: string; name: string; slug: string };
 export type SpieltagSchedule = { round_label: string; opponent_name: string; opponent_club_id: string | null; starts_at: string; venue: string; notes: string };
 export type SpieltagMatch = SpieltagSchedule & { id: string; team_id: string };
 export type SpieltagBoardInput = { home_name: string; home_fide_id: string | number | null; opponent_name: string; opponent_fide_id: string | number | null; result: string | null };
-export type SpieltagBoard = SpieltagBoardInput & { match_id: string; board_number: number };
+export type SpieltagBoard = SpieltagBoardInput & { match_id: string; board_number: number; opponent_lichess_username?:string|null };
 export function spieltagEnabled(value: unknown) { return value === 'true'; }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 export class SpieltagError extends Error { code: string; constructor(code: string) { super(code); this.code = code; } }
@@ -30,6 +30,8 @@ export function createSpieltagApi(base: string, token: string, fetchImpl: typeof
     saveBoard: async (match: string,board: number,exists: boolean,data: SpieltagBoardInput,s: AbortSignal): Promise<SpieltagBoard[]> =>
       (await request('matches/'+id(match)+'/boards/'+number(board),s,exists?'PATCH':'POST',data)).boards,
     deleteBoard: (match: string,board: number,s: AbortSignal) => request('matches/'+id(match)+'/boards/'+number(board),s,'DELETE'),
+    saveLichess: async(match:string,board:number,username:string|null,s:AbortSignal):Promise<SpieltagBoard[]>=>
+      (await request('matches/'+id(match)+'/boards/'+number(board)+'/lichess',s,'PATCH',{username})).boards,
   };
 }
 export function scheduleFromMatch(match: SpieltagMatch): SpieltagSchedule {
