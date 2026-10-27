@@ -77,11 +77,11 @@ export default function Layout() {
 
           <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
-              <div className="flex w-full items-center justify-center xl:justify-start gap-1.5 xl:gap-[3px]" aria-label="Chessaz.de">
+              <div className="flex w-full items-center justify-center xl:justify-start gap-1.5 xl:gap-0" aria-label="Chessaz.de">
                 <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.72rem] xl:leading-[1.8rem] tracking-tighter italic leading-none whitespace-nowrap text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
                   <span className="text-glow-cycle"><span className="xl:text-[1.08em]">Ch</span>essaz.</span><span className="sidebar-de-metallic inline-block not-italic xl:text-[1.06em]">de</span>
                 </span>
-                <img src="/brand/sidebar-king.svg" alt="" aria-hidden="true" width="29" height="58" className="hidden xl:block h-[58px] w-[29px] shrink-0 object-contain" />
+                <img src="/brand/sidebar-king.svg" alt="" aria-hidden="true" width="28" height="55" className="hidden xl:block h-[55px] w-[27.5px] -translate-x-[2px] shrink-0 object-contain" />
               </div>
               <div
                 role="img"
