@@ -35,3 +35,15 @@ test('minor font increase is confined to four desktop option cards, not headings
   }
   assert.doesNotMatch(rules, /h2|settings-preview-board|settings-preview-column|settings-preview-title/);
 });
+
+test('desktop choice labels are modestly larger without changing headings or Live Preview', () => {
+ const css = readFileSync(new URL('../src/screens/SettingsTypography.css', import.meta.url), 'utf8');
+ for (const [id, size] of [['board','12px'],['pieces','11px'],['sound','12px'],['background','11.5px']]) {
+  const selector = new RegExp('#settings-section-' + id + ' button(?: > span)?\\s*\\{([^}]+)\\}');
+  const rule = css.match(selector);
+  assert.ok(rule, id + ' desktop label rule present');
+  assert.match(rule[1], new RegExp('font-size:\\s*' + size.replace('.', '\\.') + ';'));
+ }
+ assert.match(css, /@media \(min-width: 1024px\)/);
+ assert.doesNotMatch(css.slice(css.indexOf('Desktop option labels only:')), /settings-options-column h2|settings-preview-title|#settings-preview-board/);
+});
