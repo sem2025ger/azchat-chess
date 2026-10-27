@@ -11,6 +11,7 @@ on:
       - feat/clubs-nrw-v1
       - feat/spieltag-v1
       - feat/vorbereitung-v1
+      - feat/vorbereitung-names-v1
   workflow_dispatch:
 
 permissions:
