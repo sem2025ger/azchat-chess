@@ -1,0 +1,38 @@
+import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react';
+import {Chess,DEFAULT_POSITION} from 'chess.js';
+import {useNavigate} from 'react-router-dom';
+import {createVorbereitungApi,VorbereitungError,type PreparationGame} from '../../services/vorbereitung';
+import {openSpielerAnalysis} from '../../services/spieler';
+import VorbereitungResults from './VorbereitungResults';
+import PreparationBoard from './PreparationBoard';
+import '../../screens/VorbereitungScreen.css';
+type SearchResult={hits:{id:string;ply:number}[];playerToMove:number;nextMoves:{san:string;uci:string;games:number;percent:number}[];error?:string;rejected?:number};
+export default function NamedPreparation({token,initialFideId=null,initialName=''}:{token:string;initialFideId?:string|null;initialName?:string}){
+ const [name,setName]=useState(initialName),[fideId,setFideId]=useState(initialFideId||''),[loaded,setLoaded]=useState(false),[rejected,setRejected]=useState(0),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [games,setGames]=useState<PreparationGame[]>([]),[candidates,setCandidates]=useState<{fideId:string;name:string}[]>([]),[color,setColor]=useState('all'),[speed,setSpeed]=useState('all'),[timeControl,setTimeControl]=useState('all'),[variation,setVariation]=useState(''),[fen,setFen]=useState(DEFAULT_POSITION);
+ const [result,setResult]=useState<SearchResult|null>(null),[searching,setSearching]=useState(false);
+ const pending=useRef<AbortController|null>(null),worker=useRef<Worker|null>(null),sequence=useRef(0),navigate=useNavigate();
+ useEffect(()=>()=>pending.current?.abort(),[]);
+ const load=useCallback(async(id:string|null,realName:string)=>{pending.current?.abort();const c=new AbortController();pending.current=c;setBusy(true);setError('');setLoaded(false);setGames([]);setCandidates([]);
+  try{const data=await createVorbereitungApi(import.meta.env.VITE_SERVER_URL||'').named({fideId:id,name:realName},token,c.signal);if(!c.signal.aborted){setCandidates(data.candidates||[]);setGames(data.games);setRejected(data.rejected||0);setFideId(data.fideId||'');setLoaded(!data.ambiguous);setFen(DEFAULT_POSITION);}}
+  catch(e){if(!c.signal.aborted)setError(e instanceof VorbereitungError&&e.code==='too_many_games'?'Dieser Spieler hat zu viele Partien für die aktuelle Stellungssuche (höchstens 10.000). Es wird kein gekürztes Ergebnis angezeigt.':e instanceof VorbereitungError&&e.code==='rate_limit'?'Zu viele Anfragen. Bitte warte eine Minute.':'Keine Daten verfügbar. Bitte den vollständigen Namen als Nachname, Vorname oder eine FIDE-ID angeben.');}finally{if(!c.signal.aborted)setBusy(false);}
+ },[token]);
+ useEffect(()=>{if(initialFideId)void load(initialFideId,initialName);},[initialFideId,initialName,load]);
+ useEffect(()=>{if(!games.length){worker.current=null;setResult(null);return;}let active=true;const w=new Worker(new URL('../../utils/preparationPositionWorker.ts',import.meta.url),{type:'module'});worker.current=w;
+  w.onmessage=e=>{if(active&&e.data.id===sequence.current){setResult(e.data);setSearching(false);}};w.onerror=()=>{if(active){setError('Stellungssuche derzeit nicht verfügbar.');setSearching(false);}};w.postMessage({type:'index',games});return()=>{active=false;w.terminate();worker.current=null;};
+ },[games]);
+ useEffect(()=>{if(!worker.current)return;const id=++sequence.current;setSearching(true);worker.current.postMessage({type:'search',id,fen,filters:{color,speed,timeControl,variation}});},[games,fen,color,speed,timeControl,variation]);
+ function submit(e:FormEvent){e.preventDefault();void load(fideId||null,name);}
+ const hits=new Map(result?.hits.map(h=>[h.id,h.ply])||[]),shown=games.filter(g=>hits.has(g.id));
+ return <section className="named-preparation vorbereitung-page"><h2>Spieler nach echtem Namen finden</h2><p>TWIC und offizielle Lichess-Broadcasts · Zuordnung bevorzugt über FIDE-ID.</p><form onSubmit={submit}><label>Spielername (Nachname, Vorname)<input value={name} maxLength={150} onChange={e=>{setName(e.target.value);setFideId('');}} placeholder="Huseynov, Sabir"/></label><label>FIDE-ID (optional)<input value={fideId} pattern="[1-9][0-9]{0,9}" maxLength={10} onChange={e=>setFideId(e.target.value)}/></label><button disabled={busy}>Spielerpartien laden</button></form>
+  {busy&&<p role="status">Spielerpartien werden geladen …</p>}{error&&<p role="alert">{error}</p>}{candidates.map(p=><button key={p.fideId} onClick={()=>void load(p.fideId,p.name)}>{p.name} · FIDE {p.fideId}</button>)}
+  {loaded&&<><p>{games.length} importierte Partien{fideId?' · FIDE '+fideId:' · Namenszuordnung (nicht verifiziert)'}</p>{rejected>0&&<p>{rejected} ungültige oder nicht abgeschlossene Partien ausgelassen.</p>}{games.some(g=>g.link_basis==='name')&&<p>Exakte Namensübereinstimmungen ohne FIDE-ID sind nicht verifiziert.</p>}
+   <div className="vorbereitung-filters"><label>Farbe<select value={color} onChange={e=>setColor(e.target.value)}><option value="all">Beide Farben</option><option value="white">Weiß</option><option value="black">Schwarz</option></select></label><label>Bedenkzeit<select value={speed} onChange={e=>setSpeed(e.target.value)}><option value="all">Alle Bedenkzeiten</option>{[...new Set(games.map(g=>g.speed))].map(s=><option key={s}>{s}</option>)}</select></label><label>Zeitkontrolle<select value={timeControl} onChange={e=>setTimeControl(e.target.value)}><option value="all">Alle Zeitkontrollen</option>{[...new Set(games.map(g=>g.timeControl))].map(t=><option key={t}>{t}</option>)}</select></label><label>Eröffnung oder Variante (Name / ECO)<input value={variation} maxLength={150} placeholder="Najdorf oder B90" onChange={e=>setVariation(e.target.value)}/></label></div>
+   <PreparationBoard fen={fen} onFen={setFen}/>{searching&&<p role="status">Stellungen werden verglichen …</p>}
+   {result?.error&&<p role="alert">Ungültige Stellung</p>}{!searching&&result&&<><h3>{result.hits.length} Partien erreichten diese Stellung</h3><p>Nächste Züge des gesuchten Spielers: {result.playerToMove} Partien. Gegnerzüge werden nicht als seine Züge gezählt.</p><table><caption>Was spielte der Spieler als Nächstes?</caption><thead><tr><th>Zug</th><th>Partien</th><th>%</th></tr></thead><tbody>{result.nextMoves.map(m=><tr key={m.uci}><td><button type="button" onClick={()=>{const g=new Chess(fen);g.move({from:m.uci.slice(0,2),to:m.uci.slice(2,4),promotion:m.uci[4]});setFen(g.fen());}}>{m.san}</button></td><td>{m.games}</td><td>{m.percent}%</td></tr>)}</tbody></table>
+    <VorbereitungResults games={shown} filters={{color,speed,timeControl,variation}} onAnalyse={pgn=>{const game=shown.find(g=>g.pgn===pgn);try{navigate(openSpielerAnalysis(pgn,undefined,game?hits.get(game.id):undefined));}catch{setError('Diese Partie kann nicht geöffnet werden.');}}}/>
+   </>}
+   {!games.length&&<p>Keine importierten Partien für diesen Spieler.</p>}<p>Lichess-Broadcastdaten: <a href="https://database.lichess.org/#broadcasts" target="_blank" rel="noopener noreferrer">Lichess</a> · <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>. Kommentare wurden beim Import entfernt.</p>
+  </>}
+ </section>;
+}

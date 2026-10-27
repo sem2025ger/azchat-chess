@@ -10,6 +10,7 @@ on:
       - feat/spieler-v1
       - feat/clubs-nrw-v1
       - feat/spieltag-v1
+      - feat/vorbereitung-v1
   workflow_dispatch:
 
 permissions:

@@ -72,11 +72,12 @@ function normalizeGame(pgn,source){
   white:(h.White||'—').slice(0,150),black:(h.Black||'—').slice(0,150),result:h.Result||'*',date:h.Date||'—',
   eco:/^[A-E]\d\d$/.test(h.ECO||'')?h.ECO:null,
   opening:h.Opening?String(h.Opening).slice(0,150):'Züge: '+moves.slice(0,8).join(' '),
+  event:(h.Event||'').slice(0,250),timeControl:(h.TimeControl||'?').slice(0,60),
   whiteFideId:/^[1-9]\d{0,9}$/.test(h.WhiteFideId||'')?h.WhiteFideId:null,
   blackFideId:/^[1-9]\d{0,9}$/.test(h.BlackFideId||'')?h.BlackFideId:null};
 }
 class GamesProvider{
- constructor({fetchImpl=fetch,twic=async()=>[],lichessAccess=sharedLichess}={}){this.fetch=fetchImpl;this.twic=twic;this.lichess=lichessAccess;}
+ constructor({fetchImpl=fetch,twic=async()=>[],lichessAccess=sharedLichess,namedPage=null,candidates=null}={}){this.fetch=fetchImpl;this.twic=twic;this.lichess=lichessAccess;this.namedPage=namedPage;this.candidates=candidates;}
  async get(url,accept){return readBounded(await this.fetch(url,{headers:{Accept:accept},redirect:'error',signal:AbortSignal.timeout(8000)}));}
  async games({source,nickname,fideId}){
   if(!['lichess','chesscom','twic'].includes(source))throw Error('invalid_provider');
@@ -123,6 +124,32 @@ class GamesProvider{
    return data;
   })();access.pending.set(nickname,task);
   try{return await task;}finally{access.pending.delete(nickname);}
+ }
+ async namedPreparation({fideId=null,name=null}){
+  const {fullNameKey}=require('../shared/playerNames.mjs');
+  if(fideId!==null&&!/^[1-9]\d{0,9}$/.test(String(fideId)))throw Object.assign(Error('invalid_query'),{code:'invalid_query'});
+  if(fideId===null&&!fullNameKey(name))throw Object.assign(Error('full_name_required'),{code:'invalid_query'});
+  if(!this.namedPage)throw Error('storage_unavailable');
+  let ids=[];
+  if(fideId===null&&this.candidates){ids=await this.candidates(fullNameKey(name));if(ids.length>1)return {games:[],candidates:ids.map(p=>({fideId:String(p.fide_id),name})),ambiguous:true};if(ids.length===1)fideId=String(ids[0].fide_id);}
+  const games=new Map();let rejected=0;
+  for(let offset=0;offset<=10000;offset+=500){
+   if(offset===10000)throw Object.assign(Error('too_many_games'),{code:'too_many_games'});
+   const rows=await this.namedPage({fideId,name:fullNameKey(name),offset,limit:500});
+   for(const row of rows){try{const g=normalizeGame(row.pgn,row.source);
+    if(!['1-0','0-1','1/2-1/2'].includes(g.result))throw Error('unfinished');
+    const timeControl=row.time_control||g.timeControl||'?';
+    const estimated=(()=>{const stage=timeControl.split(':')[0].split('/').at(-1);const m=stage.match(/^(\d+)(?:\+(\d+))?$/);return m?Number(m[1])+40*Number(m[2]||0):null;})();
+    const speed=estimated===null?'unknown':estimated<180?'bullet':estimated<480?'blitz':estimated<1500?'rapid':'classical';
+    const key=g.white.toLowerCase()+'\n'+g.black.toLowerCase()+'\n'+(row.game_date||g.date)+'\n'+g.event+'\n'+(g.pgn.match(/^\[Round "([^"]*)"\]/m)?.[1]||'')+'\n'+g.pgn.replace(/^\[.*\]\s*$/gm,'').trim();
+    const existing=games.get(key);if(existing?.link_basis==='fide_id'&&row.link_basis==='name')continue;
+    games.set(key,{...g,id:row.id,color:row.color,source:row.source,sourceUrl:row.source_url,licenseUrl:row.license_url,
+     event:row.event||g.event,opening:row.opening||g.opening,eco:row.eco||g.eco,timeControl,speed,
+     link_basis:row.link_basis,createdAt:Date.parse(row.game_date||g.date.replaceAll('.','-'))||0});
+   }catch{rejected++;}}
+   if(rows.length<500)break;
+  }
+  return {fideId:fideId?String(fideId):null,name:name||null,games:[...games.values()].sort((a,b)=>b.createdAt-a.createdAt||a.id.localeCompare(b.id)),rejected,candidates:[]};
  }
 }
 module.exports={GamesProvider,normalizeGame,splitPgn,readBounded,MAX_BYTES,createLichessAccess,readPreparation,PREPARATION_BYTES,LICHESS_AGENT};

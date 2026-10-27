@@ -48,8 +48,9 @@ export function createSpielerApi(base: string, fetchImpl: typeof fetch = fetch) 
   };
 }
 // The existing analysis session validates PGN before changing stored state.
-export function openSpielerAnalysis(pgn: string, storage?: Pick<Storage, 'getItem' | 'setItem'>) {
+export function openSpielerAnalysis(pgn: string, storage?: Pick<Storage, 'getItem' | 'setItem'>, positionPly?:number) {
   const parsed = analysisFromPgn(pgn);
-  saveAnalysisSession(parsed.moveHistory, -1, storage, parsed.positionHistory[0]);
+  if(positionPly!==undefined&&(!Number.isInteger(positionPly)||positionPly<0||positionPly>=parsed.positionHistory.length))throw new SpielerError('invalid_query');
+  saveAnalysisSession(parsed.moveHistory, positionPly===undefined?-1:positionPly, storage, parsed.positionHistory[0]);
   return '/game';
 }
