@@ -57,3 +57,18 @@ test('month runner reads German FIDE snapshot from QA and does not write in dry-
   assert.equal(stageCalls,1);assert.equal(result.inserted,0);assert.equal(result.filtered,3);assert.equal(result.database_bytes,29810000);
  }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
+
+test('CLI reports safe failure stage and allowlisted code, never provider secrets',async()=>{
+ const {main,safeFailure}=require('./scripts/importLichessBroadcast');
+ const secret='postgresql://postgres:DO_NOT_LOG@db.iukmpcytsuofqhxsumbu.supabase.co:5432/postgres';
+ const messages=[];let ended=false;
+ const ok=await main({argv:['--month=2026-04','--target=qa','--dir=/tmp/fixture'],
+  env:{SUPABASE_URL:'https://iukmpcytsuofqhxsumbu.supabase.co',QA_DATABASE_URL:secret},
+  ClientImpl:class{async connect(){throw Object.assign(Error(secret),{code:'28P01',detail:secret});}async end(){ended=true;}},
+  logError:v=>messages.push(v)});
+ assert.equal(ok,false);assert.equal(ended,true);
+ assert.deepEqual(JSON.parse(messages[0]),{error:'broadcast_import_failed',phase:'database_connect',code:'28P01'});
+ assert.ok(!messages.join('').includes('DO_NOT_LOG'));
+ assert.equal(safeFailure({code:secret,cause:{code:'SELF_SIGNED_CERT_IN_CHAIN'}},'database_connect').code,'SELF_SIGNED_CERT_IN_CHAIN');
+ assert.equal(safeFailure({message:secret,code:secret},'database_connect').code,'UNCLASSIFIED');
+});

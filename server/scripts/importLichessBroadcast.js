@@ -94,16 +94,20 @@ async function buildFilter(db,dir){
  await fsp.writeFile(filename,rows.map(r=>r.fide_id+'\t'+r.name).join('\n')+'\n',{flag:'wx',mode:0o600});
  try{return loadGermanFideList(filename);}finally{await fsp.rm(filename,{force:true});}
 }
-async function runMonth({month,dir,target='qa',url,db,apply=false,stage=stageMonth}){
+async function runMonth({month,dir,target='qa',url,db,apply=false,stage=stageMonth,progress=()=>{}}){
  assertTarget(target,url);
  if(target!=='qa')throw Error('QA only');
+ progress('database_size');
  const startBytes=await databaseBytes(db);
  if(startBytes>=MAX_DB_BYTES)throw Error('150 MB database size guard');
  await fsp.mkdir(dir,{recursive:true});
+ progress('spieler_snapshot');
  const filter=await buildFilter(db,dir);
+ progress('archive_stage');
  const report=await stage({month,dir,target,url,filter});
  let imported=0,updated=0,submitted=0,batches=0,finalBytes=startBytes;
  if(apply){
+  progress('database_import');
   const reader=readline.createInterface({input:fs.createReadStream(report.staged_file),crlfDelay:Infinity});
   let batch=[];
   for await(const line of reader){
@@ -126,20 +130,38 @@ async function runMonth({month,dir,target='qa',url,db,apply=false,stage=stageMon
   excluded:report.excluded,submitted,inserted:imported,updated,batches,
   database_bytes:finalBytes,apply};
 }
-async function main(){
- const args=validateArgs(process.argv.slice(2));
- const url=process.env.SUPABASE_URL||'';
- assertTarget(args.target,url);
- const connectionString=process.env.QA_DATABASE_URL||'';
- guardDatabaseUrl(connectionString);
- // TLS mandatory. Neither credentials nor player data are logged.
- const db=new Client({connectionString,ssl:{rejectUnauthorized:true},connectionTimeoutMillis:15000});
- try{
-  await db.connect();
-  const result=await runMonth({month:args.month,dir:args.dir,target:args.target,url,db,apply:!!args.apply});
-  console.log(JSON.stringify(result)); // Aggregate counts only.
- }finally{await db.end().catch(()=>{});}
+const SAFE_CODES=new Set(['ENOTFOUND','EAI_AGAIN','ECONNREFUSED','ECONNRESET','ETIMEDOUT',
+ 'ENETUNREACH','EHOSTUNREACH','CERT_HAS_EXPIRED','SELF_SIGNED_CERT_IN_CHAIN',
+ 'DEPTH_ZERO_SELF_SIGNED_CERT','UNABLE_TO_VERIFY_LEAF_SIGNATURE','ERR_TLS_CERT_ALTNAME_INVALID',
+ '28P01','28000','3D000','42P01','42703','42501','53300','57P03']);
+function safeFailure(error,phase){
+ // Never serialize provider messages, stacks, SQL, URLs or arbitrary codes.
+ let code='UNCLASSIFIED';
+ for(const e of [error,error?.cause])if(SAFE_CODES.has(e?.code)){code=e.code;break;}
+ return {error:'broadcast_import_failed',phase,code};
 }
-if(require.main===module)main().catch(()=>{console.error('Broadcast month import aborted; inspect QA connection, checksum and size gate.');process.exitCode=1;});
+async function main({argv=process.argv.slice(2),env=process.env,ClientImpl=Client,
+ run=runMonth,log=console.log,logError=console.error}={}){
+ let phase='arguments',db;
+ try{
+  const args=validateArgs(argv);
+  phase='qa_target';
+  const url=env.SUPABASE_URL||'';
+  assertTarget(args.target,url);
+  phase='database_url';
+  const connectionString=env.QA_DATABASE_URL||'';
+  guardDatabaseUrl(connectionString);
+  phase='database_connect';
+  db=new ClientImpl({connectionString,ssl:{rejectUnauthorized:true},connectionTimeoutMillis:15000});
+  await db.connect();
+  phase='month_processing';
+  const result=await run({month:args.month,dir:args.dir,target:args.target,url,db,apply:!!args.apply,
+   progress:value=>{phase=value;}});
+  log(JSON.stringify(result));
+  return true;
+ }catch(error){logError(JSON.stringify(safeFailure(error,phase)));return false;}
+ finally{if(db)await db.end().catch(()=>{});}
+}
+if(require.main===module)main().then(ok=>{if(!ok)process.exitCode=1;});
 module.exports={QA,MAX_DB_BYTES,BATCH_SIZE,INSERT_SQL,guardDatabaseUrl,validateArgs,
- databaseBytes,batchReservation,validateRow,upsertBatch,buildFilter,runMonth};
+ databaseBytes,batchReservation,validateRow,upsertBatch,buildFilter,runMonth,safeFailure,main};
