@@ -74,7 +74,7 @@ export default function RegionOverview(){
       .in('club_id',ids).gte('starts_at',new Date().toISOString()).order('starts_at').limit(80).abortSignal(abort.signal),
      supabase.from('clubs_nrw_league_rows').select('id,club_id,season,league,team,place,played,match_points')
       .in('club_id',ids).order('season',{ascending:false}).limit(80).abortSignal(abort.signal),
-     supabase.from('clubs_nrw_members').select('club_id').eq('user_id',user.id).maybeSingle().abortSignal(abort.signal),
+     supabase.from('clubs_nrw_members').select('club_id').eq('user_id',user.id).abortSignal(abort.signal).maybeSingle(),
     ]);
     if(!active)return;
     if(calendar.error||rows.error)setError('Einige Vereinsangaben sind derzeit nicht verfügbar.');
