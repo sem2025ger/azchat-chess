@@ -37,3 +37,25 @@ New forward migration `20261027024137_vorbereitung_names_v1.sql` adds the broadc
 CI tests: official metadata/license/checksums and interrupted staging; real PostgreSQL applies all Spieler dependencies plus the new migration, tests FIDE priority, exact unverified fallback, conflicting IDs, TWIC union, suppression and denied anon/authenticated access. HTTP covers authenticated named search and allowlists. Frontend tests cover German notation, transpositions, next moves, colour filters, valid/illegal setup and matched-ply analysis. Real Chromium with synthetic data covers primary opponent entry, marked fallback, variation, palette/FEN, next moves, mouse/tap board controls, secondary nickname, account cleanup and 390/1280 widths.
 
 Apply migration to QA only **after both CI runs for the exact PR head are green, zero skips**. Check QA history/table first and record assigned migration version and SQL hash. Run `docs/vorbereitung-names-v1-qa-regression.sql` (ROLLBACK), then import the six official months, verify stored counts/attribution and compare security advisors. Flags `VORBEREITUNG_ENABLED` / `VITE_VORBEREITUNG_ENABLED` remain OFF. No production deployment, maintenance, environment, billing or merge changes. Report and STOP.
+
+### Derived-game licensing and QA size gate
+
+**CC BY-SA 4.0 applies to derived game data as well as the original broadcast PGN.**
+Compact PGNs, SAN-only mainlines, position indexes, name/FIDE links, opening summaries,
+next-move statistics and exported subsets derived from Lichess broadcast archives must
+retain appropriate Lichess broadcast attribution, archive source URL, a link to
+https://creativecommons.org/licenses/by-sa/4.0/, and an indication of modifications.
+Redistributed adaptations remain under the same CC BY-SA 4.0 terms. Do **not**
+treat these broadcasts or their adapted game records as CC0. The source/license
+links must remain visible on every view presenting individual broadcast games.
+
+**QA import storage gate (2026-10-27): HALTED.** Measured QA database size
+29,193,907 bytes, 3,500 April broadcast games, 1,672.73 bytes average full PGN,
+7,815,168 bytes including broadcast-table indexes. A trial computation keeping only
+the seven standard headers plus WhiteFideId/BlackFideId/ECO/Opening/TimeControl and
+plain SAN moves averaged 1,169.02 bytes per game. Extrapolated table/index growth
+for 207,840 staged records is approximately 380–440 MB, above the owner's 300 MB
+ceiling. This is a projection based on the first 3,500 games, not a completed import.
+**No further QA inserts** until the storage plan is explicitly revised and a
+representative end-to-end size projection is demonstrably below 300 MB.
+
