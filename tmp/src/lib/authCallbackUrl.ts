@@ -28,3 +28,14 @@ export function authCallbackUrl(
 export function clubReturnTarget(value: string | null): '/chat' | null {
   return value === '/chat' ? '/chat' : null;
 }
+
+export function inviteReturnTarget(value: string | null): string | null {
+  return value !== null && /^\/schach-treff\/einladung\/[0-9a-f]{32}$/.test(value) ? value : null;
+}
+
+export function inviteAuthCallbackUrl(origin: string, path: '/profile' | '/update-password', target: string): string {
+  const callback = new URL(authCallbackUrl(origin, path));
+  const safe = inviteReturnTarget(target);
+  if (safe) callback.searchParams.set('returnTo', safe);
+  return callback.toString();
+}
