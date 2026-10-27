@@ -23,3 +23,15 @@ test('desktop four option surfaces use the same opaque neutral color as Live Pre
   const surfaces = readFileSync(new URL('../src/screens/SettingsTypography.css', import.meta.url), 'utf8');
   assert.match(surfaces, /\.settings-preview-matched-surface\s*\{\s*background-color:\s*#171717;/);
 });
+
+test('minor font increase is confined to four desktop option cards, not headings or board', () => {
+  const css = readFileSync(new URL('../src/screens/SettingsTypography.css', import.meta.url), 'utf8');
+  const start = css.indexOf('/* Desktop option labels only:');
+  assert.ok(start >= 0);
+  const rules = css.slice(start);
+  assert.match(rules, /@media \(min-width: 1024px\)/);
+  for (const [id, size] of [['board','12px'], ['pieces','11px'], ['sound','12px'], ['background','11.5px']]) {
+    assert.match(rules, new RegExp('#settings-section-' + id + '[^\\{]*\\{\\s*font-size: ' + size.replace('.', '\\.') + ';'));
+  }
+  assert.doesNotMatch(rules, /h2|settings-preview-board|settings-preview-column|settings-preview-title/);
+});
