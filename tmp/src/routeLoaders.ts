@@ -18,6 +18,7 @@ export const routeLoaders = {
   profile: cacheImport(() => import('./screens/ProfileScreen')),
   settings: cacheImport(() => import('./screens/SettingsScreen')),
   updatePassword: cacheImport(() => import('./screens/UpdatePasswordScreen')),
+  regionNw: cacheImport(() => import('./screens/RegionOverview')),
   clubsNrw: cacheImport(() => import('./screens/ClubsNRWScreen')),
   spieltag: cacheImport(() => import('./screens/SpieltagScreen')),
   vorbereitung: cacheImport(() => import('./screens/VorbereitungScreen')),
@@ -32,6 +33,7 @@ const destinations: Record<string, () => Promise<unknown>> = {
   '/profile': routeLoaders.profile,
   '/settings': routeLoaders.settings,
   '/clubs-nrw': routeLoaders.clubsNrw,
+  '/region/nrw': routeLoaders.regionNw,
   '/spieltag': routeLoaders.spieltag,
   '/vorbereitung': routeLoaders.vorbereitung,
 };
