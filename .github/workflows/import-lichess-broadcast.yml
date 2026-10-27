@@ -25,6 +25,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
+      - name: Require approved import branch
+        env:
+          IMPORT_REF: ${{ github.ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$IMPORT_REF" != 'refs/heads/feat/vorbereitung-names-v1' ]]; then
+            echo '::error::QA import is allowed only on feat/vorbereitung-names-v1.'
+            exit 1
+          fi
+
       - name: Require QA database secret
         env:
           QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
