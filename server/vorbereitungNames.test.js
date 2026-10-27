@@ -43,3 +43,19 @@ test('QA German FIDE snapshot: FIDE match first, no surname-only; SAN-only recon
  const {normalizeGame}=require('./spielerGamesProvider');const parsed=normalizeGame(full,'lichess-broadcast');assert.equal(parsed.result,'1-0');assert.equal(parsed.white,'Huseynov, Sabir');
  }finally{await fs.rm(tmp,{recursive:true,force:true});}
 });
+
+test('checksum-valid non-Zstandard archive fails safely without publishing partial staging',async()=>{
+ const fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path'),{createHash}=require('node:crypto');
+ const {stageMonth}=require('./scripts/importBroadcast');
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'chessaz-broadcast-invalid-'));
+ try{
+  const file='lichess_db_broadcast_2026-09.pgn.zst',garbage=Buffer.from('not a Zstandard frame');
+  await fs.writeFile(path.join(dir,file),garbage);
+  const sha=createHash('sha256').update(garbage).digest('hex');
+  await assert.rejects(stageMonth({month:'2026-09',dir,target:'local',url:'http://127.0.0.1:54321',
+   filter:{sha256:'a'.repeat(64),eligible:()=>true},
+   fetchImpl:async()=>new Response(sha+'  '+file)}),/Zstandard archive decode failed/);
+  await assert.rejects(fs.stat(path.join(dir,'2026-09.jsonl')));
+  await assert.rejects(fs.stat(path.join(dir,'2026-09.report.json')));
+ }finally{await fs.rm(dir,{recursive:true,force:true});}
+});
