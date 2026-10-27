@@ -39,3 +39,28 @@ Frontend/Chromium regression covers entry from Spieltag Gegner, private nickname
 Apply the new migration to **QA iukmpcytsuofqhxsumbu only AFTER both exact-head CI runs are green with zero skips**. Inspect history/column first; do not apply twice. Record actual assigned version and SQL hash in the PR. Then execute the extended `docs/spieltag-v1-qa-regression.sql` in its fully rolled-back transaction, inspect a separate post-rollback state and compare security advisors.
 
 Flags, production, maintenance and hosted environment/deployment settings remain unchanged. Existing gameplay acceptance/Frankfurt gates remain in force. Report and STOP.
+
+## Milestone 5c — QA-only monthly Lichess broadcast operation
+
+New operator entry point: `server/scripts/importLichessBroadcast.js`. It reuses the official SHA-256-verified `.pgn.zst` archive parser, stores SAN-only game mainlines and separate metadata, and retains official source URLs and CC BY-SA 4.0 attribution (https://creativecommons.org/licenses/by-sa/4.0/). No scraping, GPG, encryption or DB staging tables.
+
+Only QA project `iukmpcytsuofqhxsumbu` is permitted. Production `kmwfvvliundhuovoakoa` is always forbidden. Require server-only `QA_DATABASE_URL` (direct `db.iukmpcytsuofqhxsumbu.supabase.co` or QA username `postgres.iukmpcytsuofqhxsumbu` on the official pooler), TLS and `SUPABASE_URL=https://iukmpcytsuofqhxsumbu.supabase.co`. Store secrets outside repository; never use a browser key. The script uses the existing pinned server `pg` dependency and Node's Zstd support.
+
+Run from repository root, one month at a time:
+
+```sh
+node server/scripts/importLichessBroadcast.js --target=qa --month=2026-04 --dir=/absolute/private/lichess-cache --apply
+```
+
+Repeat for `2026-05`, `2026-06`, `2026-07`, `2026-08`, `2026-09` **only after** the previous month's reported `database_bytes` is checked. Without `--apply`, downloads, verifies and stages but never writes games. The filter snapshot comes from current QA `public.spieler_players`: FIDE ID membership wins; only missing-ID sides may use exact normalized `Surname, First` keys. Re-running is idempotent on `id` and interrupted months are resumable. Changed Spieler snapshot or archive checksum invalidates cached staged data.
+
+Database safety: 200-row upsert batches; before each batch check `pg_database_size(current_database())` plus a conservative index/TOAST margin against **150,000,000 bytes**; post-write check inside the same transaction, roll back if the ceiling is breached. Conditional upsert prevents rewrites for identical IDs. Quiesce other DB writers during import, because this is not a quota lock against concurrent external writers. Logs aggregate counts and database bytes, never names/PGNs/secrets. Stop on any failure; never bypass the guard.
+
+Verify counts using QA-only SQL:
+
+```sql
+SELECT source_month, count(*) AS stored FROM public.spieler_broadcast_games WHERE source_month BETWEEN '2026-04' AND '2026-09' GROUP BY source_month ORDER BY source_month;
+SELECT pg_database_size(current_database()) AS database_bytes;
+```
+
+Previous QA baseline: 541 games, approximately 29.81 MB. Filtered six-month projection: 14,976 games, approximately 45–70 MB; these are **not** claims of a completed import. Proceed only with exact-head green Server and Frontend CI and zero skips; preserve Draft PR status, flags OFF, production untouched. Report committed SHA, CI URLs, actual per-month newly inserted and stored counts and final QA size; STOP.
