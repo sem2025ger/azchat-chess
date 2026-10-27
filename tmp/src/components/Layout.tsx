@@ -78,25 +78,10 @@ export default function Layout() {
           <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
               <div className="flex w-full items-center justify-center xl:justify-start gap-1.5" aria-label="Chessaz.de">
-                <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[2rem] xl:leading-[1.8rem] tracking-tighter italic leading-none text-glow-cycle whitespace-nowrap text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
-                  Chessaz.<span className="inline-block not-italic bg-[linear-gradient(115deg,#7387A5_0%,#B8C9D9_34%,#716E9E_65%,#C1C9D3_100%)] bg-clip-text text-transparent xl:text-[1.045em]">de</span>
+                <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.72rem] xl:leading-[1.8rem] tracking-tighter italic leading-none whitespace-nowrap text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
+                  <span className="text-glow-cycle">Chessaz.</span><span className="inline-block not-italic xl:text-[1.06em] bg-[linear-gradient(115deg,#127DEB_0%,#48DBFF_23%,#D2E8FF_43%,#9C77D4_64%,#D1A5EC_82%,#6D40DC_100%)] bg-clip-text text-transparent" style={{ WebkitTextFillColor: 'transparent' }}>de</span>
                 </span>
-                <svg aria-hidden="true" viewBox="0 0 72 94" className="hidden xl:block h-[43px] w-[34px] shrink-0 drop-shadow-[0_1px_3px_rgba(195,196,202,.24)]">
-                  <defs>
-                    <linearGradient id="sidebarKingMetal" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0" stopColor="#F0E5D0" />
-                      <stop offset=".23" stopColor="#9BA8B7" />
-                      <stop offset=".47" stopColor="#E8EAEC" />
-                      <stop offset=".7" stopColor="#667484" />
-                      <stop offset="1" stopColor="#CAB79B" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M33 4h6v10h9v6h-9v13h-6V20h-9v-6h9z" fill="url(#sidebarKingMetal)" stroke="#B8A991" strokeWidth="1.2" />
-                  <path d="M24 34q-2-5 0-9h24q2 4 0 9l-6 7 8 22q-2 5-8 6H30q-6-1-8-6l8-22z" fill="url(#sidebarKingMetal)" stroke="#CFBFA1" strokeWidth="1.6" />
-                  <path d="M26 38h20M28 63h16" stroke="#3A4550" strokeWidth="1.5" opacity=".6" />
-                  <path d="M20 70q16-7 32 0l5 8q-20 7-42 0z" fill="url(#sidebarKingMetal)" stroke="#C4AD85" strokeWidth="1.6" />
-                  <path d="M12 81q24-9 48 0l5 8q-29 7-58 0z" fill="url(#sidebarKingMetal)" stroke="#D1BE9C" strokeWidth="1.7" />
-                </svg>
+                <img src="/brand/sidebar-king.svg" alt="" aria-hidden="true" width="32" height="64" className="hidden xl:block h-[64px] w-[32px] shrink-0 object-contain" />
               </div>
               <div
                 role="img"
