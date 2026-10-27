@@ -1,6 +1,6 @@
 # Milestone 4 — Schach in Bochum & NRW (Draft, default OFF)
 
-Branch `feat/clubs-nrw-v1`, base main. No production, no new games, no game result writes, no rating mutations, no automatic league scoring.
+Branch `feat/clubs-nrw-v1`, stacked on `feat/spieler-v1` (PR #127). No production, no new games, no game result writes, no rating mutations, no automatic league scoring.
 
 ## Scope and safeguards
 
@@ -51,4 +51,8 @@ Access matrix: owner/admin/moderator may maintain calendar entries; owner/admin 
 
 ## Spieler integration and merge order
 
-Merge/deploy **PR #127 before PR #128**, then apply the separate forward-only Spieler-to-NRW-club FK migration included in PR #128. The original free-text claim club is retained as `club_legacy` for migration safety and is never displayed as an unverified public association. The selected NRW club ID is nullable and must reference the curated `clubs_nrw` directory. Existing claims are not automatically matched to clubs by their legacy text.
+Merge order is **PR #127 → PR #128, both with Squash and merge only**. PR #128 is based on `feat/spieler-v1`; its normal dependency merge preserves both branch histories without a force-push. After #127 is squash-merged, retarget #128 to main and recheck that its diff contains only Clubs NRW and the club picker before its own squash merge.
+
+Apply all three #127 Spieler migrations, then `20261026224500_clubs_nrw_v1.sql`, then `20261027001000_spieler_clubs_nrw_fk.sql`. `server/clubsNrwSpielerDb.test.js` exercises that exact order on isolated PostgreSQL, including published/unknown/unpublished clubs, legacy privacy, verified club display and preserved RPC ACLs. Server CI also runs for the stacked base branch.
+
+The original free-text claim club is retained as `club_legacy` for migration safety and is never displayed as an unverified public association. The selected NRW club ID is nullable and must reference the curated `clubs_nrw` directory. Existing claims are not automatically matched to clubs by their legacy text.
