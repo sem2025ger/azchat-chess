@@ -1,0 +1,96 @@
+name: Import Lichess broadcast (QA only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      months:
+        description: Comma-separated months (YYYY-MM)
+        required: true
+        default: '2026-04,2026-05,2026-06,2026-07,2026-08,2026-09'
+        type: string
+      apply:
+        description: Import only after all monthly dry runs succeed
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lichess-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Require QA database secret
+        env:
+          QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$QA_DATABASE_URL" ]]; then
+            echo '::error::Missing QA_DATABASE_URL repository secret. Add the QA Session pooler connection string before running this workflow.'
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.14.1
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install exact dependencies
+        working-directory: server
+        run: npm ci --ignore-scripts --no-audit --no-fund > /dev/null 2>&1
+
+      - name: Dry run all months, then optionally import sequentially
+        env:
+          QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
+          SUPABASE_URL: https://iukmpcytsuofqhxsumbu.supabase.co
+          IMPORT_MONTHS: ${{ inputs.months }}
+          IMPORT_APPLY: ${{ inputs.apply }}
+          NODE_NO_WARNINGS: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          # Inputs are data, never interpolated into shell source or evaluated.
+          if [[ ! "$IMPORT_MONTHS" =~ ^[0-9]{4}-(0[1-9]|1[0-2])(,[0-9]{4}-(0[1-9]|1[0-2]))*$ ]]; then
+            echo '::error::Invalid months: expected comma-separated YYYY-MM values.'
+            exit 1
+          fi
+          if [[ "$IMPORT_APPLY" != true && "$IMPORT_APPLY" != false ]]; then
+            echo '::error::Invalid apply value.'
+            exit 1
+          fi
+          IFS=',' read -r -a months <<< "$IMPORT_MONTHS"
+          declare -A seen=()
+          for month in "${months[@]}"; do
+            if [[ -n "${seen[$month]:-}" ]]; then
+              echo '::error::Duplicate month; supply each month once.'
+              exit 1
+            fi
+            seen[$month]=1
+          done
+          cache_dir="$(mktemp -d "$RUNNER_TEMP/lichess-import.XXXXXX")"
+          trap 'rm -rf -- "$cache_dir"' EXIT
+          for month in "${months[@]}"; do
+            node server/scripts/importLichessBroadcast.js --target=qa "--month=$month" "--dir=$cache_dir"
+          done
+          # This loop is unreachable unless EVERY dry run exited successfully.
+          # The existing importer checks the 150,000,000-byte limit per batch
+          # and reports database_bytes after each month. Any error stops here.
+          if [[ "$IMPORT_APPLY" == true ]]; then
+            for month in "${months[@]}"; do
+              node server/scripts/importLichessBroadcast.js --target=qa "--month=$month" "--dir=$cache_dir" --apply
+            done
+          fi
