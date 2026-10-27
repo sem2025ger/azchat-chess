@@ -77,11 +77,14 @@ export default function Layout() {
 
           <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
-              <div className="flex w-full items-center justify-center xl:justify-start gap-1.5 xl:gap-0" aria-label="ChessAZ.de">
+              <div className="flex w-full items-center justify-center xl:justify-start gap-1.5 xl:gap-0" aria-label="Chessaz.de">
                 <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.72rem] xl:leading-[1.8rem] tracking-tight not-italic leading-none whitespace-nowrap text-center xl:text-left">
-                  <span className="sidebar-brand-silver">ChessAZ.</span><span className="sidebar-brand-de inline-block xl:text-[1.06em]">de</span>
+                  <span className="sidebar-brand-silver"><span className="xl:text-[1.08em]">Ch</span>essaz.</span><span className="sidebar-brand-de inline-block xl:text-[1.06em]">de</span>
                 </span>
-                <img src="/brand/sidebar-king.svg" alt="" aria-hidden="true" width="31" height="62" className="hidden xl:block h-[62px] w-[31px] shrink-0 object-fill -translate-x-[2px] -translate-y-[6px]" />
+                <span className="relative hidden xl:block h-[62px] w-[31px] shrink-0 -translate-x-[2px] -translate-y-[6px]" aria-hidden="true">
+                  <img src="/brand/sidebar-king.svg" alt="" width="31" height="62" className="absolute inset-0 h-full w-full object-fill" />
+                  <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
+                </span>
               </div>
               <div
                 role="img"
