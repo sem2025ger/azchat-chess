@@ -59,3 +59,9 @@ ceiling. This is a projection based on the first 3,500 games, not a completed im
 **No further QA inserts** until the storage plan is explicitly revised and a
 representative end-to-end size projection is demonstrably below 300 MB.
 
+
+### Owner decision — compact German-FIDE-only archive (2026-10-27)
+
+Only archive games involving a German `public.spieler_players` FIDE ID, or an exact full-name match when that player's FIDE ID is missing, may be uploaded. The 36,687-player list is exported as a local TSV snapshot, without any secret or user session. `importBroadcast.js` requires `--fide-list=/absolute/snapshot.tsv` for staging and application, and checksum-binds every staged report to this snapshot. Unmatched records are excluded prior to upload. Saved `pgn` is SAN movetext with move numbers and result only; standard tags are reconstructed for ChessAZ analysis from the existing metadata columns. No GPG or encryption step is required or permitted for this batch path.
+
+**Verified local dry run, official SHA-256 archives April–September 2026:** 224,224 raw records; 16,223 candidate PGNs by FIDE ID/exact unmatched-ID name, 14,976 accepted valid games, 1,247 rejected among matches, 0 staged ID duplicates. Stored SAN is 10,972,691 bytes, not a full-game tag/comment corpus. Against 29,193,907 byte QA baseline, projected complete QA database around 45–70 MB including indexes; this is below the owner’s 150 MB gate and is not a guarantee of the eventual size. Of 3,500 preexisting April entries, 537 are eligible; the other 2,963 are removed in QA-only cleanup after CI. No new schema objects or staging tables for import. All imported game-derived data remain CC BY-SA 4.0 with source and license links.

@@ -76,6 +76,24 @@ function normalizeGame(pgn,source){
   whiteFideId:/^[1-9]\d{0,9}$/.test(h.WhiteFideId||'')?h.WhiteFideId:null,
   blackFideId:/^[1-9]\d{0,9}$/.test(h.BlackFideId||'')?h.BlackFideId:null};
 }
+
+function rebuildBroadcastPgn(row) {
+ if(row.source!=='lichess-broadcast'||/^\s*\[Event\s/.test(row.pgn))return row.pgn;
+ const san=String(row.pgn||'').trim();
+ const result=san.match(/(?:^|\s)(1-0|0-1|1\/2-1\/2)\s*$/)?.[1];
+ if(!result||!san||san.length>65536||/[{}\[\]]/.test(san))throw Error('invalid_pgn');
+ const safe=s=>String(s??'?').replace(/[\r\n]+/g,' ').replace(/\\/g,'\\\\').replace(/"/g,'\\"').slice(0,500);
+ const date=String(row.game_date||'????.??.??').replace(/-/g,'.');
+ const tags={Event:row.event||'?',Site:row.source_url||'?',Date:date,Round:'?',
+  White:row.white_name||'?',Black:row.black_name||'?',Result:result};
+ if(row.white_fide_id)tags.WhiteFideId=String(row.white_fide_id);
+ if(row.black_fide_id)tags.BlackFideId=String(row.black_fide_id);
+ if(row.eco)tags.ECO=row.eco;
+ if(row.opening)tags.Opening=row.opening;
+ if(row.time_control)tags.TimeControl=row.time_control;
+ return Object.entries(tags).map(([k,v])=>'['+k+' "'+safe(v)+'"]').join('\n')+'\n\n'+san;
+}
+
 class GamesProvider{
  constructor({fetchImpl=fetch,twic=async()=>[],lichessAccess=sharedLichess,namedPage=null,candidates=null}={}){this.fetch=fetchImpl;this.twic=twic;this.lichess=lichessAccess;this.namedPage=namedPage;this.candidates=candidates;}
  async get(url,accept){return readBounded(await this.fetch(url,{headers:{Accept:accept},redirect:'error',signal:AbortSignal.timeout(8000)}));}
@@ -136,7 +154,7 @@ class GamesProvider{
   for(let offset=0;offset<=10000;offset+=500){
    if(offset===10000)throw Object.assign(Error('too_many_games'),{code:'too_many_games'});
    const rows=await this.namedPage({fideId,name:fullNameKey(name),offset,limit:500});
-   for(const row of rows){try{const g=normalizeGame(row.pgn,row.source);
+   for(const row of rows){try{const g=normalizeGame(rebuildBroadcastPgn(row),row.source);
     if(!['1-0','0-1','1/2-1/2'].includes(g.result))throw Error('unfinished');
     const timeControl=row.time_control||g.timeControl||'?';
     const estimated=(()=>{const stage=timeControl.split(':')[0].split('/').at(-1);const m=stage.match(/^(\d+)(?:\+(\d+))?$/);return m?Number(m[1])+40*Number(m[2]||0):null;})();
@@ -152,4 +170,4 @@ class GamesProvider{
   return {fideId:fideId?String(fideId):null,name:name||null,games:[...games.values()].sort((a,b)=>b.createdAt-a.createdAt||a.id.localeCompare(b.id)),rejected,candidates:[]};
  }
 }
-module.exports={GamesProvider,normalizeGame,splitPgn,readBounded,MAX_BYTES,createLichessAccess,readPreparation,PREPARATION_BYTES,LICHESS_AGENT};
+module.exports={GamesProvider,normalizeGame,splitPgn,readBounded,MAX_BYTES,createLichessAccess,readPreparation,PREPARATION_BYTES,LICHESS_AGENT,rebuildBroadcastPgn};
