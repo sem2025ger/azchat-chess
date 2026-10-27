@@ -235,6 +235,22 @@
   -webkit-text-fill-color: transparent;
   color: #9a83de;
 }
+/* Subtle premium sweep on the existing king asset; preserve all underlying pixels. */
+.sidebar-king-sheen {
+  background: linear-gradient(110deg, transparent 30%, rgba(194,219,251,.05) 41%, rgba(233,237,255,.2) 49%, rgba(222,192,136,.11) 55%, transparent 65%);
+  background-size: 230% 100%;
+  -webkit-mask: url('/brand/sidebar-king.svg') center / 100% 100% no-repeat;
+  mask: url('/brand/sidebar-king.svg') center / 100% 100% no-repeat;
+  animation: sidebarKingSoftSheen 9s ease-in-out infinite;
+}
+@keyframes sidebarKingSoftSheen {
+  0%, 22% { background-position: 100% 50%; }
+  70%, 100% { background-position: 0% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-king-sheen { animation: none; background-position: 50% 50%; }
+}
+
 /* Text Shadow Cycle for Start Game button */
 .text-shadow-cycle {
   animation: none;
