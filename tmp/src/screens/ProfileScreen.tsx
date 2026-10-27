@@ -232,7 +232,7 @@ export default function ProfileScreen() {
       <div className="max-w-6xl mx-auto px-4 py-8 md:px-8 overflow-y-auto lg:overflow-hidden bg-transparent h-full min-h-0 touch-pan-y pb-28 lg:pb-0 lg:h-full flex flex-col items-center justify-center relative max-md:w-full max-md:px-3 max-md:py-2 max-md:pb-2 max-md:justify-start">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-30 mix-blend-overlay"></div>
         
-        <div className="w-full md:w-[660px] lg:w-[700px] max-w-[calc(100vw-2rem)] bg-[#171717] backdrop-blur-2xl border-[2px] border-transparent rounded-[1.75rem] p-7 md:p-9 lg:p-9 shadow-[0_30px_90px_-35px_rgba(0,0,0,0.95)] animate-fade-in-up relative overflow-hidden panel-glow-cycle transition-all max-md:shrink-0 max-md:p-4 max-md:rounded-2xl max-md:backdrop-blur-none">
+        <div className="w-full md:w-[620px] lg:w-[660px] max-w-[calc(100vw-2rem)] bg-[#171717] backdrop-blur-2xl border border-white/10 rounded-[1.75rem] p-7 md:p-8 lg:p-8 shadow-none animate-fade-in-up relative overflow-hidden transition-all max-md:shrink-0 max-md:p-4 max-md:rounded-2xl max-md:backdrop-blur-none">
           
           
           <div className="w-full max-w-[520px] mx-auto relative z-10">
