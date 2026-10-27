@@ -79,9 +79,12 @@ export default function Layout() {
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
               <div className="flex w-full items-center justify-center xl:justify-start gap-1.5 xl:gap-0" aria-label="Chessaz.de">
                 <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.72rem] xl:leading-[1.8rem] tracking-tighter italic leading-none whitespace-nowrap text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
-                  <span className="text-glow-cycle"><span className="xl:text-[1.08em]">Ch</span>essaz.</span><span className="sidebar-de-metallic inline-block not-italic xl:text-[1.06em]">de</span>
+                  <span className="text-glow-cycle"><span className="xl:text-[1.08em]">Ch</span>essaz.</span><span className="inline-block not-italic xl:text-[1.06em] text-[#C5CAD1]">de</span>
                 </span>
-                <img src="/brand/sidebar-king.svg" alt="" aria-hidden="true" width="28" height="55" className="hidden xl:block h-[55px] w-[27.5px] -translate-x-[2px] shrink-0 object-contain" />
+                <span className="relative hidden xl:block h-[55px] w-[31px] -translate-x-[2px] shrink-0" aria-hidden="true">
+                  <img src="/brand/sidebar-king.svg" alt="" width="31" height="55" className="absolute inset-0 h-full w-full object-fill" />
+                  <span className="sidebar-king-metallic absolute inset-0" />
+                </span>
               </div>
               <div
                 role="img"
