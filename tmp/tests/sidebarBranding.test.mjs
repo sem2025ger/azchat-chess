@@ -12,7 +12,7 @@ test('sidebar wordmark keeps Chessaz.de spelling and subtly enlarges only Ch', (
 
 test('original king artwork is preserved, an additional 5% smaller, and closer to de on desktop', () => {
   assert.match(layout, /xl:gap-0/);
-  assert.match(layout, /src="\/brand\/sidebar-king\.svg"[^\n]*width="29" height="58"[^\n]*h-\[55px\] w-\[27\.5px\]/);
+  assert.match(layout, /src="\/brand\/sidebar-king\.svg"[^\n]*width="28" height="55"[^\n]*h-\[55px\] w-\[27\.5px\]/);
 });
 
 test('de has metallic sheen and respects reduced-motion preferences', () => {
