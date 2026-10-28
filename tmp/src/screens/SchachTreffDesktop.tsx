@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
-import { copy as t } from '../components/schachTreff/copy';
+import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
 import './SchachTreffDesktop.css';
 import { ChallengeProvider, ChallengeButton, ChallengeMessage } from '../components/schachTreff/Challenges';
@@ -15,6 +15,7 @@ type Message = { id: string; author_id: string; body: string; created_at: string
 type Panel = 'tournaments' | 'members' | 'ranking' | 'about';
 const warned = new Set<string>();
 export default function SchachTreffDesktop() {
+  const t=useSchachTreffCopy();
   const { user, isLoading } = useAuth();
   const [clubId, setClubId] = useState<string | null>(null);
   const [pin, setPin] = useState<{ body: string; author: string | null } | null>(null);
