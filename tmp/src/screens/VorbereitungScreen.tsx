@@ -39,11 +39,11 @@ function VorbereitungWorkspace({token,initial}:{token:string;initial:string}){
   catch(e){if(!c.signal.aborted)setError(e instanceof VorbereitungError&&e.code==='lichess_rate_limit'?`Lichess bittet um eine Pause. Bitte in ${e.retryAfter||60} Sekunden erneut versuchen.`:e instanceof VorbereitungError&&e.code==='rate_limit'?'Zu viele Anfragen. Bitte warte eine Minute.':'Partien konnten nicht geladen werden. Bitte prüfe den Namen und versuche es später erneut.');}
   finally{if(!c.signal.aborted)setBusy(false);}
  }
- function analyse(pgn:string){try{navigate(openSpielerAnalysis(pgn));}catch{setError(tr("Diese Partie kann nicht in der Analyse geöffnet werden."));}}
+ function analyse(pgn:string){try{navigate(openSpielerAnalysis(pgn));}catch{setError('Diese Partie kann nicht in der Analyse geöffnet werden.');}}
  const controls=[...new Set(games.map(g=>g.timeControl))];
  return <section className="vorbereitung-page"><header><h2>{tr("Lichess-Konto (zweite Quelle)")}</h2><p>Öffentliche Lichess-Partien eines Kontos · bis zu 200 neueste abgeschlossene Standardpartien.</p></header>
   <form onSubmit={e=>void load(e)}><label>{tr("Lichess-Benutzername")}<input required minLength={2} maxLength={30} pattern="[A-Za-z0-9_-]+" autoComplete="off" value={username} onChange={e=>setUsername(e.target.value)}/></label><button disabled={busy}>{tr("Partien laden")}</button></form>
-  {busy&&<p role="status">{tr("Partien werden geladen …")}</p>}{error&&<p role="alert">{error}</p>}
+  {busy&&<p role="status">{tr("Partien werden geladen …")}</p>}{error&&<p role="alert">{tr(error)}</p>}
   {loaded&&<><p>Lichess-Konto: {loaded} {tr('(nicht verifiziert)')}</p><p>Stichprobe, kein vollständiges Repertoire. Eröffnungsnamen und ECO stammen von Lichess. Die Stichprobe kann bis zu 15 Minuten alt sein.</p>{rejected>0&&<p>{rejected} nicht unterstützte oder ungültige Einträge ausgelassen.</p>}
    <div className="vorbereitung-filters"><label>{tr("Farbe")}<select value={color} onChange={e=>setColor(e.target.value)}><option value="all">{tr("Beide Farben")}</option><option value="white">{tr("Weiß")}</option><option value="black">{tr("Schwarz")}</option></select></label>
     <label>{tr("Bedenkzeit")}<select value={speed} onChange={e=>setSpeed(e.target.value)}><option value="all">{tr("Alle Bedenkzeiten")}</option>{['ultraBullet','bullet','blitz','rapid','classical','correspondence'].map(s=><option key={s} value={s}>{s}</option>)}</select></label>
