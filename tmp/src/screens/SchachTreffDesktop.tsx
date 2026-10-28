@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom';
 import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
+import { useOptionalLanguage } from '../context/LanguageContext';
 import { supabase } from '../services/supabase';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
@@ -16,6 +17,7 @@ type Panel = 'tournaments' | 'members' | 'ranking' | 'about';
 const warned = new Set<string>();
 export default function SchachTreffDesktop() {
   const t=useSchachTreffCopy();
+  const language=useOptionalLanguage()?.language||'de';
   const { user, isLoading } = useAuth();
   const [clubId, setClubId] = useState<string | null>(null);
   const [pin, setPin] = useState<{ body: string; author: string | null } | null>(null);
@@ -37,7 +39,7 @@ export default function SchachTreffDesktop() {
   const [player, setPlayer] = useState<Profile | null>(null);
   const [notify, setNotify] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, []);
+  useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, [t.title]);
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
   const refresh = useCallback(async () => {
     const requested = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('club');
@@ -115,7 +117,7 @@ export default function SchachTreffDesktop() {
   }
   if (missing) return null;
   const members = profiles.filter(p => roster.includes(p.id));
-  return <section className="schach-treff" lang="de" data-schach-treff-desktop>
+  return <section className="schach-treff" lang={language==="ua"?"uk":language} data-schach-treff-desktop>
     <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member}>
     <header><h1>{t.title}</h1>{import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Link className="st-region-entry" to="/region/nrw" aria-label="NRW-Regionalübersicht öffnen">NRW ↗</Link>}<div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
       {menu && <nav aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}</nav>}
