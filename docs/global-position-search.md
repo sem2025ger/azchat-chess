@@ -64,3 +64,23 @@ the memory result is reviewed.
 There is no reload endpoint and no request-triggered rebuild. No archive import
 is performed by this feature. Deploy Vercel previews using the branch name so
 branch-scoped preview variables are applied.
+
+## Owner's manual QA deploy
+
+In Render, open **chessaz-deutsch-qa-api** (service `srv-dbcktr0473hc739d5qn0`).
+Add the new environment variable `POSITION_SEARCH_ENABLED` with value `true`;
+preserve existing variables and secrets. Save without deploying if the dashboard
+offers that option. In **Manual Deploy → Deploy a specific commit**, select the
+final green CI commit from **feat/global-position-search-v1**, as identified in
+the milestone report. A specific-commit deploy disables automatic deploys in
+Render; inspect that setting yourself before choosing a future deploy strategy.
+
+Wait for Live and check `https://chessaz-deutsch-qa-api.onrender.com/health`.
+The health check confirms that the server is alive, not that the index is ready.
+The runtime log must subsequently contain `position_index_ready` with `build_ms`,
+`entries`, `games`, `rss_before`, `rss_after`, and `max_indexed_plies:60`.
+If `rss_after` exceeds 350,000,000 bytes, stop validation and report it. A
+`position_index_failed` or `position_index_memory_limit` log is not a successful
+build. During a normal build, authenticated searches return 503 `index_warming`
+and `Retry-After: 5`; after readiness, use the preview and sign in yourself to
+run the supplied Najdorf position from the milestone report with side Black.
