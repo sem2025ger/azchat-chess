@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../services/supabase';
-import { copy as t } from './copy';
+import { useSchachTreffCopy } from './copy';
 type Room = { id: string; name: string };
 export default function ClubRooms({ currentClubId }: { currentClubId: string | null }) {
+  const t=useSchachTreffCopy();
   const [rooms,setRooms]=useState<Room[]>([]), [available,setAvailable]=useState(false);
   const [name,setName]=useState(''), [form,setForm]=useState(false), [busy,setBusy]=useState(false), [error,setError]=useState('');
   const [link,setLink]=useState(''), [copied,setCopied]=useState(false);
@@ -40,6 +41,7 @@ export default function ClubRooms({ currentClubId }: { currentClubId: string | n
   </div>;
 }
 export function RoomTitle({ clubId }: { clubId: string | null }) {
+  const t=useSchachTreffCopy();
   const [room,setRoom]=useState<{id:string;name:string}|null>(null);
   useEffect(() => {
     if (!clubId) return;
