@@ -96,17 +96,17 @@ export default function Layout() {
           <nav className="px-3 xl:px-5 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
-            <NavItem to="/chat" icon={<MessageSquare size={20} />} label={desktop ? 'Schach-Treff' : t('nav.chat')} themeColor="theme-violet" subtitle={desktop ? 'Für Deutschsprachige' : undefined} />
+            <NavItem to="/chat" icon={<MessageSquare size={20} />} label={desktop ? 'Schach-Treff' : t('nav.chat')} themeColor="theme-violet" subtitle={desktop ? t('nav.germanSpeakers') : undefined} />
             {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW" themeColor="theme-gold" />}
-            {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label="Spieltag" themeColor="theme-gold" />}
+            {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
-            {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label="Spieler" themeColor="theme-blue" />}
+            {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label={t("nav.spieler")} themeColor="theme-blue" />}
           </nav>
         </div>
 
         <div className="p-2 xl:p-5 space-y-3 border-t border-white/[0.05] bg-black/40 shadow-inner shrink-0">
 
-          {/* Refined Language Selector - AZ / TR / RU ONLY */}
+          {/* Shared six-language selector — persistent across routes */}
           <div className="flex flex-col gap-3">
             <div className="hidden xl:flex bg-neutral-900/70 p-0.5 rounded-lg border border-white/10 shadow-[0_0_18px_rgba(34,211,238,0.14)] premium-cycle-container transition-all">
               {(['en', 'de', 'az', 'tr', 'ua', 'ru'] as Language[]).map(lang => (
@@ -186,7 +186,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       onPointerDown={() => prefetchRoute(to)}
       className={({ isActive }) =>
         cx(
-          "site-nav-link flex items-center px-4 py-[1.125rem] border border-transparent rounded-2xl font-black text-[0.85rem] uppercase tracking-wider relative group active:scale-95 sidebar-item",
+          "site-nav-link chessaz-bronze-frame flex items-center px-4 py-[1.125rem] border border-transparent rounded-2xl font-black text-[0.85rem] uppercase tracking-wider relative group active:scale-95 sidebar-item",
           isActive
             ? `sidebar-item-active ${themeColor}`
             : cx("text-neutral-500 sidebar-item-hover", alwaysGlow && themeColor)
