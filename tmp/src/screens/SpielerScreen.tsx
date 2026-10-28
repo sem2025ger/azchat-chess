@@ -12,6 +12,7 @@ import '../styles/sections.css';
 import NamedPreparation from '../components/spieler/NamedPreparation';
 import SpielerCard from '../components/spieler/SpielerCard';
 import SpielerAccountLabel from '../components/spieler/SpielerAccountLabel';
+import GlobalPositionSearch from '../components/spieler/GlobalPositionSearch';
 
 function message(error: unknown) {
   if (error instanceof SpielerError) {
@@ -77,6 +78,7 @@ export default function SpielerScreen() {
   function analyse(pgn: string) { try { navigate(openSpielerAnalysis(pgn)); } catch { setError('Diese Partie kann nicht in der Analyse geöffnet werden.'); } }
   return <section className="spieler-page section-page">
     <header><p className="spieler-eyebrow">ChessAZ · {tr('Spieler')} v1</p><h1>{tr('Spieler')}</h1><p>{tr('Nach Namen suchen. Öffentliche Partien entdecken.')}</p></header>
+    {import.meta.env.VITE_POSITION_SEARCH_ENABLED==='true'&&<GlobalPositionSearch key={session?.access_token||'guest'} token={session?.access_token||''}/>}
     {!session && <p role="status">{tr('Bitte melde dich zuerst über dein Profil an, um Spieler zu suchen.')}</p>}
     <form className="spieler-search section-card" onSubmit={search}><h2>{tr('Spieler finden')}</h2><label htmlFor="spieler-surname">{tr('Nachname')}</label>
       <div><input id="spieler-surname" minLength={2} maxLength={100} required value={query} onChange={e => setQuery(e.target.value)} autoComplete="off" /><button disabled={busy || !session} type="submit">{tr('Suchen')}</button></div></form>

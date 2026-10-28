@@ -1,0 +1,9 @@
+.global-position-search.vorbereitung-page{max-width:none;margin:0;padding:18px;gap:18px}
+.global-position-search header p,.global-position-controls>p{font-size:12px;color:#bcb7aa}
+.global-position-grid{display:grid;grid-template-columns:minmax(280px,1fr) minmax(240px,1fr);gap:24px;align-items:start}
+.global-position-controls{display:grid;gap:16px;min-width:0}
+.global-position-controls form{display:grid;gap:12px}.global-position-search label{min-width:0}
+.global-position-controls details ul{display:grid;gap:6px;margin-top:10px}
+.global-position-controls button{overflow-wrap:anywhere}
+.global-position-results{min-width:0}.global-position-results h3{font-weight:600}
+@media(max-width:800px){.global-position-grid{grid-template-columns:minmax(0,1fr)}.global-position-search.vorbereitung-page{padding:14px}}
