@@ -76,7 +76,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
     setProfiles(Object.fromEntries((names.data??[]).map(p=>[p.id,p.username])));
     setMessages([...recent].reverse());
     setError('');
-   }catch{if(!controller.signal.aborted)setError(tr("Chat ist momentan nicht verfügbar."));}
+   }catch{if(!controller.signal.aborted)setError("Chat ist momentan nicht verfügbar.");}
    finally{reading=false;if(!controller.signal.aborted)setLoading(false);}
   };
   void refresh();
@@ -93,7 +93,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
    });
    if(result.error)throw result.error;
    setRevision(n=>n+1);
-  }catch{setError(tr("Beitritt nicht möglich. Bitte erneut versuchen."));}
+  }catch{setError("Beitritt nicht möglich. Bitte erneut versuchen.");}
   finally{setBusy(false);}
  }
 
@@ -109,7 +109,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
    if(result.error)throw result.error;
    setDraft('');
    setRevision(n=>n+1);
-  }catch{setError(tr("Nachricht konnte nicht gesendet werden."));}
+  }catch{setError("Nachricht konnte nicht gesendet werden.");}
   finally{setBusy(false);}
  }
 
@@ -119,7 +119,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
    <div><h2>Schach-Treff</h2><small>{tr("Deutschlandweiter Chat · keine NRW-Filterung")}</small></div>
    <Link className="nrw-chat-open" to="/chat" aria-label={tr("Schach-Treff im Vollbild öffnen")} title={tr("Vollbild")}><ArrowUpRight size={19} aria-hidden="true"/></Link>
   </header>
-  {error&&<p className="nrw-chat-error" role="alert">{error}</p>}
+  {error&&<p className="nrw-chat-error" role="alert">{tr(error)}</p>}
   {authLoading||loading?<p className="nrw-muted" role="status">{tr("Chat wird geladen …")}</p>
    : !userId?<div className="nrw-chat-notice"><p>{tr("Zum Lesen und Schreiben im gemeinsamen Chat anmelden.")}</p><Link to="/profile?returnTo=%2Fregion%2Fnrw">{tr("Anmelden")}</Link></div>
    : !clubId?<p className="nrw-muted">{tr("Der Schach-Treff ist noch nicht eingerichtet.")}</p>
