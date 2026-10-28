@@ -18,6 +18,14 @@ for(const lang of ['de','en','az','tr','ua','ru']){
  assert.equal(value.includes('Eine Anfrage bestätigt keine Identität'),lang==='de','player identity warning locale: '+lang);
  assert.ok(value.length>95,'safety explanation must remain explicit: '+lang);
 }
+// Read the same existing dictionaries; assert the rendered text in Chromium below.
+const {default:ts}=await import('typescript');
+async function copyMap(path,name){
+ const source=await readFile(new URL(path,import.meta.url),'utf8'),ast=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+ let expression;const visit=node=>{if(ts.isVariableDeclaration(node)&&node.name.getText(ast)===name)expression=node.initializer.getText(ast);ts.forEachChild(node,visit);};visit(ast);
+ assert.ok(expression,name);return Function('return ('+expression+')')();
+}
+const fixedCopy={...await copyMap('../src/i18n/sectionCopy.ts','sectionCopy'),...await copyMap('../src/i18n/regionalCopy.ts','regionalCopy'),...await copyMap('../src/screens/SpieltagScreen.tsx','matchdayText')};
 const fixture=String.raw`
 import '/src/index.css';import {ThemeProvider} from '/src/context/ThemeContext.tsx';import React from 'react';import{createRoot}from'react-dom/client';import {LanguageProvider,useLanguage} from '/src/context/LanguageContext.tsx';localStorage.setItem('app-language','de');import Screen from '/src/screens/SpieltagScreen.tsx';import{MemoryRouter,Routes,Route,useNavigate}from'react-router-dom';import Preparation from '/src/screens/VorbereitungScreen.tsx';import{loadAnalysisSession}from'/src/utils/analysisSession.ts';
 
@@ -74,8 +82,19 @@ try{
  const wait=async expression=>{for(let i=0;i<200;i++){if(await evaluate("Boolean(document.body && ("+expression+"))"))return;await pause();}throw Error('UI wait failed: '+expression+'\n'+await evaluate('document.body.innerText'));};
  const click=label=>evaluate(`(()=>{const el=[...document.querySelectorAll('button,a')].find(b=>b.textContent.trim()===${JSON.stringify(label)});if(!el)throw Error('Button missing');for(let d=el.closest('details');d;d=d.parentElement?.closest('details'))if(!d.open)d.querySelector(':scope > summary').click();el.click();})()`);
  const fill=(label,value)=>evaluate(`(()=>{const l=[...document.querySelectorAll('label')].find(l=>l.textContent.startsWith(${JSON.stringify(label)}));const el=l?.querySelector('input,textarea,select');if(!el)throw Error('Input missing');for(let d=el.closest('details');d;d=d.parentElement?.closest('details'))if(!d.open)d.querySelector(':scope > summary').click();const proto=el instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:el instanceof HTMLSelectElement?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(el,${JSON.stringify(value)});el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+ const checkLocales=async(selector,keys)=>{
+  for(const locale of ['en','az','tr','ua','ru','de']){
+   await evaluate("document.querySelector('[data-test-locale="+locale+" ]').click()");
+   for(const key of keys){
+    const expected=fixedCopy[key][locale];
+    await wait("[...document.querySelectorAll("+JSON.stringify(selector)+")].some(el=>el.textContent.includes("+JSON.stringify(expected)+"))");
+    assert.equal(await evaluate("[...document.querySelectorAll("+JSON.stringify(selector)+")].some(el=>el.textContent.includes("+JSON.stringify(key)+"))"),locale==='de',key+': '+locale);
+   }
+  }
+ };
  await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Page.navigate',{url:base+'spieltag-fixture'});
  await wait(`document.body.innerText.includes('Spieltermin eintragen')`);
+ await checkLocales('.spieltag-role',['Du pflegst diese Mannschaft als Kapitänin oder Kapitän.']);
  await click('Spieltermin eintragen');await fill('Runde','Runde 1');
  for (const [locale, expected] of [['en','Add match date'],['az','Oyun tarixi əlavə et'],['tr','Maç tarihi ekle'],['ua','Додати дату матчу'],['ru','Добавить дату матча']]) {
    await evaluate("document.querySelector('[data-test-locale="+locale+"]').click()");
@@ -87,6 +106,15 @@ try{
  await wait("document.body.innerText.includes('Spieltermin eintragen')");await fill('Gegnerische Mannschaft','Gastmannschaft');await fill('Datum und Uhrzeit','2026-11-08T11:00');await fill('Spielort','Bochum');await click('Termin speichern');
  await wait(`document.querySelector('[role="tablist"]')`);assert.equal(await evaluate(`JSON.parse(window.fixtureCalls.find(c=>c.method==='POST').body).starts_at`),'2026-11-08T10:00:00.000Z');
  await click('Brett hinzufügen');await fill('Eigene Spielerin','Home player');await fill('Gegnerin / Gegner','Guest player');await fill('Gegnerische FIDE-ID','13404431');await click('Brett speichern');await wait(`document.body.innerText.includes('Home player')`);
+ // Cancel each translated delete confirmation; retain the same board and fixture.
+ await evaluate('window.originalConfirm=window.confirm;window.confirm=text=>{window.confirmText=text;return false;}');
+ for(const locale of ['en','az','tr','ua','ru','de']){
+  await evaluate("document.querySelector('[data-test-locale="+locale+"]').click()");
+  await wait("document.querySelector('.spieltag-role')?.textContent==="+JSON.stringify(fixedCopy['Du pflegst diese Mannschaft als Kapitänin oder Kapitän.'][locale]));
+  await click(fixedCopy['Brett entfernen'][locale]);
+  assert.equal(await evaluate('window.confirmText'),fixedCopy['Brett {number} aus dieser Aufstellung entfernen?'][locale].replace('{number}','1'));
+ }
+ await evaluate('window.confirm=window.originalConfirm');
  await click('Gegner');await wait(`document.body.innerText.includes('Guest player')`);await click('Spielerkarte · 13404431');await wait(`document.body.innerText.includes('Fixture FIDE Player')`);
  // Check team privacy notice (expanded Info) and player-card accessibility label in real Chromium.
  await evaluate("document.querySelector('.spieltag-controls details.section-info').open=true");
@@ -122,7 +150,10 @@ try{
  const namedPreparationSource=await readFile(new URL('../src/components/spieler/NamedPreparation.tsx',import.meta.url),'utf8');
  assert.ok(namedPreparationSource.includes(":' · '+tr('Namenszuordnung (nicht verifiziert)')"),'name-only summary uses tr()');
 
- await fill('Eröffnung oder Variante','A05');await wait(`document.body.innerText.includes('2 passende Partien')`);await fill('Eröffnung oder Variante','Najdorf');await wait(`document.body.innerText.includes('Keine Partien in dieser Variante')`);await fill('Eröffnung oder Variante','');
+ await checkLocales('.vorbereitung-colors h2',['Mit Weiß','Mit Schwarz']);
+ await checkLocales('.vorbereitung-games',['Weiß','Zuordnung über FIDE-ID','Namenszuordnung (nicht verifiziert)']);
+ await fill('Farbe','black');await wait(`document.body.innerText.includes('Keine Partien für diese Filter')`);await checkLocales('.preparation-results-panel [role=status]',['Keine Partien für diese Filter']);await fill('Farbe','all');
+ await fill('Eröffnung oder Variante','A05');await wait(`document.body.innerText.includes('2 passende Partien')`);await fill('Eröffnung oder Variante','Najdorf');await wait(`document.body.innerText.includes('Keine Partien in dieser Variante')`);await checkLocales('.preparation-results-panel [role=status]',['Keine Partien in dieser Variante']);await fill('Eröffnung oder Variante','');
  await fill('Züge (SAN','1.Sf3 d5 2.g3 Sf6');await click('Züge suchen');await wait(`document.body.innerText.includes('2 Partien erreichten diese Stellung')&&[...document.querySelectorAll('button')].some(b=>b.textContent==='Bg2')`);
  await click('Bg2');await wait(`document.querySelector('[aria-label="g2 wB"]')`);await wait(`document.body.innerText.includes('2 Partien erreichten diese Stellung')`);
  await click('Stellung aufstellen');await fill('FEN','8/8/8/8/8/8/8/8 w - - 0 1');await click('Stellung suchen');await wait(`document.body.innerText.includes('Ungültige Stellung')`);
@@ -137,6 +168,7 @@ try{
  await click('In ChessAZ analysieren');await wait(`document.getElementById('analysis-landed')`);assert.equal(await evaluate('window.fixtureAnalysisPly()'),4);assert.equal((await evaluate('window.fixtureAnalysis()')).length,6);
  await evaluate(`window.fixtureNavigate('/')`);await wait(`document.querySelector('[role="tablist"]')`);await click('Gegner');await click('Lichess-Konto vorbereiten');
  await wait(`document.querySelector('.vorbereitung-secondary-source input')?.value==='target_user'`);await click('Partien laden');await wait(`document.querySelector('.vorbereitung-secondary-source').innerText.includes('Najdorf')`);
+ await checkLocales('.vorbereitung-secondary-source .vorbereitung-colors h2',['Mit Weiß','Mit Schwarz']);
  await evaluate(`window.changeSession('member-test-only')`);await wait(`document.querySelector('.vorbereitung-secondary-source input')?.value===''`);assert.equal(await evaluate(`document.body.innerText.includes('Najdorf')`),false);await evaluate(`window.changeSession('captain-test-only')`);await fill('Lichess-Benutzername','target_user');await click('Partien laden');await wait(`document.querySelector('.vorbereitung-secondary-source').innerText.includes('Najdorf')`);
  // Scope secondary filters so their values cannot leak into the primary search.
  const fillSecondary=(value)=>evaluate(`(()=>{const el=document.querySelector('.vorbereitung-secondary-source input[placeholder="Najdorf oder B90"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,${JSON.stringify(value)});el.dispatchEvent(new Event('input',{bubbles:true}));})()`);
@@ -145,7 +177,10 @@ try{
  await evaluate(`window.fixtureNavigate('/')`);await wait(`document.querySelector('[role="tablist"]')`);
  // Same components at both viewport sizes: no horizontal overflow.
  for(const width of [390,1280]){await cdp('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});await pause();assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'));}
- await evaluate(`window.changeSession('member-test-only')`);await wait(`document.body.innerText.includes('Nur für bestätigte Mannschaftsmitglieder')`);await click('Nach der Runde');await wait(`document.body.innerText.includes('Gut gespielt!')`);assert.equal(await evaluate('document.querySelectorAll(".spieltag-form").length'),0);assert.equal(await evaluate(`document.body.innerText.includes('Brett hinzufügen')`),false);
+ await click('Nach der Runde');await fill('Ergebnis','');await wait(`window.fixtureCalls.some(c=>c.body&&JSON.parse(c.body).result===null)`);
+ await evaluate(`window.changeSession('member-test-only')`);await wait(`document.body.innerText.includes('Nur für bestätigte Mannschaftsmitglieder')`);await click('Nach der Runde');await checkLocales('.spieltag-boards span',['Noch offen']);
+ await evaluate(`window.changeSession('captain-test-only')`);await wait(`document.querySelector('[role="tablist"]')`);await click('Nach der Runde');await fill('Ergebnis','not_played');await wait(`window.fixtureCalls.some(c=>c.body&&JSON.parse(c.body).result==='not_played')`);
+ await evaluate(`window.changeSession('member-test-only')`);await wait(`document.body.innerText.includes('Nur für bestätigte Mannschaftsmitglieder')`);await click('Nach der Runde');await wait(`document.body.innerText.includes('Gut gespielt!')`);await checkLocales('.spieltag-role',['Nur für bestätigte Mannschaftsmitglieder.']);await checkLocales('.spieltag-boards span',['Nicht gespielt']);assert.equal(await evaluate('document.querySelectorAll(".spieltag-form").length'),0);assert.equal(await evaluate(`document.body.innerText.includes('Brett hinzufügen')`),false);
  await evaluate(`window.changeSession('captain-test-only')`);await wait(`document.querySelector('[role="tablist"]')`);await click('Gegner');await evaluate('window.delayCard=true');await click('Spielerkarte · 13404431');await wait('typeof window.releaseCard==="function"');await evaluate(`window.changeSession('outsider-test-only');window.releaseCard()`);await wait(`document.body.innerText.includes('noch keiner Mannschaft zugeordnet')`);assert.equal(await evaluate(`document.body.innerText.includes('Guest player')||document.body.innerText.includes('Fixture FIDE Player')`),false);
  await evaluate('window.changeSession(null)');await wait(`document.body.innerText.includes('Bitte zuerst anmelden')`);assert.equal(exceptions.length,0,exceptions.join('\n'));
  console.log('PASS Spieltag/Vorbereitung browser: captain schedule/lineup/opponents/card/results/notes, primary FIDE/name fallback, German moves/transpositions, next moves, FEN/setup/palette/illegal position, matched-ply analysis, secondary nickname/name/ECO/empty, member read-only, 390/1280 widths, identity changes and stale-card cleanup');
