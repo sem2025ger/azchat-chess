@@ -1,4 +1,4 @@
-import { useLanguage } from '../context/LanguageContext';
+import { useOptionalLanguage } from '../context/LanguageContext';
 
 // Only fixed UI labels are localized; player names, club names, chat text, PGN and FIDE data are never translated.
 const regionalCopy: Record<string, Record<string, string>> = {
@@ -517,6 +517,6 @@ const regionalCopy: Record<string, Record<string, string>> = {
 };
 
 export function useRegionalCopy() {
-  const { language } = useLanguage();
+  const language = useOptionalLanguage()?.language || 'de';
   return (label: string): string => regionalCopy[label]?.[language] || label;
 }
