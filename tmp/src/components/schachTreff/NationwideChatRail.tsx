@@ -127,7 +127,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
    : !member?<div className="nrw-chat-notice"><p>Der gemeinsame Chat ist für Mitglieder der Schach-Treff-Community.</p><button type="button" disabled={busy} onClick={()=>void join()}>Community beitreten</button></div>
    : <><div className="nrw-chat-messages" aria-label="Chat-Nachrichten" aria-live="polite" aria-relevant="additions">
        {messages.length===0?<p className="nrw-muted">Noch keine Nachrichten.</p>
-        : <>{messages.length>5&&<details className="nrw-chat-history"><summary>Weitere Nachrichten ({messages.length-5})</summary>{messages.slice(0,-5).map(renderMessage)}</details>}{messages.slice(-5).map(renderMessage)}</>}
+        : <>{messages.length>3&&<details className="nrw-chat-history"><summary>Weitere Nachrichten ({messages.length-3})</summary>{messages.slice(0,-3).map(renderMessage)}</details>}{messages.slice(-3).map(renderMessage)}</>}
      </div>
      <form className="nrw-chat-compose" onSubmit={send}>
       <label htmlFor="nrw-chat-message">Nachricht</label>

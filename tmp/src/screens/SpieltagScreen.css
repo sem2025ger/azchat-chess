@@ -15,3 +15,5 @@
 .spieltag-workspace .spieltag-boards{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.spieltag-boards li>strong{color:#dfc492;font-size:12px}
 @media(max-width:1050px){.spieltag-workspace{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.spieltag-workspace .spieltag-boards{grid-template-columns:minmax(0,1fr)}}
+.spieltag-controls .spieltag-actions button{flex:1 1 0;min-width:0;font-size:12px;padding:8px 6px}
+@media(max-width:600px){.spieltag-controls{gap:10px}.spieltag-boards li{gap:6px;padding:10px}}
