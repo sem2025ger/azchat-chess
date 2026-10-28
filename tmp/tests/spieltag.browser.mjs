@@ -7,7 +7,7 @@ import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 const fixture=String.raw`
-import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import {LanguageProvider} from '/src/context/LanguageContext.tsx';localStorage.setItem('app-language','de');import Screen from '/src/screens/SpieltagScreen.tsx';import{MemoryRouter,Routes,Route,useNavigate}from'react-router-dom';import Preparation from '/src/screens/VorbereitungScreen.tsx';import{loadAnalysisSession}from'/src/utils/analysisSession.ts';
+import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import {LanguageProvider,useLanguage} from '/src/context/LanguageContext.tsx';localStorage.setItem('app-language','de');import Screen from '/src/screens/SpieltagScreen.tsx';import{MemoryRouter,Routes,Route,useNavigate}from'react-router-dom';import Preparation from '/src/screens/VorbereitungScreen.tsx';import{loadAnalysisSession}from'/src/utils/analysisSession.ts';
 window.fixtureSession={access_token:'captain-test-only'};window.fixtureCalls=[];
 const team='11111111-1111-4111-8111-111111111111',match='22222222-2222-4222-8222-222222222222';
 let matches=[],boards=[];const native=window.fetch;
@@ -30,7 +30,7 @@ window.fetch=async(url,options={})=>{
  else data={matches};
  return new Response(JSON.stringify(data),{status:options.method==='POST'?201:200,headers:{'content-type':'application/json'}});
 };
-function Shell(){window.fixtureNavigate=useNavigate();return <Routes><Route path='/' element={<Screen/>}/><Route path='/vorbereitung' element={<Preparation/>}/><Route path='/game' element={<p id='analysis-landed'>Analyse</p>}/></Routes>;}function App(){return <MemoryRouter><Shell/></MemoryRouter>;}window.fixtureAnalysis=()=>loadAnalysisSession()?.moveHistory;window.fixtureAnalysisPly=()=>loadAnalysisSession()?.viewMoveIndex;window.changeSession=value=>{window.fixtureSession=value?{access_token:value}:null;window.dispatchEvent(new Event('fixture-auth'));};
+function Shell(){window.fixtureNavigate=useNavigate();return <Routes><Route path='/' element={<Screen/>}/><Route path='/vorbereitung' element={<Preparation/>}/><Route path='/game' element={<p id='analysis-landed'>Analyse</p>}/></Routes>;}function LocaleControls(){const {setLanguage}=useLanguage();return <nav data-test-languages>{['en','de','az','tr','ua','ru'].map(lang=><button key={lang} data-test-locale={lang} onClick={()=>setLanguage(lang)}>{lang}</button>)}</nav>;}function App(){return <MemoryRouter><LocaleControls/><Shell/></MemoryRouter>;}window.fixtureAnalysis=()=>loadAnalysisSession()?.moveHistory;window.fixtureAnalysisPly=()=>loadAnalysisSession()?.viewMoveIndex;window.changeSession=value=>{window.fixtureSession=value?{access_token:value}:null;window.dispatchEvent(new Event('fixture-auth'));};
 createRoot(document.getElementById('root')).render(<LanguageProvider><App/></LanguageProvider>);
 `;
 const plugin={name:'spieltag-browser-fixtures',enforce:'pre',
@@ -62,7 +62,13 @@ try{
  const fill=(label,value)=>evaluate(`(()=>{const l=[...document.querySelectorAll('label')].find(l=>l.textContent.startsWith(${JSON.stringify(label)}));const el=l?.querySelector('input,textarea,select');if(!el)throw Error('Input missing');const proto=el instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:el instanceof HTMLSelectElement?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(el,${JSON.stringify(value)});el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));})()`);
  await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Page.navigate',{url:base+'spieltag-fixture'});
  await wait(`document.body.innerText.includes('Spieltermin eintragen')`);
- await click('Spieltermin eintragen');await fill('Runde','Runde 1');await fill('Gegnerische Mannschaft','Gastmannschaft');await fill('Datum und Uhrzeit','2026-11-08T11:00');await fill('Spielort','Bochum');await click('Termin speichern');
+ await click('Spieltermin eintragen');await fill('Runde','Runde 1');
+ await evaluate("document.querySelector('[data-test-locale=ru]').click()");
+ await wait("document.body.innerText.includes('Добавить дату матча') || document.body.innerText.includes('Изменить дату матча')");
+ assert.equal(await evaluate("document.querySelector('.spieltag-form input').value"),'Runde 1','language switching preserves the open schedule form');
+ assert.equal(await evaluate("localStorage.getItem('app-language')"),'ru','selected language persisted');
+ await evaluate("document.querySelector('[data-test-locale=de]').click()");
+ await wait("document.body.innerText.includes('Spieltermin eintragen')");await fill('Gegnerische Mannschaft','Gastmannschaft');await fill('Datum und Uhrzeit','2026-11-08T11:00');await fill('Spielort','Bochum');await click('Termin speichern');
  await wait(`document.querySelector('[role="tablist"]')`);assert.equal(await evaluate(`JSON.parse(window.fixtureCalls.find(c=>c.method==='POST').body).starts_at`),'2026-11-08T10:00:00.000Z');
  await click('Brett hinzufügen');await fill('Eigene Spielerin','Home player');await fill('Gegnerin / Gegner','Guest player');await fill('Gegnerische FIDE-ID','13404431');await click('Brett speichern');await wait(`document.body.innerText.includes('Home player')`);
  await click('Gegner');await wait(`document.body.innerText.includes('Guest player')`);await click('Spielerkarte · 13404431');await wait(`document.body.innerText.includes('Fixture FIDE Player')`);await click('Karte schließen');await fill('Lichess-Benutzername des Gegners','target_user');await click('Lichess-Zuordnung speichern');await wait(`document.body.innerText.includes('Lichess-Konto: target_user (nicht verifiziert)')`);
