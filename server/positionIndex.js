@@ -1,5 +1,6 @@
 'use strict';
 const {Chess}=require('chess.js');
+const {replayMove,replayKey,assertReplayEngine}=require('./positionReplay');
 const {createHash}=require('node:crypto');
 const {setImmediate:yieldTurn}=require('node:timers/promises');
 const {rebuildBroadcastPgn}=require('./spielerGamesProvider');
@@ -49,44 +50,47 @@ class PositionIndex {
   const started=this.clock(),rssBefore=this.rss();
   const [hidden,ratings,nrw]=await Promise.all([this.source.hidden(),this.source.ratings?this.source.ratings():new Map(),this.source.nrw?this.source.nrw():new Set()]);this.ratings=ratings;this.nrw=nrw;
   this.log(JSON.stringify({event:'position_index_building',rss_before:rssBefore,max_indexed_plies:MAX_INDEXED_PLIES}));
-  let capacity=65536,count=0,rejected=0,excluded=0,cursor=null;
+  let capacity=65536,count=0,rejected=0,excluded=0,cursor=null,readMs=this.clock()-started,replayMs=0;
+  const replay=new Chess();assertReplayEngine(replay);
   let hashes=new BigUint64Array(capacity),gameIdx=new Uint32Array(capacity),ply=new Uint8Array(capacity);
   const append=(hash,index,p)=>{
    if(count===capacity){capacity*=2;const h=new BigUint64Array(capacity),g=new Uint32Array(capacity),v=new Uint8Array(capacity);h.set(hashes);g.set(gameIdx);v.set(ply);hashes=h;gameIdx=g;ply=v;}
    hashes[count]=hash;gameIdx[count]=index;ply[count++]=p;
   };
   for(;;){
-   const rows=await this.source.page(cursor,PAGE_SIZE);
+   const readStarted=this.clock(),rows=await this.source.page(cursor,PAGE_SIZE);readMs+=this.clock()-readStarted;
    if(!Array.isArray(rows)||rows.length>PAGE_SIZE)throw Error('invalid_archive_page');
    if(!rows.length)break;
    for(const row of rows){
     if(typeof row.id!=='string'||row.id<=String(cursor||''))throw Error('invalid_archive_order');
     cursor=row.id;
     if(hiddenGame(row,hidden)){excluded++;continue;}
-    const start=count;
+    const start=count,replayStarted=this.clock();
     try{
-     const tokens=sanTokens(row.pgn),game=new Chess(),canonical=[];
+     const tokens=sanTokens(row.pgn),game=replay,canonical=[];game.reset();
      if(!tokens.length)throw Error('empty_archive_game');
-     const index=this.games.length;append(this.hash(keyOf(game)),index,0);
+     const index=this.games.length;append(this.hash(replayKey(game)),index,0);
      for(let i=0;i<Math.min(tokens.length,MAX_INDEXED_PLIES+1);i++){
-      canonical.push(game.move(tokens[i]).san);
-      if(i<MAX_INDEXED_PLIES)append(this.hash(keyOf(game)),index,i+1);
+      canonical.push(replayMove(game,tokens[i]));
+      if(i<MAX_INDEXED_PLIES)append(this.hash(replayKey(game)),index,i+1);
      }
      this.gameIds.push(row.id);this.games.push({...row,white_rating:this.ratings.get(String(row.white_fide_id))??null,black_rating:this.ratings.get(String(row.black_fide_id))??null,prefix:canonical.join(' '),result:resultOf(row.pgn)});
     }catch{count=start;rejected++;}
+    replayMs+=this.clock()-replayStarted;
     if((this.games.length+rejected+excluded)%8===0)await yieldTurn();
     if(this.rss()>MAX_RSS_BYTES){this.log(JSON.stringify({event:'position_index_memory_limit',rss_before:rssBefore,rss_after:this.rss(),entries:count}));throw Error('index_memory_limit');}
    }
    if(rows.length<PAGE_SIZE)break;
   }
   // Only typed arrays per position. The temporary permutation is released after sorting.
+  const sortStarted=this.clock();
   const order=Uint32Array.from({length:count},(_,i)=>i);
   order.sort((a,b)=>hashes[a]<hashes[b]?-1:hashes[a]>hashes[b]?1:gameIdx[a]-gameIdx[b]||ply[a]-ply[b]);
   const sortedHashes=new BigUint64Array(count),sortedGames=new Uint32Array(count),sortedPly=new Uint8Array(count);
   for(let i=0;i<count;i++){const at=order[i];sortedHashes[i]=hashes[at];sortedGames[i]=gameIdx[at];sortedPly[i]=ply[at];}
   this.hashes=sortedHashes;this.gameIdx=sortedGames;this.ply=sortedPly;
   const rssAfter=this.rss();
-  this.metrics={event:'position_index_ready',build_ms:Math.round(this.clock()-started),games:this.games.length,entries:count,rejected,excluded,rss_before:rssBefore,rss_after:rssAfter,max_indexed_plies:MAX_INDEXED_PLIES};
+  this.metrics={event:'position_index_ready',read_ms:Math.round(readMs),replay_ms:Math.round(replayMs),sort_ms:Math.round(this.clock()-sortStarted),build_ms:Math.round(this.clock()-started),games:this.games.length,entries:count,rejected,excluded,rss_before:rssBefore,rss_after:rssAfter,max_indexed_plies:MAX_INDEXED_PLIES};
   if(rssAfter>MAX_RSS_BYTES){this.log(JSON.stringify({...this.metrics,event:'position_index_memory_limit'}));throw Error('index_memory_limit');}
   this.status='ready';this.log(JSON.stringify(this.metrics));
  }
