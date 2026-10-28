@@ -1,3 +1,5 @@
+import { useLanguage } from '../../context/LanguageContext';
+import { translateSchachTreff } from './i18n';
 export const copy = {
   createClub: 'Verein erstellen', clubName: 'Name des Vereins', createRoom: 'Raum erstellen',
   copyLink: 'Link kopieren', linkCopied: 'Link kopiert', inviteLink: 'Einladungslink', inviteReady: 'Dein Einladungslink ist bereit.',
@@ -31,3 +33,12 @@ export const copy = {
   noClub: 'Der Raum ist noch nicht eingerichtet.', noMembers: 'Noch keine Mitglieder.', blitz: 'Blitz', rapid: 'Schnell',
   noLocation: 'Keine Angaben zu Ort und Verein', yesterday: 'gestern',
 } as const;
+
+
+type LocalizedCopy = { [K in keyof typeof copy]: typeof copy[K] extends string ? string : { [N in keyof typeof copy[K]]: string } };
+export function useSchachTreffCopy(): LocalizedCopy {
+ const {language}=useLanguage();
+ return Object.fromEntries(Object.entries(copy).map(([key,entry])=>[
+  key,typeof entry==='string'?translateSchachTreff(language,entry):Object.fromEntries(Object.entries(entry).map(([subKey,value])=>[subKey,translateSchachTreff(language,value)])),
+ ])) as LocalizedCopy;
+}
