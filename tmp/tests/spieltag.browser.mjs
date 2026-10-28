@@ -6,6 +6,18 @@ import {existsSync} from 'node:fs';
 import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
+// SpielerScreen cannot be mounted without its own auth fixture: validate its existing copy map here.
+const playerCopySource=await readFile(new URL('../src/screens/SpielerScreen.tsx',import.meta.url),'utf8');
+const playerCopyLine=playerCopySource.split('\n').find(line=>line.startsWith('const playerUiCopy: '));
+assert.ok(playerCopyLine,'Spieler map must be present');
+const playerCopy=JSON.parse(playerCopyLine.slice(playerCopyLine.indexOf('= ')+2,-1));
+const playerNoticeKey="Eine Anfrage bestätigt keine Identität. Deine Vereinsangabe wird erst nach bestätigter Zuordnung sichtbar. Bis zu drei Ausblendungen wirken sofort bis zur Prüfung. Weitere Anfragen werden zuerst geprüft. Dein bestätigtes eigenes Profil kannst du immer sofort ausblenden.";
+for(const lang of ['de','en','az','tr','ua','ru']){
+ const value=playerCopy[playerNoticeKey]?.[lang];
+ assert.ok(value,'player identity safety copy: '+lang);
+ assert.equal(value.includes('Eine Anfrage bestätigt keine Identität'),lang==='de','player identity warning locale: '+lang);
+ assert.ok(value.length>95,'safety explanation must remain explicit: '+lang);
+}
 const fixture=String.raw`
 import '/src/index.css';import {ThemeProvider} from '/src/context/ThemeContext.tsx';import React from 'react';import{createRoot}from'react-dom/client';import {LanguageProvider,useLanguage} from '/src/context/LanguageContext.tsx';localStorage.setItem('app-language','de');import Screen from '/src/screens/SpieltagScreen.tsx';import{MemoryRouter,Routes,Route,useNavigate}from'react-router-dom';import Preparation from '/src/screens/VorbereitungScreen.tsx';import{loadAnalysisSession}from'/src/utils/analysisSession.ts';
 
@@ -75,12 +87,32 @@ try{
  await wait("document.body.innerText.includes('Spieltermin eintragen')");await fill('Gegnerische Mannschaft','Gastmannschaft');await fill('Datum und Uhrzeit','2026-11-08T11:00');await fill('Spielort','Bochum');await click('Termin speichern');
  await wait(`document.querySelector('[role="tablist"]')`);assert.equal(await evaluate(`JSON.parse(window.fixtureCalls.find(c=>c.method==='POST').body).starts_at`),'2026-11-08T10:00:00.000Z');
  await click('Brett hinzufügen');await fill('Eigene Spielerin','Home player');await fill('Gegnerin / Gegner','Guest player');await fill('Gegnerische FIDE-ID','13404431');await click('Brett speichern');await wait(`document.body.innerText.includes('Home player')`);
- await click('Gegner');await wait(`document.body.innerText.includes('Guest player')`);await click('Spielerkarte · 13404431');await wait(`document.body.innerText.includes('Fixture FIDE Player')`);await click('Karte schließen');await fill('Lichess-Benutzername des Gegners','target_user');await click('Lichess-Zuordnung speichern');await wait(`document.body.innerText.includes('Lichess-Konto: target_user (nicht verifiziert)')`);
+ await click('Gegner');await wait(`document.body.innerText.includes('Guest player')`);await click('Spielerkarte · 13404431');await wait(`document.body.innerText.includes('Fixture FIDE Player')`);
+ // Check team privacy notice (expanded Info) and player-card accessibility label in real Chromium.
+ await evaluate("document.querySelector('.spieltag-controls details.section-info').open=true");
+ const teamCopy={"de":"Nur bestätigte Mannschaftsmitglieder können diese Vorbereitung lesen. Die Mannschaftsleitung pflegt Termine, Aufstellung und Ergebnisse. Keine Übertragung in Online-Partien, Ratings oder Ligatabellen.","en":"Only confirmed team members can view this preparation. Team management maintains match dates, lineups and results. Nothing is transferred to online games, ratings or league tables.","az":"Bu hazırlıq məlumatlarını yalnız təsdiqlənmiş komanda üzvləri görə bilər. Komanda rəhbərliyi görüş tarixlərini, heyəti və nəticələri idarə edir. Məlumatlar onlayn partiyalara, reytinqlərə və liqa cədvəllərinə ötürülmür.","tr":"Bu hazırlığı yalnızca onaylanmış takım üyeleri görebilir. Takım yönetimi maç tarihlerini, kadroyu ve sonuçları düzenler. Veriler çevrimiçi oyunlara, reytinglere veya lig tablolarına aktarılmaz.","ua":"Цю підготовку можуть переглядати лише підтверджені члени команди. Керівництво команди веде календар матчів, склад і результати. Дані не передаються до онлайн-партій, рейтингів або таблиць ліг.","ru":"Эту подготовку могут просматривать только подтверждённые участники команды. Руководство команды ведёт расписание матчей, состав и результаты. Данные не передаются в онлайн-партии, рейтинги или таблицы лиг."};
+ const playerCardCopy={"de":"Spielerkarte","en":"Player card","az":"Oyunçu kartı","tr":"Oyuncu kartı","ua":"Картка гравця","ru":"Карточка игрока"};
+ for(const locale of ['en','az','tr','ua','ru','de']){
+  await evaluate("document.querySelector('[data-test-locale="+locale+"]').click()");
+  await wait("document.querySelector('.spieltag-controls details.section-info p')?.innerText==="+JSON.stringify(teamCopy[locale]));
+  assert.equal(await evaluate("document.body.innerText.includes('Nur bestätigte Mannschaftsmitglieder')"),locale==='de','team privacy notice: '+locale);
+  assert.equal(await evaluate("document.querySelector('.spieltag-card').getAttribute('aria-label')"),playerCardCopy[locale],'player-card label: '+locale);
+  assert.equal(await evaluate("document.querySelector('.spieltag-card').getAttribute('aria-label')==='Spielerkarte'"),locale==='de','German aria-label only for de: '+locale);
+ }
+ await click('Karte schließen');await fill('Lichess-Benutzername des Gegners','target_user');await click('Lichess-Zuordnung speichern');await wait(`document.body.innerText.includes('Lichess-Konto: target_user (nicht verifiziert)')`);
  await click('Nach der Runde');await fill('Ergebnis','1/2-1/2');await wait(`window.fixtureCalls.some(c=>c.body&&JSON.parse(c.body).result==='1/2-1/2')`);await fill('Kurze Notizen','Gut gespielt!');await click('Notizen speichern');await wait(`window.fixtureCalls.some(c=>c.body&&JSON.parse(c.body).notes==='Gut gespielt!')`);
  // Primary source: a private opponent FIDE link loads named archives automatically.
  await click('Gegner');await click('Vorbereitung');await wait(`document.body.innerText.includes('2 importierte Partien')`);
  assert.equal(await evaluate(`window.fixtureCalls.filter(c=>c.path==='/api/vorbereitung/player').length`),1);
  await wait(`document.body.innerText.includes('Namenszuordnung (nicht verifiziert)')`);
+ // The name-only association must continue to say explicitly unverified in every language.
+ const nameMatchCopy={"de":"Namenszuordnung (nicht verifiziert)","en":"Name match (unverified)","az":"Ad uyğunluğu (təsdiqlənməyib)","tr":"İsim eşleşmesi (doğrulanmadı)","ua":"Збіг імені (не підтверджено)","ru":"Совпадение имени (не подтверждено)"};
+ for(const locale of ['en','az','tr','ua','ru','de']){
+  await evaluate("document.querySelector('[data-test-locale="+locale+"]').click()");
+  await wait("document.body.innerText.includes("+JSON.stringify(nameMatchCopy[locale])+")");
+  assert.equal(await evaluate("document.body.innerText.includes('Namenszuordnung (nicht verifiziert)')"),locale==='de','name match never shown as verified: '+locale);
+ }
+
  await fill('Eröffnung oder Variante','A05');await wait(`document.body.innerText.includes('2 passende Partien')`);await fill('Eröffnung oder Variante','Najdorf');await wait(`document.body.innerText.includes('Keine Partien in dieser Variante')`);await fill('Eröffnung oder Variante','');
  await fill('Züge (SAN','1.Sf3 d5 2.g3 Sf6');await click('Züge suchen');await wait(`document.body.innerText.includes('2 Partien erreichten diese Stellung')&&[...document.querySelectorAll('button')].some(b=>b.textContent==='Bg2')`);
  await click('Bg2');await wait(`document.querySelector('[aria-label="g2 wB"]')`);await wait(`document.body.innerText.includes('2 Partien erreichten diese Stellung')`);

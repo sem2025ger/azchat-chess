@@ -1,4 +1,5 @@
 export const sectionCopy: Record<string, Record<string, string>> = {
+  "Spielerkarte": {"de":"Spielerkarte","en":"Player card","az":"Oyunçu kartı","tr":"Oyuncu kartı","ua":"Картка гравця","ru":"Карточка игрока"},
   "Vorbereitung": { "de":"Vorbereitung", "en":"Preparation", "az":"Hazırlıq", "tr":"Hazırlık", "ua":"Підготовка", "ru":"Подготовка" },
   "Spieler": { "de":"Spieler", "en":"Players", "az":"Oyunçular", "tr":"Oyuncular", "ua":"Гравці", "ru":"Игроки" },
   "Info": {

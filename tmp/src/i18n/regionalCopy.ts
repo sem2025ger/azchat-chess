@@ -491,14 +491,6 @@ const regionalCopy: Record<string, Record<string, string>> = {
     "ua": "Ще не внесено",
     "ru": "Ещё не добавлено"
   },
-  "Spielerkarte": {
-    "de": "Spielerkarte",
-    "en": "Player card",
-    "az": "Oyunçu kartı",
-    "tr": "Oyuncu kartı",
-    "ua": "Картка гравця",
-    "ru": "Карточка игрока"
-  },
   "Mannschaftskampf": {
     "de": "Mannschaftskampf",
     "en": "Team match",
