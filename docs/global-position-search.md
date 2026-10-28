@@ -40,7 +40,8 @@ The response contains `games`, `total`, `nextMoves`, `side`, `perspective`,
 `maxIndexedPlies` and `searchMs`. Games are ordered by date descending (unknown
 dates last), then id ascending, and include PGN, players, optional ratings, event,
 date, result, matching ply, perspective/outcome and source/license URLs. The
-current archive schema has no rating columns; these values are null.
+current archive schema has no rating columns; ratings are now resolved from the
+existing Spieler player table as described below.
 
 Without a FIDE filter, side selects the perspective for results, not a subset of
 games: every game has both colors. With a FIDE filter, white/black also require
