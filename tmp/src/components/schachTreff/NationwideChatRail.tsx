@@ -115,7 +115,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
  }
 
  const renderMessage=(m:ChatMessage)=><article key={m.id} className="nrw-chat-message">
-  <div className="nrw-chat-meta"><strong>{profiles[m.author_id]||'Mitglied'}</strong><time dateTime={m.created_at}>{timeLabel(m.created_at,language)}</time></div>
+  <div className="nrw-chat-meta"><strong>{profiles[m.author_id]||tr('Mitglied')}</strong><time dateTime={m.created_at}>{timeLabel(m.created_at,language)}</time></div>
   <p>{m.body}</p>
  </article>;
 
@@ -126,7 +126,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
    <div><h2>Schach-Treff</h2><small>{tr("Deutschlandweiter Chat · keine NRW-Filterung")}</small></div>
    <Link className="nrw-chat-open" to="/chat" aria-label={tr("Schach-Treff im Vollbild öffnen")} title={tr("Vollbild")}><ArrowUpRight size={19} aria-hidden="true"/></Link>
   </header>
-  {error&&<p className="nrw-chat-error" role="alert">{error}</p>}
+  {error&&<p className="nrw-chat-error" role="alert">{tr(error)}</p>}
   {authLoading||loading?<p className="nrw-muted" role="status">{tr('Chat wird geladen …')}</p>
    : !userId?<div className="nrw-chat-notice"><p>{tr('Zum Lesen und Schreiben im gemeinsamen Chat anmelden.')}</p><Link to="/profile?returnTo=%2Fregion%2Fnrw">{tr('Anmelden')}</Link></div>
    : !clubId?<p className="nrw-muted">{tr('Der Schach-Treff ist noch nicht eingerichtet.')}</p>

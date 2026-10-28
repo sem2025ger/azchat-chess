@@ -3,6 +3,8 @@ import { useOptionalLanguage } from '../context/LanguageContext';
 
 // Only fixed UI labels are localized; player names, club names, chat text, PGN and FIDE data are never translated.
 const regionalCopy: Record<string, Record<string, string>> = {
+  "Spieltag": {"de": "Spieltag", "en": "Matchday", "az": "Oyun günü", "tr": "Maç günü", "ua": "Ігровий день", "ru": "Игровой день"},
+  "Najdorf oder B90": {"de": "Najdorf oder B90", "en": "Najdorf or B90", "az": "Najdorf və ya B90", "tr": "Najdorf veya B90", "ua": "Найдорф або B90", "ru": "Найдорф или B90"},
   "Spieler nach echtem Namen finden": {
     "de": "Spieler nach echtem Namen finden",
     "en": "Find players by real name",

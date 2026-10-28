@@ -1,4 +1,11 @@
 export const sectionCopy: Record<string, Record<string, string>> = {
+  "ultraBullet": {"de": "Ultrabullet", "en": "UltraBullet", "az": "Ultrabullet", "tr": "UltraBullet", "ua": "Ультракуля", "ru": "Ультрапуля"},
+  "bullet": {"de": "Bullet", "en": "Bullet", "az": "Bullet", "tr": "Bullet", "ua": "Куля", "ru": "Пуля"},
+  "blitz": {"de": "Blitz", "en": "Blitz", "az": "Blits", "tr": "Yıldırım", "ua": "Бліц", "ru": "Блиц"},
+  "rapid": {"de": "Schnellschach", "en": "Rapid", "az": "Rapid", "tr": "Hızlı satranç", "ua": "Рапід", "ru": "Рапид"},
+  "classical": {"de": "Klassisch", "en": "Classical", "az": "Klassik", "tr": "Klasik", "ua": "Класичні", "ru": "Классические"},
+  "correspondence": {"de": "Fernschach", "en": "Correspondence", "az": "Yazışma şahmatı", "tr": "Yazışmalı satranç", "ua": "Заочні", "ru": "Заочные"},
+  "Keine aktuellen Meldungen verfügbar.": {"de": "Keine aktuellen Meldungen verfügbar.", "en": "No current news available.", "az": "Hazırda yeni xəbər yoxdur.", "tr": "Güncel haber bulunmuyor.", "ua": "Актуальних новин немає.", "ru": "Актуальных новостей нет."},
   "Spielerkarte": {"de":"Spielerkarte","en":"Player card","az":"Oyunçu kartı","tr":"Oyuncu kartı","ua":"Картка гравця","ru":"Карточка игрока"},
   "Vorbereitung": { "de":"Vorbereitung", "en":"Preparation", "az":"Hazırlıq", "tr":"Hazırlık", "ua":"Підготовка", "ru":"Подготовка" },
   "Spieler": { "de":"Spieler", "en":"Players", "az":"Oyunçular", "tr":"Oyuncular", "ua":"Гравці", "ru":"Игроки" },
