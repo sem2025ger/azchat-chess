@@ -2,6 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, MessageSquare, Send } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+const chatUiText: Record<string,Record<string,string>> = {"Deutschlandweiter Schach-Treff Chat":{"de":"Deutschlandweiter Schach-Treff Chat","en":"Nationwide Schach-Treff chat","az":"Ümumalmaniya Schach-Treff söhbəti","tr":"Almanya geneli Schach-Treff sohbeti","ua":"Загальнонімецький чат Schach-Treff","ru":"Общегерманский чат Schach-Treff"},"Deutschlandweiter Chat · keine NRW-Filterung":{"de":"Deutschlandweiter Chat · keine NRW-Filterung","en":"Nationwide chat · no NRW filter","az":"Ümumalmaniya çatı · NRW filtri yoxdur","tr":"Almanya geneli sohbet · NRW filtresi yok","ua":"Загальнонімецький чат · без фільтра NRW","ru":"Общегерманский чат · без фильтра NRW"},"Schach-Treff im Vollbild öffnen":{"de":"Schach-Treff im Vollbild öffnen","en":"Open full-screen Schach-Treff","az":"Schach-Treff-i tam ekranda aç","tr":"Schach-Treff’i tam ekranda aç","ua":"Відкрити Schach-Treff на весь екран","ru":"Открыть Schach-Treff во весь экран"},"Vollbild":{"de":"Vollbild","en":"Full screen","az":"Tam ekran","tr":"Tam ekran","ua":"Повний екран","ru":"Полный экран"},"Chat ist momentan nicht verfügbar.":{"de":"Chat ist momentan nicht verfügbar.","en":"Chat is currently unavailable.","az":"Çat hazırda əlçatan deyil.","tr":"Sohbet şu anda kullanılamıyor.","ua":"Чат наразі недоступний.","ru":"Чат сейчас недоступен."},"Beitritt nicht möglich. Bitte erneut versuchen.":{"de":"Beitritt nicht möglich. Bitte erneut versuchen.","en":"Unable to join. Please try again.","az":"Qoşulmaq mümkün deyil. Yenidən cəhd edin.","tr":"Katılamadınız. Tekrar deneyin.","ua":"Не вдалося приєднатися. Спробуйте ще раз.","ru":"Не удалось вступить. Повторите попытку."},"Nachricht konnte nicht gesendet werden.":{"de":"Nachricht konnte nicht gesendet werden.","en":"Message could not be sent.","az":"Mesaj göndərilmədi.","tr":"Mesaj gönderilemedi.","ua":"Не вдалося надіслати повідомлення.","ru":"Не удалось отправить сообщение."},"Chat wird geladen …":{"de":"Chat wird geladen …","en":"Loading chat…","az":"Çat yüklənir…","tr":"Sohbet yükleniyor…","ua":"Завантаження чату…","ru":"Загрузка чата…"},"Zum Lesen und Schreiben im gemeinsamen Chat anmelden.":{"de":"Zum Lesen und Schreiben im gemeinsamen Chat anmelden.","en":"Sign in to read and write in the shared chat.","az":"Ümumi çatda oxumaq və yazmaq üçün daxil olun.","tr":"Ortak sohbette okumak ve yazmak için giriş yapın.","ua":"Увійдіть, щоб читати й писати в загальному чаті.","ru":"Войдите, чтобы читать и писать в общем чате."},"Anmelden":{"de":"Anmelden","en":"Sign in","az":"Daxil ol","tr":"Giriş yap","ua":"Увійти","ru":"Войти"},"Der Schach-Treff ist noch nicht eingerichtet.":{"de":"Der Schach-Treff ist noch nicht eingerichtet.","en":"Schach-Treff has not been set up yet.","az":"Schach-Treff hələ qurulmayıb.","tr":"Schach-Treff henüz kurulmadı.","ua":"Schach-Treff ще не налаштований.","ru":"Schach-Treff ещё не настроен."},"Der gemeinsame Chat ist für Mitglieder der Schach-Treff-Community.":{"de":"Der gemeinsame Chat ist für Mitglieder der Schach-Treff-Community.","en":"The shared chat is for Schach-Treff community members.","az":"Ümumi çat Schach-Treff icmasının üzvləri üçündür.","tr":"Ortak sohbet Schach-Treff topluluğu üyeleri içindir.","ua":"Загальний чат для учасників спільноти Schach-Treff.","ru":"Общий чат для участников сообщества Schach-Treff."},"Community beitreten":{"de":"Community beitreten","en":"Join community","az":"İcmaya qoşul","tr":"Topluluğa katıl","ua":"Приєднатися до спільноти","ru":"Вступить в сообщество"},"Chat-Nachrichten":{"de":"Chat-Nachrichten","en":"Chat messages","az":"Çat mesajları","tr":"Sohbet mesajları","ua":"Повідомлення чату","ru":"Сообщения чата"},"Noch keine Nachrichten.":{"de":"Noch keine Nachrichten.","en":"No messages yet.","az":"Hələ mesaj yoxdur.","tr":"Henüz mesaj yok.","ua":"Повідомлень ще немає.","ru":"Сообщений пока нет."},"Mitglied":{"de":"Mitglied","en":"Member","az":"Üzv","tr":"Üye","ua":"Учасник","ru":"Участник"},"Nachricht":{"de":"Nachricht","en":"Message","az":"Mesaj","tr":"Mesaj","ua":"Повідомлення","ru":"Сообщение"},"Nachricht an Schach-Treff":{"de":"Nachricht an Schach-Treff","en":"Message to Schach-Treff","az":"Schach-Treff-ə mesaj","tr":"Schach-Treff’e mesaj","ua":"Повідомлення в Schach-Treff","ru":"Сообщение в Schach-Treff"},"Nachricht schreiben …":{"de":"Nachricht schreiben …","en":"Write a message…","az":"Mesaj yazın…","tr":"Mesaj yazın…","ua":"Написати повідомлення…","ru":"Написать сообщение…"},"Nachricht senden":{"de":"Nachricht senden","en":"Send message","az":"Mesaj göndər","tr":"Mesaj gönder","ua":"Надіслати повідомлення","ru":"Отправить сообщение"},"Gemeinsamer Raum":{"de":"Gemeinsamer Raum","en":"Shared room","az":"Ümumi otaq","tr":"Ortak oda","ua":"Спільна кімната","ru":"Общая комната"},"Alle Chat-Funktionen":{"de":"Alle Chat-Funktionen","en":"All chat features","az":"Bütün çat funksiyaları","tr":"Tüm sohbet özellikleri","ua":"Усі функції чату","ru":"Все функции чата"}};
+const translateChat=(text:string,language:string)=>chatUiText[text]?.[language]||text;
 import { supabase } from '../../services/supabase';
 
 type ChatMessage = { id: string; author_id: string; body: string; created_at: string };
@@ -27,6 +30,7 @@ export default function NationwideChatRail() {
 }
 
 function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolean}) {
+ const {language}=useLanguage();const tr=(v:string)=>translateChat(v,language);
  const [clubId,setClubId] = useState<string|null>(null);
  const [member,setMember] = useState(false);
  const [messages,setMessages] = useState<ChatMessage[]>([]);
@@ -72,7 +76,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
     setProfiles(Object.fromEntries((names.data??[]).map(p=>[p.id,p.username])));
     setMessages([...recent].reverse());
     setError('');
-   }catch{if(!controller.signal.aborted)setError('Chat ist momentan nicht verfügbar.');}
+   }catch{if(!controller.signal.aborted)setError(tr("Chat ist momentan nicht verfügbar."));}
    finally{reading=false;if(!controller.signal.aborted)setLoading(false);}
   };
   void refresh();
@@ -89,7 +93,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
    });
    if(result.error)throw result.error;
    setRevision(n=>n+1);
-  }catch{setError('Beitritt nicht möglich. Bitte erneut versuchen.');}
+  }catch{setError(tr("Beitritt nicht möglich. Bitte erneut versuchen."));}
   finally{setBusy(false);}
  }
 
@@ -105,37 +109,37 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
    if(result.error)throw result.error;
    setDraft('');
    setRevision(n=>n+1);
-  }catch{setError('Nachricht konnte nicht gesendet werden.');}
+  }catch{setError(tr("Nachricht konnte nicht gesendet werden."));}
   finally{setBusy(false);}
  }
 
- return <aside className="nrw-chat-rail" aria-label="Deutschlandweiter Schach-Treff Chat" data-national-chat-rail>
+ return <aside className="nrw-chat-rail" aria-label={tr("Deutschlandweiter Schach-Treff Chat")} data-national-chat-rail>
   <header className="nrw-chat-header">
    <span className="nrw-chat-dot" aria-hidden="true"><MessageSquare size={20}/></span>
-   <div><h2>Schach-Treff</h2><small>Deutschlandweiter Chat · keine NRW-Filterung</small></div>
-   <Link className="nrw-chat-open" to="/chat" aria-label="Schach-Treff im Vollbild öffnen" title="Vollbild"><ArrowUpRight size={19} aria-hidden="true"/></Link>
+   <div><h2>Schach-Treff</h2><small>{tr("Deutschlandweiter Chat · keine NRW-Filterung")}</small></div>
+   <Link className="nrw-chat-open" to="/chat" aria-label={tr("Schach-Treff im Vollbild öffnen")} title={tr("Vollbild")}><ArrowUpRight size={19} aria-hidden="true"/></Link>
   </header>
   {error&&<p className="nrw-chat-error" role="alert">{error}</p>}
-  {authLoading||loading?<p className="nrw-muted" role="status">Chat wird geladen …</p>
-   : !userId?<div className="nrw-chat-notice"><p>Zum Lesen und Schreiben im gemeinsamen Chat anmelden.</p><Link to="/profile?returnTo=%2Fregion%2Fnrw">Anmelden</Link></div>
-   : !clubId?<p className="nrw-muted">Der Schach-Treff ist noch nicht eingerichtet.</p>
-   : !member?<div className="nrw-chat-notice"><p>Der gemeinsame Chat ist für Mitglieder der Schach-Treff-Community.</p><button type="button" disabled={busy} onClick={()=>void join()}>Community beitreten</button></div>
-   : <><div className="nrw-chat-messages" aria-label="Chat-Nachrichten" aria-live="polite" aria-relevant="additions">
-       {messages.length===0?<p className="nrw-muted">Noch keine Nachrichten.</p>
+  {authLoading||loading?<p className="nrw-muted" role="status">{tr("Chat wird geladen …")}</p>
+   : !userId?<div className="nrw-chat-notice"><p>{tr("Zum Lesen und Schreiben im gemeinsamen Chat anmelden.")}</p><Link to="/profile?returnTo=%2Fregion%2Fnrw">{tr("Anmelden")}</Link></div>
+   : !clubId?<p className="nrw-muted">{tr("Der Schach-Treff ist noch nicht eingerichtet.")}</p>
+   : !member?<div className="nrw-chat-notice"><p>{tr("Der gemeinsame Chat ist für Mitglieder der Schach-Treff-Community.")}</p><button type="button" disabled={busy} onClick={()=>void join()}>{tr("Community beitreten")}</button></div>
+   : <><div className="nrw-chat-messages" aria-label={tr("Chat-Nachrichten")} aria-live="polite" aria-relevant="additions">
+       {messages.length===0?<p className="nrw-muted">{tr("Noch keine Nachrichten.")}</p>
         : messages.map(m=><article key={m.id} className="nrw-chat-message">
            <div className="nrw-chat-meta"><strong>{profiles[m.author_id]||'Mitglied'}</strong><time dateTime={m.created_at}>{timeLabel(m.created_at)}</time></div>
            <p>{m.body}</p>
           </article>)}
      </div>
      <form className="nrw-chat-compose" onSubmit={send}>
-      <label htmlFor="nrw-chat-message">Nachricht</label>
+      <label htmlFor="nrw-chat-message">{tr("Nachricht")}</label>
       <div className="nrw-chat-compose-line">
-       <input id="nrw-chat-message" aria-label="Nachricht an Schach-Treff" maxLength={1200} required
-        value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Nachricht schreiben …" />
-       <button type="submit" disabled={busy||!draft.trim()} aria-label="Nachricht senden"><Send size={18} aria-hidden="true"/></button>
+       <input id="nrw-chat-message" aria-label={tr("Nachricht an Schach-Treff")} maxLength={1200} required
+        value={draft} onChange={e=>setDraft(e.target.value)} placeholder={tr("Nachricht schreiben …")} />
+       <button type="submit" disabled={busy||!draft.trim()} aria-label={tr("Nachricht senden")}><Send size={18} aria-hidden="true"/></button>
       </div>
      </form>
     </>}
-  <footer>Gemeinsamer Raum · <Link to="/chat">Alle Chat-Funktionen</Link></footer>
+  <footer>{tr('Gemeinsamer Raum')} · <Link to="/chat">{tr("Alle Chat-Funktionen")}</Link></footer>
  </aside>;
 }
