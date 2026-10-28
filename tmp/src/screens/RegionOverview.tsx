@@ -5,6 +5,33 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import NationwideChatRail from '../components/schachTreff/NationwideChatRail';
 import './RegionOverview.css';
+import { useLanguage } from '../context/LanguageContext';
+const regionText: Record<string,Record<'en'|'de'|'az'|'tr'|'ua'|'ru',string>> = {
+"Turniere": { en:"Tournaments", de:"Turniere", az:"Turnirlər", tr:"Turnuvalar", ua:"Турніри", ru:"Турниры" },
+"Ligen": { en:"Leagues", de:"Ligen", az:"Liqalar", tr:"Ligler", ua:"Ліги", ru:"Лиги" },
+"Vereine": { en:"Clubs", de:"Vereine", az:"Klublar", tr:"Kulüpler", ua:"Клуби", ru:"Клубы" },
+"Nachrichten": { en:"News", de:"Nachrichten", az:"Xəbərlər", tr:"Haberler", ua:"Новини", ru:"Новости" },
+"Live-Übertragungen": { en:"Live broadcasts", de:"Live-Übertragungen", az:"Canlı yayımlar", tr:"Canlı yayınlar", ua:"Прямі трансляції", ru:"Прямые трансляции" },
+"Details ansehen": { en:"View details", de:"Details ansehen", az:"Ətraflı bax", tr:"Detayları gör", ua:"Докладніше", ru:"Подробнее" },
+"Termine werden geladen …": { en:"Loading events…", de:"Termine werden geladen …", az:"Tədbirlər yüklənir…", tr:"Etkinlikler yükleniyor…", ua:"Завантаження подій…", ru:"Загрузка событий…" },
+"Tabellen werden geladen …": { en:"Loading standings…", de:"Tabellen werden geladen …", az:"Cədvəllər yüklənir…", tr:"Tablolar yükleniyor…", ua:"Завантаження таблиць…", ru:"Загрузка таблиц…" },
+"Vereine werden geladen …": { en:"Loading clubs…", de:"Vereine werden geladen …", az:"Klublar yüklənir…", tr:"Kulüpler yükleniyor…", ua:"Завантаження клубів…", ru:"Загрузка клубов…" },
+"Nachrichten werden geladen …": { en:"Loading news…", de:"Nachrichten werden geladen …", az:"Xəbərlər yüklənir…", tr:"Haberler yükleniyor…", ua:"Завантаження новин…", ru:"Загрузка новостей…" },
+"Region nicht verfügbar": { en:"Region unavailable", de:"Region nicht verfügbar", az:"Region əlçatan deyil", tr:"Bölge kullanılamıyor", ua:"Регіон недоступний", ru:"Регион недоступен" },
+"Zurück zu Schach-Treff": { en:"Back to Schach-Treff", de:"Zurück zu Schach-Treff", az:"Schach-Treff-ə qayıt", tr:"Schach-Treff’e dön", ua:"Назад до Schach-Treff", ru:"Назад в Schach-Treff" },
+"Regional es Schach": { en:"Regional chess", de:"Regional es Schach", az:"Regional şahmat", tr:"Bölgesel satranç", ua:"Регіональні шахи", ru:"Региональные шахматы" },
+"Schach in Nordrhein-Westfalen": { en:"Chess in North Rhine-Westphalia", de:"Schach in Nordrhein-Westfalen", az:"Şimali Reyn-Vestfaliyada şahmat", tr:"Kuzey Ren-Vestfalya’da satranç", ua:"Шахи в Північному Рейні-Вестфалії", ru:"Шахматы в Северном Рейне — Вестфалии" },
+"Turniere, Mannschaften, Vereine und Meldungen auf einen Blick.": { en:"Tournaments, teams, clubs and news at a glance.", de:"Turniere, Mannschaften, Vereine und Meldungen auf einen Blick.", az:"Turnirlər, komandalar, klublar və xəbərlər bir baxışda.", tr:"Turnuvalar, takımlar, kulüpler ve haberler bir arada.", ua:"Турніри, команди, клуби та новини в одному місці.", ru:"Турниры, команды, клубы и новости в одном месте." },
+"Alle NRW-Themen": { en:"All NRW topics", de:"Alle NRW-Themen", az:"Bütün NRW mövzuları", tr:"Tüm NRW konuları", ua:"Усі теми NRW", ru:"Все темы NRW" },
+"Stadt": { en:"City", de:"Stadt", az:"Şəhər", tr:"Şehir", ua:"Місто", ru:"Город" },
+"Alle Städte in NRW": { en:"All NRW cities", de:"Alle Städte in NRW", az:"NRW-nin bütün şəhərləri", tr:"NRW’deki tüm şehirler", ua:"Усі міста NRW", ru:"Все города NRW" },
+"Keine aktuellen Meldungen verfügbar.": { en:"No current news available.", de:"Keine aktuellen Meldungen verfügbar.", az:"Hazırda xəbər yoxdur.", tr:"Güncel haber yok.", ua:"Немає актуальних новин.", ru:"Актуальных новостей нет." },
+"Mein Spieltag": { en:"My matchday", de:"Mein Spieltag", az:"Mənim oyun günüm", tr:"Maç günüm", ua:"Мій ігровий день", ru:"Мой игровой день" },
+"Spieler": { en:"Players", de:"Spieler", az:"Oyunçular", tr:"Oyuncular", ua:"Гравці", ru:"Игроки" },
+"Vorbereitung": { en:"Preparation", de:"Vorbereitung", az:"Hazırlıq", tr:"Hazırlık", ua:"Підготовка", ru:"Подготовка" },
+"Regionales Schach": { en:"Regional chess", de:"Regionales Schach", az:"Regional şahmat", tr:"Bölgesel satranç", ua:"Регіональні шахи", ru:"Региональные шахматы" }
+};
+
 
 type Club = { id:string; slug:string; name:string; city:string };
 type Event = { id:string;club_id:string;title:string;starts_at:string;venue:string|null };
@@ -29,16 +56,18 @@ function DashboardLink({section,children}:{section:Section;children:React.ReactN
  return <Link className="nrw-more" to={'/region/'+region+'/'+section}>{children}<ArrowUpRight aria-hidden="true" size={16}/></Link>;
 }
 function Tile({section,icon,children,count}:{section:Section;icon:React.ReactNode;children:React.ReactNode;count?:string}){
+ const {language}=useLanguage(); const tr=(x:string)=>regionText[x]?.[language]||x;
  return <section className={'nrw-card nrw-card--'+section} aria-labelledby={'nrw-'+section}>
   <div className="nrw-card-head"><span className="nrw-card-icon" aria-hidden="true">{icon}</span>
-   <h2 id={'nrw-'+section}>{sectionLabels[section]}</h2>
+   <h2 id={'nrw-'+section}>{tr(sectionLabels[section])}</h2>
    {count && <span className="nrw-count">{count}</span>}
   </div>
   <div className="nrw-card-content">{children}</div>
-  <DashboardLink section={section}>Details ansehen</DashboardLink>
+  <DashboardLink section={section}>{tr('Details ansehen')}</DashboardLink>
  </section>;
 }
 export default function RegionOverview(){
+ const {language}=useLanguage();const tr=(x:string)=>regionText[x]?.[language]||x;
  const {regionId,section}=useParams();
  const {user}=useAuth();
  const [clubs,setClubs]=useState<Club[]>([]);
@@ -110,22 +139,22 @@ export default function RegionOverview(){
   return own.length?own:leagues;
  },[leagues,selectedClub]);
  const clubName=(id:string)=>clubs.find(c=>c.id===id)?.name||'Verein';
- if(!validRegion)return <section className="nrw-shell"><h1>Region nicht verfügbar</h1><p>Weitere Regionen werden erst nach der Freigabe ihrer Datenquellen aktiviert.</p><Link to="/chat">Zurück zu Schach-Treff</Link></section>;
+ if(!validRegion)return <section className="nrw-shell"><h1>{tr("Region nicht verfügbar")}</h1><p>Weitere Regionen werden erst nach der Freigabe ihrer Datenquellen aktiviert.</p><Link to="/chat">{tr("Zurück zu Schach-Treff")}</Link></section>;
  const content:Record<Section,React.ReactNode>={
-  turniere:<>{loading?<p className="nrw-muted" role="status">Termine werden geladen …</p>:!user?<p className="nrw-muted">Turnierkalender nach Anmeldung verfügbar.</p>:events.length?<ul className="nrw-items">{events.slice(0,detail==='turniere'?40:3).map(e=><li key={e.id}><time dateTime={e.starts_at}>{eventTime(e.starts_at)}</time><strong>{e.title}</strong><small>{clubName(e.club_id)}{e.venue?' · '+e.venue:''}</small></li>)}</ul>:<p className="nrw-muted">Keine bestätigten kommenden Termine eingetragen.</p>}</>,
-  ligen:<>{loading?<p className="nrw-muted" role="status">Tabellen werden geladen …</p>:!user?<p className="nrw-muted">Vereinsliga-Daten nach Anmeldung verfügbar.</p>:featuredLeagues.length?<ul className="nrw-items">{featuredLeagues.slice(0,detail==='ligen'?40:3).map(r=><li key={r.id}><span className="nrw-muted">{r.season} · {r.league}</span><strong>{r.place}. {r.team}</strong><small>{clubName(r.club_id)} · {r.match_points} MP · {r.played} Spiele</small></li>)}</ul>:<p className="nrw-muted">Noch keine Tabellen eingetragen.</p>}<small className="nrw-source">Von Vereinen gepflegt · keine offizielle Live-Tabelle.</small>{user&&import.meta.env.VITE_SPIELTAG_ENABLED==='true'&&<Link className="nrw-inline" to="/spieltag">Mein Spieltag <ArrowUpRight aria-hidden="true" size={14}/></Link>}</>,
-  vereine:<><label className="nrw-select">Stadt <select value={city} onChange={e=>setCity(e.target.value)}><option value="">Alle Städte in NRW</option>{cities.map(c=><option key={c}>{c}</option>)}</select></label>{loading?<p className="nrw-muted" role="status">Vereine werden geladen …</p>:visibleClubs.length?<ul className="nrw-items">{visibleClubs.slice(0,detail==='vereine'?100:3).map(c=><li key={c.id}><Link to={'/clubs-nrw/'+encodeURIComponent(c.slug)}><strong>{c.name}</strong><small>{c.city}</small></Link></li>)}</ul>:<p className="nrw-muted">Keine veröffentlichten Vereine für diese Auswahl.</p>}<small className="nrw-source">Standort nicht ermittelt · Auswahl nach Stadt.</small></>,
-  news:<>{newsLoading?<p className="nrw-muted" role="status">Nachrichten werden geladen …</p>:news.length?<ul className="nrw-items">{news.slice(0,detail==='news'?12:3).map(n=><li key={n.url}><a href={httpsLink(n.url)!} target="_blank" rel="noopener noreferrer"><strong>{n.title}</strong><small>Schachbezirk Bochum · externe Quelle</small></a></li>)}</ul>:<p className="nrw-muted">{newsError?'Nachrichten derzeit nicht verfügbar.':'Keine aktuellen Meldungen verfügbar.'}</p>}<small className="nrw-source">Aktuell angebunden: Schachbezirk Bochum (NRW). Keine bundesweiten Meldungen.</small></>,
+  turniere:<>{loading?<p className="nrw-muted" role="status">{tr("Termine werden geladen …")}</p>:!user?<p className="nrw-muted">Turnierkalender nach Anmeldung verfügbar.</p>:events.length?<ul className="nrw-items">{events.slice(0,detail==='turniere'?40:3).map(e=><li key={e.id}><time dateTime={e.starts_at}>{eventTime(e.starts_at)}</time><strong>{e.title}</strong><small>{clubName(e.club_id)}{e.venue?' · '+e.venue:''}</small></li>)}</ul>:<p className="nrw-muted">Keine bestätigten kommenden Termine eingetragen.</p>}</>,
+  ligen:<>{loading?<p className="nrw-muted" role="status">{tr("Tabellen werden geladen …")}</p>:!user?<p className="nrw-muted">Vereinsliga-Daten nach Anmeldung verfügbar.</p>:featuredLeagues.length?<ul className="nrw-items">{featuredLeagues.slice(0,detail==='ligen'?40:3).map(r=><li key={r.id}><span className="nrw-muted">{r.season} · {r.league}</span><strong>{r.place}. {r.team}</strong><small>{clubName(r.club_id)} · {r.match_points} MP · {r.played} Spiele</small></li>)}</ul>:<p className="nrw-muted">Noch keine Tabellen eingetragen.</p>}<small className="nrw-source">Von Vereinen gepflegt · keine offizielle Live-Tabelle.</small>{user&&import.meta.env.VITE_SPIELTAG_ENABLED==='true'&&<Link className="nrw-inline" to="/spieltag">Mein Spieltag <ArrowUpRight aria-hidden="true" size={14}/></Link>}</>,
+  vereine:<><label className="nrw-select">Stadt <select value={city} onChange={e=>setCity(e.target.value)}><option value="">{tr("Alle Städte in NRW")}</option>{cities.map(c=><option key={c}>{c}</option>)}</select></label>{loading?<p className="nrw-muted" role="status">{tr("Vereine werden geladen …")}</p>:visibleClubs.length?<ul className="nrw-items">{visibleClubs.slice(0,detail==='vereine'?100:3).map(c=><li key={c.id}><Link to={'/clubs-nrw/'+encodeURIComponent(c.slug)}><strong>{c.name}</strong><small>{c.city}</small></Link></li>)}</ul>:<p className="nrw-muted">Keine veröffentlichten Vereine für diese Auswahl.</p>}<small className="nrw-source">Standort nicht ermittelt · Auswahl nach Stadt.</small></>,
+  news:<>{newsLoading?<p className="nrw-muted" role="status">{tr("Nachrichten werden geladen …")}</p>:news.length?<ul className="nrw-items">{news.slice(0,detail==='news'?12:3).map(n=><li key={n.url}><a href={httpsLink(n.url)!} target="_blank" rel="noopener noreferrer"><strong>{n.title}</strong><small>Schachbezirk Bochum · externe Quelle</small></a></li>)}</ul>:<p className="nrw-muted">{newsError?'Nachrichten derzeit nicht verfügbar.':'Keine aktuellen Meldungen verfügbar.'}</p>}<small className="nrw-source">Aktuell angebunden: Schachbezirk Bochum (NRW). Keine bundesweiten Meldungen.</small></>,
   live:<><p className="nrw-muted">Derzeit keine für NRW verifizierte Live-Übertragung eingebunden.</p><a className="nrw-inline" href="https://lichess.org/broadcast" target="_blank" rel="noopener noreferrer">Öffentliche Übertragungen bei Lichess <ArrowUpRight aria-hidden="true" size={14}/></a><small className="nrw-source">Lichess-Übersicht ist weltweit und nicht nach NRW gefiltert.</small></>,
  };
- return <div className="nrw-shell" lang="de" data-region-overview="nrw">
+ return <div className="nrw-shell" lang={language === "ua" ? "uk" : language} data-region-overview="nrw">
   <header className="nrw-header">
    <div className="nrw-header-top"><span className="nrw-kicker"><MapPin size={14} aria-hidden="true"/> Regionales Schach</span><span className="nrw-region-code" aria-current="page">NRW</span></div>
-   <h1>Schach in Nordrhein-Westfalen</h1>
-   <p>Turniere, Mannschaften, Vereine und Meldungen auf einen Blick.</p>
+   <h1>{tr("Schach in Nordrhein-Westfalen")}</h1>
+   <p>{tr("Turniere, Mannschaften, Vereine und Meldungen auf einen Blick.")}</p>
    <div className="nrw-links"><Link to="/chat"><MessageSquare size={15} aria-hidden="true"/> Schach-Treff Deutschland</Link>{import.meta.env.VITE_SPIELER_V1_ENABLED==='true'&&<Link to="/spieler"><Users size={15} aria-hidden="true"/> Spieler</Link>}{import.meta.env.VITE_VORBEREITUNG_ENABLED==='true'&&<Link to="/vorbereitung"><ShieldCheck size={15} aria-hidden="true"/> Vorbereitung</Link>}</div>
   </header>
-  {detail&&<div className="nrw-back"><Link to="/region/nrw"><ArrowLeft size={16} aria-hidden="true"/> Alle NRW-Themen</Link><span>{sectionLabels[detail]}</span></div>}
+  {detail&&<div className="nrw-back"><Link to="/region/nrw"><ArrowLeft size={16} aria-hidden="true"/> Alle NRW-Themen</Link><span>{tr(sectionLabels[detail])}</span></div>}
   {error&&<p className="nrw-error" role="alert">{error}</p>}
   <div className="nrw-layout">
    <div className={'nrw-grid'+(detail?' nrw-grid--detail':'')}>
