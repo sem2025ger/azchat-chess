@@ -3,6 +3,9 @@ export type Language = 'en' | 'de' | 'az' | 'tr' | 'ua' | 'ru';
 type TranslationDictionary = Record<string, Record<Language, string>>;
 
 export const translations: TranslationDictionary = {
+  'nav.germanSpeakers': { en:'For German speakers', de:'Für Deutschsprachige', az:'Almandilli oyunçular üçün', tr:'Almanca konuşanlar için', ua:'Для німецькомовних', ru:'Для немецкоязычных' },
+  'nav.spieltag': { en:'Matchday', de:'Spieltag', az:'Oyun günü', tr:'Maç günü', ua:'Ігровий день', ru:'Игровой день' },
+  'nav.spieler': { en:'Players', de:'Spieler', az:'Oyunçular', tr:'Oyuncular', ua:'Гравці', ru:'Игроки' },
   // Navigation & Layout
   'nav.home': { en: 'Home', de: 'Startseite', ua: 'Головна', ru: 'Главная', az: 'Ana Səhifə', tr: 'Ana Sayfa' },
   'nav.play': { en: 'Play', de: 'Spielen', ua: 'Грати', ru: 'Играть', az: 'Oyna', tr: 'Oyna' },
