@@ -1787,3 +1787,15 @@
     vertical-align:middle;
   }
 }
+
+/* Muted copper/bronze frame, no yellow-gold highlight or external glow. */
+@media (min-width: 768px) {
+  .site-nav-link.chessaz-bronze-frame {
+    border: 1px solid transparent;
+    background-image: linear-gradient(135deg,rgba(24,25,28,.96),rgba(14,16,20,.97)),linear-gradient(135deg,#554238 0%,#8e6650 24%,#aaa5a0 47%,#705246 68%,#42352f 100%);
+    background-origin: border-box;
+    background-clip: padding-box,border-box;
+    box-shadow: inset 0 1px 0 rgba(186,178,171,.08);
+  }
+  .site-nav-link.chessaz-bronze-frame:hover { box-shadow: inset 0 1px 0 rgba(186,178,171,.12); }
+}
