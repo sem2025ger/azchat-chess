@@ -439,6 +439,198 @@ const fixedCopy: Record<string, Record<Language,string>> = {
     "tr": "dün",
     "ua": "вчора",
     "ru": "вчера"
+  },
+  "Vereinsräume sind vorerst in der Desktop-Version verfügbar.": {
+    "de": "Vereinsräume sind vorerst in der Desktop-Version verfügbar.",
+    "en": "Club rooms are available on desktop for now.",
+    "az": "Klub otaqları hələlik yalnız kompüterdə əlçatandır.",
+    "tr": "Kulüp odaları şimdilik masaüstünde kullanılabilir.",
+    "ua": "Клубні кімнати поки доступні лише на комп’ютері.",
+    "ru": "Клубные комнаты пока доступны только на компьютере."
+  },
+  "Rangliste folgt mit der Elo-Wertung": {
+    "de": "Rangliste folgt mit der Elo-Wertung",
+    "en": "Rankings will arrive with Elo ratings",
+    "az": "Reytinq cədvəli Elo ilə gələcək",
+    "tr": "Sıralama Elo puanlarıyla gelecek",
+    "ua": "Рейтинг з’явиться разом з Elo",
+    "ru": "Рейтинг появится вместе с Elo"
+  },
+  "Turniere starten bald": {
+    "de": "Turniere starten bald",
+    "en": "Tournaments are coming soon",
+    "az": "Turnirlər tezliklə başlayacaq",
+    "tr": "Turnuvalar yakında başlayacak",
+    "ua": "Турніри скоро розпочнуться",
+    "ru": "Турниры скоро начнутся"
+  },
+  "Schweizer System und Arena direkt im Schach-Treff. Wir sagen dir Bescheid, sobald das erste Turnier offen ist.": {
+    "de": "Schweizer System und Arena direkt im Schach-Treff. Wir sagen dir Bescheid, sobald das erste Turnier offen ist.",
+    "en": "Swiss-system and Arena tournaments in Schach-Treff. We will notify you when the first tournament opens.",
+    "az": "Schach-Treff-də İsveçrə sistemi və Arena turnirləri. İlk turnir açılanda sizə xəbər verəcəyik.",
+    "tr": "Schach-Treff’te İsviçre sistemi ve Arena turnuvaları. İlk turnuva açılınca haber vereceğiz.",
+    "ua": "Швейцарська система й Арена у Schach-Treff. Повідомимо про перший турнір.",
+    "ru": "Швейцарская система и Арена в Schach-Treff. Сообщим об открытии первого турнира."
+  },
+  "Der Schach-Treff ist der Raum auf ChessAZ für alle, die Schach auf Deutsch spielen und besprechen: Vereinsspieler, Turnierspieler und Hobbyspieler. Höflich, sachlich, ohne Werbung.": {
+    "de": "Der Schach-Treff ist der Raum auf ChessAZ für alle, die Schach auf Deutsch spielen und besprechen: Vereinsspieler, Turnierspieler und Hobbyspieler. Höflich, sachlich, ohne Werbung.",
+    "en": "Schach-Treff is the ChessAZ room for German-speaking chess players of every level. Be respectful; no advertising.",
+    "az": "Schach-Treff, ChessAZ-da almandilli şahmatçılar üçün ümumi otaqdır. Nəzakətli olun, reklam etməyin.",
+    "tr": "Schach-Treff, ChessAZ'da Almanca konuşan satranç oyuncuları içindir. Saygılı olun, reklam yok.",
+    "ua": "Schach-Treff — простір ChessAZ для німецькомовних шахістів. Спілкуйтеся ввічливо, без реклами.",
+    "ru": "Schach-Treff — пространство ChessAZ для немецкоязычных шахматистов. Общайтесь вежливо, без рекламы."
+  },
+  "Die Daten konnten nicht geladen oder gespeichert werden. Bitte versuche es erneut.": {
+    "de": "Die Daten konnten nicht geladen oder gespeichert werden. Bitte versuche es erneut.",
+    "en": "Could not load or save data. Please try again.",
+    "az": "Məlumat yüklənmədi və ya saxlanılmadı. Yenidən cəhd edin.",
+    "tr": "Veriler yüklenemedi veya kaydedilemedi. Tekrar deneyin.",
+    "ua": "Не вдалося завантажити або зберегти дані. Спробуйте ще раз.",
+    "ru": "Не удалось загрузить или сохранить данные. Повторите попытку."
+  },
+  "Noch keine Nachrichten. Teile den Einladungslink mit deinem Verein.": {
+    "de": "Noch keine Nachrichten. Teile den Einladungslink mit deinem Verein.",
+    "en": "No messages yet. Share the invitation with your club.",
+    "az": "Hələ mesaj yoxdur. Dəvət linkini klubunuzla paylaşın.",
+    "tr": "Henüz mesaj yok. Davet bağlantısını kulübünüzle paylaşın.",
+    "ua": "Повідомлень ще немає. Надішліть запрошення клубу.",
+    "ru": "Сообщений пока нет. Поделитесь ссылкой-приглашением с клубом."
+  },
+  "Tritt dem Club bei, um die Nachrichten zu sehen.": {
+    "de": "Tritt dem Club bei, um die Nachrichten zu sehen.",
+    "en": "Join the club to view messages.",
+    "az": "Mesajları görmək üçün kluba qoşulun.",
+    "tr": "Mesajları görmek için kulübe katılın.",
+    "ua": "Приєднайтеся до клубу, щоб бачити повідомлення.",
+    "ru": "Вступите в клуб, чтобы видеть сообщения."
+  },
+  "Dieser Raum hat bereits zehn aktive Einladungen.": {
+    "de": "Dieser Raum hat bereits zehn aktive Einladungen.",
+    "en": "This room already has ten active invites.",
+    "az": "Bu otaqda artıq on aktiv dəvət var.",
+    "tr": "Bu odada zaten on aktif davet var.",
+    "ua": "У кімнаті вже десять активних запрошень.",
+    "ru": "В комнате уже десять активных приглашений."
+  },
+  "Diese Aktion ist nicht erlaubt.": {
+    "de": "Diese Aktion ist nicht erlaubt.",
+    "en": "This action is not allowed.",
+    "az": "Bu əməliyyata icazə verilmir.",
+    "tr": "Bu işleme izin verilmiyor.",
+    "ua": "Ця дія заборонена.",
+    "ru": "Это действие запрещено."
+  },
+  "Der Name muss 3–60 Zeichen lang sein.": {
+    "de": "Der Name muss 3–60 Zeichen lang sein.",
+    "en": "Name must be 3–60 characters.",
+    "az": "Ad 3–60 simvol olmalıdır.",
+    "tr": "Ad 3–60 karakter olmalı.",
+    "ua": "Назва має містити 3–60 символів.",
+    "ru": "Название должно содержать 3–60 символов."
+  },
+  "Du kannst höchstens zwei Vereinsräume erstellen.": {
+    "de": "Du kannst höchstens zwei Vereinsräume erstellen.",
+    "en": "You can create up to two club rooms.",
+    "az": "Ən çox iki klub otağı yarada bilərsiniz.",
+    "tr": "En fazla iki kulüp odası açabilirsiniz.",
+    "ua": "Можна створити не більше двох клубних кімнат.",
+    "ru": "Можно создать не более двух клубных комнат."
+  },
+  "Dieser Einladungslink ist ungültig.": {
+    "de": "Dieser Einladungslink ist ungültig.",
+    "en": "Invalid invitation link.",
+    "az": "Dəvət linki yanlışdır.",
+    "tr": "Davet bağlantısı geçersiz.",
+    "ua": "Недійсне посилання-запрошення.",
+    "ru": "Недействительная ссылка-приглашение."
+  },
+  "Dieser Einladungslink ist abgelaufen.": {
+    "de": "Dieser Einladungslink ist abgelaufen.",
+    "en": "Invitation link has expired.",
+    "az": "Dəvət linkinin vaxtı bitib.",
+    "tr": "Davet bağlantısının süresi doldu.",
+    "ua": "Термін дії запрошення минув.",
+    "ru": "Срок действия приглашения истёк."
+  },
+  "Dieser Einladungslink wurde bereits vollständig verwendet.": {
+    "de": "Dieser Einladungslink wurde bereits vollständig verwendet.",
+    "en": "This invitation link has reached its use limit.",
+    "az": "Dəvət linkinin istifadə limiti dolub.",
+    "tr": "Davet bağlantısının kullanım sınırı doldu.",
+    "ua": "Ліміт використань цього запрошення вичерпано.",
+    "ru": "Лимит использований приглашения исчерпан."
+  },
+  "Beide Spieler müssen Mitglieder des Raums sein.": {
+    "de": "Beide Spieler müssen Mitglieder des Raums sein.",
+    "en": "Both players must be room members.",
+    "az": "Hər iki oyunçu otağın üzvü olmalıdır.",
+    "tr": "İki oyuncu da odanın üyesi olmalı.",
+    "ua": "Обидва гравці мають бути учасниками кімнати.",
+    "ru": "Оба игрока должны быть участниками комнаты."
+  },
+  "Die Herausforderung ist abgelaufen.": {
+    "de": "Die Herausforderung ist abgelaufen.",
+    "en": "The challenge has expired.",
+    "az": "Çağırışın vaxtı bitib.",
+    "tr": "Meydan okumanın süresi doldu.",
+    "ua": "Термін виклику минув.",
+    "ru": "Срок вызова истёк."
+  },
+  "Diese Herausforderung ist nicht mehr verfügbar.": {
+    "de": "Diese Herausforderung ist nicht mehr verfügbar.",
+    "en": "This challenge is no longer available.",
+    "az": "Bu çağırış artıq əlçatan deyil.",
+    "tr": "Bu meydan okuma artık kullanılamıyor.",
+    "ua": "Цей виклик більше недоступний.",
+    "ru": "Этот вызов больше недоступен."
+  },
+  "Du kannst höchstens drei offene Herausforderungen haben.": {
+    "de": "Du kannst höchstens drei offene Herausforderungen haben.",
+    "en": "You can have at most three open challenges.",
+    "az": "Ən çox üç açıq çağırışınız ola bilər.",
+    "tr": "En fazla üç açık meydan okumanız olabilir.",
+    "ua": "Можна мати не більше трьох відкритих викликів.",
+    "ru": "Можно иметь не больше трёх открытых вызовов."
+  },
+  "Diese Bedenkzeit ist nicht verfügbar.": {
+    "de": "Diese Bedenkzeit ist nicht verfügbar.",
+    "en": "This time control is unavailable.",
+    "az": "Bu vaxt nəzarəti əlçatan deyil.",
+    "tr": "Bu zaman kontrolü kullanılamıyor.",
+    "ua": "Такий контроль часу недоступний.",
+    "ru": "Этот контроль времени недоступен."
+  },
+  "Der Herausforderer ist nicht mehr online.": {
+    "de": "Der Herausforderer ist nicht mehr online.",
+    "en": "The challenger is offline.",
+    "az": "Çağırış edən artıq onlayn deyil.",
+    "tr": "Meydan okuyan artık çevrimdışı.",
+    "ua": "Гравець, який кинув виклик, уже не в мережі.",
+    "ru": "Игрок, бросивший вызов, уже не в сети."
+  },
+  "Ein Spieler ist gerade nicht verfügbar.": {
+    "de": "Ein Spieler ist gerade nicht verfügbar.",
+    "en": "One player is unavailable.",
+    "az": "Oyunçulardan biri hazırda əlçatan deyil.",
+    "tr": "Oyunculardan biri şu anda müsait değil.",
+    "ua": "Один із гравців зараз недоступний.",
+    "ru": "Один из игроков сейчас недоступен."
+  },
+  "Bitte warte kurz und versuche es erneut.": {
+    "de": "Bitte warte kurz und versuche es erneut.",
+    "en": "Please wait and try again.",
+    "az": "Bir az gözləyib yenidən cəhd edin.",
+    "tr": "Biraz bekleyip yeniden deneyin.",
+    "ua": "Зачекайте й спробуйте ще раз.",
+    "ru": "Подождите и повторите попытку."
+  },
+  "Die Partie kann gerade nicht sicher gestartet werden.": {
+    "de": "Die Partie kann gerade nicht sicher gestartet werden.",
+    "en": "The game cannot be started safely right now.",
+    "az": "Partiyanı indi təhlükəsiz başlatmaq mümkün deyil.",
+    "tr": "Oyun şu anda güvenli başlatılamıyor.",
+    "ua": "Зараз не можна безпечно почати партію.",
+    "ru": "Сейчас нельзя безопасно начать партию."
   }
 };
 export const translateSchachTreff = (language: Language, text: string): string => fixedCopy[text]?.[language] || text;
