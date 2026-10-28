@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { supabase } from '../../services/supabase';
-import { copy as t } from './copy';
+import { useSchachTreffCopy } from './copy';
 type Summary = { completed_games: number; last_games: { opponent: string | null; time_control: string; result: string }[] };
 export default function PlayerSummary({ userId,children }: { userId: string; children: ReactNode }) {
+  const t=useSchachTreffCopy();
   const [state,setState]=useState<{ userId: string; data?: Summary; error?: boolean; missing?: boolean } | null>(null);
   const warned=useRef(false);
   useEffect(() => {
