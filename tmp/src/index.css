@@ -806,7 +806,9 @@
 
 /* Sidebar navigation: quiet gold metal edges; keep each item's selected colours. */
 @media (min-width: 768px) {
-  aside .site-nav-link.sidebar-item {
+  aside .site-nav-link.sidebar-item,
+  aside .site-nav-link.sidebar-item[class*="theme-"],
+  aside .site-nav-link.sidebar-item[class*="theme-"]:hover {
     border-color: transparent;
     box-shadow: none;
   }
@@ -817,7 +819,7 @@
     inset: -1px;
     border: 1px solid transparent;
     border-radius: inherit;
-    background: linear-gradient(125deg, rgba(184,134,45,.38) 0%, rgba(224,183,95,.52) 28%, rgba(255,239,190,.62) 46%, rgba(229,196,143,.44) 64%, rgba(194,147,56,.32) 100%) border-box;
+    background: linear-gradient(125deg, rgba(151,105,48,.48) 0%, rgba(184,134,65,.56) 28%, rgba(239,210,151,.60) 46%, rgba(194,147,80,.50) 64%, rgba(139,96,43,.42) 100%) border-box;
     -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
