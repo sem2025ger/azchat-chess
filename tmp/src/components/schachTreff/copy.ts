@@ -1,4 +1,4 @@
-import { useLanguage } from '../../context/LanguageContext';
+import { useOptionalLanguage } from '../../context/LanguageContext';
 import { translateSchachTreff } from './i18n';
 export const copy = {
   createClub: 'Verein erstellen', clubName: 'Name des Vereins', createRoom: 'Raum erstellen',
@@ -37,7 +37,7 @@ export const copy = {
 
 type LocalizedCopy = { [K in keyof typeof copy]: typeof copy[K] extends string ? string : { [N in keyof typeof copy[K]]: string } };
 export function useSchachTreffCopy(): LocalizedCopy {
- const {language}=useLanguage();
+ const language=useOptionalLanguage()?.language || 'de';
  return Object.fromEntries(Object.entries(copy).map(([key,entry])=>[
   key,typeof entry==='string'?translateSchachTreff(language,entry):Object.fromEntries(Object.entries(entry).map(([subKey,value])=>[subKey,translateSchachTreff(language,value)])),
  ])) as LocalizedCopy;
