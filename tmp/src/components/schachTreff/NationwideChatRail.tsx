@@ -12,10 +12,10 @@ type ChatProfile = { id: string; username: string };
 const NATIONAL_ROOM_SLUG = 'chessaz-deutsch';
 const REFRESH_MS = 12000;
 
-function timeLabel(value: string) {
+function timeLabel(value: string, language: string) {
  const date = new Date(value);
  return Number.isNaN(date.getTime()) ? '' :
-  new Intl.DateTimeFormat('de-DE',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',timeZone:'Europe/Berlin'}).format(date);
+  new Intl.DateTimeFormat(({en:'en-GB',de:'de-DE',az:'az-AZ',tr:'tr-TR',ua:'uk-UA',ru:'ru-RU'} as Record<string,string>)[language]||'de-DE',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit',timeZone:'Europe/Berlin'}).format(date);
 }
 
 /**
@@ -127,7 +127,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
    : <><div className="nrw-chat-messages" aria-label={tr("Chat-Nachrichten")} aria-live="polite" aria-relevant="additions">
        {messages.length===0?<p className="nrw-muted">{tr("Noch keine Nachrichten.")}</p>
         : messages.map(m=><article key={m.id} className="nrw-chat-message">
-           <div className="nrw-chat-meta"><strong>{profiles[m.author_id]||'Mitglied'}</strong><time dateTime={m.created_at}>{timeLabel(m.created_at)}</time></div>
+           <div className="nrw-chat-meta"><strong>{profiles[m.author_id]||'Mitglied'}</strong><time dateTime={m.created_at}>{timeLabel(m.created_at,language)}</time></div>
            <p>{m.body}</p>
           </article>)}
      </div>
