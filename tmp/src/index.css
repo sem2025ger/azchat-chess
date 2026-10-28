@@ -804,7 +804,7 @@
   .sidebar-item.theme-premium { transition: none; }
 }
 
-/* Sidebar navigation: quiet gold metal edges; keep each item's selected colours. */
+/* Sidebar navigation: muted bronze metal edges with a neutral highlight; keep each item's selected colours. */
 @media (min-width: 768px) {
   aside .site-nav-link.sidebar-item,
   aside .site-nav-link.sidebar-item[class*="theme-"],
@@ -819,7 +819,7 @@
     inset: -1px;
     border: 1px solid transparent;
     border-radius: inherit;
-    background: linear-gradient(125deg, rgba(151,105,48,.48) 0%, rgba(184,134,65,.56) 28%, rgba(239,210,151,.60) 46%, rgba(194,147,80,.50) 64%, rgba(139,96,43,.42) 100%) border-box;
+    background: linear-gradient(125deg, rgba(93,69,60,.78) 0%, rgba(132,97,80,.82) 28%, rgba(167,161,154,.72) 46%, rgba(117,85,71,.78) 64%, rgba(79,62,56,.70) 100%) border-box;
     -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
