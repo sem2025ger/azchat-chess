@@ -96,8 +96,8 @@ try{
   await evaluate("document.querySelector('[data-test-locale="+locale+"]').click()");
   await wait("document.querySelector('.spieltag-controls details.section-info p')?.innerText==="+JSON.stringify(teamCopy[locale]));
   assert.equal(await evaluate("document.body.innerText.includes('Nur bestätigte Mannschaftsmitglieder')"),locale==='de','team privacy notice: '+locale);
-  assert.equal(await evaluate("document.querySelector('.spieltag-card').getAttribute('aria-label')"),playerCardCopy[locale],'player-card label: '+locale);
-  assert.equal(await evaluate("document.querySelector('.spieltag-card').getAttribute('aria-label')==='Spielerkarte'"),locale==='de','German aria-label only for de: '+locale);
+  assert.equal(await evaluate("document.querySelector('aside.spieltag-card').getAttribute('aria-label')"),playerCardCopy[locale],'player-card label: '+locale);
+  assert.equal(await evaluate("document.querySelector('aside.spieltag-card').getAttribute('aria-label')==='Spielerkarte'"),locale==='de','German aria-label only for de: '+locale);
  }
  await click('Karte schließen');await fill('Lichess-Benutzername des Gegners','target_user');await click('Lichess-Zuordnung speichern');await wait(`document.body.innerText.includes('Lichess-Konto: target_user (nicht verifiziert)')`);
  await click('Nach der Runde');await fill('Ergebnis','1/2-1/2');await wait(`window.fixtureCalls.some(c=>c.body&&JSON.parse(c.body).result==='1/2-1/2')`);await fill('Kurze Notizen','Gut gespielt!');await click('Notizen speichern');await wait(`window.fixtureCalls.some(c=>c.body&&JSON.parse(c.body).notes==='Gut gespielt!')`);
