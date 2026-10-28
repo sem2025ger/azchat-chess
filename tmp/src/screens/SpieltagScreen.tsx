@@ -8,6 +8,7 @@ import SpieltagMatchView from '../components/spieltag/SpieltagMatchView';
 import { BoardForm,ScheduleForm } from '../components/spieltag/SpieltagForms';
 import './SpielerScreen.css';
 import './SpieltagScreen.css';
+import '../styles/sections.css';
 
 function message(error: unknown) {
   if (error instanceof SpieltagError) {
@@ -69,24 +70,26 @@ function SpieltagWorkspace({token}: {token: string}) {
     cardRequest.current?.abort();const c=new AbortController();cardRequest.current=c;setPlayer(null);setCardError('');
     try{const card=await createSpielerApi(import.meta.env.VITE_SERVER_URL || '').card(id,token,c.signal);if(!c.signal.aborted)setPlayer(card);}catch{if(!c.signal.aborted)setCardError('Spielerkarte nicht verfügbar. Das Profil kann ausgeblendet oder Spieler deaktiviert sein.');}
   }
-  return <section className="spieltag-page"><header><p className="spieler-eyebrow">Mannschaft intern</p><h1>Spieltag</h1><p>Termine, Aufstellung und Nachbesprechung deiner Mannschaft.</p></header>
+  return <section className="spieltag-page section-page"><header><p className="spieler-eyebrow">Mannschaft intern</p><h1>Spieltag</h1><p>Termine, Aufstellung und Nachbesprechung deiner Mannschaft.</p></header>
     {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}{loading&&<p role="status">Wird geladen …</p>}
     {!loading&&!teams.length&&<p>Du bist noch keiner Mannschaft zugeordnet. Bitte wende dich an die Vereinsleitung.</p>}
-    {!!teams.length&&<><label>Mannschaft<select value={teamId} disabled={busy} onChange={e=>setTeamId(e.target.value)}>{teams.map(t=><option key={t.id} value={t.id}>{clubs.find(c=>c.id===t.club_id)?.name || 'Verein'} · {t.name}</option>)}</select></label>
-      <p>{captain?'Du pflegst diese Mannschaft als Kapitänin oder Kapitän.':'Nur für bestätigte Mannschaftsmitglieder.'}</p>
+    {!!teams.length&&<div className="spieltag-workspace"><section className="section-card spieltag-controls"><h2>Deine Mannschaft</h2><label>Mannschaft<select value={teamId} disabled={busy} onChange={e=>setTeamId(e.target.value)}>{teams.map(t=><option key={t.id} value={t.id}>{clubs.find(c=>c.id===t.club_id)?.name || 'Verein'} · {t.name}</option>)}</select></label>
+      <p className="spieltag-role">{captain?'Du pflegst diese Mannschaft als Kapitänin oder Kapitän.':'Nur für bestätigte Mannschaftsmitglieder.'}</p>
       {captain&&<button disabled={busy||loading} onClick={()=>setScheduleEdit(null)}>Spieltermin eintragen</button>}
       {scheduleEdit!==undefined&&captain&&<ScheduleForm key={scheduleEdit?.id || 'new'} match={scheduleEdit} clubs={clubs} busy={busy} onSave={v=>void saveSchedule(v)} onCancel={()=>setScheduleEdit(undefined)}/>}
       {!!matches.length&&<label>Begegnung<select value={matchId} disabled={busy} onChange={e=>{setMatchId(e.target.value);setScheduleEdit(undefined);}}>{matches.map(m=><option key={m.id} value={m.id}>{m.round_label} · {m.opponent_name}</option>)}</select></label>}
       {!loading&&!matches.length&&<p>Noch keine Spieltermine eingetragen.</p>}
-      {match&&<>{captain&&<div className="spieltag-actions"><button disabled={busy} onClick={()=>setScheduleEdit(match)}>Termin bearbeiten</button><button disabled={busy||loading} onClick={()=>setBoardEdit(null)}>Brett hinzufügen</button></div>}
+      {match&&captain&&<div className="spieltag-actions"><button disabled={busy} onClick={()=>setScheduleEdit(match)}>Termin bearbeiten</button><button disabled={busy||loading} onClick={()=>setBoardEdit(null)}>Brett hinzufügen</button></div>}
         {boardEdit!==undefined&&captain&&<BoardForm key={boardEdit?.board_number || 'new'} board={boardEdit} busy={busy} onSave={(n,v)=>void saveBoard(n,v)} onCancel={()=>setBoardEdit(undefined)}/>}
+      <details className="section-info"><summary>Info</summary><p>Nur bestätigte Mannschaftsmitglieder können diese Vorbereitung lesen. Die Mannschaftsleitung pflegt Termine, Aufstellung und Ergebnisse. Keine Übertragung in Online-Partien, Ratings oder Ligatabellen.</p></details>
+      </section>{match&&<>
         <SpieltagMatchView key={match.id} match={match} boards={boards} captain={!!captain} busy={busy||loading} spielerAvailable={import.meta.env.VITE_SPIELER_V1_ENABLED==='true'} onCard={id=>void openCard(id)} onEdit={setBoardEdit}
           onDelete={b=>{if(!window.confirm('Brett '+b.board_number+' aus dieser Aufstellung entfernen?'))return;void mutate(async signal=>{await api().deleteBoard(match.id,b.board_number,signal);if(!signal.aborted)setRefresh(n=>n+1);});}}
           onResult={(b,result)=>void mutate(async signal=>{const rows=await api().saveBoard(match.id,b.board_number,true,{...boardInput(b),result},signal);if(!signal.aborted)setBoards(old=>old.map(x=>x.board_number===b.board_number?rows[0]:x));})}
           onLichess={(b,username)=>void mutate(async signal=>{const rows=await api().saveLichess(match.id,b.board_number,username,signal);if(!signal.aborted)setBoards(old=>old.map(x=>x.board_number===b.board_number?rows[0]:x));})}
           onNotes={notes=>void mutate(async signal=>{const rows=await api().saveMatch(teamId,match.id,{...scheduleFromMatch(match),notes},signal);if(!signal.aborted)setMatches(old=>old.map(x=>x.id===match.id?rows[0]:x));})}/>
       </>}
-    </>}
+    </div>}
     {cardError&&<p role="status">{cardError}</p>}{player&&<aside className="spieltag-card" aria-label="Spielerkarte"><button onClick={()=>{cardRequest.current?.abort();setPlayer(null);}}>Karte schließen</button><SpielerCard player={player}/></aside>}
   </section>;
 }

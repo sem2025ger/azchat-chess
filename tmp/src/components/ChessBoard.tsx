@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useThemeContext } from '../context/ThemeContext';
-import { BOARD_THEMES, type BoardTheme } from '../lib/chessThemes';
+import { BOARD_THEMES, type BoardTheme, type PieceTheme } from '../lib/chessThemes';
 import { Chess, type Square, type Move, type PieceSymbol, type Color } from 'chess.js';
 import { squareAtPoint, type BoardRect } from '../utils/boardCoordinates';
 
@@ -57,6 +57,7 @@ function ChessBoard({
   onMove,
   orientation = 'w',
   overrideBoardTheme,
+  overridePieceTheme,
   readOnly = false,
   confirmMovesMobile = false,
 }: {
@@ -68,6 +69,7 @@ function ChessBoard({
   onMove?: (source: string, target: string, promotion?: string) => boolean;
   orientation?: 'w' | 'b';
   overrideBoardTheme?: BoardTheme;
+  overridePieceTheme?: PieceTheme;
   readOnly?: boolean;
   confirmMovesMobile?: boolean;
 }) {
@@ -451,7 +453,7 @@ function ChessBoard({
                   )}
                   style={{ left: `${fileIdx * 12.5}%`, top: `${rankIdx * 12.5}%` }}
                 >
-                  <PieceImage piece={p} theme={pieceTheme} />
+                  <PieceImage piece={p} theme={overridePieceTheme || pieceTheme} />
                 </div>
               );
             })}
@@ -482,7 +484,7 @@ function ChessBoard({
                     >
                       <PieceImage
                         piece={{ type: pieceType, color: pendingPromotion.color }}
-                        theme={pieceTheme}
+                        theme={overridePieceTheme || pieceTheme}
                       />
                     </button>
                   ))}

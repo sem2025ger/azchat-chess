@@ -15,3 +15,12 @@
 .nrw-chat-rail footer{font-size:10px;border-top:1px solid #ffffff22;padding-top:9px;color:#aaa}
 .nrw-chat-notice p{font-size:12px;color:#aaa}
 @media(max-width:1100px){.nrw-chat-rail{max-height:450px;min-height:270px}}
+/* The page owns scrolling, including chat history. No wheel hand-off inside a rail. */
+.nrw-chat-rail{position:static;max-height:none;min-height:0;overflow:visible;padding:16px}
+.nrw-chat-messages{flex:none;min-height:0;overflow:visible;padding-right:0}
+.nrw-shell{padding:24px}.nrw-header{padding:20px 22px}.nrw-links{margin-top:12px}
+.nrw-card{min-height:180px;padding:16px}.nrw-card--live{min-height:0}.nrw-card-content{margin:10px 0}
+.nrw-card .section-info{margin:6px 0 0}.nrw-card .section-info .nrw-source{margin:0}
+.nrw-chat-history>summary{cursor:pointer;color:#d7bd8b;font-size:12px;padding:6px 0}
+@media(min-width:1250px) and (min-height:800px){.nrw-card:not(.nrw-card--live){min-height:180px}}
+@media(max-width:700px){.nrw-shell{padding:16px}.nrw-header{padding:16px}.nrw-layout{gap:14px}}

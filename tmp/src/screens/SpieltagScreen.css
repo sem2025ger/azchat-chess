@@ -9,3 +9,9 @@
 .spieltag-boards { display:grid;gap:10px;margin:12px 0; }.spieltag-boards li { display:grid;gap:8px;padding:12px;border:1px solid #ffffff20;border-radius:8px;overflow-wrap:anywhere; }
 .spieltag-page .spieltag-link { text-align:left;text-decoration:underline;color:#e8c777;justify-self:start; }.spieltag-notes p { white-space:pre-wrap;overflow-wrap:anywhere; }
 @media(max-width:600px) { .spieltag-page { padding:16px; }.spieltag-tabs button { flex:1;font-size:.85rem; }.spieltag-card,.spieltag-form { padding:12px; } }
+.spieltag-page.section-page{max-width:1240px}.spieltag-workspace{display:grid;grid-template-columns:minmax(240px,.8fr) minmax(0,1.6fr);gap:18px;align-items:start}
+.spieltag-controls{display:grid;gap:14px}.spieltag-controls .spieltag-role{font-size:12px;color:#c6b58e}.spieltag-controls .section-info{margin:0}
+.spieltag-workspace>.spieltag-card{background:linear-gradient(145deg,#202326,#16191c);border-radius:16px}
+.spieltag-workspace .spieltag-boards{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.spieltag-boards li>strong{color:#dfc492;font-size:12px}
+@media(max-width:1050px){.spieltag-workspace{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){.spieltag-workspace .spieltag-boards{grid-template-columns:minmax(0,1fr)}}

@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Home fits the desktop viewport with controls in normal layout, not below it. */
+@media(min-width:1280px){
+ [data-home-route] [data-route-scroll]{overflow:hidden}
+ .home-screen-root{height:100%;min-height:0;padding:24px 0}
+ .home-screen-root [data-mobile-home-stack]{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);align-items:center;justify-items:center;gap:24px;height:100%;min-height:0;padding:0 28px;overflow:visible}
+ .home-screen-root .home-board-column{width:100%;max-width:min(630px,calc(100dvh - 144px));margin-top:0;align-items:stretch}
+ .home-screen-root .home-desktop-controls{position:static;margin-top:12px}
+ .home-screen-root .home-dashboard-column{margin:0;width:100%;max-width:420px;min-width:0}
+}
+
+/* Native route scroll only; no blur/compositing effects on reading layers. */
+[data-reading-route] [data-route-scroll]{scroll-behavior:auto;overscroll-behavior-y:auto;backdrop-filter:none}
+
 @layer base {
   body {
     @apply bg-[#161512] text-white font-sans antialiased;

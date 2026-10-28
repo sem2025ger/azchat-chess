@@ -109,6 +109,11 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
   finally{setBusy(false);}
  }
 
+ const renderMessage=(m:ChatMessage)=><article key={m.id} className="nrw-chat-message">
+  <div className="nrw-chat-meta"><strong>{profiles[m.author_id]||'Mitglied'}</strong><time dateTime={m.created_at}>{timeLabel(m.created_at)}</time></div>
+  <p>{m.body}</p>
+ </article>;
+
  return <aside className="nrw-chat-rail" aria-label="Deutschlandweiter Schach-Treff Chat" data-national-chat-rail>
   <header className="nrw-chat-header">
    <span className="nrw-chat-dot" aria-hidden="true"><MessageSquare size={20}/></span>
@@ -122,10 +127,7 @@ function ChatSession({userId,authLoading}:{userId:string|null;authLoading:boolea
    : !member?<div className="nrw-chat-notice"><p>Der gemeinsame Chat ist für Mitglieder der Schach-Treff-Community.</p><button type="button" disabled={busy} onClick={()=>void join()}>Community beitreten</button></div>
    : <><div className="nrw-chat-messages" aria-label="Chat-Nachrichten" aria-live="polite" aria-relevant="additions">
        {messages.length===0?<p className="nrw-muted">Noch keine Nachrichten.</p>
-        : messages.map(m=><article key={m.id} className="nrw-chat-message">
-           <div className="nrw-chat-meta"><strong>{profiles[m.author_id]||'Mitglied'}</strong><time dateTime={m.created_at}>{timeLabel(m.created_at)}</time></div>
-           <p>{m.body}</p>
-          </article>)}
+        : <>{messages.length>5&&<details className="nrw-chat-history"><summary>Weitere Nachrichten ({messages.length-5})</summary>{messages.slice(0,-5).map(renderMessage)}</details>}{messages.slice(-5).map(renderMessage)}</>}
      </div>
      <form className="nrw-chat-compose" onSubmit={send}>
       <label htmlFor="nrw-chat-message">Nachricht</label>

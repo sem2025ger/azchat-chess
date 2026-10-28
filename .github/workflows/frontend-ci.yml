@@ -48,6 +48,17 @@ jobs:
 
       - name: Frontend tests
         run: npm test
+        env:
+          SECTIONS_CAPTURE: ${{ runner.temp }}/sections-layouts
+
+      - name: Section layout screenshots (synthetic data only)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sections-layout-screenshots
+          path: ${{ runner.temp }}/sections-layouts
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Mobile analysis browser regression
         # Provide a valid session bus instead of inheriting runner-specific D-Bus state.

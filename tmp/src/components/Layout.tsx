@@ -41,6 +41,8 @@ export default function Layout() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
   const isDesktopAnalysisRoute = location.pathname === '/game';
+  const isReadingRoute = ['/spieler', '/spieltag', '/vorbereitung'].includes(location.pathname) || location.pathname.startsWith('/region/');
+  const isHomeRoute = location.pathname === '/' || location.pathname === '/home';
   const needsConstrainedScroll =
     location.pathname.startsWith('/profile') ||
     location.pathname.startsWith('/settings');
@@ -67,9 +69,11 @@ export default function Layout() {
     <div className={cx(
       needsConstrainedScroll ? "h-[100dvh] overflow-hidden" : "min-h-screen max-md:h-[100dvh] max-md:min-h-0 max-md:overflow-hidden",
       isDesktopAnalysisRoute && "lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden",
+      isReadingRoute && "md:h-[100dvh] md:min-h-0 md:overflow-hidden",
+      isHomeRoute && "xl:h-[100dvh] xl:min-h-0 xl:overflow-hidden",
       "w-full flex selection:bg-chess-gold/30 selection:text-white",
       currentBgClass
-    )} data-analysis-route={isDesktopAnalysisRoute || undefined}>
+    )} data-analysis-route={isDesktopAnalysisRoute || undefined} data-reading-route={isReadingRoute || undefined} data-home-route={isHomeRoute || undefined}>
 
       {/* Premium Sidebar Navigation - Hidden on Mobile */}
       <aside className="hidden md:flex w-20 xl:w-72 bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
@@ -166,9 +170,9 @@ export default function Layout() {
         needsConstrainedScroll && "min-h-0",
         isDesktopAnalysisRoute && "lg:min-h-0"
       )}>
-        <div ref={routeScrollRef} className={cx(
+        <div ref={routeScrollRef} data-route-scroll className={cx(
           "flex-1 min-h-0 overflow-y-auto relative z-10 custom-scrollbar flex flex-col max-md:overflow-anchor-none",
-          needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : "overscroll-none",
+          needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : isReadingRoute ? "overscroll-y-auto touch-pan-y" : "overscroll-none",
           isDesktopAnalysisRoute && "lg:overflow-hidden lg:min-h-0"
         )}>
           <Suspense key={location.pathname} fallback={<RouteLoadingFallback />}>

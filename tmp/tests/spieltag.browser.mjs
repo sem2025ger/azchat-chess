@@ -7,7 +7,7 @@ import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 const fixture=String.raw`
-import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import Screen from '/src/screens/SpieltagScreen.tsx';import{MemoryRouter,Routes,Route,useNavigate}from'react-router-dom';import Preparation from '/src/screens/VorbereitungScreen.tsx';import{loadAnalysisSession}from'/src/utils/analysisSession.ts';
+import '/src/index.css';import {ThemeProvider} from '/src/context/ThemeContext.tsx';import React from 'react';import{createRoot}from'react-dom/client';import Screen from '/src/screens/SpieltagScreen.tsx';import{MemoryRouter,Routes,Route,useNavigate}from'react-router-dom';import Preparation from '/src/screens/VorbereitungScreen.tsx';import{loadAnalysisSession}from'/src/utils/analysisSession.ts';
 window.fixtureSession={access_token:'captain-test-only'};window.fixtureCalls=[];
 const team='11111111-1111-4111-8111-111111111111',match='22222222-2222-4222-8222-222222222222';
 let matches=[],boards=[];const native=window.fetch;
@@ -31,7 +31,7 @@ window.fetch=async(url,options={})=>{
  return new Response(JSON.stringify(data),{status:options.method==='POST'?201:200,headers:{'content-type':'application/json'}});
 };
 function Shell(){window.fixtureNavigate=useNavigate();return <Routes><Route path='/' element={<Screen/>}/><Route path='/vorbereitung' element={<Preparation/>}/><Route path='/game' element={<p id='analysis-landed'>Analyse</p>}/></Routes>;}function App(){return <MemoryRouter><Shell/></MemoryRouter>;}window.fixtureAnalysis=()=>loadAnalysisSession()?.moveHistory;window.fixtureAnalysisPly=()=>loadAnalysisSession()?.viewMoveIndex;window.changeSession=value=>{window.fixtureSession=value?{access_token:value}:null;window.dispatchEvent(new Event('fixture-auth'));};
-createRoot(document.getElementById('root')).render(<App/>);
+createRoot(document.getElementById('root')).render(<ThemeProvider><App/></ThemeProvider>);
 `;
 const plugin={name:'spieltag-browser-fixtures',enforce:'pre',
  resolveId(id,importer){if(id==='/__spieltag_fixture.tsx')return id;if(id==='../context/AuthContext'&&(importer?.endsWith('/screens/SpieltagScreen.tsx')||importer?.endsWith('/screens/VorbereitungScreen.tsx')))return '\0spieltag-fixture-auth';},
@@ -83,12 +83,12 @@ try{
  for(const width of [390,1280]){await cdp('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});await pause();assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'));}
  await click('In ChessAZ analysieren');await wait(`document.getElementById('analysis-landed')`);assert.equal(await evaluate('window.fixtureAnalysisPly()'),4);assert.equal((await evaluate('window.fixtureAnalysis()')).length,6);
  await evaluate(`window.fixtureNavigate('/')`);await wait(`document.querySelector('[role="tablist"]')`);await click('Gegner');await click('Lichess-Konto vorbereiten');
- await wait(`document.querySelector('details input')?.value==='target_user'`);await click('Partien laden');await wait(`document.querySelector('details').innerText.includes('Najdorf')`);
- await evaluate(`window.changeSession('member-test-only')`);await wait(`document.querySelector('details input')?.value===''`);assert.equal(await evaluate(`document.body.innerText.includes('Najdorf')`),false);await evaluate(`window.changeSession('captain-test-only')`);await fill('Lichess-Benutzername','target_user');await click('Partien laden');await wait(`document.querySelector('details').innerText.includes('Najdorf')`);
+ await wait(`document.querySelector('.vorbereitung-secondary-source input')?.value==='target_user'`);await click('Partien laden');await wait(`document.querySelector('.vorbereitung-secondary-source').innerText.includes('Najdorf')`);
+ await evaluate(`window.changeSession('member-test-only')`);await wait(`document.querySelector('.vorbereitung-secondary-source input')?.value===''`);assert.equal(await evaluate(`document.body.innerText.includes('Najdorf')`),false);await evaluate(`window.changeSession('captain-test-only')`);await fill('Lichess-Benutzername','target_user');await click('Partien laden');await wait(`document.querySelector('.vorbereitung-secondary-source').innerText.includes('Najdorf')`);
  // Scope secondary filters so their values cannot leak into the primary search.
- const fillSecondary=(value)=>evaluate(`(()=>{const el=document.querySelector('details input[placeholder="Najdorf oder B90"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,${JSON.stringify(value)});el.dispatchEvent(new Event('input',{bubbles:true}));})()`);
- await fillSecondary('Najdorf');await wait(`document.querySelector('details').innerText.includes('1 passende Partien')`);await fillSecondary('B90');await wait(`document.querySelector('details').innerText.includes('1 passende Partien')`);
- await fillSecondary('B99');await wait(`document.querySelector('details').innerText.includes('Keine Partien in dieser Variante')`);await fillSecondary('B90');await click('In ChessAZ analysieren');await wait(`document.getElementById('analysis-landed')`);assert.deepEqual(await evaluate('window.fixtureAnalysis()'),['e4','c5','Nf3','d6']);
+ const fillSecondary=(value)=>evaluate(`(()=>{const el=document.querySelector('.vorbereitung-secondary-source input[placeholder="Najdorf oder B90"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,${JSON.stringify(value)});el.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+ await fillSecondary('Najdorf');await wait(`document.querySelector('.vorbereitung-secondary-source').innerText.includes('1 passende Partien')`);await fillSecondary('B90');await wait(`document.querySelector('.vorbereitung-secondary-source').innerText.includes('1 passende Partien')`);
+ await fillSecondary('B99');await wait(`document.querySelector('.vorbereitung-secondary-source').innerText.includes('Keine Partien in dieser Variante')`);await fillSecondary('B90');await click('In ChessAZ analysieren');await wait(`document.getElementById('analysis-landed')`);assert.deepEqual(await evaluate('window.fixtureAnalysis()'),['e4','c5','Nf3','d6']);
  await evaluate(`window.fixtureNavigate('/')`);await wait(`document.querySelector('[role="tablist"]')`);
  // Same components at both viewport sizes: no horizontal overflow.
  for(const width of [390,1280]){await cdp('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});await pause();assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'));}

@@ -6,6 +6,7 @@ import {openSpielerAnalysis} from '../services/spieler';
 import VorbereitungResults from '../components/spieler/VorbereitungResults';
 import NamedPreparation from '../components/spieler/NamedPreparation';
 import './VorbereitungScreen.css';
+import '../styles/sections.css';
 export default function VorbereitungScreen(){
  const {session}=useAuth(),location=useLocation(),navigate=useNavigate();
  const initial=typeof location.state?.lichessUsername==='string'?location.state.lichessUsername:'';
@@ -20,7 +21,7 @@ export default function VorbereitungScreen(){
 }
 function PreparationSources({token,initial,initialFideId,initialName}:{token:string;initial:string;initialFideId:string|null;initialName:string}){
  const [seed]=useState({initial,initialFideId,initialName});
- return <section className="vorbereitung-page"><h1>Vorbereitung</h1><NamedPreparation token={token} initialFideId={seed.initialFideId} initialName={seed.initialName}/><details open><summary>Lichess-Benutzername — zweite Quelle</summary><VorbereitungWorkspace token={token} initial={seed.initial}/></details></section>;
+ return <section className="vorbereitung-page section-page"><header><h1>Vorbereitung</h1><p>Partien finden. Eröffnungen vergleichen. Stellungen vorbereiten.</p></header><NamedPreparation token={token} initialFideId={seed.initialFideId} initialName={seed.initialName}/><details className="section-card vorbereitung-secondary-source" open={Boolean(seed.initial)}><summary>Lichess-Benutzername — zweite Quelle</summary><VorbereitungWorkspace token={token} initial={seed.initial}/></details></section>;
 }
 function VorbereitungWorkspace({token,initial}:{token:string;initial:string}){
  const navigate=useNavigate(),[username,setUsername]=useState(initial),[loaded,setLoaded]=useState('');
@@ -35,14 +36,14 @@ function VorbereitungWorkspace({token,initial}:{token:string;initial:string}){
  }
  function analyse(pgn:string){try{navigate(openSpielerAnalysis(pgn));}catch{setError('Diese Partie kann nicht in der Analyse geöffnet werden.');}}
  const controls=[...new Set(games.map(g=>g.timeControl))];
- return <section className="vorbereitung-page"><header><h2>Lichess-Konto (zweite Quelle)</h2><p>Öffentliche Lichess-Partien eines Kontos · bis zu 200 neueste abgeschlossene Standardpartien.</p></header>
+ return <section className="vorbereitung-secondary"><header><h2>Lichess-Konto (zweite Quelle)</h2><details className="section-info"><summary>Info</summary><p>Öffentliche Lichess-Partien eines Kontos · bis zu 200 neueste abgeschlossene Standardpartien.</p></details></header>
   <form onSubmit={e=>void load(e)}><label>Lichess-Benutzername<input required minLength={2} maxLength={30} pattern="[A-Za-z0-9_-]+" autoComplete="off" value={username} onChange={e=>setUsername(e.target.value)}/></label><button disabled={busy}>Partien laden</button></form>
   {busy&&<p role="status">Partien werden geladen …</p>}{error&&<p role="alert">{error}</p>}
-  {loaded&&<><p>Lichess-Konto: {loaded} (nicht verifiziert)</p><p>Stichprobe, kein vollständiges Repertoire. Eröffnungsnamen und ECO stammen von Lichess. Die Stichprobe kann bis zu 15 Minuten alt sein.</p>{rejected>0&&<p>{rejected} nicht unterstützte oder ungültige Einträge ausgelassen.</p>}
-   <div className="vorbereitung-filters"><label>Farbe<select value={color} onChange={e=>setColor(e.target.value)}><option value="all">Beide Farben</option><option value="white">Weiß</option><option value="black">Schwarz</option></select></label>
+  {loaded&&<><p>Lichess-Konto: {loaded} (nicht verifiziert)</p><details className="section-info"><summary>Info</summary><p>Stichprobe, kein vollständiges Repertoire. Eröffnungsnamen und ECO stammen von Lichess. Die Stichprobe kann bis zu 15 Minuten alt sein.</p></details>{rejected>0&&<p>{rejected} nicht unterstützte oder ungültige Einträge ausgelassen.</p>}
+   <details className="section-info"><summary>Filter</summary><div className="vorbereitung-filters"><label>Farbe<select value={color} onChange={e=>setColor(e.target.value)}><option value="all">Beide Farben</option><option value="white">Weiß</option><option value="black">Schwarz</option></select></label>
     <label>Bedenkzeit<select value={speed} onChange={e=>setSpeed(e.target.value)}><option value="all">Alle Bedenkzeiten</option>{['ultraBullet','bullet','blitz','rapid','classical','correspondence'].map(s=><option key={s} value={s}>{s}</option>)}</select></label>
     <label>Zeitkontrolle (Sekunden + Inkrement)<select value={timeControl} onChange={e=>setTimeControl(e.target.value)}><option value="all">Alle Zeitkontrollen</option>{controls.map(c=><option key={c} value={c}>{c}</option>)}</select></label>
-    <label>Eröffnung oder Variante (Name / ECO)<input maxLength={150} placeholder="Najdorf oder B90" value={variation} onChange={e=>setVariation(e.target.value)}/></label></div>
+    <label>Eröffnung oder Variante (Name / ECO)<input maxLength={150} placeholder="Najdorf oder B90" value={variation} onChange={e=>setVariation(e.target.value)}/></label></div></details>
    <VorbereitungResults games={games} filters={{color,speed,timeControl,variation}} onAnalyse={analyse}/>
   </>}
  </section>;

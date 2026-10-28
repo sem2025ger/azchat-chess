@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { createSpielerApi, openSpielerAnalysis, SpielerError, type SpielerPlayer, type SpielerGames } from '../services/spieler';
 import './SpielerScreen.css';
+import '../styles/sections.css';
 import NamedPreparation from '../components/spieler/NamedPreparation';
 import SpielerCard from '../components/spieler/SpielerCard';
 import SpielerAccountLabel from '../components/spieler/SpielerAccountLabel';
@@ -69,22 +70,22 @@ export default function SpielerScreen() {
     catch (e) { if (!c.signal.aborted) setError(message(e)); } finally { if (!c.signal.aborted) setBusy(false); }
   }
   function analyse(pgn: string) { try { navigate(openSpielerAnalysis(pgn)); } catch { setError('Diese Partie kann nicht in der Analyse geöffnet werden.'); } }
-  return <section className="spieler-page">
+  return <section className="spieler-page section-page">
     <header><p className="spieler-eyebrow">ChessAZ · Spieler v1</p><h1>Spieler</h1><p>Nach Namen suchen. Öffentliche Partien entdecken.</p></header>
     {!session && <p role="status">Bitte melde dich zuerst über dein Profil an, um Spieler zu suchen.</p>}
-    <form className="spieler-search" onSubmit={search}><label htmlFor="spieler-surname">Nachname</label>
+    <form className="spieler-search section-card" onSubmit={search}><h2>Spieler finden</h2><label htmlFor="spieler-surname">Nachname</label>
       <div><input id="spieler-surname" minLength={2} maxLength={100} required value={query} onChange={e => setQuery(e.target.value)} autoComplete="off" /><button disabled={busy || !session} type="submit">Suchen</button></div></form>
     {error && <p role="alert">{error}</p>}{notice && <p role="status">{notice}</p>}{busy && <p role="status">Wird geladen …</p>}
-    <div className="spieler-columns"><section aria-label="Suchergebnisse">
+    <div className="spieler-columns"><section className="section-card" aria-label="Suchergebnisse"><h2>Suchergebnisse</h2>
       {searched && !players.length && <p>Keine Spieler gefunden.</p>}
       <ul className="spieler-results">{players.map(p => <li key={p.fide_id}><button type="button" aria-pressed={selected?.fide_id === p.fide_id} onClick={() => choose(p)}><strong>{p.title} {p.name}</strong><span>{p.club || 'Verein —'} · FIDE {p.fide_rating ?? '—'}</span></button></li>)}</ul>
-    </section>{selected && <section aria-label="Spielerkarte">
+    </section>{selected && <section className="section-card" aria-label="Spielerkarte">
       <div className="spieler-tabs" role="tablist" aria-label="Spielerinformationen" onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 'profile' : e.key === 'End' ? 'games' : tab === 'profile' ? 'games' : 'profile'; setTab(next); document.getElementById('spieler-tab-' + next)?.focus(); } }}>
         {(['profile', 'games'] as const).map(t => <button key={t} id={'spieler-tab-' + t} role="tab" type="button" tabIndex={tab === t ? 0 : -1} aria-controls={'spieler-panel-' + t} aria-selected={tab === t} onClick={() => setTab(t)}>{t === 'profile' ? 'Profil' : 'Partien'}</button>)}
       </div>
       <div role="tabpanel" id={'spieler-panel-' + tab} aria-labelledby={'spieler-tab-' + tab}>
-        {tab === 'profile' ? <><SpielerCard player={selected} /><label>Mein Verein (freiwillig)<select value={club} onChange={e => setClub(e.target.value)} disabled={import.meta.env.VITE_CLUBS_NRW_ENABLED !== 'true'}><option value="">Kein Verein ausgewählt</option>{availableClubs.map(c=><option key={c.id} value={c.id}>{c.name} · {c.city}</option>)}</select></label><div className="spieler-actions"><button disabled={busy} onClick={() => void action('claim')}>Das bin ich</button><button disabled={busy} onClick={() => void action('hide')}>Profil ausblenden</button></div><p className="spieler-muted">Eine Anfrage bestätigt keine Identität. Deine Vereinsangabe wird erst nach bestätigter Zuordnung sichtbar. Bis zu drei Ausblendungen wirken sofort bis zur Prüfung. Weitere Anfragen werden zuerst geprüft. Dein bestätigtes eigenes Profil kannst du immer sofort ausblenden.</p></> : import.meta.env.VITE_VORBEREITUNG_ENABLED==='true' ? <NamedPreparation key={session?.access_token+':'+selected.fide_id} token={session?.access_token||''} initialFideId={String(selected.fide_id)} initialName={selected.name}/> : <>
-          <h2>Partien</h2><p className="spieler-muted">Bis zu 25 Partien als Stichprobe. Ein eingegebener Online-Nickname ist keine bestätigte Zuordnung zu dieser Person. TWIC verwendet FIDE-IDs aus importierten PGNs.</p>
+        {tab === 'profile' ? <><SpielerCard player={selected} /><label>Mein Verein (freiwillig)<select value={club} onChange={e => setClub(e.target.value)} disabled={import.meta.env.VITE_CLUBS_NRW_ENABLED !== 'true'}><option value="">Kein Verein ausgewählt</option>{availableClubs.map(c=><option key={c.id} value={c.id}>{c.name} · {c.city}</option>)}</select></label><div className="spieler-actions"><button disabled={busy} onClick={() => void action('claim')}>Das bin ich</button><button disabled={busy} onClick={() => void action('hide')}>Profil ausblenden</button></div><details className="section-info"><summary>Info</summary><p className="spieler-muted">Eine Anfrage bestätigt keine Identität. Deine Vereinsangabe wird erst nach bestätigter Zuordnung sichtbar. Bis zu drei Ausblendungen wirken sofort bis zur Prüfung. Weitere Anfragen werden zuerst geprüft. Dein bestätigtes eigenes Profil kannst du immer sofort ausblenden.</p></details></> : import.meta.env.VITE_VORBEREITUNG_ENABLED==='true' ? <NamedPreparation key={session?.access_token+':'+selected.fide_id} token={session?.access_token||''} initialFideId={String(selected.fide_id)} initialName={selected.name}/> : <>
+          <h2>Partien</h2><details className="section-info"><summary>Info</summary><p className="spieler-muted">Bis zu 25 Partien als Stichprobe. Ein eingegebener Online-Nickname ist keine bestätigte Zuordnung zu dieser Person. TWIC verwendet FIDE-IDs aus importierten PGNs.</p></details>
           <form onSubmit={loadGames} className="spieler-provider"><label>Quelle<select value={source} onChange={e => { pending.current?.abort(); setBusy(false); setSource(e.target.value); setGames(null); setLoaded(false); setLoadedAccount(null); }}><option value="lichess">Lichess</option><option value="chesscom">Chess.com</option><option value="twic">TWIC</option></select></label>
             {source !== 'twic' && <label>Online-Nickname<input required minLength={2} maxLength={30} pattern="[A-Za-z0-9_-]+" value={nickname} onChange={e => setNickname(e.target.value)} /></label>}<button disabled={busy}>Partien laden</button></form>
           {loaded && !games?.games.length && <p>Keine Partien in dieser Quelle verfügbar.</p>}
