@@ -2,12 +2,13 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
 import { supabase } from '../../services/supabase';
-import { copy as t } from './copy';
+import { useSchachTreffCopy } from './copy';
 type Person = { id: string; username: string };
 type Challenge = { id: string; message_id: string; created_by: string; target_user_id: string | null; time_control: string; status: string; expires_at: string; room_id: string | null };
 type Controls = { now: number; available: boolean; me: string; rows: Challenge[]; people: Person[]; busy: boolean; open: (target?: string) => void; act: (action: 'accept' | 'cancel', id: string) => void };
 const Context = createContext<Controls | null>(null);
 export function ChallengeProvider({ clubId, me, people, enabled, children }: { clubId: string | null; me: string; people: Person[]; enabled: boolean; children: ReactNode }) {
+  const t=useSchachTreffCopy();
   const { socket, isConnected } = useSocket(), navigate = useNavigate();
   const [now,setNow]=useState(() => Date.now());
   const [rows,setRows] = useState<Challenge[]>([]), [available,setAvailable] = useState(false);
@@ -73,6 +74,7 @@ export function ChallengeProvider({ clubId, me, people, enabled, children }: { c
   </Context.Provider>;
 }
 export function ChallengeButton({ targetUserId,beforeOpen }: { targetUserId?: string; beforeOpen?: () => void }) {
+  const t=useSchachTreffCopy();
   const context=useContext(Context);
   if (!context?.available || targetUserId===context.me) return null;
   return <button type="button" onClick={() => { beforeOpen?.(); context.open(targetUserId); }}>{t.challengeAction}</button>;
@@ -83,6 +85,7 @@ export function ChallengeMessage({ messageId,body }: { messageId: string; body: 
   return <ChallengeCard now={context.now} row={row} me={context.me} people={context.people} busy={context.busy} act={context.act} />;
 }
 export function ChallengeCard({now,row,me,people,busy,act}: {now: number; row: Challenge; me: string; people: Person[]; busy: boolean; act: Controls['act']}) {
+  const t=useSchachTreffCopy();
   const expired=row.status==='expired' || (row.status==='open' && Date.parse(row.expires_at)<=now);
   const name=(id: string) => people.find(person => person.id===id)?.username ?? t.targetPlayer;
   return <div className="st-challenge-card"><small>{row.target_user_id ? t.personalChallenge : t.openOffer}</small>
