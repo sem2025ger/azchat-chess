@@ -19,8 +19,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // Keep for sync across tabs if needed
-  }, []);
+    document.documentElement.lang = language === 'ua' ? 'uk' : language;
+  }, [language]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
