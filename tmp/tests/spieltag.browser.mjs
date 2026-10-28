@@ -108,8 +108,8 @@ try{
  // The fixture searches by FIDE ID, so the name-only summary cannot be reached here.
  // Unit-check the existing six-language map and the restored tr() call.
  const regionalSource=await readFile(new URL('../src/i18n/regionalCopy.ts',import.meta.url),'utf8');
- const nameKey='"Namenszuordnung (nicht verifiziert)"';
- const begin=regionalSource.indexOf('  '+nameKey+': {');
+ const nameKey='Namenszuordnung (nicht verifiziert)';
+ const begin=regionalSource.indexOf('  '+JSON.stringify(nameKey)+': {');
  assert.ok(begin>=0,'existing regional copy key');
  const finish=regionalSource.indexOf('\n  },',begin);
  assert.ok(finish>begin,'regional copy entry terminator');
