@@ -753,6 +753,70 @@ const regionalCopy: Record<string, Record<string, string>> = {
     "tr": "(doğrulanmadı)",
     "ua": "(не підтверджено)",
     "ru": "(не подтверждено)"
+  },
+  "Lichess-Konto vorbereiten": {
+    "de": "Lichess-Konto vorbereiten",
+    "en": "Prepare Lichess account",
+    "az": "Lichess hesabına hazırlaş",
+    "tr": "Lichess hesabına hazırlan",
+    "ua": "Підготовка за акаунтом Lichess",
+    "ru": "Подготовка по аккаунту Lichess"
+  },
+  "Vorbereitung": {
+    "de": "Vorbereitung",
+    "en": "Preparation",
+    "az": "Hazırlıq",
+    "tr": "Hazırlık",
+    "ua": "Підготовка",
+    "ru": "Подготовка"
+  },
+  "Lichess-Konto:": {
+    "de": "Lichess-Konto:",
+    "en": "Lichess account:",
+    "az": "Lichess hesabı:",
+    "tr": "Lichess hesabı:",
+    "ua": "Акаунт Lichess:",
+    "ru": "Аккаунт Lichess:"
+  },
+  "Dieser Spieler hat zu viele Partien für die aktuelle Stellungssuche (höchstens 10.000). Es wird kein gekürztes Ergebnis angezeigt.": {
+    "de": "Dieser Spieler hat zu viele Partien für die aktuelle Stellungssuche (höchstens 10.000). Es wird kein gekürztes Ergebnis angezeigt.",
+    "en": "Too many games for position search (maximum 10,000). No incomplete results are shown.",
+    "az": "Mövqe axtarışı üçün partiya çoxdur (maksimum 10 000). Natamam nəticə göstərilmir.",
+    "tr": "Konum araması için çok fazla oyun var (en fazla 10.000). Eksik sonuç gösterilmez.",
+    "ua": "Забагато партій для пошуку позиції (максимум 10 000). Неповний результат не показується.",
+    "ru": "Слишком много партий для поиска позиции (максимум 10 000). Неполный результат не показывается."
+  },
+  "Zu viele Anfragen. Bitte warte eine Minute.": {
+    "de": "Zu viele Anfragen. Bitte warte eine Minute.",
+    "en": "Too many requests. Please wait one minute.",
+    "az": "Çox sorğu var. Bir dəqiqə gözləyin.",
+    "tr": "Çok fazla istek. Bir dakika bekleyin.",
+    "ua": "Забагато запитів. Зачекайте хвилину.",
+    "ru": "Слишком много запросов. Подождите минуту."
+  },
+  "Keine Daten verfügbar. Bitte den vollständigen Namen als Nachname, Vorname oder eine FIDE-ID angeben.": {
+    "de": "Keine Daten verfügbar. Bitte den vollständigen Namen als Nachname, Vorname oder eine FIDE-ID angeben.",
+    "en": "No data found. Enter the full name as last, first or a FIDE ID.",
+    "az": "Məlumat tapılmadı. Tam adı Soyad, Ad və ya FIDE ID kimi daxil edin.",
+    "tr": "Veri bulunamadı. Tam adı Soyadı, Adı veya FIDE ID olarak girin.",
+    "ua": "Даних немає. Вкажіть прізвище, ім’я або FIDE ID.",
+    "ru": "Данных нет. Укажите фамилию, имя или FIDE ID."
+  },
+  "Stellungssuche derzeit nicht verfügbar.": {
+    "de": "Stellungssuche derzeit nicht verfügbar.",
+    "en": "Position search is currently unavailable.",
+    "az": "Mövqe axtarışı hazırda əlçatan deyil.",
+    "tr": "Konum araması şu anda kullanılamıyor.",
+    "ua": "Пошук позиції зараз недоступний.",
+    "ru": "Поиск позиции сейчас недоступен."
+  },
+  "Diese Partie kann nicht geöffnet werden.": {
+    "de": "Diese Partie kann nicht geöffnet werden.",
+    "en": "This game cannot be opened.",
+    "az": "Bu partiya açıla bilmir.",
+    "tr": "Bu oyun açılamıyor.",
+    "ua": "Не вдалося відкрити партію.",
+    "ru": "Не удалось открыть партию."
   }
 };
 
