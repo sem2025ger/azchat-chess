@@ -248,9 +248,9 @@
   -webkit-text-fill-color: transparent;
   color: #9a83de;
 }
-/* Enhanced premium sweep on the unchanged king asset; preserve underlying silver and gold. */
+/* Subtle gold sweep on the unchanged king asset. */
 .sidebar-king-sheen {
-  background: linear-gradient(110deg, transparent 15%, rgba(121,173,238,.18) 30%, rgba(176,221,255,.36) 40%, rgba(250,249,245,.56) 49%, rgba(229,196,143,.40) 57%, rgba(158,131,208,.20) 66%, transparent 82%);
+  background: linear-gradient(110deg, transparent 15%, rgba(184,134,45,.16) 30%, rgba(224,183,95,.32) 40%, rgba(255,239,190,.52) 49%, rgba(229,196,143,.40) 57%, rgba(194,147,56,.18) 66%, transparent 82%);
   background-size: 230% 100%;
   -webkit-mask: url('/brand/sidebar-king.svg') center / 100% 100% no-repeat;
   mask: url('/brand/sidebar-king.svg') center / 100% 100% no-repeat;
@@ -802,6 +802,28 @@
 
 @media (min-width: 1280px) and (prefers-reduced-motion: reduce) {
   .sidebar-item.theme-premium { transition: none; }
+}
+
+/* Sidebar navigation: quiet gold metal edges; keep each item's selected colours. */
+@media (min-width: 768px) {
+  aside .site-nav-link.sidebar-item {
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  aside .site-nav-link.sidebar-item::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border: 1px solid transparent;
+    border-radius: inherit;
+    background: linear-gradient(125deg, rgba(184,134,45,.38) 0%, rgba(224,183,95,.52) 28%, rgba(255,239,190,.62) 46%, rgba(229,196,143,.44) 64%, rgba(194,147,56,.32) 100%) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
 }
 
 /* Desktop Analysis: widen toward the board while preserving its approved size and height. */
