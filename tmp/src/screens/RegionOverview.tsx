@@ -47,7 +47,6 @@ const regionText: Record<string,Record<'en'|'de'|'az'|'tr'|'ua'|'ru',string>> = 
  "Öffentliche Übertragungen bei Lichess": { en:"Public broadcasts on Lichess", de:"Öffentliche Übertragungen bei Lichess", az:"Lichess-də açıq yayımlar", tr:"Lichess'teki herkese açık yayınlar", ua:"Відкриті трансляції на Lichess", ru:"Открытые трансляции на Lichess" },
  "Lichess-Übersicht ist weltweit und nicht nach NRW gefiltert.": { en:"Lichess listings are worldwide and are not NRW-filtered.", de:"Lichess-Übersicht ist weltweit und nicht nach NRW gefiltert.", az:"Lichess siyahısı qlobaldır və NRW-yə görə süzülmür.", tr:"Lichess listesi küreseldir, NRW filtresi yoktur.", ua:"Список Lichess міжнародний і не фільтрується за NRW.", ru:"Список Lichess глобальный и не фильтруется по NRW." },
  "Schach-Treff Deutschland": { en:"Schach-Treff Germany", de:"Schach-Treff Deutschland", az:"Schach-Treff Almaniya", tr:"Schach-Treff Almanya", ua:"Schach-Treff Німеччина", ru:"Schach-Treff Германия" },
- "Regionales Schach": { en:"Regional chess", de:"Regionales Schach", az:"Regional şahmat", tr:"Bölgesel satranç", ua:"Регіональні шахи", ru:"Региональные шахматы" },
  "MP": { en:"MP", de:"MP", az:"MP", tr:"MP", ua:"MP", ru:"MP" },
 };
 
