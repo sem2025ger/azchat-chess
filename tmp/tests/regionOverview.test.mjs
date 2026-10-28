@@ -56,8 +56,7 @@ test('eight merged screens have complete six-language copy for fixed labels and 
   chatUiText:['Mitglied','Chat ist momentan nicht verfügbar.','Beitritt nicht möglich. Bitte erneut versuchen.','Nachricht konnte nicht gesendet werden.'],
   matchdayText:['Du pflegst diese Mannschaft als Kapitänin oder Kapitän.','Nur für bestätigte Mannschaftsmitglieder.','Brett {number} aus dieser Aufstellung entfernen?','Spielerkarte nicht verfügbar. Das Profil kann ausgeblendet oder Spieler deaktiviert sein.'],
   regionalCopy:['Najdorf oder B90','Spieltag','Keine Partien in dieser Variante','Keine Partien für diese Filter','Mit Weiß','Mit Schwarz','Weiß','Schwarz','Nicht gespielt','Noch offen','Gegner offen','Noch keine Notizen.','Zuordnung über FIDE-ID','Namenszuordnung (nicht verifiziert)','Dieser Spieler hat zu viele Partien für die aktuelle Stellungssuche (höchstens 10.000). Es wird kein gekürztes Ergebnis angezeigt.','Zu viele Anfragen. Bitte warte eine Minute.','Keine Daten verfügbar. Bitte den vollständigen Namen als Nachname, Vorname oder eine FIDE-ID angeben.','Stellungssuche derzeit nicht verfügbar.','Diese Partie kann nicht geöffnet werden.'],
-  regionText:['Nachrichten derzeit nicht verfügbar.','Verein','MP'],
-  sectionCopy:['Keine aktuellen Meldungen verfügbar.'],
+  regionText:['Nachrichten derzeit nicht verfügbar.','Keine aktuellen Meldungen verfügbar.','Verein','MP'],
   preparationText:['Zu viele Anfragen. Bitte warte eine Minute.','Partien konnten nicht geladen werden. Bitte prüfe den Namen und versuche es später erneut.','Diese Partie kann nicht in der Analyse geöffnet werden.'],
  };
  for(const [name,keys] of Object.entries(checks))for(const key of keys)for(const locale of ['en','az','tr','ua','ru']){
