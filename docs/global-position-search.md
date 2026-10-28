@@ -84,3 +84,58 @@ If `rss_after` exceeds 350,000,000 bytes, stop validation and report it. A
 build. During a normal build, authenticated searches return 503 `index_warming`
 and `Retry-After: 5`; after readiness, use the preview and sign in yourself to
 run the supplied Najdorf position from the milestone report with side Black.
+
+## Player fallback, rating order and NRW scope
+
+Search also accepts `scope=all|nrw` (default all) and
+`sort=newest|strongest` (default newest). Ratings are loaded once per startup from
+`spieler_players.fide_rating`, matched only by exact white/black FIDE ids.
+Strength is the average when both ratings are known; unknown averages sort last,
+then the existing newest/id ordering breaks ties. Known individual ratings are
+shown even when the other rating is missing. Restart refreshes rating snapshots.
+
+Every successful search includes `fallback`, `playerStats`, `fallbackGames`,
+`fallbackTotal`, `fallbackNextMoves`, `fallbackScope`, `scope`, `sort`, `nrwCount`.
+Own `games`/`total`/`nextMoves` are never combined with fallback lists. A nonempty
+player result means fallback=false. An empty player result means fallback=true
+and whole-database results for the same position/side/order/limit, even if the
+original scope was NRW. `playerStats.total` counts all visible, valid indexed
+games involving that FIDE id, regardless of color/scope; firstWhite/replyE4/replyD4
+contain up to three canonical SAN moves with counts. Zero-game players have total
+0. The UI distinguishes these two cases and shows stats only for nonzero totals.
+
+NRW membership is exactly a verified `spieler_claims` FIDE id whose club_id joins
+a published `clubs_nrw` row. The joined read excludes pending/rejected claims,
+unpublished/missing clubs and deduplicates ids. It runs during build and on every
+search together with opt-outs; read errors fail closed. No names or other
+membership sources are used. NRW selects the chosen color, or either color for
+any. Empty NRW sets remain selectable. The current count appears after a
+successful authenticated search (until then shown as —). Empty NRW results offer
+a button that changes to all and immediately searches again. Fallback sections
+are explicitly labelled whole database, with their own next-move table.
+
+## Owner deployment from the currently connected QA branch
+
+The owner reports Settings → Build & Deploy → Branch as
+`feat/settings-match-preview-surface-20261027`, Auto-Deploy On Commit, and no
+POSITION_SEARCH_ENABLED. GitHub comparison proves that branch (3a716443) is an
+ancestor of global-position-search-v1. No migration, dependency, old server route
+or deployment entry point changes between those branches; server/index.js only
+adds the positions installer. The other server changes are new position modules
+and tests. The new installer reuses existing SUPABASE_URL and SUPABASE_SERVICE_KEY
+and adds only POSITION_SEARCH_ENABLED=true. Existing feature flags remain as set.
+The actual running commit must be checked by the owner in Render's latest Live
+deployment; branch configuration alone does not prove a deployed SHA.
+
+The proposed plan is supported: add the new flag, switch this QA service's Branch
+to feat/global-position-search-v1, save, then deploy the final green commit if
+saving did not already deploy it. Verify the Live deployment SHA. With On Commit,
+subsequent commits on the new branch will also deploy automatically, while pushes
+to the old branch will no longer deploy this service. Existing QA server features
+remain available under their existing flags; new API/index functionality becomes
+available and consumes startup CPU/memory, which still needs owner measurement.
+Alternatively, if the service already tracks the new branch, deploy its latest
+commit after confirming the SHA; if Render offers the final SHA under Deploy a
+specific commit, that path avoids switching the tracked branch but disables
+Auto-Deploy. The owner must inspect that setting afterwards. Never deploy the old
+branch's latest commit expecting this feature to appear.

@@ -72,3 +72,36 @@ test('Supabase source uses bounded id pages and only active opt-out statuses, wi
  const provider=supabasePositionSource(client);await provider.page('abc',250);assert.deepEqual(await provider.hidden(),new Set(['123']));
  assert.ok(calls.some(c=>c[1]==='gt'&&c[2]==='id'&&c[3]==='abc'));assert.ok(calls.some(c=>c[1]==='in'&&c[2]==='status'&&c[3].join(',')==='hidden_pending_review,approved'));
 });
+test('A1/A2/A3 return disjoint own/fallback lists in one HTTP request and top-three player opening statistics',async()=>{
+ const rows=[row('a','e4 c5 1-0',undefined,'101','202'),row('b','d4 d5 0-1',undefined,'303','101'),row('c','e4 e5 0-1',undefined,'404','101'),row('d','d4 Nf6 1-0',undefined,'303','101')];
+ const index=await indexed(rows);const search=id=>index.search({fen:fen('e4 c5'),fideId:id,side:'any'});
+ const a1=await search('101');assert.equal(a1.fallback,false);assert.equal(a1.games.length,1);assert.deepEqual(a1.fallbackGames,[]);
+ const a2=await search('303');assert.equal(a2.fallback,true);assert.deepEqual(a2.games,[]);assert.deepEqual(a2.fallbackGames.map(g=>g.id),['a']);assert.equal(a2.playerStats.total,2);assert.deepEqual(a2.playerStats.firstWhite,[{move:'d4',count:2}]);
+ const a3=await search('999');assert.equal(a3.fallback,true);assert.equal(a3.playerStats.total,0);assert.equal(a3.fallbackScope,'all');assert.deepEqual(a3.games,[]);
+ const stats=(await index.search({fen:fen('a3'),fideId:'101'})).playerStats;assert.equal(stats.total,4);assert.deepEqual(stats.firstWhite,[{move:'e4',count:1}]);assert.deepEqual(stats.replyE4,[{move:'e5',count:1}]);assert.deepEqual(stats.replyD4,[{move:'d5',count:1},{move:'Nf6',count:1}]);
+ const many=await indexed(['e4','d4','c4','Nf3','g3'].map((m,i)=>row(String(i),m+' 1-0')));assert.equal((await many.search({fen:fen('a3'),fideId:'101'})).playerStats.firstWhite.length,3);
+ await http({enabled:true,index,verifyToken:async()=>({id:'user'})},async base=>{const response=await fetch(base+'/api/positions/search?'+new URLSearchParams({fen:fen('e4 c5'),fideId:'999',scope:'nrw',sort:'strongest'}),{headers:{Authorization:'Bearer synthetic'}});assert.equal(response.status,200);const r=await response.json();assert.equal(r.fallback,true);assert.equal(r.playerStats.total,0);assert.equal(r.fallbackGames.length,1);assert.equal(r.games.length,0);});
+});
+test('strength uses both FIDE ratings once per build, unknown averages last; newest tie-break and fallback limit',async()=>{
+ let reads=0;const provider=source([row('a',undefined,'2026-09-30','101','202'),row('b',undefined,'2026-01-01','303','404'),row('c',undefined,'2026-10-01','101','999')]);provider.ratings=async()=>{reads++;return new Map([['101',2000],['202',2200],['303',2400],['404',2600]]);};
+ const index=new PositionIndex(provider,{log(){}});await index.start();const strongest=await index.search({fen:DEFAULT_POSITION,sort:'strongest'});assert.deepEqual(strongest.games.map(g=>g.id),['b','a','c']);assert.equal(strongest.games[0].whiteRating,2400);assert.equal(strongest.games[2].blackRating,null);
+ assert.deepEqual((await index.search({fen:DEFAULT_POSITION})).games.map(g=>g.id),['c','a','b']);const fallback=await index.search({fen:DEFAULT_POSITION,sort:'strongest',fideId:'888',limit:1});assert.equal(fallback.fallbackGames[0].id,'b');assert.equal(fallback.fallbackGames.length,1);assert.equal(fallback.fallbackTotal,3);assert.equal(reads,1);
+});
+test('NRW rechecks verified membership on every cached search, side/any, empty set, privacy and whole-database fallback',async()=>{
+ const hidden=new Set(),nrw=new Set(['101']);const provider=source([row('a'),row('b',undefined,undefined,'303','101'),row('c',undefined,undefined,'303','404')],hidden);provider.nrw=async()=>new Set(nrw);const index=new PositionIndex(provider,{log(){}});await index.start();
+ const find=(side='any',fideId=null)=>index.search({fen:DEFAULT_POSITION,scope:'nrw',side,fideId});
+ assert.deepEqual((await find('white')).games.map(g=>g.id),['a']);assert.deepEqual((await find('black')).games.map(g=>g.id),['b']);assert.equal((await find()).total,2);assert.equal((await find()).nrwCount,1);
+ nrw.clear();const empty=await find();assert.equal(empty.total,0);assert.equal(empty.nrwCount,0);nrw.add('404');assert.deepEqual((await find()).games.map(g=>g.id),['c']);
+ const fallback=await find('white','101');assert.equal(fallback.total,0);assert.equal(fallback.fallback,true);assert.equal(fallback.fallbackGames.length,3);assert.equal(fallback.fallbackScope,'all');
+ hidden.add('404');assert.equal((await find()).total,0);assert.equal((await find('white','101')).fallbackGames.length,2);provider.nrw=async()=>{throw Error('unavailable');};await assert.rejects(find());
+});
+test('Supabase NRW lookup requires verified claim and inner published club; ratings and membership reads are bounded',async()=>{
+ const calls=[];const client={from(table){const q={};for(const method of ['select','order','range','eq'])q[method]=(...args)=>{calls.push([table,method,...args]);return q;};q.abortSignal=async()=>({data:table==='spieler_claims'?[{fide_id:101}]:[{fide_id:101,fide_rating:2300},{fide_id:202,fide_rating:null}],error:null});return q;}};
+ const provider=supabasePositionSource(client);assert.deepEqual(await provider.nrw(),new Set(['101']));assert.equal((await provider.ratings()).get('101'),2300);assert.equal((await provider.ratings()).has('202'),false);
+ assert.ok(calls.some(c=>c[0]==='spieler_claims'&&c[1]==='select'&&c[2]==='fide_id,clubs_nrw!inner(published)'));assert.ok(calls.some(c=>c[1]==='eq'&&c[2]==='status'&&c[3]==='verified'));assert.ok(calls.some(c=>c[1]==='eq'&&c[2]==='clubs_nrw.published'&&c[3]===true));assert.ok(calls.some(c=>c[1]==='range'&&c[2]===0&&c[3]===499));
+});
+test('NRW source excludes pending/rejected claims and unpublished clubs from a synthetic joined set',async()=>{
+ const records=[{fide_id:101,status:'verified',clubs_nrw:{published:true}},{fide_id:202,status:'pending',clubs_nrw:{published:true}},{fide_id:303,status:'rejected',clubs_nrw:{published:true}},{fide_id:404,status:'verified',clubs_nrw:{published:false}},{fide_id:505,status:'verified',clubs_nrw:null}];
+ const provider=supabasePositionSource({from(table){assert.equal(table,'spieler_claims');const filters=[];let inner=false;const q={select(value){inner=value.includes('!inner');return q;},eq(k,v){filters.push([k,v]);return q;},order(){return q;},range(){return q;},async abortSignal(){return {data:records.filter(row=>(!inner||row.clubs_nrw)&&filters.every(([k,v])=>k==='status'?row.status===v:row.clubs_nrw?.published===v)),error:null};}};return q;}});
+ assert.deepEqual(await provider.nrw(),new Set(['101']));
+});

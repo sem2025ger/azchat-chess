@@ -17,12 +17,12 @@ function installPositions(app,{enabled=false,verifyToken=async()=>null,index=nul
   next();
  });
  router.get('/search',async(req,res)=>{
-  const {fen,side='any',fideId,limit='10'}=req.query;
-  if(Object.keys(req.query).some(k=>!['fen','side','fideId','limit'].includes(k))||typeof fen!=='string'||fen.length>200||!['white','black','any'].includes(side)||(fideId!==undefined&&(typeof fideId!=='string'||!/^[1-9]\d{0,9}$/.test(fideId)))||typeof limit!=='string'||!/^\d{1,3}$/.test(limit)||Number(limit)<1)return res.status(400).json({code:'invalid_query'});
+  const {fen,side='any',fideId,limit='10',scope='all',sort='newest'}=req.query;
+  if(Object.keys(req.query).some(k=>!['fen','side','fideId','limit','scope','sort'].includes(k))||!['all','nrw'].includes(scope)||!['newest','strongest'].includes(sort)||typeof fen!=='string'||fen.length>200||!['white','black','any'].includes(side)||(fideId!==undefined&&(typeof fideId!=='string'||!/^[1-9]\d{0,9}$/.test(fideId)))||typeof limit!=='string'||!/^\d{1,3}$/.test(limit)||Number(limit)<1)return res.status(400).json({code:'invalid_query'});
   try{normalizedPositionKey(fen);}catch{return res.status(400).json({code:'invalid_fen'});}
   if(!index)return res.status(503).json({code:'index_unavailable'});
   if(index.status==='warming')return res.set('Retry-After','5').status(503).json({code:'index_warming'});
-  try{res.json(await index.search({fen,side,fideId:fideId||null,limit:Math.min(50,Number(limit))}));}
+  try{res.json(await index.search({fen,side,scope,sort,fideId:fideId||null,limit:Math.min(50,Number(limit))}));}
   catch(error){if(error.code==='index_warming')res.set('Retry-After','5');res.status(503).json({code:error.code==='index_warming'?'index_warming':'index_unavailable'});}
  });
  app.use('/api/positions',router);return router;

@@ -39,14 +39,15 @@ class PositionIndex {
  constructor(source,{hash=positionHash,clock=()=>performance.now(),rss=()=>process.memoryUsage().rss,log=console.log}={}){
   this.source=source;this.hash=hash;this.clock=clock;this.rss=rss;this.log=log;
   this.status='warming';this.games=[];this.gameIds=[];this.hashes=new BigUint64Array();this.gameIdx=new Uint32Array();this.ply=new Uint8Array();
-  this.verifiedCache=new Map();this.buildPromise=null;this.metrics=null;
+  this.ratings=new Map();this.nrw=new Set();this.verifiedCache=new Map();this.buildPromise=null;this.metrics=null;
  }
  start(){
   if(!this.buildPromise)this.buildPromise=this.build().catch(()=>{this.status='unavailable';this.log(JSON.stringify({event:'position_index_failed',code:'index_unavailable'}));});
   return this.buildPromise;
  }
  async build(){
-  const started=this.clock(),rssBefore=this.rss(),hidden=await this.source.hidden();
+  const started=this.clock(),rssBefore=this.rss();
+  const [hidden,ratings,nrw]=await Promise.all([this.source.hidden(),this.source.ratings?this.source.ratings():new Map(),this.source.nrw?this.source.nrw():new Set()]);this.ratings=ratings;this.nrw=nrw;
   this.log(JSON.stringify({event:'position_index_building',rss_before:rssBefore,max_indexed_plies:MAX_INDEXED_PLIES}));
   let capacity=65536,count=0,rejected=0,excluded=0,cursor=null;
   let hashes=new BigUint64Array(capacity),gameIdx=new Uint32Array(capacity),ply=new Uint8Array(capacity);
@@ -71,7 +72,7 @@ class PositionIndex {
       canonical.push(game.move(tokens[i]).san);
       if(i<MAX_INDEXED_PLIES)append(this.hash(keyOf(game)),index,i+1);
      }
-     this.gameIds.push(row.id);this.games.push({...row,prefix:canonical.join(' '),result:resultOf(row.pgn)});
+     this.gameIds.push(row.id);this.games.push({...row,white_rating:this.ratings.get(String(row.white_fide_id))??null,black_rating:this.ratings.get(String(row.black_fide_id))??null,prefix:canonical.join(' '),result:resultOf(row.pgn)});
     }catch{count=start;rejected++;}
     if((this.games.length+rejected+excluded)%8===0)await yieldTurn();
     if(this.rss()>MAX_RSS_BYTES){this.log(JSON.stringify({event:'position_index_memory_limit',rss_before:rssBefore,rss_after:this.rss(),entries:count}));throw Error('index_memory_limit');}
@@ -109,23 +110,29 @@ class PositionIndex {
   if(count<=20000){if(this.verifiedCache.size>=4)this.verifiedCache.delete(this.verifiedCache.keys().next().value);this.verifiedCache.set(key,matches);}
   return matches;
  }
- async search({fen,side='any',fideId=null,limit=10}){
+ async search({fen,side='any',fideId=null,limit=10,scope='all',sort='newest'}){
   if(this.status!=='ready')throw Object.assign(Error(),{code:this.status==='warming'?'index_warming':'index_unavailable'});
   const started=this.clock(),key=normalizedPositionKey(fen),turn=key.split(' ')[1]==='w'?'white':'black';
-  const matches=await this.verified(key),hidden=await this.source.hidden(),rows=[],next=new Map();
+  const matches=await this.verified(key),[hidden,nrw]=await Promise.all([this.source.hidden(),this.source.nrw?this.source.nrw():new Set()]),rows=[],fallbackRows=[];
+  const inScope=game=>scope!=='nrw'||(side==='any'?[game.white_fide_id,game.black_fide_id]:[game[side+'_fide_id']]).some(id=>nrw.has(String(id)));
+  const playerStats=fideId?{total:0,firstWhite:[],replyE4:[],replyD4:[]}:null;
+  if(playerStats){const counts=[new Map(),new Map(),new Map()];for(const game of this.games){if(hiddenGame(game,hidden))continue;const white=String(game.white_fide_id)===fideId,black=String(game.black_fide_id)===fideId;if(!white&&!black)continue;playerStats.total++;const moves=game.prefix.split(' ');const at=white?0:moves[0]==='e4'?1:moves[0]==='d4'?2:-1,move=white?moves[0]:moves[1];if(at>=0&&move)counts[at].set(move,(counts[at].get(move)||0)+1);}for(const [i,k]of ['firstWhite','replyE4','replyD4'].entries())playerStats[k]=[...counts[i]].map(([move,count])=>({move,count})).sort((a,b)=>b.count-a.count||a.move.localeCompare(b.move)).slice(0,3);}
   for(let i=0;i<matches.gameIdx.length;i++){
    const game=this.games[matches.gameIdx[i]];if(hiddenGame(game,hidden))continue;
+   const fallbackPerspective=side==='any'?turn:side;fallbackRows.push({game,ply:matches.ply[i],perspective:fallbackPerspective,outcome:outcome(game.result,fallbackPerspective),nextMove:matches.moveNames[matches.moves[i]]});
+   if(!inScope(game))continue;
    if(fideId&&!(side==='any'?[game.white_fide_id,game.black_fide_id]:[game[side+'_fide_id']]).some(id=>String(id)===fideId))continue;
    const perspective=side!=='any'?side:fideId?(String(game.white_fide_id)===fideId?'white':'black'):turn;
-   const result=outcome(game.result,perspective);
-   rows.push({game,ply:matches.ply[i],perspective,outcome:result});
-   const nextMove=matches.moveNames[matches.moves[i]];
-   if(nextMove){const value=next.get(nextMove)||{move:nextMove,count:0,win:0,draw:0,loss:0};value.count++;if(result!=='unknown')value[result]++;next.set(nextMove,value);}
+   rows.push({game,ply:matches.ply[i],perspective,outcome:outcome(game.result,perspective),nextMove:matches.moveNames[matches.moves[i]]});
   }
-  rows.sort((a,b)=>(b.game.game_date||'').localeCompare(a.game.game_date||'')||a.game.id.localeCompare(b.game.id));
-  const nextMoves=[...next.values()].map(m=>{const known=m.win+m.draw+m.loss;return {move:m.move,count:m.count,winPct:known?Math.round(m.win*1000/known)/10:0,drawPct:known?Math.round(m.draw*1000/known)/10:0,lossPct:known?Math.round(m.loss*1000/known)/10:0};}).sort((a,b)=>b.count-a.count||a.move.localeCompare(b.move));
-  const games=rows.slice(0,Math.min(50,limit)).map(({game:g,ply,perspective,outcome})=>({id:g.id,pgn:rebuildBroadcastPgn({...g,source:'lichess-broadcast'}),white:g.white_name,black:g.black_name,whiteFideId:g.white_fide_id,blackFideId:g.black_fide_id,whiteRating:g.white_rating??null,blackRating:g.black_rating??null,event:g.event,date:g.game_date,result:g.result,ply,perspective,outcome,source:'lichess-broadcast',sourceUrl:g.source_url,licenseUrl:g.license_url}));
-  return {games,total:rows.length,nextMoves,side,perspective:side==='any'?(fideId?'player':turn):side,maxIndexedPlies:MAX_INDEXED_PLIES,searchMs:Math.round((this.clock()-started)*10)/10};
+  const newest=(a,b)=>(b.game.game_date||'').localeCompare(a.game.game_date||'')||a.game.id.localeCompare(b.game.id);
+  const strength=({game:g})=>g.white_rating!=null&&g.black_rating!=null?(g.white_rating+g.black_rating)/2:null;
+  const ordering=(a,b)=>{if(sort==='strongest'){const x=strength(a),y=strength(b);if(x===null&&y!==null)return 1;if(y===null&&x!==null)return -1;if(x!==null&&y!==null&&x!==y)return y-x;}return newest(a,b);};
+  rows.sort(ordering);fallbackRows.sort(ordering);
+  const stats=list=>{const next=new Map();for(const row of list){if(!row.nextMove)continue;const value=next.get(row.nextMove)||{move:row.nextMove,count:0,win:0,draw:0,loss:0};value.count++;if(row.outcome!=='unknown')value[row.outcome]++;next.set(row.nextMove,value);}return [...next.values()].map(m=>{const known=m.win+m.draw+m.loss;return {move:m.move,count:m.count,winPct:known?Math.round(m.win*1000/known)/10:0,drawPct:known?Math.round(m.draw*1000/known)/10:0,lossPct:known?Math.round(m.loss*1000/known)/10:0};}).sort((a,b)=>b.count-a.count||a.move.localeCompare(b.move));};
+  const present=list=>list.slice(0,Math.min(50,limit)).map(({game:g,ply,perspective,outcome})=>({id:g.id,pgn:rebuildBroadcastPgn({...g,source:'lichess-broadcast'}),white:g.white_name,black:g.black_name,whiteFideId:g.white_fide_id,blackFideId:g.black_fide_id,whiteRating:g.white_rating??null,blackRating:g.black_rating??null,event:g.event,date:g.game_date,result:g.result,ply,perspective,outcome,source:'lichess-broadcast',sourceUrl:g.source_url,licenseUrl:g.license_url}));
+  const fallback=!!fideId&&!rows.length;
+  return {games:present(rows),total:rows.length,nextMoves:stats(rows),fallback,playerStats,fallbackGames:fallback?present(fallbackRows):[],fallbackTotal:fallback?fallbackRows.length:0,fallbackNextMoves:fallback?stats(fallbackRows):[],fallbackScope:fallback?'all':null,scope,sort,nrwCount:nrw.size,side,perspective:side==='any'?(fideId?'player':turn):side,maxIndexedPlies:MAX_INDEXED_PLIES,searchMs:Math.round((this.clock()-started)*10)/10};
  }
 }
 
@@ -133,6 +140,8 @@ function supabasePositionSource(client){
  const checked=async query=>{const {data,error}=await query.abortSignal(AbortSignal.timeout(15000));if(error)throw Error('storage_unavailable');return data||[];};
  return {
   async page(cursor,limit){let q=client.from('spieler_broadcast_games').select('id,pgn,game_date,white_name,black_name,white_fide_id,black_fide_id,event,source_url,license_url').order('id').limit(limit);if(cursor)q=q.gt('id',cursor);return checked(q);},
+  async ratings(){const map=new Map();for(let offset=0;;offset+=500){const rows=await checked(client.from('spieler_players').select('fide_id,fide_rating').order('fide_id').range(offset,offset+499));for(const row of rows)if(Number.isFinite(row.fide_rating))map.set(String(row.fide_id),row.fide_rating);if(rows.length<500)return map;}},
+  async nrw(){const ids=new Set();for(let offset=0;;offset+=500){const rows=await checked(client.from('spieler_claims').select('fide_id,clubs_nrw!inner(published)').eq('status','verified').eq('clubs_nrw.published',true).order('fide_id').range(offset,offset+499));for(const row of rows)ids.add(String(row.fide_id));if(rows.length<500)return ids;}},
   async hidden(){const hidden=new Set();for(let offset=0;;offset+=500){const rows=await checked(client.from('spieler_opt_out').select('fide_id').in('status',['hidden_pending_review','approved']).order('fide_id').range(offset,offset+499));for(const row of rows)hidden.add(String(row.fide_id));if(rows.length<500)return hidden;}}
  };
 }
