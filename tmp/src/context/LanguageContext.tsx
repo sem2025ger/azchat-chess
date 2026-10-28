@@ -51,3 +51,8 @@ export function useLanguage() {
   }
   return context;
 }
+
+/** Optional for standalone UI/SSR fixtures; app routes always use LanguageProvider. */
+export function useOptionalLanguage() {
+  return useContext(LanguageContext);
+}
