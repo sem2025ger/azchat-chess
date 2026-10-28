@@ -48,6 +48,17 @@ jobs:
 
       - name: Frontend tests
         run: npm test
+        env:
+          SECTIONS_CAPTURE: ${{ runner.temp }}/sections-layouts
+
+      - name: Section layout screenshots (synthetic data only)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sections-layout-screenshots
+          path: ${{ runner.temp }}/sections-layouts
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Mobile analysis browser regression
         # Provide a valid session bus instead of inheriting runner-specific D-Bus state.
@@ -58,3 +69,42 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+  server-regression:
+    name: Server regression (isolated PostgreSQL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: durable_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DURABLE_TEST_DATABASE_URL: postgresql://postgres:local-test-only@127.0.0.1:5432/durable_test
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.19.0
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install exact server dependencies
+        run: npm ci --ignore-scripts
+      - name: Server tests
+        run: npm test
+      - name: Audit server production dependencies
+        run: npm audit --omit=dev --audit-level=high

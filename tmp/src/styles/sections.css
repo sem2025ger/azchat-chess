@@ -1,0 +1,12 @@
+/* Reading pages share the native route scroller; cards never own vertical scroll. */
+.section-page{width:100%;min-width:0;max-width:1240px;margin:0 auto;padding:24px;display:grid;align-content:start;gap:18px;color:#e9e5dc;font-family:Inter,system-ui,sans-serif}
+.section-page>header h1{margin:2px 0 6px;font:600 clamp(28px,3vw,38px)/1.15 'Bodoni Moda',Georgia,serif;color:#e5c992}
+.section-page>header p{color:#aaa9a4;font-size:13px;line-height:1.5}
+.section-card{min-width:0;border:1px solid #ffffff1f;border-radius:16px;padding:18px;background:linear-gradient(145deg,#202326,#16191c)}
+.section-card>h2{margin:0 0 14px;font-size:17px;font-weight:600;color:#e6cfaa}
+.section-info{min-width:0;margin:12px 0;color:#aaa9a4;font-size:12px;line-height:1.6}
+.section-info>summary{width:fit-content;max-width:100%;cursor:pointer;color:#d7bd8b;font-size:12px;font-weight:600;padding:6px 0}
+.section-info[open]>summary{margin-bottom:8px}.section-info p+p{margin-top:8px}
+.section-page :is(input,select,textarea){max-width:100%;min-width:0}.section-page :is(p,li,dd,a,summary){overflow-wrap:anywhere}
+.section-page :focus-visible{outline:2px solid #d7bd8b;outline-offset:3px}
+@media(max-width:600px){.section-page{padding:16px;gap:14px}.section-card{padding:14px;border-radius:13px}}
