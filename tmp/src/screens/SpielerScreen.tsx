@@ -1,6 +1,6 @@
 import { translateSectionCopy } from '../i18n/sectionCopy';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -12,6 +12,8 @@ import '../styles/sections.css';
 import NamedPreparation from '../components/spieler/NamedPreparation';
 import SpielerCard from '../components/spieler/SpielerCard';
 import SpielerAccountLabel from '../components/spieler/SpielerAccountLabel';
+import {useRegionalCopy} from '../i18n/regionalCopy';
+import VorbereitungScreen from './VorbereitungScreen';
 import GlobalPositionSearch from '../components/spieler/GlobalPositionSearch';
 
 function message(error: unknown) {
@@ -25,7 +27,7 @@ function message(error: unknown) {
   }
   return 'Die Anfrage konnte nicht abgeschlossen werden. Bitte versuche es später erneut.';
 }
-export default function SpielerScreen() {
+function SpielerDirectory() {
   const {language}=useLanguage();const tr=(value:string)=>translatePlayer(value,language);
   const [query, setQuery] = useState('');
   const [players, setPlayers] = useState<SpielerPlayer[]>([]);
@@ -78,7 +80,7 @@ export default function SpielerScreen() {
   function analyse(pgn: string) { try { navigate(openSpielerAnalysis(pgn)); } catch { setError('Diese Partie kann nicht in der Analyse geöffnet werden.'); } }
   return <section className="spieler-page section-page">
     <header><p className="spieler-eyebrow">ChessAZ · {tr('Spieler')} v1</p><h1>{tr('Spieler')}</h1><p>{tr('Nach Namen suchen. Öffentliche Partien entdecken.')}</p></header>
-    {import.meta.env.VITE_POSITION_SEARCH_ENABLED==='true'&&<GlobalPositionSearch key={session?.access_token||'guest'} token={session?.access_token||''}/>}
+    {import.meta.env.VITE_POSITION_SEARCH_ENABLED==='true'&&<GlobalPositionSearch key={session?.access_token||'guest'} token={session?.access_token||''} accountId={session?.user?.id||'guest'}/>}
     {!session && <p role="status">{tr('Bitte melde dich zuerst über dein Profil an, um Spieler zu suchen.')}</p>}
     <form className="spieler-search section-card" onSubmit={search}><h2>{tr('Spieler finden')}</h2><label htmlFor="spieler-surname">{tr('Nachname')}</label>
       <div><input id="spieler-surname" minLength={2} maxLength={100} required value={query} onChange={e => setQuery(e.target.value)} autoComplete="off" /><button disabled={busy || !session} type="submit">{tr('Suchen')}</button></div></form>
@@ -104,4 +106,14 @@ export default function SpielerScreen() {
       </div>
     </section>}</div>
   </section>;
+}
+
+export default function SpielerScreen(){
+ const tr=useRegionalCopy(),[params,setParams]=useSearchParams();
+ const active=params.get('tab')==='opponent'?'opponent':'position';
+ if(import.meta.env.VITE_VORBEREITUNG_ENABLED!=='true')return <SpielerDirectory/>;
+ return <section className="spieler-page section-page"><div className="spieler-tabs" role="tablist" aria-label={tr('Spielerbereiche')} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const tab=active==='position'?'opponent':'position';setParams({tab});document.getElementById('spieler-section-'+tab)?.focus();}}}>
+ {(['position','opponent'] as const).map(tab=><button type="button" role="tab" key={tab} id={'spieler-section-'+tab} aria-selected={tab===active} aria-controls={'spieler-section-panel-'+tab} tabIndex={tab===active?0:-1} onClick={()=>setParams({tab})}>{tr(tab==='position'?'Stellungssuche':'Gegnervorbereitung')}</button>)}</div>
+ <div role="tabpanel" id="spieler-section-panel-position" aria-labelledby="spieler-section-position" hidden={active!=='position'}><SpielerDirectory/></div>
+ <div role="tabpanel" id="spieler-section-panel-opponent" aria-labelledby="spieler-section-opponent" hidden={active!=='opponent'}>{active==='opponent'&&<VorbereitungScreen embedded/>}</div></section>;
 }

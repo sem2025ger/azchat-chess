@@ -140,3 +140,52 @@ commit after confirming the SHA; if Render offers the final SHA under Deploy a
 specific commit, that path avoids switching the tracked branch but disables
 Auto-Deploy. The owner must inspect that setting afterwards. Never deploy the old
 branch's latest commit expecting this feature to appear.
+
+## Owner QA follow-up: navigation, return state, preparation tabs and startup
+
+Owner measured the previous QA index: 14,979 games, 853,036 entries, 0 rejected,
+185,999,360 RSS bytes, 896,406 ms build time. Najdorf 5...a6 / Black returned
+346 games and analysis opened at the matching ply. Those are owner-reported
+measurements of the previous build, not new measurements of this change.
+
+PreparationBoard now keeps FEN/SAN history with Back/Forward and Left/Right when
+focus is in the board section (typing fields are excluded). A new move after Back
+truncates the redo tail. The input follows board moves and marks board/text input;
+empty submission shows a hint and cannot reset the board. Explicit Grundstellung
+resets its history. Orientation defaults to My color, with a manual flip; the
+click overlay reverses with the rendered board. Setup positions start a new root.
+
+The global card checkpoints its position/history, color, name/FIDE filters,
+scope/sort, NRW count and complete result payload in sessionStorage per account.
+Remount/analysis return restores that checkpoint without searching again. Storage
+is optional when unavailable; no tokens are persisted. Explicit logout clears these checkpoints; initial guest-session detection does
+not discard a guest board checkpoint. Board/filter changes still invalidate
+results. Position search and the existing name directory remain together; the
+second Spieler tab embeds the unchanged named/FIDE and Lichess preparation sources.
+Old /vorbereitung links redirect with their router-state seeds to
+/spieler?tab=opponent when both existing Spieler/Vorbereitung flags are on. When
+Spieler is off the old preparation page remains available under its existing flag.
+No new main-menu item is added.
+
+Independent profiling after workspace recovery used 100 existing QA archive games
+read via BEGIN READ ONLY, repeated ten times to make a 1,000-game local benchmark.
+Old 100-game/5,552-entry build: 478 ms; public Chess.move took 421.45 ms (88.2%),
+including 22.09 ms nested FEN work; key FEN outside move took 9.69 ms. Public move
+creates verbose SAN/FEN objects and repeatedly enumerates legal SAN alternatives.
+The new adapter uses chess.js 1.4.0 internals for targeted SAN candidate replay,
+keeps king-safety/castling/promotion checks and produces the same canonical SAN.
+It avoids verbose Move/repetition bookkeeping; normalized keys omit counters and
+preserve legal en passant, including pinned captures. A locked-engine guard fails
+the index closed if the adapter's engine changes. Query-time collision verification
+still uses ordinary public Chess.move and FEN.
+
+Three alternating 1,000-game/55,520-entry builds: old 4,471 / 4,678 / 3,692 ms;
+new 576 / 600 / 511 ms. Median speedup 7.76x. All hashes/game indices/plies and SAN
+prefixes compared byte-for-byte equal; both versions rejected 0 games. This is
+100 unique real archive games repeated 10 times, not 1,000 unique QA games and not
+a full-QA server measurement. Applying that ratio to the owner's 896,406 ms gives
+an estimate of 115,484 ms (~115 s, under 3 min). Free-instance throttling and
+Supabase reads can change wall time. Real new QA startup is unmeasured by the
+agent. New position_index_ready metrics include read_ms, replay_ms and sort_ms to
+distinguish those phases after deployment. No database table, migration, persistent
+DB snapshot or ply-cap change is involved.

@@ -3,6 +3,15 @@ import { useOptionalLanguage } from '../context/LanguageContext';
 
 // Only fixed UI labels are localized; player names, club names, chat text, PGN and FIDE data are never translated.
 const regionalCopy: Record<string, Record<string, string>> = {
+  "Zurück": {"de": "Zurück", "en": "Back", "az": "Geri", "tr": "Geri", "ua": "Назад", "ru": "Назад"},
+  "Vorwärts": {"de": "Vorwärts", "en": "Forward", "az": "İrəli", "tr": "İleri", "ua": "Вперед", "ru": "Вперёд"},
+  "Brett drehen": {"de": "Brett drehen", "en": "Flip board", "az": "Taxtanı çevir", "tr": "Tahtayı çevir", "ua": "Перевернути дошку", "ru": "Перевернуть доску"},
+  "Eingabe: Züge auf dem Brett": {"de": "Eingabe: Züge auf dem Brett", "en": "Input: board moves", "az": "Daxiletmə: taxtadakı gedişlər", "tr": "Giriş: tahtadaki hamleler", "ua": "Введення: ходи на дошці", "ru": "Ввод: ходы на доске"},
+  "Eingabe: Textzüge ab Grundstellung": {"de": "Eingabe: Textzüge ab Grundstellung", "en": "Input: typed moves from the starting position", "az": "Daxiletmə: başlanğıc mövqedən yazılmış gedişlər", "tr": "Giriş: başlangıç konumundan yazılan hamleler", "ua": "Введення: текстові ходи з початкової позиції", "ru": "Ввод: текстовые ходы из начальной позиции"},
+  "Gib Züge ein oder spiele auf dem Brett weiter.": {"de": "Gib Züge ein oder spiele auf dem Brett weiter.", "en": "Enter moves or continue playing on the board.", "az": "Gedişləri yazın və ya taxtada davam edin.", "tr": "Hamleleri yazın veya tahtada oynamaya devam edin.", "ua": "Введіть ходи або продовжуйте грати на дошці.", "ru": "Введите ходы или продолжайте играть на доске."},
+  "Spielerbereiche": {"de": "Spielerbereiche", "en": "Player sections", "az": "Oyunçu bölmələri", "tr": "Oyuncu bölümleri", "ua": "Розділи гравців", "ru": "Разделы игроков"},
+  "Stellungssuche": {"de": "Stellungssuche", "en": "Position search", "az": "Mövqe axtarışı", "tr": "Konum arama", "ua": "Пошук позиції", "ru": "Поиск позиции"},
+  "Gegnervorbereitung": {"de": "Gegnervorbereitung", "en": "Opponent preparation", "az": "Rəqibə hazırlıq", "tr": "Rakibe hazırlık", "ua": "Підготовка до суперника", "ru": "Подготовка к сопернику"},
   "Suchbereich": {"de": "Suchbereich", "en": "Search scope", "az": "Axtarış sahəsi", "tr": "Arama kapsamı", "ua": "Область пошуку", "ru": "Область поиска"},
   "Gesamte Datenbank": {"de": "Gesamte Datenbank", "en": "Whole database", "az": "Bütün baza", "tr": "Tüm veritabanı", "ua": "Уся база", "ru": "Вся база"},
   "Nur NRW-Vereine": {"de": "Nur NRW-Vereine", "en": "NRW clubs only", "az": "Yalnız NRW klubları", "tr": "Yalnız NRW kulüpleri", "ua": "Лише клуби NRW", "ru": "Только клубы NRW"},

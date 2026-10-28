@@ -1,3 +1,4 @@
+import {clearPositionSearchState} from '../utils/positionSearchState';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, type UserProfile } from '../services/supabase';
 import { type Session, type User } from '@supabase/supabase-js';
@@ -47,6 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (session?.user) {
           fetchProfile(session.user.id);
         } else {
+          if (_event === 'SIGNED_OUT') clearPositionSearchState();
           setProfile(null);
           setIsLoading(false);
         }

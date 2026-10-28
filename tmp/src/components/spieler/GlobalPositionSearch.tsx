@@ -4,15 +4,21 @@ import {useNavigate} from 'react-router-dom';
 import {useRegionalCopy} from '../../i18n/regionalCopy';
 import {createSpielerApi,openSpielerAnalysis,type SpielerPlayer} from '../../services/spieler';
 import {createPositionSearchApi,PositionSearchError,type PositionSearchResult,type PositionSide} from '../../services/positions';
+import {readPositionSearchState,writePositionSearchState} from '../../utils/positionSearchState';
+import type {PreparationBoardState} from '../../utils/preparationBoardState';
 import PreparationBoard from './PreparationBoard';
 import '../../screens/VorbereitungScreen.css';
 import './GlobalPositionSearch.css';
 
-export default function GlobalPositionSearch({token}:{token:string}){
+type SavedSearch={fen:string;side:PositionSide;fideId:string;name:string;scope:'all'|'nrw';sort:'newest'|'strongest';nrwCount:number|null;players:SpielerPlayer[];result:PositionSearchResult|null;boardState?:PreparationBoardState};
+export default function GlobalPositionSearch({token,accountId='guest'}:{token:string;accountId?:string}){
  const tr=useRegionalCopy(),navigate=useNavigate();
- const [fen,setFen]=useState(DEFAULT_POSITION),[side,setSide]=useState<PositionSide>('any'),[fideId,setFideId]=useState(''),[name,setName]=useState('');
- const [scope,setScope]=useState<'all'|'nrw'>('all'),[sort,setSort]=useState<'newest'|'strongest'>('newest'),[nrwCount,setNrwCount]=useState<number|null>(null);
- const [players,setPlayers]=useState<SpielerPlayer[]>([]),[result,setResult]=useState<PositionSearchResult|null>(null),[busy,setBusy]=useState(false),[finding,setFinding]=useState(false),[error,setError]=useState('');
+ const [saved]=useState(()=>readPositionSearchState<SavedSearch>(accountId));
+ const [boardState,setBoardState]=useState(saved?.boardState);
+ const [fen,setFen]=useState(saved?.fen||DEFAULT_POSITION),[side,setSide]=useState<PositionSide>(saved?.side||'any'),[fideId,setFideId]=useState(saved?.fideId||''),[name,setName]=useState(saved?.name||'');
+ const [scope,setScope]=useState<'all'|'nrw'>(saved?.scope||'all'),[sort,setSort]=useState<'newest'|'strongest'>(saved?.sort||'newest'),[nrwCount,setNrwCount]=useState<number|null>(saved?.nrwCount??null);
+ const [players,setPlayers]=useState<SpielerPlayer[]>(saved?.players||[]),[result,setResult]=useState<PositionSearchResult|null>(saved?.result||null),[busy,setBusy]=useState(false),[finding,setFinding]=useState(false),[error,setError]=useState('');
+ useEffect(()=>{writePositionSearchState(accountId,{fen,side,fideId,name,scope,sort,nrwCount,players,result,boardState});},[accountId,fen,side,fideId,name,scope,sort,nrwCount,players,result,boardState]);
  const pending=useRef<AbortController|null>(null),lookup=useRef<AbortController|null>(null);
  useEffect(()=>()=>{pending.current?.abort();lookup.current?.abort();},[]);
  function invalidate(){pending.current?.abort();setBusy(false);setResult(null);setError('');}
@@ -35,7 +41,7 @@ export default function GlobalPositionSearch({token}:{token:string}){
   <label>{tr('Suchbereich')}<select value={scope} onChange={e=>{const value=e.target.value as 'all'|'nrw';setScope(value);invalidate();if(token)void search(undefined,value);}}><option value="all">{tr('Gesamte Datenbank')}</option><option value="nrw">{tr('Nur NRW-Vereine')}</option></select></label>
   <p>{tr('NRW = Spieler, die ihr Profil und ihren NRW-Verein auf ChessAZ bestätigt haben.')} {tr('Bestätigte NRW-Spieler:')} {nrwCount??'—'}</p>
   {nrwCount===0&&<p role="status">{tr('Noch keine bestätigten NRW-Vereinsspieler.')}</p>}
-  <div className="global-position-grid"><PreparationBoard fen={fen} onFen={value=>{invalidate();setFen(value);}}/>
+  <div className="global-position-grid"><PreparationBoard fen={fen} initialState={boardState} onState={setBoardState} orientation={side==='black'?'b':'w'} onFen={value=>{invalidate();setFen(value);}}/>
    <div className="global-position-controls">
     <form onSubmit={e=>void search(e)}><label>{tr('Meine Farbe')}<select value={side} onChange={e=>{invalidate();setSide(e.target.value as PositionSide);}}><option value="black">{tr('Schwarz')}</option><option value="white">{tr('Weiß')}</option><option value="any">{tr('Beide Farben')}</option></select></label><label>{tr('FIDE-ID (optional)')}<input value={fideId} pattern="[1-9][0-9]{0,9}" maxLength={10} onChange={e=>{invalidate();setFideId(e.target.value);}}/></label><button disabled={busy||!token}>{tr('Stellung in der Datenbank suchen')}</button></form>
     <details className="section-info"><summary>{tr('Spielerfilter (optional)')}</summary><form onSubmit={findPlayer}><label>{tr('Nachname')}<input minLength={2} maxLength={100} required value={name} onChange={e=>{lookup.current?.abort();setFinding(false);setName(e.target.value);setPlayers([]);}}/></label><button disabled={finding||!token}>{tr('Spieler finden')}</button></form><ul>{players.map(p=><li key={p.fide_id}><button type="button" aria-pressed={fideId===String(p.fide_id)} onClick={()=>{invalidate();setFideId(String(p.fide_id));}}>{p.name} · FIDE {p.fide_id}</button></li>)}</ul></details>
