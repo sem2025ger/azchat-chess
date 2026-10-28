@@ -63,10 +63,12 @@ try{
  await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Page.navigate',{url:base+'spieltag-fixture'});
  await wait(`document.body.innerText.includes('Spieltermin eintragen')`);
  await click('Spieltermin eintragen');await fill('Runde','Runde 1');
- await evaluate("document.querySelector('[data-test-locale=ru]').click()");
- await wait("document.body.innerText.includes('Добавить дату матча') || document.body.innerText.includes('Изменить дату матча')");
- assert.equal(await evaluate("document.querySelector('.spieltag-form input').value"),'Runde 1','language switching preserves the open schedule form');
- assert.equal(await evaluate("localStorage.getItem('app-language')"),'ru','selected language persisted');
+ for (const [locale, expected] of [['en','Add match date'],['az','Oyun tarixi əlavə et'],['tr','Maç tarihi ekle'],['ua','Додати дату матчу'],['ru','Добавить дату матча']]) {
+   await evaluate("document.querySelector('[data-test-locale="+locale+"]').click()");
+   await wait("document.body.innerText.includes("+JSON.stringify(expected)+")");
+   assert.equal(await evaluate("document.querySelector('.spieltag-form input').value"),'Runde 1','switching '+locale+' preserves unsaved form');
+   assert.equal(await evaluate("localStorage.getItem('app-language')"),locale,'selected language persists');
+ }
  await evaluate("document.querySelector('[data-test-locale=de]').click()");
  await wait("document.body.innerText.includes('Spieltermin eintragen')");await fill('Gegnerische Mannschaft','Gastmannschaft');await fill('Datum und Uhrzeit','2026-11-08T11:00');await fill('Spielort','Bochum');await click('Termin speichern');
  await wait(`document.querySelector('[role="tablist"]')`);assert.equal(await evaluate(`JSON.parse(window.fixtureCalls.find(c=>c.method==='POST').body).starts_at`),'2026-11-08T10:00:00.000Z');
