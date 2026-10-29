@@ -79,7 +79,7 @@ export const supabase={from(table){let single=false,filters=[];const q={select()
      assert.ok(metric.cityLines.every(r=>r.city.y>=r.title.bottom-1),'club city has its own line');
      if(width===1280){assert.ok(Math.abs(metric.cards[0].y-metric.cards[1].y)<=1,'first two core panels align beside chat');assert.ok(metric.cards[2].y>=metric.cards[0].bottom-1,'third core panel flows below with restored chat rail');assert.ok(metric.cards.every(r=>r.width>=240),'readable panel width');}
      else assert.ok(metric.cards.every((r,i)=>!i||r.y>=metric.cards[i-1].bottom),'mobile panels stack');
-     const gaps=await evaluate(`(()=>{const root=document.querySelector('.nrw-shell'),all=[...root.querySelectorAll('a,summary,select')].filter(e=>e.getClientRects().length);return all.every(e=>e.getBoundingClientRect().height>=32)})()`);assert.ok(gaps,'comfortable targets '+lang+' '+width);
+     const gaps=await evaluate(`(()=>{const root=document.querySelector('.nrw-content'),all=[...root.querySelectorAll('a,summary,select')].filter(e=>e.getClientRects().length);return all.every(e=>e.getBoundingClientRect().height>=32)})()`);assert.ok(gaps,'comfortable targets '+lang+' '+width);
     }
    }
    if(!verify)continue;
