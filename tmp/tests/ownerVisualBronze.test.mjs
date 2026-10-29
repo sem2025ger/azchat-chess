@@ -14,7 +14,7 @@ test('NRW uses cool, light metallic bronze only within the region shell',()=>{
  assert.match(css,/\.nrw-shell :is\(\.nrw-header p,\.nrw-muted,\.nrw-card-subtitle/);
 });
 test('only Schach-Treff and NRW desktop sidebar labels receive metallic treatment',()=>{
- const highlighted=[...layout.matchAll(/<NavItem[^\\n]*bronzeLabel/g)].map(m=>m[0]);
+ const highlighted=[...layout.matchAll(/<NavItem[^\n]*bronzeLabel/g)].map(m=>m[0]);
  assert.equal(highlighted.length,2);
  assert.ok(highlighted.some(m=>m.includes('label="Schach-Treff"')));
  assert.ok(highlighted.some(m=>m.includes('label="NRW"')));
