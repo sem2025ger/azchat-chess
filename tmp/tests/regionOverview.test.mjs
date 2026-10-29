@@ -29,9 +29,11 @@ test('NRW dashboard sources are scoped and transparent about unavailable data',(
  assert.match(region,/to=\{'\/clubs-nrw\/'/);
 });
 
-test('regional rail reuses the national room and guards membership',()=>{
+test('NRW keeps the national chat as a compact link; the reusable room still guards membership',()=>{
  const rail=read('src/components/schachTreff/NationwideChatRail.tsx');
- assert.match(region,/NationwideChatRail/);
+ assert.doesNotMatch(region,/<NationwideChatRail/);
+ assert.match(region,/<footer className="nrw-footer">/);
+ assert.match(region,/to="\/chat"/);
  assert.match(rail,/NATIONAL_ROOM_SLUG = 'chessaz-deutsch'/);
  assert.match(rail,/\.eq\('club_id',id\)/);
  assert.match(rail,/if\(!joined\)/);
