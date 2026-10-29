@@ -1,6 +1,6 @@
 import { translateSectionCopy } from '../i18n/sectionCopy';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -13,7 +13,7 @@ import NamedPreparation from '../components/spieler/NamedPreparation';
 import SpielerCard from '../components/spieler/SpielerCard';
 import SpielerAccountLabel from '../components/spieler/SpielerAccountLabel';
 import {useRegionalCopy} from '../i18n/regionalCopy';
-import VorbereitungScreen from './VorbereitungScreen';
+import {VorbereitungWorkspace} from './VorbereitungScreen';
 import GlobalPositionSearch from '../components/spieler/GlobalPositionSearch';
 
 function message(error: unknown) {
@@ -28,8 +28,10 @@ function message(error: unknown) {
   return 'Die Anfrage konnte nicht abgeschlossen werden. Bitte versuche es später erneut.';
 }
 function SpielerDirectory() {
-  const {language}=useLanguage();const tr=(value:string)=>translatePlayer(value,language);
-  const [query, setQuery] = useState('');
+  const {language}=useLanguage(),regional=useRegionalCopy();const tr=(value:string)=>playerUiCopy[value]?translatePlayer(value,language):regional(value);
+  const lookupId=useId(),location=useLocation();const [seed]=useState(()=>location.state||{});
+  const [lookupMode,setLookupMode]=useState<'surname'|'fide'|'lichess'>(seed.lichessUsername?'lichess':seed.playerFideId?'fide':'surname'),[loadedNickname,setLoadedNickname]=useState(''),[seedPreparation,setSeedPreparation]=useState<{fideId:string;name:string}|null>(null);
+  const [query, setQuery] = useState(seed.lichessUsername||seed.playerFideId||'');
   const [players, setPlayers] = useState<SpielerPlayer[]>([]);
   const [selected, setSelected] = useState<SpielerPlayer | null>(null);
   const [tab, setTab] = useState<'profile' | 'games'>('profile');
@@ -57,18 +59,19 @@ function SpielerDirectory() {
   function start() { pending.current?.abort(); const c = new AbortController(); pending.current = c; setError(''); setNotice(''); setBusy(true); return c; }
   function api() { return createSpielerApi(import.meta.env.VITE_SERVER_URL || ''); }
   async function search(event: FormEvent) {
-    event.preventDefault(); const c = start(); setSelected(null); setGames(null); setLoadedAccount(null); setSearched(false);
-    try { const found = await api().search(query.trim(), session?.access_token || '', c.signal); if (!c.signal.aborted) { setPlayers(found); setSearched(true); } }
+    event.preventDefault(); const c = start(); setSelected(null); setGames(null); setLoadedAccount(null); setSearched(false);setLoadedNickname('');setSeedPreparation(null);
+    try {if(lookupMode==='lichess'){if(!c.signal.aborted){setLoadedNickname(query.trim());setBusy(false);}return;}
+      const found = lookupMode==='fide'?[await api().card(query.trim(),session?.access_token||'',c.signal)]:await api().search(query.trim(), session?.access_token || '', c.signal); if (!c.signal.aborted) { setPlayers(found); setSearched(true); } }
     catch (e) { if (!c.signal.aborted) setError(message(e)); } finally { if (!c.signal.aborted) setBusy(false); }
   }
-  function choose(player: SpielerPlayer) { pending.current?.abort(); setBusy(false); setSelected(player); setTab('profile'); setGames(null); setLoaded(false); setLoadedAccount(null); setNickname(''); setClub(''); setNotice(''); setError(''); }
-  async function action(kind: 'claim' | 'hide') {
-    if (!selected) return;
+  function choose(player: SpielerPlayer) { pending.current?.abort(); setBusy(false); setSelected(player); setTab('games'); setGames(null); setLoaded(false); setLoadedAccount(null); setNickname(''); setClub(''); setNotice(''); setError(''); }
+  async function action(kind: 'claim' | 'hide', target=selected, selectedClub=club) {
+    if (!target) return;
     if (!session) { setError('Bitte melde dich zuerst über dein Profil an.'); return; }
     const c = start();
-    try { const result = await api().action(String(selected.fide_id), kind, session.access_token, c.signal, kind === 'claim' ? club : undefined);
+    try { const result = await api().action(String(target.fide_id), kind, session.access_token, c.signal, kind === 'claim' ? selectedClub : undefined);
       if (c.signal.aborted) return;
-      if (kind === 'hide' && ['hidden_pending_review', 'approved'].includes(result.status)) { setPlayers(p => p.filter(x => x.fide_id !== selected.fide_id)); setSelected(null); setGames(null); setNotice('Profil sofort ausgeblendet. Die Anfrage wird geprüft.'); }
+      if (kind === 'hide' && ['hidden_pending_review', 'approved'].includes(result.status)) { setPlayers(p => p.filter(x => x.fide_id !== target.fide_id)); setSelected(null); setGames(null); setNotice('Profil sofort ausgeblendet. Die Anfrage wird geprüft.'); }
       else setNotice(kind === 'claim' && result.status === 'verified' ? 'Dieses Profil ist deinem Konto zugeordnet.' : 'Anfrage eingegangen. Die Identität wird vor einer Zuordnung geprüft.');
     } catch (e) { if (!c.signal.aborted) setError(message(e)); } finally { if (!c.signal.aborted) setBusy(false); }
   }
@@ -78,22 +81,16 @@ function SpielerDirectory() {
     catch (e) { if (!c.signal.aborted) setError(message(e)); } finally { if (!c.signal.aborted) setBusy(false); }
   }
   function analyse(pgn: string) { try { navigate(openSpielerAnalysis(pgn)); } catch { setError('Diese Partie kann nicht in der Analyse geöffnet werden.'); } }
-  return <section className="spieler-page section-page">
-    <header><p className="spieler-eyebrow">ChessAZ · {tr('Spieler')} v1</p><h1>{tr('Spieler')}</h1><p>{tr('Nach Namen suchen. Öffentliche Partien entdecken.')}</p></header>
-    {import.meta.env.VITE_POSITION_SEARCH_ENABLED==='true'&&<GlobalPositionSearch key={session?.access_token||'guest'} token={session?.access_token||''} accountId={session?.user?.id||'guest'}/>}
-    {!session && <p role="status">{tr('Bitte melde dich zuerst über dein Profil an, um Spieler zu suchen.')}</p>}
-    <form className="spieler-search section-card" onSubmit={search}><h2>{tr('Spieler finden')}</h2><label htmlFor="spieler-surname">{tr('Nachname')}</label>
-      <div><input id="spieler-surname" minLength={2} maxLength={100} required value={query} onChange={e => setQuery(e.target.value)} autoComplete="off" /><button disabled={busy || !session} type="submit">{tr('Suchen')}</button></div></form>
-    {error && <p role="alert">{tr(error)}</p>}{notice && <p role="status">{tr(notice)}</p>}{busy && <p role="status">{tr('Wird geladen …')}</p>}
-    <div className="spieler-columns"><section className="section-card" aria-label={tr('Suchergebnisse')}><h2>{tr('Suchergebnisse')}</h2>
-      {searched && !players.length && <p>{tr('Keine Spieler gefunden.')}</p>}
-      <ul className="spieler-results">{players.map(p => <li key={p.fide_id}><button type="button" aria-pressed={selected?.fide_id === p.fide_id} onClick={() => choose(p)}><strong>{p.title} {p.name}</strong><span>{p.club || tr('Verein —')} · FIDE {p.fide_rating ?? '—'}</span></button></li>)}</ul>
-    </section>{selected && <section className="section-card" aria-label={tr('Spielerkarte')}>
-      <div className="spieler-tabs" role="tablist" aria-label={tr('Spielerinformationen')} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = e.key === 'Home' ? 'profile' : e.key === 'End' ? 'games' : tab === 'profile' ? 'games' : 'profile'; setTab(next); document.getElementById('spieler-tab-' + next)?.focus(); } }}>
-        {(['profile', 'games'] as const).map(t => <button key={t} id={'spieler-tab-' + t} role="tab" type="button" tabIndex={tab === t ? 0 : -1} aria-controls={'spieler-panel-' + t} aria-selected={tab === t} onClick={() => setTab(t)}>{tr(t === 'profile' ? 'Profil' : 'Partien')}</button>)}
-      </div>
-      <div role="tabpanel" id={'spieler-panel-' + tab} aria-labelledby={'spieler-tab-' + tab}>
-        {tab === 'profile' ? <><SpielerCard player={selected} /><label>{tr('Mein Verein (freiwillig)')}<select value={club} onChange={e => setClub(e.target.value)} disabled={import.meta.env.VITE_CLUBS_NRW_ENABLED !== 'true'}><option value="">{tr('Kein Verein ausgewählt')}</option>{availableClubs.map(c=><option key={c.id} value={c.id}>{c.name} · {c.city}</option>)}</select></label><div className="spieler-actions"><button disabled={busy} onClick={() => void action('claim')}>{tr('Das bin ich')}</button><button disabled={busy} onClick={() => void action('hide')}>{tr('Profil ausblenden')}</button></div><details className="section-info"><summary>{tr('Info')}</summary><p className="spieler-muted">{tr("Eine Anfrage bestätigt keine Identität. Deine Vereinsangabe wird erst nach bestätigter Zuordnung sichtbar. Bis zu drei Ausblendungen wirken sofort bis zur Prüfung. Weitere Anfragen werden zuerst geprüft. Dein bestätigtes eigenes Profil kannst du immer sofort ausblenden.")}</p></details></> : import.meta.env.VITE_VORBEREITUNG_ENABLED==='true' ? <NamedPreparation key={session?.access_token+':'+selected.fide_id} token={session?.access_token||''} initialFideId={String(selected.fide_id)} initialName={selected.name}/> : <>
+  useEffect(()=>{if(!session?.access_token)return;if(seed.playerFideId)setSeedPreparation({fideId:String(seed.playerFideId),name:seed.playerName||''});else if(seed.lichessUsername)setLoadedNickname(seed.lichessUsername);if(seed.playerFideId||seed.lichessUsername)navigate(location.pathname+location.search,{replace:true,state:null});},[session?.access_token,seed,location.pathname,location.search,navigate]);
+  return <section className="spieler-opponent-directory">
+    {!session&&<p role="status">{tr('Bitte melde dich zuerst über dein Profil an, um Spieler zu suchen.')}</p>}
+    <form className="spieler-search section-card" onSubmit={search}><h2>{tr('Gegner für die Vorbereitung finden')}</h2><fieldset className="position-segment"><legend>{tr('Suchen nach')}</legend><div>{(['surname','fide','lichess'] as const).map(mode=><button type="button" key={mode} aria-pressed={lookupMode===mode} onClick={()=>{pending.current?.abort();setBusy(false);setLookupMode(mode);setQuery('');setPlayers([]);setSelected(null);setLoadedNickname('');setSeedPreparation(null);setSearched(false);}}>{tr(mode==='surname'?'Nachname':mode==='fide'?'FIDE-ID':'Lichess-Benutzername')}</button>)}</div></fieldset><label htmlFor={lookupId}>{tr(lookupMode==='surname'?'Nachname':lookupMode==='fide'?'FIDE-ID':'Lichess-Benutzername')}</label><div><input id={lookupId} minLength={lookupMode==='fide'?1:2} maxLength={100} pattern={lookupMode==='fide'?'[1-9][0-9]{0,9}':lookupMode==='lichess'?'[A-Za-z0-9_-]+':undefined} required value={query} placeholder={lookupMode==='surname'?tr('Lateinische Buchstaben, z. B. Huseynov'):undefined} onChange={e=>setQuery(e.target.value)} autoComplete="off"/><button disabled={busy||!session}>{tr('Suchen')}</button></div></form>
+    {error&&<p role="alert">{tr(error)}</p>}{notice&&<p role="status">{tr(notice)}</p>}{busy&&<p role="status">{tr('Wird geladen …')}</p>}
+    {seedPreparation&&<NamedPreparation key={session?.access_token+':'+seedPreparation.fideId} token={session?.access_token||''} initialFideId={seedPreparation.fideId} initialName={seedPreparation.name} hideSearch/>}
+    {loadedNickname&&<VorbereitungWorkspace key={session?.access_token+':'+loadedNickname} token={session?.access_token||''} initial={loadedNickname} autoLoad hideSearch/>}
+    {lookupMode!=='lichess'&&(searched||selected)&&<div className="spieler-columns"><section className="section-card" aria-label={tr('Suchergebnisse')}><h2>{tr('Suchergebnisse')}</h2>{searched&&!players.length&&<p>{tr('Keine Spieler gefunden.')}</p>}<ul className="spieler-results">{players.map(p=><li key={p.fide_id}><button type="button" aria-pressed={selected?.fide_id===p.fide_id} onClick={()=>choose(p)}><strong>{p.title} {p.name}</strong><span>{p.club||tr('Verein —')} · FIDE {p.fide_rating??'—'}</span></button><button type="button" disabled={busy||!session} onClick={()=>{choose(p);void action('claim',p,'');}}>{tr('Das bin ich')}</button></li>)}</ul></section>
+    {selected&&<section className="section-card" aria-label={tr('Spielerkarte')}><SpielerCard player={selected} onPrepare={()=>setTab('games')}/><details className="section-info"><summary>{tr('Profil')}</summary><label>{tr('Mein Verein (freiwillig)')}<select value={club} onChange={e => setClub(e.target.value)} disabled={import.meta.env.VITE_CLUBS_NRW_ENABLED !== 'true'}><option value="">{tr('Kein Verein ausgewählt')}</option>{availableClubs.map(c=><option key={c.id} value={c.id}>{c.name} · {c.city}</option>)}</select></label><div className="spieler-actions"><button disabled={busy} onClick={() => void action('claim')}>{tr('Das bin ich')}</button><button disabled={busy} onClick={() => void action('hide')}>{tr('Profil ausblenden')}</button></div><details className="section-info"><summary>{tr('Info')}</summary><p className="spieler-muted">{tr("Eine Anfrage bestätigt keine Identität. Deine Vereinsangabe wird erst nach bestätigter Zuordnung sichtbar. Bis zu drei Ausblendungen wirken sofort bis zur Prüfung. Weitere Anfragen werden zuerst geprüft. Dein bestätigtes eigenes Profil kannst du immer sofort ausblenden.")}</p></details></details>
+    {import.meta.env.VITE_VORBEREITUNG_ENABLED==='true'?tab==='games'&&<NamedPreparation key={session?.access_token+':'+selected.fide_id} token={session?.access_token||''} initialFideId={String(selected.fide_id)} initialName={selected.name} hideSearch/>:<>
           <h2>{tr('Partien')}</h2><details className="section-info"><summary>{tr('Info')}</summary><p className="spieler-muted">{tr('Bis zu 25 Partien als Stichprobe. Ein eingegebener Online-Nickname ist keine bestätigte Zuordnung zu dieser Person. TWIC verwendet FIDE-IDs aus importierten PGNs.')}</p></details>
           <form onSubmit={loadGames} className="spieler-provider"><label>{tr('Quelle')}<select value={source} onChange={e => { pending.current?.abort(); setBusy(false); setSource(e.target.value); setGames(null); setLoaded(false); setLoadedAccount(null); }}><option value="lichess">Lichess</option><option value="chesscom">Chess.com</option><option value="twic">TWIC</option></select></label>
             {source !== 'twic' && <label>{tr('Online-Nickname')}<input required minLength={2} maxLength={30} pattern="[A-Za-z0-9_-]+" value={nickname} onChange={e => setNickname(e.target.value)} /></label>}<button disabled={busy}>{tr('Partien laden')}</button></form>
@@ -102,18 +99,16 @@ function SpielerDirectory() {
           {loadedAccount && <SpielerAccountLabel source={loadedAccount.source} nickname={loadedAccount.nickname} />}
           {games && <><h3>{tr("Eröffnungen dieser Stichprobe")}</h3><ul>{games.openings.map(o => <li key={o.name}>{o.name} · {o.count}</li>)}</ul>{games.rejected > 0 && <p>{games.rejected} {tr('nicht unterstützte oder ungültige Partien ausgelassen.')}</p>}
             <ul className="spieler-games">{games.games.map(g => <li key={g.id}><strong>{g.white} – {g.black}</strong><span>{g.result} · {g.date} · {g.eco} {g.opening}</span><button onClick={() => analyse(g.pgn)}>{tr("In Analyse öffnen")}</button></li>)}</ul></>}
-        </>}
-      </div>
-    </section>}</div>
+</>}
+    </section>}</div>}
   </section>;
 }
 
 export default function SpielerScreen(){
- const tr=useRegionalCopy(),[params,setParams]=useSearchParams();
+ const tr=useRegionalCopy(),{language}=useLanguage(),{session}=useAuth(),[params,setParams]=useSearchParams();
  const active=params.get('tab')==='opponent'?'opponent':'position';
- if(import.meta.env.VITE_VORBEREITUNG_ENABLED!=='true')return <SpielerDirectory/>;
- return <section className="spieler-page section-page"><div className="spieler-tabs" role="tablist" aria-label={tr('Spielerbereiche')} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const tab=active==='position'?'opponent':'position';setParams({tab});document.getElementById('spieler-section-'+tab)?.focus();}}}>
- {(['position','opponent'] as const).map(tab=><button type="button" role="tab" key={tab} id={'spieler-section-'+tab} aria-selected={tab===active} aria-controls={'spieler-section-panel-'+tab} tabIndex={tab===active?0:-1} onClick={()=>setParams({tab})}>{tr(tab==='position'?'Stellungssuche':'Gegnervorbereitung')}</button>)}</div>
- <div role="tabpanel" id="spieler-section-panel-position" aria-labelledby="spieler-section-position" hidden={active!=='position'}><SpielerDirectory/></div>
- <div role="tabpanel" id="spieler-section-panel-opponent" aria-labelledby="spieler-section-opponent" hidden={active!=='opponent'}>{active==='opponent'&&<VorbereitungScreen embedded/>}</div></section>;
+ return <section className="spieler-page section-page"><header><p className="spieler-eyebrow">ChessAZ</p><h1>{translatePlayer('Spieler',language)}</h1><p>{tr('Stellungen entdecken. Die nächste Partie vorbereiten.')}</p></header><div className="spieler-tabs spieler-primary-tabs" role="tablist" aria-label={tr('Spielerbereiche')} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const tab=active==='position'?'opponent':'position';setParams({tab});document.getElementById('spieler-section-'+tab)?.focus();}}}>
+ {(['position',...(import.meta.env.VITE_VORBEREITUNG_ENABLED==='true'?['opponent' as const]:[])] as const).map(tab=><button type="button" role="tab" key={tab} id={'spieler-section-'+tab} aria-selected={tab===active} aria-controls={'spieler-section-panel-'+tab} tabIndex={tab===active?0:-1} onClick={()=>setParams({tab})}>{tr(tab==='position'?'Stellungssuche':'Gegnervorbereitung')}</button>)}</div>
+ <div role="tabpanel" id="spieler-section-panel-position" aria-labelledby="spieler-section-position" hidden={active!=='position'}>{import.meta.env.VITE_POSITION_SEARCH_ENABLED==='true'?<GlobalPositionSearch key={session?.access_token||'guest'} token={session?.access_token||''} accountId={session?.user?.id||'guest'}/>:active==='position'?<SpielerDirectory/>:null}</div>
+ <div role="tabpanel" id="spieler-section-panel-opponent" aria-labelledby="spieler-section-opponent" hidden={active!=='opponent'}>{active==='opponent'&&<SpielerDirectory key={session?.access_token||'guest'}/>}</div></section>;
 }

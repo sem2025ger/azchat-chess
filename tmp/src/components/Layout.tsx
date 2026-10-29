@@ -106,7 +106,7 @@ export default function Layout() {
           <nav className="px-3 xl:px-5 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
-            <NavItem to="/chat" icon={<MessageSquare size={20} />} label={desktop ? 'Schach-Treff' : t('nav.chat')} themeColor="theme-violet" subtitle={desktop ? t('nav.germanSpeakers') : undefined} />
+            <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" subtitle={t('nav.germanSpeakers')} />
             {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW" themeColor="theme-gold" />}
             {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
@@ -150,7 +150,7 @@ export default function Layout() {
           </div>
 
           <div className="space-y-3">
-            <NavItem to="/settings" icon={<Settings size={24} />} label={t('nav.settings')} themeColor="theme-gold" alwaysGlow={!desktop} />
+            <NavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} themeColor="theme-gold" alwaysGlow={!desktop} />
           </div>
         </div>
       </aside>
@@ -159,7 +159,7 @@ export default function Layout() {
       <nav data-mobile-app-nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} premiumHome />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} accent="analysis" />
-        <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} accent="chat" />
+        <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" accent="chat" />
         <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} accent="profile" />
         <MobileNavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} accent="settings" />
       </nav>
@@ -196,7 +196,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       onPointerDown={() => prefetchRoute(to)}
       className={({ isActive }) =>
         cx(
-          "site-nav-link flex items-center px-4 py-[1.125rem] border border-transparent rounded-2xl font-black text-[0.85rem] uppercase tracking-wider relative group active:scale-95 sidebar-item",
+          "site-nav-link flex items-center px-4 py-[1.125rem] border border-transparent rounded-2xl font-semibold text-[0.94rem] normal-case tracking-normal relative group active:scale-95 sidebar-item",
           isActive
             ? `sidebar-item-active ${themeColor}`
             : cx("text-neutral-500 sidebar-item-hover", alwaysGlow && themeColor)
@@ -204,9 +204,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       }
     >
       <div className="w-8 flex justify-center shrink-0 group-hover:scale-110 transition-transform duration-150 motion-reduce:transition-none">{icon}</div>
-      <span className={subtitle ? "ml-4 hidden xl:block normal-case tracking-normal" : "ml-4 hidden xl:block italic truncate"}>
-        {label}{subtitle && <span className="block text-xs font-normal text-[#A8A293]">{subtitle}</span>}
-      </span>
+      <span className="site-nav-copy ml-4 hidden xl:block"><span className="site-nav-label">{label}</span>{subtitle&&<span className="site-nav-subtitle">{subtitle}</span>}</span>
 
       {/* Active Indicator Dot */}
       <NavItemActiveDot />
@@ -257,7 +255,7 @@ function MobileNavItem({ to, icon, label, premiumHome = false, accent }: { to: s
         {icon}
         <Circle size={4} className="absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-current fill-current" />
       </div>
-      <span className="text-[0.5rem] font-black uppercase tracking-widest">{label}</span>
+      <span className="site-nav-label text-[0.75rem] font-semibold normal-case tracking-normal">{label}</span>
     </NavLink>
   );
 }

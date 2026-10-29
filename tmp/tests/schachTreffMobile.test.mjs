@@ -11,13 +11,15 @@ test('legacy community implementation remains byte-identical to approved main', 
   assert.match(read('../src/components/schachTreff/useDesktop.ts'), /\(min-width: 1024px\)/);
   for (const width of [360,390,430,768]) assert.equal(width >= 1024, false);
 });
-test('mobile navigation JSX is unchanged', () => {
+test('mobile navigation preserves its routes and interactions with the approved label/style update', () => {
   const baseline = execFileSync('git', ['show', '4af51e5:tmp/src/components/Layout.tsx'], {encoding:'utf8'}).replace(/\r\n/g, '\n');
   const current = read('../src/components/Layout.tsx');
   const nav = source => source.split('<nav data-mobile-app-nav')[1].split('</nav>')[0];
-  assert.equal(nav(current), nav(baseline));
+  assert.equal(nav(current).replace('label="Schach-Treff"', "label={t('nav.chat')}"), nav(baseline));
   const mobileNavItem = source => source.split('function MobileNavItem')[1].split('function SidebarGermanyFlag')[0];
-  assert.equal(mobileNavItem(current), mobileNavItem(baseline));
+  const newLabel='site-nav-label text-[0.75rem] font-semibold normal-case tracking-normal';
+  assert.ok(mobileNavItem(current).includes(newLabel));
+  assert.equal(mobileNavItem(current).replace(newLabel,'text-[0.5rem] font-black uppercase tracking-widest'), mobileNavItem(baseline));
 });
 test('desktop names are stored usernames without suffix stripping or pseudonyms', () => {
   const current = read('../src/screens/SchachTreffDesktop.tsx');

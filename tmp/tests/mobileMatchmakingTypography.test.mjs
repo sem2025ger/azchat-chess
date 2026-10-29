@@ -15,7 +15,7 @@ test('mobile search uses dedicated accessible panel with premium typography and 
   assert.match(overlay, /onClick={onCancel}/);
   assert.match(styles, /@media \(max-width:767px\)/);
   assert.match(styles, /montserrat-cyrillic\.woff2/);
-  assert.match(styles, /font-size:clamp\(19px,5\.4vw,23px\)/);
+  assert.match(styles, /font-size:clamp\(1\.1875rem,5\.4vw,1\.4375rem\)/);
   assert.match(styles, /chessaz-search-mobile__cancel[\s\S]*?min-height:49px/);
   assert.doesNotMatch(styles, /red-500|#ef4444/);
 });

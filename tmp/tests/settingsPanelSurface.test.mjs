@@ -30,7 +30,7 @@ test('minor font increase is confined to four desktop option cards, not headings
   assert.ok(start >= 0);
   const rules = css.slice(start);
   assert.match(rules, /@media \(min-width: 1024px\)/);
-  for (const [id, size] of [['board','12px'], ['pieces','11px'], ['sound','12px'], ['background','11.5px']]) {
+  for (const [id, size] of [['board','0.75rem'], ['pieces','0.6875rem'], ['sound','0.75rem'], ['background','0.71875rem']]) {
     assert.match(rules, new RegExp('#settings-section-' + id + '[^\\{]*\\{\\s*font-size: ' + size.replace('.', '\\.') + ';'));
   }
   assert.doesNotMatch(rules, /h2|settings-preview-board|settings-preview-column|settings-preview-title/);
@@ -38,7 +38,7 @@ test('minor font increase is confined to four desktop option cards, not headings
 
 test('desktop choice labels are modestly larger without changing headings or Live Preview', () => {
  const css = readFileSync(new URL('../src/screens/SettingsTypography.css', import.meta.url), 'utf8');
- for (const [id, size] of [['board','12px'],['pieces','11px'],['sound','12px'],['background','11.5px']]) {
+ for (const [id, size] of [['board','0.75rem'],['pieces','0.6875rem'],['sound','0.75rem'],['background','0.71875rem']]) {
   const selector = new RegExp('#settings-section-' + id + ' button(?: > span)?\\s*\\{([^}]+)\\}');
   const rule = css.match(selector);
   assert.ok(rule, id + ' desktop label rule present');

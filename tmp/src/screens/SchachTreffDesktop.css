@@ -1,10 +1,10 @@
 @media(min-width:1024px){
 .schach-treff{width:100%;max-width:1280px;margin:0 auto;padding:32px 24px;background:#0A0B0B;color:#F2EEE3;min-height:100%;font-family:Inter,ui-sans-serif,system-ui,sans-serif}
 .schach-treff>header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px}
-.schach-treff h1,.schach-treff .st-display{font-family:'Bodoni Moda',Georgia,serif;color:#D9AE5B;letter-spacing:.02em;font-size:40px;font-weight:600}
+.schach-treff h1,.schach-treff .st-display{font-family:'Bodoni Moda',Georgia,serif;color:#D9AE5B;letter-spacing:.02em;font-size:2.5rem;font-weight:600}
 .schach-treff h1{text-shadow:0 2px 14px rgba(0,0,0,.85),0 0 1px rgba(217,174,91,.35)}
 .schach-treff h1:after{content:'';display:block;width:64px;height:1px;margin-top:12px;background:rgba(217,174,91,.45)}
-.schach-treff h2{font-size:16px;font-weight:600;margin-bottom:16px}
+.schach-treff h2{font-size:1rem;font-weight:600;margin-bottom:16px}
 .schach-treff button,.schach-treff input,.schach-treff a{min-height:44px;border-radius:12px;padding:10px 12px}
 .schach-treff button{border:1px solid rgba(255,255,255,.07);color:#D9AE5B;background:#0E100F}
 .schach-treff button:hover{color:#F0CF86;border-color:#D9AE5B}
@@ -23,7 +23,7 @@
 .schach-treff .st-pin-form{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .schach-treff article{padding:14px 0;border-bottom:1px solid rgba(255,255,255,.07)}
 .schach-treff .st-message-heading{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.schach-treff time,.schach-treff small{font-size:12px;color:#A8A293}
+.schach-treff time,.schach-treff small{font-size:0.75rem;color:#A8A293}
 .schach-treff time,.schach-treff dd,.schach-treff .st-member>span{font-family:ui-monospace,monospace}
 .schach-treff .st-name{background:none;border:0;text-align:left;overflow-wrap:anywhere;max-width:100%;padding-left:0}
 .schach-treff form{display:flex;gap:8px;padding-top:16px}

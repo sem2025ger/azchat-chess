@@ -7,7 +7,7 @@ export const translations: TranslationDictionary = {
   'nav.spieltag': { en:'Matchday', de:'Spieltag', az:'Oyun günü', tr:'Maç günü', ua:'Ігровий день', ru:'Игровой день' },
   'nav.spieler': { en:'Players', de:'Spieler', az:'Oyunçular', tr:'Oyuncular', ua:'Гравці', ru:'Игроки' },
   // Navigation & Layout
-  'nav.home': { en: 'Home', de: 'Startseite', ua: 'Головна', ru: 'Главная', az: 'Ana Səhifə', tr: 'Ana Sayfa' },
+  'nav.home': { en: 'Home', de: 'Startseite', ua: 'Головна', ru: 'Главная', az: 'Ana səhifə', tr: 'Ana sayfa' },
   'nav.play': { en: 'Play', de: 'Spielen', ua: 'Грати', ru: 'Играть', az: 'Oyna', tr: 'Oyna' },
   'nav.game': { en: 'Analysis', de: 'Analyse', ua: 'Аналіз', ru: 'Анализ', az: 'Analiz', tr: 'Analiz' },
   'nav.chat': { en: 'ChessAZ Deutsch', de: 'ChessAZ Deutsch', ua: 'ChessAZ Deutsch', ru: 'ChessAZ Deutsch', az: 'ChessAZ Deutsch', tr: 'ChessAZ Deutsch' },

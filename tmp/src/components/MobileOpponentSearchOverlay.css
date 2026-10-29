@@ -82,14 +82,14 @@
     pointer-events:none;
   }
   .chessaz-search-mobile__eyebrow {
-    color:#d8b783; font-size:12px; font-weight:700; line-height:18px;
+    color:#d8b783; font-size:0.75rem; font-weight:700; line-height:18px;
     letter-spacing:.23em;
   }
   .chessaz-search-mobile__title {
     max-width:100%; margin:7px 0 0;
     color:#f6eee2;
     font-family:'ChessAZ Search UI', 'Segoe UI',sans-serif;
-    font-size:clamp(19px,5.4vw,23px);
+    font-size:clamp(1.1875rem,5.4vw,1.4375rem);
     font-weight:700; font-style:normal; text-transform:none;
     line-height:1.27; letter-spacing:-.035em;
     text-wrap:balance;
@@ -97,7 +97,7 @@
   }
   .chessaz-search-mobile__description {
     margin:7px 0 13px; color:#c7c0b7;
-    font-size:13.5px; font-weight:500; font-style:normal;
+    font-size:0.84375rem; font-weight:500; font-style:normal;
     letter-spacing:.005em; text-transform:none; line-height:1.4;
   }
   .chessaz-search-mobile__clock {
@@ -110,7 +110,7 @@
   .chessaz-search-mobile__elapsed {
     color:#f8f1e7; font-family:'ChessAZ Search UI', 'Segoe UI',sans-serif;
     font-variant-numeric:tabular-nums;
-    font-size:29px; font-weight:600; letter-spacing:.045em; line-height:1;
+    font-size:1.8125rem; font-weight:600; letter-spacing:.045em; line-height:1;
   }
   .chessaz-search-mobile__cancel {
     box-sizing:border-box;
@@ -121,7 +121,7 @@
     background:linear-gradient(180deg,rgba(104,101,96,.23),rgba(61,64,65,.23));
     color:#eae0d3;
     font-family:'ChessAZ Search UI', 'Segoe UI',sans-serif;
-    font-size:15.5px; font-weight:650; font-style:normal;
+    font-size:0.96875rem; font-weight:650; font-style:normal;
     letter-spacing:.015em; text-transform:none;
     cursor:pointer; touch-action:manipulation;
     transition:background .15s,border-color .15s,transform .15s;

@@ -30,11 +30,11 @@
   }
 
   .desktop-player-passport > header p:first-child {
-    font-size: 17px;
+    font-size: 1.0625rem;
   }
 
   .desktop-player-passport > header p + p {
-    font-size: 13px;
+    font-size: 0.8125rem;
   }
 
   .desktop-player-passport > section {
@@ -47,7 +47,7 @@
   }
 
   .desktop-player-passport h2 {
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.5;
     overflow-wrap: anywhere;
   }
@@ -74,7 +74,7 @@
   }
 
   .desktop-player-passport .passport-identity h1 {
-    font-size: 28px;
+    font-size: 1.75rem;
     line-height: 1.2;
     overflow-wrap: anywhere;
     word-break: normal;
@@ -83,7 +83,7 @@
   .desktop-player-passport .passport-identity > .relative > div:first-child > div:first-child > div {
     width: 88px;
     height: 88px;
-    font-size: 38px;
+    font-size: 2.375rem;
     border-radius: 23px;
   }
 
@@ -98,11 +98,11 @@
 
   .desktop-player-passport .passport-rating [role='group'] button {
     min-height: 46px;
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   .desktop-player-passport .passport-rating .tabular-nums {
-    font-size: 52px;
+    font-size: 3.25rem;
   }
 
   .desktop-player-passport .passport-signature {
@@ -111,7 +111,7 @@
   }
 
   .desktop-player-passport .passport-signature > p {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   .desktop-player-passport .passport-next {
@@ -123,14 +123,14 @@
   }
 
   .desktop-player-passport .passport-next > p {
-    font-size: 19px;
+    font-size: 1.1875rem;
     margin-top: 10px;
     margin-bottom: 18px;
   }
 
   .desktop-player-passport .passport-next > button {
     min-height: 50px;
-    font-size: 14px;
+    font-size: 0.875rem;
   }
 
   .desktop-player-passport .passport-performance {
@@ -143,7 +143,7 @@
   }
 
   .desktop-player-passport .passport-performance .text-center .tabular-nums {
-    font-size: 30px;
+    font-size: 1.875rem;
   }
 
   .desktop-player-passport .passport-recent {
@@ -168,6 +168,6 @@
 
   .desktop-player-passport > footer {
     padding-top: 4px;
-    font-size: 11px;
+    font-size: 0.6875rem;
   }
 }
