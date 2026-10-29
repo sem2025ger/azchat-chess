@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, CalendarDays, Radio, Newspaper, ShieldCheck, MapPin, Trophy, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
+import NationwideChatRail from '../components/schachTreff/NationwideChatRail';
 import './RegionOverview.css';
 import { useLanguage } from '../context/LanguageContext';
 const regionText: Record<string,Record<'en'|'de'|'az'|'tr'|'ua'|'ru',string>> = {
@@ -205,17 +206,21 @@ export default function RegionOverview(){
   </header>
   {detail&&<div className="nrw-back"><Link to="/region/nrw"><ArrowLeft size={16} aria-hidden="true"/> {tr("Alle NRW-Themen")}</Link><span>{tr(sectionLabels[detail])}</span></div>}
   {error&&<p className="nrw-error" role="alert">{tr(error)}</p>}
-   <div className={'nrw-grid'+(detail?' nrw-grid--detail':'')}>
+   <div className="nrw-layout">
+    <div className={'nrw-grid'+(detail?' nrw-grid--detail':'')}>
     {(!detail||detail==='turniere')&&<Tile section="turniere" icon={<CalendarDays size={19}/>} detail={!!detail} count={events.length?String(events.length):undefined}>{content.turniere}</Tile>}
     {(!detail||detail==='ligen')&&<Tile section="ligen" icon={<Trophy size={19}/>} detail={!!detail} count={featuredLeagues.length?String(featuredLeagues.length):undefined}>{content.ligen}</Tile>}
     {(!detail||detail==='vereine')&&<Tile section="vereine" icon={<Users size={19}/>} detail={!!detail} count={visibleClubs.length?String(visibleClubs.length):undefined}>{content.vereine}</Tile>}
     {detail==='news'&&<Tile section="news" icon={<Newspaper size={19}/>} detail count={news.length?String(news.length):undefined}>{content.news}</Tile>}
     {detail==='live'&&<Tile section="live" icon={<Radio size={19}/>} detail>{content.live}</Tile>}
    </div>
-   {!detail&&<details className="nrw-news">
+    {!detail&&<details className="nrw-news">
     <summary><Newspaper size={18} aria-hidden="true"/><span>{tr('Nachrichten aus den Vereinen')}</span>{news.length>0&&<span className="nrw-count">{news.length}</span>}</summary>
     <div className="nrw-news-content">{content.news}<DashboardLink section="news">{tr(sectionActions.news)}</DashboardLink><DashboardLink section="live">{tr(sectionLabels.live)}</DashboardLink></div>
    </details>}
-   <footer className="nrw-footer"><span>{tr('Vereinsangaben aus NRW · von Vereinen gepflegt.')}</span><Link to="/chat"><MessageSquare size={16} aria-hidden="true"/>{tr('Schach-Treff Deutschland')}<ArrowUpRight size={14} aria-hidden="true"/></Link></footer>
+     <footer className="nrw-footer"><span>{tr('Vereinsangaben aus NRW · von Vereinen gepflegt.')}</span><Link to="/chat"><MessageSquare size={16} aria-hidden="true"/>{tr('Schach-Treff Deutschland')}<ArrowUpRight size={14} aria-hidden="true"/></Link></footer>
+    </div>
+    <NationwideChatRail />
+   </div>
  </div>;
 }
