@@ -2,7 +2,7 @@
 // A single unauthenticated QA-only probe. No credentials, feature changes or data writes.
 const {URL} = require('node:url');
 
-const QA_HOST = 'chessaz-deutsch-qa-api.onrender.com';
+const QA_HOSTS = new Set(['chessaz-deutsch-qa-api.onrender.com', 'chessaz-ai-coach-v1-isolated-qa.onrender.com']);
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
 const REQUEST_BODY = JSON.stringify({moves: 'e4', color: 'black', language: 'en'});
 const MAX_AUTH_BODY_BYTES = 2048;
@@ -12,7 +12,7 @@ function checkedQaUrl(baseUrl) {
   let url;
   try { url = new URL(baseUrl); } catch { throw Error('invalid_qa_url'); }
   const local = LOCAL_HOSTS.has(url.hostname);
-  if (url.hostname !== QA_HOST && !local) throw Error('unapproved_qa_host');
+  if (!QA_HOSTS.has(url.hostname) && !local) throw Error('unapproved_qa_host');
   if (url.protocol !== (local ? 'http:' : 'https:')) throw Error('invalid_qa_protocol');
   if (url.username || url.password || url.search || url.hash || url.pathname !== '/') throw Error('invalid_qa_url');
   if (!local && url.port) throw Error('invalid_qa_port');
