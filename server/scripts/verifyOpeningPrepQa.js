@@ -100,6 +100,10 @@ if (require.main === module) {
   verifyOpeningPrepQa({baseUrl: process.env.QA_BASE_URL, token: process.env.QA_ACCESS_TOKEN,
     expectedAi: process.env.QA_EXPECT_AI || 'either', report: value => console.log(JSON.stringify(value))})
     .then(result => console.log(JSON.stringify(result)))
-    .catch(error => {console.error('QA FAILED: ' + error.message.replace(/Bearer\s+\S+/g, 'Bearer [redacted]')); process.exitCode = 1;});
+    .catch(() => {
+      // Assertion/JSON errors can contain response data or credentials from an invalid URL.
+      console.error('QA FAILED: network, response, or acceptance check failed. Review the status/latency lines; response bodies are not logged.');
+      process.exitCode = 1;
+    });
 }
 module.exports = {verifyOpeningPrepQa, validateLesson};
