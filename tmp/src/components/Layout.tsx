@@ -106,8 +106,8 @@ export default function Layout() {
           <nav className="px-3 xl:px-5 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
-            <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" />
-            {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW" themeColor="theme-gold" />}
+            <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
+            {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW" themeColor="theme-gold" bronzeLabel />}
             {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
             {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label={t("nav.spieler")} themeColor="theme-blue" />}
@@ -185,7 +185,7 @@ export default function Layout() {
   );
 }
 
-function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean }) {
+function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false, bronzeLabel = false }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean, bronzeLabel?: boolean }) {
   const { pathname } = useLocation();
   const destination = to === '/home' && pathname === '/' ? '/' : to;
   return (
@@ -204,7 +204,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       }
     >
       <div className="w-8 flex justify-center shrink-0 group-hover:scale-110 transition-transform duration-150 motion-reduce:transition-none">{icon}</div>
-      <span className="site-nav-copy ml-4 hidden xl:flex"><span className="site-nav-label">{label}</span></span>
+      <span className="site-nav-copy ml-4 hidden xl:flex"><span className={cx("site-nav-label", bronzeLabel && "site-nav-label--bronze")}>{label}</span></span>
 
       {/* Active Indicator Dot */}
       <NavItemActiveDot />

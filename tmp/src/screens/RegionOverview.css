@@ -70,11 +70,39 @@
 .nrw-chat-rail{display:flex;flex-direction:column;gap:12px;min-width:0;padding:16px;border:1px solid #8C6A4866;border-radius:16px;background:#171b1d;position:sticky;top:16px}
 .nrw-chat-header{display:flex;align-items:center;gap:9px}.nrw-chat-header h2{margin:0;font-size:1rem;color:#A9825A;font-weight:600}.nrw-chat-header small{font-size:.6875rem;color:#b1b0aa}.nrw-chat-open{margin-left:auto}.nrw-chat-dot{color:#A9825A}
 .nrw-chat-messages{min-height:0}.nrw-chat-message{padding:9px 0;border-bottom:1px solid #ffffff18;overflow-wrap:anywhere}.nrw-chat-message p,.nrw-chat-notice p{font-size:.75rem;line-height:1.5;color:#b1b0aa;white-space:pre-wrap}.nrw-chat-meta{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;font-size:.6875rem;color:#A9825A}.nrw-chat-compose label{display:block;margin-bottom:6px;font-size:.75rem}.nrw-chat-compose-line{display:flex;gap:6px}.nrw-chat-compose input{min-width:0;width:100%;background:#202426;border:1px solid #ffffff33;border-radius:8px;padding:9px;color:#eee}.nrw-chat-compose button,.nrw-chat-notice button{border:1px solid #8C6A4877;border-radius:8px;padding:9px;color:#c0a180;background:#29251e}.nrw-chat-compose button:disabled{opacity:.5}.nrw-chat-error{font-size:.75rem;color:#ffb3a5}.nrw-chat-rail footer{padding-top:9px;border-top:1px solid #ffffff22;font-size:.6875rem;color:#aaa}.nrw-chat-rail a{color:#A9825A}.nrw-chat-history>summary{color:#A9825A;cursor:pointer;font-size:.75rem}
-/* NRW-specific muted bronze replaces the old champagne/gold accents. */
-.nrw-shell{--nrw-bronze:#A9825A;--nrw-bronze-dark:#8C6A48}
-.nrw-shell :is(.nrw-kicker,.nrw-region-code,.nrw-header h1,.nrw-links a,.nrw-inline,.nrw-card-head,.nrw-card-icon,.nrw-items time,.nrw-score,.nrw-more,.nrw-back,.nrw-news>summary::after,.nrw-footer a,.nrw-chat-rail a,.nrw-chat-dot,.nrw-chat-header h2,.nrw-chat-meta,.nrw-chat-history>summary){color:var(--nrw-bronze)}
-.nrw-shell :is(.nrw-card,.nrw-links a,.nrw-region-code,.nrw-chat-rail){border-color:#8C6A4855}
-.nrw-shell :is(a,summary,select,button,input):focus-visible{outline:2px solid var(--nrw-bronze);outline-offset:3px}
-.nrw-shell a:hover{color:#C0A180}
+/* Light, cool bronze-silver metal: distinct headings, body copy and actions. NRW only. */
+.nrw-shell{
+ --nrw-metal:#C7BBA8;
+ --nrw-metal-muted:#B6AB9A;
+ --nrw-metal-glow:#E1DCD3;
+ --nrw-metal-stroke:rgba(193,182,162,.34);
+ --nrw-metallic-gradient:linear-gradient(108deg,#B8AA96 0%,#E1DCD2 37%,#BEB09A 70%,#DDD5C8 100%);
+}
+.nrw-shell .nrw-header h1,
+.nrw-shell .nrw-card-head h2,
+.nrw-shell .nrw-chat-header h2{
+ color:#D8CDBD;
+ background-image:var(--nrw-metallic-gradient);
+ -webkit-background-clip:text;
+ background-clip:text;
+ -webkit-text-fill-color:transparent;
+}
+.nrw-shell .nrw-card-head{color:#D8CDBD}
+.nrw-shell .nrw-card-head h2{font-weight:650;letter-spacing:.005em}
+.nrw-shell .nrw-card-icon,.nrw-shell .nrw-chat-dot{color:var(--nrw-metal)}
+.nrw-shell :is(.nrw-kicker,.nrw-region-code,.nrw-items time,.nrw-score,.nrw-back,.nrw-news>summary::after,.nrw-chat-meta){color:var(--nrw-metal)}
+.nrw-shell :is(.nrw-links a,.nrw-inline,.nrw-more,.nrw-footer a,.nrw-chat-rail a,.nrw-chat-history>summary){color:#D2C3AF}
+.nrw-shell :is(.nrw-header p,.nrw-muted,.nrw-card-subtitle,.nrw-items small,.nrw-league-meta,.nrw-source,.nrw-chat-message p,.nrw-chat-notice p){color:#B9BDC0}
+.nrw-shell .nrw-items strong{color:#E8EAEB;font-weight:600}
+.nrw-shell .nrw-count{color:#C6C7C5;border-color:rgba(193,182,162,.3)}
+.nrw-shell .nrw-news>summary{color:#D6D8D7;font-weight:600}
+.nrw-shell .nrw-score>span{color:#B9BDC0}
+.nrw-shell :is(.nrw-card,.nrw-links a,.nrw-region-code,.nrw-chat-rail){border-color:var(--nrw-metal-stroke)}
+.nrw-shell :is(.nrw-chat-compose button,.nrw-chat-notice button){color:#DDCFBB;border-color:var(--nrw-metal-stroke);background:#23262A}
+.nrw-shell :is(a,summary,select,button,input):focus-visible{outline:2px solid #D2C3AF;outline-offset:3px}
+.nrw-shell a:hover{color:#E6DAC9}
+@media(prefers-contrast:more){
+ .nrw-shell :is(.nrw-header h1,.nrw-card-head h2,.nrw-chat-header h2){background-image:none;-webkit-text-fill-color:currentColor;color:#EAE2D7}
+}
 @media(max-width:1199px){.nrw-layout{grid-template-columns:minmax(0,1fr)}.nrw-chat-rail{position:static}.nrw-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.nrw-grid{grid-template-columns:minmax(0,1fr)}.nrw-layout{gap:14px}}

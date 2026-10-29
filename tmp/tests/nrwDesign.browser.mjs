@@ -71,6 +71,12 @@ export const supabase={from(table){let single=false,filters=[];const q={select()
       assert.ok(navMetrics.every(v=>!v.wrap&&!v.clipped&&v.fontSize>=15&&v.fontSize<=16&&v.weight>=500&&v.weight<=600),'readable one-line navigation: '+JSON.stringify(navMetrics));
       assert.ok(new Set(navMetrics.map(v=>Math.round(v.height))).size===1,'equal menu heights');
       assert.equal(navMetrics.find(v=>v.name==='Schach-Treff')?.name,'Schach-Treff','no subtitle');
+      const bronzeLabels=await evaluate(`(()=>{const labels=[...document.querySelectorAll('aside .site-nav-label')].filter(e=>e.getClientRects().length);return labels.map(el=>({label:el.textContent,metal:el.classList.contains('site-nav-label--bronze'),gradient:getComputedStyle(el).backgroundImage.includes('linear-gradient')}));})()`);
+      assert.deepEqual(bronzeLabels.filter(v=>v.metal).map(v=>v.label).sort(),['NRW','Schach-Treff'],'only NRW and Schach-Treff receive bronze lettering');
+      assert.ok(bronzeLabels.filter(v=>v.metal).every(v=>v.gradient),'metallic gradient rendered');
+      assert.ok(bronzeLabels.filter(v=>!v.metal).every(v=>!v.gradient),'other menu labels unchanged');
+      const nrwHeadings=await evaluate(`(()=>[...document.querySelectorAll('.nrw-card-head h2')].map(el=>getComputedStyle(el).backgroundImage.includes('linear-gradient')))()`);
+      assert.ok(nrwHeadings.length===3 && nrwHeadings.every(Boolean),'three metallic NRW headings');
      }
     }
     if(verify){

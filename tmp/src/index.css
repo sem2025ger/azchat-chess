@@ -6,8 +6,8 @@
 @media(min-width:1280px){
  [data-home-route] [data-route-scroll]{overflow:hidden}
  .home-screen-root{height:100%;min-height:0;padding:24px 0}
- .home-screen-root [data-mobile-home-stack]{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr);align-items:center;justify-items:center;gap:24px;height:100%;min-height:0;padding:0 28px;overflow:visible}
- .home-screen-root .home-board-column{width:100%;max-width:min(630px,calc(100dvh - 144px));margin-top:0;align-items:stretch}
+ .home-screen-root [data-mobile-home-stack]{display:grid;grid-template-columns:minmax(0,1.22fr) minmax(300px,.78fr);align-items:center;justify-items:center;gap:24px;height:100%;min-height:0;padding:0 28px;overflow:visible}
+ .home-screen-root .home-board-column{width:100%;max-width:min(660px,calc(100dvh - 120px));margin-top:0;align-items:stretch}
  .home-screen-root .home-desktop-controls{position:static;margin-top:12px}
  .home-screen-root .home-dashboard-column{margin:0;width:100%;max-width:420px;min-width:0}
 }
@@ -1897,3 +1897,16 @@ aside nav{padding-top:12px!important}
 
 /* Desktop sidebar: equal centered rows, one-line labels across all six locales. */
 @media(min-width:768px){aside .site-nav-link.sidebar-item{height:54px;min-height:54px;padding:0 14px;display:flex;align-items:center;justify-content:flex-start;box-sizing:border-box;gap:0}aside .site-nav-link .site-nav-copy{align-self:center;align-items:center;min-height:100%;min-width:0;white-space:nowrap}aside .site-nav-link .site-nav-label{font-family:Inter,system-ui,sans-serif;font-size:15px;font-weight:600;line-height:20px;white-space:nowrap;overflow:visible;text-overflow:clip;margin:0;padding:0}aside .site-nav-link>div:first-child{align-self:center;align-items:center}}
+
+/* Metallic lettering is restricted to the two designated desktop sidebar items. */
+@media(min-width:1280px){
+ aside .site-nav-link .site-nav-label--bronze{
+  color:#D3C5AE;
+  background-image:linear-gradient(110deg,#B9AA92 0%,#E5DED3 35%,#C0AD91 70%,#DBD0C1 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 3px rgba(215,207,193,.17));
+ }
+}
+@media(min-width:1280px) and (prefers-contrast:more){aside .site-nav-link .site-nav-label--bronze{background-image:none;color:#E9DFD1;-webkit-text-fill-color:currentColor;filter:none}}
