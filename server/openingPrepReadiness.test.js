@@ -1,6 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const {createServer} = require('node:http');
 const {checkedQaUrl, verifyOpeningPrepReadiness} = require('./scripts/verifyOpeningPrepReadiness');
 const QA = 'https://chessaz-deutsch-qa-api.onrender.com/';
 
@@ -62,4 +63,40 @@ test('unsafe destination and invalid options are rejected before fetch', async (
   await assert.rejects(verifyOpeningPrepReadiness({baseUrl: 'https://chessaz.de/', fetchImpl}));
   await assert.rejects(verifyOpeningPrepReadiness({baseUrl: QA, fetchImpl, timeoutMs: 120000}));
   assert.equal(calls, 0);
+});
+
+test('large authentication replies are rejected without buffering an unlimited body', async () => {
+  let pulls = 0;
+  let cancelled = false;
+  const stream = new ReadableStream({
+    pull(controller) {
+      pulls++;
+      controller.enqueue(new Uint8Array(1024));
+      if (pulls > 10) controller.close();
+    },
+    cancel() { cancelled = true; },
+  });
+  const result = await verifyOpeningPrepReadiness({baseUrl: QA, fetchImpl: async () =>
+    new Response(stream, {status: 401, headers: {'content-type': 'application/json'}})});
+  assert.equal(result.status, 'UNVERIFIED_AUTH_RESPONSE');
+  assert.ok(pulls < 10, 'must not read all bytes before rejecting');
+  assert.equal(cancelled, true);
+});
+
+test('real loopback HTTP confirms exactly one unauthenticated request', async () => {
+  const requests = [];
+  const server = createServer((req, res) => {
+    requests.push({url: req.url, method: req.method, authorization: req.headers.authorization});
+    res.writeHead(401, {'content-type': 'application/json'});
+    res.end(JSON.stringify({code: 'authentication_required'}));
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  try {
+    const baseUrl = 'http://127.0.0.1:' + server.address().port + '/';
+    const result = await verifyOpeningPrepReadiness({baseUrl});
+    assert.equal(result.status, 'AUTH_ROUTE_PRESENT');
+    assert.deepEqual(requests, [{url: '/api/ai-coach/preparation', method: 'POST', authorization: undefined}]);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
 });
