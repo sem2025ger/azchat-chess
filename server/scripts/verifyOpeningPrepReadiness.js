@@ -5,6 +5,7 @@ const {URL} = require('node:url');
 const QA_HOST = 'chessaz-deutsch-qa-api.onrender.com';
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1']);
 const REQUEST_BODY = JSON.stringify({moves: 'e4', color: 'black', language: 'en'});
+const MAX_AUTH_BODY_BYTES = 2048;
 
 function checkedQaUrl(baseUrl) {
   if (typeof baseUrl !== 'string' || !baseUrl) throw Error('qa_url_required');
@@ -40,8 +41,31 @@ async function verifyOpeningPrepReadiness({baseUrl, fetchImpl = fetch, timeoutMs
     return {...base, status: 'UNEXPECTED_RESPONSE', note: 'Unauthenticated requests must not return lesson data'};
   if (!/^application\/json(?:\s*;|\s*$)/i.test(response.headers.get('content-type') || ''))
     return {...base, status: 'UNVERIFIED_AUTH_RESPONSE', note: 'An upstream proxy may have returned HTTP 401'};
-  const raw = await response.text();
-  if (raw.length > 2048) return {...base, status: 'UNVERIFIED_AUTH_RESPONSE', note: 'Unexpected authentication body size'};
+  // Never buffer an untrusted 401 body without a limit. Content-Length alone is not authoritative.
+  if (Number(response.headers.get('content-length')) > MAX_AUTH_BODY_BYTES)
+    return {...base, status: 'UNVERIFIED_AUTH_RESPONSE', note: 'Unexpected authentication body size'};
+  if (!response.body || typeof response.body.getReader !== 'function')
+    return {...base, status: 'UNVERIFIED_AUTH_RESPONSE', note: 'Missing authentication response body'};
+  const reader = response.body.getReader();
+  const chunks = []; let total = 0; let oversized = false;
+  try {
+    while (true) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_AUTH_BODY_BYTES) { oversized = true; break; }
+      chunks.push(value);
+    }
+  } finally {
+    if (oversized) await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+  if (oversized) return {...base, status: 'UNVERIFIED_AUTH_RESPONSE', note: 'Unexpected authentication body size'};
+  const bytes = new Uint8Array(total); let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  let raw;
+  try { raw = new TextDecoder('utf-8', {fatal: true}).decode(bytes); }
+  catch { return {...base, status: 'UNVERIFIED_AUTH_RESPONSE', note: 'Unexpected authentication response encoding'}; }
   let parsed;
   try { parsed = JSON.parse(raw); } catch { return {...base, status: 'UNVERIFIED_AUTH_RESPONSE', note: 'Unexpected authentication response format'}; }
   if (parsed?.code !== 'authentication_required')
