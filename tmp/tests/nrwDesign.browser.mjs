@@ -58,6 +58,21 @@ export const supabase={from(table){let single=false,filters=[];const q={select()
     if(lang==='de'||lang==='ru')await capture('nrw-'+lang+'-'+width+'x'+height);
     const metric=await evaluate(`(()=>{const root=document.querySelector('.nrw-shell'),cards=[...root.querySelectorAll('.nrw-grid>.nrw-card')],r=e=>{const b=e.getBoundingClientRect();return{x:b.x,y:b.y,right:b.right,bottom:b.bottom,width:b.width,height:b.height}};return {width:innerWidth,height:innerHeight,documentWidth:document.documentElement.scrollWidth,headings:cards.map(e=>e.querySelector('h2').textContent),cards:cards.map(r),newsClosed:!root.querySelector('.nrw-news')?.open,rail:!!root.querySelector('.nrw-chat-rail'),scrolls:[...root.querySelectorAll('*')].filter(e=>e.scrollHeight>e.clientHeight+1&&/^(auto|scroll)$/.test(getComputedStyle(e).overflowY)).length,links:[...root.querySelectorAll('a')].filter(e=>e.getClientRects().length).map(e=>e.getAttribute('href')),cityLines:[...root.querySelectorAll('.nrw-card--vereine .nrw-items a')].map(e=>({title:r(e.querySelector('strong')),city:r(e.querySelector('small'))}))};})()`);
     measurements.push({lang,...metric});
+    if(verify && (lang==='de'||lang==='ru')){
+     const navMetrics=await evaluate(`(()=>{const links=[...document.querySelectorAll('aside nav .site-nav-link')].filter(e=>e.getClientRects().length);
+      return links.map(link=>{const label=link.querySelector('.site-nav-label'),icon=link.firstElementChild,box=link.getBoundingClientRect(),r=label?.getBoundingClientRect(),i=icon?.getBoundingClientRect();
+       return {name:label?.textContent||'',height:box.height,topGap:r?Math.abs(r.top-box.top):999,bottomGap:r?Math.abs(box.bottom-r.bottom):999,
+        iconCenter:i?(i.top+i.bottom)/2:0,labelCenter:r?(r.top+r.bottom)/2:0,wrap:label?label.getBoundingClientRect().height>parseFloat(getComputedStyle(label).lineHeight)+2:false,
+        clipped:label?label.scrollWidth>label.clientWidth+1:false,weight:label?parseInt(getComputedStyle(label).fontWeight):0,
+        fontSize:label?parseFloat(getComputedStyle(label).fontSize):0};});})()`);
+     if(width===1280){assert.ok(navMetrics.length>=5,'desktop menu mounted');
+      assert.ok(navMetrics.every(v=>Math.abs(v.topGap-v.bottomGap)<=2),'vertical center: '+JSON.stringify(navMetrics));
+      assert.ok(navMetrics.every(v=>Math.abs(v.iconCenter-v.labelCenter)<=2),'icon-label center: '+JSON.stringify(navMetrics));
+      assert.ok(navMetrics.every(v=>!v.wrap&&!v.clipped&&v.fontSize>=15&&v.fontSize<=16&&v.weight>=500&&v.weight<=600),'readable one-line navigation: '+JSON.stringify(navMetrics));
+      assert.ok(new Set(navMetrics.map(v=>Math.round(v.height))).size===1,'equal menu heights');
+      assert.equal(navMetrics.find(v=>v.name==='Schach-Treff')?.name,'Schach-Treff','no subtitle');
+     }
+    }
     if(verify){
      assert.ok(metric.documentWidth<=width+1,'NRW overflow '+JSON.stringify(metric));assert.equal(metric.cards.length,3,'only three core panels');assert.equal(metric.rail,true,'national chat rail restored');assert.equal(metric.newsClosed,true,'news is secondary and closed initially');assert.equal(metric.scrolls,0,'no nested NRW scrolling');
      assert.ok(metric.links.includes('/vorbereitung'),'preparation entry preserved');assert.ok(!await evaluate("!!document.querySelector('.nrw-grid .nrw-card--live')"),'no unavailable broadcast card');
