@@ -8,7 +8,7 @@ From `server/` on an operator-controlled runner:
 QA_BASE_URL=https://chessaz-deutsch-qa-api.onrender.com node scripts/verifyOpeningPrepReadiness.js
 ```
 
-The command sends exactly one POST to `/api/ai-coach/preparation` with a fixed valid one-ply opening (`e4`). It does not accept a token and never logs response bodies. Unexpectedly large authentication response bodies are rejected after a bounded read (2 KiB). It strictly rejects production hosts, arbitrary domains, credentials in URLs, paths, redirects and search parameters; localhost and 127.0.0.1 are permitted for isolated tests only.
+The command sends exactly one POST to `/api/ai-coach/preparation` with a fixed valid one-ply opening (`e4`). It does not accept a token and never logs response bodies. Unexpectedly large authentication response bodies are rejected after a bounded read (2 KiB). It accepts exactly two pinned QA hosts (`chessaz-deutsch-qa-api.onrender.com` and `chessaz-ai-coach-v1-isolated-qa.onrender.com`), and strictly rejects production hosts, arbitrary domains, credentials in URLs, paths, redirects and search parameters; localhost and 127.0.0.1 are permitted for isolated tests only.
 
 ## Status meanings
 
@@ -30,4 +30,4 @@ Once those gates are met, the existing verifier uses a short-lived QA-only token
 
 ## Validation
 
-Run `node --test openingPrepReadiness.test.js` from `server/`. Six isolated tests cover pinned destinations, the one-request contract, 404/429/200/proxy 401 outcomes, fail-closed validation, bounded streamed responses, and an actual loopback HTTP request. No hosted call is made.
+Run `node --test openingPrepReadiness.test.js` from `server/`. Six isolated tests cover both pinned QA destinations, the one-request contract, 404/429/200/proxy 401 outcomes, fail-closed validation, bounded streamed responses, and an actual loopback HTTP request. No hosted call is made.
