@@ -20,8 +20,10 @@ test('only Schach-Treff and NRW desktop sidebar labels receive metallic treatmen
  assert.ok(highlighted.some(m=>m.includes('label="NRW"')));
  assert.match(site,/aside \.site-nav-link \.site-nav-label--bronze/);
 });
-test('desktop Home board grows proportionally without changing mobile rules',()=>{
- assert.match(site,/grid-template-columns:minmax\(0,1\.22fr\) minmax\(300px,\.78fr\)/);
- assert.match(site,/max-width:min\(660px,calc\(100dvh - 120px\)\)/);
- assert.match(site,/\.home-board-column/);
+test('desktop Home board remains in its visual plane beside balanced Arena panels',()=>{
+ assert.match(site,/grid-template-columns:minmax\(0,1\.2fr\) minmax\(320px,\.8fr\)/);
+ assert.match(site,/max-width:min\(640px,calc\(100dvh - 145px\)\)/);
+ assert.match(site,/\.home-board-column\{[^}]*perspective:1400px/);
+ assert.match(site,/\.home-dashboard-column\{[^}]*max-width:420px/);
+ assert.doesNotMatch(site.slice(0,site.indexOf('/* Native route scroll only')),/translateZ\(|scale\(/);
 });
