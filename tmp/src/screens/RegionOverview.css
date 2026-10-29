@@ -10,7 +10,9 @@
 .nrw-links{flex-wrap:wrap;margin-top:12px}
 .nrw-links a,.nrw-inline{display:inline-flex;align-items:center;gap:7px;min-height:36px;font-size:.75rem;font-weight:500;color:#dfc596}
 .nrw-links a{padding:8px 12px;border:1px solid #a997754d;border-radius:9px;background:#222426}
-.nrw-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
+.nrw-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.nrw-layout>div{min-width:0}
+.nrw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
 .nrw-card{display:flex;flex-direction:column;min-width:0;padding:18px;border:1px solid #b79c7540;border-radius:16px;background:linear-gradient(145deg,#202326,#171a1d)}
 .nrw-card-head{align-items:flex-start;min-height:44px;color:#e6cfaa}
 .nrw-card-head h2{margin:0;font-size:1rem;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
@@ -63,3 +65,16 @@
 @media(max-width:1199px){.nrw-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.nrw-card--vereine{grid-column:1/-1}.nrw-grid--detail{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:700px){.nrw-shell{padding:16px}.nrw-header{margin-bottom:16px}.nrw-header h1{font-size:1.75rem}.nrw-grid{grid-template-columns:minmax(0,1fr);gap:14px}.nrw-card{padding:16px}.nrw-card-head,.nrw-card-subtitle{min-height:0}.nrw-card--vereine{grid-column:auto}.nrw-links a,.nrw-inline,.nrw-more{min-height:40px}.nrw-footer{align-items:flex-start;flex-direction:column}.nrw-shell :is(a,summary,select){max-width:100%}}
 @media(prefers-reduced-motion:reduce){.nrw-shell :is(a,summary,select){transition:none}}
+
+/* Restored nationwide chat, with the same membership-controlled component. */
+.nrw-chat-rail{display:flex;flex-direction:column;gap:12px;min-width:0;padding:16px;border:1px solid #8C6A4866;border-radius:16px;background:#171b1d;position:sticky;top:16px}
+.nrw-chat-header{display:flex;align-items:center;gap:9px}.nrw-chat-header h2{margin:0;font-size:1rem;color:#A9825A;font-weight:600}.nrw-chat-header small{font-size:.6875rem;color:#b1b0aa}.nrw-chat-open{margin-left:auto}.nrw-chat-dot{color:#A9825A}
+.nrw-chat-messages{min-height:0}.nrw-chat-message{padding:9px 0;border-bottom:1px solid #ffffff18;overflow-wrap:anywhere}.nrw-chat-message p,.nrw-chat-notice p{font-size:.75rem;line-height:1.5;color:#b1b0aa;white-space:pre-wrap}.nrw-chat-meta{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;font-size:.6875rem;color:#A9825A}.nrw-chat-compose label{display:block;margin-bottom:6px;font-size:.75rem}.nrw-chat-compose-line{display:flex;gap:6px}.nrw-chat-compose input{min-width:0;width:100%;background:#202426;border:1px solid #ffffff33;border-radius:8px;padding:9px;color:#eee}.nrw-chat-compose button,.nrw-chat-notice button{border:1px solid #8C6A4877;border-radius:8px;padding:9px;color:#c0a180;background:#29251e}.nrw-chat-compose button:disabled{opacity:.5}.nrw-chat-error{font-size:.75rem;color:#ffb3a5}.nrw-chat-rail footer{padding-top:9px;border-top:1px solid #ffffff22;font-size:.6875rem;color:#aaa}.nrw-chat-rail a{color:#A9825A}.nrw-chat-history>summary{color:#A9825A;cursor:pointer;font-size:.75rem}
+/* NRW-specific muted bronze replaces the old champagne/gold accents. */
+.nrw-shell{--nrw-bronze:#A9825A;--nrw-bronze-dark:#8C6A48}
+.nrw-shell :is(.nrw-kicker,.nrw-region-code,.nrw-header h1,.nrw-links a,.nrw-inline,.nrw-card-head,.nrw-card-icon,.nrw-items time,.nrw-score,.nrw-more,.nrw-back,.nrw-news>summary::after,.nrw-footer a,.nrw-chat-rail a,.nrw-chat-dot,.nrw-chat-header h2,.nrw-chat-meta,.nrw-chat-history>summary){color:var(--nrw-bronze)}
+.nrw-shell :is(.nrw-card,.nrw-links a,.nrw-region-code,.nrw-chat-rail){border-color:#8C6A4855}
+.nrw-shell :is(a,summary,select,button,input):focus-visible{outline:2px solid var(--nrw-bronze);outline-offset:3px}
+.nrw-shell a:hover{color:#C0A180}
+@media(max-width:1199px){.nrw-layout{grid-template-columns:minmax(0,1fr)}.nrw-chat-rail{position:static}.nrw-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.nrw-grid{grid-template-columns:minmax(0,1fr)}.nrw-layout{gap:14px}}
