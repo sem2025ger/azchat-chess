@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const {createServer} = require('node:http');
 const {checkedQaUrl, verifyOpeningPrepReadiness} = require('./scripts/verifyOpeningPrepReadiness');
 const QA = 'https://chessaz-deutsch-qa-api.onrender.com/';
+const ISOLATED_QA = 'https://chessaz-ai-coach-v1-isolated-qa.onrender.com/';
 
 function stub(status, code = 'authentication_required', contentType = 'application/json') {
   const calls = [];
@@ -16,8 +17,9 @@ function stub(status, code = 'authentication_required', contentType = 'applicati
 
 test('only pinned QA origin or loopback can be probed', async () => {
   assert.equal(checkedQaUrl(QA).origin, 'https://chessaz-deutsch-qa-api.onrender.com');
+  assert.equal(checkedQaUrl(ISOLATED_QA).origin, 'https://chessaz-ai-coach-v1-isolated-qa.onrender.com');
   assert.equal(checkedQaUrl('http://127.0.0.1:4000/').port, '4000');
-  for (const bad of [undefined, '', 'not-a-url', 'https://chessaz.de/', 'https://chessaz-api.onrender.com/',
+  for (const bad of [undefined, '', 'not-a-url', 'https://chessaz.de/', 'https://chessaz-api.onrender.com/', 'https://chessaz-ai-coach-v1-isolated-qa.onrender.com.evil.example/',
     'http://chessaz-deutsch-qa-api.onrender.com/', 'https://chessaz-deutsch-qa-api.onrender.com:444/',
     'https://user:password@chessaz-deutsch-qa-api.onrender.com/',
     'https://chessaz-deutsch-qa-api.onrender.com/?token=secret',
