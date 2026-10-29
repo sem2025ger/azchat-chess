@@ -50,7 +50,7 @@ function validateBriefing(value){
  if(!clean||clean.length>1600||/https?:\/\/|\b(?:FEN|PGN)\s*:/i.test(clean))return null;
  return clean;
 }
-async function generateBriefing(result,language,{apiKey,model='gemini-3.8-flash',fetchImpl=fetch}={}){
+async function generateBriefing(result,language,{apiKey,model='gemini-2.5-flash',fetchImpl=fetch}={}){
  if(!apiKey||!/^gemini-[a-z0-9.-]{3,48}$/.test(model)||!result.groups.length)return null;
  const evidence=result.groups.map(g=>({move:g.move,games:g.games.slice(0,2).map(x=>({first25:x.first25.slice(0,28)}))}));
  const prompt=[
@@ -67,8 +67,7 @@ async function generateBriefing(result,language,{apiKey,model='gemini-3.8-flash'
    method:'POST',redirect:'error',signal:AbortSignal.timeout(9000),
    headers:{'x-goog-api-key':apiKey,'Content-Type':'application/json'},
    body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],
-    generationConfig:{temperature:0.2,maxOutputTokens:400,responseFormat:{text:{mimeType:'application/json',
-     schema:{type:'object',properties:{briefing:{type:'string'}},required:['briefing'],additionalProperties:false}}}}})
+    generationConfig:{temperature:0.2,maxOutputTokens:400,responseMimeType:'application/json'}})
   });
   if(!response.ok||Number(response.headers.get('content-length')||0)>16384)return null;
   const raw=await response.text();if(raw.length>16384)return null;

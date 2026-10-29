@@ -32,6 +32,6 @@ function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,
 }
 function installAiCoachFromEnv(app,verifyToken,index,env=process.env){
  return installAiCoach(app,{enabled:env.AI_COACH_ENABLED==='true',verifyToken,index,
-  apiKey:env.GEMINI_API_KEY||null,model:env.GEMINI_MODEL||'gemini-3.8-flash'});
+  apiKey:env.GEMINI_API_KEY||null,model:env.GEMINI_MODEL||'gemini-2.5-flash'});
 }
 module.exports={installAiCoach,installAiCoachFromEnv};
