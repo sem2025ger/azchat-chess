@@ -39,6 +39,41 @@ test('Gemini receives only bounded SAN evidence; fallback without key',async()=>
  assert.equal(called,true);assert.equal(text,'Study the central structure.');
  assert.equal(await generateBriefing(result,'ru',{apiKey:null}),null);
 });
+test('Gemini oversized chunked responses stop at the byte limit and cancel the stream',async()=>{
+ const lesson={moves:['e4'],color:'black',turn:'black',groups:[{move:'e5',games:[]}]};
+ for(const headers of [{},{'content-length':'16'}]){
+  let pulls=0,cancelled=false;
+  const body=new ReadableStream({pull(controller){
+   pulls++;controller.enqueue(new Uint8Array(16385));
+   if(pulls===3)controller.close();
+  },cancel(){cancelled=true;}},{highWaterMark:0});
+  assert.equal(await generateBriefing(lesson,'en',{apiKey:'synthetic',fetchImpl:async()=>new Response(body,{headers})}),null);
+  assert.equal(pulls,1,'Do not consume the rest of an oversized provider response');
+  assert.equal(cancelled,true);
+  assert.equal(body.locked,false);
+ }
+});
+test('Gemini response limit counts UTF-8 bytes, including unknown JSON fields',async()=>{
+ const lesson={moves:['e4'],color:'black',turn:'black',groups:[{move:'e5',games:[]}]};
+ const text=JSON.stringify({padding:'ш'.repeat(9000),candidates:[{content:{parts:[{text:'{"briefing":"Study the model games."}'}]}}]});
+ assert.ok(text.length<16384);assert.ok(Buffer.byteLength(text)>16384);
+ assert.equal(await generateBriefing(lesson,'ru',{apiKey:'synthetic',fetchImpl:async()=>new Response(text)}),null);
+});
+test('Gemini accepts exactly the byte limit, rejects invalid UTF-8 and cancels rejected status/header bodies',async()=>{
+ const lesson={moves:['e4'],color:'black',turn:'black',groups:[{move:'e5',games:[]}]};
+ const json=JSON.stringify({candidates:[{content:{parts:[{text:'{"briefing":"Проверенные партии."}'}]}}]});
+ const body=json+' '.repeat(16384-Buffer.byteLength(json));
+ assert.equal(await generateBriefing(lesson,'ru',{apiKey:'synthetic',fetchImpl:async()=>new Response(body)}),'Проверенные партии.');
+ const invalid=Buffer.from(JSON.stringify({candidates:[{content:{parts:[{text:'{"briefing":"badXtext"}'}]}}]}));
+ invalid[invalid.indexOf('X')]=255;
+ assert.equal(await generateBriefing(lesson,'en',{apiKey:'synthetic',fetchImpl:async()=>new Response(invalid)}),null);
+ for(const options of [{status:503},{headers:{'content-length':'16385'}}]){
+  let cancelled=false;
+  const stream=new ReadableStream({cancel(){cancelled=true;}},{highWaterMark:0});
+  assert.equal(await generateBriefing(lesson,'en',{apiKey:'synthetic',fetchImpl:async()=>new Response(stream,options)}),null);
+  assert.equal(cancelled,true);assert.equal(stream.locked,false);
+ }
+});
 async function serve(config,check){const app=express();installAiCoach(app,config);const listener=app.listen(0,'127.0.0.1');await new Promise(r=>listener.once('listening',r));try{await check('http://127.0.0.1:'+listener.address().port);}finally{await new Promise(r=>listener.close(r));}}
 test('API defaults off, requires valid auth and accepts arbitrary legal opening',async()=>{
  await serve({},async u=>assert.equal((await fetch(u+'/api/ai-coach/preparation',{method:'POST'})).status,404));
@@ -53,6 +88,40 @@ test('API defaults off, requires valid auth and accepts arbitrary legal opening'
  });
 });
 test('not-ready index fails closed',async()=>{await assert.rejects(prepareOpening({status:'warming'},{moves:'e4',color:'black'}),{code:'index_warming'});});
+test('Coach auth gate bounds invalid tokens by IP and never reaches index or provider',async()=>{
+ let verified=0,searched=0,generated=0;
+ await serve({enabled:true,index:{status:'ready',search:async()=>{searched++;throw Error('should not read');}},
+  verifyToken:async()=>{verified++;throw Error('private auth failure');},apiKey:'synthetic',fetchImpl:async()=>{generated++;throw Error();}},async url=>{
+  for(let i=0;i<61;i++){
+   const response=await fetch(url+'/api/ai-coach/preparation',{method:'POST',headers:{Authorization:'Bearer synthetic-'+i,'Content-Type':'application/json','X-Forwarded-For':'192.0.2.'+i},body:JSON.stringify({moves:'e4',color:'black',language:'en'})});
+   assert.equal(response.status,i<60?401:429);
+   assert.equal((await response.json()).code,i<60?'authentication_required':'rate_limit');
+   assert.match(response.headers.get('cache-control'),/no-store/);
+  }
+ });
+ assert.equal(verified,60);assert.equal(searched,0);assert.equal(generated,0);
+});
+test('Coach per-user budget follows user identity across tokens and resets after one minute',async()=>{
+ let time=0,searches=0;
+ const index={status:'ready',search:async()=>{searches++;return {total:0,games:[]};}};
+ await serve({enabled:true,index,now:()=>time,verifyToken:async token=>({id:token==='other'?'other':'same'})},async url=>{
+  async function send(token,status){
+   const response=await fetch(url+'/api/ai-coach/preparation',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({moves:'e4',color:'black',language:'en'})});
+   assert.equal(response.status,status);assert.match(response.headers.get('cache-control'),/no-store/);return response.json();
+  }
+  for(let i=0;i<6;i++)await send('rotated-'+i,200);
+  assert.equal((await send('rotated-7',429)).code,'rate_limit');assert.equal(searches,12);
+  await send('other',200);time=60000;await send('rotated-8',200);assert.equal(searches,16);
+ });
+});
+test('Coach HTTP warming and privacy failures expose only stable unavailable codes',async()=>{
+ const index={status:'warming',search:async()=>{throw Error('private database detail');}};
+ await serve({enabled:true,index,verifyToken:async()=>({id:'synthetic'})},async url=>{
+  const send=()=>fetch(url+'/api/ai-coach/preparation',{method:'POST',headers:{Authorization:'Bearer synthetic','Content-Type':'application/json'},body:JSON.stringify({moves:'e4',color:'black',language:'en'})});
+  const warming=await send();assert.equal(warming.status,503);assert.equal(warming.headers.get('retry-after'),'5');assert.deepEqual(await warming.json(),{code:'index_warming'});
+  index.status='ready';const failed=await send();assert.equal(failed.status,503);assert.match(failed.headers.get('cache-control'),/no-store/);assert.deepEqual(await failed.json(),{code:'index_unavailable'});
+ });
+});
 test('real index joins move-order transpositions and repetitions at their own indexed ply',async()=>{
  const rows=[
   archive('a','Nf3 d5 g3 Nf6 Bg2 e6'),
