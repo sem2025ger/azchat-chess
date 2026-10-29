@@ -15,7 +15,7 @@ import SpielerAccountLabel from '../components/spieler/SpielerAccountLabel';
 import {useRegionalCopy} from '../i18n/regionalCopy';
 import {VorbereitungWorkspace} from './VorbereitungScreen';
 import GlobalPositionSearch from '../components/spieler/GlobalPositionSearch';
-import AiCoachNajdorf from '../components/spieler/AiCoachNajdorf';
+import OpeningPrep from '../components/spieler/OpeningPrep';
 
 function message(error: unknown) {
   if (error instanceof SpielerError) {
@@ -110,6 +110,6 @@ export default function SpielerScreen(){
  const active=params.get('tab')==='opponent'?'opponent':'position';
  return <section className="spieler-page section-page"><header><p className="spieler-eyebrow">ChessAZ</p><h1>{translatePlayer('Spieler',language)}</h1><p>{tr('Stellungen entdecken. Die nächste Partie vorbereiten.')}</p></header><div className="spieler-tabs spieler-primary-tabs" role="tablist" aria-label={tr('Spielerbereiche')} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const tab=active==='position'?'opponent':'position';setParams({tab});document.getElementById('spieler-section-'+tab)?.focus();}}}>
  {(['position',...(import.meta.env.VITE_VORBEREITUNG_ENABLED==='true'?['opponent' as const]:[])] as const).map(tab=><button type="button" role="tab" key={tab} id={'spieler-section-'+tab} aria-selected={tab===active} aria-controls={'spieler-section-panel-'+tab} tabIndex={tab===active?0:-1} onClick={()=>setParams({tab})}>{tr(tab==='position'?'Stellungssuche':'Gegnervorbereitung')}</button>)}</div>
- <div role="tabpanel" id="spieler-section-panel-position" aria-labelledby="spieler-section-position" hidden={active!=='position'}>{import.meta.env.VITE_POSITION_SEARCH_ENABLED==='true'?<><AiCoachNajdorf key={session?.access_token||'guest'} token={session?.access_token||''}/><GlobalPositionSearch key={session?.access_token||'guest'} token={session?.access_token||''} accountId={session?.user?.id||'guest'}/></>:active==='position'?<SpielerDirectory/>:null}</div>
+ <div role="tabpanel" id="spieler-section-panel-position" aria-labelledby="spieler-section-position" hidden={active!=='position'}>{import.meta.env.VITE_POSITION_SEARCH_ENABLED==='true'?<><OpeningPrep key={'coach:'+(session?.access_token||'guest')} token={session?.access_token||''}/><GlobalPositionSearch key={session?.access_token||'guest'} token={session?.access_token||''} accountId={session?.user?.id||'guest'}/></>:active==='position'?<SpielerDirectory/>:null}</div>
  <div role="tabpanel" id="spieler-section-panel-opponent" aria-labelledby="spieler-section-opponent" hidden={active!=='opponent'}>{active==='opponent'&&<SpielerDirectory key={session?.access_token||'guest'}/>}</div></section>;
 }

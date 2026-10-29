@@ -2,6 +2,8 @@
 .chessaz-ai-coach header{margin-bottom:1rem}
 .chessaz-ai-coach header h2{margin:0 0 .4rem}
 .chessaz-ai-coach header p{margin:0}
+.chessaz-ai-coach-input,.chessaz-ai-coach-color{display:grid;gap:6px;margin:12px 0}
+.chessaz-ai-coach input,.chessaz-ai-coach select{min-width:0;max-width:100%}
 .chessaz-ai-coach-results{display:grid;gap:.8rem;margin-top:1rem;min-width:0}
 .chessaz-ai-coach-results p{margin:0}
 .chessaz-ai-coach-note{font-size:.86rem;opacity:.8}
