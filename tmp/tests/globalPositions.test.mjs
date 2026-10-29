@@ -22,5 +22,8 @@ test('PreparationBoard and global card use complete existing six-language copy m
  }
 });
 test('global position real Chromium regression with synthetic data',{timeout:180000},async()=>{
- const {stdout}=await promisify(execFile)(process.execPath,['tests/globalPositions.browser.mjs'],{cwd:process.cwd(),env:process.env,timeout:160000,maxBuffer:2*1024*1024});assert.match(stdout,/PASS global position browser/);
+ const linux=process.platform==='linux';
+ const executable=linux?'dbus-run-session':process.execPath;
+ const args=linux?['--',process.execPath,'tests/globalPositions.browser.mjs']:['tests/globalPositions.browser.mjs'];
+ const {stdout}=await promisify(execFile)(executable,args,{cwd:process.cwd(),env:process.env,timeout:160000,maxBuffer:2*1024*1024});assert.match(stdout,/PASS global position browser/);
 });
