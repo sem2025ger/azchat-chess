@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const {Chess} = require('chess.js');
 const {normalizedPositionKey} = require('../positionIndex');
+const {checkedQaUrl} = require('./verifyOpeningPrepReadiness');
 
 function validateLesson(data, expectedPly, {requireGames = true} = {}) {
   assert.equal(data.ply, expectedPly);
@@ -39,13 +40,9 @@ function validateLesson(data, expectedPly, {requireGames = true} = {}) {
 }
 
 async function verifyOpeningPrepQa({baseUrl, token, expectedAi = 'either', report = () => {}}) {
-  const url = new URL(baseUrl);
-  assert.ok(['https:', 'http:'].includes(url.protocol));
-  assert.equal(url.username + url.password + url.search + url.hash, '');
-  assert.equal(url.pathname, '/');
-  assert.ok(['chessaz-deutsch-qa-api.onrender.com', 'localhost', '127.0.0.1'].includes(url.hostname),
-    'Only the known QA service or a local fixture is allowed; production is rejected');
-  if (!['localhost', '127.0.0.1'].includes(url.hostname)) assert.equal(url.protocol, 'https:');
+  // Share the strict QA allowlist with the token-free preflight, including the isolated Coach QA.
+  // This rejects production, lookalikes, embedded credentials, unsafe schemes and unexpected ports.
+  const url = checkedQaUrl(baseUrl);
   assert.ok(typeof token === 'string' && token.length > 0, 'QA_ACCESS_TOKEN is required');
   assert.ok(['either', 'fallback', 'generated'].includes(expectedAi));
   const results = [];
