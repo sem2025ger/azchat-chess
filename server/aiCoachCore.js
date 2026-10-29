@@ -9,7 +9,7 @@ function najdorfFen(){
 }
 const NAJDORF_FEN=najdorfFen();
 function safeGame(record){
- if(!record||typeof record.pgn!=='string'||record.pgn.length>65536||!Number.isInteger(record.ply)||record.ply<10||record.ply>60)return null;
+ if(!record||typeof record.pgn!=='string'||record.pgn.length>65536||!Number.isInteger(record.ply)||record.ply!==10)return null;
  try{
   const board=new Chess();board.loadPgn(record.pgn);
   const moves=board.history(),reply=moves[record.ply];
@@ -20,7 +20,7 @@ function safeGame(record){
    black:String(record.black||'—').slice(0,120),whiteRating:Number.isInteger(record.whiteRating)?record.whiteRating:null,
    blackRating:Number.isInteger(record.blackRating)?record.blackRating:null,date:String(record.date||'').slice(0,32),
    event:String(record.event||'').slice(0,180),result:String(record.result||'*').slice(0,12),
-   move:reply,ply:record.ply,pgn:record.pgn,first25:moves.slice(0,50)};
+   move:reply,blackReply:moves[record.ply+1]||null,ply:record.ply,pgn:record.pgn,first25:moves.slice(0,50)};
  }catch{return null;}
 }
 function quality(game){
@@ -38,7 +38,10 @@ async function prepareNajdorf(index){
  const groups=SYSTEMS.map(move=>{
   const candidates=[...unique.values()].filter(game=>game.move===move)
    .sort((a,b)=>quality(b)-quality(a)||b.date.localeCompare(a.date)||a.id.localeCompare(b.id));
-  return {move:'6.'+move,availableInSample:candidates.length,games:candidates.slice(0,5)};
+  const choices=candidates.slice(0,5),answers=new Map();
+  for(const game of choices)if(game.blackReply)answers.set(game.blackReply,(answers.get(game.blackReply)||0)+1);
+  const blackReplies=[...answers].map(([move,count])=>({move,count})).sort((a,b)=>b.count-a.count||a.move.localeCompare(b.move));
+  return {move:'6.'+move,availableInSample:candidates.length,blackReplies,games:choices};
  }).filter(group=>group.games.length);
  return {opening:'najdorf',color:'black',fen:NAJDORF_FEN,
   matched:queries[0].total,inspected:unique.size,groups,

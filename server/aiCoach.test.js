@@ -12,7 +12,7 @@ const pgn=(reply='Bg5',black='e6')=>{
 const record=(id,reply='Bg5',rating=2350)=>({id,pgn:pgn(reply),ply:10,white:'Player A',black:'Player B',whiteRating:rating,blackRating:rating,date:'2026-10-10',event:'Fixture',result:'1-0'});
 test('Najdorf anchor and records are verified, first 25 full moves only',()=>{
  const board=new Chess(NAJDORF_FEN);assert.equal(board.turn(),'w');
- const entry=safeGame(record('a'));assert.equal(entry.move,'Bg5');assert.equal(entry.first25[10],'Bg5');
+ const entry=safeGame(record('a'));assert.equal(entry.move,'Bg5');assert.equal(entry.blackReply,'e6');assert.equal(entry.first25[10],'Bg5');
  assert.equal(safeGame({...record('a'),ply:9}),null);
  assert.equal(safeGame({...record('a'),pgn:'bad'}),null);
  assert.equal(safeGame({...record('a'),pgn:pgn('Be3'),ply:10}).move,'Be3');
@@ -22,7 +22,8 @@ test('deduplicates strongest/newest and selects no more than 5 verified games pe
  const calls=[];const index={status:'ready',search:async q=>{calls.push(q);return {total:346,games:q.sort==='strongest'?entries:entries.slice(1)};}};
  const lesson=await prepareNajdorf(index);
  assert.equal(lesson.matched,346);assert.equal(lesson.inspected,8);assert.deepEqual(lesson.groups.map(g=>g.move),['6.Bg5','6.Be3']);
- assert.equal(lesson.groups[0].games.length,5);assert.equal(new Set(lesson.groups[0].games.map(g=>g.id)).size,5);
+ assert.equal(lesson.groups[0].games.length,5);
+ assert.deepEqual(lesson.groups[0].blackReplies,[{move:'e6',count:5}]);assert.equal(new Set(lesson.groups[0].games.map(g=>g.id)).size,5);
  assert.ok(calls.every(q=>q.fen===NAJDORF_FEN&&q.side==='black'&&q.limit===50&&q.scope==='all'));
 });
 test('Gemini only receives bounded, anonymized candidate move lines; invalid provider response falls back',async()=>{
@@ -45,10 +46,10 @@ async function serve(config,check){
 test('route defaults off; rejects anonymous/invalid requests, serves source-backed lesson without key',async()=>{
  await serve({},async url=>assert.equal((await fetch(url+'/api/ai-coach/preparation',{method:'POST'})).status,404));
  const index={status:'ready',search:async()=>({total:1,games:[record('a')]})};
- await serve({enabled:true,index,verifyToken:async()=>({id:'member'})},async url=>{
+ await serve({enabled:true,index,verifyToken:async token=>token==='valid'?{id:'member'}:null},async url=>{
   const send=(body,token='valid')=>fetch(url+'/api/ai-coach/preparation',{method:'POST',
    headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body)});
-  assert.equal((await send({opening:'najdorf',color:'black',language:'de'},'invalid')).status,200);
+  assert.equal((await send({opening:'najdorf',color:'black',language:'de'},'invalid')).status,401);
   assert.equal((await fetch(url+'/api/ai-coach/preparation',{method:'POST'})).status,401);
   assert.equal((await send({opening:'najdorf',color:'white',language:'ru'})).status,400);
   assert.equal((await send({opening:'najdorf',color:'black',language:'ru',extra:true})).status,400);

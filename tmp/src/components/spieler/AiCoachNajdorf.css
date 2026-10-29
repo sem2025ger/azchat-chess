@@ -1,0 +1,15 @@
+.chessaz-ai-coach{margin-bottom:1.25rem;min-width:0}
+.chessaz-ai-coach header{margin-bottom:1rem}
+.chessaz-ai-coach header h2{margin:0 0 .4rem}
+.chessaz-ai-coach header p{margin:0}
+.chessaz-ai-coach-results{display:grid;gap:.8rem;margin-top:1rem;min-width:0}
+.chessaz-ai-coach-results p{margin:0}
+.chessaz-ai-coach-note{font-size:.86rem;opacity:.8}
+.chessaz-ai-coach-group{min-width:0;border:1px solid rgba(150,150,150,.25);border-radius:.65rem}
+.chessaz-ai-coach-group>summary{display:flex;align-items:center;justify-content:space-between;gap:.8rem;cursor:pointer;padding:.8rem 1rem}
+.chessaz-ai-coach-group>summary span{font-size:.85rem;opacity:.8}
+.chessaz-ai-coach-group-body{padding:0 1rem 1rem;display:grid;gap:.8rem}
+.chessaz-ai-coach-group-body ol{margin:0;padding-left:1.45rem;display:grid;gap:1rem}
+.chessaz-ai-coach-group-body li{overflow-wrap:anywhere}
+.chessaz-ai-coach-group-body li p{line-height:1.5;margin:.4rem 0}
+@media(max-width:560px){.chessaz-ai-coach-group>summary{align-items:flex-start;flex-direction:column;gap:.2rem}.chessaz-ai-coach-group-body{padding:0 .8rem .8rem}}

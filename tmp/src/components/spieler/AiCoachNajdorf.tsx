@@ -1,48 +1,63 @@
-import {useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {openSpielerAnalysis} from '../../services/spieler';
 import {useLanguage} from '../../context/LanguageContext';
+import {openSpielerAnalysis} from '../../services/spieler';
+import './AiCoachNajdorf.css';
 
 type ModelGame={id:string;pgn:string;white:string;black:string;event:string;date:string;result:string;first25:string[]};
-type ModelGroup={move:string;availableInSample:number;games:ModelGame[]};
-type Lesson={opening:string;color:string;matched:number;inspected:number;groups:ModelGroup[];briefing:string|null;generated:boolean};
+type Group={move:string;availableInSample:number;blackReplies:{move:string;count:number}[];games:ModelGame[]};
+type Lesson={opening:string;color:string;matched:number;inspected:number;groups:Group[];briefing:string|null};
 const labels={
- de:{title:'ChessAZ AI Coach · Najdorf',desc:'Mit Schwarz: Modellpartien nach den Antworten von Weiß vergleichen. Bis zu fünf Partien pro System.',start:'Vorbereitung erstellen',loading:'Partien werden zusammengestellt …',empty:'In der vorhandenen Stichprobe sind keine passenden Partien.',sample:'Auswahl aus den verfügbaren Partien, keine vollständige Theorie und keine Engine-Bewertung.',view:'Partie im Analysebrett öffnen',first:'Erste 25 Züge',error:'Der Coach ist derzeit nicht verfügbar.',auth:'Bitte zuerst anmelden',noAi:'KI-Erklärung derzeit nicht eingerichtet. Die Partien stammen aus der Datenbank.',matched:'Gefundene Partien',sampled:'Geprüfte Stichprobe'},
- en:{title:'ChessAZ AI Coach · Najdorf',desc:'Playing Black: compare model games by White’s replies. Up to five games per system.',start:'Build preparation',loading:'Selecting model games …',empty:'No matching games in the current sample.',sample:'Sample of available games, not comprehensive theory or an engine verdict.',view:'Open game in analysis',first:'First 25 moves',error:'Coach is currently unavailable.',auth:'Please sign in',noAi:'AI explanation is not configured. Games come from the database.',matched:'Matching games',sampled:'Inspected sample'},
- ru:{title:'ChessAZ AI Coach · Найдорф',desc:'Игра за чёрных: модельные партии по продолжениям белых. До пяти партий на каждую систему.',start:'Подготовить репертуар',loading:'Подбираю модельные партии …',empty:'Подходящих партий в текущей выборке нет.',sample:'Выборка доступных партий, не полная теория и не оценка движка.',view:'Открыть в анализе',first:'Первые 25 ходов',error:'Помощник временно недоступен.',auth:'Сначала войдите в аккаунт',noAi:'ИИ-объяснения пока не подключены. Партии взяты из базы.',matched:'Найдено партий',sampled:'Изучено в выборке'}
-};
+ de:{title:'ChessAZ AI Coach · Najdorf',desc:'Mit Schwarz: Weiß-Pläne durch echte Modellpartien verstehen.',start:'Partien auswählen',busy:'Partien werden ausgewählt …',empty:'Keine passenden Partien in dieser Stichprobe.',sample:'Begrenzte Auswahl, keine vollständige Theorie oder Engine-Bewertung.',open:'In Analyse öffnen',moves:'Bis zu 25 vollständige Züge',error:'Coach derzeit nicht verfügbar.',auth:'Bitte zuerst anmelden.',noAi:'KI-Einführung nicht verfügbar. Die Partien kommen aus der Datenbank.',total:'Partien in der Stellung',inspected:'Geprüfte Beispiele',replies:'Antworten von Schwarz in den gezeigten Partien',ai:'KI-Einführung (nicht Engine-geprüft)',examples:'Modellpartien',notice:'Nur gezeigte Beispiele, keine Gesamtstatistik.'},
+ en:{title:'ChessAZ AI Coach · Najdorf',desc:'With Black: study White’s plans through real model games.',start:'Select games',busy:'Selecting games …',empty:'No matching games in this sample.',sample:'Limited sample, not complete theory or engine analysis.',open:'Open in analysis',moves:'Up to 25 full moves',error:'Coach is unavailable.',auth:'Please sign in.',noAi:'AI introduction unavailable; games are from the database.',total:'Games in the position',inspected:'Games inspected',replies:'Black replies in the games shown',ai:'AI introduction (not engine verified)',examples:'Model games',notice:'Only the shown examples, not opening-wide statistics.'},
+ ru:{title:'ChessAZ AI Coach · Найдорф',desc:'Играя чёрными, изучайте планы белых по реальным модельным партиям.',start:'Подобрать партии',busy:'Подбираю партии …',empty:'В выборке подходящих партий нет.',sample:'Ограниченная выборка, не полная теория дебюта и не оценка движка.',open:'Открыть на доске анализа',moves:'До 25 полных ходов',error:'Помощник пока недоступен.',auth:'Сначала войдите в аккаунт.',noAi:'ИИ-объяснение недоступно; ниже реальные партии из базы.',total:'Партий в позиции',inspected:'Изучено в выборке',replies:'Ответы чёрных в показанных партиях',ai:'Объяснение ИИ (не проверено движком)',examples:'Модельные партии',notice:'Только показанные примеры, не общая статистика дебюта.'},
+ az:{title:'ChessAZ AI Coach · Naydorf',desc:'Qaralarla ağların planlarını real nümunəvi partiyalarda öyrənin.',start:'Partiyaları seç',busy:'Partiyalar seçilir …',empty:'Uyğun partiya tapılmadı.',sample:'Məhdud seçim, tam nəzəriyyə və ya mühərrik təhlili deyil.',open:'Analizdə aç',moves:'25 tam gedişə qədər',error:'Köməkçi əlçatan deyil.',auth:'Əvvəlcə daxil olun.',noAi:'AI izahı əlçatan deyil; partiyalar bazadandır.',total:'Mövqedəki partiyalar',inspected:'Yoxlanılan nümunələr',replies:'Göstərilən partiyalarda qaraların cavabları',ai:'AI izahı (mühərriklə yoxlanmayıb)',examples:'Nümunəvi partiyalar',notice:'Yalnız göstərilən nümunələr, ümumi statistika deyil.'},
+ tr:{title:'ChessAZ AI Coach · Najdorf',desc:'Siyahlarla beyazların planlarını gerçek örnek partilerde öğrenin.',start:'Partileri seç',busy:'Partiler seçiliyor …',empty:'Uygun parti bulunamadı.',sample:'Sınırlı örneklem, tam teori veya motor analizi değildir.',open:'Analizde aç',moves:'25 tam hamleye kadar',error:'Asistan kullanılamıyor.',auth:'Önce giriş yapın.',noAi:'Yapay zekâ açıklaması yok; partiler veri tabanından.',total:'Konumdaki partiler',inspected:'İncelenen örnekler',replies:'Gösterilen partilerde siyahın yanıtları',ai:'Yapay zekâ açıklaması (motor kontrolü yok)',examples:'Örnek partiler',notice:'Yalnızca gösterilen örnekler, genel istatistik değil.'},
+ ua:{title:'ChessAZ AI Coach · Найдорф',desc:'Граючи чорними, вивчайте плани білих за реальними партіями.',start:'Підібрати партії',busy:'Підбираємо партії …',empty:'Відповідних партій немає.',sample:'Обмежена вибірка, не повна теорія чи аналіз рушія.',open:'Відкрити в аналізі',moves:'До 25 повних ходів',error:'Помічник недоступний.',auth:'Спочатку увійдіть.',noAi:'Пояснення ШІ недоступне; партії взято з бази.',total:'Партій у позиції',inspected:'Перевірено прикладів',replies:'Відповіді чорних у показаних партіях',ai:'Пояснення ШІ (без перевірки рушієм)',examples:'Зразкові партії',notice:'Лише показані приклади, не загальна статистика.'}
+} as const;
+function formatLine(moves:string[]){return moves.map((san,i)=>(i%2===0?Math.floor(i/2)+1+'. ':'')+san).join(' ');}
 export default function AiCoachNajdorf({token}:{token:string}){
- const {language}=useLanguage();const t=labels[language as keyof typeof labels]||labels.en,navigate=useNavigate();
+ const {language}=useLanguage(),navigate=useNavigate(),t=labels[language as keyof typeof labels]||labels.de;
  const [lesson,setLesson]=useState<Lesson|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const pending=useRef<AbortController|null>(null);
+ useEffect(()=>()=>pending.current?.abort(),[]);
  if(import.meta.env.VITE_AI_COACH_ENABLED!=='true')return null;
  async function prepare(){
+  pending.current?.abort();const c=new AbortController();pending.current=c;
   setBusy(true);setError('');setLesson(null);
   try{
    const base=new URL(import.meta.env.VITE_SERVER_URL||'');
-   const response=await fetch(new URL('/api/ai-coach/preparation',base),{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({opening:'najdorf',color:'black',language}),cache:'no-store'});
+   const response=await fetch(new URL('/api/ai-coach/preparation',base),{method:'POST',
+    headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+    body:JSON.stringify({opening:'najdorf',color:'black',language}),cache:'no-store',signal:c.signal});
    if(!response.ok)throw Error('unavailable');
-   const data=await response.json();
-   if(!Array.isArray(data.groups))throw Error('invalid');
-   setLesson(data);
-  }catch{setError(t.error);}finally{setBusy(false);}
+   const data:Lesson=await response.json();
+   if(data.opening!=='najdorf'||data.color!=='black'||!Array.isArray(data.groups))throw Error('invalid');
+   if(!c.signal.aborted)setLesson(data);
+  }catch{if(!c.signal.aborted)setError(t.error);}finally{if(!c.signal.aborted)setBusy(false);}
  }
  function view(pgn:string){try{navigate(openSpielerAnalysis(pgn));}catch{setError(t.error);}}
- return <section className="section-card" aria-label={t.title} style={{marginBottom:20}}>
-  <h2>{t.title}</h2><p>{t.desc}</p>
-  <button type="button" disabled={!token||busy} onClick={()=>void prepare()}>{busy?t.loading:t.start}</button>
+ return <section className="section-card chessaz-ai-coach" aria-label={t.title}>
+  <header><h2>{t.title}</h2><p>{t.desc}</p></header>
+  <button type="button" disabled={!token||busy} onClick={()=>void prepare()}>{busy?t.busy:t.start}</button>
   {!token&&<p role="status">{t.auth}</p>}{error&&<p role="alert">{error}</p>}
-  {lesson&&<div style={{marginTop:16}}>
-   <p>{t.matched}: {lesson.matched} · {t.sampled}: {lesson.inspected}</p>
-   <p>{lesson.briefing||t.noAi}</p><p>{t.sample}</p>
+  {lesson&&<div className="chessaz-ai-coach-results" aria-live="polite">
+   <p>{t.total}: <strong>{lesson.matched}</strong> · {t.inspected}: <strong>{lesson.inspected}</strong></p>
+   <p>{lesson.briefing?<><strong>{t.ai}:</strong> {lesson.briefing}</>:t.noAi}</p>
+   <p className="chessaz-ai-coach-note">{t.sample}</p>
    {!lesson.groups.length&&<p>{t.empty}</p>}
-   {lesson.groups.map(group=><details key={group.move} style={{marginTop:12}}>
-    <summary><strong>{group.move}</strong> · {group.games.length} / {group.availableInSample}</summary>
-    <ol>{group.games.map(game=><li key={game.id} style={{marginBottom:16}}>
-     <strong>{game.white} – {game.black}</strong> · {game.result}
-     <p>{game.date} · {game.event}</p>
-     <p>{t.first}: {game.first25.map((san,i)=>(i%2===0?(Math.floor(i/2)+1)+'. ':'')+san).join(' ').slice(0,900)}</p>
-     <button type="button" onClick={()=>view(game.pgn)}>{t.view}</button>
-    </li>)}</ol>
+   {lesson.groups.map(group=><details key={group.move} className="chessaz-ai-coach-group">
+    <summary><strong>{group.move}</strong> <span>{t.examples}: {group.games.length}</span></summary>
+    <div className="chessaz-ai-coach-group-body">
+     <p><strong>{t.replies}:</strong> {group.blackReplies?.map(m=>m.move+' ('+m.count+')').join(', ')||'—'}</p>
+     <p className="chessaz-ai-coach-note">{t.notice}</p>
+     <ol>{group.games.map(game=><li key={game.id}>
+      <strong>{game.white} – {game.black}</strong> · {game.result}
+      <p>{game.date||'—'} · {game.event}</p>
+      <p><strong>{t.moves}:</strong> {formatLine(game.first25)}</p>
+      <button type="button" onClick={()=>view(game.pgn)}>{t.open}</button>
+     </li>)}</ol>
+    </div>
    </details>)}
   </div>}
  </section>;
