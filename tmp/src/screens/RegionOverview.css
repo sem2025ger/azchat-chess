@@ -1,0 +1,108 @@
+/* NRW uses the route's native scroller. Secondary information stays collapsed. */
+.nrw-shell{width:100%;min-width:0;max-width:1240px;margin:0 auto;padding:24px;color:#e9e5dc;font-family:Inter,system-ui,sans-serif}
+.nrw-header{margin-bottom:20px}
+.nrw-header-top,.nrw-links,.nrw-back,.nrw-card-head,.nrw-inline,.nrw-more{display:flex;align-items:center;gap:8px}
+.nrw-header-top{justify-content:space-between;min-height:24px}
+.nrw-kicker{display:flex;align-items:center;gap:6px;font-size:.6875rem;letter-spacing:.12em;text-transform:uppercase;color:#c8ac7c}
+.nrw-region-code{font-size:.6875rem;font-weight:600;letter-spacing:.08em;color:#c8ac7c;border:1px solid #a9977540;border-radius:6px;padding:3px 8px}
+.nrw-header h1{margin:6px 0 8px;font:600 clamp(1.75rem,2.6vw,2.375rem)/1.15 'Bodoni Moda',Georgia,serif;color:#e5c992;overflow-wrap:anywhere}
+.nrw-header p,.nrw-muted{color:#b1b0aa;font-size:.8125rem;line-height:1.6}
+.nrw-links{flex-wrap:wrap;margin-top:12px}
+.nrw-links a,.nrw-inline{display:inline-flex;align-items:center;gap:7px;min-height:36px;font-size:.75rem;font-weight:500;color:#dfc596}
+.nrw-links a{padding:8px 12px;border:1px solid #a997754d;border-radius:9px;background:#222426}
+.nrw-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.nrw-layout>div{min-width:0}
+.nrw-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+.nrw-card{display:flex;flex-direction:column;min-width:0;padding:18px;border:1px solid #b79c7540;border-radius:16px;background:linear-gradient(145deg,#202326,#171a1d)}
+.nrw-card-head{align-items:flex-start;min-height:44px;color:#e6cfaa}
+.nrw-card-head h2{margin:0;font-size:1rem;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.nrw-card-icon{display:flex;flex-shrink:0;margin-top:2px;color:#cbb083}
+.nrw-count{margin-left:auto;flex-shrink:0;padding:2px 7px;border:1px solid #a9977533;border-radius:6px;font-size:.6875rem;font-variant-numeric:tabular-nums;font-weight:500;line-height:1.4;color:#bcb7ac}
+.nrw-card-subtitle{min-height:3em;margin:4px 0 12px;color:#b1b0aa;font-size:.75rem;line-height:1.5}
+.nrw-card-content{flex:1;min-width:0;margin-bottom:16px}
+.nrw-items{display:grid;gap:12px;list-style:none;margin:0;padding:0}
+.nrw-items li{min-width:0;display:flex;flex-direction:column;gap:5px;border-top:1px solid #ffffff12;padding-top:12px}
+.nrw-items li:first-child{padding-top:0;border-top:0}
+.nrw-items :is(a,strong,small,time){display:block;overflow-wrap:anywhere}
+.nrw-items a{min-height:36px;border-radius:4px;line-height:1.5}
+.nrw-items strong{font-size:.8125rem;font-weight:600;line-height:1.5;color:#eee7d9}
+.nrw-items small,.nrw-items time,.nrw-league-meta,.nrw-source{font-size:.6875rem;color:#b1b0aa;line-height:1.6}
+.nrw-items a small{margin-top:4px}
+.nrw-items time{color:#d9bd8b;font-variant-numeric:tabular-nums}
+.nrw-score{font-size:.8125rem;color:#e6cfaa;font-variant-numeric:tabular-nums}
+.nrw-score>span{font-size:.6875rem;color:#b1b0aa}
+.nrw-more{justify-content:space-between;min-height:36px;border-top:1px solid #ffffff17;padding-top:12px;font-size:.75rem;font-weight:500;color:#dfc596}
+.nrw-more svg{flex-shrink:0}
+.nrw-select{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center;margin-bottom:12px;font-size:.75rem;color:#b1b0aa}
+.nrw-select select{width:100%;min-width:0;min-height:36px;border:1px solid #ffffff30;border-radius:8px;padding:6px 8px;background:#242729;color:#e9e5dc;font:inherit}
+.nrw-shell .section-info{margin:10px 0 0}
+.nrw-shell .section-info>summary{display:flex;align-items:center;min-height:32px;gap:6px;font-size:.6875rem;font-weight:400}
+.nrw-shell .section-info>summary::before{content:'+';font-size:.875rem}
+.nrw-shell .section-info[open]>summary::before{content:'−'}
+.nrw-source{display:block}
+.nrw-back{justify-content:space-between;flex-wrap:wrap;margin:0 0 16px;font-size:.8125rem;color:#d9bd8b}
+.nrw-back a{display:inline-flex;align-items:center;gap:6px;min-height:36px}
+.nrw-grid--detail{grid-template-columns:minmax(0,1fr);max-width:900px}
+.nrw-grid--detail .nrw-card{min-height:240px}
+.nrw-grid--detail .nrw-card-head{min-height:0}
+.nrw-grid--detail .nrw-card-subtitle{min-height:0}
+.nrw-grid--detail .nrw-items{gap:16px}
+.nrw-error{margin:0 0 16px;color:#ffb3a5;font-size:.8125rem;line-height:1.5}
+.nrw-news{margin-top:16px;border:1px solid #ffffff1c;border-radius:12px;background:#1a1d20}
+.nrw-news>summary{display:flex;align-items:center;gap:10px;min-height:48px;padding:12px 16px;color:#cec5b5;font-size:.8125rem;font-weight:500;cursor:pointer;list-style:none}
+.nrw-news>summary::-webkit-details-marker{display:none}
+.nrw-news>summary::after{content:'+';margin-left:4px;font-size:1rem;color:#cbb083}
+.nrw-news[open]>summary::after{content:'−'}
+.nrw-news>summary>.nrw-count{margin-left:auto}
+.nrw-news>summary>span:first-of-type{flex:1;overflow-wrap:anywhere}
+.nrw-news-content{padding:4px 16px 16px}
+.nrw-news-content>.nrw-more{margin-top:12px}
+.nrw-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;margin-top:12px;color:#a5a39b;font-size:.6875rem;line-height:1.5}
+.nrw-footer a{display:inline-flex;align-items:center;gap:7px;min-height:36px;color:#c8b391}
+.nrw-shell :is(a,summary,select):focus-visible{outline:2px solid #d7bd8b;outline-offset:3px}
+.nrw-shell :is(a,summary,select){transition:border-color .15s,color .15s}
+.nrw-shell a:hover{color:#f1d8aa}
+@media(max-width:1199px){.nrw-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.nrw-card--vereine{grid-column:1/-1}.nrw-grid--detail{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:700px){.nrw-shell{padding:16px}.nrw-header{margin-bottom:16px}.nrw-header h1{font-size:1.75rem}.nrw-grid{grid-template-columns:minmax(0,1fr);gap:14px}.nrw-card{padding:16px}.nrw-card-head,.nrw-card-subtitle{min-height:0}.nrw-card--vereine{grid-column:auto}.nrw-links a,.nrw-inline,.nrw-more{min-height:40px}.nrw-footer{align-items:flex-start;flex-direction:column}.nrw-shell :is(a,summary,select){max-width:100%}}
+@media(prefers-reduced-motion:reduce){.nrw-shell :is(a,summary,select){transition:none}}
+
+/* Restored nationwide chat, with the same membership-controlled component. */
+.nrw-chat-rail{display:flex;flex-direction:column;gap:12px;min-width:0;padding:16px;border:1px solid #8C6A4866;border-radius:16px;background:#171b1d;position:sticky;top:16px}
+.nrw-chat-header{display:flex;align-items:center;gap:9px}.nrw-chat-header h2{margin:0;font-size:1rem;color:#A9825A;font-weight:600}.nrw-chat-header small{font-size:.6875rem;color:#b1b0aa}.nrw-chat-open{margin-left:auto}.nrw-chat-dot{color:#A9825A}
+.nrw-chat-messages{min-height:0}.nrw-chat-message{padding:9px 0;border-bottom:1px solid #ffffff18;overflow-wrap:anywhere}.nrw-chat-message p,.nrw-chat-notice p{font-size:.75rem;line-height:1.5;color:#b1b0aa;white-space:pre-wrap}.nrw-chat-meta{display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap;font-size:.6875rem;color:#A9825A}.nrw-chat-compose label{display:block;margin-bottom:6px;font-size:.75rem}.nrw-chat-compose-line{display:flex;gap:6px}.nrw-chat-compose input{min-width:0;width:100%;background:#202426;border:1px solid #ffffff33;border-radius:8px;padding:9px;color:#eee}.nrw-chat-compose button,.nrw-chat-notice button{border:1px solid #8C6A4877;border-radius:8px;padding:9px;color:#c0a180;background:#29251e}.nrw-chat-compose button:disabled{opacity:.5}.nrw-chat-error{font-size:.75rem;color:#ffb3a5}.nrw-chat-rail footer{padding-top:9px;border-top:1px solid #ffffff22;font-size:.6875rem;color:#aaa}.nrw-chat-rail a{color:#A9825A}.nrw-chat-history>summary{color:#A9825A;cursor:pointer;font-size:.75rem}
+/* Light, cool bronze-silver metal: distinct headings, body copy and actions. NRW only. */
+.nrw-shell{
+ --nrw-metal:#C7BBA8;
+ --nrw-metal-muted:#B6AB9A;
+ --nrw-metal-glow:#E1DCD3;
+ --nrw-metal-stroke:rgba(193,182,162,.34);
+ --nrw-metallic-gradient:linear-gradient(108deg,#B8AA96 0%,#E1DCD2 37%,#BEB09A 70%,#DDD5C8 100%);
+}
+.nrw-shell .nrw-header h1,
+.nrw-shell .nrw-card-head h2,
+.nrw-shell .nrw-chat-header h2{
+ color:#D8CDBD;
+ background-image:var(--nrw-metallic-gradient);
+ -webkit-background-clip:text;
+ background-clip:text;
+ -webkit-text-fill-color:transparent;
+}
+.nrw-shell .nrw-card-head{color:#D8CDBD}
+.nrw-shell .nrw-card-head h2{font-weight:650;letter-spacing:.005em}
+.nrw-shell .nrw-card-icon,.nrw-shell .nrw-chat-dot{color:var(--nrw-metal)}
+.nrw-shell :is(.nrw-kicker,.nrw-region-code,.nrw-items time,.nrw-score,.nrw-back,.nrw-news>summary::after,.nrw-chat-meta){color:var(--nrw-metal)}
+.nrw-shell :is(.nrw-links a,.nrw-inline,.nrw-more,.nrw-footer a,.nrw-chat-rail a,.nrw-chat-history>summary){color:#D2C3AF}
+.nrw-shell :is(.nrw-header p,.nrw-muted,.nrw-card-subtitle,.nrw-items small,.nrw-league-meta,.nrw-source,.nrw-chat-message p,.nrw-chat-notice p){color:#B9BDC0}
+.nrw-shell .nrw-items strong{color:#E8EAEB;font-weight:600}
+.nrw-shell .nrw-count{color:#C6C7C5;border-color:rgba(193,182,162,.3)}
+.nrw-shell .nrw-news>summary{color:#D6D8D7;font-weight:600}
+.nrw-shell .nrw-score>span{color:#B9BDC0}
+.nrw-shell :is(.nrw-card,.nrw-links a,.nrw-region-code,.nrw-chat-rail){border-color:var(--nrw-metal-stroke)}
+.nrw-shell :is(.nrw-chat-compose button,.nrw-chat-notice button){color:#DDCFBB;border-color:var(--nrw-metal-stroke);background:#23262A}
+.nrw-shell :is(a,summary,select,button,input):focus-visible{outline:2px solid #D2C3AF;outline-offset:3px}
+.nrw-shell a:hover{color:#E6DAC9}
+@media(prefers-contrast:more){
+ .nrw-shell :is(.nrw-header h1,.nrw-card-head h2,.nrw-chat-header h2){background-image:none;-webkit-text-fill-color:currentColor;color:#EAE2D7}
+}
+@media(max-width:1199px){.nrw-layout{grid-template-columns:minmax(0,1fr)}.nrw-chat-rail{position:static}.nrw-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.nrw-grid{grid-template-columns:minmax(0,1fr)}.nrw-layout{gap:14px}}

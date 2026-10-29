@@ -3,7 +3,7 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } fr
 import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
 import nightEarthStill from '../assets/night-earth-still.webp';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, Grid, MessageSquare, User, Settings, Circle } from 'lucide-react';
+import { Home, Grid, MessageSquare, User, Settings, Circle, MapPin } from 'lucide-react';
 import { premiumInterfaceThemes } from '../lib/interfaceThemes';
 import { useThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -41,6 +41,8 @@ export default function Layout() {
     window.scrollTo(0, 0);
   }, [location.pathname]);
   const isDesktopAnalysisRoute = location.pathname === '/game';
+  const isReadingRoute = ['/spieler', '/spieltag', '/vorbereitung'].includes(location.pathname) || location.pathname.startsWith('/region/');
+  const isHomeRoute = location.pathname === '/' || location.pathname === '/home';
   const needsConstrainedScroll =
     location.pathname.startsWith('/profile') ||
     location.pathname.startsWith('/settings');
@@ -67,9 +69,11 @@ export default function Layout() {
     <div className={cx(
       needsConstrainedScroll ? "h-[100dvh] overflow-hidden" : "min-h-screen max-md:h-[100dvh] max-md:min-h-0 max-md:overflow-hidden",
       isDesktopAnalysisRoute && "lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden",
+      isReadingRoute && "md:h-[100dvh] md:min-h-0 md:overflow-hidden",
+      isHomeRoute && "xl:h-[100dvh] xl:min-h-0 xl:overflow-hidden",
       "w-full flex selection:bg-chess-gold/30 selection:text-white",
       currentBgClass
-    )} data-analysis-route={isDesktopAnalysisRoute || undefined}>
+    )} data-analysis-route={isDesktopAnalysisRoute || undefined} data-reading-route={isReadingRoute || undefined} data-home-route={isHomeRoute || undefined}>
 
       {/* Premium Sidebar Navigation - Hidden on Mobile */}
       <aside className="hidden md:flex w-20 xl:w-72 bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
@@ -77,9 +81,15 @@ export default function Layout() {
 
           <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
-              <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[2rem] xl:leading-[1.8rem] tracking-tighter italic leading-none text-glow-cycle w-full text-center xl:text-left transition-all duration-500 xl:motion-reduce:transition-none">
-                Chessaz.De
-              </span>
+              <div className="flex w-full items-center justify-center xl:justify-start gap-1.5 xl:gap-0" aria-label="Chessaz.de">
+                <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.72rem] xl:leading-[1.8rem] tracking-tight not-italic leading-none whitespace-nowrap text-center xl:text-left">
+                  <span className="sidebar-brand-silver"><span className="xl:text-[1.08em]">Ch</span>essaz.</span><span className="sidebar-brand-de inline-block xl:text-[1.06em]">de</span>
+                </span>
+                <span className="relative hidden xl:block h-[62px] w-[31px] shrink-0 -translate-x-[2px] -translate-y-[6px]" aria-hidden="true">
+                  <img src="/brand/sidebar-king.svg" alt="" width="31" height="62" className="absolute inset-0 h-full w-full object-fill" />
+                  <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
+                </span>
+              </div>
               <div
                 role="img"
                 aria-label="Germany • Azerbaijan"
@@ -96,14 +106,17 @@ export default function Layout() {
           <nav className="px-3 xl:px-5 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
-            <NavItem to="/chat" icon={<MessageSquare size={20} />} label={desktop ? 'Schach-Treff' : t('nav.chat')} themeColor="theme-violet" subtitle={desktop ? 'Für Deutschsprachige' : undefined} />
+            <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
+            {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW" themeColor="theme-gold" bronzeLabel />}
+            {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
+            {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label={t("nav.spieler")} themeColor="theme-blue" />}
           </nav>
         </div>
 
         <div className="p-2 xl:p-5 space-y-3 border-t border-white/[0.05] bg-black/40 shadow-inner shrink-0">
 
-          {/* Refined Language Selector - AZ / TR / RU ONLY */}
+          {/* Shared six-language selector — persistent across routes */}
           <div className="flex flex-col gap-3">
             <div className="hidden xl:flex bg-neutral-900/70 p-0.5 rounded-lg border border-white/10 shadow-[0_0_18px_rgba(34,211,238,0.14)] premium-cycle-container transition-all">
               {(['en', 'de', 'az', 'tr', 'ua', 'ru'] as Language[]).map(lang => (
@@ -137,7 +150,7 @@ export default function Layout() {
           </div>
 
           <div className="space-y-3">
-            <NavItem to="/settings" icon={<Settings size={24} />} label={t('nav.settings')} themeColor="theme-gold" alwaysGlow={!desktop} />
+            <NavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} themeColor="theme-gold" alwaysGlow={!desktop} />
           </div>
         </div>
       </aside>
@@ -146,7 +159,7 @@ export default function Layout() {
       <nav data-mobile-app-nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} premiumHome />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} accent="analysis" />
-        <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label={t('nav.chat')} accent="chat" />
+        <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" accent="chat" />
         <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} accent="profile" />
         <MobileNavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} accent="settings" />
       </nav>
@@ -157,9 +170,9 @@ export default function Layout() {
         needsConstrainedScroll && "min-h-0",
         isDesktopAnalysisRoute && "lg:min-h-0"
       )}>
-        <div ref={routeScrollRef} className={cx(
+        <div ref={routeScrollRef} data-route-scroll className={cx(
           "flex-1 min-h-0 overflow-y-auto relative z-10 custom-scrollbar flex flex-col max-md:overflow-anchor-none",
-          needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : "overscroll-none",
+          needsConstrainedScroll ? "overscroll-y-contain touch-pan-y min-h-0" : isReadingRoute ? "overscroll-y-auto touch-pan-y" : "overscroll-none",
           isDesktopAnalysisRoute && "lg:overflow-hidden lg:min-h-0"
         )}>
           <Suspense key={location.pathname} fallback={<RouteLoadingFallback />}>
@@ -172,7 +185,7 @@ export default function Layout() {
   );
 }
 
-function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false, subtitle }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean, subtitle?: string }) {
+function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false, bronzeLabel = false }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean, bronzeLabel?: boolean }) {
   const { pathname } = useLocation();
   const destination = to === '/home' && pathname === '/' ? '/' : to;
   return (
@@ -183,7 +196,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       onPointerDown={() => prefetchRoute(to)}
       className={({ isActive }) =>
         cx(
-          "site-nav-link flex items-center px-4 py-[1.125rem] border border-transparent rounded-2xl font-black text-[0.85rem] uppercase tracking-wider relative group active:scale-95 sidebar-item",
+          "site-nav-link flex items-center px-4 border border-transparent rounded-2xl font-semibold text-[0.94rem] normal-case tracking-normal relative group active:scale-95 sidebar-item",
           isActive
             ? `sidebar-item-active ${themeColor}`
             : cx("text-neutral-500 sidebar-item-hover", alwaysGlow && themeColor)
@@ -191,9 +204,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       }
     >
       <div className="w-8 flex justify-center shrink-0 group-hover:scale-110 transition-transform duration-150 motion-reduce:transition-none">{icon}</div>
-      <span className={subtitle ? "ml-4 hidden xl:block normal-case tracking-normal" : "ml-4 hidden xl:block italic truncate"}>
-        {label}{subtitle && <span className="block text-xs font-normal text-[#A8A293]">{subtitle}</span>}
-      </span>
+      <span className="site-nav-copy ml-4 hidden xl:flex"><span className={cx("site-nav-label", bronzeLabel && "site-nav-label--bronze")}>{label}</span></span>
 
       {/* Active Indicator Dot */}
       <NavItemActiveDot />
@@ -244,7 +255,7 @@ function MobileNavItem({ to, icon, label, premiumHome = false, accent }: { to: s
         {icon}
         <Circle size={4} className="absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-current fill-current" />
       </div>
-      <span className="text-[0.5rem] font-black uppercase tracking-widest">{label}</span>
+      <span className="site-nav-label text-[0.75rem] font-semibold normal-case tracking-normal">{label}</span>
     </NavLink>
   );
 }

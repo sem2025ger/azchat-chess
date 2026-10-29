@@ -17,7 +17,9 @@ test('club pinned messages: only moderator/admin can change pin', {skip:!local},
       BEGIN CREATE ROLE anon; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
       BEGIN CREATE ROLE authenticated; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
       BEGIN CREATE ROLE service_role BYPASSRLS; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END;
-      ALTER ROLE service_role BYPASSRLS;
+      IF NOT (SELECT rolbypassrls FROM pg_roles WHERE rolname='service_role') THEN
+        ALTER ROLE service_role BYPASSRLS;
+      END IF;
     END $$;`);
     await db.query(`CREATE SCHEMA auth;
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;

@@ -1,0 +1,37 @@
+.spieler-page{width:min(1100px,100%);margin:0 auto;padding:clamp(20px,4vw,48px);color:#e8e4da}
+.spieler-page h1{font-family:'Bodoni Moda',serif;font-size:clamp(2rem,4vw,3rem);color:#dfc492}.spieler-page h2{font-size:1.35rem;margin:16px 0}.spieler-page h3{font-weight:700;margin:18px 0 10px}.spieler-eyebrow{color:#bda984;font-size:.75rem;letter-spacing:.12em;text-transform:uppercase}
+.spieler-page button,.spieler-page input,.spieler-page select{border:1px solid #756449;border-radius:8px;background:#17191c;padding:10px 14px;color:inherit}.spieler-page button{cursor:pointer}.spieler-page button:hover,.spieler-page button[aria-selected=true],.spieler-page button[aria-pressed=true]{border-color:#dfc492;background:#302a20}.spieler-page button:disabled{opacity:.5;cursor:wait}.spieler-page :focus-visible{outline:2px solid #dfc492;outline-offset:3px}
+.spieler-search{margin:24px 0}.spieler-search label,.spieler-provider label{display:flex;flex-direction:column;gap:7px}.spieler-search>div{display:flex;gap:10px;margin-top:7px}.spieler-search input{flex:1;min-width:0}.spieler-columns{display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,2fr);gap:24px}.spieler-results{list-style:none;padding:0}.spieler-results li{margin-bottom:10px}.spieler-results button{width:100%;text-align:left}.spieler-results span,.spieler-games span{display:block;color:#b7b3aa;font-size:.85rem;margin-top:6px}
+.spieler-card{background:#1b1e22;border:1px solid #45413a;border-radius:12px;padding:20px}.spieler-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}.spieler-card dt{color:#aaa59b;font-size:.8rem}.spieler-card dd{margin:4px 0 0;font-weight:700;overflow-wrap:anywhere}.spieler-muted{font-size:.8rem;color:#aaa59b;line-height:1.6;margin:12px 0}.spieler-tabs,.spieler-actions{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.spieler-provider{display:flex;flex-wrap:wrap;align-items:end;gap:12px}.spieler-games{padding:0;list-style:none}.spieler-games li{border-top:1px solid #45413a;padding:16px 0}.spieler-games button{margin-top:10px}.spieler-page [role=alert]{border-left:3px solid #df8c8c;padding:12px}.spieler-page [role=status]{padding:12px;color:#dfc492}
+@media(max-width:800px){.spieler-columns{grid-template-columns:1fr}.spieler-provider label{width:100%}}
+.spieler-page.section-page{max-width:1240px}.spieler-search.section-card{margin:0}.spieler-search h2{margin:0 0 12px}
+.spieler-columns{gap:18px;align-items:start;grid-template-columns:minmax(230px,.85fr) minmax(0,1.65fr)}
+.spieler-columns>.section-card>.spieler-tabs{margin-top:0}.spieler-columns .spieler-card{border:0;background:none;padding:0}
+.spieler-columns .spieler-card h2{margin:6px 0}.spieler-columns .spieler-card dl{gap:12px;margin:14px 0}
+.spieler-page .section-info .spieler-muted{margin:6px 0}.spieler-page .section-info{margin:10px 0}
+@media(max-width:800px){.spieler-columns{grid-template-columns:minmax(0,1fr)}}
+/* Spieler workspace: one title and one segmented tab bar, no nested page padding. */
+.spieler-page.section-page{padding:12px 16px;gap:8px;max-width:1240px}
+.spieler-page>header{display:grid;gap:2px}.spieler-page>header h1{font-size:1.75rem;margin:0;line-height:1.05}
+.spieler-page>header p{margin:0;font-size:.76rem;line-height:1.3}
+.spieler-page>header .spieler-eyebrow{font-size:.6rem;letter-spacing:.12em}
+.spieler-primary-tabs{margin:0 0 2px;gap:0;background:#15181b;border:1px solid #625541;border-radius:10px;padding:3px;width:fit-content;max-width:100%;flex-wrap:nowrap}
+.spieler-primary-tabs>button{min-height:30px;padding:4px 14px;border:0;font-size:.78rem;line-height:1.2;border-radius:7px;background:none}
+.spieler-primary-tabs>button[aria-selected=true]{background:#3a3329;color:#f0dfc2}
+.spieler-opponent-directory{display:grid;gap:16px;min-width:0}
+.spieler-opponent-directory .spieler-search{display:grid;gap:12px}.spieler-opponent-directory .spieler-search h2{font-size:1rem;margin:0}
+.spieler-opponent-directory .spieler-search>div{margin:0}.spieler-results li{border:1px solid #4d473d;border-radius:10px;padding:8px}.spieler-results li>button+button{margin-top:6px;width:auto}
+.spieler-opponent-directory .named-preparation{padding:12px;margin-top:12px}.spieler-opponent-directory .named-preparation h2{font-size:1rem}
+@media(max-width:600px){.spieler-page.section-page{padding:12px;gap:12px}.spieler-primary-tabs{width:100%}.spieler-primary-tabs>button{flex:1;padding:8px;font-size:.8rem}.spieler-page>header h1{font-size:2rem}}
+.spieler-page.section-page>header h1{font-size:1.75rem;line-height:1.05;margin:0}
+.spieler-page.section-page>header p{margin:0;font-size:.76rem;line-height:1.3}
+.spieler-page.section-page>header .spieler-eyebrow{font-size:.6rem}
+.spieler-page.section-page .global-position-search .section-info{margin:0}
+.spieler-page.section-page .global-position-search .preparation-position>p[role=status]{position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden}
+.spieler-page.section-page .global-position-search .preparation-moves-input label{font-size:.6rem;gap:0}
+@media(min-width:801px){.spieler-page.section-page{padding-top:8px;padding-bottom:8px;gap:4px}}
+@media(min-width:801px){.spieler-page.section-page{padding-top:6px;padding-bottom:6px}}
+.spieler-opponent-directory .position-segment button{flex:1;min-width:0;min-height:38px;padding:6px;border:0;background:transparent;border-radius:6px;font-size:.84rem;line-height:1.25}
+.spieler-opponent-directory .position-segment button[aria-pressed=true]{background:#42382a;color:#f3dfba}
+.spieler-search button[type=submit],.spieler-search>div>button{background:#493b2a;border-color:#bc9b6a;color:#f5e5c9;font-weight:600}
+.spieler-page form{margin:0}

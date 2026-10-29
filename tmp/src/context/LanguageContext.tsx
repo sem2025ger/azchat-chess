@@ -19,8 +19,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    // Keep for sync across tabs if needed
-  }, []);
+    document.documentElement.lang = language === 'ua' ? 'uk' : language;
+  }, [language]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
@@ -50,4 +50,9 @@ export function useLanguage() {
     throw new Error('useLanguage must be used within a LanguageProvider');
   }
   return context;
+}
+
+/** Optional for standalone UI/SSR fixtures; app routes always use LanguageProvider. */
+export function useOptionalLanguage() {
+  return useContext(LanguageContext);
 }

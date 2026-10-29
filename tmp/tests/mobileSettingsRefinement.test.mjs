@@ -22,7 +22,7 @@ test('mobile settings use desktop font families while retaining button legibilit
   assert.match(css, /font-family: 'ChessAZ Settings UI'/);
   assert.match(css, /font-family: 'ChessAZ Settings Display'/);
   assert.match(css, /\.settings-mobile-view h2/);
-  assert.match(css, /font-size: max\(14px, \.875rem\)/);
+  assert.match(css, /font-size: max\(0\.875rem, \.875rem\)/);
 });
 
 test('mobile settings translate labels without changing existing choices and clear scroll area', () => {
