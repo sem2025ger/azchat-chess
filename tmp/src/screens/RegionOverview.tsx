@@ -207,6 +207,7 @@ export default function RegionOverview(){
   {detail&&<div className="nrw-back"><Link to="/region/nrw"><ArrowLeft size={16} aria-hidden="true"/> {tr("Alle NRW-Themen")}</Link><span>{tr(sectionLabels[detail])}</span></div>}
   {error&&<p className="nrw-error" role="alert">{tr(error)}</p>}
    <div className="nrw-layout">
+    <div className="nrw-content">
     <div className={'nrw-grid'+(detail?' nrw-grid--detail':'')}>
     {(!detail||detail==='turniere')&&<Tile section="turniere" icon={<CalendarDays size={19}/>} detail={!!detail} count={events.length?String(events.length):undefined}>{content.turniere}</Tile>}
     {(!detail||detail==='ligen')&&<Tile section="ligen" icon={<Trophy size={19}/>} detail={!!detail} count={featuredLeagues.length?String(featuredLeagues.length):undefined}>{content.ligen}</Tile>}
