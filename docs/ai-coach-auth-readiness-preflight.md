@@ -28,6 +28,8 @@ A successful preflight does **not** establish the deployed commit SHA, Supabase 
 
 Once those gates are met, the existing verifier uses a short-lived QA-only token in a secure runner (never committed or pasted into chat), makes six authenticated requests (one unauthenticated request) and remains subject to the normal rate budget. UI and real Gemini acceptance are separate.
 
+The authenticated verifier now shares the exact allowlist and URL validation with this token-free preflight, including the isolated Coach host. Before any hosted authenticated run, use a short-lived **QA-only** account token via a secure runner. Do not place tokens in PRs, logs, screenshots or chat. A token-free readiness probe is the next independent gate. The Vercel project currently has Supabase/API variables targeted at both Preview and Production; do not deploy a Coach Preview until the Preview values are separately verified as QA-only (without revealing their values).
+
 ## Validation
 
 Run `node --test openingPrepReadiness.test.js` from `server/`. Six isolated tests cover both pinned QA destinations, the one-request contract, 404/429/200/proxy 401 outcomes, fail-closed validation, bounded streamed responses, and an actual loopback HTTP request. No hosted call is made.
