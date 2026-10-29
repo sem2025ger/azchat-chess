@@ -40,6 +40,23 @@ test('QA HTTP verifier covers exact ply, KID transpositions, auth, boundaries an
   }
 });
 
+test('isolated Coach host is strictly allowed but impostor domains are denied', async () => {
+  // An empty token fails after URL validation: no request is made.
+  const baseUrl = 'https://chessaz-ai-coach-v1-isolated-qa.onrender.com/';
+  await assert.rejects(verifyOpeningPrepQa({baseUrl, token: ''}), /QA_ACCESS_TOKEN is required/);
+  for (const unsafe of [
+    'https://chessaz-ai-coach-v1-isolated-qa.onrender.com.evil.example/',
+    'http://chessaz-ai-coach-v1-isolated-qa.onrender.com/',
+    'https://chessaz-ai-coach-v1-isolated-qa.onrender.com:444/',
+    'https://user:pass@chessaz-ai-coach-v1-isolated-qa.onrender.com/',
+    'https://chessaz-api.onrender.com/',
+    'https://chessaz.de/',
+  ]) {
+    await assert.rejects(verifyOpeningPrepQa({baseUrl: unsafe, token: 'synthetic'}),
+      /unapproved_qa_host|invalid_qa_protocol|invalid_qa_port|invalid_qa_url/);
+  }
+});
+
 test('QA verifier refuses production before any network request', async () => {
   for (const baseUrl of ['https://chessaz-api.onrender.com', 'https://chessaz.de', 'https://user:secret@chessaz-deutsch-qa-api.onrender.com']) {
     await assert.rejects(verifyOpeningPrepQa({baseUrl, token: 'synthetic'}));
