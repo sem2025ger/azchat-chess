@@ -2,12 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Home fits the desktop viewport with controls in normal layout, not below it. */
+/* Home desktop: retain the original visual plane and keep the chessboard
+   modestly enlarged within its column. Do not scale or translate the scene toward
+   the viewer; balance the right-hand Arena and slogan in the same grid. */
 @media(min-width:1280px){
  [data-home-route] [data-route-scroll]{overflow:hidden}
  .home-screen-root{height:100%;min-height:0;padding:24px 0}
- .home-screen-root [data-mobile-home-stack]{display:grid;grid-template-columns:minmax(0,1.22fr) minmax(300px,.78fr);align-items:center;justify-items:center;gap:24px;height:100%;min-height:0;padding:0 28px;overflow:visible}
- .home-screen-root .home-board-column{width:100%;max-width:min(660px,calc(100dvh - 120px));margin-top:0;align-items:stretch}
+ .home-screen-root [data-mobile-home-stack]{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);align-items:center;justify-items:center;gap:clamp(24px,2.2vw,32px);height:100%;min-height:0;padding:0 28px;overflow:visible}
+ .home-screen-root .home-board-column{width:100%;max-width:min(640px,calc(100dvh - 145px));margin-top:0;align-items:stretch;perspective:1400px}
  .home-screen-root .home-desktop-controls{position:static;margin-top:12px}
  .home-screen-root .home-dashboard-column{margin:0;width:100%;max-width:420px;min-width:0}
 }
