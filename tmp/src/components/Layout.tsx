@@ -106,7 +106,7 @@ export default function Layout() {
           <nav className="px-3 xl:px-5 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
-            <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" subtitle={t('nav.germanSpeakers')} />
+            <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" />
             {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW" themeColor="theme-gold" />}
             {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
@@ -185,7 +185,7 @@ export default function Layout() {
   );
 }
 
-function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false, subtitle }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean, subtitle?: string }) {
+function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean }) {
   const { pathname } = useLocation();
   const destination = to === '/home' && pathname === '/' ? '/' : to;
   return (
@@ -196,7 +196,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       onPointerDown={() => prefetchRoute(to)}
       className={({ isActive }) =>
         cx(
-          "site-nav-link flex items-center px-4 py-[1.125rem] border border-transparent rounded-2xl font-semibold text-[0.94rem] normal-case tracking-normal relative group active:scale-95 sidebar-item",
+          "site-nav-link flex items-center px-4 border border-transparent rounded-2xl font-semibold text-[0.94rem] normal-case tracking-normal relative group active:scale-95 sidebar-item",
           isActive
             ? `sidebar-item-active ${themeColor}`
             : cx("text-neutral-500 sidebar-item-hover", alwaysGlow && themeColor)
@@ -204,7 +204,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       }
     >
       <div className="w-8 flex justify-center shrink-0 group-hover:scale-110 transition-transform duration-150 motion-reduce:transition-none">{icon}</div>
-      <span className="site-nav-copy ml-4 hidden xl:block"><span className="site-nav-label">{label}</span>{subtitle&&<span className="site-nav-subtitle">{subtitle}</span>}</span>
+      <span className="site-nav-copy ml-4 hidden xl:flex"><span className="site-nav-label">{label}</span></span>
 
       {/* Active Indicator Dot */}
       <NavItemActiveDot />
