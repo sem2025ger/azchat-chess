@@ -1,6 +1,6 @@
 'use strict';
 const express=require('express');
-const {LANGUAGE_CODES,prepareNajdorf,generateBriefing}=require('./aiCoachCore');
+const {LANGUAGE_CODES,prepareOpening,parseOpening,generateBriefing}=require('./aiCoachCore');
 function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,apiKey=null,model,fetchImpl=fetch,now=Date.now}={}){
  const router=express(),budgets=new Map();
  function limited(id,max){
@@ -16,14 +16,14 @@ function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,
   if(!user?.id)return res.status(401).json({code:'authentication_required'});
   if(limited('user:'+user.id,6))return res.status(429).json({code:'rate_limit'});
   const value=req.body;
-  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!['opening','color','language'].includes(k))||
-     value.opening!=='najdorf'||value.color!=='black'||!LANGUAGE_CODES.has(value.language))
+  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!['moves','color','language'].includes(k))||
+     !parseOpening(value.moves)||!['white','black'].includes(value.color)||!LANGUAGE_CODES.has(value.language))
    return res.status(400).json({code:'invalid_query'});
   try{
-   const lesson=await prepareNajdorf(index);
+   const lesson=await prepareOpening(index,{moves:value.moves,color:value.color});
    const briefing=await generateBriefing(lesson,value.language,{apiKey,model,fetchImpl});
    res.json({...lesson,briefing,generated:!!briefing});
-  }catch(e){const warming=e.code==='index_warming';if(warming)res.set('Retry-After','5');
+  }catch(e){const warming=e.code==='index_warming';if(e.code==='invalid_query')return res.status(400).json({code:'invalid_query'});if(warming)res.set('Retry-After','5');
    res.status(503).json({code:warming?'index_warming':'index_unavailable'});
   }
  });
