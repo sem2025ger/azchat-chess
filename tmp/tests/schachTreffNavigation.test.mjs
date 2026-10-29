@@ -6,7 +6,8 @@ test('desktop inactive home and settings cannot retain active-looking theme', ()
   assert.equal((source.match(/alwaysGlow=\{!desktop\}/g) || []).length, 2);
   assert.match(source, /isActive\s*\? `sidebar-item-active/);
 });
-test('Schach-Treff uses the same label on desktop/mobile and the translated desktop subtitle', () => {
-  assert.match(source, /<NavItem to="\/chat"[^\n]*label="Schach-Treff"[^\n]*subtitle=\{t\('nav.germanSpeakers'\)\}/);
+test('Schach-Treff uses one label on desktop/mobile without a subtitle', () => {
+  assert.match(source, /<NavItem to="\/chat"[^\n]*label="Schach-Treff"/);
+  assert.doesNotMatch(source, /subtitle=\{t\('nav.germanSpeakers'\)\}|site-nav-subtitle/);
   assert.match(source, /<MobileNavItem to="\/chat"[^\n]*label="Schach-Treff"/);
 });
