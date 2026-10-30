@@ -1,6 +1,7 @@
 'use strict';
 const express=require('express');
 const {LANGUAGE_CODES,prepareOpening,parseOpening,generateBriefing}=require('./aiCoachCore');
+const {validChatQuery,groundedChat}=require('./aiCoachChat');
 function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,apiKey=null,model,fetchImpl=fetch,now=Date.now}={}){
  const router=express(),budgets=new Map();
  function limited(id,max){
@@ -26,6 +27,16 @@ function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,
   }catch(e){const warming=e.code==='index_warming';if(e.code==='invalid_query')return res.status(400).json({code:'invalid_query'});if(warming)res.set('Retry-After','5');
    res.status(503).json({code:warming?'index_warming':'index_unavailable'});
   }
+ });
+ router.post('/chat',express.json({limit:'3kb'}),async(req,res)=>{
+  if(limited('chat-ip:'+req.ip,60))return res.status(429).json({code:'rate_limit'});
+  const auth=req.get('authorization')||'';let user=null;
+  if(/^Bearer [^\s]+$/.test(auth)&&auth.length<=8192)try{user=await verifyToken(auth.slice(7));}catch{}
+  if(!user?.id)return res.status(401).json({code:'authentication_required'});
+  if(limited('chat-user:'+user.id,6))return res.status(429).json({code:'rate_limit'});
+  if(!validChatQuery(req.body))return res.status(400).json({code:'invalid_query'});
+  try{res.json(await groundedChat(index,req.body,{apiKey,model,fetchImpl}));}
+  catch(e){const warming=e.code==='index_warming';if(warming)res.set('Retry-After','5');res.status(503).json({code:warming?'index_warming':'index_unavailable'});}
  });
  app.use('/api/ai-coach',router);
  return router;
