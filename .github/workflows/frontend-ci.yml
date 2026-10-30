@@ -46,6 +46,9 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Server dependencies for Coach browser integration
+        run: npm ci --ignore-scripts --prefix ../server
+
       - name: Frontend tests
         run: npm test
         env:
