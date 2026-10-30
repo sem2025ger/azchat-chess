@@ -40,9 +40,9 @@ export default function OpeningPrep({token}:{token:string}){
  }
  function view(game:ModelGame){try{navigate(openSpielerAnalysis(game.pgn,undefined,game.ply));}catch{setFailure({key:requestKey,code:'unavailable'});}}
  return <section className="section-card chessaz-ai-coach" aria-label={t.title}>
-  <header><h2 className="ai-coach-wordmark">{t.title}</h2><p>{t.desc}</p></header>
+  <header><h2 className="ai-coach-wordmark">{t.title}</h2><details className="chessaz-ai-coach-help"><summary>{t.help}</summary><p>{t.desc}</p><p>{t.hint}</p></details></header>
   <label className="chessaz-ai-coach-input">{t.input}<input aria-label={t.input} aria-describedby={id+'-hint'} value={moves} maxLength={250} onChange={e=>{invalidate();setMoves(e.target.value);}} placeholder="e4 e5 Nf3 Nc6"/></label>
-  <p id={id+'-hint'} className="chessaz-ai-coach-note">{t.hint}</p>
+  <span id={id+'-hint'} className="sr-only">{t.hint}</span>
   <label className="chessaz-ai-coach-color">{t.color}<select aria-label={t.color} value={color} onChange={e=>{invalidate();setColor(e.target.value as 'white'|'black');}}><option value="white">{t.white}</option><option value="black">{t.black}</option></select></label>
   <button type="button" disabled={!token||busy||!moves.trim()} onClick={()=>void prepare()}>{busy?t.busy:t.start}</button>
   {!token&&<p role="status">{t.auth}</p>}{error&&<p role="alert">{error}</p>}
