@@ -12,6 +12,24 @@ const fallback={
  uk:(total)=>'У цій позиції знайдено '+total+' відкритих партій. Переглянь приклади нижче в аналізі. Оцінка Stockfish у чаті поки недоступна.'
 };
 function normalizeLanguage(language){return language==='ua'?'uk':language;}
+const gameHeadings={
+ de:'In Partien kamen folgende Fortsetzungen vor:',
+ en:'These continuations occurred in games:',
+ ru:'В партиях встречались такие продолжения:',
+ az:'Partiyalarda belə davamlar oynanılıb:',
+ tr:'Partilerde şu devam yolları oynandı:',
+ uk:'У партіях зустрічалися такі продовження:'
+};
+const numberWords={одну:1,один:1,одна:1,две:2,два:2,дві:2,три:3,четыре:4,чотири:4,пять:5,п'ять:5,пять:5,шесть:6,семь:7,восемь:8,девять:9,десять:10,three:3,two:2,one:1,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,drei:3,zwei:2,ein:1,vier:4,fünf:5,üç:3,iki:2,bir:1,dört:4,beş:5,üç:3};
+function gameRequest(message){
+ const value=message.toLowerCase();
+ if(!/(?:парт(?:ии|ий|ию|ия|ій|ії)|part(?:ien|ies|y|i)|games?|oyun|partiya)/iu.test(value)||!/(?:найд|покаж|подбер|да[йй]|знайд|покаж|find|show|list|suche|zeig|finde|göster|bul|tap|göstər|göstər)/iu.test(value))return null;
+ const number=value.match(/\b([1-9]|10)\b/u);
+ const word=value.match(/(?:^|[^\p{L}])([\p{L}']+)(?=$|[^\p{L}])/gu)?.map(w=>w.trim()).find(w=>numberWords[w]!=null);
+ const count=number?Number(number[1]):word?numberWords[word]:3;
+ return Math.max(1,Math.min(10,count));
+}
+
 function validChatQuery(value){
  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!['message','fen','side','language','history'].includes(k)))return false;
  if(typeof value.message!=='string'||value.message.trim().length<2||value.message.length>500)return false;
@@ -21,23 +39,25 @@ function validChatQuery(value){
  try{new Chess(value.fen);}catch{return false;}
  return true;
 }
-function publicChatGames(result,fen){
- return (result.games||[]).slice(0,5).flatMap(record=>{
+function publicChatGames(result,fen,count=5){
+ return (result.games||[]).slice(0,count).flatMap(record=>{
   const game=safeGame(record,{fen});
   return game?[{id:game.id,white:game.white,black:game.black,result:game.result,ply:game.ply,pgn:game.pgn,date:game.date||null}]:[];
  });
 }
 async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal}={}){
+ const requested=gameRequest(query.message);
  let result=null;
  // Search rechecks both players' opt-outs. Never query private/personal games.
- if(index?.status==='ready')try{result=await index.search({fen:query.fen,side:query.side,scope:'all',sort:'strongest',limit:5});}catch{ /* General teaching can continue without archive claims. */ }
+ if(index?.status==='ready')try{result=await index.search({fen:query.fen,side:query.side,scope:'all',sort:'strongest',limit:requested??5});}catch{ /* General teaching can continue without archive claims. */ }
  if(!result&&!openaiApiKey)throw Object.assign(Error('index_unavailable'),{code:index?.status==='warming'?'index_warming':'index_unavailable'});
- const games=result?publicChatGames(result,query.fen):[],language=normalizeLanguage(query.language);
+ const games=result?publicChatGames(result,query.fen,requested??5):[],language=normalizeLanguage(query.language);
  const evidence={archiveAvailable:!!result,matched:result?.total??null,
   nextMoves:(result?.nextMoves||[]).slice(0,8).map(x=>({move:x.move,count:x.count})),
   games:games.map(({white,black,result,date,ply,pgn})=>{const board=new Chess();board.loadPgn(pgn);return {white,black,result,date,hasPgn:true,matchedPly:ply,continuation:board.history().slice(ply,ply+6)};})};
- const answer=openaiApiKey?await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal}):fallback[language](result.total||0);
+ const archiveOnly=!!requested&&!!result;
+ const answer=archiveOnly?gameHeadings[language]:openaiApiKey?await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal}):fallback[language](result.total||0);
  return {answer,generated:!!openaiApiKey,provider:openaiApiKey?'openai':null,providerStatus:openaiApiKey?'ready':'not_configured',
-  source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:false,position:query.fen,matched:result?.total??null,games};
+  source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:false,position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);return {...game,moves:board.history().slice(0,30)};}):games};
 }
-module.exports={validChatQuery,groundedChat,publicChatGames};
+module.exports={validChatQuery,groundedChat,publicChatGames,gameRequest};
