@@ -87,7 +87,7 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
  async function send(event:FormEvent){
   event.preventDefault();const message=draft.trim();if(message.length<2||!token||busyRef.current||recorder.current)return;
   busyRef.current=true;
-  stopSpeech();const abort=new AbortController();request.current?.abort();request.current=abort;const previous=items.slice(-60);
+  stopSpeech();const abort=new AbortController();request.current?.abort();request.current=abort;const previous=items.slice(-58);
   setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);
   try{
    const response=await checked(await fetch(apiUrl('chat'),{method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text}))})}));
