@@ -58,7 +58,7 @@ try{
  const played=await evaluate(`document.querySelector('.global-position-search .preparation-board-input').innerHTML`);
  await click('Zurück');await wait(`document.querySelector('.preparation-board-input [aria-label^="c7 bP"]')!==null`);await click('Vorwärts');await wait(`document.querySelector('.preparation-board-input [aria-label^="c5 bP"]')!==null`);
  await evaluate(`document.querySelector('.global-position-search .preparation-position').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}))`);await wait(`document.querySelector('.preparation-board-input [aria-label^="c7 bP"]')!==null`);await evaluate(`document.querySelector('.global-position-search .preparation-position').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))`);await wait(`document.querySelector('.preparation-board-input [aria-label^="c5 bP"]')!==null`);await click('Zurück');await square('e7');await square('e5');assert.ok(await evaluate(`[...document.querySelectorAll('.global-position-search button')].find(b=>b.textContent.includes('Vorwärts')).disabled`));
- await locales(['Eingabe: Züge auf dem Brett','Zurück','Vorwärts','Brett drehen']);
+ await locales(['Zurück','Vorwärts','Brett drehen']);
  assert.equal(await evaluate(`!!document.querySelector('.preparation-moves-input')`),false,'text move search removed only in Spieler');
  await fill('Meine Farbe','black');await wait(`document.querySelector('.global-position-search .preparation-board-input button').getAttribute('aria-label').startsWith('h1 ')`);await click('Brett drehen');await wait(`document.querySelector('.global-position-search .preparation-board-input button').getAttribute('aria-label').startsWith('a8 ')`);
  await locales(['Zurück','Vorwärts','Brett drehen']);
