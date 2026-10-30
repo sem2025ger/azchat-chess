@@ -76,8 +76,15 @@ async function generateBriefing(result,language,{apiKey,model='gemini-2.5-flash'
    body:JSON.stringify({contents:[{role:'user',parts:[{text:prompt}]}],
     generationConfig:{temperature:0.2,maxOutputTokens:400,responseMimeType:'application/json'}})
   });
-  if(!response.ok||Number(response.headers.get('content-length')||0)>16384)return null;
-  const raw=await response.text();if(raw.length>16384)return null;
+  if(!response.ok||Number(response.headers.get('content-length')||0)>16384){await response.body?.cancel().catch(()=>{});return null;}
+  const reader=response.body?.getReader();if(!reader)return null;
+  const chunks=[];let bytes=0;
+  try{
+   while(true){const {value,done}=await reader.read();if(done)break;
+    bytes+=value.byteLength;if(bytes>16384)return null;chunks.push(value);
+   }
+  }finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+  const raw=new TextDecoder('utf-8',{fatal:true}).decode(Buffer.concat(chunks,bytes));
   const data=JSON.parse(raw),text=data?.candidates?.[0]?.content?.parts?.find(part=>typeof part.text==='string')?.text;
   return validateBriefing(JSON.parse(text||'{}').briefing);
  }catch{return null;}

@@ -17,7 +17,7 @@ test('QA HTTP verifier covers exact ply, KID transpositions, auth, boundaries an
     license_url: 'https://creativecommons.org/licenses/by-sa/4.0/'}));
   const index = new PositionIndex({page: async cursor => rows.filter(r => !cursor || r.id > cursor), hidden: async () => new Set()}, {log() {}});
   await index.start(); assert.equal(index.status, 'ready');
-  for (const mode of ['no-key', 'provider-error', 'malformed', 'generated']) {
+  for (const mode of ['no-key', 'provider-error', 'malformed', 'oversized-stream', 'generated']) {
     let calls = 0;
     const app = express();
     installAiCoach(app, {enabled: true, index, verifyToken: async token => token === 'synthetic' ? {id: 'fixture'} : null,
@@ -26,6 +26,7 @@ test('QA HTTP verifier covers exact ply, KID transpositions, auth, boundaries an
         calls++;
         if (mode === 'provider-error') return new Response('', {status: 503});
         if (mode === 'malformed') return new Response('not json');
+        if (mode === 'oversized-stream') return new Response(new Uint8Array(16385));
         return Response.json({candidates: [{content: {parts: [{text: JSON.stringify({briefing: 'Study the supplied model games.'})}]}}]});
       }});
     const server = app.listen(0, '127.0.0.1');
