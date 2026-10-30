@@ -53,5 +53,5 @@ test('archive-only requests honor exact counts and return original first fifteen
   assert.equal(answer.games[0].moves.length,30);
  }
  assert.equal(gameRequest('Объясни ход Nf3'),null);
- assert.equal(gameRequest('Найди 50 партий'),3);
+ assert.equal(gameRequest('Найди 50 партий'),null);
 });
