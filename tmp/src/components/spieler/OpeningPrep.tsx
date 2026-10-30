@@ -9,7 +9,7 @@ type ModelGame={id:string;pgn:string;ply:number;white:string;black:string;event:
 type Continuation={move:string;availableInSample:number;replyColor:'white'|'black';replies:{move:string;count:number}[];games:ModelGame[]};
 type OpeningLesson={opening:string;color:string;moves:string[];ply:number;turn:string;matched:number;inspected:number;groups:Continuation[];briefing:string|null};
 function formatLine(moves:string[]){return moves.map((san,i)=>(i%2===0?Math.floor(i/2)+1+'. ':'')+san).join(' ');}
-export default function OpeningPrep({token}:{token:string}){
+export default function OpeningPrep({token,showAuthNotice=true}:{token:string;showAuthNotice?:boolean}){
  const {language}=useLanguage(),navigate=useNavigate(),id=useId();
  const locale=openingPrepLanguage(language),t=openingPrepCopy[locale];
  const [result,setResult]=useState<{key:string;lesson:OpeningLesson}|null>(null);
@@ -45,7 +45,7 @@ export default function OpeningPrep({token}:{token:string}){
   <span id={id+'-hint'} className="sr-only">{t.hint}</span>
   <label className="chessaz-ai-coach-color">{t.color}<select aria-label={t.color} value={color} onChange={e=>{invalidate();setColor(e.target.value as 'white'|'black');}}><option value="white">{t.white}</option><option value="black">{t.black}</option></select></label>
   <button type="button" disabled={!token||busy||!moves.trim()} onClick={()=>void prepare()}>{busy?t.busy:t.start}</button>
-  {!token&&<p role="status">{t.auth}</p>}{error&&<p role="alert">{error}</p>}
+  {!token&&showAuthNotice&&<p role="status">{t.auth}</p>}{error&&<p role="alert">{error}</p>}
   {lesson&&<div className="chessaz-ai-coach-results" aria-live="polite">
    <p><strong>{lesson.moves.join(' ')}</strong> · {lesson.turn==='white'?t.whiteTurn:t.blackTurn}</p>
    <p>{t.total}: <strong>{lesson.matched}</strong> · {t.inspected}: <strong>{lesson.inspected}</strong></p>
