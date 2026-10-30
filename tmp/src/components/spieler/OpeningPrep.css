@@ -15,3 +15,14 @@
 .chessaz-ai-coach-group-body li{overflow-wrap:anywhere}
 .chessaz-ai-coach-group-body li p{line-height:1.5;margin:.4rem 0}
 @media(max-width:560px){.chessaz-ai-coach-group>summary{align-items:flex-start;flex-direction:column;gap:.2rem}.chessaz-ai-coach-group-body{padding:0 .8rem .8rem}}
+
+/* Scoped AI Coach wordmark: premium typography without changing any other heading. */
+#root .chessaz-ai-coach header .ai-coach-wordmark{
+ font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif!important;
+ font-size:clamp(1.55rem,2.6vw,2.05rem);font-weight:800;line-height:1.15;letter-spacing:-.045em;
+ color:#e6dfd0;background:linear-gradient(105deg,#c0c5cb 0%,#f7f4ea 24%,#b8a68b 45%,#d0d9df 65%,#a68c70 83%,#e7e1d3 100%);
+ background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+ animation:aiCoachMetalSweep 12s ease-in-out infinite alternate;
+}
+@keyframes aiCoachMetalSweep{from{background-position:0% center}to{background-position:100% center}}
+@media(prefers-reduced-motion:reduce){#root .chessaz-ai-coach header .ai-coach-wordmark{animation:none;background-position:50% center}}
