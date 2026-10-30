@@ -1,6 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
 import {useRegionalCopy} from '../../i18n/regionalCopy';
-import {useLanguage} from '../../context/LanguageContext';
 import {Chess,DEFAULT_POSITION,type Square,type PieceSymbol,type Color} from 'chess.js';
 import {validateAnalysisFen} from '../../utils/analysisWorkspace';
 import {initialBoardState,boardAt,boardMove,boardSeek,boardText,type PreparationBoardState} from '../../utils/preparationBoardState';
@@ -10,9 +9,7 @@ const pieces=['wK','wQ','wR','wB','wN','wP','bK','bQ','bR','bB','bN','bP'];
 const squares=Array.from({length:64},(_,i)=>('abcdefgh'[i%8]+(8-Math.floor(i/8))) as Square);
 export default function PreparationBoard({fen,onFen,initialState,onState,orientation='w',onReset,showMoveSearch=true,showModeSwitcher=true,allowFullscreen=false}:{fen:string;onFen:(fen:string)=>void;initialState?:PreparationBoardState;onState?:(state:PreparationBoardState)=>void;orientation?:'w'|'b';onReset?:()=>void;showMoveSearch?:boolean;showModeSwitcher?:boolean;allowFullscreen?:boolean}){
  const tr=useRegionalCopy();
- const {language}=useLanguage();
- const boardLabels:Record<string,[string,string]>={de:['Brett vergrößern','Normale Brettgröße'],en:['Expand board','Restore board size'],ru:['Развернуть доску','Вернуть обычный размер'],az:['Lövhəni böyüt','Lövhəni əvvəlki ölçüyə qaytar'],tr:['Tahtayı büyüt','Tahtayı normal boyuta döndür'],uk:['Розгорнути дошку','Повернути розмір дошки']};
- const [expandLabel,shrinkLabel]=boardLabels[language==='ua'?'uk':language]||boardLabels.de;
+ const expandLabel=tr('Brett vergrößern'),shrinkLabel=tr('Normale Brettgröße');
  const boardContainer=useRef<HTMLElement>(null);
  const [fullscreen,setFullscreen]=useState(false);
  useEffect(()=>{const changed=()=>setFullscreen(document.fullscreenElement===boardContainer.current);document.addEventListener('fullscreenchange',changed);return()=>document.removeEventListener('fullscreenchange',changed);},[]);
