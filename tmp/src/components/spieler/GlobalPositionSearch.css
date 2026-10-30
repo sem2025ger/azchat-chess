@@ -80,3 +80,6 @@
 .global-position-results-disclosure>summary{cursor:pointer;color:#e2cba4;font-weight:700;line-height:1.5;padding:8px 5px;list-style-position:inside}
 .global-position-results-disclosure>summary:focus-visible{outline:2px solid #d8b77e;outline-offset:2px;border-radius:6px}
 .global-position-results-disclosure[open]>summary{margin-bottom:10px}
+
+.spieler-page .global-position-results-disclosure[open]{max-height:min(58dvh,520px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-inline-end:5px}
+.spieler-page .global-position-results-close{display:block;width:100%;min-height:39px;margin-top:12px;color:#e5cf9f;border:1px solid #756449;border-radius:8px;background:#201f1e}
