@@ -101,3 +101,23 @@
  .spieler-page .spieler-workspace-top .spieler-primary-tabs{width:100%}
  .spieler-page .spieler-workspace-top .spieler-primary-tabs>button{font-size:.78rem;padding:7px 5px}
 }
+
+/* Square chessboard: prevent grid track stretching at larger widths/heights. */
+.spieler-page .spieler-position-workspace .preparation-position{
+ align-content:start;grid-auto-rows:max-content;
+}
+.spieler-page .spieler-position-workspace .preparation-shared-board{
+ width:100%;aspect-ratio:1 / 1;height:auto;min-height:0;
+ align-self:start;justify-self:center;
+}
+.spieler-page .spieler-position-workspace .preparation-shared-board>div{
+ width:100%;height:100%;aspect-ratio:1 / 1;
+}
+/* Only the persistent Layout route container may own vertical scrolling.
+   No nested rail scrollbar capturing the wheel over AI Coach. */
+.spieler-page .spieler-position-workspace .global-position-right-rail{
+ overflow:visible;max-height:none;overscroll-behavior:auto;
+}
+[data-reading-route]:has(.spieler-page) [data-route-scroll]{
+ scroll-behavior:auto;overscroll-behavior-y:auto;
+}
