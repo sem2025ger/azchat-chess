@@ -31,3 +31,13 @@
 .coach-chat-message .coach-chat-message-actions button{width:auto;margin-top:0;text-align:center}
 .coach-chat-actions button:focus-visible,.coach-chat-message-actions button:focus-visible{outline:2px solid #d8b77e;outline-offset:2px}
 @media(max-width:600px){.coach-chat-message-actions button{min-height:40px}}
+
+.coach-chat-message .coach-chat-archive-heading{text-align:center;color:#d5b889;font-weight:750;letter-spacing:.012em;padding:4px 0 9px;border-bottom:1px solid #655441}
+.coach-chat-variations{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px;min-width:0}
+.coach-chat-variations li{border:1px solid #544a3d;background:#1c2022;border-radius:8px;min-width:0}
+.coach-chat-variations summary{display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px 10px;color:#e7e2d7;font:600 .82rem/1.45 Inter,system-ui,sans-serif;overflow-wrap:anywhere}
+.coach-chat-variations summary:focus-visible{outline:2px solid #d9b780;outline-offset:2px;border-radius:7px}
+.coach-chat-variations summary>span:first-child{color:#cbaa73;flex:none}
+.coach-chat-variation-full{padding:0 10px 10px;display:flex;flex-wrap:wrap;gap:8px}
+.coach-chat-message .coach-chat-variation-full p{width:100%;font:500 .82rem/1.65 Inter,system-ui,sans-serif;color:#ebe6dc;overflow-wrap:anywhere}
+.coach-chat-message .coach-chat-variation-full button{display:inline-flex;align-items:center;gap:6px;width:auto;margin:0;padding:7px 9px;min-height:36px;text-align:center}
