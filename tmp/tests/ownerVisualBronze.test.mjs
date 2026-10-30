@@ -17,7 +17,7 @@ test('only Schach-Treff and NRW desktop sidebar labels receive metallic treatmen
  const highlighted=[...layout.matchAll(/<NavItem[^\n]*bronzeLabel/g)].map(m=>m[0]);
  assert.equal(highlighted.length,2);
  assert.ok(highlighted.some(m=>m.includes('label="Schach-Treff"')));
- assert.ok(highlighted.some(m=>m.includes('label="NRW"')));
+ assert.ok(highlighted.some(m=>m.includes('label="NRW – Schach"')));
  assert.match(site,/aside \.site-nav-link \.site-nav-label--bronze/);
 });
 test('desktop Home board remains in its visual plane beside balanced Arena panels',()=>{
