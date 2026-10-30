@@ -22,7 +22,7 @@ function restoredChat(accountId:string,context:string){
   if(m.generated!==undefined&&typeof m.generated!=='boolean')return true;
   if(m.archiveOnly!==undefined&&typeof m.archiveOnly!=='boolean')return true;
   if(m.games===undefined)return false;
-  if(!Array.isArray(m.games)||m.games.length>10)return true;
+  if(!Array.isArray(m.games)||m.games.length>20)return true;
   return m.games.some(g=>!g||typeof g.id!=='string'||typeof g.white!=='string'||typeof g.black!=='string'||typeof g.pgn!=='string'||!Number.isInteger(g.ply)||g.ply<0||(g.moves!==undefined&&(!Array.isArray(g.moves)||g.moves.length>30||g.moves.some(move=>typeof move!=='string'||move.length>16))));
  }))return null;
  if(saved.expanded!==undefined&&(!Array.isArray(saved.expanded)||saved.expanded.some(i=>!Number.isInteger(i)||i<0||i>=saved.items.length)))return null;
@@ -93,7 +93,7 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
    const response=await checked(await fetch(apiUrl('chat'),{method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text}))})}));
    const data=await response.json() as Reply;
    if(typeof data.answer!=='string'||data.answer.length>1200||!Array.isArray(data.games)||typeof data.generated!=='boolean')throw Error('api');
-   if(!abort.signal.aborted){setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:data.games.slice(0,10),generated:data.generated,archiveOnly:data.archiveOnly===true}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
+   if(!abort.signal.aborted){setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:data.games.slice(0,20),generated:data.generated,archiveOnly:data.archiveOnly===true}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
   }catch(e){if(!abort.signal.aborted){setError(describe(e));setDraft(message);setItems(previous);}}
   finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}
  }
