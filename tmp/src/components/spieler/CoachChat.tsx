@@ -5,11 +5,20 @@ import {useLanguage} from '../../context/LanguageContext';
 import {openSpielerAnalysis} from '../../services/spieler';
 import {openingPrepLanguage} from '../../i18n/openingPrepCopy';
 import {coachChatCopy} from '../../i18n/coachChatCopy';
+import {readPositionSearchState,writePositionSearchState} from '../../utils/positionSearchState';
 import './CoachChat.css';
 type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string};
 type Reply={answer:string;games:ResultGame[];generated:boolean};
 type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated?:boolean};
 type Clip={url:string;item:number};
+type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string};
+type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number};
+function restoredChat(accountId:string,context:string){
+ const saved=readPositionSearchState<SavedChat>(accountId,'chat');
+ if(!saved||saved.context!==context||typeof saved.open!=='boolean'||typeof saved.voiceReplies!=='boolean'||typeof saved.draft!=='string'||saved.draft.length>500||!Number.isFinite(saved.scrollTop)||!Array.isArray(saved.items)||saved.items.length>18)return null;
+ if(saved.items.some(m=>!m||!['user','assistant'].includes(m.role)||typeof m.text!=='string'||m.text.length>1200||(m.generated!==undefined&&typeof m.generated!=='boolean')||(m.games!==undefined&&(!Array.isArray(m.games)||m.games.length>5||m.games.some(g=>!g||typeof g.id!=='string'||typeof g.white!=='string'||typeof g.black!=='string'||typeof g.pgn!=='string'||!Number.isInteger(g.ply)||g.ply<0)))))return null;
+ return saved;
+}
 const MAX_AUDIO_BYTES=2*1024*1024;
 function apiUrl(path:string){
  const root=new URL(import.meta.env.VITE_SERVER_URL||'');
@@ -20,10 +29,16 @@ async function checked(response:Response){
  if(!response.ok){let code='unavailable';try{code=(await response.json()).code||code;}catch{/* Proxy errors use the localized fallback. */}throw Error(code);}
  return response;
 }
-export default function CoachChat({fen,side,token}:{fen:string;side:'white'|'black'|'any';token:string}){
+export default function CoachChat(props:Props){
+ const {language}=useLanguage();
+ return <CoachConversation key={JSON.stringify([props.accountId,props.fen,props.side,openingPrepLanguage(language)])} {...props}/>;
+}
+function CoachConversation({fen,side,token,accountId='guest'}:Props){
  const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId(),privacyId=useId();
- const [open,setOpen]=useState(false),[draft,setDraft]=useState(''),[items,setItems]=useState<ChatItem[]>([]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null);
- const request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(false),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
+ const context=JSON.stringify([fen,side,lang]);
+ const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context):null);
+ const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0);
+ const request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
  const stopSpeech=useCallback(()=>{speechRequest.current?.abort();speechRequest.current=null;audioRef.current?.pause();if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;setClip(null);setSpeechBusy(null);},[]);
  const cancel=useCallback(()=>{
   epoch.current++;busyRef.current=false;request.current?.abort();request.current=null;stopSpeech();
@@ -31,8 +46,9 @@ export default function CoachChat({fen,side,token}:{fen:string;side:'white'|'bla
   const current=recorder.current;recorder.current=null;if(current){current.onstop=null;current.ondataavailable=null;current.onerror=null;if(current.state!=='inactive')current.stop();}
   stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;setRecording(false);setBusy(null);
  },[stopSpeech]);
- useEffect(()=>{cancel();setItems([]);setDraft('');setError('');return cancel;},[fen,side,lang,token,cancel]);
- useEffect(()=>{listRef.current?.scrollTo({top:listRef.current.scrollHeight});},[items,open,busy]);
+ useEffect(()=>{cancel();setError('');return cancel;},[token,cancel]);
+ useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{context,open,draft,items,voiceReplies,scrollTop},'chat');},[accountId,context,token,open,draft,items,voiceReplies,scrollTop]);
+ useEffect(()=>{const list=listRef.current;if(list){list.scrollTop=restoredScroll.current??list.scrollHeight;restoredScroll.current=null;}},[items,open,busy]);
  useEffect(()=>{if(clip)void audioRef.current?.play().catch(()=>{/* Native controls remain available when autoplay is blocked. */});},[clip]);
  function describe(error:unknown){
   const code=error instanceof Error?error.message:'';
@@ -100,7 +116,7 @@ export default function CoachChat({fen,side,token}:{fen:string;side:'white'|'bla
  return <section className="coach-chat" aria-label={t.title}>
   <button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(v=>!v);}}><MessageSquare size={16}/>{t.title}</button>
   {open&&<div className="coach-chat-panel">
-   <div ref={listRef} className="coach-chat-history" role="log" aria-live="polite" aria-relevant="additions text">
+   <div ref={listRef} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="coach-chat-history" role="log" aria-live="polite" aria-relevant="additions text">
     {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p>{m.text}</p>{m.role==='assistant'&&<>
      {!m.generated&&<small className="coach-chat-notice">{t.fallback}</small>}
      <button type="button" className="coach-chat-listen" disabled={!token||!!busy||recording||speechBusy!==null} onClick={()=>void speak(m.text,i)}><Volume2 size={14}/>{t.listen}</button>

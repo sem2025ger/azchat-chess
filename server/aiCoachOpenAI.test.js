@@ -8,12 +8,12 @@ const query={message:'What should I study here?',fen:new Chess().fen(),side:'whi
 const key='synthetic-provider-key';
 const answerResponse=(answer='Развивай фигуры и следи за центром.')=>Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer})}]}]});
 const readyIndex={status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})};
-function speechSocket({failed=false,oversized=false}={}){return(url,options)=>{
+function speechSocket({failed=false,oversized=false,expectedScript}={}){return(url,options)=>{
  assert.equal(url,'wss://api.openai.com/v1/realtime?model=gpt-realtime-2.1-mini');assert.equal(options.headers.Authorization,'Bearer '+key);assert.equal(options.followRedirects,false);
  const socket=new EventEmitter();socket.terminated=false;socket.terminate=()=>{socket.terminated=true;};
  socket.send=value=>{const event=JSON.parse(value);queueMicrotask(()=>{if(socket.terminated)return;
   if(event.type==='session.update'){assert.deepEqual(event.session.audio.output.format,{type:'audio/pcm',rate:24000});socket.emit('message',Buffer.from(JSON.stringify({type:'session.updated'})));}
-  else{assert.equal(event.type,'response.create');assert.equal(event.response.conversation,'none');assert.equal(event.response.max_output_tokens,2048);
+  else{assert.equal(event.type,'response.create');assert.equal(event.response.conversation,'none');assert.equal(event.response.max_output_tokens,2048);if(expectedScript)assert.equal(event.response.input[0].content[0].text,expectedScript);
    const chunk=oversized?Buffer.alloc(180000):Buffer.alloc(4800);
    for(let i=0;i<(oversized?15:1)&&!socket.terminated;i++)socket.emit('message',Buffer.from(JSON.stringify({type:'response.output_audio.delta',delta:chunk.toString('base64')})));
    if(!socket.terminated)socket.emit('message',Buffer.from(JSON.stringify(failed?{type:'error',error:{message:'SECRET upstream failure'}}:{type:'response.done',response:{status:'completed'}})));
@@ -25,7 +25,7 @@ test('OpenAI exact model, nonstored Responses, schema, bounded history and legal
  let calls=0;const answer=await generateAnswer(query,{archiveAvailable:false},{apiKey:key,model:'gpt-6-sol',fetchImpl:async(url,options)=>{
   calls++;assert.equal(url,'https://api.openai.com/v1/responses');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,'Bearer '+key);assert.ok(options.signal);
   const body=JSON.parse(options.body),input=JSON.parse(body.input);assert.equal(body.model,'gpt-6-sol');assert.equal(body.store,false);assert.equal(body.text.format.type,'json_schema');assert.equal(body.text.format.strict,true);assert.ok(body.instructions.includes('Stockfish is NOT available'));
-  assert.equal(input.position,query.fen);assert.equal(input.sideToMove,'w');assert.deepEqual(input.legalMoves,new Chess().moves());assert.deepEqual(input.history,query.history);assert.equal(input.evidence.archiveAvailable,false);return answerResponse();
+  assert.equal(input.position,query.fen);assert.equal(input.sideToMove,'w');assert.deepEqual(input.legalMoves,new Chess().moves());assert.deepEqual(input.history,query.history);assert.equal(input.evidence.archiveAvailable,false);assert.equal(input.positionStatus.inCheck,false);assert.equal(input.pieces.length,32);assert.deepEqual(input.legalMoveDetails.find(m=>m.san==='e4'),{san:'e4',from:'e2',to:'e4',piece:'p'});assert.ok(body.instructions.includes('requestedSide'));return answerResponse();
  }});assert.equal(calls,1);assert.ok(answer.includes('центр'));
 });
 test('provider refusals, partial output, links, bad JSON and streamed byte overflow fail closed',async()=>{
@@ -97,4 +97,8 @@ test('voice budgets apply to verified account identity and reset after one minut
   assert.equal((await post(base+'/speech',{text:'Hello',language:'en'})).status,429);clock=60000;
   assert.equal((await post(base+'/speech',{text:'Hello',language:'en'},'rotated')).status,503);
  });
+});
+
+test('Realtime receives the deterministic spoken script while text SAN is left intact',async()=>{
+ const text='12...Nxe5+; O-O; c3';await speakAnswer(text,'ru',{apiKey:key,socketFactory:speechSocket({expectedScript:'ход 12, чёрные: конь берёт на е пять, шах; короткая рокировка; цэ три'})});assert.equal(text,'12...Nxe5+; O-O; c3');
 });

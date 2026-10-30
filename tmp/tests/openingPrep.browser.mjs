@@ -31,7 +31,7 @@ window.fetch=async(url,options={})=>{
  const game={id:'synthetic',pgn:model.pgn(),ply:transposed?8:ply,white:'Synthetic White',black:'Synthetic Black',event:'Synthetic',date:'2026-10-29',result:'*',first25:model.history()};
  return Response.json({opening:'custom',color:body.color,moves,ply,turn,matched:1,inspected:1,briefing:null,groups:[{move:rest[0],replyColor:turn==='white'?'black':'white',replies:[{move:rest[1],count:1}],games:[game]}]});
 };
-function App(){const{setLanguage}=useLanguage();const theme=useThemeContext();const[token,setToken]=useState('synthetic-only');window.setToken=setToken;window.language=setLanguage;window.theme=theme;window.navigate=useNavigate();return <Routes><Route element={<Layout/>}><Route path='/' element={<main className='spieler-page section-page'><OpeningPrep token={token}/></main>}/><Route path='/game' element={<GameRoute/>}/></Route></Routes>;}
+function App(){const{setLanguage}=useLanguage();const theme=useThemeContext();const[token,setToken]=useState('synthetic-only');window.setToken=setToken;window.language=setLanguage;window.theme=theme;window.navigate=useNavigate();return <Routes><Route element={<Layout/>}><Route path='/' element={<main className='spieler-page section-page'><OpeningPrep token={token} accountId="opening-fixture"/></main>}/><Route path='/game' element={<GameRoute/>}/></Route></Routes>;}
 createRoot(document.getElementById('root')).render(<ThemeProvider><LanguageProvider><MemoryRouter><App/></MemoryRouter></LanguageProvider></ThemeProvider>);
 `;
 export async function checkOpeningPrep({captureRoot}={}){
@@ -82,6 +82,8 @@ export async function checkOpeningPrep({captureRoot}={}){
  if(captureRoot){await mkdir(captureRoot,{recursive:true});const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});await writeFile(join(captureRoot,'opening-prep-ru-mobile.png'),Buffer.from(shot.data,'base64'));}
  await click(t.open);await wait(`document.querySelector('.desktop-analysis-main-board [data-piece-square]')`);assert.equal(await evaluate('window.analysis().viewMoveIndex'),8,'analysis opens at indexed ply, including transpositions');assert.equal((await evaluate('window.analysis().moveHistory')).length,10);
 
+ // Route unmount must preserve both the query and its already fetched model games.
+ const beforeReturn=await evaluate('window.calls.length');await evaluate("window.navigate('/')");await wait('document.querySelector(".chessaz-ai-coach-results")');assert.equal(await evaluate('document.querySelector(".chessaz-ai-coach input").value'),'Nf3 d5 g3 Nf6');assert.equal(await evaluate('document.querySelector(".chessaz-ai-coach select").value'),'white');assert.equal(await evaluate('document.querySelector(".chessaz-ai-coach-group").open'),true);assert.equal(await evaluate('window.calls.length'),beforeReturn);assert.ok(!(await evaluate('JSON.stringify(sessionStorage)')).includes('synthetic-only'),'no bearer token in saved results');await click(t.open);await wait('document.querySelector(".desktop-analysis-main-board [data-piece-square]")');
  const modelMoves='Nf3 Nf6 Ng1 Ng8 g3 d5 Nf3 Nf6 Bg2 e6'.split(' ');
  const expectedAt=ply=>{const board=new Chess();for(const move of modelMoves.slice(0,ply))board.move(move);return board;};
  const expectedPieces=board=>board.board().flat().filter(Boolean).map(p=>[p.square,p.color+p.type.toUpperCase()]).sort();
