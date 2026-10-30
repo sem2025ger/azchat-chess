@@ -44,6 +44,8 @@
 
 /* On opening, the whole coach panel fits inside the available viewport; history scrolls independently. */
 .spieler-page .coach-chat[aria-label]{min-height:0;scroll-margin-top:12px}
-.spieler-page .coach-chat-panel{max-height:clamp(260px,calc(100dvh - 190px),610px);min-height:0;overflow:hidden;grid-template-rows:auto minmax(0,1fr) auto auto auto auto auto}
-.spieler-page .coach-chat-history{min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}
+.spieler-page .coach-chat-panel{max-height:clamp(260px,calc(100dvh - 190px),610px);min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.spieler-page .coach-chat-history{flex:1 1 120px;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}
 @media(max-width:800px){.spieler-page .coach-chat-panel{max-height:calc(100dvh - 175px)}}
+
+.spieler-page .coach-chat-collapse-bottom{display:block;width:100%;flex:none;min-height:34px;border:1px solid #756449;border-radius:8px;background:#201f1e;color:#e7d3af;font-size:.77rem}
