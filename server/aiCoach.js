@@ -31,7 +31,7 @@ function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,
  router.post('/chat',express.json({limit:'3kb'}),async(req,res)=>{
   if(limited('chat-ip:'+req.ip,60))return res.status(429).json({code:'rate_limit'});
   const auth=req.get('authorization')||'';let user=null;
-  if(/^Bearer [^\\s]+$/.test(auth)&&auth.length<=8192)try{user=await verifyToken(auth.slice(7));}catch{}
+  if(/^Bearer [^\s]+$/.test(auth)&&auth.length<=8192)try{user=await verifyToken(auth.slice(7));}catch{}
   if(!user?.id)return res.status(401).json({code:'authentication_required'});
   if(limited('chat-user:'+user.id,6))return res.status(429).json({code:'rate_limit'});
   if(!validChatQuery(req.body))return res.status(400).json({code:'invalid_query'});
