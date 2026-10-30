@@ -74,6 +74,6 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
     {gameList(result.fallbackGames)}
    </section>}
 
-  </details></section>}
+  <button type="button" className="global-position-results-close" onClick={()=>setResultsOpen(false)}>{tr('Suchergebnisse')} ↑</button></details></section>}
  </section>;
 }
