@@ -16,7 +16,7 @@ type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string
 type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number;expanded?:number[]};
 function restoredChat(accountId:string,context:string){
  const saved=readPositionSearchState<SavedChat>(accountId,'chat');
- if(!saved||saved.context!==context||typeof saved.open!=='boolean'||typeof saved.voiceReplies!=='boolean'||typeof saved.draft!=='string'||saved.draft.length>500||!Number.isFinite(saved.scrollTop)||!Array.isArray(saved.items)||saved.items.length>18)return null;
+ if(!saved||saved.context!==context||typeof saved.open!=='boolean'||typeof saved.voiceReplies!=='boolean'||typeof saved.draft!=='string'||saved.draft.length>500||!Number.isFinite(saved.scrollTop)||!Array.isArray(saved.items)||saved.items.length>60)return null;
  if(saved.items.some(m=>{
   if(!m||!['user','assistant'].includes(m.role)||typeof m.text!=='string'||m.text.length>1200)return true;
   if(m.generated!==undefined&&typeof m.generated!=='boolean')return true;
@@ -87,7 +87,7 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
  async function send(event:FormEvent){
   event.preventDefault();const message=draft.trim();if(message.length<2||!token||busyRef.current||recorder.current)return;
   busyRef.current=true;
-  stopSpeech();const abort=new AbortController();request.current?.abort();request.current=abort;const previous=items.slice(-16);
+  stopSpeech();const abort=new AbortController();request.current?.abort();request.current=abort;const previous=items.slice(-60);
   setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);
   try{
    const response=await checked(await fetch(apiUrl('chat'),{method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text}))})}));
