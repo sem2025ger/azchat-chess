@@ -26,7 +26,7 @@ test('model evidence includes only verified public continuations from the exact 
  const game={id:'public',source:'lichess-broadcast',pgn:'1. e4 e5 2. Nf3 Nc6 3. Bb5 a6',ply:1,white:'A',black:'B',result:'*'};
  const index={status:'ready',search:async()=>({total:1,nextMoves:[{move:'e5',count:1}],games:[game,{...game,id:'private',source:'private-room'}]})};
  await groundedChat(index,{...query,fen:board.fen()},{openaiApiKey:'synthetic',fetchImpl:async(url,options)=>{
-  const body=JSON.parse(options.body),{evidence}=JSON.parse(body.input);assert.equal(evidence.games.length,1);assert.equal(evidence.games[0].hasPgn,true);assert.equal(evidence.games[0].matchedPly,1);assert.deepEqual(evidence.games[0].continuation,['e5','Nf3','Nc6','Bb5','a6']);assert.ok(body.instructions.includes('never claim those supplied records do not exist'));
+  const body=JSON.parse(options.body),{evidence}=JSON.parse(body.input);assert.equal(evidence.games.length,1);assert.equal(evidence.games[0].hasPgn,true);assert.equal(evidence.games[0].matchedPly,1);assert.deepEqual(evidence.games[0].continuation,['e5','Nf3','Nc6','Bb5','a6']);assert.ok(body.instructions.includes('do not claim provided PGNs are missing'));
   return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Verified example.'})}]}]});
  }});
 });
