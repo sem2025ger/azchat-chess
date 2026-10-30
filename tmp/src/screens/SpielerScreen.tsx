@@ -108,7 +108,27 @@ function SpielerDirectory() {
 export default function SpielerScreen(){
  const tr=useRegionalCopy(),{language}=useLanguage(),{session}=useAuth(),[params,setParams]=useSearchParams();
  const active=params.get('tab')==='opponent'?'opponent':'position';
- return <section className="spieler-page section-page"><header className="spieler-workspace-top"><h1 className="spieler-visually-hidden-title">{translatePlayer('Spieler',language)}</h1><div className="spieler-tabs spieler-primary-tabs" role="tablist" aria-label={tr('Spielerbereiche')} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const tab=active==='position'?'opponent':'position';setParams({tab});document.getElementById('spieler-section-'+tab)?.focus();}}}>
+ const workspaceRef=useRef<HTMLElement|null>(null);
+ useEffect(()=>{
+  const node=workspaceRef.current;
+  const owner=node?.closest('[data-route-scroll]') as HTMLElement|null;
+  if(!node||!owner)return;
+  const wheel=(event:WheelEvent)=>{
+   if(event.ctrlKey||event.metaKey||event.deltaY===0||!event.cancelable||owner.scrollHeight<=owner.clientHeight+1)return;
+   const lineHeight=20;
+   const unit=event.deltaMode===1?lineHeight:event.deltaMode===2?owner.clientHeight:1;
+   const delta=event.deltaY*unit;
+   // Preserve precision trackpad gestures; accelerate discrete mouse wheel steps.
+   const multiplier=event.deltaMode===1||Math.abs(delta)>=80?1.6:1;
+   const max=owner.scrollHeight-owner.clientHeight;
+   const next=Math.max(0,Math.min(max,owner.scrollTop+delta*multiplier));
+   if(next===owner.scrollTop)return;
+   event.preventDefault();owner.scrollTop=next;
+  };
+  node.addEventListener('wheel',wheel,{passive:false});
+  return()=>node.removeEventListener('wheel',wheel);
+ },[]);
+ return <section ref={workspaceRef} className="spieler-page section-page"><header className="spieler-workspace-top"><h1 className="spieler-visually-hidden-title">{translatePlayer('Spieler',language)}</h1><div className="spieler-tabs spieler-primary-tabs" role="tablist" aria-label={tr('Spielerbereiche')} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const tab=active==='position'?'opponent':'position';setParams({tab});document.getElementById('spieler-section-'+tab)?.focus();}}}>
  {(['position',...(import.meta.env.VITE_VORBEREITUNG_ENABLED==='true'?['opponent' as const]:[])] as const).map(tab=><button type="button" role="tab" key={tab} id={'spieler-section-'+tab} aria-selected={tab===active} aria-controls={'spieler-section-panel-'+tab} tabIndex={tab===active?0:-1} onClick={()=>setParams({tab})}>{tr(tab==='position'?'Partiensuche':'Gegnervorbereitung')}</button>)}</div></header>
  <div role="tabpanel" id="spieler-section-panel-position" aria-labelledby="spieler-section-position" hidden={active!=='position'}>{import.meta.env.VITE_POSITION_SEARCH_ENABLED==='true'?<div className="spieler-position-workspace"><GlobalPositionSearch key={session?.access_token||'guest'} token={session?.access_token||''} accountId={session?.user?.id||'guest'} coach={<OpeningPrep key={'coach:'+(session?.access_token||'guest')} token={session?.access_token||''}/>} /></div>:active==='position'?<SpielerDirectory/>:null}</div>
  <div role="tabpanel" id="spieler-section-panel-opponent" aria-labelledby="spieler-section-opponent" hidden={active!=='opponent'}>{active==='opponent'&&<SpielerDirectory key={session?.access_token||'guest'}/>}</div></section>;
