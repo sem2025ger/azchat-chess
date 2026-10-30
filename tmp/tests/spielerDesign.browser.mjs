@@ -48,7 +48,7 @@ export async function checkSpielerDesign({root=process.cwd(),captureRoot,phase='
     if(verify){
       const labels={de:'Partiensuche — Züge eingeben',en:'Find games — enter moves',az:'Partiya axtarışı — gedişləri daxil edin',tr:'Parti arama — hamleleri girin',ua:'Пошук партій — введіть ходи',ru:'Поиск партий — введите ходы'};
       assert.ok(coach,'AI Coach is present for '+lang+' '+width);assert.ok(metric.board&&Math.abs(metric.board.width-metric.board.height)<1.5,'board must stay square '+lang+' '+width+' '+JSON.stringify(metric.board));assert.equal(await evaluate(`!!document.querySelector('.chessaz-ai-coach-help, .position-info')`),false,'no redundant help disclosures');assert.ok(await evaluate(`(()=>{const r=document.querySelector('.ai-coach-wordmark').getBoundingClientRect(),c=document.querySelector('.chessaz-ai-coach').getBoundingClientRect();return Math.abs((r.left+r.width/2)-(c.left+c.width/2))<3})()`),'metal title centered');
-      assert.equal(coach.heading,'AI Coach','premium title '+lang);assert.ok(await evaluate(`document.querySelector('.ai-coach-wordmark').getBoundingClientRect().height<45`),'compact Coach title '+lang);assert.equal(await evaluate(`!!document.querySelector('.preparation-moves-input')`),false,'no duplicate SAN input '+lang);
+      assert.equal(coach.heading,'AI Coach','premium title '+lang);assert.equal(await evaluate(`!!document.querySelector('.global-position-search .preparation-mode')`),false,'hide board mode buttons '+lang);assert.ok(await evaluate(`document.querySelector('.ai-coach-wordmark').getBoundingClientRect().height<45`),'compact Coach title '+lang);assert.equal(await evaluate(`!!document.querySelector('.preparation-moves-input')`),false,'no duplicate SAN input '+lang);
       assert.equal(coach.label,labels[lang],'localized opening input '+lang);
       if(width===1280)assert.ok(coach.x>=coach.boardRight-2,'Coach should be to right of board '+lang);
       else assert.ok(coach.y>=coach.boardBottom,'mobile Coach should stack below board '+lang);
@@ -64,21 +64,6 @@ export async function checkSpielerDesign({root=process.cwd(),captureRoot,phase='
       await wait(`document.querySelector('[data-route-scroll]').scrollTop>=450`);
     }
     await evaluate(`(()=>{document.getElementById('spieler-wheel-probe').remove();document.querySelector('[data-route-scroll]').scrollTop=0})()`);
-   }
-   if(verify&&width===1280&&height===720){
-    await evaluate(`document.querySelector('[data-route-scroll]').scrollTop=0`);
-    await evaluate(`[...document.querySelectorAll('.preparation-mode button')].find(b=>b.getAttribute('aria-pressed')==='false').click()`);
-    await wait(`document.querySelector('.preparation-palette')`);
-    await evaluate(`(()=>{const e=document.createElement('div');e.id='spieler-setup-wheel-probe';e.style.cssText='height:950px;min-height:950px';document.querySelector('.global-position-search').appendChild(e)})()`);
-    for(const selector of ['.preparation-board-input button','.preparation-shared-board','.preparation-palette','.global-position-right-rail']){
-      await evaluate(`document.querySelector('[data-route-scroll]').scrollTop=0`);
-      const at=await evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return{x:Math.round(r.left+Math.min(35,r.width/2)),y:Math.max(20,Math.min(innerHeight-70,Math.round(r.top+Math.min(35,r.height/2))))}})()`);
-      await cdp('Input.dispatchMouseEvent',{type:'mouseWheel',x:at.x,y:at.y,deltaX:0,deltaY:300});
-      await wait(`document.querySelector('[data-route-scroll]').scrollTop>=450`);
-    }
-    await evaluate(`(()=>{document.getElementById('spieler-setup-wheel-probe').remove();document.querySelector('[data-route-scroll]').scrollTop=0})()`);
-    await evaluate(`document.querySelector('.preparation-mode button[aria-pressed="false"]').click()`);
-    await wait(`!document.querySelector('.preparation-palette')`);
    }
    await evaluate("window.fixtureNavigate('/spieler?tab=opponent')");await wait(`!document.getElementById('spieler-section-panel-opponent').hidden`);await evaluate("window.fixtureLanguage('ru')");await pause(100);if(!verify)await capture('opponent-ru-'+width+'x'+height);
    if(verify){for(const lang of ['de','en','az','tr','ua','ru']){await evaluate('window.fixtureLanguage('+JSON.stringify(lang)+')');await pause(50);assert.equal(await evaluate(`document.querySelectorAll('#spieler-section-panel-opponent .spieler-search input').length`),1,'one opponent input');assert.equal(await evaluate(`[...document.querySelectorAll('#spieler-section-panel-opponent form')].filter(e=>e.getClientRects().length).length`),1,'one opponent search form');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'opponent overflow '+lang+' '+width);}await evaluate("window.fixtureLanguage('ru')");await evaluate(`(()=>{const input=document.querySelector('#spieler-section-panel-opponent .spieler-search input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Huseynov');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);await pause(50);await evaluate(`document.querySelector('#spieler-section-panel-opponent .spieler-search').requestSubmit()`);await wait(`document.querySelector('#spieler-section-panel-opponent .spieler-results button')`);await evaluate(`document.querySelector('#spieler-section-panel-opponent .spieler-results button').click()`);await wait(`document.querySelector('#spieler-section-panel-opponent .named-preparation')?.innerText.includes('0 ')`);assert.equal(await evaluate(`document.querySelectorAll('#spieler-section-panel-opponent .named-preparation .preparation-primary>form').length`),0,'no duplicate player lookup');assert.ok(await evaluate(`document.querySelector('#spieler-section-panel-opponent .spieler-results').innerText.includes('2371')`),'rating remains visible');await capture('opponent-ru-'+width+'x'+height);}
