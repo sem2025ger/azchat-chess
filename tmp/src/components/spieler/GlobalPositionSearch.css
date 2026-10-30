@@ -52,8 +52,8 @@
 
 /* Spieler-only shared graphite surface for the search button and filters. */
 .spieler-page .global-position-controls{
- --spieler-search-graphite:#2b3037;
- --spieler-search-edge:#737b84;
+ --spieler-search-graphite:#17191c;
+ --spieler-search-edge:#756449;
 }
 .spieler-page .global-position-primary,
 .spieler-page .position-advanced-settings>summary{
@@ -73,5 +73,5 @@
 }
 .spieler-page .global-position-primary:hover:not(:disabled),
 .spieler-page .position-advanced-settings>summary:hover{
- background:#353b43!important;border-color:#98a1ac!important;
+ background:#27231e!important;border-color:#a78b66!important;
 }
