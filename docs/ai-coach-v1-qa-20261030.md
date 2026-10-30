@@ -84,3 +84,97 @@ changes, authenticated hosted acceptance remains blocked.
 
 Only after matching hosted evidence, successful CI and owner acceptance should the relevant
 Draft PRs be considered for review readiness. No merge or production release is authorized.
+
+## Continuation — real analysis board and theme coverage
+
+Rechecked source PRs #139/#141/#142: all remain open Draft at the starting SHAs
+above; all returned completed successful checks. Local starting tree was clean at
+`97e57656ed18c925da7d6d8c96d64d9a11c03eda`. Follow-up branch:
+`qa/ai-coach-analysis-themes-20261030`, based on #142.
+
+### Confirmed defect / Alpha correction
+
+The real desktop analysis header called the absent translation key
+`game.analysis.title`. Browser console warnings and rendered `aria-label` exposed
+the untranslated key. The new six-language server-rendered regression failed on
+the original component (`de: translated analysis region name`). Use the existing
+`analysisCopy[language].analysis` label. This is a one-line component correction;
+no new translation system, layout, board rules or engine changes.
+
+### Omega evidence executed in this continuation
+
+- `node --test tests/analysisHeaderLocale.test.mjs tests/mobileAnalysisLayout.test.mjs tests/analysisDesktopMenu.test.mjs`
+  from `tmp/`: **5 PASS, 0 failed/skipped**, after the new regression failed before
+  the fix. Existing mobile action wiring and desktop menu checks remain intact.
+- Expanded `tests/openingPrep.browser.mjs`: **PASS** in real Chromium, now using
+  actual `Layout`, `GameRoute`, `GameScreen`, `ChessBoard` and `ThemeProvider`,
+  replacing the former destination placeholder. For six locales at both 390 and
+  1280 px, the four-ply query opens its transposed model game at indexed ply 8;
+  every rendered piece/square is compared with a separate chess.js replay.
+  Previous/next/last positions and illegal `e2-e5` rejection / legal `e2-e4`
+  continuation were checked. Localized region names and absence of missing-key
+  console warnings were asserted. Existing lifecycle/default-OFF checks remain.
+- Each of **15 interface palettes**, **10 board themes** and **4 selectable piece
+  sets** was swept independently at both widths. Assertions cover square board
+  geometry, horizontal fit, configured square classes and loaded piece images.
+  This is not all 7,200 combinations, a contrast audit, or human visual approval
+  of every palette. Sample mobile/desktop captures were visually inspected.
+- The fixture disables env-file loading, uses synthetic public bindings, blocks
+  external HTTPS/WSS, and asserts no external fetch attempt. Auth/socket contexts
+  stay signed out; the engine is a handshake stub. Thus this is real UI/chess
+  integration with synthetic API data, not hosted auth/Gemini/Stockfish proof.
+- Targeted server command from the earlier section repeated on the unchanged
+  server source: **38 PASS, 0 failed/skipped**.
+- `npm run build`: **PASS**, including TypeScript. Existing bundle/CSS warnings
+  remain. `npm run lint`: **PASS**, **0 errors, 62 existing warnings**.
+- `git diff --check`: **PASS**. Full follow-up CI must be verified separately.
+
+### Hosted gates remain blocked
+
+A fresh Vercel query returned no deployment for #142's exact SHA. The three API /
+Supabase variables still list Production + Preview together without branch
+scoping. Values were not decrypted. Isolation is not confirmed; no deployment was
+created. A new token-free isolated-host probe from this runner failed before a
+verified HTTP response, so it does not renew the earlier HTTP 401 evidence.
+`QA_ACCESS_TOKEN` and QA Supabase bindings are absent in the secure runner.
+No account/session was acquired and no authenticated or real Gemini request was
+made. Earlier successful CI and hosted smoke are historical observations at
+those exact SHAs, not evidence that this follow-up is deployed.
+
+Next operational gate is unchanged: nonsecret operator confirmation of the
+reviewed backend SHA, QA-only Supabase binding and fresh `position_index_ready`
+numeric fields; then a QA-only short-lived session made available in a protected
+runner without pasting credentials into chat. Run the existing
+`server/scripts/verifyOpeningPrepQa.js` only after those gates. Confirm actual
+Gemini success if already configured; otherwise record fallback. No Render
+account access, settings/env/secret changes, Supabase operations, merge,
+production deployment or V2 work occurred.
+
+### Final local regression / publication state
+
+- Full local `npm test`: **178/180 PASS, 2 failed, 0 skipped**. The failures were
+  the global-position browser wrapper (`dbus-daemon: Failed to open socket:
+  Operation not permitted`) and the font transform under a `node_modules` symlink
+  outside this checkout. This is not a successful full-suite result.
+- The unchanged `node tests/globalPositions.browser.mjs` passed when launched
+  directly with Chromium: arrows/keyboard, redo tail, orientation/flip, scope,
+  exact matched ply, session restore and all six locales at both widths. The
+  D-Bus wrapper itself remains unverified here; no wrapper or CI check was edited.
+- Dependencies were copied locally from the same existing installation, replacing
+  only the checkout's dependency symlink; manifests/lockfiles stayed unchanged.
+  `node --test tests/interFontPrivacy.test.mjs` then passed (**1/1**). No network
+  install, service setting or secret change was involved.
+- The desktop board-navigation controls still have legacy Russian accessible
+  labels across locales. This correction covers the analysis region label;
+  it is not acceptance of exhaustive localization of the whole analysis screen.
+- Automatic approval review rejected `github.create_tree` (uploading these source
+  and QA-document changes to `sem2025ger/azchat-chess`), stating that explicit
+  user-authored authorization for that upload destination/side effect was not
+  sufficiently established. No alternative upload method was attempted. A new
+  remote branch/PR and its CI are **not created**. Changes are retained locally
+  for review; publishing requires explicit owner approval after this report.
+
+The final patch is limited to `AnalysisWorkspaceHeader.tsx`, the expanded
+`openingPrep.browser.mjs`, new `analysisHeaderLocale.test.mjs`, and this report.
+The generated Stockfish build outputs are not part of the patch. The original
+Draft PR #142 remains unchanged.
