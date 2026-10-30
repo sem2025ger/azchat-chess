@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),express=require('express');
 const {Chess}=require('chess.js');
-const {validChatQuery,groundedChat}=require('./aiCoachChat');
+const {validChatQuery,groundedChat,gameRequest}=require('./aiCoachChat');
 const {installAiCoach}=require('./aiCoach');
 const fen=new Chess().fen();
 const query={message:'Find games in this position',fen,side:'white',language:'ru'};
@@ -39,4 +39,19 @@ test('router denies anonymous access and does not expose results when feature of
   assert.equal((await post()).status,401);assert.equal((await post('wrong')).status,401);
   const ok=await post('ok');assert.equal(ok.status,200);assert.equal((await ok.json()).matched,0);
  }finally{await new Promise(r=>server.close(r));}
+});
+
+test('archive-only requests honor exact counts and return original first fifteen moves without model calls',async()=>{
+ const longPgn='1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Nb8 10. d4 Nbd7 11. c4 c6 12. Nc3 Qc7 13. Be3 Bb7 14. Rc1 Rfe8 15. a3 Bf8 16. Ba2';
+ const games=Array.from({length:15},(_,i)=>({id:'public-'+i,source:'lichess-broadcast',pgn:longPgn,ply:0,white:'White',black:'Black',result:'*'}));
+ for(const [text,expected] of [['Найди мне за белых три партии на этот вариант',3],['Покажи 10 партий',10],['Найди 15 партий',15],['Find two games',2]]){
+  let searched=0;const index={status:'ready',search:async args=>{searched++;assert.equal(args.limit,expected);return {total:games.length,games:games.slice(0,args.limit),nextMoves:[{move:'e4',count:15}]};}};
+  const answer=await groundedChat(index,{...query,message:text},{openaiApiKey:'synthetic',fetchImpl:()=>{throw Error('must not call model for archive-only request');}});
+  assert.equal(searched,1);assert.equal(answer.archiveOnly,true);assert.equal(answer.generated,true);
+  assert.equal(answer.answer,'В партиях встречались такие продолжения:');
+  assert.equal(answer.games.length,expected);assert.deepEqual(answer.games[0].moves.slice(0,4),['e4','e5','Nf3','Nc6']);
+  assert.equal(answer.games[0].moves.length,30);
+ }
+ assert.equal(gameRequest('Объясни ход Nf3'),null);
+ assert.equal(gameRequest('Найди 50 партий'),3);
 });
