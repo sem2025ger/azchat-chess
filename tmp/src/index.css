@@ -1912,3 +1912,10 @@ aside nav{padding-top:12px!important}
  }
 }
 @media(min-width:1280px) and (prefers-contrast:more){aside .site-nav-link .site-nav-label--bronze{background-image:none;color:#E9DFD1;-webkit-text-fill-color:currentColor;filter:none}}
+
+/* Only the existing Schach-Treff and NRW desktop labels: subdued moving metallic sheen. */
+@media(min-width:1280px) and (prefers-reduced-motion:no-preference){
+ aside .site-nav-link .site-nav-label--bronze{background-size:220% 100%;animation:chessazSidebarMetalSweep 13s ease-in-out infinite alternate}
+}
+@keyframes chessazSidebarMetalSweep{from{background-position:0% center}to{background-position:100% center}}
+@media(min-width:1280px) and (prefers-contrast:more){aside .site-nav-link .site-nav-label--bronze{animation:none}}
