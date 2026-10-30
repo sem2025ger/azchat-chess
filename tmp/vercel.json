@@ -4,5 +4,7 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "buildCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"qa/spieler-coach-compact-controls-20261030\" ]; then echo 'ChessAZ isolated Players QA build: enabling existing client feature flags'; VITE_MAINTENANCE_MODE=false VITE_SPIELER_V1_ENABLED=true VITE_POSITION_SEARCH_ENABLED=true VITE_AI_COACH_ENABLED=true VITE_VORBEREITUNG_ENABLED=true VITE_SPIELTAG_ENABLED=true VITE_CLUBS_NRW_ENABLED=true npm run build; else echo 'ChessAZ default feature flags unchanged'; npm run build; fi",
+  "outputDirectory": "dist"
 }
