@@ -114,6 +114,9 @@ export default function SpielerScreen(){
   const owner=node?.closest('[data-route-scroll]') as HTMLElement|null;
   if(!node||!owner)return;
   const wheel=(event:WheelEvent)=>{
+   // Capture wheel events before chessboard controls can intercept them.
+   // Keep all wheel routing strictly inside the Spieler workspace.
+   if(!event.target||!node.contains(event.target as Node))return;
    if(event.ctrlKey||event.metaKey||event.deltaY===0||!event.cancelable||owner.scrollHeight<=owner.clientHeight+1)return;
    const lineHeight=20;
    const unit=event.deltaMode===1?lineHeight:event.deltaMode===2?owner.clientHeight:1;
@@ -125,8 +128,8 @@ export default function SpielerScreen(){
    if(next===owner.scrollTop)return;
    event.preventDefault();owner.scrollTop=next;
   };
-  node.addEventListener('wheel',wheel,{passive:false});
-  return()=>node.removeEventListener('wheel',wheel);
+  owner.addEventListener('wheel',wheel,{passive:false,capture:true});
+  return()=>owner.removeEventListener('wheel',wheel,{capture:true});
  },[]);
  return <section ref={workspaceRef} className="spieler-page section-page"><header className="spieler-workspace-top"><h1 className="spieler-visually-hidden-title">{translatePlayer('Spieler',language)}</h1><div className="spieler-tabs spieler-primary-tabs" role="tablist" aria-label={tr('Spielerbereiche')} onKeyDown={e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();const tab=active==='position'?'opponent':'position';setParams({tab});document.getElementById('spieler-section-'+tab)?.focus();}}}>
  {(['position',...(import.meta.env.VITE_VORBEREITUNG_ENABLED==='true'?['opponent' as const]:[])] as const).map(tab=><button type="button" role="tab" key={tab} id={'spieler-section-'+tab} aria-selected={tab===active} aria-controls={'spieler-section-panel-'+tab} tabIndex={tab===active?0:-1} onClick={()=>setParams({tab})}>{tr(tab==='position'?'Partiensuche':'Gegnervorbereitung')}</button>)}</div></header>
