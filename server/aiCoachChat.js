@@ -57,7 +57,7 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
   games:games.map(({white,black,result,date,ply,pgn})=>{const board=new Chess();board.loadPgn(pgn);return {white,black,result,date,hasPgn:true,matchedPly:ply,continuation:board.history().slice(ply,ply+6)};})};
  const archiveOnly=!!requested&&!!result;
  const answer=archiveOnly?gameHeadings[language]:openaiApiKey?await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal}):fallback[language](result.total||0);
- return {answer,generated:!!openaiApiKey,provider:openaiApiKey?'openai':null,providerStatus:openaiApiKey?'ready':'not_configured',
+ return {answer,generated:archiveOnly||!!openaiApiKey,provider:archiveOnly?null:openaiApiKey?'openai':null,providerStatus:archiveOnly?'archive':openaiApiKey?'ready':'not_configured',
   source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:false,position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);return {...game,moves:board.history().slice(0,30)};}):games};
 }
 module.exports={validChatQuery,groundedChat,publicChatGames,gameRequest};
