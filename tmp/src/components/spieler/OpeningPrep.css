@@ -56,3 +56,7 @@
 .chessaz-ai-coach-results-panel .chessaz-ai-coach-results{margin-top:8px;padding-top:4px}
 .chessaz-ai-coach-results-panel :is(details,ol,li){min-width:0;max-width:100%}
 .chessaz-ai-coach-group>summary{flex-wrap:wrap}
+
+/* Keep extensive model games in their own scroller instead of pushing Coach off-screen. */
+.spieler-page .chessaz-ai-coach-results-panel[open]>.chessaz-ai-coach-results{max-height:min(34dvh,310px);overflow:auto;overscroll-behavior:contain;padding-right:5px;scrollbar-gutter:stable}
+.spieler-page .chessaz-ai-coach-close-results{display:block;width:100%;min-height:36px;margin-top:8px;background:#201f1e;border:1px solid #756449;border-radius:8px;color:#e5d0aa}
