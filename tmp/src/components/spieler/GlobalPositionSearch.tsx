@@ -45,7 +45,7 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
     {nrwCount===0&&<p className="position-empty-nrw" role="status">{tr('Noch keine bestätigten NRW-Vereinsspieler.')}</p>}
     <details className="section-info position-player-filter"><summary>{tr('Nur Partien eines bestimmten Spielers')}</summary><label>{tr('FIDE-ID (optional)')}<input form="global-position-form" value={fideId} pattern="[1-9][0-9]{0,9}" maxLength={10} onChange={e=>{invalidate();setFideId(e.target.value);}}/></label><form onSubmit={findPlayer}><label>{tr('Nachname')}<input minLength={2} maxLength={100} required value={name} placeholder={tr('Lateinische Buchstaben, z. B. Huseynov')} onChange={e=>{lookup.current?.abort();setFinding(false);setName(e.target.value);setPlayers([]);}}/></label><button disabled={finding||!token}>{tr('Spieler finden')}</button></form><ul>{players.map(p=><li key={p.fide_id}><button type="button" aria-pressed={fideId===String(p.fide_id)} onClick={()=>{invalidate();setFideId(String(p.fide_id));}}>{p.name} · FIDE {p.fide_id}</button></li>)}</ul></details></div></details>
     {!token&&<p role="status">{tr('Bitte zuerst anmelden')}</p>}{busy&&<p role="status">{tr('Stellung wird gesucht …')}</p>}{error&&<p role="alert">{tr(error)}</p>}
-    <form id="global-position-form" className="position-submit" onSubmit={e=>void search(e)}><button className="global-position-primary" disabled={busy||!token}>{tr('Stellung suchen')}</button></form>
+    <form id="global-position-form" className="position-submit" onSubmit={e=>void search(e)}><button className="global-position-primary" disabled={busy||!token}><span className="position-search-metal-label">{tr('Stellung suchen')}</span></button></form>
    </div>
    </div>
   </div>
