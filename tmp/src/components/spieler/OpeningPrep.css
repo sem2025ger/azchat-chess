@@ -24,9 +24,9 @@
 #root .spieler-page .chessaz-ai-coach h2.ai-coach-wordmark{
  display:block;width:max-content;max-width:100%;margin:0 auto;
  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
- font-size:clamp(1.7rem,2.35vw,2.1rem);font-weight:900;line-height:1.12;letter-spacing:-.05em;
+ font-size:clamp(1.55rem,2.05vw,1.92rem);font-weight:900;line-height:1.12;letter-spacing:-.05em;
  color:#bac0c2;
- background:linear-gradient(108deg,#302822 0%,#6f5544 13%,#42464a 27%,#b4b9bd 39%,#3b3531 51%,#8a7055 62%,#c1a174 67%,#4c4f53 78%,#2b2521 90%,#847c73 100%);
+ background:linear-gradient(108deg,#261f1b 0%,#5b4233 13%,#34383c 27%,#afb5b7 39%,#312924 51%,#765841 62%,#b99a69 67%,#3f4245 78%,#24201d 90%,#79716a 100%);
  background-size:240% 100%;-webkit-background-clip:text;background-clip:text;
  -webkit-text-fill-color:transparent;
  filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));
