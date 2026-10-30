@@ -130,11 +130,10 @@
  width:16px;height:16px;
 }
 
-/* Players study board: one discreet fullscreen control, no normal-size changes. */
-.spieler-page .preparation-position{position:relative}
-.spieler-page .preparation-fullscreen-action{position:absolute;right:4px;top:3px;z-index:2;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;min-height:36px;padding:7px;background:#17191c;border:1px solid #756449;border-radius:9px;color:#e2cfaa}
+/* Players study board: icon-only fifth toolbar button, never covering any square. */
+.spieler-page .preparation-toolbar--fullscreen{grid-template-columns:repeat(5,minmax(0,1fr))!important}
+.spieler-page .preparation-fullscreen-action{display:inline-flex;align-items:center;justify-content:center;min-width:0;min-height:37px;padding:7px;color:#e2cfaa}
 .spieler-page .preparation-fullscreen-action:focus-visible{outline:2px solid #dec084;outline-offset:2px}
 .spieler-page .preparation-position:fullscreen{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;width:100%;height:100%;padding:clamp(12px,3vmin,28px);background:#141617;overflow-y:auto}
 .spieler-page .preparation-position:fullscreen .preparation-shared-board{width:min(83dvw,73dvh)!important;max-width:min(83dvw,73dvh);margin:0 auto;flex:none}
 .spieler-page .preparation-position:fullscreen .preparation-toolbar{width:min(83dvw,73dvh)}
-.spieler-page .preparation-position:fullscreen .preparation-fullscreen-action{right:clamp(12px,2vw,30px);top:clamp(12px,2vw,30px)}
