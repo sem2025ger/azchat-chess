@@ -16,30 +16,28 @@
 .chessaz-ai-coach-group-body li p{line-height:1.5;margin:.4rem 0}
 @media(max-width:560px){.chessaz-ai-coach-group>summary{align-items:flex-start;flex-direction:column;gap:.2rem}.chessaz-ai-coach-group-body{padding:0 .8rem .8rem}}
 
-/* Scoped AI Coach wordmark: premium typography without changing any other heading. */
-#root .chessaz-ai-coach header .ai-coach-wordmark{
- font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif!important;
- font-size:clamp(1.55rem,2.6vw,2.05rem);font-weight:800;line-height:1.15;letter-spacing:-.045em;
- color:#e6dfd0;background:linear-gradient(105deg,#c0c5cb 0%,#f7f4ea 24%,#b8a68b 45%,#d0d9df 65%,#a68c70 83%,#e7e1d3 100%);
- background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
- animation:aiCoachMetalSweep 12s ease-in-out infinite alternate;
-}
-@keyframes aiCoachMetalSweep{from{background-position:0% center}to{background-position:100% center}}
-@media(prefers-reduced-motion:reduce){#root .chessaz-ai-coach header .ai-coach-wordmark{animation:none;background-position:50% center}}
 
-/* High-contrast animated metal lettering; isolated to the Coach wordmark. */
-#root .spieler-page .chessaz-ai-coach h2.ai-coach-wordmark{
- display:inline-block;width:max-content;max-width:100%;margin:0;
- font-family:Inter,system-ui,sans-serif!important;font-size:clamp(2rem,3.1vw,2.7rem)!important;
- font-weight:900!important;letter-spacing:-.055em!important;line-height:1.2!important;
- background:linear-gradient(105deg,#9b6a35 0%,#f5cf8a 14%,#fff8e7 28%,#a3bbc8 42%,#f8e6ba 57%,#9b744b 72%,#f6f9fc 85%,#bd9459 100%)!important;
- background-size:260% 100%!important;background-clip:text!important;-webkit-background-clip:text!important;
- -webkit-text-fill-color:transparent!important;color:transparent!important;
- filter:drop-shadow(0 1px 0 rgba(0,0,0,.65));
- animation:chessazCoachShimmer 5.5s linear infinite!important;
+/* Spieler-only metal title. Small gold accent, dark bronze and silver, no extra controls. */
+#root .spieler-page .chessaz-ai-coach>header{
+ display:flex;align-items:center;justify-content:center;text-align:center;margin-bottom:10px;
 }
-@keyframes chessazCoachShimmer{from{background-position:0% 50%}to{background-position:260% 50%}}
-#root .spieler-page .chessaz-ai-coach .chessaz-ai-coach-help{margin:0 0 6px;font-size:.72rem;color:#c0b7a8}
-#root .spieler-page .chessaz-ai-coach .chessaz-ai-coach-help>summary{cursor:pointer;width:max-content}
-#root .spieler-page .chessaz-ai-coach .chessaz-ai-coach-help p{margin:6px 0}
-@media(prefers-reduced-motion:reduce){#root .spieler-page .chessaz-ai-coach h2.ai-coach-wordmark{animation:none!important;background-position:35% center!important}}
+#root .spieler-page .chessaz-ai-coach h2.ai-coach-wordmark{
+ display:block;width:max-content;max-width:100%;margin:0 auto;
+ font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ font-size:clamp(2rem,3.1vw,2.7rem);font-weight:900;line-height:1.18;letter-spacing:-.055em;
+ color:#bac0c2;
+ background:linear-gradient(108deg,#72513e 0%,#b2bbc1 14%,#66737d 27%,#ad8163 41%,#d5b479 48%,#7c7068 56%,#b8c2c9 72%,#715541 86%,#c5c9cb 100%);
+ background-size:240% 100%;-webkit-background-clip:text;background-clip:text;
+ -webkit-text-fill-color:transparent;
+ filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));
+ animation:chessazCoachDarkMetal 8s ease-in-out infinite alternate;
+}
+@keyframes chessazCoachDarkMetal{
+ from{background-position:0% 50%}
+ to{background-position:100% 50%}
+}
+@media(prefers-reduced-motion:reduce){
+ #root .spieler-page .chessaz-ai-coach h2.ai-coach-wordmark{
+  animation:none;background-position:50% 50%;
+ }
+}

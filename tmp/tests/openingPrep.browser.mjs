@@ -65,7 +65,7 @@ export async function checkOpeningPrep({captureRoot}={}){
    const t=openingPrepCopy[lang==='ua'?'uk':lang];await evaluate('window.language('+JSON.stringify(lang)+')');await wait('document.querySelector(".chessaz-ai-coach input").getAttribute("aria-label")==='+JSON.stringify(t.input));
    assert.deepEqual(await evaluate(`[...document.querySelectorAll('.chessaz-ai-coach option')].map(e=>e.textContent)`),[t.white,t.black]);
    await click(t.start);await wait(`document.querySelector('.chessaz-ai-coach-results')`);await evaluate(`document.querySelector('.chessaz-ai-coach-group').open=true`);
-   await evaluate(`document.querySelector('.chessaz-ai-coach-help').open=true`);const text=await evaluate(`document.querySelector('.chessaz-ai-coach').innerText`);for(const key of ['desc','hint','whiteTurn','blackReplies','sample','noAi','moves'])assert.ok(text.includes(t[key]),lang+': '+key);
+   assert.equal(await evaluate(`!!document.querySelector('.chessaz-ai-coach-help')`),false,'no redundant Coach help');assert.ok(await evaluate(`!!document.getElementById(document.querySelector('.chessaz-ai-coach-input input').getAttribute('aria-describedby'))`),'accessible hidden SAN guidance');const text=await evaluate(`document.querySelector('.chessaz-ai-coach').innerText`);for(const key of ['whiteTurn','blackReplies','sample','noAi','moves'])assert.ok(text.includes(t[key]),lang+': '+key);
    assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'overflow '+lang+' '+width);
    const call=await evaluate('window.calls.at(-1)');assert.equal(call.body.language,lang==='ua'?'uk':lang);assert.equal(call.headers.Authorization,'Bearer synthetic-only');assert.equal(call.cache,'no-store');
   }
