@@ -119,7 +119,7 @@ export default function AnalysisWorkspaceHeader({
     </dialog>
   </>;
   return (
-    <header className="analysis-redesign-header" aria-label={t('game.analysis.title')}>
+    <header className="analysis-redesign-header" aria-label={analysisCopy[language].analysis}>
       <div className="analysis-redesign-actions">
         <details ref={desktopMoreRef} className="analysis-redesign-menu"
           onKeyDown={event => { if (event.key === 'Escape') { desktopMoreRef.current?.removeAttribute('open'); desktopMoreRef.current?.querySelector('summary')?.focus(); } }}
