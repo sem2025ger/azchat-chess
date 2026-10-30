@@ -8,7 +8,7 @@ test('Russian speech expands SAN without losing pieces, source, target, captures
  assert.equal(chessSpeech('e2e4, e7-e8q+','ru'),'е два — е четыре, е семь — е восемь, превращение в ферзя, шах');
 });
 test('all six languages speak both coordinates separately and localize castling and pieces',()=>{
- const expected={en:'knight takes on ee five, check; kingside castling; see three',de:'Springer schlägt auf e fünf, Schach; kurze Rochade; ze drei',ru:'конь берёт на е пять, шах; короткая рокировка; цэ три',uk:'кінь бере на е п’ять, шах; коротка рокіровка; це три',az:'at vurur e beş, şah; qısa rokirovka; se üç',tr:'at alır e beş, şah; kısa rok; ce üç'};
+ const expected={en:'knight takes on ee five, check; kingside castling; see three',de:'Springer schlägt auf e fünf, Schach; kurze Rochade; ze drei',ru:'конь берёт на е пять, шах; короткая рокировка; цэ три',uk:'кінь бере на е п’ять, шах; коротка рокіровка; це три',az:'at vurur e beş, şah; qısa rokirovka; ce üç',tr:'at alır e beş, şah; kısa rok; ce üç'};
  for(const [lang,spoken]of Object.entries(expected))assert.equal(chessSpeech('Nxe5+; O-O; c3',lang),spoken,lang);
  assert.equal(chessSpeech('Nxe5','ua'),chessSpeech('Nxe5','uk'));
 });
