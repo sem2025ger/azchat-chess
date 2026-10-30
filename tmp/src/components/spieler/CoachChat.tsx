@@ -66,7 +66,7 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
  useEffect(()=>{cancel();setError('');setSpeechError('');return cancel;},[token,cancel]);
  useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{context,open,draft,items,voiceReplies,scrollTop,expanded},'chat',storageRevision);},[storageRevision,accountId,context,token,open,draft,items,voiceReplies,scrollTop,expanded]);
  useEffect(()=>{const list=listRef.current;if(list){list.scrollTop=restoredScroll.current??list.scrollHeight;restoredScroll.current=null;}},[items,open,busy]);
- useEffect(()=>{if(!open)return;const node=sectionRef.current;const scroll=node?.closest('[data-route-scroll]') as HTMLElement|null;if(!node||!scroll)return;const frame=requestAnimationFrame(()=>{const box=node.getBoundingClientRect(),area=scroll.getBoundingClientRect();if(box.top<area.top+8||box.bottom>area.bottom-8){scroll.scrollBy({top:box.top-area.top-8,behavior:'instant'});}});return()=>cancelAnimationFrame(frame);},[open]);
+ useEffect(()=>{if(!open)return;const node=sectionRef.current;const scroll=node?.closest('[data-route-scroll]') as HTMLElement|null;if(!node||!scroll)return;const frame=requestAnimationFrame(()=>{const rail=node.closest('.global-position-right-rail') as HTMLElement|null;if(rail&&rail.scrollHeight>rail.clientHeight){rail.scrollTo({top:Math.max(0,node.offsetTop-rail.offsetTop-8),behavior:'instant'});}const box=node.getBoundingClientRect(),area=scroll.getBoundingClientRect();if(box.top<area.top+8||box.bottom>area.bottom-8)scroll.scrollBy({top:box.top-area.top-8,behavior:'instant'});});return()=>cancelAnimationFrame(frame);},[open]);
  useEffect(()=>{if(clip?.autoplay)void audioRef.current?.play().catch(()=>{/* Native controls remain available when autoplay is blocked. */});},[clip]);
  function describe(error:unknown){
   const code=error instanceof Error?error.message:'';
@@ -164,6 +164,7 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
    </form>
    <label className="coach-chat-voice-option"><input type="checkbox" checked={voiceReplies} disabled={!token} onChange={e=>{voicePreference.current=e.target.checked;setVoiceReplies(e.target.checked);if(!e.target.checked)stopSpeech();}}/>{t.autoVoice}</label>
    <p id={privacyId} className="coach-chat-notice">{t.privacy}</p>
+   <button type="button" className="coach-chat-collapse-bottom" onClick={()=>{cancel();setOpen(false);}}>{t.closeChat} ↑</button>
   </div>}
  </section>;
 }
