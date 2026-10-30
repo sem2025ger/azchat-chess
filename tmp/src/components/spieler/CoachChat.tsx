@@ -17,7 +17,14 @@ type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceR
 function restoredChat(accountId:string,context:string){
  const saved=readPositionSearchState<SavedChat>(accountId,'chat');
  if(!saved||saved.context!==context||typeof saved.open!=='boolean'||typeof saved.voiceReplies!=='boolean'||typeof saved.draft!=='string'||saved.draft.length>500||!Number.isFinite(saved.scrollTop)||!Array.isArray(saved.items)||saved.items.length>18)return null;
- if(saved.items.some(m=>!m||!['user','assistant'].includes(m.role)||typeof m.text!=='string'||m.text.length>1200||(m.generated!==undefined&&typeof m.generated!=='boolean')||(m.games!==undefined&&(!Array.isArray(m.games)||m.games.length>10||m.games.some(g=>!g||typeof g.id!=='string'||typeof g.white!=='string'||typeof g.black!=='string'||typeof g.pgn!=='string'||!Number.isInteger(g.ply)||g.ply<0||(g.moves!==undefined&&(!Array.isArray(g.moves)||g.moves.length>30||g.moves.some(m=>typeof m!=='string'||m.length>16)))))))))return null;
+ if(saved.items.some(m=>{
+  if(!m||!['user','assistant'].includes(m.role)||typeof m.text!=='string'||m.text.length>1200)return true;
+  if(m.generated!==undefined&&typeof m.generated!=='boolean')return true;
+  if(m.archiveOnly!==undefined&&typeof m.archiveOnly!=='boolean')return true;
+  if(m.games===undefined)return false;
+  if(!Array.isArray(m.games)||m.games.length>10)return true;
+  return m.games.some(g=>!g||typeof g.id!=='string'||typeof g.white!=='string'||typeof g.black!=='string'||typeof g.pgn!=='string'||!Number.isInteger(g.ply)||g.ply<0||(g.moves!==undefined&&(!Array.isArray(g.moves)||g.moves.length>30||g.moves.some(move=>typeof move!=='string'||move.length>16))));
+ }))return null;
  if(saved.expanded!==undefined&&(!Array.isArray(saved.expanded)||saved.expanded.some(i=>!Number.isInteger(i)||i<0||i>=saved.items.length)))return null;
  return saved;
 }
