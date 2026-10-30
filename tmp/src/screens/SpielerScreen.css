@@ -35,3 +35,12 @@
 .spieler-opponent-directory .position-segment button[aria-pressed=true]{background:#42382a;color:#f3dfba}
 .spieler-search button[type=submit],.spieler-search>div>button{background:#493b2a;border-color:#bc9b6a;color:#f5e5c9;font-weight:600}
 .spieler-page form{margin:0}
+
+/* Desktop Spieler: chessboard/search on the left, compact AI Coach on the right. */
+.spieler-position-workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.94fr);align-items:start;gap:16px;min-width:0}
+.spieler-position-workspace>.global-position-search,.spieler-position-workspace>.chessaz-ai-coach{min-width:0;margin:0}
+.spieler-position-workspace .global-position-grid{grid-template-columns:minmax(0,1fr);gap:14px}
+.spieler-position-workspace .global-position-search .preparation-position{width:min(100%,480px);margin-inline:auto}
+.spieler-position-workspace .global-position-controls{min-height:0;margin-top:0;gap:12px;padding:12px}
+.spieler-position-workspace>.chessaz-ai-coach{padding:16px}
+@media(max-width:1023px){.spieler-position-workspace{grid-template-columns:minmax(0,1fr)}.spieler-position-workspace>.chessaz-ai-coach{max-width:100%}}
