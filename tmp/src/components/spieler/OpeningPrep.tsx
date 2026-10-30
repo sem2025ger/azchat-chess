@@ -83,6 +83,6 @@ export default function OpeningPrep({token,accountId='guest',showAuthNotice=true
      </li>)}</ol>
     </div>
    </details>)}
-  </div></details>}
+  </div><button type="button" className="chessaz-ai-coach-close-results" onClick={()=>setResultsOpen(false)}>{t.closeResults}</button></details>}
  </section>;
 }
