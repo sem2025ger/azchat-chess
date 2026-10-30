@@ -5,6 +5,6 @@
       "destination": "/index.html"
     }
   ],
-  "buildCommand": "VITE_SERVER_URL=https://chessaz-ai-coach-v1-isolated-qa.onrender.com VITE_SPIELER_V1_ENABLED=true VITE_POSITION_SEARCH_ENABLED=true VITE_AI_COACH_ENABLED=true VITE_VORBEREITUNG_ENABLED=true npm run build",
+  "buildCommand": "node scripts/buildQaPreview.mjs",
   "outputDirectory": "dist"
 }
