@@ -5,7 +5,7 @@ import {useLanguage} from '../../context/LanguageContext';
 import {openSpielerAnalysis} from '../../services/spieler';
 import {openingPrepLanguage} from '../../i18n/openingPrepCopy';
 import {coachChatCopy} from '../../i18n/coachChatCopy';
-import {readPositionSearchState,writePositionSearchState} from '../../utils/positionSearchState';
+import {readPositionSearchState,writePositionSearchState,positionSearchRevision} from '../../utils/positionSearchState';
 import './CoachChat.css';
 type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string};
 type Reply={answer:string;games:ResultGame[];generated:boolean};
@@ -36,6 +36,7 @@ export default function CoachChat(props:Props){
 function CoachConversation({fen,side,token,accountId='guest'}:Props){
  const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId(),privacyId=useId();
  const context=JSON.stringify([fen,side,lang]);
+ const [storageRevision]=useState(positionSearchRevision);
  const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context):null);
  const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0);
  const request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
@@ -47,7 +48,7 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
   stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;setRecording(false);setBusy(null);
  },[stopSpeech]);
  useEffect(()=>{cancel();setError('');return cancel;},[token,cancel]);
- useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{context,open,draft,items,voiceReplies,scrollTop},'chat');},[accountId,context,token,open,draft,items,voiceReplies,scrollTop]);
+ useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{context,open,draft,items,voiceReplies,scrollTop},'chat',storageRevision);},[storageRevision,accountId,context,token,open,draft,items,voiceReplies,scrollTop]);
  useEffect(()=>{const list=listRef.current;if(list){list.scrollTop=restoredScroll.current??list.scrollHeight;restoredScroll.current=null;}},[items,open,busy]);
  useEffect(()=>{if(clip)void audioRef.current?.play().catch(()=>{/* Native controls remain available when autoplay is blocked. */});},[clip]);
  function describe(error:unknown){

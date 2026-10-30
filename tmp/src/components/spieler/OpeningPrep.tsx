@@ -3,7 +3,7 @@ import {useNavigate} from 'react-router-dom';
 import {useLanguage} from '../../context/LanguageContext';
 import {openSpielerAnalysis} from '../../services/spieler';
 import {openingPrepCopy,openingPrepLanguage} from '../../i18n/openingPrepCopy';
-import {readPositionSearchState,writePositionSearchState} from '../../utils/positionSearchState';
+import {readPositionSearchState,writePositionSearchState,positionSearchRevision} from '../../utils/positionSearchState';
 import './OpeningPrep.css';
 
 type ModelGame={id:string;pgn:string;ply:number;white:string;black:string;event:string;date:string;result:string;first25:string[]};
@@ -20,19 +20,21 @@ function restorePreparation(accountId:string){
  return saved;
 }
 function formatLine(moves:string[]){return moves.map((san,i)=>(i%2===0?Math.floor(i/2)+1+'. ':'')+san).join(' ');}
-export default function OpeningPrep({token,accountId='guest',showAuthNotice=true}:{token:string;accountId?:string;showAuthNotice?:boolean}){
+export default function OpeningPrep({token,accountId='guest',showAuthNotice=true,color:selectedColor,onColorChange}:{token:string;accountId?:string;showAuthNotice?:boolean;color?:'white'|'black';onColorChange?:(color:'white'|'black')=>void}){
  const {language}=useLanguage(),navigate=useNavigate(),id=useId();
  const locale=openingPrepLanguage(language),t=openingPrepCopy[locale];
+ const [storageRevision]=useState(positionSearchRevision);
  const [saved]=useState(()=>token&&accountId!=='guest'?restorePreparation(accountId):null);
  const [result,setResult]=useState<{key:string;lesson:OpeningLesson}|null>(saved?.result??null);
  const [busyKey,setBusyKey]=useState<string|null>(null),[failure,setFailure]=useState<{key:string;code:string}|null>(null);
- const [moves,setMoves]=useState(saved?.moves??'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6'),[color,setColor]=useState<'white'|'black'>(saved?.color??'black'),[expanded,setExpanded]=useState<string[]>(saved?.expanded??[]);
+ const [moves,setMoves]=useState(saved?.moves??'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6'),[localColor,setLocalColor]=useState<'white'|'black'>(saved?.color??'black'),[expanded,setExpanded]=useState<string[]>(saved?.expanded??[]);
+ const color=selectedColor??localColor;
  // Identity is scoped by account; bearer tokens are never persisted in a query key.
  const requestKey=JSON.stringify([moves,color,locale]);
  const operationKey=JSON.stringify([requestKey,token]);
  const pending=useRef<AbortController|null>(null);
  useEffect(()=>()=>pending.current?.abort(),[requestKey,token]);
- useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{moves,color,result,expanded},'preparation');},[accountId,token,moves,color,result,expanded]);
+ useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{moves,color,result,expanded},'preparation',storageRevision);},[storageRevision,accountId,token,moves,color,result,expanded]);
  const lesson=result?.key===requestKey?result.lesson:null,busy=busyKey===operationKey;
  const code=failure?.key===operationKey?failure.code:null;
  const error=code==='invalid_query'?t.invalid:code==='authentication_required'?t.auth:code==='index_warming'?t.warming:code==='rate_limit'?t.rate:code?t.error:'';
@@ -58,7 +60,7 @@ export default function OpeningPrep({token,accountId='guest',showAuthNotice=true
   <header><h2 className="ai-coach-wordmark">{t.title}</h2></header>
   <label className="chessaz-ai-coach-input">{t.input}<input aria-label={t.input} aria-describedby={id+'-hint'} value={moves} maxLength={250} onChange={e=>{invalidate();setMoves(e.target.value);}} placeholder="e4 e5 Nf3 Nc6"/></label>
   <span id={id+'-hint'} className="sr-only">{t.hint}</span>
-  <label className="chessaz-ai-coach-color">{t.color}<select aria-label={t.color} value={color} onChange={e=>{invalidate();setColor(e.target.value as 'white'|'black');}}><option value="white">{t.white}</option><option value="black">{t.black}</option></select></label>
+  <label className="chessaz-ai-coach-color">{t.color}<select aria-label={t.color} value={color} onChange={e=>{invalidate();const value=e.target.value as 'white'|'black';setLocalColor(value);onColorChange?.(value);}}><option value="white">{t.white}</option><option value="black">{t.black}</option></select></label>
   <button type="button" disabled={!token||busy||!moves.trim()} onClick={()=>void prepare()}>{busy?t.busy:t.start}</button>
   {!token&&showAuthNotice&&<p role="status">{t.auth}</p>}{error&&<p role="alert">{error}</p>}
   {lesson&&<div className="chessaz-ai-coach-results" aria-live="polite">
