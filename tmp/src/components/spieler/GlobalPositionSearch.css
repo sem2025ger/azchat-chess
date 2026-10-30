@@ -35,3 +35,17 @@
 .preparation-promotion{display:flex;flex-wrap:wrap;gap:5px;padding:8px;border:1px solid #c9a66f;border-radius:9px;background:#292720}
 @media(max-width:800px){.global-position-grid{grid-template-columns:minmax(0,1fr);gap:16px}.global-position-search .preparation-position{width:100%;max-width:480px;margin:auto}.global-position-controls{min-height:0;margin:0;padding:14px;gap:16px}.global-position-search.vorbereitung-page{padding:10px;gap:12px}.global-position-search .preparation-toolbar button{min-height:36px;white-space:normal;font-size:.7rem;flex-wrap:wrap}.global-position-search .preparation-moves-input label{font-size:.67rem}.global-position-search .preparation-moves-input button{max-width:105px;min-height:34px}.position-card-header h2{font-size:.95rem!important}.position-info[open]{flex-basis:60%}.position-results-header{flex-wrap:wrap}}
 .position-info>summary{display:flex;align-items:center;gap:4px;list-style:none}.position-info>summary::-webkit-details-marker{display:none}
+
+/* Spieler position search: restrained bronze/gold lettering without changing the CTA action. */
+.spieler-page .global-position-primary .position-search-metal-label{
+ color:#ebcc92;
+ background:linear-gradient(100deg,#b18c59 0%,#d9b67a 36%,#f0d69e 49%,#b68c55 66%,#d7b57e 100%);
+ background-size:190% 100%;
+ background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+ text-shadow:none;font-weight:700;
+ animation:spielerSearchBronzeText 9s ease-in-out infinite alternate;
+}
+@keyframes spielerSearchBronzeText{from{background-position:0% center}to{background-position:100% center}}
+@media(prefers-reduced-motion:reduce){
+ .spieler-page .global-position-primary .position-search-metal-label{animation:none;background-position:50% center}
+}
