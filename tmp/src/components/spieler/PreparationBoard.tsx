@@ -1,14 +1,19 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {useRegionalCopy} from '../../i18n/regionalCopy';
 import {Chess,DEFAULT_POSITION,type Square,type PieceSymbol,type Color} from 'chess.js';
 import {validateAnalysisFen} from '../../utils/analysisWorkspace';
 import {initialBoardState,boardAt,boardMove,boardSeek,boardText,type PreparationBoardState} from '../../utils/preparationBoardState';
-import {ArrowLeft,ArrowRight,FlipHorizontal,RotateCcw} from 'lucide-react';
+import {ArrowLeft,ArrowRight,FlipHorizontal,RotateCcw,Maximize2,Minimize2} from 'lucide-react';
 import ChessBoard from '../ChessBoard';
 const pieces=['wK','wQ','wR','wB','wN','wP','bK','bQ','bR','bB','bN','bP'];
 const squares=Array.from({length:64},(_,i)=>('abcdefgh'[i%8]+(8-Math.floor(i/8))) as Square);
-export default function PreparationBoard({fen,onFen,initialState,onState,orientation='w',onReset,showMoveSearch=true,showModeSwitcher=true}:{fen:string;onFen:(fen:string)=>void;initialState?:PreparationBoardState;onState?:(state:PreparationBoardState)=>void;orientation?:'w'|'b';onReset?:()=>void;showMoveSearch?:boolean;showModeSwitcher?:boolean}){
+export default function PreparationBoard({fen,onFen,initialState,onState,orientation='w',onReset,showMoveSearch=true,showModeSwitcher=true,allowFullscreen=false}:{fen:string;onFen:(fen:string)=>void;initialState?:PreparationBoardState;onState?:(state:PreparationBoardState)=>void;orientation?:'w'|'b';onReset?:()=>void;showMoveSearch?:boolean;showModeSwitcher?:boolean;allowFullscreen?:boolean}){
  const tr=useRegionalCopy();
+ const boardContainer=useRef<HTMLElement>(null);
+ const [fullscreen,setFullscreen]=useState(false);
+ useEffect(()=>{const changed=()=>setFullscreen(document.fullscreenElement===boardContainer.current);document.addEventListener('fullscreenchange',changed);return()=>document.removeEventListener('fullscreenchange',changed);},[]);
+ async function toggleFullscreen(){if(!boardContainer.current)return;try{if(document.fullscreenElement===boardContainer.current)await document.exitFullscreen();else if(!document.fullscreenElement)await boardContainer.current.requestFullscreen();}catch{/* Browser can deny fullscreen; normal board remains usable. */}}
+
  const [state,setState]=useState(()=>showModeSwitcher?(initialState||initialBoardState(fen)):{...(initialState||initialBoardState(fen)),mode:'moves' as const}),[flipped,setFlipped]=useState(initialState?.flipped||false);
  const {mode,text,draft}=state;const setMode=(mode:'moves'|'setup')=>setState(s=>({...s,mode})),setText=(text:string)=>setState(s=>({...s,text,source:'text'})),setDraft=(draft:string)=>setState(s=>({...s,draft}));
  useEffect(()=>{onState?.({...state,flipped});},[state,flipped,onState]);
@@ -28,7 +33,7 @@ export default function PreparationBoard({fen,onFen,initialState,onState,orienta
   if(!selected){setSelected(square);return;}const moving=board.get(selected);if(moving?.type==='p'&&(square[1]==='8'||square[1]==='1')){setPromotionMove([selected,square]);return;}try{const next=boardMove(state,selected,square,promotion);setState(next);setError('');onFen(boardAt(next));}catch{setError('Dieser Zug ist nicht möglich.');}setSelected(null);
  }
  function seek(delta:number){const next=boardSeek(state,delta);if(next.cursor!==state.cursor){setState(next);setSelected(null);setError('');onFen(boardAt(next));}}
- return <section className="preparation-position" tabIndex={0} onKeyDown={e=>{if(mode!=='moves'||e.altKey||e.ctrlKey||e.metaKey||(e.target as HTMLElement).closest('input,textarea,select,[contenteditable=true]'))return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();seek(e.key==='ArrowLeft'?-1:1);}}}><h2>{tr('Nach Zügen oder Stellung suchen')}</h2>{showModeSwitcher&&<div className="spieltag-actions preparation-mode"><button type="button" aria-pressed={mode==='moves'} onClick={()=>{setMode('moves');setSelected(null);setError('');}}>{tr('Züge spielen')}</button><button type="button" aria-pressed={mode==='setup'} onClick={()=>{setMode('setup');setDraft(fen);setSelected(null);setError('');}}>{tr('Stellung aufstellen')}</button></div>}
+ return <section ref={boardContainer} className="preparation-position" tabIndex={0} onKeyDown={e=>{if(mode!=='moves'||e.altKey||e.ctrlKey||e.metaKey||(e.target as HTMLElement).closest('input,textarea,select,[contenteditable=true]'))return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();seek(e.key==='ArrowLeft'?-1:1);}}}><h2>{tr('Nach Zügen oder Stellung suchen')}</h2>{allowFullscreen&&<button className="preparation-fullscreen-action" type="button" onClick={()=>void toggleFullscreen()} aria-label={fullscreen?"Вернуть доску":"Развернуть доску"} title={fullscreen?"Вернуть доску":"Развернуть доску"}>{fullscreen?<Minimize2 size={17}/>:<Maximize2 size={17}/>}</button>}{showModeSwitcher&&<div className="spieltag-actions preparation-mode"><button type="button" aria-pressed={mode==='moves'} onClick={()=>{setMode('moves');setSelected(null);setError('');}}>{tr('Züge spielen')}</button><button type="button" aria-pressed={mode==='setup'} onClick={()=>{setMode('setup');setDraft(fen);setSelected(null);setError('');}}>{tr('Stellung aufstellen')}</button></div>}
   <div className="preparation-shared-board" role="group" aria-label={tr('Vorbereitungsbrett')}>
    <ChessBoard game={board} readOnly overrideBoardTheme="Classic Wood" overridePieceTheme="cburnett-classic" className="!border-0 !p-0" orientation={facing}/>
    <div className="preparation-board-input">{(facing==='b'?[...squares].reverse():squares).map(square=>{const piece=board.get(square),key=piece?piece.color+piece.type.toUpperCase():'';return <button key={square} type="button" aria-label={square+(key?' '+key:' '+tr('leer'))} aria-pressed={selected===square} onClick={()=>click(square)}/>;})}</div>
