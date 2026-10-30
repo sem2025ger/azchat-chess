@@ -21,6 +21,15 @@ test('chat rejects archive PGNs whose indexed ply does not match the actual quer
  const index={status:'ready',search:async()=>({total:2,games:[{id:'wrong-ply',source:'lichess-broadcast',pgn:'1. e4 e5',ply:1},{id:'invalid',source:'lichess-broadcast',pgn:'1. e9',ply:0}]})};
  assert.deepEqual((await groundedChat(index,query)).games,[]);
 });
+test('model evidence includes only verified public continuations from the exact indexed ply',async()=>{
+ const board=new Chess();board.move('e4');
+ const game={id:'public',source:'lichess-broadcast',pgn:'1. e4 e5 2. Nf3 Nc6 3. Bb5 a6',ply:1,white:'A',black:'B',result:'*'};
+ const index={status:'ready',search:async()=>({total:1,nextMoves:[{move:'e5',count:1}],games:[game,{...game,id:'private',source:'private-room'}]})};
+ await groundedChat(index,{...query,fen:board.fen()},{openaiApiKey:'synthetic',fetchImpl:async(url,options)=>{
+  const body=JSON.parse(options.body),{evidence}=JSON.parse(body.input);assert.equal(evidence.games.length,1);assert.equal(evidence.games[0].hasPgn,true);assert.equal(evidence.games[0].matchedPly,1);assert.deepEqual(evidence.games[0].continuation,['e5','Nf3','Nc6','Bb5','a6']);assert.ok(body.instructions.includes('never claim those supplied records do not exist'));
+  return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Verified example.'})}]}]});
+ }});
+});
 test('router denies anonymous access and does not expose results when feature off',async()=>{
  const app=express(),index={status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})};
  installAiCoach(app,{enabled:true,index,verifyToken:async t=>t==='ok'?{id:'test'}:null});

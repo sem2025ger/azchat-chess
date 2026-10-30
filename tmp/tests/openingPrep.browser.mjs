@@ -78,7 +78,7 @@ export async function checkOpeningPrep({captureRoot}={}){
  }
  await evaluate(`window.responseMode='hold'`);await click(t.start);await wait(`typeof window.release==='function'`);await fill(t.input,'d4 d5');await evaluate(`window.release()`);assert.equal(await evaluate(`!!document.querySelector('.chessaz-ai-coach-results')`),false);assert.equal(await evaluate(`document.querySelector('.chessaz-ai-coach button').disabled`),false);
  await evaluate(`window.setToken('')`);await wait(`document.querySelector('[role=status]')?.textContent===${JSON.stringify(t.auth)}`);assert.equal(await evaluate(`document.querySelector('.chessaz-ai-coach button').disabled`),true);
- await evaluate(`window.setToken('synthetic-only');window.responseMode='ready'`);await fill(t.input,'Nf3 d5 g3 Nf6');await click(t.start);await wait(`document.querySelector('.chessaz-ai-coach-results')`);await evaluate(`document.querySelector('details').open=true`);
+ await evaluate(`window.setToken('synthetic-only');window.responseMode='ready'`);await fill(t.input,'Nf3 d5 g3 Nf6');await click(t.start);await wait(`document.querySelector('.chessaz-ai-coach-results')`);await evaluate(`document.querySelector('.chessaz-ai-coach-group').open=true`);
  if(captureRoot){await mkdir(captureRoot,{recursive:true});const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});await writeFile(join(captureRoot,'opening-prep-ru-mobile.png'),Buffer.from(shot.data,'base64'));}
  await click(t.open);await wait(`document.querySelector('.desktop-analysis-main-board [data-piece-square]')`);assert.equal(await evaluate('window.analysis().viewMoveIndex'),8,'analysis opens at indexed ply, including transpositions');assert.equal((await evaluate('window.analysis().moveHistory')).length,10);
 

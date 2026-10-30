@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),{EventEmitter}=require('node:events'),express=require('express');
 const {Chess}=require('chess.js');
-const {generateAnswer,transcribeAudio,speakAnswer,readBytes,MAX_AUDIO_BYTES}=require('./aiCoachOpenAI');
+const {generateAnswer,transcribeAudio,speakAnswer,readBytes,MAX_AUDIO_BYTES,MAX_SPEECH_BYTES}=require('./aiCoachOpenAI');
 const {groundedChat,validChatQuery}=require('./aiCoachChat');
 const {installAiCoach,installAiCoachFromEnv}=require('./aiCoach');
 const query={message:'What should I study here?',fen:new Chess().fen(),side:'white',language:'ru',history:[{role:'user',text:'I am a beginner.'}]};
@@ -13,9 +13,9 @@ function speechSocket({failed=false,oversized=false,expectedScript}={}){return(u
  const socket=new EventEmitter();socket.terminated=false;socket.terminate=()=>{socket.terminated=true;};
  socket.send=value=>{const event=JSON.parse(value);queueMicrotask(()=>{if(socket.terminated)return;
   if(event.type==='session.update'){assert.deepEqual(event.session.audio.output.format,{type:'audio/pcm',rate:24000});socket.emit('message',Buffer.from(JSON.stringify({type:'session.updated'})));}
-  else{assert.equal(event.type,'response.create');assert.equal(event.response.conversation,'none');assert.equal(event.response.max_output_tokens,2048);if(expectedScript)assert.equal(event.response.input[0].content[0].text,expectedScript);
+  else{assert.equal(event.type,'response.create');assert.equal(event.response.conversation,'none');assert.equal(event.response.max_output_tokens,'inf');if(expectedScript)assert.equal(event.response.input[0].content[0].text,expectedScript);
    const chunk=oversized?Buffer.alloc(180000):Buffer.alloc(4800);
-   for(let i=0;i<(oversized?15:1)&&!socket.terminated;i++)socket.emit('message',Buffer.from(JSON.stringify({type:'response.output_audio.delta',delta:chunk.toString('base64')})));
+   for(let i=0;i<(oversized?Math.ceil(MAX_SPEECH_BYTES/180000)+1:1)&&!socket.terminated;i++)socket.emit('message',Buffer.from(JSON.stringify({type:'response.output_audio.delta',delta:chunk.toString('base64')})));
    if(!socket.terminated)socket.emit('message',Buffer.from(JSON.stringify(failed?{type:'error',error:{message:'SECRET upstream failure'}}:{type:'response.done',response:{status:'completed'}})));
   }});};queueMicrotask(()=>socket.emit('open'));return socket;
 };}
@@ -47,7 +47,7 @@ test('transcription uploads real bytes with multipart filename and bounds the tr
 });
 test('Realtime emits bounded mono WAV and closes on success, failure, overflow or abort',async()=>{
  const audio=await speakAnswer('Развивай фигуры.','ru',{apiKey:key,socketFactory:speechSocket()});assert.equal(audio.subarray(0,4).toString(),'RIFF');assert.equal(audio.readUInt32LE(24),24000);assert.equal(audio.readUInt16LE(22),1);assert.equal(audio.readUInt32LE(40),4800);assert.equal(audio.length,4844);
- for(const config of [{failed:true},{oversized:true}])await assert.rejects(speakAnswer('Hello','en',{apiKey:key,socketFactory:speechSocket(config)}),{code:'provider_unavailable'});
+ for(const config of [{failed:true},{oversized:true}])await assert.rejects(speakAnswer('Hello','en',{apiKey:key,socketFactory:speechSocket(config)}),{code:config.oversized?'speech_too_long':'provider_unavailable'});
  await assert.rejects(speakAnswer('Hello','en',{apiKey:key,signal:AbortSignal.abort(),socketFactory:()=>{throw Error('must not open');}}));
 });
 test('HTTP chat/audio gates require authentication, default OFF, and redact provider errors',async()=>{

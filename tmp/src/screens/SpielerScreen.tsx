@@ -121,6 +121,13 @@ export default function SpielerScreen(){
    const lineHeight=20;
    const unit=event.deltaMode===1?lineHeight:event.deltaMode===2?owner.clientHeight:1;
    const delta=event.deltaY*unit;
+   // Let an independently scrollable chat consume its wheel before the page.
+   // At either edge the event continues to the route scroller normally.
+   for(let target=event.target as HTMLElement|null;target&&target!==owner;target=target.parentElement){
+    const style=getComputedStyle(target);
+    if(/auto|scroll/.test(style.overflowY)&&target.scrollHeight>target.clientHeight+1&&
+      (delta>0?target.scrollTop+target.clientHeight<target.scrollHeight-1:target.scrollTop>1))return;
+   }
    // Preserve precision trackpad gestures; accelerate discrete mouse wheel steps.
    const multiplier=event.deltaMode===1||Math.abs(delta)>=80?1.6:1;
    const max=owner.scrollHeight-owner.clientHeight;

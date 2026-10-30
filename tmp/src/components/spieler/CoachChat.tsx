@@ -6,17 +6,19 @@ import {openSpielerAnalysis} from '../../services/spieler';
 import {openingPrepLanguage} from '../../i18n/openingPrepCopy';
 import {coachChatCopy} from '../../i18n/coachChatCopy';
 import {readPositionSearchState,writePositionSearchState,positionSearchRevision} from '../../utils/positionSearchState';
+import {readCoachSpeech,createCoachPlayback} from '../../services/coachSpeech';
 import './CoachChat.css';
 type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string};
 type Reply={answer:string;games:ResultGame[];generated:boolean};
 type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated?:boolean};
-type Clip={url:string;item:number};
+type Clip={url:string;item:number;autoplay:boolean};
 type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string};
-type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number};
+type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number;expanded?:number[]};
 function restoredChat(accountId:string,context:string){
  const saved=readPositionSearchState<SavedChat>(accountId,'chat');
  if(!saved||saved.context!==context||typeof saved.open!=='boolean'||typeof saved.voiceReplies!=='boolean'||typeof saved.draft!=='string'||saved.draft.length>500||!Number.isFinite(saved.scrollTop)||!Array.isArray(saved.items)||saved.items.length>18)return null;
  if(saved.items.some(m=>!m||!['user','assistant'].includes(m.role)||typeof m.text!=='string'||m.text.length>1200||(m.generated!==undefined&&typeof m.generated!=='boolean')||(m.games!==undefined&&(!Array.isArray(m.games)||m.games.length>5||m.games.some(g=>!g||typeof g.id!=='string'||typeof g.white!=='string'||typeof g.black!=='string'||typeof g.pgn!=='string'||!Number.isInteger(g.ply)||g.ply<0)))))return null;
+ if(saved.expanded!==undefined&&(!Array.isArray(saved.expanded)||saved.expanded.some(i=>!Number.isInteger(i)||i<0||i>=saved.items.length)))return null;
  return saved;
 }
 const MAX_AUDIO_BYTES=2*1024*1024;
@@ -38,19 +40,20 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
  const context=JSON.stringify([fen,side,lang]);
  const [storageRevision]=useState(positionSearchRevision);
  const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context):null);
- const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0);
+ const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0),[speechError,setSpeechError]=useState(''),[speechPlaying,setSpeechPlaying]=useState(false),[expanded,setExpanded]=useState<number[]>(saved?.expanded??[]);
  const request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
- const stopSpeech=useCallback(()=>{speechRequest.current?.abort();speechRequest.current=null;audioRef.current?.pause();if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;setClip(null);setSpeechBusy(null);},[]);
+ const playback=useRef<ReturnType<typeof createCoachPlayback>>(null),speechCache=useRef(new Map<string,Blob>());
+ const stopSpeech=useCallback(()=>{speechRequest.current?.abort();speechRequest.current=null;playback.current?.stop();playback.current=null;setSpeechPlaying(false);setSpeechError('');audioRef.current?.pause();if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;setClip(null);setSpeechBusy(null);},[]);
  const cancel=useCallback(()=>{
   epoch.current++;busyRef.current=false;request.current?.abort();request.current=null;stopSpeech();
   if(recordTimer.current)clearTimeout(recordTimer.current);recordTimer.current=null;
   const current=recorder.current;recorder.current=null;if(current){current.onstop=null;current.ondataavailable=null;current.onerror=null;if(current.state!=='inactive')current.stop();}
   stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;setRecording(false);setBusy(null);
  },[stopSpeech]);
- useEffect(()=>{cancel();setError('');return cancel;},[token,cancel]);
- useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{context,open,draft,items,voiceReplies,scrollTop},'chat',storageRevision);},[storageRevision,accountId,context,token,open,draft,items,voiceReplies,scrollTop]);
+ useEffect(()=>{cancel();setError('');setSpeechError('');return cancel;},[token,cancel]);
+ useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{context,open,draft,items,voiceReplies,scrollTop,expanded},'chat',storageRevision);},[storageRevision,accountId,context,token,open,draft,items,voiceReplies,scrollTop,expanded]);
  useEffect(()=>{const list=listRef.current;if(list){list.scrollTop=restoredScroll.current??list.scrollHeight;restoredScroll.current=null;}},[items,open,busy]);
- useEffect(()=>{if(clip)void audioRef.current?.play().catch(()=>{/* Native controls remain available when autoplay is blocked. */});},[clip]);
+ useEffect(()=>{if(clip?.autoplay)void audioRef.current?.play().catch(()=>{/* Native controls remain available when autoplay is blocked. */});},[clip]);
  function describe(error:unknown){
   const code=error instanceof Error?error.message:'';
   if(code==='authentication_required')return t.auth;if(code==='rate_limit')return t.rate;
@@ -59,20 +62,26 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
   return t.unavailable;
  }
  async function speak(text:string,item:number){
-  stopSpeech();const abort=new AbortController();speechRequest.current=abort;setSpeechBusy(item);setError('');
+  stopSpeech();const abort=new AbortController();speechRequest.current=abort;setSpeechBusy(item);setSpeechError('');
+  const cacheKey=lang+':'+text;
+  const attach=(blob:Blob,autoplay:boolean)=>{const url=URL.createObjectURL(blob);clipUrl.current=url;setClip({url,item,autoplay});};
+  let player:ReturnType<typeof createCoachPlayback>=null;
   try{
-   const response=await checked(await fetch(apiUrl('speech'),{method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({text,language:lang})}));
-   if(!response.headers.get('content-type')?.startsWith('audio/wav'))throw Error('audio');
-   const blob=await response.blob();if(blob.size>MAX_AUDIO_BYTES+44||blob.size<=44)throw Error('audio');
-   if(!abort.signal.aborted){const url=URL.createObjectURL(blob);clipUrl.current=url;setClip({url,item});}
-  }catch(e){if(!abort.signal.aborted)setError(describe(e));}
+   const cached=speechCache.current.get(cacheKey);if(cached){attach(cached,true);return;}
+   player=createCoachPlayback(()=>{if(!abort.signal.aborted)setSpeechPlaying(true);});playback.current=player;
+   const response=await checked(await fetch(apiUrl('speech'),{method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(95000)]),cache:'no-store',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json',Accept:'application/x-ndjson'},body:JSON.stringify({text,language:lang})}));
+   const blob=await readCoachSpeech(response,pcm=>{if(!abort.signal.aborted)player?.push(pcm);});
+   if(abort.signal.aborted)return;
+   if(speechCache.current.size>=2)speechCache.current.delete(speechCache.current.keys().next().value!);speechCache.current.set(cacheKey,blob);
+   const played=await player?.finish();if(!abort.signal.aborted){playback.current=null;setSpeechPlaying(false);attach(blob,!played);}
+  }catch(e){player?.stop();if(playback.current===player)playback.current=null;if(!abort.signal.aborted){const code=e instanceof Error?e.message:'';setSpeechError(code==='speech_timeout'||(e instanceof DOMException&&e.name==='TimeoutError')?t.speechTimeout:code==='speech_too_long'?t.speechTooLong:code==='rate_limit'?t.rate:code==='provider_not_configured'?t.notConfigured:t.speechUnavailable);setSpeechPlaying(false);}}
   finally{if(!abort.signal.aborted)setSpeechBusy(null);}
  }
  async function send(event:FormEvent){
   event.preventDefault();const message=draft.trim();if(message.length<2||!token||busyRef.current||recorder.current)return;
   busyRef.current=true;
   stopSpeech();const abort=new AbortController();request.current?.abort();request.current=abort;const previous=items.slice(-16);
-  setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);
+  setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);
   try{
    const response=await checked(await fetch(apiUrl('chat'),{method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text}))})}));
    const data=await response.json() as Reply;
@@ -121,14 +130,15 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
     {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p>{m.text}</p>{m.role==='assistant'&&<>
      {!m.generated&&<small className="coach-chat-notice">{t.fallback}</small>}
      <button type="button" className="coach-chat-listen" disabled={!token||!!busy||recording||speechBusy!==null} onClick={()=>void speak(m.text,i)}><Volume2 size={14}/>{t.listen}</button>
-    </>}{m.games?.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</div>)}
+    </>}{!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
     {busy&&<p role="status">{busy==='transcribe'?t.transcribing:busy==='microphone'?t.voice:t.busy}</p>}
    </div>
    {recording&&<p role="status" className="coach-chat-notice">{t.recording}</p>}
-   {speechBusy!==null&&<p role="status" className="coach-chat-notice">{t.speechBusy}</p>}
+   {speechBusy!==null&&<div role="status" className="coach-chat-stream"><span>{speechPlaying?t.speechPlaying:t.speechBusy}</span><button type="button" onClick={stopSpeech} aria-label={t.stopSpeaking}><Square size={15}/></button></div>}
    {clip&&<div className="coach-chat-audio"><audio ref={audioRef} src={clip.url} controls aria-label={t.listen}/><button type="button" onClick={stopSpeech} aria-label={t.stopSpeaking}><Square size={15}/></button><small>{t.audioReady}</small></div>}
    {!token&&<p className="coach-chat-error" role="status">{t.auth}</p>}
    {error&&<p className="coach-chat-error" role="alert">{error}</p>}
+   {speechError&&<p className="coach-chat-error coach-chat-speech-error" role="alert">{speechError}</p>}
    <form className="coach-chat-compose" onSubmit={send}>
     <label className="sr-only" htmlFor={inputId}>{t.placeholder}</label>
     <input id={inputId} value={draft} maxLength={500} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder} disabled={!token||!!busy||recording}/>

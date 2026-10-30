@@ -46,7 +46,7 @@ function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,
   return {signal:abort.signal,done:()=>{res.off('close',close);release();}};
  }
  function failed(res,e){
-  const code=['index_warming','index_unavailable','provider_not_configured','invalid_audio','empty_audio','transcript_too_long'].includes(e.code)?e.code:'provider_unavailable';
+  const code=['index_warming','index_unavailable','provider_not_configured','invalid_audio','empty_audio','transcript_too_long','speech_timeout','speech_incomplete','speech_too_long'].includes(e.code)?e.code:'provider_unavailable';
   if(code==='index_warming')res.set('Retry-After','5');
   if(!res.destroyed)res.status(['invalid_audio','empty_audio','transcript_too_long'].includes(code)?400:503).json({code});
  }
@@ -67,8 +67,22 @@ function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,
   const value=req.body;
   if(!value||typeof value!=='object'||Object.keys(value).some(k=>!['text','language'].includes(k))||typeof value.text!=='string'||value.text.trim().length<2||value.text.length>1200||!LANGUAGE_CODES.has(value.language))return res.status(400).json({code:'invalid_query'});
   const op=operation(req,res);if(!op)return;
-  try{res.type('audio/wav').send(await speakAnswer(value.text,value.language==='ua'?'uk':value.language,{apiKey:openaiApiKey,signal:op.signal,socketFactory}));}
-  catch(e){failed(res,e);}finally{op.done();}
+  const streaming=req.get('accept')?.includes('application/x-ndjson');
+  try{
+   const audio=await speakAnswer(value.text,value.language==='ua'?'uk':value.language,{apiKey:openaiApiKey,signal:op.signal,socketFactory,
+    ...(streaming?{onAudio:chunk=>{
+     if(res.destroyed||res.writableLength>512*1024)throw Object.assign(Error('speech_backpressure'),{code:'provider_unavailable'});
+     if(!res.headersSent){res.type('application/x-ndjson');res.set('Cache-Control','no-store, no-transform');res.set('X-Content-Type-Options','nosniff');}
+     res.write(JSON.stringify({type:'audio',delta:chunk.toString('base64')})+'\n');
+    }}:{})});
+   if(streaming)res.end(JSON.stringify({type:'done',bytes:audio.bytes,sampleRate:audio.sampleRate})+'\n');else res.type('audio/wav').send(audio);
+  }catch(e){
+   const code=['speech_timeout','speech_incomplete','speech_too_long','provider_not_configured'].includes(e.code)?e.code:'provider_unavailable';
+   if(!res.destroyed&&e.code!=='speech_cancelled'){
+    console.warn(JSON.stringify({event:'coach_speech_failed',reason:code}));
+    if(res.headersSent)res.end(JSON.stringify({type:'error',code})+'\n');else failed(res,e);
+   }
+  }finally{op.done();}
  });
  router.use((error,req,res,next)=>{
   if(error.type==='entity.too.large')return res.status(413).json({code:'payload_too_large'});
