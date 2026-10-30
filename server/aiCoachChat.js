@@ -20,12 +20,12 @@ const gameHeadings={
  tr:'Partilerde şu devam yolları oynandı:',
  uk:'У партіях зустрічалися такі продовження:'
 };
-const numberWords={одну:1,один:1,одна:1,две:2,два:2,дві:2,три:3,четыре:4,чотири:4,пять:5,п'ять:5,пять:5,шесть:6,семь:7,восемь:8,девять:9,десять:10,three:3,two:2,one:1,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,drei:3,zwei:2,ein:1,vier:4,fünf:5,üç:3,iki:2,bir:1,dört:4,beş:5,üç:3};
+const numberWords={одну:1,один:1,одна:1,две:2,два:2,дві:2,три:3,четыре:4,чотири:4,пять:5,"п'ять":5,шесть:6,семь:7,восемь:8,девять:9,десять:10,three:3,two:2,one:1,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,drei:3,zwei:2,ein:1,vier:4,"fünf":5,"üç":3,iki:2,bir:1,"dört":4,"beş":5};
 function gameRequest(message){
  const value=message.toLowerCase();
  if(!/(?:парт(?:ии|ий|ию|ия|ій|ії)|part(?:ien|ies|y|i)|games?|oyun|partiya)/iu.test(value)||!/(?:найд|покаж|подбер|да[йй]|знайд|покаж|find|show|list|suche|zeig|finde|göster|bul|tap|göstər|göstər)/iu.test(value))return null;
  const number=value.match(/\b([1-9]|10)\b/u);
- const word=value.match(/(?:^|[^\p{L}])([\p{L}']+)(?=$|[^\p{L}])/gu)?.map(w=>w.trim()).find(w=>numberWords[w]!=null);
+ const word=value.match(/[\p{L}']+/gu)?.find(w=>Object.prototype.hasOwnProperty.call(numberWords,w));
  const count=number?Number(number[1]):word?numberWords[word]:3;
  return Math.max(1,Math.min(10,count));
 }
