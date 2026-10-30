@@ -24,10 +24,10 @@ const numberWords={одну:1,один:1,одна:1,две:2,два:2,дві:2,�
 function gameRequest(message){
  const value=message.toLowerCase();
  if(!/(?:парт(?:ии|ий|ию|ия|ій|ії)|part(?:ien|ies|y|i)|games?|oyun|partiya)/iu.test(value)||!/(?:найд|покаж|подбер|да[йй]|знайд|покаж|find|show|list|suche|zeig|finde|göster|bul|tap|göstər|göstər)/iu.test(value))return null;
- const number=value.match(/\b([1-9]|10)\b/u);
+ const number=value.match(/\b([1-9]|1[0-9]|20)\b/u);
  const word=value.match(/[\p{L}']+/gu)?.find(w=>Object.prototype.hasOwnProperty.call(numberWords,w));
  const count=number?Number(number[1]):word?numberWords[word]:3;
- return Math.max(1,Math.min(10,count));
+ return Math.max(1,Math.min(20,count));
 }
 
 function validChatQuery(value){
