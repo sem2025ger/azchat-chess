@@ -26,7 +26,7 @@
  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
  font-size:clamp(1.42rem,1.8vw,1.76rem);font-weight:900;line-height:1.12;letter-spacing:-.05em;
  color:#bac0c2;
- background:linear-gradient(108deg,#675a50 0%,#9b7960 13%,#727b80 27%,#dce0df 39%,#68594c 51%,#9e7658 62%,#d7b588 67%,#8c9495 78%,#5e5148 90%,#b3a79b 100%);
+ background:linear-gradient(108deg,#77716b 0%,#b4997e 13%,#91999b 27%,#e0e2df 39%,#827668 51%,#ac8767 62%,#e2c39b 67%,#969fa3 78%,#786e67 90%,#c4b9aa 100%);
  background-size:240% 100%;-webkit-background-clip:text;background-clip:text;
  -webkit-text-fill-color:transparent;
  filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));
