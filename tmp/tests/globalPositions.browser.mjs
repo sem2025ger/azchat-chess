@@ -65,11 +65,12 @@ try{
  await click('Grundstellung');
  assert.equal(await evaluate(`!!document.querySelector('.preparation-moves-input')`),false);
  await evaluate(`document.querySelector('.position-advanced-settings').open=true`);
- await locales(['Nach Zügen oder Stellung suchen','Züge spielen','Stellung aufstellen','Grundstellung','Vorbereitungsbrett','leer','Partien nach Stellung suchen','Meine Farbe','Stellung suchen','Nur Partien eines bestimmten Spielers']);
+ assert.equal(await evaluate(`!!document.querySelector('.global-position-search .preparation-mode')`),false,'single board heading without mode tabs');
+  await locales(['Nach Zügen oder Stellung suchen','Grundstellung','Vorbereitungsbrett','leer','Partien nach Stellung suchen','Meine Farbe','Stellung suchen','Nur Partien eines bestimmten Spielers']);
  await play([['e2','e4'],['c7','c5'],['g1','f3'],['d7','d6'],['d2','d4'],['c5','d4'],['f3','d4'],['g8','f6'],['b1','c3'],['a7','a6']]);await fill('Meine Farbe','black');
- await click('Stellung aufstellen');await click('Brett leeren');await click('Stellung suchen');await wait(`document.body.innerText.includes('Ungültige Stellung')`);
- await locales(['Nach Zügen oder Stellung suchen','Züge spielen','Stellung aufstellen','Grundstellung','Figurenpalette','Entfernen','Brett leeren','Am Zug','Weiß','Schwarz','Rochaderechte','Stellung suchen','leer','Ungültige Stellung']);
- await fill('FEN','4k3/P7/8/8/8/8/8/4K3 w - - 0 1');await click('Stellung suchen');await click('Züge spielen');await square('a7');await square('a8');await wait(`document.querySelector('.preparation-promotion')`);await locales(['Umwandlung','Dame','Turm','Läufer','Springer']);await click('Dame');await click('Grundstellung');await play([['e2','e4'],['c7','c5'],['g1','f3'],['d7','d6'],['d2','d4'],['c5','d4'],['f3','d4'],['g8','f6'],['b1','c3'],['a7','a6']]);await click('Stellung suchen');await wait(`document.querySelectorAll('.global-position-results li').length===2`);
+ await click('Grundstellung');assert.equal(await evaluate(`!!document.querySelector('.global-position-search .preparation-mode')`),false);
+ await locales(['Nach Zügen oder Stellung suchen','Grundstellung','Stellung suchen','leer']);
+ await play([['e2','e4'],['c7','c5'],['g1','f3'],['d7','d6'],['d2','d4'],['c5','d4'],['f3','d4'],['g8','f6'],['b1','c3'],['a7','a6']]);await click('Stellung suchen');await wait(`document.querySelectorAll('.global-position-results li').length===2`);
  assert.deepEqual(await evaluate(`[...document.querySelectorAll('.global-position-results li strong')].map(e=>e.textContent)`),['White new – Black new','White old – Black old']);
  assert.equal(await evaluate(`new URLSearchParams(window.positionCalls.at(-1).query).get('side')`),'black');assert.ok(await evaluate(`window.positionCalls.at(-1).headers.Authorization==='Bearer synthetic-test-token'`));
  assert.equal(await evaluate(`!!document.querySelector('.position-info')`),false,'redundant info removed');

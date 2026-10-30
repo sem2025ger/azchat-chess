@@ -121,3 +121,11 @@
 [data-reading-route]:has(.spieler-page) [data-route-scroll]{
  scroll-behavior:auto;overscroll-behavior-y:auto;
 }
+
+/* Spieler-only compact board controls; position title stays as the sole board heading. */
+.spieler-page .spieler-position-workspace .preparation-toolbar button{
+ min-height:37px;padding:7px 9px;font-size:.76rem;gap:5px;
+}
+.spieler-page .spieler-position-workspace .preparation-toolbar svg{
+ width:16px;height:16px;
+}
