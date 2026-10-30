@@ -36,9 +36,9 @@
 
 Ограничения проверки: тестовые ответы и loopback WebSocket доказывают связность нашего кода, но не доступ к моделям, качество ответа OpenAI, произношение или работу реального микрофона пользователя. Настоящие OpenAI API calls не выполнялись. Визуальное покрытие не означает проверку контраста всех сочетаний тем.
 
-## Точная оставшаяся конфигурация — только оператором в изолированном QA
+## Конфигурация на момент первоначальной передачи реализации
 
-Ничего из следующего в hosted окружении не менялось.
+На момент первоначальной передачи ничего из следующего в hosted окружении не менялось. Последующие разрешённые QA-изменения перечислены в дополнении ниже.
 
 | Где | Что проверить или предоставить |
 |---|---|
@@ -60,6 +60,26 @@
 6. Проверить смену FEN/пользователя, освобождение микрофона, 429 без повторных автоматических запросов, существующий indexed-ply переход к Analysis и opt-out архивов. Провести обычный bounded QA, без нагрузочного теста сервиса.
 
 Ограничения runtime: API timeout 25 s, UI timeout 30 s, audio output до 2 MiB, Realtime max_output_tokens=2048. Слишком длинное или незавершённое озвучивание возвращает ошибку; текст ответа сохраняется. Лимиты и concurrency process-local и не заменяют quota всего OpenAI project.
+
+## Дополнение: подготовка hosted QA после разрешения владельца, 30.10.2026
+
+- Подтверждены workspace Render `My Workspace` / `tea-d7dfmdlckfvc73eq8ne0` и только целевой сервис `chessaz-ai-coach-v1-isolated-qa` / `srv-dbhsatvlk1mc739rq1jg`. Production `chessaz-api` и shared QA не изменялись.
+- Render по-прежнему привязан к `feat/ai-coach-v1-qa-20261029`, коммит `a470cfd74bd1db712e3b8b73d6a65f4640049110`. Новые `/chat`, `/transcribe`, `/speech` на нём отвечают 404; существующий `/preparation` отклоняет запрос без токена с 401. CORS допускает workspace preview origin, `/health` вернул 200.
+- Существующий start guard требует точный QA Supabase URL `https://iukmpcytsuofqhxsumbu.supabase.co` и непустые backend credentials. Успешный запуск подтверждён логами; значения backend secrets не читались и не переносились. В логах текущего старого кода индекс содержит 14 979 партий / 853 036 entries, rejected=0, excluded=0. Это не является проверкой индекса на новой версии.
+- Через merge, без замены коллекции env, сохранены только `AI_COACH_ENABLED=true`, `POSITION_SEARCH_ENABLED=true`, `OPENAI_COACH_MODEL=gpt-6-sol`. Плагин автоматически запустил deploy `dep-dbia8letlv9c739a1qfg`; подтверждён статус **live**, но на прежнем коммите `a470cfd`. Отдельный повторный deploy не запускался.
+- Vercel: только проект `chessaz-preview-workspace` / `prj_eZ75ATduvjG0551uNVwy9BCin2cM`, target **preview**, branch **feat/ai-coach-openai-voice-qa-20261030**. Сохранены QA Supabase URL, существующий публичный publishable key этого QA-проекта, `VITE_SERVER_URL` указанного изолированного API, три флага Coach/Spieler/position search и выключен maintenance. OpenAI secret во frontend не добавлялся.
+- `tmp/scripts/buildCoachQa.mjs` создаёт воспроизводимую QA-сборку в `dist-coach-qa`: разрешены только точные QA endpoints и публичный Supabase key; `.env` не читаются, автоматический экспорт `VITE_*` выключен, клиентские bindings перечислены явно, production Sentry не наследуется. Сборка сохраняет `snapshot.json` с exact source SHA и `openaiVerified:false`; добавлен noindex. Штатная production-сборка и UI не менялись. Четыре отдельные regression-проверки охватывают production/alternate bindings, случайно публичные secrets и несовпадение SHA.
+- Render MCP не предоставляет смену branch или deploy конкретного commit. Dashboard потребовал вход; вход не выполнялся, страница закрыта. Не менялись другие Git-ветки, чтобы обойти это ограничение.
+
+### Точные оставшиеся действия в Render
+
+В существующем сервисе https://dashboard.render.com/web/srv-dbhsatvlk1mc739rq1jg:
+
+1. Settings → Build & Deploy → Branch: `feat/ai-coach-openai-voice-qa-20261030`. Оставить Auto-Deploy OFF, repo/root/build/start guard без изменений. Убедиться, что текущий HEAD PR #154 прошёл CI; именно он должен стать backend source. Не выбирать `main` или production-сервис.
+2. Environment → добавить или безопасно заполнить `OPENAI_API_KEY` ключом проекта ChessAZ с необходимым доступом и бюджетом. Не публиковать ключ в чате, GitHub или `VITE_*`. Остальные перечисленные не секретные настройки уже сохранены. Не затирать Supabase credentials.
+3. Сохранить с rebuild/deploy, дождаться **live**, сверить SHA с PR #154. Если сохранение уже запустило deploy, не запускать второй. Повторить anonymous checks: три новых маршрута должны отвечать **401**, а не 404. Затем выполнить перечисленные выше authenticated text/transcription/speech tests на отдельном QA-аккаунте.
+
+До смены backend source и этих проверок milestone остаётся **частично завершённым**. Даже после вставки ключа доступ к моделям, billing, реальный микрофон, точность озвучивания и успешная QA-сессия требуют проверки. Предыдущая visual-review ссылка не поддерживает вход; новая QA-сборка должна использовать `buildCoachQa.mjs`, а не `buildReview.mjs`.
 
 ## Официальная документация, использованная при реализации
 
