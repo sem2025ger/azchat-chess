@@ -23,3 +23,11 @@
 .coach-chat-audio audio{width:100%;min-width:0;height:38px}
 .coach-chat-audio small{grid-column:1/-1;font-size:.72rem;color:var(--text-secondary,#c4bcb0)}
 @media(max-width:600px){.coach-chat-panel{padding:10px}.coach-chat-history{max-height:52dvh}.coach-chat-message{padding:9px}.coach-chat-compose{gap:5px!important;grid-template-columns:minmax(0,1fr) 40px 40px}.coach-chat-compose button{width:40px}}
+
+/* Compact, accessible actions preserve the existing conversation layout. */
+.coach-chat-actions{display:flex;justify-content:flex-end;gap:8px}
+.coach-chat-actions button,.coach-chat-message-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:6px 10px;font-size:.75rem;line-height:1.3;width:auto;white-space:nowrap}
+.coach-chat-message-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.coach-chat-message .coach-chat-message-actions button{width:auto;margin-top:0;text-align:center}
+.coach-chat-actions button:focus-visible,.coach-chat-message-actions button:focus-visible{outline:2px solid #d8b77e;outline-offset:2px}
+@media(max-width:600px){.coach-chat-message-actions button{min-height:40px}}
