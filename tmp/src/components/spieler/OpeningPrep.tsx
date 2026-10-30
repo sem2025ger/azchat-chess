@@ -20,7 +20,7 @@ function restorePreparation(accountId:string){
  return saved;
 }
 function formatLine(moves:string[]){return moves.map((san,i)=>(i%2===0?Math.floor(i/2)+1+'. ':'')+san).join(' ');}
-export default function OpeningPrep({token,accountId='guest',showAuthNotice=true,color:selectedColor,onColorChange}:{token:string;accountId?:string;showAuthNotice?:boolean;color?:'white'|'black';onColorChange?:(color:'white'|'black')=>void}){
+export default function OpeningPrep({token,accountId='guest',showAuthNotice=true,color:selectedColor,onColorChange,onPreparedMoves}:{token:string;accountId?:string;showAuthNotice?:boolean;color?:'white'|'black';onColorChange?:(color:'white'|'black')=>void;onPreparedMoves?:(moves:string[])=>void}){
  const {language}=useLanguage(),navigate=useNavigate(),id=useId();
  const locale=openingPrepLanguage(language),t=openingPrepCopy[locale];
  const [storageRevision]=useState(positionSearchRevision);
@@ -52,7 +52,7 @@ export default function OpeningPrep({token,accountId='guest',showAuthNotice=true
    if(!response.ok){const data=await response.json().catch(()=>null);throw Error(typeof data?.code==='string'?data.code:'unavailable');}
    const data:OpeningLesson=await response.json();
    if(data.opening!=='custom'||data.color!==color||!Array.isArray(data.groups))throw Error('invalid');
-   if(!c.signal.aborted)setResult({key:requestKey,lesson:data});
+   if(!c.signal.aborted){onPreparedMoves?.(data.moves);setResult({key:requestKey,lesson:data});}
   }catch(error){if(!c.signal.aborted)setFailure({key:operationKey,code:error instanceof Error?error.message:'unavailable'});}
   finally{if(!c.signal.aborted)setBusyKey(null);}
  }

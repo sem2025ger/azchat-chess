@@ -10,9 +10,10 @@ The owner reported read-aloud failing after a long Russian answer and confusing 
 - Audio errors have localized speech-specific messages, preserving the answer and game links. Minimal server diagnostics record only an allowlisted reason code, with no prompt, audio, bearer token or raw provider error.
 - Public archive game links are grouped under an accessible disclosure. Preparation results have their own collapsible summary. Expanded state remains account/tab scoped. Long names wrap; history has a bounded readable viewport; composer/audio/status sit below history in normal layout flow.
 - Players wheel routing lets a scrollable descendant consume movement before scrolling the page. At a history edge, scrolling continues into the page. Expanded preparation, chat, filters and results remain in normal flow.
+- A successful preparation query applies its validated SAN line to the existing preparation-board state, so the board, chat FEN and subsequent position search refer to the same position. Back/forward history and board orientation remain available. This is an explicit action after successful preparation, with no model calls per board move. Stale query responses cannot apply a position.
 - Model evidence now includes the verified public PGN's next six SAN half-moves at the exact indexed ply. Instructions avoid falsely claiming supplied records are missing and avoid repeating every player's name/date/result unless requested. This does not add engine analysis or establish super-grandmaster accuracy.
 
-No model, voice, dependency, architecture, board size, piece art, engine, authentication, database schema or production configuration was replaced.
+No model, voice, dependency, architecture, board size/rendering, piece art, engine, authentication, database schema or production configuration was replaced.
 
 ## Verification
 
@@ -21,6 +22,7 @@ No model, voice, dependency, architecture, board size, piece art, engine, authen
 - Full local frontend suite: 191 total, 190 pass, 1 failure in the unchanged D-Bus wrapper (`Failed to open socket: Operation not permitted`). The underlying global-position browser check is also run directly; CI's Ubuntu D-Bus environment is the release gate.
 - Coach integration uses real Express HTTP, a loopback Realtime WebSocket, browser Web Audio/native WAV and Chromium MediaRecorder with a fake microphone. It covers first playback before provider completion, cached replay without another request, isolated speech failure while answers remain, cancellation, six locales, auth, account/token lifecycle and Analysis round-trip restoration. Provider content is explicitly synthetic.
 - Real Players/Layout browser checks exercise preparation, long chat answers, long game names, archive disclosure and filters together at 1280×720, 1280×900 and 390×844. Geometry asserts no overlap or horizontal overflow; actual wheel input verifies inner-scroll priority and page chaining. Six-language initial layout checks remain intact.
+- The composed preparation/chat browser scenario asserts that a submitted four-ply line appears on the actual board, retains working back/forward history and reaches the model as the exact resulting FEN. This guards against the photographed input/board mismatch.
 - Opening preparation browser checks cover six languages, exact transposed analysis ply, back/forward/legal continuation, return restoration and independent sweeps of 15 interface palettes, 10 board themes and four piece sets. The test explicitly targets the continuation-group disclosure after adding the new outer result disclosure.
 
 ## Hosted acceptance and boundaries

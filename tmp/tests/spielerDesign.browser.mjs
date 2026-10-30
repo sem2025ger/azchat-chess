@@ -69,9 +69,10 @@ export async function checkSpielerDesign({root=process.cwd(),captureRoot,phase='
    }
    if(verify){
     // Open the real sections together: long answer, game examples, preparation and filters.
+    await evaluate(`document.querySelector('.chessaz-ai-coach>button').click()`);await wait(`document.querySelector('.chessaz-ai-coach-results-panel')`);await wait(`document.querySelector('.preparation-shared-board [data-piece-square="c5"]')`);
+    assert.equal(await evaluate(`document.querySelector('.preparation-toolbar button').disabled`),false,'prepared position has real move history');
     await evaluate(`document.querySelector('.coach-chat-toggle').click()`);await wait(`document.querySelector('.coach-chat-compose input')`);
     await evaluate(`(()=>{const input=document.querySelector('.coach-chat-compose input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Layout regression');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);await pause(20);await evaluate(`document.querySelector('.coach-chat-compose').requestSubmit()`);await wait(`document.querySelector('.coach-chat-message.assistant')`);
-    await evaluate(`document.querySelector('.chessaz-ai-coach>button').click()`);await wait(`document.querySelector('.chessaz-ai-coach-results-panel')`);
     await evaluate(`(()=>{for(const selector of ['.chessaz-ai-coach-group','.coach-chat-games','.position-advanced-settings','.position-player-filter']){const d=document.querySelector(selector);if(d&&!d.open)d.querySelector('summary').click();}})()`);await pause(50);
     const layout=await evaluate(`(()=>{const r=s=>{const x=document.querySelector(s).getBoundingClientRect();return {top:x.top,bottom:x.bottom,left:x.left,right:x.right};};return {prep:r('.chessaz-ai-coach'),chat:r('.coach-chat'),history:r('.coach-chat-history'),compose:r('.coach-chat-compose'),controls:r('.global-position-controls'),width:document.documentElement.scrollWidth,viewport:innerWidth};})()`);
     assert.ok(layout.prep.bottom<=layout.chat.top+1,'preparation never covers chat');assert.ok(layout.history.bottom<=layout.compose.top+1,'history never covers composer');assert.ok(layout.chat.bottom<=layout.controls.top+1,'chat never covers search/filter controls');assert.ok(layout.width<=layout.viewport+1,'expanded sections fit horizontally');
