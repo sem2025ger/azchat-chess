@@ -12,7 +12,7 @@ import CoachChat from './CoachChat';
 import '../../screens/VorbereitungScreen.css';
 import './GlobalPositionSearch.css';
 
-type SavedSearch={fen:string;side:PositionSide;coachColor?:'white'|'black';fideId:string;name:string;scope:'all'|'nrw';sort:'newest'|'strongest';nrwCount:number|null;players:SpielerPlayer[];result:PositionSearchResult|null;boardState?:PreparationBoardState};
+type SavedSearch={fen:string;side:PositionSide;coachColor?:'white'|'black';fideId:string;name:string;scope:'all'|'nrw';sort:'newest'|'strongest';resultsOpen?:boolean;nrwCount:number|null;players:SpielerPlayer[];result:PositionSearchResult|null;boardState?:PreparationBoardState};
 export default function GlobalPositionSearch({token,accountId='guest',coach}:{token:string;accountId?:string;coach?:(color:'white'|'black',onColorChange:(color:'white'|'black')=>void,onPreparedMoves:(moves:string[])=>void)=>ReactNode}){
  const tr=useRegionalCopy(),navigate=useNavigate();
  const [storageRevision]=useState(positionSearchRevision);
@@ -20,10 +20,11 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
  const [coachColor,setCoachColor]=useState<'white'|'black'>(()=>{const color=saved?.coachColor??readPositionSearchState<{color?:'white'|'black'}>(accountId,'preparation')?.color;return color==='white'?'white':'black';});
  const [boardState,setBoardState]=useState(saved?.boardState);
  const [boardRevision,setBoardRevision]=useState(0);
+ const [resultsOpen,setResultsOpen]=useState(saved?.resultsOpen??true);
  const [fen,setFen]=useState(saved?.fen||DEFAULT_POSITION),[side,setSide]=useState<PositionSide>(saved?.side||'any'),[fideId,setFideId]=useState(saved?.fideId||''),[name,setName]=useState(saved?.name||'');
  const [scope,setScope]=useState<'all'|'nrw'>(saved?.scope||'all'),[sort,setSort]=useState<'newest'|'strongest'>(saved?.sort||'newest'),[nrwCount,setNrwCount]=useState<number|null>(saved?.nrwCount??null);
  const [players,setPlayers]=useState<SpielerPlayer[]>(saved?.players||[]),[result,setResult]=useState<PositionSearchResult|null>(saved?.result||null),[busy,setBusy]=useState(false),[finding,setFinding]=useState(false),[error,setError]=useState('');
- useEffect(()=>{writePositionSearchState(accountId,{fen,side,coachColor,fideId,name,scope,sort,nrwCount,players,result,boardState},'',storageRevision);},[storageRevision,accountId,fen,side,coachColor,fideId,name,scope,sort,nrwCount,players,result,boardState]);
+ useEffect(()=>{writePositionSearchState(accountId,{fen,side,coachColor,fideId,name,scope,sort,resultsOpen,nrwCount,players,result,boardState},'',storageRevision);},[storageRevision,accountId,fen,side,coachColor,fideId,name,scope,sort,resultsOpen,nrwCount,players,result,boardState]);
  const pending=useRef<AbortController|null>(null),lookup=useRef<AbortController|null>(null);
  useEffect(()=>()=>{pending.current?.abort();lookup.current?.abort();},[]);
  function invalidate(){pending.current?.abort();setBusy(false);setResult(null);setError('');}
@@ -58,7 +59,7 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
    </div>
    </div>
   </div>
-  {result&&<section className="global-position-results" aria-label={tr('Suchergebnisse')}>
+  {result&&<section className="global-position-results" aria-label={tr('Suchergebnisse')}><details open={resultsOpen} onToggle={e=>setResultsOpen(e.currentTarget.open)} className="global-position-results-disclosure"><summary>{tr('Suchergebnisse')} · {result.total} {tr('Partien')}</summary>
    <header className="position-results-header"><h3>{result.total} {tr('Partien')}</h3>{(result.total>0||result.fallbackTotal>0)&&<fieldset className="position-segment position-sort" data-control="sort"><legend>{tr('Sortierung')}</legend><div>{(['newest','strongest'] as const).map(value=><button type="button" key={value} data-value={value} aria-pressed={sort===value} onClick={()=>{setSort(value);void search(undefined,scope,value);}}>{tr(value==='newest'?'Neueste':'Stärkste')}</button>)}</div></fieldset>}</header>
    {result.scope==='nrw'&&!result.games.length&&<div role="status"><p>{tr('Keine Partien von NRW-Vereinsspielern in dieser Stellung.')}</p><button type="button" onClick={()=>{setScope('all');void search(undefined,'all');}}>{tr('Gesamte Datenbank anzeigen')}</button></div>}
    {!result.fallback&&result.scope!=='nrw'&&!result.games.length&&<p role="status">{tr('Keine Partien erreichten diese Stellung.')}</p>}
@@ -73,6 +74,6 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
     {gameList(result.fallbackGames)}
    </section>}
 
-  </section>}
+  </details></section>}
  </section>;
 }
