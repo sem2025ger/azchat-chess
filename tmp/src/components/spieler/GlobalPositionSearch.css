@@ -49,3 +49,20 @@
 @media(prefers-reduced-motion:reduce){
  .spieler-page .global-position-primary .position-search-metal-label{animation:none;background-position:50% center}
 }
+
+/* Align Spieler search actions with the AI Coach graphite inputs. */
+.spieler-page .global-position-primary{
+ background:#363b43!important;
+ border:1px solid #8c9199!important;
+ border-radius:9px;color:#f2f1ef!important;
+ box-shadow:none;
+}
+.spieler-page .position-advanced-settings>summary{
+ background:#363b43!important;
+ border:1px solid #8c9199!important;
+ border-radius:9px;color:#f2f1ef;
+}
+.spieler-page .global-position-primary:hover:not(:disabled),
+.spieler-page .position-advanced-settings>summary:hover{
+ background:#424850!important;border-color:#abb0b8!important;
+}
