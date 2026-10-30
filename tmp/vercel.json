@@ -5,6 +5,6 @@
       "destination": "/index.html"
     }
   ],
-  "buildCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"qa/spieler-coach-compact-controls-20261030\" ]; then export VITE_SPIELER_V1_ENABLED=true VITE_POSITION_SEARCH_ENABLED=true VITE_AI_COACH_ENABLED=true VITE_VORBEREITUNG_ENABLED=true; fi; npm run build",
+  "buildCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"qa/spieler-coach-compact-controls-20261030\" ]; then export VITE_SPIELER_V1_ENABLED=true VITE_POSITION_SEARCH_ENABLED=true VITE_AI_COACH_ENABLED=true VITE_VORBEREITUNG_ENABLED=true VITE_SERVER_URL=https://chessaz-ai-coach-v1-isolated-qa.onrender.com; fi; npm run build",
   "outputDirectory": "dist"
 }
