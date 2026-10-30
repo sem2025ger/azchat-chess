@@ -39,7 +39,7 @@
 /* Spieler position search: restrained bronze/gold lettering without changing the CTA action. */
 .spieler-page .global-position-primary .position-search-metal-label{
  color:#ebcc92;
- background:linear-gradient(100deg,#b18c59 0%,#d9b67a 36%,#f0d69e 49%,#b68c55 66%,#d7b57e 100%);
+ background:linear-gradient(100deg,#caa776 0%,#e0c48f 36%,#f0d7a4 49%,#be9a66 66%,#dfbf88 100%);
  background-size:190% 100%;
  background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
  text-shadow:none;font-weight:700;
@@ -50,19 +50,28 @@
  .spieler-page .global-position-primary .position-search-metal-label{animation:none;background-position:50% center}
 }
 
-/* Align Spieler search actions with the AI Coach graphite inputs. */
-.spieler-page .global-position-primary{
- background:#363b43!important;
- border:1px solid #8c9199!important;
- border-radius:9px;color:#f2f1ef!important;
+/* Spieler-only shared graphite surface for the search button and filters. */
+.spieler-page .global-position-controls{
+ --spieler-search-graphite:#2b3037;
+ --spieler-search-edge:#737b84;
+}
+.spieler-page .global-position-primary,
+.spieler-page .position-advanced-settings>summary{
+ background:var(--spieler-search-graphite)!important;
+ border:1px solid var(--spieler-search-edge)!important;
+ border-radius:9px;
  box-shadow:none;
 }
+.spieler-page .global-position-primary:disabled{
+ opacity:1;cursor:not-allowed;
+}
 .spieler-page .position-advanced-settings>summary{
- background:#363b43!important;
- border:1px solid #8c9199!important;
- border-radius:9px;color:#f2f1ef;
+ color:#d6dce3!important;
+}
+.spieler-page .position-advanced-settings>summary::marker{
+ color:#c5cdd5;
 }
 .spieler-page .global-position-primary:hover:not(:disabled),
 .spieler-page .position-advanced-settings>summary:hover{
- background:#424850!important;border-color:#abb0b8!important;
+ background:#353b43!important;border-color:#98a1ac!important;
 }
