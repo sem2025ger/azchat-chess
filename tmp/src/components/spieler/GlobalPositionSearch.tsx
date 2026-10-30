@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState,type FormEvent} from 'react';
+import {useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
 import {Info} from 'lucide-react';
 import {DEFAULT_POSITION} from 'chess.js';
 import {useNavigate} from 'react-router-dom';
@@ -12,7 +12,7 @@ import '../../screens/VorbereitungScreen.css';
 import './GlobalPositionSearch.css';
 
 type SavedSearch={fen:string;side:PositionSide;fideId:string;name:string;scope:'all'|'nrw';sort:'newest'|'strongest';nrwCount:number|null;players:SpielerPlayer[];result:PositionSearchResult|null;boardState?:PreparationBoardState};
-export default function GlobalPositionSearch({token,accountId='guest'}:{token:string;accountId?:string}){
+export default function GlobalPositionSearch({token,accountId='guest',coach}:{token:string;accountId?:string;coach?:ReactNode}){
  const tr=useRegionalCopy(),navigate=useNavigate();
  const [saved]=useState(()=>readPositionSearchState<SavedSearch>(accountId));
  const [boardState,setBoardState]=useState(saved?.boardState);
@@ -40,13 +40,14 @@ export default function GlobalPositionSearch({token,accountId='guest'}:{token:st
  return <section className="global-position-search vorbereitung-page section-card" aria-label={tr('Stellung in allen importierten Partien suchen')}>
   <header className="position-card-header"><div><h2>{tr('Stellungssuche')}</h2><p>{tr('Eine Stellung. Alle importierten Partien.')}</p></div><details className="section-info position-info"><summary><Info size={14} aria-hidden="true"/>{tr('Info')}</summary><p>{tr('Die ersten 60 Halbzüge jeder importierten Partie. Neueste Partien zuerst.')}</p><p>{tr('NRW = Spieler, die ihr Profil und ihren NRW-Verein auf ChessAZ bestätigt haben.')}</p><p>{tr('Ohne Spielerfilter gilt die gewählte Farbe für die Ergebniswertung. Bei beiden Farben zählt die Seite am Zug; mit Spielerfilter die Farbe des Spielers.')}</p></details></header>
   <div className="global-position-grid"><PreparationBoard fen={fen} initialState={boardState} onState={setBoardState} orientation={side==='black'?'b':'w'} onFen={value=>{invalidate();setFen(value);}}/>
-   <div className="global-position-controls">
+   <div className="global-position-right-rail">{coach}<div className="global-position-controls">
     <fieldset className="position-segment" data-control="side"><legend>{tr('Meine Farbe')}</legend><div>{(['white','black','any'] as const).map(value=><button type="button" key={value} data-value={value} aria-pressed={side===value} onClick={()=>{invalidate();setSide(value);}}>{tr(value==='white'?'Weiß':value==='black'?'Schwarz':'Beide Farben')}</button>)}</div></fieldset>
     <fieldset className="position-segment" data-control="scope"><legend>{tr('Suchbereich')}</legend><div>{(['all','nrw'] as const).map(value=><button type="button" key={value} data-value={value} aria-pressed={scope===value} onClick={()=>{setScope(value);invalidate();if(token)void search(undefined,value);}}>{tr(value==='all'?'Gesamte Datenbank':'Nur NRW-Vereine')}{value==='nrw'&&<span className="position-count" aria-label={tr('Bestätigte NRW-Spieler:')}>{nrwCount??'—'}</span>}</button>)}</div></fieldset>
     {nrwCount===0&&<p className="position-empty-nrw" role="status">{tr('Noch keine bestätigten NRW-Vereinsspieler.')}</p>}
     <details className="section-info position-player-filter"><summary>{tr('Nur Partien eines bestimmten Spielers')}</summary><label>{tr('FIDE-ID (optional)')}<input form="global-position-form" value={fideId} pattern="[1-9][0-9]{0,9}" maxLength={10} onChange={e=>{invalidate();setFideId(e.target.value);}}/></label><form onSubmit={findPlayer}><label>{tr('Nachname')}<input minLength={2} maxLength={100} required value={name} placeholder={tr('Lateinische Buchstaben, z. B. Huseynov')} onChange={e=>{lookup.current?.abort();setFinding(false);setName(e.target.value);setPlayers([]);}}/></label><button disabled={finding||!token}>{tr('Spieler finden')}</button></form><ul>{players.map(p=><li key={p.fide_id}><button type="button" aria-pressed={fideId===String(p.fide_id)} onClick={()=>{invalidate();setFideId(String(p.fide_id));}}>{p.name} · FIDE {p.fide_id}</button></li>)}</ul></details>
     {!token&&<p role="status">{tr('Bitte zuerst anmelden')}</p>}{busy&&<p role="status">{tr('Stellung wird gesucht …')}</p>}{error&&<p role="alert">{tr(error)}</p>}
     <form id="global-position-form" className="position-submit" onSubmit={e=>void search(e)}><button className="global-position-primary" disabled={busy||!token}>{tr('Stellung suchen')}</button></form>
+   </div>
    </div>
   </div>
   {result&&<section className="global-position-results" aria-label={tr('Suchergebnisse')}>
