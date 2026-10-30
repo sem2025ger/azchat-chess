@@ -21,7 +21,7 @@ const ClubsNRWScreen = lazy(routeLoaders.clubsNrw);
 const RegionOverview = lazy(routeLoaders.regionNw);
 const SpieltagScreen = lazy(routeLoaders.spieltag);
 const VorbereitungScreen = lazy(routeLoaders.vorbereitung);
-const SpielerScreen = lazy(() => import('./screens/SpielerScreen'));
+const SpielerScreen = lazy(routeLoaders.spieler);
 
 // Keep the public maintenance gate active for production until separately authorized.
 function App() {

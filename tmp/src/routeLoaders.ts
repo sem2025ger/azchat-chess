@@ -21,6 +21,7 @@ export const routeLoaders = {
   regionNw: cacheImport(() => import('./screens/RegionOverview')),
   clubsNrw: cacheImport(() => import('./screens/ClubsNRWScreen')),
   spieltag: cacheImport(() => import('./screens/SpieltagScreen')),
+  spieler: cacheImport(() => import('./screens/SpielerScreen')),
   vorbereitung: cacheImport(() => import('./screens/VorbereitungScreen')),
 };
 
@@ -35,6 +36,7 @@ const destinations: Record<string, () => Promise<unknown>> = {
   '/clubs-nrw': routeLoaders.clubsNrw,
   '/region/nrw': routeLoaders.regionNw,
   '/spieltag': routeLoaders.spieltag,
+  '/spieler': routeLoaders.spieler,
   '/vorbereitung': routeLoaders.vorbereitung,
 };
 
@@ -53,7 +55,7 @@ export function scheduleNavigationPreload(currentPath: string) {
     return () => {};
   }
 
-  const queue = ['/game', '/play', '/profile', '/settings', '/chat']
+  const queue = ['/game', '/play', '/profile', '/settings', '/chat', '/spieler', '/spieltag', '/region/nrw']
     .filter(path => path !== currentPath);
   let cancelled = false;
   let idleHandle: number | undefined;

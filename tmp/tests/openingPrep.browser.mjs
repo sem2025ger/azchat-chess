@@ -65,14 +65,14 @@ export async function checkOpeningPrep({captureRoot}={}){
    const t=openingPrepCopy[lang==='ua'?'uk':lang];await evaluate('window.language('+JSON.stringify(lang)+')');await wait('document.querySelector(".chessaz-ai-coach input").getAttribute("aria-label")==='+JSON.stringify(t.input));
    assert.deepEqual(await evaluate(`[...document.querySelectorAll('.chessaz-ai-coach option')].map(e=>e.textContent)`),[t.white,t.black]);
    await click(t.start);await wait(`document.querySelector('.chessaz-ai-coach-results')`);await evaluate(`document.querySelector('.chessaz-ai-coach-group').open=true`);
-   const text=await evaluate(`document.querySelector('.chessaz-ai-coach').innerText`);for(const key of ['desc','hint','whiteTurn','blackReplies','sample','noAi','moves'])assert.ok(text.includes(t[key]),lang+': '+key);
+   await evaluate(`document.querySelector('.chessaz-ai-coach-help').open=true`);const text=await evaluate(`document.querySelector('.chessaz-ai-coach').innerText`);for(const key of ['desc','hint','whiteTurn','blackReplies','sample','noAi','moves'])assert.ok(text.includes(t[key]),lang+': '+key);
    assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'overflow '+lang+' '+width);
    const call=await evaluate('window.calls.at(-1)');assert.equal(call.body.language,lang==='ua'?'uk':lang);assert.equal(call.headers.Authorization,'Bearer synthetic-only');assert.equal(call.cache,'no-store');
   }
  }
  const t=openingPrepCopy.ru;
  await evaluate(`window.language('ru')`);await wait(`document.querySelector('.chessaz-ai-coach input').getAttribute('aria-label')===${JSON.stringify(t.input)}`);
- await fill(t.input,'e4');await fill(t.color,'white');await click(t.start);await wait(`document.querySelector('.chessaz-ai-coach-results')`);await evaluate(`document.querySelector('details').open=true`);assert.ok((await evaluate('document.body.innerText')).includes(t.whiteReplies));assert.ok((await evaluate('document.body.innerText')).includes(t.blackTurn));
+ await fill(t.input,'e4');await fill(t.color,'white');await click(t.start);await wait(`document.querySelector('.chessaz-ai-coach-results')`);await evaluate(`document.querySelector('.chessaz-ai-coach-group').open=true`);assert.ok((await evaluate('document.body.innerText')).includes(t.whiteReplies));assert.ok((await evaluate('document.body.innerText')).includes(t.blackTurn));
  for(const [code,key]of [['invalid_query','invalid'],['index_warming','warming'],['rate_limit','rate'],['authentication_required','auth']]){
   await evaluate('window.responseMode='+JSON.stringify(code));await click(t.start);await wait(`document.querySelector('[role=alert]')?.textContent===${JSON.stringify(t[key])}`);
  }
