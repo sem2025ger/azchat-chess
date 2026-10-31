@@ -69,6 +69,18 @@ test('client candidate lines must be bounded, unique and legal from exact FEN',(
  assert.equal(validChatQuery({...query,fen:afterE4.fen(),candidateLines:[{moves:['e4']}]}),false);
  assert.equal(validChatQuery({...query,fen:afterE4.fen(),candidateLines:[{moves:['c5','Nf3']}]}),true);
 });
+test('teaching uses public archive evidence without automatically displaying games',async()=>{
+ const archiveGame={id:'public',source:'lichess-broadcast',pgn:'1. e4 e5',ply:0,white:'White',black:'Black',result:'*'};
+ const index={status:'ready',search:async()=>({total:1,nextMoves:[],games:[archiveGame]})};
+ const reply=await groundedChat(index,{...query,message:'Explain this position'},{openaiApiKey:'synthetic',fetchImpl:async(_url,options)=>{
+  const {evidence}=JSON.parse(JSON.parse(options.body).input);
+  assert.equal(evidence.games.length,1,'model can still ground its answer in public archive evidence');
+  return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Develop pieces toward the centre.'})}]}]});
+ }});
+ assert.equal(reply.archiveOnly,false);
+ assert.deepEqual(reply.games,[],'do not show archive games unless requested');
+});
+
 test('candidate lines reach model only after replay validation and return without engine verification',async()=>{
  const index={status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})};
  const lines=[{moves:['e4','e5','Nf3']}];
@@ -79,5 +91,6 @@ test('candidate lines reach model only after replay validation and return withou
    return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Develop the pieces before launching an attack.'})}]}]});
  }});
  assert.deepEqual(reply.candidateLines,lines);
+ assert.equal(reply.games.length,0,'teaching should not auto-open five archive games');
  assert.equal(reply.engineVerified,false);
 });
