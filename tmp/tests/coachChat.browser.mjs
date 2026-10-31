@@ -23,6 +23,11 @@ export async function checkCoachChat({captureRoot}={}){
   if(event.type==='response.create'){calls.push({kind:'speech',body:event.response});const pcm=Buffer.alloc(4800);for(let i=0;i<2400;i++)pcm.writeInt16LE(Math.round(800*Math.sin(i*Math.PI*2*440/24000)),i*2);socket.send(JSON.stringify({type:'response.output_audio.delta',delta:pcm.toString('base64')}));const finish=()=>socket.send(JSON.stringify({type:'response.done',response:{status:mode==='speech-error'?'incomplete':'completed'}}));if(mode==='hold-speech')release=finish;else finish();}
  });});
  const app=express();app.use((req,res,next)=>{res.set('Access-Control-Allow-Origin','*');res.set('Access-Control-Allow-Headers','Authorization,Content-Type');if(req.method==='OPTIONS')return res.sendStatus(204);next();});
+ // Synthetic public position search: archive appears only after explicit user request.
+ app.get('/api/positions/search',(req,res)=>res.json({total:1,nextMoves:[],games:[{
+  id:'public-fixture',source:'lichess-broadcast',pgn:'1. e4 e5',ply:0,
+  white:'Fixture White',black:'Fixture Black',result:'*'
+ }]}));
  installAiCoach(app,{enabled:true,index:{status:'ready',search:async()=>({total:1,games:[{id:'public-fixture',source:'lichess-broadcast',pgn:'1. e4 e5',ply:0,white:'Fixture White',black:'Fixture Black',result:'*'}],nextMoves:[{move:'e4',count:1}]})},verifyToken:async token=>token.startsWith('synthetic-')?{id:token}:null,openaiApiKey:'synthetic-provider',now:()=>clock,
   socketFactory:(url,options)=>{assert.equal(new URL(url).hostname,'api.openai.com');return new WebSocket('ws://127.0.0.1:'+wss.address().port,options);},
   fetchImpl:async(url,options)=>{
