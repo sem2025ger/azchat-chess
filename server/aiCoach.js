@@ -3,7 +3,7 @@ const express=require('express');
 const {LANGUAGE_CODES,prepareOpening,parseOpening,generateBriefing}=require('./aiCoachCore');
 const {validChatQuery,groundedChat}=require('./aiCoachChat');
 const {AUDIO_TYPES,transcribeAudio,speakAnswer}=require('./aiCoachOpenAI');
-function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,apiKey=null,model,openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,socketFactory,now=Date.now}={}){
+function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,apiKey=null,model,openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,socketFactory,now=Date.now,engine=null}={}){
  const router=express(),budgets=new Map(),active=new Map();
  function limited(id,max){
   const time=now();if(budgets.size>2000)for(const [k,v]of budgets)if(time-v.start>60000)budgets.delete(k);
@@ -53,7 +53,7 @@ function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,
  router.post('/chat',authorizeChat,express.json({limit:'24kb'}),async(req,res)=>{
   if(!validChatQuery(req.body))return res.status(400).json({code:'invalid_query'});
   const op=operation(req,res);if(!op)return;
-  try{res.json(await groundedChat(index,req.body,{openaiApiKey,openaiModel,fetchImpl,signal:op.signal}));}
+  try{res.json(await groundedChat(index,req.body,{openaiApiKey,openaiModel,fetchImpl,signal:op.signal,...(engine?{engine}:{})}));}
   catch(e){failed(res,e);}finally{op.done();}
  });
  router.post('/transcribe',authorizeChat,express.raw({type:[...AUDIO_TYPES.keys()],limit:'2mb'}),async(req,res)=>{
@@ -92,9 +92,16 @@ function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,
  app.use('/api/ai-coach',router);
  return router;
 }
+// Server engine is opt-in (default off) and starts lazily on the first chat request.
+function engineFromEnv(env){
+ if(env.AI_COACH_ENABLED!=='true'||env.AI_COACH_SERVER_ENGINE_ENABLED!=='true')return null;
+ const engine=require('./coachEngine').createCoachEngine();
+ process.once('exit',()=>engine.close());
+ return engine;
+}
 function installAiCoachFromEnv(app,verifyToken,index,env=process.env){
  return installAiCoach(app,{enabled:env.AI_COACH_ENABLED==='true',verifyToken,index,
   apiKey:env.GEMINI_API_KEY||null,model:env.GEMINI_MODEL||'gemini-2.5-flash',
-  openaiApiKey:env.OPENAI_API_KEY||null,openaiModel:env.OPENAI_COACH_MODEL||'gpt-6-sol'});
+  openaiApiKey:env.OPENAI_API_KEY||null,openaiModel:env.OPENAI_COACH_MODEL||'gpt-6-sol',engine:engineFromEnv(env)});
 }
-module.exports={installAiCoach,installAiCoachFromEnv};
+module.exports={installAiCoach,installAiCoachFromEnv,engineFromEnv};

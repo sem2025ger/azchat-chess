@@ -64,20 +64,29 @@ function publicChatGames(result,fen,count=5){
   return game?[{id:game.id,white:game.white,black:game.black,result:game.result,ply:game.ply,pgn:game.pgn,date:game.date||null}]:[];
  });
 }
-async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal}={}){
+// Server-verified engine evidence (flag-gated). The engine result replaces client lines as
+// model evidence; client lines stay in the response because the current UI renders them.
+function serverEngineLines(analysis){
+ return analysis.lines.map((line,i)=>({id:'L'+(i+1),moves:line.sanPv,scoreKind:line.scoreKind,scoreWhite:line.scoreWhite,depth:line.depth,wdlWhite:line.wdlWhite}));
+}
+async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null}={}){
  const requested=gameRequest(query.message);
- let result=null;
+ let result=null,analysis=null,engineError=null;
+ const engineRun=engine&&!requested?engine.analyze(query.fen,{signal}).then(value=>{analysis=value.lines.length?value:null;if(!analysis)engineError='engine_unavailable';},e=>{engineError=e.code||'engine_unavailable';}):null;
  // Search rechecks both players' opt-outs. Never query private/personal games.
  if(index?.status==='ready')try{result=await index.search({fen:query.fen,side:query.side,scope:'all',sort:'strongest',limit:requested??5});}catch{ /* General teaching can continue without archive claims. */ }
  if(!result&&!openaiApiKey)throw Object.assign(Error('index_unavailable'),{code:index?.status==='warming'?'index_warming':'index_unavailable'});
+ if(engineRun)await engineRun;
  const games=result?publicChatGames(result,query.fen,requested??5):[],language=normalizeLanguage(query.language);
+ const clientLines=legalCandidateLines(query.candidateLines,query.fen)||[];
  const evidence={archiveAvailable:!!result,matched:result?.total??null,
-  candidateLines:legalCandidateLines(query.candidateLines,query.fen)||[],candidateOrigin:'untrusted_client_legality_checked',
+  ...(analysis?{candidateLines:serverEngineLines(analysis),candidateOrigin:'server_stockfish_19',engine:{name:analysis.engine,budgetMs:analysis.budget.movetimeMs,perspective:'white'}}:{candidateLines:clientLines,candidateOrigin:'untrusted_client_legality_checked'}),
   nextMoves:(result?.nextMoves||[]).slice(0,8).map(x=>({move:x.move,count:x.count})),
   games:games.map(({white,black,result,date,ply,pgn})=>{const board=new Chess();board.loadPgn(pgn);return {white,black,result,date,hasPgn:true,matchedPly:ply,continuation:board.history().slice(ply,ply+6)};})};
  const archiveOnly=!!requested&&!!result;
  const answer=archiveOnly?gameHeadings[language]:openaiApiKey?await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal}):fallback[language](result.total||0);
  return {answer,generated:archiveOnly||!!openaiApiKey,provider:archiveOnly?null:openaiApiKey?'openai':null,providerStatus:archiveOnly?'archive':openaiApiKey?'ready':'not_configured',
-  source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:false,candidateLines:evidence.candidateLines,position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);const moves=board.history();return {...game,moves:moves.slice(0,30),continuation:moves.slice(game.ply,game.ply+6)};}):openaiApiKey?[]:games};
+  source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:!!analysis,candidateLines:clientLines,
+  ...(engine&&!requested?(analysis?{engineLines:serverEngineLines(analysis)}:{engineError}):{}),position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);const moves=board.history();return {...game,moves:moves.slice(0,30),continuation:moves.slice(game.ply,game.ply+6)};}):openaiApiKey?[]:games};
 }
-module.exports={validChatQuery,groundedChat,publicChatGames,gameRequest,legalCandidateLines};
+module.exports={validChatQuery,groundedChat,publicChatGames,gameRequest,legalCandidateLines,serverEngineLines};
