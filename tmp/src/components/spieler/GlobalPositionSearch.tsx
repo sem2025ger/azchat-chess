@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
+import {useCallback,useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
 import {DEFAULT_POSITION,Chess} from 'chess.js';
 import {formatNumberedMove,formatNumberedMoves} from '../../utils/numberedSan';
 import {useNavigate} from 'react-router-dom';
@@ -24,7 +24,7 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
  const [boardRevision,setBoardRevision]=useState(0);
  const [coachPreview,setCoachPreview]=useState<{baseFen:string;moves:string[];ply:number}|null>(null);
  const previewFen=coachPreview?.baseFen===fen?coachVariationFen(fen,coachPreview.moves,coachPreview.ply):null;
- const showCoachVariation=(moves:string[],ply:number)=>{if(ply<0){setCoachPreview(null);return;}if(coachVariationFen(fen,moves,ply))setCoachPreview({baseFen:fen,moves,ply});};
+ const showCoachVariation=useCallback((moves:string[],ply:number)=>{if(ply<0){setCoachPreview(null);return;}if(coachVariationFen(fen,moves,ply))setCoachPreview({baseFen:fen,moves,ply});},[fen]);
  const [resultsOpen,setResultsOpen]=useState(saved?.resultsOpen??true);
  const [fen,setFen]=useState(saved?.fen||DEFAULT_POSITION),[side,setSide]=useState<PositionSide>(saved?.side||'any'),[fideId,setFideId]=useState(saved?.fideId||''),[name,setName]=useState(saved?.name||'');
  const [scope,setScope]=useState<'all'|'nrw'>(saved?.scope||'all'),[sort,setSort]=useState<'newest'|'strongest'>(saved?.sort||'newest'),[nrwCount,setNrwCount]=useState<number|null>(saved?.nrwCount??null);
