@@ -24,7 +24,7 @@ const post=(url,body,token='ok',type='application/json')=>fetch(url,{method:'POS
 test('OpenAI exact model, nonstored Responses, schema, bounded history and legal FEN context',async()=>{
  let calls=0;const answer=await generateAnswer(query,{archiveAvailable:false},{apiKey:key,model:'gpt-6-sol',fetchImpl:async(url,options)=>{
   calls++;assert.equal(url,'https://api.openai.com/v1/responses');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,'Bearer '+key);assert.ok(options.signal);
-  const body=JSON.parse(options.body),input=JSON.parse(body.input);assert.equal(body.model,'gpt-6-sol');assert.equal(body.store,false);assert.equal(body.text.format.type,'json_schema');assert.equal(body.text.format.strict,true);assert.ok(body.instructions.includes('Stockfish is NOT available'));
+  const body=JSON.parse(options.body),input=JSON.parse(body.input);assert.equal(body.model,'gpt-6-sol');assert.equal(body.store,false);assert.equal(body.text.format.type,'json_schema');assert.equal(body.text.format.strict,true);assert.ok(body.instructions.includes('NOT independently authenticated engine results'));assert.ok(body.instructions.includes('Never invent scores'));
   assert.equal(input.position,query.fen);assert.equal(input.sideToMove,'w');assert.deepEqual(input.legalMoves,new Chess().moves());assert.deepEqual(input.history,query.history);assert.equal(input.evidence.archiveAvailable,false);assert.equal(input.positionStatus.inCheck,false);assert.equal(input.pieces.length,32);assert.deepEqual(input.legalMoveDetails.find(m=>m.san==='e4'),{san:'e4',from:'e2',to:'e4',piece:'p'});assert.ok(body.instructions.includes('requestedSide'));return answerResponse();
  }});assert.equal(calls,1);assert.ok(answer.includes('центр'));
 });
