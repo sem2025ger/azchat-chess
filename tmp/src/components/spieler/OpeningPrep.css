@@ -49,3 +49,10 @@
 #root .spieler-page .chessaz-ai-coach>button:disabled{
  opacity:.88;cursor:not-allowed;
 }
+
+/* Results grow in normal document flow; only the conversation owns an inner scroller. */
+.chessaz-ai-coach-results-panel{margin-top:12px;min-width:0;border-top:1px solid #655441}
+.chessaz-ai-coach-results-panel>summary{cursor:pointer;font-size:.85rem;font-weight:650;line-height:1.5;padding:10px 2px;color:#ddc6a3}
+.chessaz-ai-coach-results-panel .chessaz-ai-coach-results{margin-top:8px;padding-top:4px}
+.chessaz-ai-coach-results-panel :is(details,ol,li){min-width:0;max-width:100%}
+.chessaz-ai-coach-group>summary{flex-wrap:wrap}
