@@ -69,7 +69,7 @@ export default function OpeningPrep({token,accountId='guest',showAuthNotice=true
   <label className="chessaz-ai-coach-color">{t.color}<select aria-label={t.color} value={color} onChange={e=>{invalidate();const value=e.target.value as 'white'|'black';setLocalColor(value);onColorChange?.(value);}}><option value="white">{t.white}</option><option value="black">{t.black}</option></select></label>
   <button type="button" disabled={!token||busy||!moves.trim()} onClick={()=>void prepare()}>{busy?t.busy:t.start}</button>
   {!token&&showAuthNotice&&<p role="status">{t.auth}</p>}{error&&<p role="alert">{error}</p>}
-  {lesson&&<details className="chessaz-ai-coach-results-panel" open={resultsOpen} onToggle={e=>setResultsOpen(e.currentTarget.open)}><summary>{t.examples} · {lesson.matched}</summary><div className="chessaz-ai-coach-results" aria-live="polite">
+  {lesson&&<details className="chessaz-ai-coach-results-panel" open={resultsOpen} onToggle={e=>setResultsOpen(e.currentTarget.open)}><summary>{t.foundGames} · {lesson.matched}</summary><div className="chessaz-ai-coach-results" aria-live="polite">
    <p className="chessaz-ai-coach-search-line"><strong>{formatNumberedMoves(lesson.moves)}</strong></p>
    {!lesson.groups.length&&<p>{t.empty}</p>}
    {lesson.groups.map(group=><details key={group.move} className="chessaz-ai-coach-group" open={expanded.includes(group.move)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(group.move)===isOpen?previous:isOpen?[...previous,group.move]:previous.filter(move=>move!==group.move));}}>
