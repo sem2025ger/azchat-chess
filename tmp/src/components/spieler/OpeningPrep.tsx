@@ -1,5 +1,6 @@
 import {useEffect,useId,useRef,useState} from 'react';
 import {useNavigate} from 'react-router-dom';
+import {Chess} from 'chess.js';
 import {useLanguage} from '../../context/LanguageContext';
 import {openSpielerAnalysis} from '../../services/spieler';
 import {openingPrepCopy,openingPrepLanguage} from '../../i18n/openingPrepCopy';
@@ -19,7 +20,17 @@ function restorePreparation(accountId:string){
  }
  return saved;
 }
-function formatLine(moves:string[]){return moves.map((san,i)=>(i%2===0?Math.floor(i/2)+1+'. ':'')+san).join(' ');}
+function formatLine(moves:string[],startPly=0){
+ return moves.map((san,i)=>{const ply=startPly+i;return (ply%2===0?Math.floor(ply/2)+1+'. ':i===0?Math.floor(ply/2)+1+'... ':'')+san;}).join(' ');
+}
+function fullGameLine(game:ModelGame){
+ try{
+  const board=new Chess();board.loadPgn(game.pgn);
+  const history=board.history();
+  if(history.length>=game.first25.length&&history.length>0)return formatLine(history)+(game.result&&game.result!=='*'?' '+game.result:'');
+ }catch{/* Preserve source moves if the stored PGN cannot be parsed. */}
+ return formatLine(game.first25)+(game.result&&game.result!=='*'?' '+game.result:'');
+}
 export default function OpeningPrep({token,accountId='guest',showAuthNotice=true,color:selectedColor,onColorChange,onPreparedMoves}:{token:string;accountId?:string;showAuthNotice?:boolean;color?:'white'|'black';onColorChange?:(color:'white'|'black')=>void;onPreparedMoves?:(moves:string[])=>void}){
  const {language}=useLanguage(),navigate=useNavigate(),id=useId();
  const locale=openingPrepLanguage(language),t=openingPrepCopy[locale];
@@ -65,20 +76,15 @@ export default function OpeningPrep({token,accountId='guest',showAuthNotice=true
   <button type="button" disabled={!token||busy||!moves.trim()} onClick={()=>void prepare()}>{busy?t.busy:t.start}</button>
   {!token&&showAuthNotice&&<p role="status">{t.auth}</p>}{error&&<p role="alert">{error}</p>}
   {lesson&&<details className="chessaz-ai-coach-results-panel" open={resultsOpen} onToggle={e=>setResultsOpen(e.currentTarget.open)}><summary>{t.examples} · {lesson.matched}</summary><div className="chessaz-ai-coach-results" aria-live="polite">
-   <p><strong>{lesson.moves.join(' ')}</strong> · {lesson.turn==='white'?t.whiteTurn:t.blackTurn}</p>
-   <p>{t.total}: <strong>{lesson.matched}</strong> · {t.inspected}: <strong>{lesson.inspected}</strong></p>
-   <p>{lesson.briefing?<><strong>{t.ai}:</strong> {lesson.briefing}</>:t.noAi}</p>
-   <p className="chessaz-ai-coach-note">{t.sample}</p>
+   <p className="chessaz-ai-coach-search-line"><strong>{formatLine(lesson.moves)}</strong></p>
    {!lesson.groups.length&&<p>{t.empty}</p>}
    {lesson.groups.map(group=><details key={group.move} className="chessaz-ai-coach-group" open={expanded.includes(group.move)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(group.move)===isOpen?previous:isOpen?[...previous,group.move]:previous.filter(move=>move!==group.move));}}>
-    <summary><strong>{group.move}</strong> <span>{t.examples}: {group.games.length}</span></summary>
+    <summary><strong>{formatLine([group.move],lesson.ply)}</strong> <span>{t.samples}: {group.games.length}</span></summary>
     <div className="chessaz-ai-coach-group-body">
-     <p><strong>{group.replyColor==='white'?t.whiteReplies:t.blackReplies}:</strong> {group.replies.map(m=>m.move+' ('+m.count+')').join(', ')||'—'}</p>
-     <p className="chessaz-ai-coach-note">{t.notice}</p>
      <ol>{group.games.map(game=><li key={game.id}>
-      <strong>{game.white} – {game.black}</strong> · {game.result}
-      <p>{game.date||'—'} · {game.event}</p>
-      <p><strong>{t.moves}:</strong> {formatLine(game.first25)}</p>
+      <strong>{game.white} – {game.black}</strong>
+      {(game.date||game.event)&&<p>{[game.date,game.event].filter(Boolean).join(' · ')}</p>}
+      <p className="chessaz-ai-coach-game-moves">{fullGameLine(game)}</p>
       <button type="button" onClick={()=>view(game)}>{t.open}</button>
      </li>)}</ol>
     </div>
