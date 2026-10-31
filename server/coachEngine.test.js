@@ -47,20 +47,102 @@ test('sanLine replays every ply and rejects an illegal line',()=>{
  assert.equal(sanLine(START,['e2e4','e2e4']),null);
  assert.equal(sanLine(START,['zz99']),null);
  assert.deepEqual(sanLine('8/P6k/8/8/8/8/8/K7 w - - 0 1',['a7a8q']),['a8=Q']);
+ // The whole PV is validated, not only the displayed first ten plies.
+ const knights=['g1f3','g8f6','f3g1','f6g8','g1f3','g8f6','f3g1','f6g8','g1f3','g8f6'];
+ assert.equal(sanLine(START,knights).length,10);
+ assert.equal(sanLine(START,[...knights,'e1e3']),null,'illegal 11th ply rejects the line');
+ assert.equal(sanLine(START,[...knights,'f3e5']).length,10,'legal 11th ply is validated, SAN capped at 10');
 });
 
-test('only a complete exact MultiPV set from one depth is used; illegal PV line is dropped',async()=>{
+test('only a complete exact MultiPV set from one depth is used',async()=>{
  const engine=createCoachEngine({verify:noVerify,spawnImpl:fakeSpawn(standardScript([
   'info depth 10 multipv 1 score cp 30 wdl 50 920 30 nodes 10 time 10 pv e2e4 e7e5',
   'info depth 10 multipv 2 score cp 20 wdl 40 930 30 nodes 10 time 10 pv d2d4 d7d5',
-  'info depth 10 multipv 3 score cp 10 wdl 30 940 30 nodes 10 time 10 pv e2e5',
+  'info depth 10 multipv 3 score cp 10 wdl 30 940 30 nodes 10 time 10 pv c2c4',
   'info depth 11 multipv 1 score cp 33 upperbound nodes 11 time 11 pv e2e4',
+  'info depth 11 multipv 2 score cp 25 nodes 11 time 11 pv d2d4',
   'bestmove e2e4'
  ])),movetimeMs:50});
  const result=await engine.analyze(START);
  engine.close();
- assert.deepEqual(result.lines.map(l=>[l.depth,l.scoreWhite,l.sanPv.join(' ')]),[[10,30,'e4 e5'],[10,20,'d4 d5']]);
+ assert.deepEqual(result.lines.map(l=>[l.depth,l.scoreWhite,l.sanPv.join(' ')]),[[10,30,'e4 e5'],[10,20,'d4 d5'],[10,10,'c4']]);
  assert.equal(result.nnue,'nn-test.nnue');assert.equal(result.engine,'stockfish-19-lite');
+});
+
+test('one illegal PV rejects the whole set instead of returning a partial verified set',async()=>{
+ const engine=createCoachEngine({verify:noVerify,spawnImpl:fakeSpawn(standardScript([
+  'info depth 10 multipv 1 score cp 30 nodes 10 time 10 pv e2e4 e7e5',
+  'info depth 10 multipv 2 score cp 20 nodes 10 time 10 pv d2d4 d7d5',
+  'info depth 10 multipv 3 score cp 10 nodes 10 time 10 pv e2e5',
+  'bestmove e2e4'
+ ])),movetimeMs:50});
+ await assert.rejects(engine.analyze(START),{code:'engine_unavailable'});
+ engine.close();
+});
+
+// Controllable async checksum step for start-up race tests.
+function gate(){let open;const promise=new Promise(r=>{open=r;});return {verify:()=>promise,open};}
+const goodScript=(onGo)=>(cmd,emit)=>{
+ if(cmd==='uci')emit('uciok');if(cmd==='isready')emit('readyok');
+ if(cmd.startsWith('go')){onGo?.();emit('info depth 5 multipv 1 score cp 1 nodes 1 time 1 pv e2e4');emit('info depth 5 multipv 2 score cp 0 nodes 1 time 1 pv d2d4');emit('info depth 5 multipv 3 score cp 0 nodes 1 time 1 pv c2c4');emit('bestmove e2e4');}
+};
+
+test('abort during engine start-up never runs an orphaned search',async()=>{
+ const g=gate();let searches=0;
+ const engine=createCoachEngine({verify:g.verify,movetimeMs:20,spawnImpl:fakeSpawn(goodScript(()=>searches++))});
+ const abort=new AbortController();
+ const pendingResult=engine.analyze(START,{signal:abort.signal});
+ abort.abort();
+ await assert.rejects(pendingResult,{code:'engine_cancelled'});
+ g.open();
+ await new Promise(r=>setTimeout(r,50));
+ assert.equal(searches,0);assert.equal(engine.status().searching,false);
+ const result=await engine.analyze(START);
+ assert.equal(result.lines.length,3);assert.equal(searches,1);
+ engine.close();
+});
+
+test('abandoned queued jobs are removed at once and never cause engine_busy',async()=>{
+ const g=gate();
+ const engine=createCoachEngine({verify:g.verify,maxQueue:2,movetimeMs:20,spawnImpl:fakeSpawn(goodScript())});
+ const first=engine.analyze(START);
+ for(let n=2;n<12;n++){
+  const abort=new AbortController(),p=engine.analyze(START.replace(/ 1$/,' '+n),{signal:abort.signal});
+  abort.abort();await assert.rejects(p,{code:'engine_cancelled'});
+ }
+ assert.equal(engine.status().queued,0,'cancelled jobs do not occupy queue slots');
+ const second=engine.analyze(START.replace(/ 1$/,' 99'));
+ g.open();
+ assert.equal((await first).lines.length,3);assert.equal((await second).lines.length,3);
+ engine.close();
+});
+
+test('close during checksum verification spawns no process and rejects callers',async()=>{
+ const g=gate();let spawned=0;
+ const engine=createCoachEngine({verify:g.verify,spawnImpl:fakeSpawn(goodScript(),{onSpawn:()=>spawned++})});
+ const pendingResult=engine.analyze(START);
+ engine.close();
+ g.open();
+ await assert.rejects(pendingResult,{code:'engine_unavailable'});
+ await new Promise(r=>setTimeout(r,20));
+ assert.equal(spawned,0);assert.equal(engine.status().pid,null);
+ await assert.rejects(engine.analyze(SICILIAN_BLACK),{code:'engine_unavailable'});
+});
+
+test('close while the engine starts kills the child and runs no search',async()=>{
+ let searches=0,child=null,ready=null;
+ const engine=createCoachEngine({verify:noVerify,spawnImpl:fakeSpawn((cmd,emit)=>{
+  if(cmd==='uci')emit('uciok');
+  if(cmd==='isready')ready=()=>emit('readyok');
+  if(cmd.startsWith('go'))searches++;
+ },{onSpawn:(c)=>{child=c;}})});
+ const pendingResult=engine.analyze(START);
+ await new Promise(r=>setTimeout(r,20));
+ assert.ok(child&&ready,'engine was spawned and is waiting for readyok');
+ engine.close();
+ await assert.rejects(pendingResult,{code:'engine_unavailable'});
+ await new Promise(r=>setTimeout(r,20));
+ assert.equal(child.killed,true);assert.equal(searches,0);assert.equal(engine.status().pid,null);
 });
 
 test('wrong checksum makes the engine unavailable without spawning',async()=>{

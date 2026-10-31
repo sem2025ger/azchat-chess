@@ -31,14 +31,15 @@ function parseInfo(line,turn){
   scoreKind:score[1],scoreWhite:toWhite(Number(score[2]),turn),bound,
   wdlWhite:wdl?(turn==='w'?[w,d,l]:[l,d,w]):null,uciPv:line.split(' pv ')[1].trim().split(/\s+/)};
 }
-// Replay every ply with chess.js from the exact root. One illegal ply rejects the whole line.
+// Replay EVERY ply of the PV with chess.js from the exact root; one illegal ply rejects the
+// line. SAN is capped for display only after the whole PV has been validated.
 function sanLine(fen,uciPv){
  const board=new Chess(fen),san=[];
- for(const uci of uciPv.slice(0,MAX_SAN_PLIES)){
+ for(const uci of uciPv){
   if(!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci))return null;
   try{san.push(board.move({from:uci.slice(0,2),to:uci.slice(2,4),...(uci[4]?{promotion:uci[4]}:{})}).san);}catch{return null;}
  }
- return san.length?san:null;
+ return san.length?san.slice(0,MAX_SAN_PLIES):null;
 }
 async function verifyFiles(enginePath,pinned){
  const dir=path.dirname(enginePath);
@@ -69,6 +70,7 @@ function createCoachEngine({
   ready=(async()=>{
    if(!enginePath)throw engineError('engine_unavailable');
    try{await verify(enginePath,pinned);}catch{disabled=true;throw engineError('engine_unavailable');}
+   if(closed)throw engineError('engine_unavailable');
    const proc=spawnImpl(process.execPath,[enginePath],{stdio:['pipe','pipe','ignore'],cwd:path.dirname(enginePath)});
    child=proc;
    proc.stdout.setEncoding('utf8');
@@ -113,7 +115,10 @@ function createCoachEngine({
     }
     if(line.startsWith('bestmove')){
      if(!complete)return finish(reject,engineError('engine_unavailable'));
-     const lines=complete.flatMap((x)=>{const san=sanLine(fen,x.uciPv);return san?[{...x,uciPv:x.uciPv.slice(0,MAX_SAN_PLIES),sanPv:san}]:[];});
+     // An illegal PV means corrupted engine output: reject the whole set instead of
+     // returning a partial MultiPV set as verified evidence.
+     const lines=complete.map((x)=>{const san=sanLine(fen,x.uciPv);return san&&{...x,uciPv:x.uciPv.slice(0,MAX_SAN_PLIES),sanPv:san};});
+     if(lines.some(x=>!x))return finish(reject,engineError('engine_unavailable'));
      finish(resolve,{fen,engine:ENGINE_NAME,nnue,budget,elapsedMs:now()-started,lines});
     }
    };
@@ -128,6 +133,8 @@ function createCoachEngine({
   active=job;
   try{
    await start();
+   if(closed)throw engineError('engine_unavailable');
+   if(!job.subscribers.size)throw engineError('engine_cancelled');
    const result=await search(job);
    if(result.lines.length){cache.set(job.key,result);if(cache.size>cacheSize)cache.delete(cache.keys().next().value);}
    job.settle(null,result);
@@ -155,7 +162,11 @@ function createCoachEngine({
    function done(error,value){
     clearTimeout(deadline);signal?.removeEventListener('abort',onAbort);
     if(!job.subscribers.delete(subscriber))return;
-    if(!job.subscribers.size&&active===job&&running)running.stop();
+    if(!job.subscribers.size){
+     const queued=queue.indexOf(job);
+     if(queued>=0){queue.splice(queued,1);pending.delete(key);}
+     else if(active===job&&running)running.stop();
+    }
     error?reject(error):resolve(value);
    }
    const subscriber=(error,value)=>done(error,value);
