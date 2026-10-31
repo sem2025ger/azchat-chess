@@ -78,6 +78,6 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
  const archiveOnly=!!requested&&!!result;
  const answer=archiveOnly?gameHeadings[language]:openaiApiKey?await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal}):fallback[language](result.total||0);
  return {answer,generated:archiveOnly||!!openaiApiKey,provider:archiveOnly?null:openaiApiKey?'openai':null,providerStatus:archiveOnly?'archive':openaiApiKey?'ready':'not_configured',
-  source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:false,position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);const moves=board.history();return {...game,moves:moves.slice(0,30),continuation:moves.slice(game.ply,game.ply+6)};}):games};
+  source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:false,candidateLines:evidence.candidateLines,position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);const moves=board.history();return {...game,moves:moves.slice(0,30),continuation:moves.slice(game.ply,game.ply+6)};}):games};
 }
 module.exports={validChatQuery,groundedChat,publicChatGames,gameRequest,legalCandidateLines};
