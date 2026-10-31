@@ -63,44 +63,52 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
  const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context):null);
  const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0),[speechError,setSpeechError]=useState(''),[speechPlaying,setSpeechPlaying]=useState(false),[expanded,setExpanded]=useState<number[]>(saved?.expanded??[]);
  const [preview,setPreview]=useState<{item:number;line:number;ply:number}|null>(null);
- // Analyze on explicit teaching requests, not while the user is moving pieces.
- // Cache completed work for follow-up questions on the exact same FEN.
+ // Keep one bounded background analysis per exact FEN; never start a second
+ // worker for a question while an analysis of that FEN is still running.
  const engineCacheRef=useRef<{fen:string;depth:number;lines:CandidateLine[]}|null>(null);
- function analyzeWithStockfish(signal:AbortSignal):Promise<CandidateLine[]>{
+ const engineJobRef=useRef<{fen:string;promise:Promise<CandidateLine[]>;cancel:()=>void}|null>(null);
+ function analyzeWithStockfish():Promise<CandidateLine[]>{
   const cached=engineCacheRef.current;
-  if(cached?.fen===fen&&cached.depth>=14)return Promise.resolve(cached.lines);
-  if(signal.aborted)return Promise.resolve([]);
-  return new Promise(resolve=>{
+  if(cached?.fen===fen)return Promise.resolve(cached.lines);
+  if(engineJobRef.current?.fen===fen)return engineJobRef.current.promise;
+  engineJobRef.current?.cancel();
+  let stop=()=>{};
+  const promise=new Promise<CandidateLine[]>(resolve=>{
    const engine=new StockfishEngine();
    let done=false,latestLines:CandidateLine[]=[],latestDepth=0;
-   let timeout:ReturnType<typeof setTimeout>|null=null;
+   let timer:ReturnType<typeof setTimeout>|null=null;
    const finish=(lines:CandidateLine[])=>{
-    if(done)return;done=true;
-    if(timeout!==null)clearTimeout(timeout);
-    signal.removeEventListener('abort',onAbort);
-    engine.destroy();resolve(lines);
+    if(done)return;
+    done=true;
+    if(timer!==null)clearTimeout(timer);
+    engine.destroy();
+    if(lines.length&&latestDepth>=10)engineCacheRef.current={fen,depth:latestDepth,lines};
+    resolve(lines);
    };
-   const onAbort=()=>finish([]);
+   stop=()=>finish([]);
    engine.onResult(result=>{
-    if(done||signal.aborted||result.analyzedFen!==fen||result.depth<8)return;
+    if(done||result.analyzedFen!==fen||result.depth<8)return;
     const lines=positionMap(fen,result).plans.slice(0,2)
      .map(plan=>({moves:plan.moves.slice(0,10).map(move=>move.san)}))
      .filter(line=>line.moves.length>0);
     if(!lines.length)return;
     latestLines=lines;latestDepth=result.depth;
-    if(result.depth>=14){
-     engineCacheRef.current={fen,depth:result.depth,lines};
-     finish(lines);
-    }
+    if(result.depth>=14)finish(lines);
    });
    engine.onError(()=>finish(latestDepth>=10?latestLines:[]));
-   signal.addEventListener('abort',onAbort,{once:true});
-   // Bound the worker budget. If depth 14 is too slow, use only a usable
-   // partial PV; otherwise explain from FEN without claiming engine support.
-   timeout=setTimeout(()=>finish(latestDepth>=10?latestLines:[]),14000);
+   // No long blocking spinner on slower hardware or missing WASM/Worker.
+   timer=setTimeout(()=>finish(latestDepth>=10?latestLines:[]),3500);
    engine.analyze(fen,14,2);
   });
+  engineJobRef.current={fen,promise,cancel:()=>stop()};
+  return promise;
  }
+ useEffect(()=>{
+  if(!open||!token)return;
+  // Short idle debounce: dragging pieces is never delayed by a new Worker.
+  const timer=setTimeout(()=>{void analyzeWithStockfish();},500);
+  return()=>{clearTimeout(timer);engineJobRef.current?.cancel();engineJobRef.current=null;};
+ },[open,token,fen]);
  const sectionRef=useRef<HTMLElement>(null),request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
  const playback=useRef<ReturnType<typeof createCoachPlayback>>(null),speechCache=useRef(new Map<string,Blob>());
  const stopSpeech=useCallback(()=>{speechRequest.current?.abort();speechRequest.current=null;playback.current?.stop();playback.current=null;setSpeechPlaying(false);setSpeechError('');audioRef.current?.pause();if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;setClip(null);setSpeechBusy(null);},[]);
@@ -146,7 +154,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
   setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);setPreview(null);onVariationPreview?.([], -1);
   try{
    const requested=archiveCount(message);
-   const analysisLines=requested===null?await analyzeWithStockfish(abort.signal):[];
+   const analysisLines=requested===null?await analyzeWithStockfish():[];
    if(abort.signal.aborted)return;
    let data:Reply,legacyBackend=false;
    if(requested!==null){const records=await createPositionSearchApi(import.meta.env.VITE_SERVER_URL||'').search({fen,side,fideId:'',scope:'all',sort:'strongest',limit:requested},token,abort.signal);const archive=records.games.map(g=>verifiedArchiveGame(g,fen)).filter((g):g is ResultGame=>g!==null).slice(0,requested);data={answer:archive.length?archiveHeadings[lang]:t.unavailable,games:archive,generated:true,archiveOnly:archive.length>0};}
