@@ -49,3 +49,60 @@
 @media(max-width:800px){.spieler-page .coach-chat-panel{max-height:calc(100dvh - 175px)}}
 
 .spieler-page .coach-chat-collapse-bottom{display:block;width:100%;flex:none;min-height:34px;border:1px solid #756449;border-radius:8px;background:#201f1e;color:#e7d3af;font-size:.77rem}
+
+
+/* Spieler desktop: one detachable-looking chat surface. It never expands the
+   board/search document, and its own history is the only inner scroller. */
+@media (min-width:1024px) {
+ .spieler-page .spieler-position-workspace .coach-chat[aria-label] {
+  position:fixed;
+  inset:auto 18px 18px auto;
+  z-index:90;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px;
+  width:min(408px,calc(100dvw - 36px));
+  max-height:calc(100dvh - 36px);
+  pointer-events:none;
+ }
+ .spieler-page .spieler-position-workspace .coach-chat-toggle {
+  width:max-content;
+  max-width:100%;
+  align-self:flex-end;
+  padding:8px 15px;
+  pointer-events:auto;
+  box-shadow:0 5px 22px rgba(0,0,0,.34);
+ }
+ .spieler-page .spieler-position-workspace .coach-chat:has(.coach-chat-panel) {
+  height:min(625px,calc(100dvh - 36px));
+ }
+ .spieler-page .spieler-position-workspace .coach-chat:has(.coach-chat-panel) .coach-chat-toggle{
+  width:100%;
+  align-self:stretch;
+  justify-content:space-between;
+ }
+ .spieler-page .spieler-position-workspace .coach-chat-panel {
+  position:relative;
+  width:100%;
+  flex:1 1 auto;
+  min-height:0;
+  height:auto;
+  max-height:none;
+  pointer-events:auto;
+  border-color:#8a7255;
+  box-shadow:0 16px 55px rgba(0,0,0,.65),0 0 0 1px rgba(197,156,98,.1);
+ }
+ .spieler-page .spieler-position-workspace .coach-chat-history{
+  flex:1 1 80px;
+  min-height:0;
+  scrollbar-gutter:stable;
+ }
+}
+/* AI Coach is reserved for desktop; the mobile chessboard and game search remain. */
+@media (max-width:1023px){
+ .spieler-page .spieler-position-workspace .coach-chat,
+ .spieler-page .spieler-position-workspace .chessaz-ai-coach{
+  display:none!important;
+ }
+}
