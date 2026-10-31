@@ -58,8 +58,8 @@
 .spieler-page .spieler-workspace-top h1{font-size:1.25rem;line-height:1.1;flex:none}
 .spieler-page .spieler-workspace-top .spieler-primary-tabs{margin:0}
 .spieler-page .spieler-position-workspace .global-position-search.vorbereitung-page{padding:7px;gap:6px}
-.spieler-page .spieler-position-workspace .global-position-grid{grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:12px}
-.spieler-page .spieler-position-workspace .global-position-search .preparation-position{width:min(100%,clamp(410px,calc(100dvh - 225px),490px));margin-inline:auto}
+.spieler-page .spieler-position-workspace .global-position-grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px}
+.spieler-page .spieler-position-workspace .global-position-search .preparation-position{width:min(100%,clamp(443px,calc(108dvh - 243px),529px));margin-inline:auto}
 .spieler-page .spieler-position-workspace .global-position-right-rail{max-height:calc(100dvh - 132px);gap:8px}
 .spieler-page .spieler-position-workspace .global-position-controls{border:0;background:transparent;padding:0;gap:6px}
 .spieler-page .spieler-position-workspace .global-position-controls .position-submit{order:-1}
@@ -68,7 +68,7 @@
 .spieler-page .spieler-position-workspace .position-advanced-content{display:grid;gap:12px;margin-top:10px}
 .spieler-page .spieler-position-workspace .position-card-header h2{font-size:1.16rem}
 .spieler-page .spieler-position-workspace .position-card-header{align-items:center}
-@media(max-width:1100px){.spieler-page .spieler-position-workspace .global-position-grid{grid-template-columns:minmax(0,1fr)}.spieler-page .spieler-position-workspace .global-position-search .preparation-position{width:min(100%,480px)}.spieler-page .spieler-position-workspace .global-position-right-rail{max-height:none}}
+@media(max-width:1100px){.spieler-page .spieler-position-workspace .global-position-grid{grid-template-columns:minmax(0,1fr)}.spieler-page .spieler-position-workspace .global-position-search .preparation-position{width:min(100%,518px)}.spieler-page .spieler-position-workspace .global-position-right-rail{max-height:none}}
 @media(max-width:600px){.spieler-page .spieler-workspace-top{align-items:stretch;flex-direction:column;gap:7px}.spieler-page .spieler-workspace-top h1{font-size:1.5rem}.spieler-page.section-page{padding:8px}}
 
 /* Owner QA: align navigation centrally without duplicating the sidebar page title. */

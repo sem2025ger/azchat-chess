@@ -11,6 +11,9 @@ test('arbitrary legal opening lines and colors validated',()=>{
  assert.equal(parseOpening('e4 e5 Nf3 bad'),null);
  assert.equal(parseOpening(''),null);
  assert.ok(parseOpening(DEFAULT_MOVES));
+ const numbered='1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6';
+ assert.deepEqual(parseOpening(numbered)?.moves,DEFAULT_MOVES.split(' '));
+ assert.equal(parseOpening(numbered)?.fen,parseOpening(DEFAULT_MOVES)?.fen);
  assert.ok(parseOpening(Array(10).fill('Nf3 Nf6 Ng1 Ng8').join(' ')));
  assert.equal(parseOpening(Array(11).fill('Nf3 Nf6 Ng1 Ng8').join(' ')),null);
 });
