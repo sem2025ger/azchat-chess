@@ -22,11 +22,11 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
  const [coachColor,setCoachColor]=useState<'white'|'black'>(()=>{const color=saved?.coachColor??readPositionSearchState<{color?:'white'|'black'}>(accountId,'preparation')?.color;return color==='white'?'white':'black';});
  const [boardState,setBoardState]=useState(saved?.boardState);
  const [boardRevision,setBoardRevision]=useState(0);
+ const [resultsOpen,setResultsOpen]=useState(saved?.resultsOpen??true);
+ const [fen,setFen]=useState(saved?.fen||DEFAULT_POSITION),[side,setSide]=useState<PositionSide>(saved?.side||'any'),[fideId,setFideId]=useState(saved?.fideId||''),[name,setName]=useState(saved?.name||'');
  const [coachPreview,setCoachPreview]=useState<{baseFen:string;moves:string[];ply:number}|null>(null);
  const previewFen=coachPreview?.baseFen===fen?coachVariationFen(fen,coachPreview.moves,coachPreview.ply):null;
  const showCoachVariation=useCallback((moves:string[],ply:number)=>{if(ply<0){setCoachPreview(null);return;}if(coachVariationFen(fen,moves,ply))setCoachPreview({baseFen:fen,moves,ply});},[fen]);
- const [resultsOpen,setResultsOpen]=useState(saved?.resultsOpen??true);
- const [fen,setFen]=useState(saved?.fen||DEFAULT_POSITION),[side,setSide]=useState<PositionSide>(saved?.side||'any'),[fideId,setFideId]=useState(saved?.fideId||''),[name,setName]=useState(saved?.name||'');
  const [scope,setScope]=useState<'all'|'nrw'>(saved?.scope||'all'),[sort,setSort]=useState<'newest'|'strongest'>(saved?.sort||'newest'),[nrwCount,setNrwCount]=useState<number|null>(saved?.nrwCount??null);
  const [players,setPlayers]=useState<SpielerPlayer[]>(saved?.players||[]),[result,setResult]=useState<PositionSearchResult|null>(saved?.result||null),[busy,setBusy]=useState(false),[finding,setFinding]=useState(false),[error,setError]=useState('');
  useEffect(()=>{writePositionSearchState(accountId,{fen,side,coachColor,fideId,name,scope,sort,resultsOpen,nrwCount,players,result,boardState},'',storageRevision);},[storageRevision,accountId,fen,side,coachColor,fideId,name,scope,sort,resultsOpen,nrwCount,players,result,boardState]);
