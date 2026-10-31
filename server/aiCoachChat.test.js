@@ -55,3 +55,29 @@ test('archive-only requests honor exact counts and return original first fifteen
  assert.equal(gameRequest('Объясни ход Nf3'),null);
  assert.equal(gameRequest('Найди 50 партий'),null);
 });
+
+test('client candidate lines must be bounded, unique and legal from exact FEN',()=>{
+ const line={moves:['e4','e5','Nf3','Nc6']};
+ assert.equal(validChatQuery({...query,candidateLines:[line]}),true);
+ for(const lines of [
+  [],Array(4).fill(line),[{moves:['e4','e4']}],
+  [{moves:['e4','e5','Nf3','Nc6']},{moves:['e4','e5','Nf3','Nc6']}],
+  [{moves:['a1a9']}],[{moves:[]}],[{moves:['e4'],evaluation:99}],
+  [{moves:Array(11).fill('e4')}]
+ ])assert.equal(validChatQuery({...query,candidateLines:lines}),false);
+ const afterE4=new Chess();afterE4.move('e4');
+ assert.equal(validChatQuery({...query,fen:afterE4.fen(),candidateLines:[{moves:['e4']}]}),false);
+ assert.equal(validChatQuery({...query,fen:afterE4.fen(),candidateLines:[{moves:['c5','Nf3']}]}),true);
+});
+test('candidate lines reach model only after replay validation and return without engine verification',async()=>{
+ const index={status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})};
+ const lines=[{moves:['e4','e5','Nf3']}];
+ const reply=await groundedChat(index,{...query,message:'Explain the idea behind this line',candidateLines:lines},{openaiApiKey:'synthetic',fetchImpl:async(url,options)=>{
+   const data=JSON.parse(JSON.parse(options.body).input);
+   assert.deepEqual(data.evidence.candidateLines,lines);
+   assert.equal(data.evidence.candidateOrigin,'untrusted_client_legality_checked');
+   return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Develop the pieces before launching an attack.'})}]}]});
+ }});
+ assert.deepEqual(reply.candidateLines,lines);
+ assert.equal(reply.engineVerified,false);
+});
