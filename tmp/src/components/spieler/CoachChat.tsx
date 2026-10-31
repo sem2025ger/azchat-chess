@@ -63,8 +63,44 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
  const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context):null);
  const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0),[speechError,setSpeechError]=useState(''),[speechPlaying,setSpeechPlaying]=useState(false),[expanded,setExpanded]=useState<number[]>(saved?.expanded??[]);
  const [preview,setPreview]=useState<{item:number;line:number;ply:number}|null>(null);
- const engineLinesRef=useRef<CandidateLine[]>([]);
- useEffect(()=>{if(!open||!token)return;let live=true;const engine=new StockfishEngine();engine.onResult(result=>{if(!live||result.analyzedFen!==fen)return;const valid=positionMap(fen,result).plans.slice(0,2).map(plan=>({moves:plan.moves.slice(0,10).map(move=>move.san)}));if(valid.length){engineLinesRef.current=valid;}});engine.analyze(fen,14,2);return()=>{live=false;engineLinesRef.current=[];engine.destroy();};},[fen,open,token]);
+ // Analyze on explicit teaching requests, not while the user is moving pieces.
+ // Cache completed work for follow-up questions on the exact same FEN.
+ const engineCacheRef=useRef<{fen:string;depth:number;lines:CandidateLine[]}|null>(null);
+ function analyzeWithStockfish(signal:AbortSignal):Promise<CandidateLine[]>{
+  const cached=engineCacheRef.current;
+  if(cached?.fen===fen&&cached.depth>=14)return Promise.resolve(cached.lines);
+  if(signal.aborted)return Promise.resolve([]);
+  return new Promise(resolve=>{
+   const engine=new StockfishEngine();
+   let done=false,latestLines:CandidateLine[]=[],latestDepth=0;
+   let timeout:ReturnType<typeof setTimeout>|null=null;
+   const finish=(lines:CandidateLine[])=>{
+    if(done)return;done=true;
+    if(timeout!==null)clearTimeout(timeout);
+    signal.removeEventListener('abort',onAbort);
+    engine.destroy();resolve(lines);
+   };
+   const onAbort=()=>finish([]);
+   engine.onResult(result=>{
+    if(done||signal.aborted||result.analyzedFen!==fen||result.depth<8)return;
+    const lines=positionMap(fen,result).plans.slice(0,2)
+     .map(plan=>({moves:plan.moves.slice(0,10).map(move=>move.san)}))
+     .filter(line=>line.moves.length>0);
+    if(!lines.length)return;
+    latestLines=lines;latestDepth=result.depth;
+    if(result.depth>=14){
+     engineCacheRef.current={fen,depth:result.depth,lines};
+     finish(lines);
+    }
+   });
+   engine.onError(()=>finish(latestDepth>=10?latestLines:[]));
+   signal.addEventListener('abort',onAbort,{once:true});
+   // Bound the worker budget. If depth 14 is too slow, use only a usable
+   // partial PV; otherwise explain from FEN without claiming engine support.
+   timeout=setTimeout(()=>finish(latestDepth>=10?latestLines:[]),14000);
+   engine.analyze(fen,14,2);
+  });
+ }
  const sectionRef=useRef<HTMLElement>(null),request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
  const playback=useRef<ReturnType<typeof createCoachPlayback>>(null),speechCache=useRef(new Map<string,Blob>());
  const stopSpeech=useCallback(()=>{speechRequest.current?.abort();speechRequest.current=null;playback.current?.stop();playback.current=null;setSpeechPlaying(false);setSpeechError('');audioRef.current?.pause();if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;setClip(null);setSpeechBusy(null);},[]);
@@ -110,15 +146,17 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
   setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);setPreview(null);onVariationPreview?.([], -1);
   try{
    const requested=archiveCount(message);
-   let data:Reply;
+   const analysisLines=requested===null?await analyzeWithStockfish(abort.signal):[];
+   if(abort.signal.aborted)return;
+   let data:Reply,legacyBackend=false;
    if(requested!==null){const records=await createPositionSearchApi(import.meta.env.VITE_SERVER_URL||'').search({fen,side,fideId:'',scope:'all',sort:'strongest',limit:requested},token,abort.signal);const archive=records.games.map(g=>verifiedArchiveGame(g,fen)).filter((g):g is ResultGame=>g!==null).slice(0,requested);data={answer:archive.length?archiveHeadings[lang]:t.unavailable,games:archive,generated:true,archiveOnly:archive.length>0};}
-   else{const payload={message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text})),...(engineLinesRef.current.length?{candidateLines:engineLinesRef.current}:{})};const opts={method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store' as const,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token}};
+   else{const payload={message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text})),...(analysisLines.length?{candidateLines:analysisLines}:{})};const opts={method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store' as const,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token}};
     let response=await fetch(apiUrl('chat'),{...opts,body:JSON.stringify(payload)});
     // The isolated QA backend may still run the older API. Do not break chat before its QA rollout.
-    if(response.status===400&&'candidateLines'in payload){const failure=await response.clone().json().catch(()=>null);if(failure?.code==='invalid_query')response=await fetch(apiUrl('chat'),{...opts,body:JSON.stringify({...payload,candidateLines:undefined})});}
+    if(response.status===400&&'candidateLines'in payload){const failure=await response.clone().json().catch(()=>null);if(failure?.code==='invalid_query'){legacyBackend=true;response=await fetch(apiUrl('chat'),{...opts,body:JSON.stringify({...payload,candidateLines:undefined})});}}
     data=await (await checked(response)).json() as Reply;}
    if(typeof data.answer!=='string'||data.answer.length>1200||!Array.isArray(data.games)||typeof data.generated!=='boolean')throw Error('api');
-   if(!abort.signal.aborted){setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:data.games.slice(0,20),generated:data.generated,archiveOnly:data.archiveOnly===true,candidateLines:!data.archiveOnly?(data.candidateLines?.length?data.candidateLines:engineLinesRef.current):[]}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
+   if(!abort.signal.aborted){setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:data.games.slice(0,20),generated:data.generated,archiveOnly:data.archiveOnly===true,candidateLines:!data.archiveOnly&&!legacyBackend&&analysisLines.length&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines)?analysisLines:[]}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
   }catch(e){if(!abort.signal.aborted){setError(describe(e));setDraft(message);setItems(previous);}}
   finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}
  }
@@ -164,7 +202,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
     {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p className={m.archiveOnly?'coach-chat-archive-heading':undefined}>{m.text}</p>{m.role==='assistant'&&<>
      {!m.generated&&<small className="coach-chat-notice">{t.fallback}</small>}
      <div className="coach-chat-message-actions"><button type="button" className="coach-chat-copy" onClick={()=>void navigator.clipboard.writeText(m.text).catch(()=>setError(t.unavailable))} aria-label={t.copyAnswer} title={t.copyAnswer}><Copy size={15}/>{t.copyAnswer}</button><button type="button" className="coach-chat-listen" disabled={!token||!!busy||recording||speechBusy!==null} onClick={()=>void speak(m.text,i)}><Volume2 size={14}/>{t.listen}</button></div>
-    </>}{m.role==='assistant'&&!m.archiveOnly&&!!m.candidateLines?.length&&<div className="coach-chat-study"><div className="coach-chat-study-choices">{m.candidateLines.map((line,j)=><button type="button" key={j} aria-pressed={preview?.item===i&&preview.line===j} onClick={()=>{setPreview({item:i,line:j,ply:0});onVariationPreview?.(line.moves,0);}}>{t.variant} {j+1} · {formatNumberedMoves(line.moves,(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0))}</button>)}</div>{preview?.item===i&&<div className="coach-chat-study-nav"><button type="button" aria-label={t.prevMove} disabled={preview.ply===0} onClick={()=>{const ply=preview.ply-1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>←</button><span>{preview.ply} / {m.candidateLines[preview.line].moves.length}</span><button type="button" aria-label={t.nextMove} disabled={preview.ply===m.candidateLines[preview.line].moves.length} onClick={()=>{const ply=preview.ply+1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>→</button><button type="button" onClick={()=>{setPreview(null);onVariationPreview?.([], -1);}}>{t.returnPosition}</button></div>}</div>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{t.gameNumber} {j+1}</span><span>{formatNumberedMoves(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6)),g.ply)||"—"}</span></summary><div className="coach-chat-variation-full"><div className="coach-chat-variation-rule" aria-hidden="true"/><p>{formatNumberedMoves((g.moves||[]).slice(0,30))}</p><button type="button" onClick={()=>void navigator.clipboard.writeText(formatNumberedMoves((g.moves||[]).slice(0,30))).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
+    </>}{m.role==='assistant'&&!m.archiveOnly&&!!m.candidateLines?.length&&<div className="coach-chat-study"><small className="coach-chat-engine-source">Stockfish 19</small><div className="coach-chat-study-choices">{m.candidateLines.map((line,j)=><button type="button" key={j} aria-pressed={preview?.item===i&&preview.line===j} onClick={()=>{setPreview({item:i,line:j,ply:0});onVariationPreview?.(line.moves,0);}}>{t.variant} {j+1} · {formatNumberedMoves(line.moves,(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0))}</button>)}</div>{preview?.item===i&&<div className="coach-chat-study-nav"><button type="button" aria-label={t.prevMove} disabled={preview.ply===0} onClick={()=>{const ply=preview.ply-1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>←</button><span>{preview.ply} / {m.candidateLines[preview.line].moves.length}</span><button type="button" aria-label={t.nextMove} disabled={preview.ply===m.candidateLines[preview.line].moves.length} onClick={()=>{const ply=preview.ply+1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>→</button><button type="button" onClick={()=>{setPreview(null);onVariationPreview?.([], -1);}}>{t.returnPosition}</button></div>}</div>}{m.role==='assistant'&&!m.archiveOnly&&!m.candidateLines?.length&&<small className="coach-chat-notice">{t.engineUnavailable}</small>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{t.gameNumber} {j+1}</span><span>{formatNumberedMoves(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6)),g.ply)||"—"}</span></summary><div className="coach-chat-variation-full"><div className="coach-chat-variation-rule" aria-hidden="true"/><p>{formatNumberedMoves((g.moves||[]).slice(0,30))}</p><button type="button" onClick={()=>void navigator.clipboard.writeText(formatNumberedMoves((g.moves||[]).slice(0,30))).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
     {busy&&<p role="status">{busy==='transcribe'?t.transcribing:busy==='microphone'?t.voice:t.busy}</p>}
    </div>
    {recording&&<p role="status" className="coach-chat-notice">{t.recording}</p>}
