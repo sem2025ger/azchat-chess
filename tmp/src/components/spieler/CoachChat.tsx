@@ -2,6 +2,8 @@ import {useCallback,useEffect,useId,useRef,useState,type FormEvent} from 'react'
 import {Mic,Send,MessageSquare,Square,Volume2,Copy,Trash2} from 'lucide-react';
 import {useNavigate} from 'react-router-dom';
 import {Chess} from 'chess.js';
+import {createPortal} from 'react-dom';
+import {formatNumberedMoves} from '../../utils/numberedSan';
 import {createPositionSearchApi} from '../../services/positions';
 import {useLanguage} from '../../context/LanguageContext';
 import {openSpielerAnalysis} from '../../services/spieler';
@@ -49,9 +51,11 @@ export default function CoachChat(props:Props){
  return <CoachConversation key={JSON.stringify([props.accountId,props.fen,props.side,openingPrepLanguage(language)])} {...props}/>;
 }
 function CoachConversation({fen,side,token,accountId='guest'}:Props){
- const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId(),privacyId=useId();
+ const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId();
  const context=JSON.stringify([fen,side,lang]);
  const [storageRevision]=useState(positionSearchRevision);
+ const [headerTarget,setHeaderTarget]=useState<HTMLElement|null>(null);
+ useEffect(()=>{setHeaderTarget(document.querySelector('.spieler-position-workspace .chessaz-ai-coach>header'));},[]);
  const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context):null);
  const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0),[speechError,setSpeechError]=useState(''),[speechPlaying,setSpeechPlaying]=useState(false),[expanded,setExpanded]=useState<number[]>(saved?.expanded??[]);
  const sectionRef=useRef<HTMLElement>(null),request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
@@ -140,14 +144,15 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
  }
  if(import.meta.env.VITE_AI_COACH_ENABLED!=='true')return null;
  return <section ref={sectionRef} className="coach-chat" aria-label={t.title}>
-  <button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(v=>!v);}}><MessageSquare size={16}/>{t.title}</button>
+  {(headerTarget?createPortal(<button type="button" className="coach-chat-toggle" aria-label={t.title} aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}><MessageSquare size={16}/>{t.askChat}</button>,headerTarget):<button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}><MessageSquare size={16}/>{t.title}</button>)}
+
   {open&&<div className="coach-chat-panel">
    <div className="coach-chat-actions"><button type="button" disabled={!items.length||!!busy||recording} onClick={()=>{if(!window.confirm(t.clearConfirm))return;cancel();setItems([]);setDraft('');setExpanded([]);setScrollTop(0);setError('');}}><Trash2 size={15}/>{t.clearChat}</button></div>
    <div ref={listRef} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="coach-chat-history" role="log" aria-live="polite" aria-relevant="additions text">
     {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p className={m.archiveOnly?'coach-chat-archive-heading':undefined}>{m.text}</p>{m.role==='assistant'&&<>
      {!m.generated&&<small className="coach-chat-notice">{t.fallback}</small>}
      <div className="coach-chat-message-actions"><button type="button" className="coach-chat-copy" onClick={()=>void navigator.clipboard.writeText(m.text).catch(()=>setError(t.unavailable))} aria-label={t.copyAnswer} title={t.copyAnswer}><Copy size={15}/>{t.copyAnswer}</button><button type="button" className="coach-chat-listen" disabled={!token||!!busy||recording||speechBusy!==null} onClick={()=>void speak(m.text,i)}><Volume2 size={14}/>{t.listen}</button></div>
-    </>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{j+1}.</span><span>{(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6))).join(" ")||"—"}</span></summary><div className="coach-chat-variation-full"><p>{(g.moves||[]).map((move,k)=>(k%2===0?Math.floor(k/2)+1+". ":"")+move).join(" ")}</p><button type="button" onClick={()=>void navigator.clipboard.writeText((g.moves||[]).map((move,k)=>(k%2===0?Math.floor(k/2)+1+". ":"")+move).join(" ")).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
+    </>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{t.gameNumber} {j+1}</span><span>{formatNumberedMoves(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6)),g.ply)||"—"}</span></summary><div className="coach-chat-variation-full"><div className="coach-chat-variation-rule" aria-hidden="true"/><p>{formatNumberedMoves((g.moves||[]).slice(0,30))}</p><button type="button" onClick={()=>void navigator.clipboard.writeText(formatNumberedMoves((g.moves||[]).slice(0,30))).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
     {busy&&<p role="status">{busy==='transcribe'?t.transcribing:busy==='microphone'?t.voice:t.busy}</p>}
    </div>
    {recording&&<p role="status" className="coach-chat-notice">{t.recording}</p>}
@@ -156,14 +161,15 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
    {!token&&<p className="coach-chat-error" role="status">{t.auth}</p>}
    {error&&<p className="coach-chat-error" role="alert">{error}</p>}
    {speechError&&<p className="coach-chat-error coach-chat-speech-error" role="alert">{speechError}</p>}
+   <label className="coach-chat-voice-option"><input type="checkbox" checked={voiceReplies} disabled={!token} onChange={e=>{voicePreference.current=e.target.checked;setVoiceReplies(e.target.checked);if(!e.target.checked)stopSpeech();}}/>{t.autoVoice}</label>
    <form className="coach-chat-compose" onSubmit={send}>
     <label className="sr-only" htmlFor={inputId}>{t.placeholder}</label>
     <input id={inputId} value={draft} maxLength={500} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder} disabled={!token||!!busy||recording}/>
-    <button type="button" onClick={()=>void toggleVoice()} disabled={!token||!!busy} aria-label={recording?t.stop:t.voice} aria-pressed={recording} aria-describedby={privacyId} title={recording?t.stop:t.voice}>{recording?<Square size={15}/>:<Mic size={17}/>}</button>
+    <button type="button" onClick={()=>void toggleVoice()} disabled={!token||!!busy} aria-label={recording?t.stop:t.voice} aria-pressed={recording} title={recording?t.stop:t.voice}>{recording?<Square size={15}/>:<Mic size={17}/>}</button>
     <button type="submit" aria-label={t.send} disabled={!token||!!busy||recording||draft.trim().length<2}><Send size={17}/></button>
    </form>
-   <label className="coach-chat-voice-option"><input type="checkbox" checked={voiceReplies} disabled={!token} onChange={e=>{voicePreference.current=e.target.checked;setVoiceReplies(e.target.checked);if(!e.target.checked)stopSpeech();}}/>{t.autoVoice}</label>
-   <p id={privacyId} className="coach-chat-notice">{t.privacy}</p>
+
+
    <button type="button" className="coach-chat-collapse-bottom" onClick={()=>{cancel();setOpen(false);}}>{t.closeChat} ↑</button>
   </div>}
  </section>;
