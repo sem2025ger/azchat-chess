@@ -28,6 +28,13 @@ export async function checkCoachChat({captureRoot}={}){
   id:'public-fixture',source:'lichess-broadcast',pgn:'1. e4 e5',ply:0,
   white:'Fixture White',black:'Fixture Black',result:'*'
  }]}));
+ // Simulate the isolated older QA backend; it rejects the new optional field.
+ app.post('/api/ai-coach/chat',express.json({limit:'16kb'}),(req,res,next)=>{
+  if(mode!=='legacy-chat')return next();
+  if(req.body?.candidateLines)return res.status(400).json({code:'invalid_query'});
+  return res.json({answer:'Legacy Coach explanation without Stockfish evidence.',generated:true,
+   games:[{id:'legacy-game',white:'Fixture White',black:'Fixture Black',pgn:'1. e4 e5',ply:0,result:'*'}]});
+ });
  installAiCoach(app,{enabled:true,index:{status:'ready',search:async()=>({total:1,games:[{id:'public-fixture',source:'lichess-broadcast',pgn:'1. e4 e5',ply:0,white:'Fixture White',black:'Fixture Black',result:'*'}],nextMoves:[{move:'e4',count:1}]})},verifyToken:async token=>token.startsWith('synthetic-')?{id:token}:null,openaiApiKey:'synthetic-provider',now:()=>clock,
   socketFactory:(url,options)=>{assert.equal(new URL(url).hostname,'api.openai.com');return new WebSocket('ws://127.0.0.1:'+wss.address().port,options);},
   fetchImpl:async(url,options)=>{
@@ -96,7 +103,22 @@ export async function checkCoachChat({captureRoot}={}){
  await wait('document.querySelectorAll(".coach-chat-message").length===0');
  assert.ok(await evaluate('!!document.querySelector(".preparation-shared-board")'));
  await evaluate('window.setWorkspace(false);window.logout()');await wait('document.querySelector(".coach-chat-toggle")');
- assert.equal(await evaluate('Object.keys(sessionStorage).filter(k=>k.startsWith("chessaz:position-search:")).length'),0,'logout clears all account snapshots');assert.deepEqual(exceptions,[]);console.log('PASS CoachChat: real HTTP router, real MediaRecorder with Chromium fake microphone, multipart provider adapter, actual loopback WebSocket/WAV playback, six locales at 390/1280, bounded context, auth/error handling, denied/late permissions, close cleanup, stale board cancellation, analysis round-trip restoration, scroll/draft preservation, token rotation, account isolation, logout cleanup and actual workspace colour propagation. OpenAI responses are synthetic; no hosted credentials or external API calls.');
+ assert.equal(await evaluate('Object.keys(sessionStorage).filter(k=>k.startsWith("chessaz:position-search:")).length'),0,'logout clears all account snapshots');
+ // A legacy server may reject candidateLines: preserve *local* Stockfish replay,
+ // label the ungrounded AI text and never show unsolicited archive parties.
+ mode='legacy-chat';
+ await evaluate('window.setToken("synthetic-legacy");window.setAccount("legacy-browser");window.setWorkspace(false)');
+ await wait('document.querySelector(".coach-chat-toggle")');
+ await click(t.title);await fill('Explain this position using Stockfish 19');await click(t.send);
+ await wait('document.querySelector(".coach-chat-message.assistant")');
+ assert.equal(await evaluate('document.querySelectorAll(".coach-chat-games").length'),0,'no unsolicited archive games');
+ await wait('document.querySelector(".coach-chat-study")');
+ assert.ok(await evaluate('!!document.querySelector(".coach-chat-engine-unlinked")'),'show real provenance warning');
+ assert.ok(await evaluate('document.querySelector(".coach-chat-engine-source").textContent.includes("Stockfish 19")'));
+ await evaluate('document.querySelector(".coach-chat-study-choices button").click()');
+ await wait('document.querySelector(".coach-chat-study-nav")');
+ mode='ready';
+assert.deepEqual(exceptions,[]);console.log('PASS CoachChat: real HTTP router, real MediaRecorder with Chromium fake microphone, multipart provider adapter, actual loopback WebSocket/WAV playback, six locales at 390/1280, bounded context, auth/error handling, denied/late permissions, close cleanup, stale board cancellation, analysis round-trip restoration, scroll/draft preservation, token rotation, account isolation, logout cleanup and actual workspace colour propagation. OpenAI responses are synthetic; no hosted credentials or external API calls.');
  }finally{for(const p of pending.values())clearTimeout(p.timer);ws?.close();chrome?.kill('SIGKILL');await server?.close();if(api)await new Promise(r=>api.close(r));if(wss){for(const client of wss.clients)client.terminate();await new Promise(r=>wss.close(r));}if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});if(cacheDir)await rm(cacheDir,{recursive:true,force:true});}
 }
 if(process.argv[1]===fileURLToPath(import.meta.url))await checkCoachChat({captureRoot:process.env.COACH_CAPTURE});
