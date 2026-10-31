@@ -9,6 +9,7 @@ import {readPositionSearchState,writePositionSearchState,positionSearchRevision}
 import type {PreparationBoardState} from '../../utils/preparationBoardState';
 import {initialBoardState,boardAt,boardText} from '../../utils/preparationBoardState';
 import PreparationBoard from './PreparationBoard';
+import {coachVariationFen} from '../../utils/coachVariation';
 import CoachChat from './CoachChat';
 import '../../screens/VorbereitungScreen.css';
 import './GlobalPositionSearch.css';
@@ -21,6 +22,9 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
  const [coachColor,setCoachColor]=useState<'white'|'black'>(()=>{const color=saved?.coachColor??readPositionSearchState<{color?:'white'|'black'}>(accountId,'preparation')?.color;return color==='white'?'white':'black';});
  const [boardState,setBoardState]=useState(saved?.boardState);
  const [boardRevision,setBoardRevision]=useState(0);
+ const [coachPreview,setCoachPreview]=useState<{baseFen:string;moves:string[];ply:number}|null>(null);
+ const previewFen=coachPreview?.baseFen===fen?coachVariationFen(fen,coachPreview.moves,coachPreview.ply):null;
+ const showCoachVariation=(moves:string[],ply:number)=>{if(ply<0){setCoachPreview(null);return;}if(coachVariationFen(fen,moves,ply))setCoachPreview({baseFen:fen,moves,ply});};
  const [resultsOpen,setResultsOpen]=useState(saved?.resultsOpen??true);
  const [fen,setFen]=useState(saved?.fen||DEFAULT_POSITION),[side,setSide]=useState<PositionSide>(saved?.side||'any'),[fideId,setFideId]=useState(saved?.fideId||''),[name,setName]=useState(saved?.name||'');
  const [scope,setScope]=useState<'all'|'nrw'>(saved?.scope||'all'),[sort,setSort]=useState<'newest'|'strongest'>(saved?.sort||'newest'),[nrwCount,setNrwCount]=useState<number|null>(saved?.nrwCount??null);
@@ -28,7 +32,7 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
  useEffect(()=>{writePositionSearchState(accountId,{fen,side,coachColor,fideId,name,scope,sort,resultsOpen,nrwCount,players,result,boardState},'',storageRevision);},[storageRevision,accountId,fen,side,coachColor,fideId,name,scope,sort,resultsOpen,nrwCount,players,result,boardState]);
  const pending=useRef<AbortController|null>(null),lookup=useRef<AbortController|null>(null);
  useEffect(()=>()=>{pending.current?.abort();lookup.current?.abort();},[]);
- function invalidate(){pending.current?.abort();setBusy(false);setResult(null);setError('');}
+ function invalidate(){setCoachPreview(null);pending.current?.abort();setBusy(false);setResult(null);setError('');}
  function applyPreparedMoves(moves:string[]){
   const next=boardText({...initialBoardState(),text:moves.join(' '),source:'text',flipped:boardState?.flipped});
   invalidate();setBoardState(next);setFen(boardAt(next));setBoardRevision(value=>value+1);
@@ -51,8 +55,8 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
  function moveTable(moves:PositionSearchResult['nextMoves']){return !!moves.length&&<div className="vorbereitung-table"><table><caption>{tr('Nächste Züge · Ergebnisse aus deiner Sicht')}</caption><thead><tr><th>{tr('Zug')}</th><th>{tr('Partien')}</th><th>{tr('Sieg %')}</th><th>{tr('Remis %')}</th><th>{tr('Niederlage %')}</th></tr></thead><tbody>{moves.map(m=><tr key={m.move}><td>{formatNumberedMove(m.move,numberedPly())}</td><td>{m.count}</td><td>{m.winPct}%</td><td>{m.drawPct}%</td><td>{m.lossPct}%</td></tr>)}</tbody></table></div>;}
  return <section className="global-position-search vorbereitung-page section-card" aria-label={tr('Stellung in allen importierten Partien suchen')}>
   <header className="position-card-header"><h2>{tr('Partien nach Stellung suchen')}</h2></header>
-  <div className="global-position-grid"><PreparationBoard allowFullscreen key={boardRevision} showModeSwitcher={false} showMoveSearch={false} fen={fen} initialState={boardState} onState={setBoardState} orientation={side==='black'?'b':'w'} onFen={value=>{invalidate();setFen(value);}}/>
-   <div className="global-position-right-rail">{coach?.(coachColor,setCoachColor,applyPreparedMoves)}<CoachChat fen={fen} side={coach?coachColor:side} token={token} accountId={accountId}/><div className="global-position-controls">
+  <div className="global-position-grid"><PreparationBoard coachPreviewFen={previewFen} allowFullscreen key={boardRevision} showModeSwitcher={false} showMoveSearch={false} fen={fen} initialState={boardState} onState={setBoardState} orientation={side==='black'?'b':'w'} onFen={value=>{invalidate();setFen(value);}}/>
+   <div className="global-position-right-rail">{coach?.(coachColor,setCoachColor,applyPreparedMoves)}<CoachChat fen={fen} side={coach?coachColor:side} token={token} accountId={accountId} onVariationPreview={showCoachVariation}/><div className="global-position-controls">
     <details className="section-info position-advanced-settings"><summary>{tr('Suchfilter')}</summary><div className="position-advanced-content"><fieldset className="position-segment" data-control="side"><legend>{tr('Meine Farbe')}</legend><div>{(['white','black','any'] as const).map(value=><button type="button" key={value} data-value={value} aria-pressed={side===value} onClick={()=>{invalidate();setSide(value);}}>{tr(value==='white'?'Weiß':value==='black'?'Schwarz':'Beide Farben')}</button>)}</div></fieldset>
     <fieldset className="position-segment" data-control="scope"><legend>{tr('Suchbereich')}</legend><div>{(['all','nrw'] as const).map(value=><button type="button" key={value} data-value={value} aria-pressed={scope===value} onClick={()=>{setScope(value);invalidate();if(token)void search(undefined,value);}}>{tr(value==='all'?'Gesamte Datenbank':'Nur NRW-Vereine')}{value==='nrw'&&<span className="position-count" aria-label={tr('Bestätigte NRW-Spieler:')}>{nrwCount??'—'}</span>}</button>)}</div></fieldset>
     {nrwCount===0&&<p className="position-empty-nrw" role="status">{tr('Noch keine bestätigten NRW-Vereinsspieler.')}</p>}
