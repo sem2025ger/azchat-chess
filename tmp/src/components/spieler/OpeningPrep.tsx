@@ -33,7 +33,7 @@ export default function OpeningPrep({token,accountId='guest',showAuthNotice=true
  const [result,setResult]=useState<{key:string;lesson:OpeningLesson}|null>(saved?.result??null);
  const [resultsOpen,setResultsOpen]=useState(saved?.resultsOpen??true);
  const [busyKey,setBusyKey]=useState<string|null>(null),[failure,setFailure]=useState<{key:string;code:string}|null>(null);
- const [moves,setMoves]=useState(saved?.moves??'e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6'),[localColor,setLocalColor]=useState<'white'|'black'>(saved?.color??'black'),[expanded,setExpanded]=useState<string[]>(saved?.expanded??[]);
+ const [moves,setMoves]=useState(saved?.moves??'1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6'),[localColor,setLocalColor]=useState<'white'|'black'>(saved?.color??'black'),[expanded,setExpanded]=useState<string[]>(saved?.expanded??[]);
  const color=selectedColor??localColor;
  // Identity is scoped by account; bearer tokens are never persisted in a query key.
  const requestKey=JSON.stringify([moves,color,locale]);

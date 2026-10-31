@@ -25,8 +25,8 @@ window.fetch=async(url,options={})=>{
  const body=JSON.parse(options.body);window.calls.push({body,headers:options.headers,cache:options.cache});
  if(window.responseMode==='hold')await new Promise(resolve=>window.release=resolve);
  if(!['ready','hold'].includes(window.responseMode))return Response.json({code:window.responseMode},{status:400});
- const board=new Chess();for(const move of body.moves.split(' '))board.move(move);const moves=board.history(),ply=moves.length,turn=board.turn()==='w'?'white':'black';
- const transposed=body.moves==='Nf3 d5 g3 Nf6';const rest=body.moves==='e4'?['e5','Nf3','Nc6']:transposed?['Bg2','e6']:['c4','e6','Nc3'];
+ const board=new Chess();for(const move of body.moves.match(/[A-Za-z][A-Za-z0-9+#=-]*/g)||[])board.move(move);const moves=board.history(),ply=moves.length,turn=board.turn()==='w'?'white':'black';
+ const transposed=body.moves==='Nf3 d5 g3 Nf6';const rest=body.moves==='e4'?['e5','Nf3','Nc6']:transposed?['Bg2','e6']:body.moves.startsWith('1. e4 c5 2. Nf3 d6')?['Be3','e6','f3']:['c4','e6','Nc3'];
  const model=new Chess();for(const move of transposed?'Nf3 Nf6 Ng1 Ng8 g3 d5 Nf3 Nf6 Bg2 e6'.split(' '):[...moves,...rest])model.move(move);
  const game={id:'synthetic',pgn:model.pgn(),ply:transposed?8:ply,white:'Synthetic White',black:'Synthetic Black',event:'Synthetic',date:'2026-10-29',result:'*',first25:model.history()};
  return Response.json({opening:'custom',color:body.color,moves,ply,turn,matched:1,inspected:1,briefing:null,groups:[{move:rest[0],replyColor:turn==='white'?'black':'white',replies:[{move:rest[1],count:1}],games:[game]}]});
@@ -58,6 +58,10 @@ export async function checkOpeningPrep({captureRoot}={}){
  await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Network.enable');await cdp('Network.setBlockedURLs',{urls:['https://*','wss://*']});await cdp('Page.navigate',{url:base+'coach-fixture'});
  await wait(`typeof window.language==='function'`);assert.equal(await evaluate(`!!document.querySelector('.chessaz-ai-coach')`),false);assert.equal(await evaluate('window.calls.length'),0);
  await server.close();server=await makeServer(true);await server.listen();base=server.resolvedUrls.local[0];await cdp('Page.navigate',{url:base+'coach-fixture'});await wait(`document.querySelector('.chessaz-ai-coach input')`);
+ const sicilian='1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6';
+ assert.equal(await evaluate(`document.querySelector('.chessaz-ai-coach-input input').value`),sicilian,'numbered Sicilian sample');
+ await click(openingPrepCopy.de.start);await wait(`document.querySelector('.chessaz-ai-coach-results')`);
+ assert.equal((await evaluate(`window.calls.at(-1)`)).body.moves,sicilian);
  await fill(openingPrepCopy.de.input,'d4 d5');
  for(const width of [1280,390]){
   await cdp('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:width===390});

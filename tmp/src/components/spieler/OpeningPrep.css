@@ -17,7 +17,7 @@
 @media(max-width:560px){.chessaz-ai-coach-group>summary{align-items:flex-start;flex-direction:column;gap:.2rem}.chessaz-ai-coach-group-body{padding:0 .8rem .8rem}}
 
 
-/* Spieler-only metal title. Small gold accent, dark bronze and silver, no extra controls. */
+/* Spieler-only metallic wordmark. Keep the original section-card surface unchanged. */
 #root .spieler-page .chessaz-ai-coach>header{
  display:flex;align-items:center;justify-content:flex-end;text-align:right;margin-bottom:14px;
 }
@@ -25,12 +25,12 @@
  display:block;width:max-content;max-width:100%;margin:0 0 0 auto;
  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
  font-size:clamp(1.42rem,1.8vw,1.76rem);font-weight:900;line-height:1.12;letter-spacing:-.05em;
- color:#bac0c2;
- background:linear-gradient(108deg,#77716b 0%,#b4997e 13%,#91999b 27%,#e0e2df 39%,#827668 51%,#ac8767 62%,#e2c39b 67%,#969fa3 78%,#786e67 90%,#c4b9aa 100%);
+ color:#a6afb9;
+ background:linear-gradient(108deg,#7c8a99 0%,#b8c0c8 12%,#455363 28%,#c8ccd0 40%,#8a95a3 52%,#c1a478 66%,#e3d6bb 72%,#536273 83%,#a6afb9 100%);
  background-size:240% 100%;-webkit-background-clip:text;background-clip:text;
  -webkit-text-fill-color:transparent;
  filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));
- animation:chessazCoachDarkMetal 8s ease-in-out infinite alternate;
+ animation:chessazCoachDarkMetal 11s ease-in-out infinite alternate;
 }
 @keyframes chessazCoachDarkMetal{
  from{background-position:0% 50%}
