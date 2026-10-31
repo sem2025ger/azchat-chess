@@ -1,8 +1,7 @@
-import {useCallback,useEffect,useId,useRef,useState,useMemo,type FormEvent} from 'react';
+import {useCallback,useEffect,useId,useRef,useState,type FormEvent} from 'react';
 import {Mic,Send,MessageSquare,Square,Volume2,Copy,Trash2} from 'lucide-react';
 import {useNavigate} from 'react-router-dom';
 import {Chess} from 'chess.js';
-import ChessBoard from '../ChessBoard';
 import {StockfishEngine} from '../../utils/StockfishEngine';
 import {positionMap} from '../../utils/positionMap';
 import {createPortal} from 'react-dom';
@@ -20,7 +19,7 @@ type CandidateLine={moves:string[]};
 type Reply={answer:string;games:ResultGame[];generated:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[]};
 type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated?:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[]};
 type Clip={url:string;item:number;autoplay:boolean};
-type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string};
+type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string;onVariationPreview?:(moves:string[],ply:number)=>void};
 type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number;expanded?:number[]};
 function restoredChat(accountId:string,context:string){
  const saved=readPositionSearchState<SavedChat>(accountId,'chat');
@@ -55,7 +54,7 @@ export default function CoachChat(props:Props){
  const {language}=useLanguage();
  return <CoachConversation key={JSON.stringify([props.accountId,props.fen,props.side,openingPrepLanguage(language)])} {...props}/>;
 }
-function CoachConversation({fen,side,token,accountId='guest'}:Props){
+function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}:Props){
  const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId();
  const context=JSON.stringify([fen,side,lang]);
  const [storageRevision]=useState(positionSearchRevision);
@@ -66,16 +65,16 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
  const [preview,setPreview]=useState<{item:number;line:number;ply:number}|null>(null);
  const engineLinesRef=useRef<CandidateLine[]>([]);
  useEffect(()=>{if(!open||!token)return;let live=true;const engine=new StockfishEngine();engine.onResult(result=>{if(!live||result.analyzedFen!==fen)return;const valid=positionMap(fen,result).plans.slice(0,2).map(plan=>({moves:plan.moves.slice(0,10).map(move=>move.san)}));if(valid.length){engineLinesRef.current=valid;}});engine.analyze(fen,14,2);return()=>{live=false;engineLinesRef.current=[];engine.destroy();};},[fen,open,token]);
- const replayBoard=useMemo(()=>{if(!preview)return null;const lines=items[preview.item]?.candidateLines||[];const line=lines[preview.line];if(!line)return null;try{const board=new Chess(fen);for(const move of line.moves.slice(0,preview.ply))board.move(move,{strict:true});return board;}catch{return null;}},[fen,preview,items]);
  const sectionRef=useRef<HTMLElement>(null),request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
  const playback=useRef<ReturnType<typeof createCoachPlayback>>(null),speechCache=useRef(new Map<string,Blob>());
  const stopSpeech=useCallback(()=>{speechRequest.current?.abort();speechRequest.current=null;playback.current?.stop();playback.current=null;setSpeechPlaying(false);setSpeechError('');audioRef.current?.pause();if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;setClip(null);setSpeechBusy(null);},[]);
  const cancel=useCallback(()=>{
+  onVariationPreview?.([], -1);setPreview(null);
   epoch.current++;busyRef.current=false;request.current?.abort();request.current=null;stopSpeech();
   if(recordTimer.current)clearTimeout(recordTimer.current);recordTimer.current=null;
   const current=recorder.current;recorder.current=null;if(current){current.onstop=null;current.ondataavailable=null;current.onerror=null;if(current.state!=='inactive')current.stop();}
   stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;setRecording(false);setBusy(null);
- },[stopSpeech]);
+ },[stopSpeech,onVariationPreview]);
  useEffect(()=>{cancel();setError('');setSpeechError('');return cancel;},[token,cancel]);
  useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{context,open,draft,items,voiceReplies,scrollTop,expanded},'chat',storageRevision);},[storageRevision,accountId,context,token,open,draft,items,voiceReplies,scrollTop,expanded]);
  useEffect(()=>{const list=listRef.current;if(list){list.scrollTop=restoredScroll.current??list.scrollHeight;restoredScroll.current=null;}},[items,open,busy]);
@@ -108,7 +107,7 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
   event.preventDefault();const message=draft.trim();if(message.length<2||!token||busyRef.current||recorder.current)return;
   busyRef.current=true;
   stopSpeech();const abort=new AbortController();request.current?.abort();request.current=abort;const previous=items.slice(-58);
-  setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);setPreview(null);
+  setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);setPreview(null);onVariationPreview?.([], -1);
   try{
    const requested=archiveCount(message);
    let data:Reply;
@@ -160,12 +159,12 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
   {(headerTarget?createPortal(<button type="button" className="coach-chat-toggle" aria-label={t.title} aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}><MessageSquare size={16}/>{t.askChat}</button>,headerTarget):<button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}><MessageSquare size={16}/>{t.title}</button>)}
 
   {open&&<div className="coach-chat-panel">
-   <div className="coach-chat-actions"><button type="button" disabled={!items.length||!!busy||recording} onClick={()=>{if(!window.confirm(t.clearConfirm))return;cancel();setItems([]);setDraft('');setExpanded([]);setScrollTop(0);setError('');}}><Trash2 size={15}/>{t.clearChat}</button></div>
+   <div className="coach-chat-actions"><button type="button" disabled={!items.length||!!busy||recording} onClick={()=>{if(!window.confirm(t.clearConfirm))return;cancel();setItems([]);setDraft('');setExpanded([]);setPreview(null);onVariationPreview?.([], -1);setScrollTop(0);setError('');}}><Trash2 size={15}/>{t.clearChat}</button></div>
    <div ref={listRef} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="coach-chat-history" role="log" aria-live="polite" aria-relevant="additions text">
     {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p className={m.archiveOnly?'coach-chat-archive-heading':undefined}>{m.text}</p>{m.role==='assistant'&&<>
      {!m.generated&&<small className="coach-chat-notice">{t.fallback}</small>}
      <div className="coach-chat-message-actions"><button type="button" className="coach-chat-copy" onClick={()=>void navigator.clipboard.writeText(m.text).catch(()=>setError(t.unavailable))} aria-label={t.copyAnswer} title={t.copyAnswer}><Copy size={15}/>{t.copyAnswer}</button><button type="button" className="coach-chat-listen" disabled={!token||!!busy||recording||speechBusy!==null} onClick={()=>void speak(m.text,i)}><Volume2 size={14}/>{t.listen}</button></div>
-    </>}{m.role==='assistant'&&!m.archiveOnly&&!!m.candidateLines?.length&&<div className="coach-chat-study" aria-label="Stockfish"><div className="coach-chat-study-choices">{m.candidateLines.map((line,j)=><button type="button" key={j} aria-pressed={preview?.item===i&&preview.line===j} onClick={()=>setPreview({item:i,line:j,ply:0})}>{t.gameNumber} {j+1} · {formatNumberedMoves(line.moves,(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0))}</button>)}</div>{preview?.item===i&&replayBoard&&<div className="coach-chat-study-board"><ChessBoard game={replayBoard} readOnly overrideBoardTheme="Classic Wood" overridePieceTheme="cburnett-classic" className="!border-0 !p-0"/><div className="coach-chat-study-nav"><button type="button" aria-label={t.prevMove} disabled={preview.ply===0} onClick={()=>setPreview({...preview,ply:preview.ply-1})}>←</button><span>{preview.ply} / {m.candidateLines[preview.line].moves.length}</span><button type="button" aria-label={t.nextMove} disabled={preview.ply===m.candidateLines[preview.line].moves.length} onClick={()=>setPreview({...preview,ply:preview.ply+1})}>→</button></div></div>}</div>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{t.gameNumber} {j+1}</span><span>{formatNumberedMoves(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6)),g.ply)||"—"}</span></summary><div className="coach-chat-variation-full"><div className="coach-chat-variation-rule" aria-hidden="true"/><p>{formatNumberedMoves((g.moves||[]).slice(0,30))}</p><button type="button" onClick={()=>void navigator.clipboard.writeText(formatNumberedMoves((g.moves||[]).slice(0,30))).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
+    </>}{m.role==='assistant'&&!m.archiveOnly&&!!m.candidateLines?.length&&<div className="coach-chat-study"><div className="coach-chat-study-choices">{m.candidateLines.map((line,j)=><button type="button" key={j} aria-pressed={preview?.item===i&&preview.line===j} onClick={()=>{setPreview({item:i,line:j,ply:0});onVariationPreview?.(line.moves,0);}}>{t.variant} {j+1} · {formatNumberedMoves(line.moves,(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0))}</button>)}</div>{preview?.item===i&&<div className="coach-chat-study-nav"><button type="button" aria-label={t.prevMove} disabled={preview.ply===0} onClick={()=>{const ply=preview.ply-1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>←</button><span>{preview.ply} / {m.candidateLines[preview.line].moves.length}</span><button type="button" aria-label={t.nextMove} disabled={preview.ply===m.candidateLines[preview.line].moves.length} onClick={()=>{const ply=preview.ply+1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>→</button><button type="button" onClick={()=>{setPreview(null);onVariationPreview?.([], -1);}}>{t.returnPosition}</button></div>}</div>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{t.gameNumber} {j+1}</span><span>{formatNumberedMoves(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6)),g.ply)||"—"}</span></summary><div className="coach-chat-variation-full"><div className="coach-chat-variation-rule" aria-hidden="true"/><p>{formatNumberedMoves((g.moves||[]).slice(0,30))}</p><button type="button" onClick={()=>void navigator.clipboard.writeText(formatNumberedMoves((g.moves||[]).slice(0,30))).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
     {busy&&<p role="status">{busy==='transcribe'?t.transcribing:busy==='microphone'?t.voice:t.busy}</p>}
    </div>
    {recording&&<p role="status" className="coach-chat-notice">{t.recording}</p>}
