@@ -1,10 +1,17 @@
 'use strict';
 // Manual benchmark for the server-side AI Coach engine (not part of npm test).
-// Usage: node scripts/benchCoachEngine.js [movetimeMs]
+// Usage:
+//   node scripts/benchCoachEngine.js --generate 15000 games.json   (seeded random legal games)
+//   node --expose-gc scripts/benchCoachEngine.js [movetimeMs] [games.json]
 // Reports cold start, p50/p95 over 20 positions, reached depth, and memory:
 // parent (Express process) RSS delta and the engine child process peak RSS (VmHWM).
-const {readFileSync}=require('node:fs');
+// With games.json a PositionIndex is built in this process first (games are generated in a
+// separate run so generation garbage does not inflate the measurement), and combined memory
+// is reported as RSS and PSS (PSS splits shared pages, so the sum is not double counted).
+const {readFileSync,writeFileSync}=require('node:fs');
+const {Chess}=require('chess.js');
 const {createCoachEngine}=require('../coachEngine');
+const {PositionIndex}=require('../positionIndex');
 
 const POSITIONS=[
  'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
@@ -32,9 +39,34 @@ const rss=()=>process.memoryUsage().rss;
 const mb=(bytes)=>Math.round(bytes/1048576);
 function childPeakKb(pid){try{return Number(readFileSync('/proc/'+pid+'/status','utf8').match(/VmHWM:\s+(\d+)/)[1]);}catch{return null;}}
 const pct=(sorted,p)=>sorted[Math.min(sorted.length-1,Math.ceil(p*sorted.length)-1)];
+function kb(pid,file,field){try{return Number(readFileSync('/proc/'+pid+'/'+file,'utf8').match(new RegExp(field+':\\s+(\\d+)'))[1]);}catch{return null;}}
+function syntheticGames(count){
+ let seed=20261101;const rand=()=>((seed=Math.imul(seed^(seed>>>15),2246822507)+0x9e3779b9|0)>>>0)/4294967296;
+ const rows=[];
+ for(let i=0;i<count;i++){
+  const board=new Chess(),plies=70+Math.floor(rand()*30);
+  for(let p=0;p<plies&&!board.isGameOver();p++){const moves=board.moves();board.move(moves[Math.floor(rand()*moves.length)]);}
+  rows.push({id:'g'+String(i).padStart(8,'0'),pgn:board.history().join(' ')+' 1/2-1/2',white_fide_id:null,black_fide_id:null,white_name:'W',black_name:'B',event:'Synthetic',game_date:'2026-01-01',source_url:'https://example.invalid',license_url:'https://creativecommons.org/licenses/by-sa/4.0/'});
+ }
+ return rows;
+}
+// Rows are handed out page by page, like rows arriving from Supabase.
+async function buildIndex(file){
+ let all=JSON.parse(readFileSync(file,'utf8')),offset=0;
+ const index=new PositionIndex({page:async(cursor,limit)=>{
+  const rows=all?all.slice(offset,offset+limit):[];offset+=rows.length;
+  if(!rows.length)all=null; // release the source copy once fully paged, like a finished DB read
+  return rows;
+ },hidden:async()=>new Set()},{log(){}});
+ await index.start();
+ if(index.status!=='ready')throw Error('index_not_ready');
+ return index;
+}
 
 (async()=>{
- const movetimeMs=Number(process.argv[2]||900);
+ if(process.argv[2]==='--generate'){writeFileSync(process.argv[4],JSON.stringify(syntheticGames(Number(process.argv[3]))));return;}
+ const movetimeMs=Number(process.argv[2]||900),gamesFile=process.argv[3]||null;
+ const index=gamesFile?await buildIndex(gamesFile):null;
  global.gc?.();const before=rss();
  const engine=createCoachEngine({movetimeMs});
  let t=Date.now();const first=await engine.analyze(POSITIONS[0]);const cold=Date.now()-t;
@@ -44,9 +76,14 @@ const pct=(sorted,p)=>sorted[Math.min(sorted.length-1,Math.ceil(p*sorted.length)
  }
  depths.push(...first.lines.map(l=>l.depth));
  global.gc?.();const after=rss(),peakKb=childPeakKb(pid);
+ const combined={parentPeakRssMb:Math.round(kb(process.pid,'status','VmHWM')/1024),parentPssMb:Math.round(kb(process.pid,'smaps_rollup','Pss')/1024),
+  childPssMb:Math.round(kb(pid,'smaps_rollup','Pss')/1024)};
+ combined.totalPssMb=combined.parentPssMb+combined.childPssMb;
+ combined.totalPeakRssMb=combined.parentPeakRssMb+Math.round(peakKb/1024);
  times.sort((a,b)=>a-b);depths.sort((a,b)=>a-b);
  console.log(JSON.stringify({engine:first.engine,nnue:first.nnue,movetimeMs,positions:POSITIONS.length,coldStartMs:cold,
   p50Ms:pct(times,0.5),p95Ms:pct(times,0.95),depthMin:depths[0],depthMedian:depths[Math.floor(depths.length/2)],
-  parentRssBeforeMb:mb(before),parentRssAfterMb:mb(after),parentDeltaMb:mb(after-before),engineChildPeakRssMb:peakKb===null?null:Math.round(peakKb/1024)}));
+  parentRssBeforeMb:mb(before),parentRssAfterMb:mb(after),parentDeltaMb:mb(after-before),engineChildPeakRssMb:peakKb===null?null:Math.round(peakKb/1024),
+  ...(index?{indexGames:index.games.length,indexEntries:index.metrics?.entries??null,indexRssAfterBuildMb:index.metrics?mb(index.metrics.rss_after):null}:{}),...combined}));
  engine.close();
 })().catch((e)=>{console.error(e.code||e.message);process.exit(1);});
