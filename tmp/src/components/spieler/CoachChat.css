@@ -138,3 +138,18 @@
  background:linear-gradient(90deg,transparent,rgba(185,158,122,.65),rgba(198,204,208,.55),transparent);
 }
 .coach-chat-variations summary>span:first-child{white-space:nowrap}
+
+/* Scoped, optional study replay: no changes to the main board or theme tokens. */
+.coach-chat-study{display:grid;gap:8px;margin-top:10px;min-width:0;border-top:1px solid #655441;padding-top:10px}
+.coach-chat-study-choices{display:grid;gap:5px;min-width:0}
+.coach-chat-message .coach-chat-study-choices button{width:100%;margin:0;padding:8px 10px;border:1px solid #5b5248;border-radius:7px;background:#222629;color:#ded9ce;line-height:1.4;text-align:left}
+.coach-chat-message .coach-chat-study-choices button[aria-pressed="true"]{border-color:#bda078}
+.coach-chat-study-nav{display:flex;justify-content:center;align-items:center;gap:12px}
+.coach-chat-message .coach-chat-study-nav button{width:42px;height:38px;margin:0;text-align:center}
+.coach-chat-study-nav span{font-variant-numeric:tabular-nums}
+
+.coach-chat-study-nav{flex-wrap:wrap}
+.coach-chat-message .coach-chat-study-nav button:last-child{width:auto;min-width:110px;padding-inline:10px}
+
+/* Source attribution for the two replayable engine variations. */
+.coach-chat-engine-source{display:block;color:#bda078;font-size:11px;font-weight:600;letter-spacing:.065em;line-height:1.4}

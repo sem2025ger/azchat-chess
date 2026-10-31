@@ -24,9 +24,23 @@ const post=(url,body,token='ok',type='application/json')=>fetch(url,{method:'POS
 test('OpenAI exact model, nonstored Responses, schema, bounded history and legal FEN context',async()=>{
  let calls=0;const answer=await generateAnswer(query,{archiveAvailable:false},{apiKey:key,model:'gpt-6-sol',fetchImpl:async(url,options)=>{
   calls++;assert.equal(url,'https://api.openai.com/v1/responses');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,'Bearer '+key);assert.ok(options.signal);
-  const body=JSON.parse(options.body),input=JSON.parse(body.input);assert.equal(body.model,'gpt-6-sol');assert.equal(body.store,false);assert.equal(body.text.format.type,'json_schema');assert.equal(body.text.format.strict,true);assert.ok(body.instructions.includes('Stockfish is NOT available'));
+  const body=JSON.parse(options.body),input=JSON.parse(body.input);assert.equal(body.model,'gpt-6-sol');assert.equal(body.store,false);assert.equal(body.text.format.type,'json_schema');assert.equal(body.text.format.strict,true);assert.ok(body.instructions.includes('backend checks their legality'));assert.ok(body.instructions.includes('cannot independently authenticate'));assert.ok(body.instructions.includes('Never incorrectly state they are NOT Stockfish variations'));assert.ok(body.instructions.includes('Never invent scores'));
   assert.equal(input.position,query.fen);assert.equal(input.sideToMove,'w');assert.deepEqual(input.legalMoves,new Chess().moves());assert.deepEqual(input.history,query.history);assert.equal(input.evidence.archiveAvailable,false);assert.equal(input.positionStatus.inCheck,false);assert.equal(input.pieces.length,32);assert.deepEqual(input.legalMoveDetails.find(m=>m.san==='e4'),{san:'e4',from:'e2',to:'e4',piece:'p'});assert.ok(body.instructions.includes('requestedSide'));return answerResponse();
  }});assert.equal(calls,1);assert.ok(answer.includes('центр'));
+});
+test('Stockfish study lines are used as local-board evidence without claiming server-side verification',async()=>{
+ const lines=[{moves:['e4','e5','Nf3','Nc6']},{moves:['d4','d5']}];
+ const result=await generateAnswer({...query,message:'Explain the Stockfish lines'},
+  {candidateLines:lines,candidateOrigin:'untrusted_client_legality_checked'},
+  {apiKey:key,fetchImpl:async(_url,options)=>{
+   const body=JSON.parse(options.body),input=JSON.parse(body.input);
+   assert.deepEqual(input.evidence.candidateLines,lines);
+   assert.ok(body.instructions.includes('explain the exact displayed candidateLines as local Stockfish 19 lines'));
+   assert.ok(body.instructions.includes('do not claim the server independently verified them'));
+   assert.ok(body.instructions.includes('never claim the lines are merely fabricated illustrations'));
+   return answerResponse('В показанной локальной линии 1. e4 e5 развивается центр; оценки сервер не пересчитывал.');
+  }});
+ assert.match(result,/локальной линии/);
 });
 test('provider refusals, partial output, links, bad JSON and streamed byte overflow fail closed',async()=>{
  for(const make of [()=>Response.json({status:'incomplete',output:[]}),()=>answerResponse('https://example.com'),()=>Response.json({status:'completed',output:[]}),()=>new Response('not JSON'),()=>new Response('SECRET upstream',{status:401})])await assert.rejects(generateAnswer(query,{},{apiKey:key,fetchImpl:async()=>make()}));

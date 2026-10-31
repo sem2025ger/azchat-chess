@@ -30,13 +30,32 @@ function gameRequest(message){
  return count===null?null:Math.max(1,Math.min(20,count));
 }
 
+// Client-submitted variations are untrusted hints. Rebuild every move from the exact FEN
+// with chess.js before passing any SAN to the language model; do not accept engine scores.
+function legalCandidateLines(lines,fen){
+ if(lines===undefined)return [];
+ if(!Array.isArray(lines)||lines.length<1||lines.length>3)return null;
+ const normalized=[],seen=new Set();
+ for(const line of lines){
+  if(!line||typeof line!=='object'||Array.isArray(line)||Object.keys(line).some(k=>k!=='moves')||!Array.isArray(line.moves)||line.moves.length<1||line.moves.length>10)return null;
+  const board=new Chess(fen),moves=[];
+  for(const text of line.moves){
+   if(typeof text!=='string'||text.length<2||text.length>16)return null;
+   try{moves.push(board.move(text,{strict:true}).san);}catch{return null;}
+  }
+  const id=moves.join(' ');
+  if(seen.has(id))return null;seen.add(id);
+  normalized.push({moves});
+ }
+ return normalized;
+}
 function validChatQuery(value){
- if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!['message','fen','side','language','history'].includes(k)))return false;
+ if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!['message','fen','side','language','history','candidateLines'].includes(k)))return false;
  if(typeof value.message!=='string'||value.message.trim().length<2||value.message.length>500)return false;
  if(typeof value.fen!=='string'||value.fen.length>200||!validateFen(value.fen).ok)return false;
  if(!['white','black','any'].includes(value.side)||!LANGUAGE_CODES.has(value.language))return false;
  if(value.history!==undefined&&(!Array.isArray(value.history)||value.history.length>8||value.history.some(item=>!item||typeof item!=='object'||Object.keys(item).some(k=>!['role','text'].includes(k))||!['user','assistant'].includes(item.role)||typeof item.text!=='string'||item.text.length<1||item.text.length>1200)))return false;
- try{new Chess(value.fen);}catch{return false;}
+ try{new Chess(value.fen);if(legalCandidateLines(value.candidateLines,value.fen)===null)return false;}catch{return false;}
  return true;
 }
 function publicChatGames(result,fen,count=5){
@@ -53,11 +72,12 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
  if(!result&&!openaiApiKey)throw Object.assign(Error('index_unavailable'),{code:index?.status==='warming'?'index_warming':'index_unavailable'});
  const games=result?publicChatGames(result,query.fen,requested??5):[],language=normalizeLanguage(query.language);
  const evidence={archiveAvailable:!!result,matched:result?.total??null,
+  candidateLines:legalCandidateLines(query.candidateLines,query.fen)||[],candidateOrigin:'untrusted_client_legality_checked',
   nextMoves:(result?.nextMoves||[]).slice(0,8).map(x=>({move:x.move,count:x.count})),
   games:games.map(({white,black,result,date,ply,pgn})=>{const board=new Chess();board.loadPgn(pgn);return {white,black,result,date,hasPgn:true,matchedPly:ply,continuation:board.history().slice(ply,ply+6)};})};
  const archiveOnly=!!requested&&!!result;
  const answer=archiveOnly?gameHeadings[language]:openaiApiKey?await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal}):fallback[language](result.total||0);
  return {answer,generated:archiveOnly||!!openaiApiKey,provider:archiveOnly?null:openaiApiKey?'openai':null,providerStatus:archiveOnly?'archive':openaiApiKey?'ready':'not_configured',
-  source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:false,position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);const moves=board.history();return {...game,moves:moves.slice(0,30),continuation:moves.slice(game.ply,game.ply+6)};}):games};
+  source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:false,candidateLines:evidence.candidateLines,position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);const moves=board.history();return {...game,moves:moves.slice(0,30),continuation:moves.slice(game.ply,game.ply+6)};}):openaiApiKey?[]:games};
 }
-module.exports={validChatQuery,groundedChat,publicChatGames,gameRequest};
+module.exports={validChatQuery,groundedChat,publicChatGames,gameRequest,legalCandidateLines};
