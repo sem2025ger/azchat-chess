@@ -60,3 +60,22 @@
 /* Keep extensive model games in their own scroller instead of pushing Coach off-screen. */
 .spieler-page .chessaz-ai-coach-results-panel[open]>.chessaz-ai-coach-results{max-height:min(34dvh,310px);overflow:auto;overscroll-behavior:contain;padding-right:5px;scrollbar-gutter:stable}
 .spieler-page .chessaz-ai-coach-close-results{display:block;width:100%;min-height:36px;margin-top:8px;background:#201f1e;border:1px solid #756449;border-radius:8px;color:#e5d0aa}
+
+/* Preserve the metallic title and align the desktop ask action alongside it. */
+@media(min-width:1024px){
+ #root .spieler-page .spieler-position-workspace .chessaz-ai-coach>header{
+  justify-content:space-between;text-align:left;flex-wrap:wrap;gap:10px;
+ }
+ #root .spieler-page .spieler-position-workspace .chessaz-ai-coach h2.ai-coach-wordmark{
+  margin:0 auto 0 0;
+ }
+}
+.chessaz-ai-coach-results-panel>summary{
+ display:list-item;min-height:42px;padding:10px 7px;
+ font-weight:700;cursor:pointer;
+}
+.chessaz-ai-coach-results-panel>summary::marker,
+.chessaz-ai-coach-group>summary::marker{
+ font-size:1.2rem;color:#c6a77d;
+}
+.chessaz-ai-coach-game-moves{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
