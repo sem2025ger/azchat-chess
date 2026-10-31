@@ -1,8 +1,8 @@
 import {spawnSync} from 'node:child_process';
+import {isIsolatedQaPreviewBranch} from './qaPreviewBranch.mjs';
 
 const branch=process.env.VERCEL_GIT_COMMIT_REF;
-const qaBranch='qa/spieler-coach-compact-controls-20261030';
-if(branch===qaBranch){
+if(isIsolatedQaPreviewBranch(branch)){
  const qa={
   VITE_MAINTENANCE_MODE:'false',
   VITE_SERVER_URL:'https://chessaz-ai-coach-v1-isolated-qa.onrender.com',
