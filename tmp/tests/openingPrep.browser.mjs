@@ -26,7 +26,7 @@ window.fetch=async(url,options={})=>{
  if(window.responseMode==='hold')await new Promise(resolve=>window.release=resolve);
  if(!['ready','hold'].includes(window.responseMode))return Response.json({code:window.responseMode},{status:400});
  const board=new Chess();for(const move of body.moves.match(/[A-Za-z][A-Za-z0-9+#=-]*/g)||[])board.move(move);const moves=board.history(),ply=moves.length,turn=board.turn()==='w'?'white':'black';
- const transposed=body.moves==='Nf3 d5 g3 Nf6';const rest=body.moves==='e4'?['e5','Nf3','Nc6']:transposed?['Bg2','e6']:['c4','e6','Nc3'];
+ const transposed=body.moves==='Nf3 d5 g3 Nf6';const rest=body.moves==='e4'?['e5','Nf3','Nc6']:transposed?['Bg2','e6']:body.moves.startsWith('1. e4 c5 2. Nf3 d6')?['Be3','e6','f3']:['c4','e6','Nc3'];
  const model=new Chess();for(const move of transposed?'Nf3 Nf6 Ng1 Ng8 g3 d5 Nf3 Nf6 Bg2 e6'.split(' '):[...moves,...rest])model.move(move);
  const game={id:'synthetic',pgn:model.pgn(),ply:transposed?8:ply,white:'Synthetic White',black:'Synthetic Black',event:'Synthetic',date:'2026-10-29',result:'*',first25:model.history()};
  return Response.json({opening:'custom',color:body.color,moves,ply,turn,matched:1,inspected:1,briefing:null,groups:[{move:rest[0],replyColor:turn==='white'?'black':'white',replies:[{move:rest[1],count:1}],games:[game]}]});
