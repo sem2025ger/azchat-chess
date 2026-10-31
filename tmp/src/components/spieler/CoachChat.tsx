@@ -17,7 +17,7 @@ import './CoachChat.css';
 type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string;moves?:string[];continuation?:string[]};
 type CandidateLine={moves:string[]};
 type Reply={answer:string;games:ResultGame[];generated:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[]};
-type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated?:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[]};
+type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated?:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLinked?:boolean};
 type Clip={url:string;item:number;autoplay:boolean};
 type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string;onVariationPreview?:(moves:string[],ply:number)=>void};
 type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number;expanded?:number[]};
@@ -28,6 +28,7 @@ function restoredChat(accountId:string,context:string){
   if(!m||!['user','assistant'].includes(m.role)||typeof m.text!=='string'||m.text.length>1200)return true;
   if(m.generated!==undefined&&typeof m.generated!=='boolean')return true;
   if(m.archiveOnly!==undefined&&typeof m.archiveOnly!=='boolean')return true;
+  if(m.engineLinked!==undefined&&typeof m.engineLinked!=='boolean')return true;
   if(m.candidateLines!==undefined&&(!Array.isArray(m.candidateLines)||m.candidateLines.length>3||m.candidateLines.some(l=>!l||!Array.isArray(l.moves)||l.moves.length>10||l.moves.some(move=>typeof move!=='string'||move.length>16))))return true;
   if(m.games===undefined)return false;
   if(!Array.isArray(m.games)||m.games.length>20)return true;
@@ -82,7 +83,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
     done=true;
     if(timer!==null)clearTimeout(timer);
     engine.destroy();
-    if(lines.length&&latestDepth>=10)engineCacheRef.current={fen,depth:latestDepth,lines};
+    if(lines.length&&latestDepth>=8)engineCacheRef.current={fen,depth:latestDepth,lines};
     resolve(lines);
    };
    stop=()=>finish([]);
@@ -95,12 +96,14 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
     latestLines=lines;latestDepth=result.depth;
     if(result.depth>=14)finish(lines);
    });
-   engine.onError(()=>finish(latestDepth>=10?latestLines:[]));
+   engine.onError(()=>finish(latestDepth>=8?latestLines:[]));
    // No long blocking spinner on slower hardware or missing WASM/Worker.
-   timer=setTimeout(()=>finish(latestDepth>=10?latestLines:[]),3500);
+   timer=setTimeout(()=>finish(latestDepth>=8?latestLines:[]),7000);
    engine.analyze(fen,14,2);
   });
   engineJobRef.current={fen,promise,cancel:()=>stop()};
+  // Empty/time-limited jobs must not permanently prevent retrying this FEN.
+  void promise.then(()=>{if(engineJobRef.current?.promise===promise)engineJobRef.current=null;});
   return promise;
  }
  useEffect(()=>{
@@ -164,7 +167,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
     if(response.status===400&&'candidateLines'in payload){const failure=await response.clone().json().catch(()=>null);if(failure?.code==='invalid_query'){legacyBackend=true;response=await fetch(apiUrl('chat'),{...opts,body:JSON.stringify({...payload,candidateLines:undefined})});}}
     data=await (await checked(response)).json() as Reply;}
    if(typeof data.answer!=='string'||data.answer.length>1200||!Array.isArray(data.games)||typeof data.generated!=='boolean')throw Error('api');
-   if(!abort.signal.aborted){setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:data.games.slice(0,20),generated:data.generated,archiveOnly:data.archiveOnly===true,candidateLines:!data.archiveOnly&&!legacyBackend&&analysisLines.length&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines)?analysisLines:[]}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
+   if(!abort.signal.aborted){setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:requested!==null?data.games.slice(0,20):[],generated:data.generated,archiveOnly:data.archiveOnly===true,candidateLines:!data.archiveOnly?analysisLines:[],engineLinked:!legacyBackend&&analysisLines.length>0&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines)}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
   }catch(e){if(!abort.signal.aborted){setError(describe(e));setDraft(message);setItems(previous);}}
   finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}
  }
@@ -210,7 +213,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
     {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p className={m.archiveOnly?'coach-chat-archive-heading':undefined}>{m.text}</p>{m.role==='assistant'&&<>
      {!m.generated&&<small className="coach-chat-notice">{t.fallback}</small>}
      <div className="coach-chat-message-actions"><button type="button" className="coach-chat-copy" onClick={()=>void navigator.clipboard.writeText(m.text).catch(()=>setError(t.unavailable))} aria-label={t.copyAnswer} title={t.copyAnswer}><Copy size={15}/>{t.copyAnswer}</button><button type="button" className="coach-chat-listen" disabled={!token||!!busy||recording||speechBusy!==null} onClick={()=>void speak(m.text,i)}><Volume2 size={14}/>{t.listen}</button></div>
-    </>}{m.role==='assistant'&&!m.archiveOnly&&!!m.candidateLines?.length&&<div className="coach-chat-study"><small className="coach-chat-engine-source">Stockfish 19</small><div className="coach-chat-study-choices">{m.candidateLines.map((line,j)=><button type="button" key={j} aria-pressed={preview?.item===i&&preview.line===j} onClick={()=>{setPreview({item:i,line:j,ply:0});onVariationPreview?.(line.moves,0);}}>{t.variant} {j+1} · {formatNumberedMoves(line.moves,(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0))}</button>)}</div>{preview?.item===i&&<div className="coach-chat-study-nav"><button type="button" aria-label={t.prevMove} disabled={preview.ply===0} onClick={()=>{const ply=preview.ply-1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>←</button><span>{preview.ply} / {m.candidateLines[preview.line].moves.length}</span><button type="button" aria-label={t.nextMove} disabled={preview.ply===m.candidateLines[preview.line].moves.length} onClick={()=>{const ply=preview.ply+1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>→</button><button type="button" onClick={()=>{setPreview(null);onVariationPreview?.([], -1);}}>{t.returnPosition}</button></div>}</div>}{m.role==='assistant'&&!m.archiveOnly&&!m.candidateLines?.length&&<small className="coach-chat-notice">{t.engineUnavailable}</small>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{t.gameNumber} {j+1}</span><span>{formatNumberedMoves(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6)),g.ply)||"—"}</span></summary><div className="coach-chat-variation-full"><div className="coach-chat-variation-rule" aria-hidden="true"/><p>{formatNumberedMoves((g.moves||[]).slice(0,30))}</p><button type="button" onClick={()=>void navigator.clipboard.writeText(formatNumberedMoves((g.moves||[]).slice(0,30))).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
+    </>}{m.role==='assistant'&&!m.archiveOnly&&!!m.candidateLines?.length&&<div className="coach-chat-study"><small className="coach-chat-engine-source">Stockfish 19</small><div className="coach-chat-study-choices">{m.candidateLines.map((line,j)=><button type="button" key={j} aria-pressed={preview?.item===i&&preview.line===j} onClick={()=>{setPreview({item:i,line:j,ply:0});onVariationPreview?.(line.moves,0);}}>{t.variant} {j+1} · {formatNumberedMoves(line.moves,(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0))}</button>)}</div>{!m.engineLinked&&<small className="coach-chat-notice coach-chat-engine-unlinked">{t.engineNotLinked}</small>}{preview?.item===i&&<div className="coach-chat-study-nav"><button type="button" aria-label={t.prevMove} disabled={preview.ply===0} onClick={()=>{const ply=preview.ply-1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>←</button><span>{preview.ply} / {m.candidateLines[preview.line].moves.length}</span><button type="button" aria-label={t.nextMove} disabled={preview.ply===m.candidateLines[preview.line].moves.length} onClick={()=>{const ply=preview.ply+1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>→</button><button type="button" onClick={()=>{setPreview(null);onVariationPreview?.([], -1);}}>{t.returnPosition}</button></div>}</div>}{m.role==='assistant'&&!m.archiveOnly&&!m.candidateLines?.length&&<small className="coach-chat-notice">{t.engineUnavailable}</small>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{t.gameNumber} {j+1}</span><span>{formatNumberedMoves(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6)),g.ply)||"—"}</span></summary><div className="coach-chat-variation-full"><div className="coach-chat-variation-rule" aria-hidden="true"/><p>{formatNumberedMoves((g.moves||[]).slice(0,30))}</p><button type="button" onClick={()=>void navigator.clipboard.writeText(formatNumberedMoves((g.moves||[]).slice(0,30))).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
     {busy&&<p role="status">{busy==='transcribe'?t.transcribing:busy==='microphone'?t.voice:t.busy}</p>}
    </div>
    {recording&&<p role="status" className="coach-chat-notice">{t.recording}</p>}
