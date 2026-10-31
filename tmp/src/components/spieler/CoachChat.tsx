@@ -1,6 +1,10 @@
 import {useCallback,useEffect,useId,useRef,useState,type FormEvent} from 'react';
-import {Mic,Send,MessageSquare,Square,Volume2} from 'lucide-react';
+import {Mic,Send,MessageSquare,Square,Volume2,Copy,Trash2} from 'lucide-react';
 import {useNavigate} from 'react-router-dom';
+import {Chess} from 'chess.js';
+import {createPortal} from 'react-dom';
+import {formatNumberedMoves} from '../../utils/numberedSan';
+import {createPositionSearchApi} from '../../services/positions';
 import {useLanguage} from '../../context/LanguageContext';
 import {openSpielerAnalysis} from '../../services/spieler';
 import {openingPrepLanguage} from '../../i18n/openingPrepCopy';
@@ -8,19 +12,30 @@ import {coachChatCopy} from '../../i18n/coachChatCopy';
 import {readPositionSearchState,writePositionSearchState,positionSearchRevision} from '../../utils/positionSearchState';
 import {readCoachSpeech,createCoachPlayback} from '../../services/coachSpeech';
 import './CoachChat.css';
-type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string};
-type Reply={answer:string;games:ResultGame[];generated:boolean};
-type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated?:boolean};
+type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string;moves?:string[];continuation?:string[]};
+type Reply={answer:string;games:ResultGame[];generated:boolean;archiveOnly?:boolean};
+type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated?:boolean;archiveOnly?:boolean};
 type Clip={url:string;item:number;autoplay:boolean};
 type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string};
 type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number;expanded?:number[]};
 function restoredChat(accountId:string,context:string){
  const saved=readPositionSearchState<SavedChat>(accountId,'chat');
- if(!saved||saved.context!==context||typeof saved.open!=='boolean'||typeof saved.voiceReplies!=='boolean'||typeof saved.draft!=='string'||saved.draft.length>500||!Number.isFinite(saved.scrollTop)||!Array.isArray(saved.items)||saved.items.length>18)return null;
- if(saved.items.some(m=>!m||!['user','assistant'].includes(m.role)||typeof m.text!=='string'||m.text.length>1200||(m.generated!==undefined&&typeof m.generated!=='boolean')||(m.games!==undefined&&(!Array.isArray(m.games)||m.games.length>5||m.games.some(g=>!g||typeof g.id!=='string'||typeof g.white!=='string'||typeof g.black!=='string'||typeof g.pgn!=='string'||!Number.isInteger(g.ply)||g.ply<0)))))return null;
+ if(!saved||saved.context!==context||typeof saved.open!=='boolean'||typeof saved.voiceReplies!=='boolean'||typeof saved.draft!=='string'||saved.draft.length>500||!Number.isFinite(saved.scrollTop)||!Array.isArray(saved.items)||saved.items.length>60)return null;
+ if(saved.items.some(m=>{
+  if(!m||!['user','assistant'].includes(m.role)||typeof m.text!=='string'||m.text.length>1200)return true;
+  if(m.generated!==undefined&&typeof m.generated!=='boolean')return true;
+  if(m.archiveOnly!==undefined&&typeof m.archiveOnly!=='boolean')return true;
+  if(m.games===undefined)return false;
+  if(!Array.isArray(m.games)||m.games.length>20)return true;
+  return m.games.some(g=>!g||typeof g.id!=='string'||typeof g.white!=='string'||typeof g.black!=='string'||typeof g.pgn!=='string'||!Number.isInteger(g.ply)||g.ply<0||(g.moves!==undefined&&(!Array.isArray(g.moves)||g.moves.length>30||g.moves.some(move=>typeof move!=='string'||move.length>16)))||(g.continuation!==undefined&&(!Array.isArray(g.continuation)||g.continuation.length>6||g.continuation.some(move=>typeof move!=='string'||move.length>16))));
+ }))return null;
  if(saved.expanded!==undefined&&(!Array.isArray(saved.expanded)||saved.expanded.some(i=>!Number.isInteger(i)||i<0||i>=saved.items.length)))return null;
  return saved;
 }
+const archiveHeadings:Record<string,string>={ru:'В партиях встречались такие продолжения:',de:'In Partien kamen folgende Fortsetzungen vor:',en:'These continuations occurred in games:',az:'Partiyalarda belə davamlar oynanılıb:',tr:'Partilerde şu devam yolları oynandı:',uk:'У партіях зустрічалися такі продовження:'};
+const archiveWords:Record<string,number>={одну:1,один:1,одна:1,две:2,два:2,дві:2,три:3,четыре:4,чотири:4,пять:5,"п'ять":5,шесть:6,семь:7,восемь:8,девять:9,десять:10,one:1,two:2,three:3,four:4,five:5,ten:10,ein:1,zwei:2,drei:3,vier:4,fünf:5,bir:1,iki:2,üç:3,dört:4,beş:5};
+function archiveCount(message:string):number|null{const value=message.toLowerCase();if(!/(?:парт(?:ии|ий|ию|ия|ій|ії)|part(?:ien|ies|y|i)|games?|oyun|partiya)/iu.test(value)||!/(?:найд|покаж|подбер|да[йй]|знайд|find|show|list|suche|zeig|finde|göster|bul|tap|göstər)/iu.test(value))return null;const number=value.match(/\b([1-9]|1[0-9]|20)\b/u);const word=value.match(/[\p{L}']+/gu)?.find(w=>Object.prototype.hasOwnProperty.call(archiveWords,w));return number?Number(number[1]):word?archiveWords[word]:null;}
+function verifiedArchiveGame(game:{id:string;white:string;black:string;result:string;pgn:string;ply:number},fen:string):ResultGame|null{try{const board=new Chess();board.loadPgn(game.pgn);const history=board.history();if(!Number.isInteger(game.ply)||game.ply<0||game.ply>history.length)return null;const checkpoint=new Chess();for(let n=0;n<game.ply;n++)checkpoint.move(history[n]);const target=new Chess(fen);const position=(chess:Chess)=>chess.fen().split(' ').slice(0,4).join(' ');if(position(checkpoint)!==position(target))return null;return {...game,moves:history.slice(0,30),continuation:history.slice(game.ply,game.ply+6)};}catch{return null;}}
 const MAX_AUDIO_BYTES=2*1024*1024;
 function apiUrl(path:string){
  const root=new URL(import.meta.env.VITE_SERVER_URL||'');
@@ -36,12 +51,14 @@ export default function CoachChat(props:Props){
  return <CoachConversation key={JSON.stringify([props.accountId,props.fen,props.side,openingPrepLanguage(language)])} {...props}/>;
 }
 function CoachConversation({fen,side,token,accountId='guest'}:Props){
- const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId(),privacyId=useId();
+ const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId();
  const context=JSON.stringify([fen,side,lang]);
  const [storageRevision]=useState(positionSearchRevision);
+ const [headerTarget,setHeaderTarget]=useState<HTMLElement|null>(null);
+ useEffect(()=>{setHeaderTarget(document.querySelector('.spieler-position-workspace .chessaz-ai-coach>header'));},[]);
  const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context):null);
  const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0),[speechError,setSpeechError]=useState(''),[speechPlaying,setSpeechPlaying]=useState(false),[expanded,setExpanded]=useState<number[]>(saved?.expanded??[]);
- const request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
+ const sectionRef=useRef<HTMLElement>(null),request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
  const playback=useRef<ReturnType<typeof createCoachPlayback>>(null),speechCache=useRef(new Map<string,Blob>());
  const stopSpeech=useCallback(()=>{speechRequest.current?.abort();speechRequest.current=null;playback.current?.stop();playback.current=null;setSpeechPlaying(false);setSpeechError('');audioRef.current?.pause();if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;setClip(null);setSpeechBusy(null);},[]);
  const cancel=useCallback(()=>{
@@ -53,6 +70,7 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
  useEffect(()=>{cancel();setError('');setSpeechError('');return cancel;},[token,cancel]);
  useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{context,open,draft,items,voiceReplies,scrollTop,expanded},'chat',storageRevision);},[storageRevision,accountId,context,token,open,draft,items,voiceReplies,scrollTop,expanded]);
  useEffect(()=>{const list=listRef.current;if(list){list.scrollTop=restoredScroll.current??list.scrollHeight;restoredScroll.current=null;}},[items,open,busy]);
+ useEffect(()=>{if(!open)return;const node=sectionRef.current;if(node?.closest('.spieler-position-workspace')&&window.matchMedia('(min-width: 1024px)').matches)return;const scroll=node?.closest('[data-route-scroll]') as HTMLElement|null;if(!node||!scroll)return;const frame=requestAnimationFrame(()=>{const rail=node.closest('.global-position-right-rail') as HTMLElement|null;if(rail&&rail.scrollHeight>rail.clientHeight){rail.scrollTo({top:Math.max(0,node.offsetTop-rail.offsetTop-8),behavior:'instant'});}const box=node.getBoundingClientRect(),area=scroll.getBoundingClientRect();if(box.top<area.top+8||box.bottom>area.bottom-8)scroll.scrollBy({top:box.top-area.top-8,behavior:'instant'});});return()=>cancelAnimationFrame(frame);},[open]);
  useEffect(()=>{if(clip?.autoplay)void audioRef.current?.play().catch(()=>{/* Native controls remain available when autoplay is blocked. */});},[clip]);
  function describe(error:unknown){
   const code=error instanceof Error?error.message:'';
@@ -80,13 +98,15 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
  async function send(event:FormEvent){
   event.preventDefault();const message=draft.trim();if(message.length<2||!token||busyRef.current||recorder.current)return;
   busyRef.current=true;
-  stopSpeech();const abort=new AbortController();request.current?.abort();request.current=abort;const previous=items.slice(-16);
+  stopSpeech();const abort=new AbortController();request.current?.abort();request.current=abort;const previous=items.slice(-58);
   setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);
   try{
-   const response=await checked(await fetch(apiUrl('chat'),{method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text}))})}));
-   const data=await response.json() as Reply;
+   const requested=archiveCount(message);
+   let data:Reply;
+   if(requested!==null){const records=await createPositionSearchApi(import.meta.env.VITE_SERVER_URL||'').search({fen,side,fideId:'',scope:'all',sort:'strongest',limit:requested},token,abort.signal);const archive=records.games.map(g=>verifiedArchiveGame(g,fen)).filter((g):g is ResultGame=>g!==null).slice(0,requested);data={answer:archive.length?archiveHeadings[lang]:t.unavailable,games:archive,generated:true,archiveOnly:archive.length>0};}
+   else{const response=await checked(await fetch(apiUrl('chat'),{method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text}))})}));data=await response.json() as Reply;}
    if(typeof data.answer!=='string'||data.answer.length>1200||!Array.isArray(data.games)||typeof data.generated!=='boolean')throw Error('api');
-   if(!abort.signal.aborted){setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:data.games.slice(0,5),generated:data.generated}]);if(voicePreference.current)void speak(data.answer,previous.length+1);}
+   if(!abort.signal.aborted){setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:data.games.slice(0,20),generated:data.generated,archiveOnly:data.archiveOnly===true}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
   }catch(e){if(!abort.signal.aborted){setError(describe(e));setDraft(message);setItems(previous);}}
   finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}
  }
@@ -123,14 +143,16 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
   }catch(e){acquired?.getTracks().forEach(track=>track.stop());stream.current=null;recorder.current=null;if(epoch.current===currentEpoch){busyRef.current=false;setBusy(null);setError(e instanceof DOMException&&e.name==='NotAllowedError'?t.micDenied:t.micUnavailable);}}
  }
  if(import.meta.env.VITE_AI_COACH_ENABLED!=='true')return null;
- return <section className="coach-chat" aria-label={t.title}>
-  <button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(v=>!v);}}><MessageSquare size={16}/>{t.title}</button>
+ return <section ref={sectionRef} className="coach-chat" aria-label={t.title}>
+  {(headerTarget?createPortal(<button type="button" className="coach-chat-toggle" aria-label={t.title} aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}><MessageSquare size={16}/>{t.askChat}</button>,headerTarget):<button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}><MessageSquare size={16}/>{t.title}</button>)}
+
   {open&&<div className="coach-chat-panel">
+   <div className="coach-chat-actions"><button type="button" disabled={!items.length||!!busy||recording} onClick={()=>{if(!window.confirm(t.clearConfirm))return;cancel();setItems([]);setDraft('');setExpanded([]);setScrollTop(0);setError('');}}><Trash2 size={15}/>{t.clearChat}</button></div>
    <div ref={listRef} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="coach-chat-history" role="log" aria-live="polite" aria-relevant="additions text">
-    {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p>{m.text}</p>{m.role==='assistant'&&<>
+    {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p className={m.archiveOnly?'coach-chat-archive-heading':undefined}>{m.text}</p>{m.role==='assistant'&&<>
      {!m.generated&&<small className="coach-chat-notice">{t.fallback}</small>}
-     <button type="button" className="coach-chat-listen" disabled={!token||!!busy||recording||speechBusy!==null} onClick={()=>void speak(m.text,i)}><Volume2 size={14}/>{t.listen}</button>
-    </>}{!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
+     <div className="coach-chat-message-actions"><button type="button" className="coach-chat-copy" onClick={()=>void navigator.clipboard.writeText(m.text).catch(()=>setError(t.unavailable))} aria-label={t.copyAnswer} title={t.copyAnswer}><Copy size={15}/>{t.copyAnswer}</button><button type="button" className="coach-chat-listen" disabled={!token||!!busy||recording||speechBusy!==null} onClick={()=>void speak(m.text,i)}><Volume2 size={14}/>{t.listen}</button></div>
+    </>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{t.gameNumber} {j+1}</span><span>{formatNumberedMoves(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6)),g.ply)||"—"}</span></summary><div className="coach-chat-variation-full"><div className="coach-chat-variation-rule" aria-hidden="true"/><p>{formatNumberedMoves((g.moves||[]).slice(0,30))}</p><button type="button" onClick={()=>void navigator.clipboard.writeText(formatNumberedMoves((g.moves||[]).slice(0,30))).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
     {busy&&<p role="status">{busy==='transcribe'?t.transcribing:busy==='microphone'?t.voice:t.busy}</p>}
    </div>
    {recording&&<p role="status" className="coach-chat-notice">{t.recording}</p>}
@@ -139,14 +161,16 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
    {!token&&<p className="coach-chat-error" role="status">{t.auth}</p>}
    {error&&<p className="coach-chat-error" role="alert">{error}</p>}
    {speechError&&<p className="coach-chat-error coach-chat-speech-error" role="alert">{speechError}</p>}
+   <label className="coach-chat-voice-option"><input type="checkbox" checked={voiceReplies} disabled={!token} onChange={e=>{voicePreference.current=e.target.checked;setVoiceReplies(e.target.checked);if(!e.target.checked)stopSpeech();}}/>{t.autoVoice}</label>
    <form className="coach-chat-compose" onSubmit={send}>
     <label className="sr-only" htmlFor={inputId}>{t.placeholder}</label>
     <input id={inputId} value={draft} maxLength={500} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder} disabled={!token||!!busy||recording}/>
-    <button type="button" onClick={()=>void toggleVoice()} disabled={!token||!!busy} aria-label={recording?t.stop:t.voice} aria-pressed={recording} aria-describedby={privacyId} title={recording?t.stop:t.voice}>{recording?<Square size={15}/>:<Mic size={17}/>}</button>
+    <button type="button" onClick={()=>void toggleVoice()} disabled={!token||!!busy} aria-label={recording?t.stop:t.voice} aria-pressed={recording} title={t.privacy}>{recording?<Square size={15}/>:<Mic size={17}/>}</button>
     <button type="submit" aria-label={t.send} disabled={!token||!!busy||recording||draft.trim().length<2}><Send size={17}/></button>
    </form>
-   <label className="coach-chat-voice-option"><input type="checkbox" checked={voiceReplies} disabled={!token} onChange={e=>{voicePreference.current=e.target.checked;setVoiceReplies(e.target.checked);if(!e.target.checked)stopSpeech();}}/>{t.autoVoice}</label>
-   <p id={privacyId} className="coach-chat-notice">{t.privacy}</p>
+
+
+   <button type="button" className="coach-chat-collapse-bottom" onClick={()=>{cancel();setOpen(false);}}>{t.closeChat} ↑</button>
   </div>}
  </section>;
 }

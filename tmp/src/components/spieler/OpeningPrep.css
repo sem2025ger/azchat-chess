@@ -26,7 +26,7 @@
  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
  font-size:clamp(1.42rem,1.8vw,1.76rem);font-weight:900;line-height:1.12;letter-spacing:-.05em;
  color:#bac0c2;
- background:linear-gradient(108deg,#261f1b 0%,#5b4233 13%,#34383c 27%,#afb5b7 39%,#312924 51%,#765841 62%,#b99a69 67%,#3f4245 78%,#24201d 90%,#79716a 100%);
+ background:linear-gradient(108deg,#77716b 0%,#b4997e 13%,#91999b 27%,#e0e2df 39%,#827668 51%,#ac8767 62%,#e2c39b 67%,#969fa3 78%,#786e67 90%,#c4b9aa 100%);
  background-size:240% 100%;-webkit-background-clip:text;background-clip:text;
  -webkit-text-fill-color:transparent;
  filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));
@@ -56,3 +56,26 @@
 .chessaz-ai-coach-results-panel .chessaz-ai-coach-results{margin-top:8px;padding-top:4px}
 .chessaz-ai-coach-results-panel :is(details,ol,li){min-width:0;max-width:100%}
 .chessaz-ai-coach-group>summary{flex-wrap:wrap}
+
+/* Keep extensive model games in their own scroller instead of pushing Coach off-screen. */
+.spieler-page .chessaz-ai-coach-results-panel[open]>.chessaz-ai-coach-results{max-height:min(34dvh,310px);overflow:auto;overscroll-behavior:contain;padding-right:5px;scrollbar-gutter:stable}
+.spieler-page .chessaz-ai-coach-close-results{display:block;width:100%;min-height:36px;margin-top:8px;background:#201f1e;border:1px solid #756449;border-radius:8px;color:#e5d0aa}
+
+/* Preserve the metallic title and align the desktop ask action alongside it. */
+@media(min-width:1024px){
+ #root .spieler-page .spieler-position-workspace .chessaz-ai-coach>header{
+  justify-content:space-between;text-align:left;flex-wrap:wrap;gap:10px;
+ }
+ #root .spieler-page .spieler-position-workspace .chessaz-ai-coach h2.ai-coach-wordmark{
+  margin:0 auto 0 0;
+ }
+}
+.chessaz-ai-coach-results-panel>summary{
+ display:list-item;min-height:42px;padding:10px 7px;
+ font-weight:700;cursor:pointer;
+}
+.chessaz-ai-coach-results-panel>summary::marker,
+.chessaz-ai-coach-group>summary::marker{
+ font-size:1.2rem;color:#c6a77d;
+}
+.chessaz-ai-coach-game-moves{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}

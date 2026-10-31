@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
-import {DEFAULT_POSITION} from 'chess.js';
+import {DEFAULT_POSITION,Chess} from 'chess.js';
+import {formatNumberedMove,formatNumberedMoves} from '../../utils/numberedSan';
 import {useNavigate} from 'react-router-dom';
 import {useRegionalCopy} from '../../i18n/regionalCopy';
 import {createSpielerApi,openSpielerAnalysis,type SpielerPlayer} from '../../services/spieler';
@@ -12,7 +13,7 @@ import CoachChat from './CoachChat';
 import '../../screens/VorbereitungScreen.css';
 import './GlobalPositionSearch.css';
 
-type SavedSearch={fen:string;side:PositionSide;coachColor?:'white'|'black';fideId:string;name:string;scope:'all'|'nrw';sort:'newest'|'strongest';nrwCount:number|null;players:SpielerPlayer[];result:PositionSearchResult|null;boardState?:PreparationBoardState};
+type SavedSearch={fen:string;side:PositionSide;coachColor?:'white'|'black';fideId:string;name:string;scope:'all'|'nrw';sort:'newest'|'strongest';resultsOpen?:boolean;nrwCount:number|null;players:SpielerPlayer[];result:PositionSearchResult|null;boardState?:PreparationBoardState};
 export default function GlobalPositionSearch({token,accountId='guest',coach}:{token:string;accountId?:string;coach?:(color:'white'|'black',onColorChange:(color:'white'|'black')=>void,onPreparedMoves:(moves:string[])=>void)=>ReactNode}){
  const tr=useRegionalCopy(),navigate=useNavigate();
  const [storageRevision]=useState(positionSearchRevision);
@@ -20,10 +21,11 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
  const [coachColor,setCoachColor]=useState<'white'|'black'>(()=>{const color=saved?.coachColor??readPositionSearchState<{color?:'white'|'black'}>(accountId,'preparation')?.color;return color==='white'?'white':'black';});
  const [boardState,setBoardState]=useState(saved?.boardState);
  const [boardRevision,setBoardRevision]=useState(0);
+ const [resultsOpen,setResultsOpen]=useState(saved?.resultsOpen??true);
  const [fen,setFen]=useState(saved?.fen||DEFAULT_POSITION),[side,setSide]=useState<PositionSide>(saved?.side||'any'),[fideId,setFideId]=useState(saved?.fideId||''),[name,setName]=useState(saved?.name||'');
  const [scope,setScope]=useState<'all'|'nrw'>(saved?.scope||'all'),[sort,setSort]=useState<'newest'|'strongest'>(saved?.sort||'newest'),[nrwCount,setNrwCount]=useState<number|null>(saved?.nrwCount??null);
  const [players,setPlayers]=useState<SpielerPlayer[]>(saved?.players||[]),[result,setResult]=useState<PositionSearchResult|null>(saved?.result||null),[busy,setBusy]=useState(false),[finding,setFinding]=useState(false),[error,setError]=useState('');
- useEffect(()=>{writePositionSearchState(accountId,{fen,side,coachColor,fideId,name,scope,sort,nrwCount,players,result,boardState},'',storageRevision);},[storageRevision,accountId,fen,side,coachColor,fideId,name,scope,sort,nrwCount,players,result,boardState]);
+ useEffect(()=>{writePositionSearchState(accountId,{fen,side,coachColor,fideId,name,scope,sort,resultsOpen,nrwCount,players,result,boardState},'',storageRevision);},[storageRevision,accountId,fen,side,coachColor,fideId,name,scope,sort,resultsOpen,nrwCount,players,result,boardState]);
  const pending=useRef<AbortController|null>(null),lookup=useRef<AbortController|null>(null);
  useEffect(()=>()=>{pending.current?.abort();lookup.current?.abort();},[]);
  function invalidate(){pending.current?.abort();setBusy(false);setResult(null);setError('');}
@@ -43,11 +45,13 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
   finally{if(!c.signal.aborted)setBusy(false);}
  }
  function analyse(pgn:string,ply:number){try{navigate(openSpielerAnalysis(pgn,undefined,ply));}catch{setError('Diese Partie kann nicht geöffnet werden.');}}
- function gameList(games:PositionSearchResult['games']){return <ol className="vorbereitung-games">{games.map(g=><li key={g.id}><strong>{g.white}{g.whiteRating!=null?' ('+g.whiteRating+')':''} – {g.black}{g.blackRating!=null?' ('+g.blackRating+')':''}</strong><p>{g.date||'—'} · {g.event}</p><p>{g.result} · {tr(g.perspective==='white'?'Mit Weiß':'Mit Schwarz')} · {tr(g.outcome==='win'?'Sieg':g.outcome==='loss'?'Niederlage':g.outcome==='draw'?'Remis':'Ergebnis offen')}</p><p>Lichess broadcast · <a href={g.sourceUrl} target="_blank" rel="noopener noreferrer">{tr('Quelldatei')}</a> · <a href={g.licenseUrl} target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></p><button type="button" onClick={()=>analyse(g.pgn,g.ply)}>{tr('In ChessAZ analysieren')}</button></li>)}</ol>;}
- function moveTable(moves:PositionSearchResult['nextMoves']){return !!moves.length&&<div className="vorbereitung-table"><table><caption>{tr('Nächste Züge · Ergebnisse aus deiner Sicht')}</caption><thead><tr><th>{tr('Zug')}</th><th>{tr('Partien')}</th><th>{tr('Sieg %')}</th><th>{tr('Remis %')}</th><th>{tr('Niederlage %')}</th></tr></thead><tbody>{moves.map(m=><tr key={m.move}><td>{m.move}</td><td>{m.count}</td><td>{m.winPct}%</td><td>{m.drawPct}%</td><td>{m.lossPct}%</td></tr>)}</tbody></table></div>;}
+ function numberedPly(){try{const b=new Chess(fen);return (Number(b.fen().split(' ')[5])-1)*2+(b.turn()==='b'?1:0);}catch{return 0;}}
+ function gameNotation(pgn:string){try{const b=new Chess();b.loadPgn(pgn);return formatNumberedMoves(b.history());}catch{return '';}}
+ function gameList(games:PositionSearchResult['games']){return <ol className="vorbereitung-games">{games.map(g=><li key={g.id}><strong>{g.white}{g.whiteRating!=null?' ('+g.whiteRating+')':''} – {g.black}{g.blackRating!=null?' ('+g.blackRating+')':''}</strong><p>{g.date||'—'} · {g.event}</p><p className="position-game-notation">{gameNotation(g.pgn)} {g.result}</p><p>Lichess broadcast · <a href={g.sourceUrl} target="_blank" rel="noopener noreferrer">{tr('Quelldatei')}</a> · <a href={g.licenseUrl} target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></p><button type="button" onClick={()=>analyse(g.pgn,g.ply)}>{tr('In ChessAZ analysieren')}</button></li>)}</ol>;}
+ function moveTable(moves:PositionSearchResult['nextMoves']){return !!moves.length&&<div className="vorbereitung-table"><table><caption>{tr('Nächste Züge · Ergebnisse aus deiner Sicht')}</caption><thead><tr><th>{tr('Zug')}</th><th>{tr('Partien')}</th><th>{tr('Sieg %')}</th><th>{tr('Remis %')}</th><th>{tr('Niederlage %')}</th></tr></thead><tbody>{moves.map(m=><tr key={m.move}><td>{formatNumberedMove(m.move,numberedPly())}</td><td>{m.count}</td><td>{m.winPct}%</td><td>{m.drawPct}%</td><td>{m.lossPct}%</td></tr>)}</tbody></table></div>;}
  return <section className="global-position-search vorbereitung-page section-card" aria-label={tr('Stellung in allen importierten Partien suchen')}>
   <header className="position-card-header"><h2>{tr('Partien nach Stellung suchen')}</h2></header>
-  <div className="global-position-grid"><PreparationBoard key={boardRevision} showModeSwitcher={false} showMoveSearch={false} fen={fen} initialState={boardState} onState={setBoardState} orientation={side==='black'?'b':'w'} onFen={value=>{invalidate();setFen(value);}}/>
+  <div className="global-position-grid"><PreparationBoard allowFullscreen key={boardRevision} showModeSwitcher={false} showMoveSearch={false} fen={fen} initialState={boardState} onState={setBoardState} orientation={side==='black'?'b':'w'} onFen={value=>{invalidate();setFen(value);}}/>
    <div className="global-position-right-rail">{coach?.(coachColor,setCoachColor,applyPreparedMoves)}<CoachChat fen={fen} side={coach?coachColor:side} token={token} accountId={accountId}/><div className="global-position-controls">
     <details className="section-info position-advanced-settings"><summary>{tr('Suchfilter')}</summary><div className="position-advanced-content"><fieldset className="position-segment" data-control="side"><legend>{tr('Meine Farbe')}</legend><div>{(['white','black','any'] as const).map(value=><button type="button" key={value} data-value={value} aria-pressed={side===value} onClick={()=>{invalidate();setSide(value);}}>{tr(value==='white'?'Weiß':value==='black'?'Schwarz':'Beide Farben')}</button>)}</div></fieldset>
     <fieldset className="position-segment" data-control="scope"><legend>{tr('Suchbereich')}</legend><div>{(['all','nrw'] as const).map(value=><button type="button" key={value} data-value={value} aria-pressed={scope===value} onClick={()=>{setScope(value);invalidate();if(token)void search(undefined,value);}}>{tr(value==='all'?'Gesamte Datenbank':'Nur NRW-Vereine')}{value==='nrw'&&<span className="position-count" aria-label={tr('Bestätigte NRW-Spieler:')}>{nrwCount??'—'}</span>}</button>)}</div></fieldset>
@@ -58,7 +62,7 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
    </div>
    </div>
   </div>
-  {result&&<section className="global-position-results" aria-label={tr('Suchergebnisse')}>
+  {result&&<section className="global-position-results" aria-label={tr('Suchergebnisse')}><details open={resultsOpen} onToggle={e=>setResultsOpen(e.currentTarget.open)} className="global-position-results-disclosure"><summary>{tr('Suchergebnisse')} · {result.total} {tr('Partien')}</summary>
    <header className="position-results-header"><h3>{result.total} {tr('Partien')}</h3>{(result.total>0||result.fallbackTotal>0)&&<fieldset className="position-segment position-sort" data-control="sort"><legend>{tr('Sortierung')}</legend><div>{(['newest','strongest'] as const).map(value=><button type="button" key={value} data-value={value} aria-pressed={sort===value} onClick={()=>{setSort(value);void search(undefined,scope,value);}}>{tr(value==='newest'?'Neueste':'Stärkste')}</button>)}</div></fieldset>}</header>
    {result.scope==='nrw'&&!result.games.length&&<div role="status"><p>{tr('Keine Partien von NRW-Vereinsspielern in dieser Stellung.')}</p><button type="button" onClick={()=>{setScope('all');void search(undefined,'all');}}>{tr('Gesamte Datenbank anzeigen')}</button></div>}
    {!result.fallback&&result.scope!=='nrw'&&!result.games.length&&<p role="status">{tr('Keine Partien erreichten diese Stellung.')}</p>}
@@ -73,6 +77,6 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
     {gameList(result.fallbackGames)}
    </section>}
 
-  </section>}
+  <button type="button" className="global-position-results-close" onClick={()=>setResultsOpen(false)}>{tr('Suchergebnisse')} ↑</button></details></section>}
  </section>;
 }

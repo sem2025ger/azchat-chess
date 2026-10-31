@@ -3,6 +3,9 @@ import { useOptionalLanguage } from '../context/LanguageContext';
 
 // Only fixed UI labels are localized; player names, club names, chat text, PGN and FIDE data are never translated.
 const regionalCopy: Record<string, Record<string, string>> = {
+  'Brett vergrößern': {de:'Brett vergrößern',en:'Expand board',az:'Lövhəni böyüt',tr:'Tahtayı büyüt',ua:'Розгорнути дошку',ru:'Развернуть доску'},
+  'Normale Brettgröße': {de:'Normale Brettgröße',en:'Restore board size',az:'Lövhəni əvvəlki ölçüyə qaytar',tr:'Tahtayı normal boyuta döndür',ua:'Повернути розмір дошки',ru:'Вернуть обычный размер'},
+
   "FIDE, Stand:": {"de": "FIDE, Stand:", "en": "FIDE list date:", "az": "FIDE, tarix:", "tr": "FIDE tarihi:", "ua": "FIDE, станом на:", "ru": "FIDE, на дату:"},
   "Lichess-Benutzername": {"de": "Lichess-Benutzername", "en": "Lichess username", "az": "Lichess istifadəçi adı", "tr": "Lichess kullanıcı adı", "ua": "Ім’я користувача Lichess", "ru": "Имя пользователя Lichess"},
   "Noch nicht bestätigt": {"de": "Noch nicht bestätigt", "en": "Not confirmed yet", "az": "Hələ təsdiqlənməyib", "tr": "Henüz doğrulanmadı", "ua": "Ще не підтверджено", "ru": "Пока не подтверждено"},
