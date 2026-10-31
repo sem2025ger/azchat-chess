@@ -165,7 +165,7 @@ function CoachConversation({fen,side,token,accountId='guest'}:Props){
    <form className="coach-chat-compose" onSubmit={send}>
     <label className="sr-only" htmlFor={inputId}>{t.placeholder}</label>
     <input id={inputId} value={draft} maxLength={500} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder} disabled={!token||!!busy||recording}/>
-    <button type="button" onClick={()=>void toggleVoice()} disabled={!token||!!busy} aria-label={recording?t.stop:t.voice} aria-pressed={recording} title={recording?t.stop:t.voice}>{recording?<Square size={15}/>:<Mic size={17}/>}</button>
+    <button type="button" onClick={()=>void toggleVoice()} disabled={!token||!!busy} aria-label={recording?t.stop:t.voice} aria-pressed={recording} title={t.privacy}>{recording?<Square size={15}/>:<Mic size={17}/>}</button>
     <button type="submit" aria-label={t.send} disabled={!token||!!busy||recording||draft.trim().length<2}><Send size={17}/></button>
    </form>
 
