@@ -1,5 +1,6 @@
 import {useEffect,useRef,useState,type FormEvent,type ReactNode} from 'react';
-import {DEFAULT_POSITION} from 'chess.js';
+import {DEFAULT_POSITION,Chess} from 'chess.js';
+import {formatNumberedMove,formatNumberedMoves} from '../../utils/numberedSan';
 import {useNavigate} from 'react-router-dom';
 import {useRegionalCopy} from '../../i18n/regionalCopy';
 import {createSpielerApi,openSpielerAnalysis,type SpielerPlayer} from '../../services/spieler';
@@ -44,8 +45,10 @@ export default function GlobalPositionSearch({token,accountId='guest',coach}:{to
   finally{if(!c.signal.aborted)setBusy(false);}
  }
  function analyse(pgn:string,ply:number){try{navigate(openSpielerAnalysis(pgn,undefined,ply));}catch{setError('Diese Partie kann nicht geöffnet werden.');}}
- function gameList(games:PositionSearchResult['games']){return <ol className="vorbereitung-games">{games.map(g=><li key={g.id}><strong>{g.white}{g.whiteRating!=null?' ('+g.whiteRating+')':''} – {g.black}{g.blackRating!=null?' ('+g.blackRating+')':''}</strong><p>{g.date||'—'} · {g.event}</p><p>{g.result} · {tr(g.perspective==='white'?'Mit Weiß':'Mit Schwarz')} · {tr(g.outcome==='win'?'Sieg':g.outcome==='loss'?'Niederlage':g.outcome==='draw'?'Remis':'Ergebnis offen')}</p><p>Lichess broadcast · <a href={g.sourceUrl} target="_blank" rel="noopener noreferrer">{tr('Quelldatei')}</a> · <a href={g.licenseUrl} target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></p><button type="button" onClick={()=>analyse(g.pgn,g.ply)}>{tr('In ChessAZ analysieren')}</button></li>)}</ol>;}
- function moveTable(moves:PositionSearchResult['nextMoves']){return !!moves.length&&<div className="vorbereitung-table"><table><caption>{tr('Nächste Züge · Ergebnisse aus deiner Sicht')}</caption><thead><tr><th>{tr('Zug')}</th><th>{tr('Partien')}</th><th>{tr('Sieg %')}</th><th>{tr('Remis %')}</th><th>{tr('Niederlage %')}</th></tr></thead><tbody>{moves.map(m=><tr key={m.move}><td>{m.move}</td><td>{m.count}</td><td>{m.winPct}%</td><td>{m.drawPct}%</td><td>{m.lossPct}%</td></tr>)}</tbody></table></div>;}
+ function numberedPly(){try{const b=new Chess(fen);return (Number(b.fen().split(' ')[5])-1)*2+(b.turn()==='b'?1:0);}catch{return 0;}}
+ function gameNotation(pgn:string){try{const b=new Chess();b.loadPgn(pgn);return formatNumberedMoves(b.history());}catch{return '';}}
+ function gameList(games:PositionSearchResult['games']){return <ol className="vorbereitung-games">{games.map(g=><li key={g.id}><strong>{g.white}{g.whiteRating!=null?' ('+g.whiteRating+')':''} – {g.black}{g.blackRating!=null?' ('+g.blackRating+')':''}</strong><p>{g.date||'—'} · {g.event}</p><p className="position-game-notation">{gameNotation(g.pgn)} {g.result}</p><p>Lichess broadcast · <a href={g.sourceUrl} target="_blank" rel="noopener noreferrer">{tr('Quelldatei')}</a> · <a href={g.licenseUrl} target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></p><button type="button" onClick={()=>analyse(g.pgn,g.ply)}>{tr('In ChessAZ analysieren')}</button></li>)}</ol>;}
+ function moveTable(moves:PositionSearchResult['nextMoves']){return !!moves.length&&<div className="vorbereitung-table"><table><caption>{tr('Nächste Züge · Ergebnisse aus deiner Sicht')}</caption><thead><tr><th>{tr('Zug')}</th><th>{tr('Partien')}</th><th>{tr('Sieg %')}</th><th>{tr('Remis %')}</th><th>{tr('Niederlage %')}</th></tr></thead><tbody>{moves.map(m=><tr key={m.move}><td>{formatNumberedMove(m.move,numberedPly())}</td><td>{m.count}</td><td>{m.winPct}%</td><td>{m.drawPct}%</td><td>{m.lossPct}%</td></tr>)}</tbody></table></div>;}
  return <section className="global-position-search vorbereitung-page section-card" aria-label={tr('Stellung in allen importierten Partien suchen')}>
   <header className="position-card-header"><h2>{tr('Partien nach Stellung suchen')}</h2></header>
   <div className="global-position-grid"><PreparationBoard allowFullscreen key={boardRevision} showModeSwitcher={false} showMoveSearch={false} fen={fen} initialState={boardState} onState={setBoardState} orientation={side==='black'?'b':'w'} onFen={value=>{invalidate();setFen(value);}}/>
