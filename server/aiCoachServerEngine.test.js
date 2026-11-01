@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),express=require('express');
 const {Chess}=require('chess.js');
 const {groundedChat}=require('./aiCoachChat');
-const {installAiCoach,engineFromEnv,engineMovetimeFromEnv}=require('./aiCoach');
+const {installAiCoach,installAiCoachFromEnv,engineFromEnv,engineMovetimeFromEnv}=require('./aiCoach');
 
 const fen='rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2';
 const clientLines=[{moves:['d6','d4']},{moves:['e6','d4']}];
@@ -108,4 +108,19 @@ test('engine movetime comes from a validated setting: default 900, range 300–3
  const fallback=engineFromEnv({AI_COACH_ENABLED:'true',AI_COACH_SERVER_ENGINE_ENABLED:'true'});
  assert.equal(fallback.status().budget.movetimeMs,900);fallback.close();
  assert.equal(engineFromEnv({AI_COACH_ENGINE_MOVETIME_MS:'2000'}),null,'setting alone never enables the engine');
+});
+
+test('prewarm rejection emits exactly one bounded, redacted operational log',async()=>{
+ const module=require('./coachEngine'),original=module.createCoachEngine,warn=console.warn;
+ const logs=[];
+ const engine={warmup:async()=>{throw Object.assign(Error('SECRET FEN and stack'),{code:'engine_unavailable'});},close(){},status(){return {engine:'stockfish-19-lite'};}};
+ try{
+  module.createCoachEngine=()=>engine;
+  console.warn=line=>logs.push(JSON.parse(line));
+  const app=express(),index={status:'ready',start:()=>Promise.resolve()};
+  installAiCoachFromEnv(app,async()=>({id:'fixture'}),index,{AI_COACH_ENABLED:'true',AI_COACH_SERVER_ENGINE_ENABLED:'true'});
+  await new Promise(r=>setImmediate(r));
+  assert.deepEqual(logs,[{event:'coach_engine_warmup_failed',engine:'stockfish-19-lite',code:'engine_unavailable'}]);
+  assert.equal(JSON.stringify(logs).includes('SECRET'),false);
+ }finally{module.createCoachEngine=original;console.warn=warn;}
 });
