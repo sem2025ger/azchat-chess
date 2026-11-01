@@ -1,5 +1,5 @@
 // Keep email callbacks on the same ChessAZ environment as their auth session.
-// Preserve unique deployment URLs for feature QA; keep shared Git aliases on the stable QA host.
+// Preserve each QA branch alias for sign-in and recovery; ephemeral deployment recovery uses the stable QA host.
 const qaPreviewHost = /^chessaz-preview-workspace-(?:git-)?[a-z0-9]+-semov20207-3068s-projects\.vercel\.app$/;
 
 export function authCallbackUrl(
@@ -10,13 +10,12 @@ export function authCallbackUrl(
 ): string {
   const current = new URL(currentOrigin);
   const isUniqueDeployment = /^chessaz-preview-workspace-(?!git-)[a-z0-9]{8,16}-semov20207-3068s-projects\.vercel\.app$/.test(current.hostname);
-  // Recovery emails must not point to ephemeral deployment hosts:
-  // those URLs cannot be exhaustively listed in Supabase Auth's redirect allowlist.
-  // Use the stable QA hostname; preserve existing sign-in/registration callback behavior.
-  const stableRecoveryHost = path === '/update-password' &&
-    (qaPreviewHost.test(current.hostname) || current.hostname === 'chessaz-preview-workspace.vercel.app');
-  const origin = current.protocol === 'https:' &&
-    (stableRecoveryHost || (qaPreviewHost.test(current.hostname) && !isUniqueDeployment))
+  // Ephemeral deployment hosts cannot be exhaustively allowlisted in Supabase Auth.
+  // Stable branch aliases must retain their own origin, or magic links return to an
+  // older build on the shared QA hostname and the authenticated session is lost.
+  const useStableRecoveryHost = path === '/update-password' &&
+    current.protocol === 'https:' && qaPreviewHost.test(current.hostname) && isUniqueDeployment;
+  const origin = useStableRecoveryHost
     ? 'https://chessaz-preview-workspace.vercel.app'
     : current.origin;
   const callback = new URL(path, origin);
