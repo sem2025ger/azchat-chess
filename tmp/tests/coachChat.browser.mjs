@@ -5,6 +5,7 @@ import {mkdtemp,readFile,rm,mkdir,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';import {fileURLToPath} from 'node:url';import {createRequire} from 'node:module';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';import {Chess} from 'chess.js';
 import {coachChatCopy} from '../src/i18n/coachChatCopy.ts';
+import {formatEngineScore} from '../src/utils/engineLines.ts';
 const require=createRequire(new URL('../../server/package.json',import.meta.url)),express=require('express'),{WebSocket,WebSocketServer}=require('ws');
 const {installAiCoach}=require('./aiCoach.js');
 const fixture=String.raw`
@@ -34,6 +35,16 @@ export async function checkCoachChat({captureRoot}={}){
   if(req.body?.candidateLines)return res.status(400).json({code:'invalid_query'});
   return res.json({answer:'Legacy Coach explanation without Stockfish evidence.',generated:true,
    games:[{id:'legacy-game',white:'Fixture White',black:'Fixture Black',pgn:'1. e4 e5',ply:0,result:'*'}]});
+ });
+ // Simulate the backend with AI_COACH_SERVER_ENGINE_ENABLED=true: its own verified lines in engineLines.
+ let serverLines=null;
+ app.post('/api/ai-coach/chat',express.json({limit:'16kb'}),(req,res,next)=>{
+  if(mode!=='server-lines'&&mode!=='server-lines-malformed')return next();
+  const board=new Chess(req.body.fen),first=board.moves()[0];board.move(first);const reply=board.moves()[0];
+  const second=new Chess(req.body.fen).moves()[1];
+  serverLines=[{id:'L1',moves:[first,reply],scoreKind:'cp',scoreWhite:43,depth:15,wdlWhite:[95,902,3]},{id:'L2',moves:[second],scoreKind:'mate',scoreWhite:-2,depth:15,wdlWhite:[0,0,1000]}];
+  return res.json({answer:'Server-grounded explanation.',generated:true,games:[],engineVerified:true,candidateLines:req.body.candidateLines||[],
+   engineLines:mode==='server-lines'?serverLines:[{...serverLines[0],moves:['Ke8']}]});
  });
  installAiCoach(app,{enabled:true,index:{status:'ready',search:async()=>({total:1,games:[{id:'public-fixture',source:'lichess-broadcast',pgn:'1. e4 e5',ply:0,white:'Fixture White',black:'Fixture Black',result:'*'}],nextMoves:[{move:'e4',count:1}]})},verifyToken:async token=>token.startsWith('synthetic-')?{id:token}:null,openaiApiKey:'synthetic-provider',now:()=>clock,
   socketFactory:(url,options)=>{assert.equal(new URL(url).hostname,'api.openai.com');return new WebSocket('ws://127.0.0.1:'+wss.address().port,options);},
@@ -117,6 +128,30 @@ export async function checkCoachChat({captureRoot}={}){
  assert.ok(await evaluate('document.querySelector(".coach-chat-engine-source").textContent.includes("Stockfish 19")'));
  await evaluate('document.querySelector(".coach-chat-study-choices button").click()');
  await wait('document.querySelector(".coach-chat-study-nav")');
+ // Server-verified lines replace local ones, show White-perspective evaluations and no
+ // provenance warning; malformed server lines fall back to the previous local behaviour.
+ mode='server-lines';clock+=61000;
+ await evaluate('window.setToken("synthetic-server");window.setAccount("server-lines")');
+ await wait('document.querySelector(".coach-chat-toggle")');
+ await click(t.title);await fill('Explain the Stockfish lines');await click(t.send);
+ await wait('document.querySelector(".coach-chat-message.assistant .coach-chat-study")');
+ const shown=await evaluate('[...document.querySelectorAll(".coach-chat-study-choices button")].map(b=>b.textContent)');
+ assert.equal(shown.length,2);
+ assert.ok(shown[0].includes(serverLines[0].moves[0])&&shown[0].includes(formatEngineScore({kind:'cp',white:43})),shown[0]);
+ assert.ok(shown[1].includes(serverLines[1].moves[0])&&shown[1].includes(formatEngineScore({kind:'mate',white:-2})),shown[1]);
+ assert.ok((await evaluate('document.querySelector(".coach-chat-engine-source").textContent')).includes(t.engineServer));
+ assert.equal(await evaluate('document.querySelector(".coach-chat-eval-note").textContent'),t.evalPerspective);
+ assert.equal(await evaluate('!!document.querySelector(".coach-chat-engine-unlinked")'),false,'no provenance warning for server lines');
+ assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'evaluation badges fit');
+ await evaluate('document.querySelector(".coach-chat-study-choices button").click()');
+ await wait('document.querySelector(".coach-chat-study-nav span")?.textContent==="0 / 2"');
+ mode='server-lines-malformed';clock+=61000;
+ await fill('Explain again');await click(t.send);
+ await wait('document.querySelectorAll(".coach-chat-message.assistant").length===2');
+ await wait('document.querySelectorAll(".coach-chat-study").length===2');
+ const last='[...document.querySelectorAll(".coach-chat-study")].at(-1)';
+ assert.equal(await evaluate(last+'.querySelector(".coach-chat-eval")'),null,'malformed server lines are never rendered');
+ assert.equal(await evaluate(last+'.querySelector(".coach-chat-engine-source").textContent'),'Stockfish 19');
  mode='ready';
 assert.deepEqual(exceptions,[]);console.log('PASS CoachChat: real HTTP router, real MediaRecorder with Chromium fake microphone, multipart provider adapter, actual loopback WebSocket/WAV playback, six locales at 390/1280, bounded context, auth/error handling, denied/late permissions, close cleanup, stale board cancellation, analysis round-trip restoration, scroll/draft preservation, token rotation, account isolation, logout cleanup and actual workspace colour propagation. OpenAI responses are synthetic; no hosted credentials or external API calls.');
  }finally{for(const p of pending.values())clearTimeout(p.timer);ws?.close();chrome?.kill('SIGKILL');await server?.close();if(api)await new Promise(r=>api.close(r));if(wss){for(const client of wss.clients)client.terminate();await new Promise(r=>wss.close(r));}if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});if(cacheDir)await rm(cacheDir,{recursive:true,force:true});}
