@@ -168,7 +168,9 @@ function createCoachEngine({
    pending.set(key,job);queue.push(job);
   }
   return new Promise((resolve,reject)=>{
-   const deadline=setTimeout(()=>done(engineError('engine_timeout')),deadlineMs);
+   // Cold UCI/WASM initialization has a separate, bounded allowance. A search
+   // already running on a warm engine retains the original deadline.
+   const deadline=setTimeout(()=>done(engineError('engine_timeout')),deadlineMs+(!ready?startupMs:0));
    const onAbort=()=>done(engineError('engine_cancelled'));
    function done(error,value){
     clearTimeout(deadline);signal?.removeEventListener('abort',onAbort);
@@ -189,9 +191,12 @@ function createCoachEngine({
   });
  }
 
+ // Warm UCI/WASM without searching any user position or consuming the chat budget.
+ function warmup(){return start();}
+
  function close(){closed=true;for(const job of queue.splice(0))job.settle(engineError('engine_unavailable'));if(running)running.stop();kill();}
  function status(){return {engine:ENGINE_NAME,budget,started:!!child,disabled,queued:queue.length,searching:!!active,cached:cache.size,pid:child?.pid??null};}
- return {analyze,close,status};
+ return {analyze,warmup,close,status};
 }
 
 module.exports={createCoachEngine,parseInfo,sanLine,ENGINE_NAME,PINNED_SHA256};
