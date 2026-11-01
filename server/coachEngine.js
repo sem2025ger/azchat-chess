@@ -57,14 +57,14 @@ function createCoachEngine({
  log=(entry)=>console.log(JSON.stringify(entry))
 }={}){
  const cache=new Map(),pending=new Map(),queue=[];
- let child=null,ready=null,buffer='',listener=null,running=null,active=null,disabled=false,nnue=null,closed=false;
+ let child=null,ready=null,buffer='',listener=null,running=null,active=null,disabled=false,nnue=null,closed=false,initialized=false;
  const budget={movetimeMs,multiPv,hashMb};
  const keyOf=(fen)=>[ENGINE_NAME,movetimeMs,multiPv,hashMb,fen].join('|');
 
  function safeLog(entry){try{log(entry);}catch{/* Logging must never affect analysis. */}}
  function send(line){child.stdin.write(line+'\n');}
  function kill(){
-  const current=child;child=null;ready=null;buffer='';listener=null;
+  const current=child;child=null;ready=null;initialized=false;buffer='';listener=null;
   if(current){current.stdout?.removeAllListeners('data');try{current.kill('SIGKILL');}catch{}}
  }
  function start(){
@@ -90,7 +90,7 @@ function createCoachEngine({
     listener=(line)=>{
      const evalFile=line.match(/^option name EvalFile type string default (\S+)/);if(evalFile)nnue=evalFile[1];
      if(line==='uciok'){send('setoption name Hash value '+hashMb);send('setoption name MultiPV value '+multiPv);send('setoption name UCI_ShowWDL value true');send('isready');}
-     if(line==='readyok'){clearTimeout(timer);listener=null;resolve();}
+     if(line==='readyok'){initialized=true;clearTimeout(timer);listener=null;resolve();}
     };
     proc.once('exit',()=>{clearTimeout(timer);reject(engineError('engine_unavailable'));});
     send('uci');
@@ -134,7 +134,7 @@ function createCoachEngine({
   const job=queue.shift();
   if(!job.subscribers.size){pending.delete(job.key);return pump();}
   active=job;
-  const cold=!ready,startedAt=now();
+  const cold=!initialized,startedAt=now();
   try{
    await start();
    if(closed)throw engineError('engine_unavailable');
@@ -170,7 +170,7 @@ function createCoachEngine({
   return new Promise((resolve,reject)=>{
    // Cold UCI/WASM initialization has a separate, bounded allowance. A search
    // already running on a warm engine retains the original deadline.
-   const deadline=setTimeout(()=>done(engineError('engine_timeout')),deadlineMs+(!ready?startupMs:0));
+   const deadline=setTimeout(()=>done(engineError('engine_timeout')),deadlineMs+(!initialized?startupMs:0));
    const onAbort=()=>done(engineError('engine_cancelled'));
    function done(error,value){
     clearTimeout(deadline);signal?.removeEventListener('abort',onAbort);
