@@ -92,10 +92,21 @@ function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,
  app.use('/api/ai-coach',router);
  return router;
 }
+// AI_COACH_ENGINE_MOVETIME_MS: integer 300–3000 (default 900). Anything else keeps the
+// default and logs a warning, so a typo in Render can never disable or overload the engine.
+const DEFAULT_MOVETIME_MS=900;
+function engineMovetimeFromEnv(env,log=(entry)=>console.warn(JSON.stringify(entry))){
+ const raw=env.AI_COACH_ENGINE_MOVETIME_MS;
+ if(raw===undefined||raw==='')return DEFAULT_MOVETIME_MS;
+ const value=/^\d{3,4}$/.test(raw)?Number(raw):NaN;
+ if(value>=300&&value<=3000)return value;
+ log({event:'coach_engine_config_invalid',setting:'AI_COACH_ENGINE_MOVETIME_MS',used:DEFAULT_MOVETIME_MS});
+ return DEFAULT_MOVETIME_MS;
+}
 // Server engine is opt-in (default off) and starts lazily on the first chat request.
 function engineFromEnv(env){
  if(env.AI_COACH_ENABLED!=='true'||env.AI_COACH_SERVER_ENGINE_ENABLED!=='true')return null;
- const engine=require('./coachEngine').createCoachEngine();
+ const engine=require('./coachEngine').createCoachEngine({movetimeMs:engineMovetimeFromEnv(env)});
  process.once('exit',()=>engine.close());
  return engine;
 }
@@ -104,4 +115,4 @@ function installAiCoachFromEnv(app,verifyToken,index,env=process.env){
   apiKey:env.GEMINI_API_KEY||null,model:env.GEMINI_MODEL||'gemini-2.5-flash',
   openaiApiKey:env.OPENAI_API_KEY||null,openaiModel:env.OPENAI_COACH_MODEL||'gpt-6-sol',engine:engineFromEnv(env)});
 }
-module.exports={installAiCoach,installAiCoachFromEnv,engineFromEnv};
+module.exports={installAiCoach,installAiCoachFromEnv,engineFromEnv,engineMovetimeFromEnv};

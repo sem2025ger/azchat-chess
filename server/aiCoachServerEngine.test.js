@@ -3,7 +3,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),express=req
 const {createHash}=require('node:crypto');
 const {Chess}=require('chess.js');
 const {groundedChat}=require('./aiCoachChat');
-const {installAiCoach,engineFromEnv}=require('./aiCoach');
+const {installAiCoach,engineFromEnv,engineMovetimeFromEnv}=require('./aiCoach');
 
 const fen='rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2';
 const clientLines=[{moves:['d6','d4']},{moves:['e6','d4']}];
@@ -94,4 +94,19 @@ test('HTTP chat route forwards the configured engine',async()=>{
   const res=await fetch('http://127.0.0.1:'+server.address().port+'/api/ai-coach/chat',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer ok'},body:JSON.stringify(query)});
   assert.equal(res.status,200);const body=await res.json();assert.equal(body.engineVerified,true);assert.equal(engine.calls.length,1);
  }finally{await new Promise(r=>server.close(r));}
+});
+
+test('engine movetime comes from a validated setting: default 900, range 300–3000',()=>{
+ const warnings=[];const read=(raw)=>engineMovetimeFromEnv(raw===undefined?{}:{AI_COACH_ENGINE_MOVETIME_MS:raw},(e)=>warnings.push(e));
+ assert.equal(read(undefined),900);assert.equal(read(''),900);
+ for(const [raw,ms] of [['300',300],['900',900],['2000',2000],['3000',3000]])assert.equal(read(raw),ms,raw);
+ assert.equal(warnings.length,0);
+ for(const raw of ['299','3001','0','-500','1500.5','2e3',' 2000','2000ms','abc','99999'])assert.equal(read(raw),900,raw);
+ assert.equal(warnings.length,10);
+ assert.deepEqual(warnings[0],{event:'coach_engine_config_invalid',setting:'AI_COACH_ENGINE_MOVETIME_MS',used:900});
+ const engine=engineFromEnv({AI_COACH_ENABLED:'true',AI_COACH_SERVER_ENGINE_ENABLED:'true',AI_COACH_ENGINE_MOVETIME_MS:'2000'});
+ assert.equal(engine.status().budget.movetimeMs,2000);engine.close();
+ const fallback=engineFromEnv({AI_COACH_ENABLED:'true',AI_COACH_SERVER_ENGINE_ENABLED:'true'});
+ assert.equal(fallback.status().budget.movetimeMs,900);fallback.close();
+ assert.equal(engineFromEnv({AI_COACH_ENGINE_MOVETIME_MS:'2000'}),null,'setting alone never enables the engine');
 });
