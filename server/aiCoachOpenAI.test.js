@@ -126,6 +126,7 @@ test('archive filter never implies the learner plays that colour in either promp
    assert.equal(input.archiveFilterSide,'black');assert.equal(input.requestedSide,undefined);
    assert.match(payload.instructions,/NOT the learner.s colour/);
    assert.match(payload.instructions,/question about White.s plan is about White/);
+   assert.match(payload.instructions,/an explicit statement in earlier user turns/);
    return answerResponse();
   }});
  }
