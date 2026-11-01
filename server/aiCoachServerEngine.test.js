@@ -1,6 +1,5 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),express=require('express');
-const {createHash}=require('node:crypto');
 const {Chess}=require('chess.js');
 const {groundedChat}=require('./aiCoachChat');
 const {installAiCoach,engineFromEnv,engineMovetimeFromEnv}=require('./aiCoach');
@@ -9,8 +8,6 @@ const fen='rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2';
 const clientLines=[{moves:['d6','d4']},{moves:['e6','d4']}];
 const query={message:'Какой план у белых?',fen,side:'white',language:'ru',candidateLines:clientLines};
 const index={status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})};
-// sha256 of the legacy instructions for a ru start-position request at base commit 4ec227b.
-const LEGACY_INSTRUCTIONS_SHA256='b540fe36b8a79f73ef398a354ee4b6179a2d09f31ffdaf2b98391bd681809d9a';
 const serverAnalysis={fen,engine:'stockfish-19-lite',nnue:'nn-61e7af4bb97d.nnue',budget:{movetimeMs:900,multiPv:3,hashMb:16},lines:[
  {multipv:1,depth:15,scoreKind:'cp',scoreWhite:43,bound:null,wdlWhite:[95,902,3],uciPv:['b8c6','d2d4'],sanPv:['Nc6','d4']},
  {multipv:2,depth:15,scoreKind:'cp',scoreWhite:44,bound:null,wdlWhite:[96,901,3],uciPv:['g7g6','c2c3'],sanPv:['g6','c3']}
@@ -22,11 +19,13 @@ function capture(answer='Чёрные развивают коня.'){
   return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer})}]}]});}};
 }
 
-test('flag off: legacy instructions are byte-identical and the response gains no engine fields',async()=>{
+test('flag off: client-line provenance preserved and learner side is not inferred',async()=>{
  const start={...query,fen:new Chess().fen(),message:'Plan?',candidateLines:undefined};
  const {seen,fetchImpl}=capture();
  const response=await groundedChat(index,start,{openaiApiKey:'k',fetchImpl});
- assert.equal(createHash('sha256').update(seen.instructions).digest('hex'),LEGACY_INSTRUCTIONS_SHA256);
+ assert.match(seen.instructions,/archiveFilterSide is only a database filter/);
+ assert.equal(seen.input.archiveFilterSide,'white');
+ assert.equal(seen.input.requestedSide,undefined);
  assert.equal(response.engineVerified,false);
  assert.ok(!('engineLines'in response)&&!('engineError'in response));
  assert.equal(seen.input.evidence.candidateOrigin,'untrusted_client_legality_checked');
