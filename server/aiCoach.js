@@ -111,8 +111,19 @@ function engineFromEnv(env){
  return engine;
 }
 function installAiCoachFromEnv(app,verifyToken,index,env=process.env){
+ const engine=engineFromEnv(env);
+ // The index build is asynchronous. Prewarm only after it settles so the WASM
+ // initialization does not compete with the archive's peak memory/CPU usage.
+ // Do not delay HTTP startup and never expose raw startup errors or user FENs.
+ if(engine){
+  const ready=index?.start?.();
+  if(ready&&typeof ready.then==='function')void ready.then(()=>{
+   if(index.status==='ready')return engine.warmup();
+  }).catch(()=>{});
+  else void engine.warmup().catch(()=>{});
+ }
  return installAiCoach(app,{enabled:env.AI_COACH_ENABLED==='true',verifyToken,index,
   apiKey:env.GEMINI_API_KEY||null,model:env.GEMINI_MODEL||'gemini-2.5-flash',
-  openaiApiKey:env.OPENAI_API_KEY||null,openaiModel:env.OPENAI_COACH_MODEL||'gpt-6-sol',engine:engineFromEnv(env)});
+  openaiApiKey:env.OPENAI_API_KEY||null,openaiModel:env.OPENAI_COACH_MODEL||'gpt-6-sol',engine});
 }
 module.exports={installAiCoach,installAiCoachFromEnv,engineFromEnv,engineMovetimeFromEnv};
