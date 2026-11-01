@@ -295,3 +295,21 @@ test('[real] position with a single legal move returns one line',async()=>{
  const result=await real.analyze('7k/8/8/8/8/8/6q1/7K w - - 0 1');
  assert.equal(result.lines.length,1);assert.equal(result.lines[0].sanPv[0],'Kxg2');
 });
+
+test('prewarm initializes engine once without starting a position search',async()=>{
+ let spawns=0,searches=0;
+ const engine=createCoachEngine({verify:noVerify,spawnImpl:fakeSpawn(goodScript(()=>searches++),{onSpawn:()=>spawns++})});
+ await Promise.all([engine.warmup(),engine.warmup()]);
+ assert.equal(spawns,1);assert.equal(searches,0);assert.equal(engine.status().started,true);
+ await engine.analyze(START);assert.equal(searches,1);engine.close();
+});
+
+test('cold initialization gets a bounded allowance without extending warm search timeout',async()=>{
+ let release;
+ const verify=()=>new Promise(r=>release=r);
+ const engine=createCoachEngine({verify,spawnImpl:fakeSpawn(goodScript()),startupMs:200,deadlineMs:15,movetimeMs:20});
+ const pending=engine.analyze(START);
+ await new Promise(r=>setTimeout(r,30));
+ release();const result=await pending;
+ assert.equal(result.lines.length,3);engine.close();
+});
