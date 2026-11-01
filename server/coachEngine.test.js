@@ -117,6 +117,24 @@ test('abandoned queued jobs are removed at once and never cause engine_busy',asy
  engine.close();
 });
 
+test('a new request right after the last caller aborts a running search gets its own result',async()=>{
+ let searches=0;
+ const engine=createCoachEngine({verify:noVerify,movetimeMs:20,spawnImpl:fakeSpawn((cmd,emit)=>{
+  if(cmd==='uci')emit('uciok');if(cmd==='isready')emit('readyok');
+  if(cmd.startsWith('go')&&++searches>1){emit('info depth 5 multipv 1 score cp 1 nodes 1 time 1 pv e2e4');emit('info depth 5 multipv 2 score cp 0 nodes 1 time 1 pv d2d4');emit('info depth 5 multipv 3 score cp 0 nodes 1 time 1 pv c2c4');emit('bestmove e2e4');}
+ })});
+ const abort=new AbortController();
+ const first=engine.analyze(START,{signal:abort.signal});
+ await new Promise(r=>setTimeout(r,20));
+ assert.equal(engine.status().searching,true,'first search is running and never answers');
+ abort.abort();
+ const second=engine.analyze(START); // same FEN, synchronously after the abort
+ await assert.rejects(first,{code:'engine_cancelled'});
+ const result=await second;
+ assert.equal(result.lines.length,3);assert.equal(searches,2);
+ engine.close();
+});
+
 test('close during checksum verification spawns no process and rejects callers',async()=>{
  const g=gate();let spawned=0;
  const engine=createCoachEngine({verify:g.verify,spawnImpl:fakeSpawn(goodScript(),{onSpawn:()=>spawned++})});

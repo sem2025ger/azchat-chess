@@ -139,7 +139,7 @@ function createCoachEngine({
    if(result.lines.length){cache.set(job.key,result);if(cache.size>cacheSize)cache.delete(cache.keys().next().value);}
    job.settle(null,result);
   }catch(e){job.settle(e);}
-  finally{pending.delete(job.key);active=null;pump();}
+  finally{if(pending.get(job.key)===job)pending.delete(job.key);active=null;pump();}
  }
 
  function analyze(fen,{signal}={}){
@@ -165,7 +165,9 @@ function createCoachEngine({
     if(!job.subscribers.size){
      const queued=queue.indexOf(job);
      if(queued>=0){queue.splice(queued,1);pending.delete(key);}
-     else if(active===job&&running)running.stop();
+     // Detach before stopping so a new caller for the same FEN starts a fresh job
+     // instead of joining one that is about to be rejected as cancelled.
+     else if(active===job&&running){if(pending.get(key)===job)pending.delete(key);running.stop();}
     }
     error?reject(error):resolve(value);
    }
