@@ -313,3 +313,30 @@ test('cold initialization gets a bounded allowance without extending warm search
  release();const result=await pending;
  assert.equal(result.lines.length,3);engine.close();
 });
+
+test('request during prewarm uses cold allowance and reports coldStart true',async()=>{
+ const g=gate(),logs=[];
+ const engine=createCoachEngine({verify:g.verify,spawnImpl:fakeSpawn(goodScript()),startupMs:200,deadlineMs:15,movetimeMs:20,log:x=>logs.push(x)});
+ const warming=engine.warmup();
+ const pending=engine.analyze(START);
+ await new Promise(r=>setTimeout(r,30));
+ g.open();await warming;
+ const result=await pending;
+ assert.equal(result.lines.length,3);
+ assert.equal(logs.filter(x=>x.event==='coach_engine_analysis').length,1);
+ assert.equal(logs.find(x=>x.event==='coach_engine_analysis').coldStart,true);
+ engine.close();
+});
+
+test('a prewarmed engine retains the short search deadline',async()=>{
+ const engine=createCoachEngine({verify:noVerify,spawnImpl:fakeSpawn((cmd,emit)=>{
+  if(cmd==='uci')emit('uciok');
+  if(cmd==='isready')emit('readyok');
+ }),startupMs:200,deadlineMs:30,movetimeMs:500});
+ await engine.warmup();
+ const began=Date.now();
+ await assert.rejects(engine.analyze(START),{code:'engine_timeout'});
+ const elapsed=Date.now()-began;
+ assert.ok(elapsed>=20&&elapsed<170,'warm deadline must not include 200 ms startup allowance');
+ engine.close();
+});
