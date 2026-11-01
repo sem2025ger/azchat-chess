@@ -17,12 +17,12 @@ import {readCoachSpeech,createCoachPlayback} from '../../services/coachSpeech';
 import './CoachChat.css';
 type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string;moves?:string[];continuation?:string[]};
 type CandidateLine={moves:string[];score?:EngineScore};
-type Reply={answer:string;games:ResultGame[];generated:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLines?:unknown};
+type Reply={answer:string;games:ResultGame[];generated:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLines?:unknown;engineVerified?:boolean;position?:string};
 type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated?:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLinked?:boolean;engineServer?:boolean};
 type Clip={url:string;item:number;autoplay:boolean};
 type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string;onVariationPreview?:(moves:string[],ply:number)=>void};
 type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number;expanded?:number[]};
-function restoredChat(accountId:string,context:string){
+function restoredChat(accountId:string,context:string,fen:string){
  const saved=readPositionSearchState<SavedChat>(accountId,'chat');
  if(!saved||saved.context!==context||typeof saved.open!=='boolean'||typeof saved.voiceReplies!=='boolean'||typeof saved.draft!=='string'||saved.draft.length>500||!Number.isFinite(saved.scrollTop)||!Array.isArray(saved.items)||saved.items.length>60)return null;
  if(saved.items.some(m=>{
@@ -31,8 +31,13 @@ function restoredChat(accountId:string,context:string){
   if(m.archiveOnly!==undefined&&typeof m.archiveOnly!=='boolean')return true;
   if(m.engineLinked!==undefined&&typeof m.engineLinked!=='boolean')return true;
   if(m.engineServer!==undefined&&typeof m.engineServer!=='boolean')return true;
-  if(m.candidateLines?.some(l=>l?.score!==undefined&&(!l.score||typeof l.score!=='object'||!['cp','mate'].includes(l.score.kind)||!Number.isInteger(l.score.white))))return true;
   if(m.candidateLines!==undefined&&(!Array.isArray(m.candidateLines)||m.candidateLines.length>3||m.candidateLines.some(l=>!l||!Array.isArray(l.moves)||l.moves.length>10||l.moves.some(move=>typeof move!=='string'||move.length>16))))return true;
+  // Scores belong only to server-verified lines; those are re-validated from the exact FEN.
+  if(m.engineServer){
+   if(m.engineLinked!==true||!m.candidateLines?.length)return true;
+   const again=serverEngineLines(m.candidateLines.map(l=>({moves:l.moves,scoreKind:l.score?.kind,scoreWhite:l.score?.white})),fen);
+   if(!again||JSON.stringify(again)!==JSON.stringify(m.candidateLines.map(l=>({moves:l.moves,score:l.score}))))return true;
+  }else if(m.candidateLines?.some(l=>l.score!==undefined))return true;
   if(m.games===undefined)return false;
   if(!Array.isArray(m.games)||m.games.length>20)return true;
   return m.games.some(g=>!g||typeof g.id!=='string'||typeof g.white!=='string'||typeof g.black!=='string'||typeof g.pgn!=='string'||!Number.isInteger(g.ply)||g.ply<0||(g.moves!==undefined&&(!Array.isArray(g.moves)||g.moves.length>30||g.moves.some(move=>typeof move!=='string'||move.length>16)))||(g.continuation!==undefined&&(!Array.isArray(g.continuation)||g.continuation.length>6||g.continuation.some(move=>typeof move!=='string'||move.length>16))));
@@ -64,7 +69,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
  const [storageRevision]=useState(positionSearchRevision);
  const [headerTarget,setHeaderTarget]=useState<HTMLElement|null>(null);
  useEffect(()=>{setHeaderTarget(document.querySelector('.spieler-position-workspace .chessaz-ai-coach>header'));},[]);
- const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context):null);
+ const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context,fen):null);
  const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0),[speechError,setSpeechError]=useState(''),[speechPlaying,setSpeechPlaying]=useState(false),[expanded,setExpanded]=useState<number[]>(saved?.expanded??[]);
  const [preview,setPreview]=useState<{item:number;line:number;ply:number}|null>(null);
  // Keep one bounded background analysis per exact FEN; never start a second
@@ -172,8 +177,12 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    if(typeof data.answer!=='string'||data.answer.length>1200||!Array.isArray(data.games)||typeof data.generated!=='boolean')throw Error('api');
    if(!abort.signal.aborted){// Server-verified lines (flag-gated on the backend) are exactly what the AI explained;
     // without them the previous local-line behaviour is unchanged.
-    const serverLines=requested===null&&!data.archiveOnly?serverEngineLines(data.engineLines,fen):null;
-    setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:requested!==null?data.games.slice(0,20):[],generated:data.generated,archiveOnly:data.archiveOnly===true,candidateLines:serverLines??(!data.archiveOnly?analysisLines:[]),engineLinked:serverLines?true:!legacyBackend&&analysisLines.length>0&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines),...(serverLines?{engineServer:true}:{})}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
+    // Server lines count only when bound to this exact position. If the server says it
+    // verified lines but they cannot be shown, the AI explained other moves: fail closed
+    // and keep the provenance warning on the local lines.
+    const serverClaimed=requested===null&&!data.archiveOnly&&data.engineVerified===true;
+    const serverLines=serverClaimed&&data.position===fen?serverEngineLines(data.engineLines,fen):null;
+    setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:requested!==null?data.games.slice(0,20):[],generated:data.generated,archiveOnly:data.archiveOnly===true,candidateLines:serverLines??(!data.archiveOnly?analysisLines:[]),engineLinked:serverLines?true:!serverClaimed&&!legacyBackend&&analysisLines.length>0&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines),...(serverLines?{engineServer:true}:{})}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
   }catch(e){if(!abort.signal.aborted){setError(describe(e));setDraft(message);setItems(previous);}}
   finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}
  }

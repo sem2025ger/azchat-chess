@@ -39,12 +39,13 @@ export async function checkCoachChat({captureRoot}={}){
  // Simulate the backend with AI_COACH_SERVER_ENGINE_ENABLED=true: its own verified lines in engineLines.
  let serverLines=null;
  app.post('/api/ai-coach/chat',express.json({limit:'16kb'}),(req,res,next)=>{
-  if(mode!=='server-lines'&&mode!=='server-lines-malformed')return next();
+  if(!['server-lines','server-lines-malformed','server-lines-other-fen'].includes(mode))return next();
   const board=new Chess(req.body.fen),first=board.moves()[0];board.move(first);const reply=board.moves()[0];
   const second=new Chess(req.body.fen).moves()[1];
   serverLines=[{id:'L1',moves:[first,reply],scoreKind:'cp',scoreWhite:43,depth:15,wdlWhite:[95,902,3]},{id:'L2',moves:[second],scoreKind:'mate',scoreWhite:-2,depth:15,wdlWhite:[0,0,1000]}];
   return res.json({answer:'Server-grounded explanation.',generated:true,games:[],engineVerified:true,candidateLines:req.body.candidateLines||[],
-   engineLines:mode==='server-lines'?serverLines:[{...serverLines[0],moves:['Ke8']}]});
+   position:mode==='server-lines-other-fen'?new Chess().fen():req.body.fen,
+   engineLines:mode==='server-lines-malformed'?[{...serverLines[0],moves:['Ke8']}]:serverLines});
  });
  installAiCoach(app,{enabled:true,index:{status:'ready',search:async()=>({total:1,games:[{id:'public-fixture',source:'lichess-broadcast',pgn:'1. e4 e5',ply:0,white:'Fixture White',black:'Fixture Black',result:'*'}],nextMoves:[{move:'e4',count:1}]})},verifyToken:async token=>token.startsWith('synthetic-')?{id:token}:null,openaiApiKey:'synthetic-provider',now:()=>clock,
   socketFactory:(url,options)=>{assert.equal(new URL(url).hostname,'api.openai.com');return new WebSocket('ws://127.0.0.1:'+wss.address().port,options);},
@@ -129,29 +130,62 @@ export async function checkCoachChat({captureRoot}={}){
  await evaluate('document.querySelector(".coach-chat-study-choices button").click()');
  await wait('document.querySelector(".coach-chat-study-nav")');
  // Server-verified lines replace local ones, show White-perspective evaluations and no
- // provenance warning; malformed server lines fall back to the previous local behaviour.
- mode='server-lines';clock+=61000;
- await evaluate('window.setToken("synthetic-server");window.setAccount("server-lines")');
- await wait('document.querySelector(".coach-chat-toggle")');
- await click(t.title);await fill('Explain the Stockfish lines');await click(t.send);
- await wait('document.querySelector(".coach-chat-message.assistant .coach-chat-study")');
- const shown=await evaluate('[...document.querySelectorAll(".coach-chat-study-choices button")].map(b=>b.textContent)');
- assert.equal(shown.length,2);
- assert.ok(shown[0].includes(serverLines[0].moves[0])&&shown[0].includes(formatEngineScore({kind:'cp',white:43})),shown[0]);
- assert.ok(shown[1].includes(serverLines[1].moves[0])&&shown[1].includes(formatEngineScore({kind:'mate',white:-2})),shown[1]);
- assert.ok((await evaluate('document.querySelector(".coach-chat-engine-source").textContent')).includes(t.engineServer));
- assert.equal(await evaluate('document.querySelector(".coach-chat-eval-note").textContent'),t.evalPerspective);
- assert.equal(await evaluate('!!document.querySelector(".coach-chat-engine-unlinked")'),false,'no provenance warning for server lines');
- assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'evaluation badges fit');
+ // provenance warning, in all six languages at 390 px and once at 1280 px.
+ const chatKey=account=>'chessaz:position-search:v1:'+account+':chat';
+ for(const [width,lang] of [[390,'de'],[390,'en'],[390,'az'],[390,'tr'],[390,'ua'],[390,'ru'],[1280,'ru']]){
+  const tl=coachChatCopy[lang==='ua'?'uk':lang];mode='server-lines';clock+=61000;
+  await cdp('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:width===390});
+  await evaluate('window.language('+JSON.stringify(lang)+');window.setToken("synthetic-server-'+width+lang+'");window.setAccount("server-'+width+lang+'")');
+  await wait('document.querySelector(".coach-chat-toggle")?.textContent==='+JSON.stringify(tl.title));
+  if(!await evaluate('!!document.querySelector(".coach-chat-panel")'))await click(tl.title);
+  await fill('Explain the Stockfish lines');await click(tl.send);
+  await wait('document.querySelector(".coach-chat-message.assistant .coach-chat-study")');
+  const shown=await evaluate('[...document.querySelectorAll(".coach-chat-study-choices button")].map(b=>b.textContent)');
+  assert.equal(shown.length,2,lang);
+  assert.ok(shown[0].includes(serverLines[0].moves[0])&&shown[0].includes(tl.variant)&&shown[0].includes(formatEngineScore({kind:'cp',white:43})),shown[0]);
+  assert.ok(shown[1].includes(serverLines[1].moves[0])&&shown[1].includes(formatEngineScore({kind:'mate',white:-2})),shown[1]);
+  assert.equal(await evaluate('document.querySelector(".coach-chat-engine-source").textContent'),'Stockfish 19 · '+tl.engineServer,lang);
+  assert.equal(await evaluate('document.querySelector(".coach-chat-eval-note").textContent'),tl.evalPerspective,lang);
+  assert.equal(await evaluate('!!document.querySelector(".coach-chat-engine-unlinked")'),false,'no provenance warning for server lines '+lang);
+  assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'evaluation badges fit '+width+' '+lang);
+  assert.ok(await evaluate('[...document.querySelectorAll(".coach-chat-study-choices button")].every(b=>b.scrollWidth<=b.clientWidth+1)'),'line buttons do not overflow '+width+' '+lang);
+ }
+ const tr=coachChatCopy.ru,account='server-1280ru';
  await evaluate('document.querySelector(".coach-chat-study-choices button").click()');
  await wait('document.querySelector(".coach-chat-study-nav span")?.textContent==="0 / 2"');
- mode='server-lines-malformed';clock+=61000;
- await fill('Explain again');await click(t.send);
- await wait('document.querySelectorAll(".coach-chat-message.assistant").length===2');
- await wait('document.querySelectorAll(".coach-chat-study").length===2');
- const last='[...document.querySelectorAll(".coach-chat-study")].at(-1)';
- assert.equal(await evaluate(last+'.querySelector(".coach-chat-eval")'),null,'malformed server lines are never rendered');
- assert.equal(await evaluate(last+'.querySelector(".coach-chat-engine-source").textContent'),'Stockfish 19');
+ // Restoring a valid server-verified answer keeps its lines and evaluations.
+ const restore=async()=>{await evaluate('window.setAccount("restore-probe")');await wait('document.querySelectorAll(".coach-chat-message").length===0');await evaluate('window.setAccount('+JSON.stringify(account)+')');await pause();await pause();};
+ await restore();await wait('document.querySelector(".coach-chat-eval")');
+ assert.ok((await evaluate('document.querySelector(".coach-chat-eval").textContent'))===formatEngineScore({kind:'cp',white:43}));
+ // Corrupted session storage never throws and never renders unverified evidence.
+ const original=await evaluate('sessionStorage.getItem('+JSON.stringify(chatKey(account))+')');assert.ok(original);
+ const corrupt=async mutate=>{
+  await evaluate('window.setAccount("restore-probe")');await wait('document.querySelectorAll(".coach-chat-message").length===0');
+  const value=JSON.parse(original);mutate(value.payload.items.find(m=>m.role==='assistant'));
+  await evaluate('sessionStorage.setItem('+JSON.stringify(chatKey(account))+','+JSON.stringify(JSON.stringify(value))+')');
+  await evaluate('window.setAccount('+JSON.stringify(account)+')');await pause();await pause();
+  if(!await evaluate('!!document.querySelector(".coach-chat-panel")'))await click(tr.title);
+  assert.equal(await evaluate('document.querySelectorAll(".coach-chat-message").length'),0,'invalid stored chat is discarded');
+  assert.equal(await evaluate('!!document.querySelector(".coach-chat-eval")'),false);
+ };
+ await corrupt(m=>{m.candidateLines={};});
+ await corrupt(m=>{m.candidateLines[0].moves=['Ke8'];});
+ await corrupt(m=>{m.candidateLines[0].score={kind:'cp',white:1e9};});
+ await corrupt(m=>{m.engineServer=false;});                 // scores without server provenance
+ await corrupt(m=>{m.engineLinked=false;});
+ // Server claims verification but its lines are malformed or for another position:
+ // fall back to local lines, no server label or score, and keep the provenance warning.
+ for(const bad of ['server-lines-malformed','server-lines-other-fen']){
+  mode=bad;clock+=61000;
+  const before=await evaluate('document.querySelectorAll(".coach-chat-message.assistant").length');
+  await fill('Explain again');await click(tr.send);
+  await wait('document.querySelectorAll(".coach-chat-message.assistant").length==='+(before+1));
+  await wait('[...document.querySelectorAll(".coach-chat-message.assistant")].at(-1).querySelector(".coach-chat-study")');
+  const last='[...document.querySelectorAll(".coach-chat-message.assistant")].at(-1)';
+  assert.equal(await evaluate(last+'.querySelector(".coach-chat-eval")'),null,bad+': never rendered as server-verified');
+  assert.equal(await evaluate(last+'.querySelector(".coach-chat-engine-source").textContent'),'Stockfish 19',bad);
+  assert.ok(await evaluate('!!'+last+'.querySelector(".coach-chat-engine-unlinked")'),bad+': provenance warning kept');
+ }
  mode='ready';
 assert.deepEqual(exceptions,[]);console.log('PASS CoachChat: real HTTP router, real MediaRecorder with Chromium fake microphone, multipart provider adapter, actual loopback WebSocket/WAV playback, six locales at 390/1280, bounded context, auth/error handling, denied/late permissions, close cleanup, stale board cancellation, analysis round-trip restoration, scroll/draft preservation, token rotation, account isolation, logout cleanup and actual workspace colour propagation. OpenAI responses are synthetic; no hosted credentials or external API calls.');
  }finally{for(const p of pending.values())clearTimeout(p.timer);ws?.close();chrome?.kill('SIGKILL');await server?.close();if(api)await new Promise(r=>api.close(r));if(wss){for(const client of wss.clients)client.terminate();await new Promise(r=>wss.close(r));}if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});if(cacheDir)await rm(cacheDir,{recursive:true,force:true});}
