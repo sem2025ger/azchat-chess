@@ -25,7 +25,7 @@ test('OpenAI exact model, nonstored Responses, schema, bounded history and legal
  let calls=0;const answer=await generateAnswer(query,{archiveAvailable:false},{apiKey:key,model:'gpt-6-sol',fetchImpl:async(url,options)=>{
   calls++;assert.equal(url,'https://api.openai.com/v1/responses');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,'Bearer '+key);assert.ok(options.signal);
   const body=JSON.parse(options.body),input=JSON.parse(body.input);assert.equal(body.model,'gpt-6-sol');assert.equal(body.store,false);assert.equal(body.text.format.type,'json_schema');assert.equal(body.text.format.strict,true);assert.ok(body.instructions.includes('backend checks their legality'));assert.ok(body.instructions.includes('cannot independently authenticate'));assert.ok(body.instructions.includes('Never incorrectly state they are NOT Stockfish variations'));assert.ok(body.instructions.includes('Never invent scores'));
-  assert.equal(input.position,query.fen);assert.equal(input.sideToMove,'w');assert.deepEqual(input.legalMoves,new Chess().moves());assert.deepEqual(input.history,query.history);assert.equal(input.evidence.archiveAvailable,false);assert.equal(input.positionStatus.inCheck,false);assert.equal(input.pieces.length,32);assert.deepEqual(input.legalMoveDetails.find(m=>m.san==='e4'),{san:'e4',from:'e2',to:'e4',piece:'p'});assert.ok(body.instructions.includes('requestedSide'));return answerResponse();
+  assert.equal(input.position,query.fen);assert.equal(input.sideToMove,'w');assert.deepEqual(input.legalMoves,new Chess().moves());assert.deepEqual(input.history,query.history);assert.equal(input.evidence.archiveAvailable,false);assert.equal(input.positionStatus.inCheck,false);assert.equal(input.pieces.length,32);assert.deepEqual(input.legalMoveDetails.find(m=>m.san==='e4'),{san:'e4',from:'e2',to:'e4',piece:'p'});assert.ok(body.instructions.includes('archiveFilterSide'));assert.equal(input.archiveFilterSide,'white');assert.equal(input.requestedSide,undefined);return answerResponse();
  }});assert.equal(calls,1);assert.ok(answer.includes('центр'));
 });
 test('Stockfish study lines are used as local-board evidence without claiming server-side verification',async()=>{
@@ -115,4 +115,18 @@ test('voice budgets apply to verified account identity and reset after one minut
 
 test('Realtime receives the deterministic spoken script while text SAN is left intact',async()=>{
  const text='12...Nxe5+; O-O; c3';await speakAnswer(text,'ru',{apiKey:key,socketFactory:speechSocket({expectedScript:'ход 12, чёрные: конь берёт на е пять, шах; короткая рокировка; цэ три'})});assert.equal(text,'12...Nxe5+; O-O; c3');
+});
+
+test('archive filter never implies the learner plays that colour in either prompt',async()=>{
+ for(const server of [false,true]){
+  const q={...query,message:'Какой план у белых?',side:'black'};
+  const evidence=server?{candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:2000},candidateLines:[]}:{candidateOrigin:'untrusted_client_legality_checked',candidateLines:[]};
+  await generateAnswer(q,evidence,{apiKey:key,fetchImpl:async(_url,options)=>{
+   const payload=JSON.parse(options.body),input=JSON.parse(payload.input);
+   assert.equal(input.archiveFilterSide,'black');assert.equal(input.requestedSide,undefined);
+   assert.match(payload.instructions,/NOT the learner.s colour/);
+   assert.match(payload.instructions,/question about White.s plan is about White/);
+   return answerResponse();
+  }});
+ }
 });
