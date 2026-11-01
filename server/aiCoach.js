@@ -119,8 +119,8 @@ function installAiCoachFromEnv(app,verifyToken,index,env=process.env){
   const ready=index?.start?.();
   if(ready&&typeof ready.then==='function')void ready.then(()=>{
    if(index.status==='ready')return engine.warmup();
-  }).catch(()=>{});
-  else void engine.warmup().catch(()=>{});
+  }).catch(error=>console.warn(JSON.stringify({event:'coach_engine_warmup_failed',engine:'stockfish-19-lite',code:error?.code||'engine_unavailable'})));
+  else void engine.warmup().catch(error=>console.warn(JSON.stringify({event:'coach_engine_warmup_failed',engine:'stockfish-19-lite',code:error?.code||'engine_unavailable'})));
  }
  return installAiCoach(app,{enabled:env.AI_COACH_ENABLED==='true',verifyToken,index,
   apiKey:env.GEMINI_API_KEY||null,model:env.GEMINI_MODEL||'gemini-2.5-flash',
