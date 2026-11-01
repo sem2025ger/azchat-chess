@@ -52,13 +52,16 @@ async function verifyFiles(enginePath,pinned){
 function createCoachEngine({
  enginePath=(()=>{try{return require.resolve(ENGINE_FILE);}catch{return null;}})(),
  pinned=PINNED_SHA256,movetimeMs=900,multiPv=3,hashMb=16,maxQueue=4,deadlineMs=8000,
- startupMs=10000,cacheSize=500,spawnImpl=spawn,verify=verifyFiles,now=Date.now
+ startupMs=10000,cacheSize=500,spawnImpl=spawn,verify=verifyFiles,now=Date.now,
+ // Structured operational log: numbers and codes only, never FEN, moves, user text or ids.
+ log=(entry)=>console.log(JSON.stringify(entry))
 }={}){
  const cache=new Map(),pending=new Map(),queue=[];
  let child=null,ready=null,buffer='',listener=null,running=null,active=null,disabled=false,nnue=null,closed=false;
  const budget={movetimeMs,multiPv,hashMb};
  const keyOf=(fen)=>[ENGINE_NAME,movetimeMs,multiPv,hashMb,fen].join('|');
 
+ function safeLog(entry){try{log(entry);}catch{/* Logging must never affect analysis. */}}
  function send(line){child.stdin.write(line+'\n');}
  function kill(){
   const current=child;child=null;ready=null;buffer='';listener=null;
@@ -131,14 +134,22 @@ function createCoachEngine({
   const job=queue.shift();
   if(!job.subscribers.size){pending.delete(job.key);return pump();}
   active=job;
+  const cold=!ready,startedAt=now();
   try{
    await start();
    if(closed)throw engineError('engine_unavailable');
    if(!job.subscribers.size)throw engineError('engine_cancelled');
    const result=await search(job);
    if(result.lines.length){cache.set(job.key,result);if(cache.size>cacheSize)cache.delete(cache.keys().next().value);}
+   const best=result.lines[0];
+   safeLog({event:'coach_engine_analysis',engine:ENGINE_NAME,movetimeMs,multiPv,lines:result.lines.length,
+    depth:best.depth,seldepth:Math.max(...result.lines.map(l=>l.seldepth||0)),nodes:best.nodes,engineTimeMs:best.timeMs,
+    searchMs:result.elapsedMs,totalMs:now()-startedAt,coldStart:cold});
    job.settle(null,result);
-  }catch(e){job.settle(e);}
+  }catch(e){
+   safeLog({event:'coach_engine_failed',engine:ENGINE_NAME,movetimeMs,code:e.code||'engine_unavailable',totalMs:now()-startedAt,coldStart:cold});
+   job.settle(e);
+  }
   finally{if(pending.get(job.key)===job)pending.delete(job.key);active=null;pump();}
  }
 

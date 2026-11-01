@@ -224,6 +224,41 @@ test('terminal and invalid positions never reach the engine',async()=>{
  engine.close();
 });
 
+test('each search logs depth and timing as numbers only, never the position or moves',async()=>{
+ const logs=[];
+ const engine=createCoachEngine({verify:noVerify,movetimeMs:50,log:(e)=>logs.push(e),spawnImpl:fakeSpawn(standardScript([
+  'info depth 12 seldepth 19 multipv 1 score cp 30 nodes 4321 time 48 pv e2e4 e7e5',
+  'info depth 12 seldepth 21 multipv 2 score cp 20 nodes 4321 time 48 pv d2d4 d7d5',
+  'info depth 12 seldepth 17 multipv 3 score cp 10 nodes 4321 time 48 pv c2c4',
+  'bestmove e2e4'
+ ]))});
+ await engine.analyze(START);
+ await engine.analyze(START); // cache hit: no second log line
+ engine.close();
+ assert.equal(logs.length,1);
+ const [entry]=logs;
+ assert.deepEqual(Object.keys(entry).sort(),['coldStart','depth','engine','engineTimeMs','event','lines','movetimeMs','multiPv','nodes','searchMs','seldepth','totalMs']);
+ assert.deepEqual([entry.event,entry.engine,entry.movetimeMs,entry.multiPv,entry.lines,entry.depth,entry.seldepth,entry.nodes,entry.engineTimeMs,entry.coldStart],
+  ['coach_engine_analysis','stockfish-19-lite',50,3,3,12,21,4321,48,true]);
+ for(const value of Object.values(entry))assert.ok(['number','string','boolean'].includes(typeof value));
+ const text=JSON.stringify(entry);
+ for(const secret of ['rnbqkbnr','e2e4','e4','KQkq'])assert.ok(!text.includes(secret),secret);
+});
+
+test('failed searches log only a stable code; a throwing logger never breaks analysis',async()=>{
+ const logs=[];let hang=true;
+ const engine=createCoachEngine({verify:noVerify,movetimeMs:20,log:(e)=>{logs.push(e);throw Error('log sink down');},spawnImpl:fakeSpawn((cmd,emit)=>{
+  if(cmd==='uci')emit('uciok');if(cmd==='isready')emit('readyok');
+  if(cmd.startsWith('go')&&!hang){emit('info depth 5 multipv 1 score cp 1 nodes 1 time 1 pv e2e4');emit('info depth 5 multipv 2 score cp 0 nodes 1 time 1 pv d2d4');emit('info depth 5 multipv 3 score cp 0 nodes 1 time 1 pv c2c4');emit('bestmove e2e4');}
+ })});
+ await assert.rejects(engine.analyze(START),{code:'engine_timeout'});
+ hang=false;
+ assert.equal((await engine.analyze(START)).lines.length,3);
+ engine.close();
+ assert.deepEqual(logs.map(e=>[e.event,e.code??null,e.coldStart]),[['coach_engine_failed','engine_timeout',true],['coach_engine_analysis',null,true]]);
+ assert.ok(!JSON.stringify(logs).includes('rnbqkbnr'));
+});
+
 // Real Stockfish 19 lite from the pinned npm package.
 const real=createCoachEngine({movetimeMs:300});
 test.after(()=>real.close());
