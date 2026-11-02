@@ -87,14 +87,17 @@ export async function checkCoachChat({captureRoot}={}){
  await evaluate('window.setToken("synthetic-rotated")');await pause();assert.equal(await evaluate('document.querySelector(".coach-chat-history").innerText'),savedText);assert.ok(!(await evaluate('JSON.stringify(sessionStorage)')).includes('synthetic-rotated'),'bearer token is never persisted');
  await evaluate('window.setAccount("other-account")');await wait('document.querySelectorAll(".coach-chat-message").length===0');await click(t.title);assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").value'),'');await evaluate('window.setAccount("account-1280-ru")');await wait('document.querySelectorAll(".coach-chat-message.assistant").length===3');
  // Switching the site language keeps the same position conversation and draft.
- const beforeLanguageSwitch=calls.length, beforeLanguageText=await evaluate('document.querySelector(".coach-chat-history").innerText');
+ const beforeLanguageSwitch=calls.length, beforeLanguageText=await evaluate('JSON.stringify([...document.querySelectorAll(".coach-chat-message > p")].map(p=>p.textContent))');
  await evaluate('window.language("de")');
  await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.de.title));
- assert.equal(await evaluate('document.querySelector(".coach-chat-history").innerText'),beforeLanguageText);
+ assert.equal(await evaluate('JSON.stringify([...document.querySelectorAll(".coach-chat-message > p")].map(p=>p.textContent))'),beforeLanguageText,'previous message text is unchanged');
+ assert.equal(await evaluate('document.querySelector(".coach-chat-copy").textContent'),coachChatCopy.de.copyAnswer,'controls translate into German');
+ assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").value'),'Keep this draft','draft survives language switch');
  assert.equal(calls.length,beforeLanguageSwitch,'language switch must not call the provider');
  await fill('Was ist der Plan für Schwarz?');await click(coachChatCopy.de.send);
  await wait('document.querySelectorAll(".coach-chat-message.assistant").length===4');
  assert.equal(calls.at(-1).body.question,'Was ist der Plan für Schwarz?','German question reaches the provider');
+ assert.equal(calls.at(-1).body.language,'de','German site locale is sent to the provider');
  await evaluate('window.language("ru")');
  await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.ru.title));
  assert.equal(await evaluate('document.querySelectorAll(".coach-chat-message.assistant").length'),4);
