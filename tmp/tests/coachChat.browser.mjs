@@ -105,7 +105,7 @@ export async function checkCoachChat({captureRoot}={}){
  // An in-flight response survives a locale switch without remount, duplication, or stuck busy state.
  const priorAssistantCount=await evaluate('document.querySelectorAll(".coach-chat-message.assistant").length');
  const priorUserCount=await evaluate('document.querySelectorAll(".coach-chat-message.user").length');
- mode='hold-chat';await fill('In-flight language switch question');await click(coachChatCopy.ru.send);
+ clock+=61000;mode='hold-chat';await fill('In-flight language switch question');await click(coachChatCopy.ru.send);
  for(let i=0;i<100&&!release;i++)await pause();assert.ok(release,'provider response must be held');
  await evaluate('window.language("de")');
  await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.de.title));
