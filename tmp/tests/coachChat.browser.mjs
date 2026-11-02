@@ -52,7 +52,7 @@ export async function checkCoachChat({captureRoot}={}){
   fetchImpl:async(url,options)=>{
    const transcription=url.endsWith('transcriptions');assert.equal(url,transcription?'https://api.openai.com/v1/audio/transcriptions':'https://api.openai.com/v1/responses');
    if(transcription){assert.ok(options.body.get('file').size>16);calls.push({kind:'transcribe',language:options.body.get('language')});if(mode==='hold-transcribe')await new Promise(r=>release=r);return Response.json({text:'How should I develop my pieces?'});}
-   const body=JSON.parse(options.body),input=JSON.parse(body.input);calls.push({kind:'chat',body:input});if(mode==='hold-chat')await new Promise(r=>release=r);if(mode==='error')return new Response('SECRET provider error',{status:401});
+   const body=JSON.parse(options.body),input=JSON.parse(body.input);calls.push({kind:'chat',body:input,instructions:body.instructions});if(mode==='hold-chat')await new Promise(r=>release=r);if(mode==='error')return new Response('SECRET provider error',{status:401});
    return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Fixture answer: '+input.question})}]}]});
   }});
  api=app.listen(0,'127.0.0.1');await new Promise(r=>api.once('listening',r));
@@ -97,7 +97,7 @@ export async function checkCoachChat({captureRoot}={}){
  await fill('Was ist der Plan für Schwarz?');await click(coachChatCopy.de.send);
  await wait('document.querySelectorAll(".coach-chat-message.assistant").length===4');
  assert.equal(calls.at(-1).body.question,'Was ist der Plan für Schwarz?','German question reaches the provider');
- assert.equal(calls.at(-1).body.language,'de','German site locale is sent to the provider');
+ assert.ok(calls.at(-1).instructions.includes('Reply in de using clear, concise teaching language.'),'German locale reaches the model instructions');
  await evaluate('window.language("ru")');
  await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.ru.title));
  assert.equal(await evaluate('document.querySelectorAll(".coach-chat-message.assistant").length'),4);
