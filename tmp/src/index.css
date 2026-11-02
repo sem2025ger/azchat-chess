@@ -1965,3 +1965,37 @@ aside nav{padding-top:12px!important}
 }
 @keyframes chessazSidebarMetalSweep{from{background-position:0% center}to{background-position:100% center}}
 @media(min-width:1280px) and (prefers-contrast:more){aside .site-nav-link .site-nav-label--bronze{animation:none}}
+
+
+/* Owner analysis pass — desktop review only; no mobile or live engine overrides. */
+@media (min-width:1024px) {
+  .desktop-analysis-screen .analysis-engine-indicator {width:18px;height:18px;min-width:18px;display:inline-grid;place-items:center;position:relative;flex:none;}
+  .desktop-analysis-screen .analysis-engine-indicator-core {width:7px;height:7px;border-radius:50%;background:#C0AD91;box-shadow:0 0 7px rgba(215,207,193,.22);}
+  .desktop-analysis-screen .analysis-engine-indicator--working::before {content:"";position:absolute;inset:1px;border:2px solid transparent;border-top-color:#E5DED3;border-right-color:#C0AD91;border-radius:50%;box-shadow:0 0 7px rgba(215,207,193,.22);animation:chessazEngineRing 1.15s linear infinite;}
+  .desktop-analysis-screen .analysis-engine-variations {gap:8px!important;}
+  .desktop-analysis-screen .analysis-engine-variations > .analysis-engine-line {padding:4px 9px!important;}
+  .desktop-analysis-screen .analysis-engine-score[data-score-side] {height:30px;min-height:30px;max-height:30px;align-self:center;display:flex;align-items:center;justify-content:center;line-height:1.25!important;}
+  .desktop-analysis-screen .analysis-engine-score[data-score-side="white"] {background:linear-gradient(145deg,#F4F0E8,#DCD7CD)!important;color:#181916!important;border-color:#D5C9B4!important;}
+  .desktop-analysis-screen .analysis-engine-score[data-score-side="black"] {background:linear-gradient(145deg,#242522,#131513)!important;color:#F3F0E8!important;border-color:#77746C!important;}
+  .desktop-analysis-screen .analysis-engine-score[data-score-side="pending"] {background:#2A2A26!important;color:#C1BCAF!important;border-color:#55534E!important;}
+  .desktop-analysis-screen .desktop-analysis-transport-stack {display:flex;flex-direction:column;flex-shrink:0;min-width:0;}
+  .desktop-analysis-screen .desktop-analysis-transport {justify-content:stretch!important;gap:8px!important;padding:5px 10px!important;height:54px!important;min-height:54px!important;}
+  .desktop-analysis-screen .desktop-analysis-transport > button {flex:1 1 0!important;width:0!important;min-width:0!important;max-width:none!important;height:44px!important;min-height:44px!important;display:flex;align-items:center;justify-content:center;}
+  .desktop-analysis-screen .desktop-analysis-transport > button svg {width:27px;height:27px;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions {display:flex;align-items:center;gap:9px;padding:7px 10px 9px;background:#141512;border-top:1px solid rgba(205,179,138,.12);min-height:54px;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions > button,.desktop-analysis-screen .desktop-analysis-save-button {min-height:40px;padding:8px 14px;border:1px solid rgba(171,171,167,.38);border-radius:9px;color:#DAD6CC;background:linear-gradient(165deg,#2C2D2A,#1A1C19);font:600 .75rem/1.35 Inter,system-ui,sans-serif;cursor:pointer;}
+  .desktop-analysis-screen .desktop-analysis-save-wrapper {position:relative;display:flex;align-items:center;gap:10px;min-width:0;}
+  .desktop-analysis-screen .desktop-analysis-save-menu-root > summary {display:flex;align-items:center;justify-content:center;list-style:none;}
+  .desktop-analysis-screen .desktop-analysis-save-menu-root > summary::-webkit-details-marker {display:none;}
+  .desktop-analysis-screen .desktop-analysis-save-menu {position:absolute;z-index:80;bottom:calc(100% + 7px);left:0;min-width:182px;display:flex;flex-direction:column;gap:3px;padding:6px;border:1px solid rgba(183,165,131,.42);border-radius:11px;background:#22231F;box-shadow:0 15px 32px rgba(0,0,0,.52);}
+  .desktop-analysis-screen .desktop-analysis-save-menu-root:not([open]) .desktop-analysis-save-menu {display:none;}
+  .desktop-analysis-screen .desktop-analysis-save-menu > button {padding:11px 9px;text-align:left;border-radius:7px;color:#E7E1D5;font-size:.74rem;white-space:nowrap;}
+  .desktop-analysis-screen .desktop-analysis-save-menu > button:hover {background:#36362F;}
+  .desktop-analysis-screen .desktop-analysis-save-feedback {color:#C5B598;font-size:.7rem;white-space:nowrap;}
+  .desktop-analysis-screen .desktop-analysis-save-menu-root > summary:focus-visible,.desktop-analysis-screen .desktop-analysis-save-menu > button:focus-visible,.desktop-analysis-screen .desktop-analysis-bottom-actions > button:focus-visible {outline:2px solid #C0AD91;outline-offset:2px;}
+}
+@keyframes chessazEngineRing {to {transform:rotate(360deg);}}
+@media (min-width:1024px) and (prefers-reduced-motion:reduce) {
+  .desktop-analysis-screen .analysis-engine-indicator--working::before {animation:none;display:none;}
+  .desktop-analysis-screen .analysis-engine-indicator--working .analysis-engine-indicator-core {background:#E5DED3;}
+}

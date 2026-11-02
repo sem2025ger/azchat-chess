@@ -17,7 +17,7 @@ import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
 import PositionMap from '../components/analysis/PositionMap';
 import { positionMapLabel } from '../components/analysis/positionMapLabels';
 import { reviewLayout } from '../utils/reviewLayout';
-import type { PositionEvaluation } from '../utils/positionMap';
+import { annotatedPgn, type PositionEvaluation } from '../utils/positionMap';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
@@ -71,7 +71,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = previousOverflow; };
   }, [mobileTool]);
-  const [pvLines, setPvLines] = useState(3);
   const [mobileOrientation, setMobileOrientation] = useState<'w' | 'b'>('w');
   const [planHighlight, setPlanHighlight] = useState<{ fen: string; squares: Square[] } | null>(null);
   const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
@@ -131,7 +130,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       ? window.matchMedia('(min-width: 768px)').matches
       : false
   );
-  const effectivePvLines = mode === 'review' && !isDesktop ? 2 : pvLines;
+  const effectivePvLines = mode === 'review' && !isDesktop ? 2 : 3;
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
@@ -841,7 +840,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   // Keep a SINGLE set of real handlers: the toolbar stays in the analysis panel.
   // In review, navigation must not add height below
   // the main board; in live mode it stays in its existing right-side location.
-  const desktopAnalysisTransport = (
+  const desktopTransportControls = (
               <div className={cx("h-14 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-8 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]", mode === 'review' && "desktop-analysis-transport")}>
                 <button type="button" aria-label="К началу партии" title="К началу партии" disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><Rewind size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
                 <button type="button" aria-label="Предыдущий ход" title="Предыдущий ход" disabled={!hasHistory} onClick={() => {
@@ -861,6 +860,17 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 <button type="button" aria-label="К концу партии" title="К концу партии" disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
               </div>
   );
+  const desktopAnalysisTransport = mode === 'review' ? (
+    <div className="desktop-analysis-transport-stack">
+      {desktopTransportControls}
+      <div className="desktop-analysis-bottom-actions">
+        <button type="button" onClick={startNewAnalysis} className="desktop-analysis-new-button inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 text-xs font-semibold text-neutral-300">
+          <RotateCcw size={17} aria-hidden="true" />{t('game.analysis.new')}
+        </button>
+        <DesktopAnalysisSave initialFen={positionHistory[0] || DEFAULT_POSITION} moveHistory={moveHistory} evaluations={evaluations} />
+      </div>
+    </div>
+  ) : desktopTransportControls;
   const analysisWorkspaceHeader = (mobile = false) => mode === 'review' ? (
     <AnalysisWorkspaceHeader
           mobile={mobile}
@@ -1380,16 +1390,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
         <div className={cx("hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]", !isMultiplayer && "xl:bg-white/[0.015]", mode === 'review' && workspaceTab !== 'analysis' && "lg:hidden")}>
           {mode === 'review' && loadedGameTitle && <p role="status" className="hidden lg:block truncate px-4 pt-2 text-[11px] text-amber-100/60" title={loadedGameTitle}>{loadedGameTitle}</p>}
 
-          {mode === 'review' && (
-            // Never add/remove controls as a historic move is selected: reflow used
-            // to shift the Stockfish panel when stepping onto/off the last move.
-            <div className="desktop-analysis-review-controls flex h-10 shrink-0 flex-nowrap items-center justify-end gap-1.5 px-3">
-              <button type="button" onClick={startNewAnalysis} className="desktop-analysis-new-button flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 px-2 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
-                <RotateCcw size={14} aria-hidden="true" />
-                {t('game.analysis.new')}
-              </button>
-            </div>
-          )}
 
           <div className={cx("shrink-0 flex flex-col border-b border-white/[0.06]", mode === "review" && "desktop-analysis-stockfish")}>
             {!isLiveMultiplayer && (
@@ -1404,8 +1404,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 reviewLayout={mode === 'review'}
                 requestedDepth={mode === 'review' ? analysisDepth : undefined}
                 onIncreaseDepth={mode === 'review' ? () => setAnalysisDepth(depth => Math.min(36, depth + 6)) : undefined}
-                pvLines={mode === 'review' ? pvLines : undefined}
-                onPvLinesChange={mode === 'review' ? setPvLines : undefined}
                 error={engineFailed}
               />
             )}
@@ -1603,3 +1601,71 @@ export default function GameScreen({ mode }: GameScreenProps) {
   );
 }
 
+
+
+/** Desktop-only PGN actions; mobile actions stay in AnalysisWorkspaceHeader. */
+function DesktopAnalysisSave({ initialFen, moveHistory, evaluations }: {
+  initialFen: string;
+  moveHistory: string[];
+  evaluations: Record<string, PositionEvaluation>;
+}) {
+  const { language } = useLanguage();
+  const words = analysisCopy[language];
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [feedback, setFeedback] = useState<'copied' | 'failed' | null>(null);
+  useEffect(() => () => { if (feedbackTimer.current) clearTimeout(feedbackTimer.current); }, []);
+
+  const report = (state: 'copied' | 'failed') => {
+    setFeedback(state);
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+    feedbackTimer.current = setTimeout(() => setFeedback(null), 1800);
+  };
+  const buildPgn = () => {
+    // Reuse the existing legal-move PGN exporter; its principal line is the game history.
+    if (moveHistory.length) return annotatedPgn(initialFen, moveHistory, evaluations);
+    const game = new Chess(initialFen);
+    game.header('Event', 'ChessAZ Analysis');
+    game.header('Result', '*');
+    return game.pgn();
+  };
+  const copyPgn = async () => {
+    menuRef.current?.removeAttribute('open');
+    try {
+      const pgn = buildPgn();
+      if (!pgn.trim()) throw new Error('empty PGN');
+      await navigator.clipboard.writeText(pgn);
+      report('copied');
+    } catch { report('failed'); }
+  };
+  const downloadPgn = () => {
+    menuRef.current?.removeAttribute('open');
+    try {
+      const pgn = buildPgn();
+      if (!pgn.trim()) throw new Error('empty PGN');
+      const date = new Date();
+      const day = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+      const blobUrl = URL.createObjectURL(new Blob([pgn], { type: 'application/x-chess-pgn;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `chessaz-analysis-${day}.pgn`;
+      document.body.appendChild(link);
+      try { link.click(); } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(blobUrl), 0); }
+      setFeedback(null);
+    } catch { report('failed'); }
+  };
+  return (
+    <div className="desktop-analysis-save-wrapper">
+      <details ref={menuRef} className="desktop-analysis-save-menu-root"
+        onKeyDown={event => { if (event.key === 'Escape') { menuRef.current?.removeAttribute('open'); menuRef.current?.querySelector('summary')?.focus(); } }}
+        onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) menuRef.current?.removeAttribute('open'); }}>
+        <summary aria-label={words.save} className="desktop-analysis-save-button">{words.save}</summary>
+        <div className="desktop-analysis-save-menu">
+          <button type="button" onClick={() => void copyPgn()}>{words.copyPgn}</button>
+          <button type="button" onClick={downloadPgn}>{words.downloadPgn}</button>
+        </div>
+      </details>
+      <span role="status" className="desktop-analysis-save-feedback">{feedback ? words[feedback === 'copied' ? 'copied' : 'exportFailed'] : ''}</span>
+    </div>
+  );
+}
