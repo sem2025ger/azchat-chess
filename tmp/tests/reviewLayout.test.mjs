@@ -3,24 +3,24 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { reviewLayout } from '../src/utils/reviewLayout.ts';
 
-test('approved desktop reference keeps the 692px field, 736px frame, 574px panel and 51px gap', () => {
+test('desktop reference keeps a 692px field, 736px square frame and 630px panel', () => {
   const layout = reviewLayout(1560, 880);
   assert.equal(layout.scale, 1);
   assert.equal(layout.boardSize, 736);
   assert.equal(layout.boardSize - 2 * (6 + 16), 692);
-  assert.equal(layout.panelWidth, 574);
+  assert.equal(layout.panelWidth, 630);
   assert.equal(layout.columnGap, 51);
-  assert.equal(66 + layout.boardColumn + layout.columnGap, 907);
+  assert.equal(40 + layout.boardColumn + layout.columnGap, 881);
 });
 
 test('smaller workspaces scale the approved composition without horizontal or vertical overflow', () => {
   for (const [width, height] of [[1248,704],[1028,912],[912,744],[800,1000],[1560,600]]) {
     const layout = reviewLayout(width,height);
     const s = layout.scale;
-    assert.ok(66*s + layout.boardColumn + layout.columnGap + layout.panelWidth <= width);
+    assert.ok(40*s + layout.boardColumn + layout.columnGap + layout.panelWidth + 45*s <= width);
     assert.ok(10*s + 36*s + layout.boardSize + 36*s <= height);
     assert.ok(Math.abs(layout.boardColumn - layout.boardSize - 54*s) < 1e-9);
-    assert.ok(Math.abs(layout.panelWidth / layout.boardSize - 574/736) < 1e-12);
+    assert.ok(Math.abs(layout.panelWidth / layout.boardSize - 630/736) < 1e-12);
   }
 });
 

@@ -5,6 +5,6 @@ export function reviewLayout(width: number, height: number) {
   const boardSize = 736 * scale; // Slightly smaller desktop frame; keep the board square and the surrounding composition proportional.
   const evaluationSpace = 54 * scale;
   const columnGap = 51 * scale;
-  const panelWidth = 574 * scale;
+  const panelWidth = 630 * scale; // A narrower desktop site rail frees room for PV notation.
   return { scale, boardSize, boardColumn: boardSize + evaluationSpace, panelWidth, columnGap };
 }

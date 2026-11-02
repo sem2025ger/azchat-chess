@@ -76,7 +76,7 @@ export default function Layout() {
     )} data-analysis-route={isDesktopAnalysisRoute || undefined} data-reading-route={isReadingRoute || undefined} data-home-route={isHomeRoute || undefined}>
 
       {/* Premium Sidebar Navigation - Hidden on Mobile */}
-      <aside className="hidden md:flex w-20 xl:w-72 bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
+      <aside className="hidden md:flex w-20 xl:w-[260px] bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
 
           <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">

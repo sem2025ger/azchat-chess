@@ -837,6 +837,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
     };
   }, [engineResult, liveFen, mode]);
 
+  const evaluationForMove = (index: number): string | null => {
+    const evaluation = evaluations[positionHistory[index] || ''];
+    if (!evaluation) return null;
+    if (evaluation.mate != null) return `${evaluation.mate < 0 ? '-' : ''}M${Math.abs(evaluation.mate)}`;
+    return `${evaluation.evaluation > 0 ? '+' : ''}${evaluation.evaluation.toFixed(2)}`;
+  };
+
   // Keep a SINGLE set of real handlers: the toolbar stays in the analysis panel.
   // In review, navigation must not add height below
   // the main board; in live mode it stays in its existing right-side location.
@@ -868,6 +875,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           <RotateCcw size={17} aria-hidden="true" />{t('game.analysis.new')}
         </button>
         <DesktopAnalysisSave initialFen={positionHistory[0] || DEFAULT_POSITION} moveHistory={moveHistory} evaluations={evaluations} />
+        {analysisWorkspaceHeader()}
       </div>
     </div>
   ) : desktopTransportControls;
@@ -1337,7 +1345,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Professional Sidebar Sidebar Tabs */}
       <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' ? "desktop-analysis-panel" : "animate-fade-in-right transition-all")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
-        {mode === 'review' && <div className="hidden lg:block shrink-0">{analysisWorkspaceHeader()}</div>}
+        {mode === 'review' && <h2 className="desktop-analysis-panel-title hidden lg:flex" aria-label={words.analysis}>{words.analysis}</h2>}
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">
@@ -1436,8 +1444,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
                             }}
                           >
                             <div className="flex justify-between items-center group-hover/row:text-chess-gold transition-colors">
-                              <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w || '…'}</span>
-                              <span className="text-[0.65rem] text-neutral-700 font-mono italic opacity-40 group-hover:opacity-80">{move.wTime}</span>
+                              <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w}</span>
+                              {move.w && evaluationForMove(move.wIndex) !== null && <span className="desktop-analysis-move-eval">{evaluationForMove(move.wIndex)}</span>}
                             </div>
                           </td>
                           <td 
@@ -1450,7 +1458,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                           >
                             <div className="flex justify-between items-center group-hover/row:text-chess-active transition-colors">
                               <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.b}</span>
-                              <span className="text-[0.65rem] text-neutral-700 font-mono italic opacity-40 group-hover:opacity-80">{move.bTime}</span>
+                              {move.b && evaluationForMove(move.bIndex) !== null && <span className="desktop-analysis-move-eval">{evaluationForMove(move.bIndex)}</span>}
                             </div>
                           </td>
                         </tr>
