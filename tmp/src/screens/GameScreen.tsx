@@ -879,7 +879,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       </div>
     </div>
   ) : desktopTransportControls;
-  const analysisWorkspaceHeader = (mobile = false) => mode === 'review' ? (
+  function analysisWorkspaceHeader(mobile = false) { return mode === 'review' ? (
     <AnalysisWorkspaceHeader
           mobile={mobile}
           onMobileTool={mobile ? openMobileTool : undefined}
@@ -901,7 +901,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             setWorkspaceTab('position');
           }}
         />
-  ) : null;
+  ) : null; }
   const openMobileTool = (tool: 'map' | 'games' | 'position') => {
     if (tool === 'position') {
       resetPositionDraft(displayedGame.fen());
