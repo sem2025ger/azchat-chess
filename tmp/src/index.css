@@ -1999,3 +1999,31 @@ aside nav{padding-top:12px!important}
   .desktop-analysis-screen .analysis-engine-indicator--working::before {animation:none;display:none;}
   .desktop-analysis-screen .analysis-engine-indicator--working .analysis-engine-indicator-core {background:#E5DED3;}
 }
+
+/* PR168 owner follow-up: layout finish */
+@media (min-width:1024px) {
+  #root .desktop-analysis-screen h2.desktop-analysis-panel-title {display:flex;align-items:center;justify-content:center;flex:0 0 44px;margin:0;padding:5px 12px;border-bottom:1px solid rgba(192,162,109,.22);font-family:'Bodoni Moda',Georgia,serif!important;font-style:normal!important;font-size:1.35rem;font-weight:600;letter-spacing:.02em;background-image:linear-gradient(110deg,#B9AA92,#E5DED3 35%,#C0AD91 70%,#DBD0C1);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  .desktop-analysis-screen .desktop-analysis-move-eval {font:500 .68rem/1.2 Inter,system-ui,sans-serif;color:#aaa49a;margin-left:8px;white-space:nowrap;flex:none;}
+  .desktop-analysis-screen .desktop-analysis-stockfish {height:clamp(222px,43%,274px)!important;}
+  .desktop-analysis-screen .analysis-engine-variations {gap:8px!important;}
+  .desktop-analysis-screen .analysis-engine-variations > .analysis-engine-line {min-height:40px!important;padding:4px 8px!important;box-sizing:border-box;}
+  .desktop-analysis-screen .analysis-engine-score[data-score-side] {box-sizing:border-box;height:30px!important;min-height:30px!important;max-height:30px!important;align-self:center;margin-block:auto;flex:0 0 58px;width:58px!important;min-width:58px!important;max-width:58px!important;}
+  .desktop-analysis-screen .analysis-engine-line {gap:7px!important;}
+  .desktop-analysis-screen .analysis-engine-moves {gap:2px 3px!important;font-size:.73rem!important;letter-spacing:-.15px;mask-image:none!important;overflow:hidden!important;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions {width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;position:relative;z-index:40;box-sizing:border-box;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button,
+  .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-save-wrapper {flex:1 1 0;min-width:0;margin:0;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button {width:0;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions .desktop-analysis-save-menu-root,
+  .desktop-analysis-screen .desktop-analysis-bottom-actions .desktop-analysis-save-button {width:100%;box-sizing:border-box;}
+  .desktop-analysis-screen .desktop-analysis-save-feedback {position:absolute;bottom:calc(100% + 2px);left:0;pointer-events:none;padding:2px 5px;background:#181917;border-radius:4px;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions > .analysis-redesign-header {display:flex;align-items:center;justify-content:center;flex:0 0 42px;width:42px!important;min-width:42px;height:42px!important;min-height:42px;padding:0!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions .analysis-redesign-actions {display:flex;justify-content:center;align-items:center;flex:0 0 42px;margin:0;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions .analysis-redesign-menu > summary {width:42px;height:42px;min-height:42px;padding:0;border-radius:10px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions .analysis-redesign-menu-list {top:auto;bottom:calc(100% + 7px);right:0;left:auto;}
+  .desktop-analysis-screen > .desktop-analysis-panel {box-sizing:border-box;width:var(--review-panel-width)!important;min-width:0!important;max-width:var(--review-panel-width)!important;margin-left:0!important;}
+}
+@media (min-width:1280px) {
+  #root aside {width:260px;min-width:260px;max-width:260px;}
+  #root aside .site-nav-link .site-nav-label {white-space:nowrap;}
+}
