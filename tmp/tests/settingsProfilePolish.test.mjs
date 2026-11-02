@@ -10,7 +10,7 @@ import {join,resolve} from 'node:path';
 import {createServer} from 'vite';
 import react from '@vitejs/plugin-react';
 
-const snapshot='8a2f0f204f9ab9bbe6073af8e79d13301c221b60';
+const snapshot='87d40deb4dc09a4dc0816efafbd5da9e204d5d9d';
 const page=[
  "import '/src/index.css';",
  "import React from 'react';import{createRoot}from'react-dom/client';",
@@ -46,7 +46,7 @@ function fixturePlugin(){
  };
 }
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
-const dimensions=[[1366,768],[1440,900],[1920,1080]];
+const dimensions=[[1366,768],[1440,900],[1920,1080],[1920,880]];
 test('Settings/Profile browser geometry and mobile Settings baseline pixel identity',{timeout:420000},async()=>{
  let oldDir,chromeDir,chrome,ws,server;const pending=new Map();
  try{
@@ -81,7 +81,7 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
    server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-polish-cache-'+process.pid+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[fixturePlugin(),react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:{'import.meta.env.VITE_SERVER_URL':JSON.stringify('https://fixture.invalid')}});
    await server.listen();
    const url=server.resolvedUrls.local[0]+'polish-qa';
-   for(const [width,height] of (phase==='before'?[[1366,768],[390,844]]:[...dimensions,[390,844]])){
+   for(const [width,height] of (phase==='before'?[[1366,768],[1920,880],[390,844]]:[...dimensions,[390,844]])){
     // Unmount the previous React screen before Chrome changes the viewport.
     // Profile can keep the renderer busy when resized directly.
     await cdp('Page.navigate',{url:'about:blank'});
@@ -90,34 +90,35 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
     await wait("typeof window.qaNavigate==='function'&&!!document.querySelector('.settings-fixed-workspace')");
     await evaluate('document.fonts.ready');await pause(150);
     if(width>=1024){
-     const geom=await evaluate("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect();const a=r('.settings-fixed-workspace'),b=r('#settings-section-board'),mid=r('.settings-options-column > div:nth-child(2)'),last=r('#settings-section-background'),p=r('.settings-preview-column'),left=r('.settings-options-column'),pieces=r('#settings-section-pieces'),sound=r('#settings-section-sound'),board=r('#settings-preview-board'),stage=r('.settings-preview-stage');const gap=id=>{const s=document.querySelector('#settings-section-'+id+' section');return s.getBoundingClientRect().bottom-s.querySelector('.grid').getBoundingClientRect().bottom};return{top:b.top-a.top,bottom:a.bottom-last.bottom,gap1:mid.top-b.bottom,gap2:last.top-mid.bottom,previewTop:p.top-b.top,previewBottom:p.bottom-last.bottom,previewHeight:p.height,leftHeight:left.height,piecesHeight:pieces.height,soundHeight:sound.height,configuredGap:parseFloat(getComputedStyle(document.querySelector('.settings-desktop-grid')).getPropertyValue('--settings-card-gap')),boardHeight:board.height,boardWidth:board.width,boardWithinStage:board.top>=stage.top-2&&board.bottom<=stage.bottom+2,boardGap:gap('board'),piecesGap:gap('pieces'),soundGap:gap('sound'),documentOverflow:document.documentElement.scrollHeight-innerHeight}})()");
-     results[phase]['settings-'+width]=geom;
+     const geom=await evaluate("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect();const a=r('.settings-fixed-workspace'),b=r('#settings-section-board'),mid=r('.settings-options-column > div:nth-child(2)'),last=r('#settings-section-background'),p=r('.settings-preview-column'),left=r('.settings-options-column'),pieces=r('#settings-section-pieces'),sound=r('#settings-section-sound'),board=r('#settings-preview-board'),stage=r('.settings-preview-stage');const gap=id=>{const s=document.querySelector('#settings-section-'+id+' section');return s.getBoundingClientRect().bottom-s.querySelector('.grid').getBoundingClientRect().bottom};return{top:b.top-a.top,bottom:a.bottom-last.bottom,gap1:mid.top-b.bottom,gap2:last.top-mid.bottom,previewTop:p.top-b.top,previewBottom:p.bottom-last.bottom,previewHeight:p.height,leftHeight:left.height,boardCardHeight:b.height,middleHeight:mid.height,backgroundHeight:last.height,piecesHeight:pieces.height,soundHeight:sound.height,configuredGap:parseFloat(getComputedStyle(document.querySelector('.settings-desktop-grid')).getPropertyValue('--settings-card-gap')),boardHeight:board.height,boardWidth:board.width,boardWithinStage:board.top>=stage.top-2&&board.bottom<=stage.bottom+2,boardGap:gap('board'),piecesGap:gap('pieces'),soundGap:gap('sound'),documentOverflow:document.documentElement.scrollHeight-innerHeight}})()");
+     results[phase]['settings-'+width+'x'+height]=geom;
      if(phase==='after'){
       for(const name of ['boardGap','piecesGap','soundGap'])assert.ok(geom[name]>=0&&geom[name]<=16,name+': '+JSON.stringify(geom));
       for(const name of ['gap1','gap2']) assert.ok(geom[name]>=geom.configuredGap-2&&geom[name]<=geom.configuredGap+2,'oversized left gap '+JSON.stringify(geom));
       assert.ok(Math.abs(geom.piecesHeight-geom.soundHeight)<=2,'Pieces and Sound heights differ '+JSON.stringify(geom));
       assert.ok(Math.abs(geom.previewTop)<=2&&Math.abs(geom.previewBottom)<=2,'Preview alignment '+JSON.stringify(geom));
-      assert.ok(geom.top>=16&&geom.bottom>=16&&Math.abs(geom.top-geom.bottom)<=4,'outer breathing room '+JSON.stringify(geom));
+      assert.ok(geom.top>=16&&geom.top<=40&&geom.bottom>=16&&geom.bottom<=40&&Math.abs(geom.top-geom.bottom)<=4,'outer breathing room '+JSON.stringify(geom));
+      assert.ok(Math.max(geom.boardCardHeight,geom.middleHeight,geom.backgroundHeight)-Math.min(geom.boardCardHeight,geom.middleHeight,geom.backgroundHeight)<=2,'Settings rows unequal '+JSON.stringify(geom));
       assert.ok(Math.abs(geom.previewHeight-geom.leftHeight)<=2,'Preview and options heights differ '+JSON.stringify(geom));
-      assert.ok(Math.abs(geom.boardHeight-geom.boardWidth)<=2&&geom.boardWithinStage&&geom.boardWidth>120,'preview chessboard clipped or not square '+JSON.stringify(geom));
+      assert.ok(Math.abs(geom.boardHeight-geom.boardWidth)<=2&&geom.boardWithinStage&&geom.boardWidth>=geom.previewHeight*.60,'preview chessboard clipped or not square '+JSON.stringify(geom));
       assert.ok(geom.documentOverflow<=1,'Settings page scroll '+JSON.stringify(geom));
      }
     }
-    if(width===1366||width===390){
+    if(width===1366||width===1920&&height===880||width===390){
      const image=(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
-     if(capture)await writeFile(join(capture,phase+'-settings-'+width+'.png'),Buffer.from(image,'base64'));
+     if(capture)await writeFile(join(capture,phase+'-settings-'+width+'x'+height+'.png'),Buffer.from(image,'base64'));
      if(width===390){if(phase==='before')baselineMobile=image;else assert.equal(image,baselineMobile,'mobile Settings differs from baseline');}
     }
     if(width>=1024||width===390){
      await evaluate("window.qaNavigate('/profile')");
      await wait("!!document.querySelector('.passport-rating')");
      await evaluate('document.fonts.ready');await pause(100);
-     const profile=await evaluate("(()=>{const p=document.querySelector('.desktop-player-passport')||document.querySelector('.passport-identity').parentElement;const main=document.querySelector('main');return{signature:!!document.querySelector('.passport-signature'),copy:/ШАХМАТНЫЙ ПОЧЕРК|CHESS SIGNATURE/.test(document.body.innerText),scroll:main.scrollHeight-main.clientHeight,bottom:p.getBoundingClientRect().bottom,identityBlank:Math.max(0,document.querySelector('.passport-identity').getBoundingClientRect().bottom-document.querySelector('.passport-identity > .relative + div').getBoundingClientRect().bottom),sections:[...p.querySelectorAll(':scope > section')].map(s=>s.className.match(/passport-[a-z]+/)?.[0])}})()");
-     results[phase]['profile-'+width]=profile;
+     const profile=await evaluate("(()=>{const p=document.querySelector('.desktop-player-passport')||document.querySelector('.passport-identity').parentElement;const main=document.querySelector('main');return{signature:!!document.querySelector('.passport-signature'),copy:/ШАХМАТНЫЙ ПОЧЕРК|CHESS SIGNATURE/.test(document.body.innerText),scroll:main.scrollHeight-main.clientHeight,bottom:p.getBoundingClientRect().bottom,bottomFree:innerHeight-p.getBoundingClientRect().bottom,identityHeight:document.querySelector('.passport-identity').getBoundingClientRect().height,ratingHeight:document.querySelector('.passport-rating').getBoundingClientRect().height,nextHeight:document.querySelector('.passport-next').getBoundingClientRect().height,performanceHeight:document.querySelector('.passport-performance').getBoundingClientRect().height,rowGap1:document.querySelector('.passport-next').getBoundingClientRect().top-document.querySelector('.passport-identity').getBoundingClientRect().bottom,rowGap2:document.querySelector('.passport-achievements').getBoundingClientRect().top-document.querySelector('.passport-next').getBoundingClientRect().bottom,identityBlank:Math.max(0,document.querySelector('.passport-identity').getBoundingClientRect().bottom-document.querySelector('.passport-identity > .relative + div').getBoundingClientRect().bottom),sections:[...p.querySelectorAll(':scope > section')].map(s=>s.className.match(/passport-[a-z]+/)?.[0])}})()");
+     results[phase]['profile-'+width+'x'+height]=profile;
      if(phase==='after'){
       assert.equal(profile.signature,false,'signature mounted at '+width);
       assert.equal(profile.copy,false,'signature shown at '+width);
-      if(width>=1024){assert.ok(profile.scroll<=1,'Profile scrolled '+JSON.stringify(profile));assert.ok(profile.bottom<=height,'Profile clipped '+JSON.stringify(profile));assert.ok(profile.identityBlank<=2,'Identity has empty band '+JSON.stringify(profile));}
+      if(width>=1024){assert.ok(profile.scroll<=1,'Profile scrolled '+JSON.stringify(profile));assert.ok(profile.bottom<=height,'Profile clipped '+JSON.stringify(profile));assert.ok(profile.bottomFree>=16&&profile.bottomFree<=40,'Profile bottom margin '+JSON.stringify(profile));assert.ok(Math.abs(profile.identityHeight-profile.ratingHeight)<=2&&Math.abs(profile.nextHeight-profile.performanceHeight)<=2,'Profile paired heights '+JSON.stringify(profile));assert.ok(profile.rowGap1>=0&&profile.rowGap1<=16&&profile.rowGap2>=0&&profile.rowGap2<=16,'Profile rows gaps '+JSON.stringify(profile));}
      }
      if(width===390){
       const image=(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
@@ -125,9 +126,9 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
       else assert.equal(image,baselineProfileMobile,'mobile Profile differs from 8a2f0f2');
       if(capture) await writeFile(join(capture,phase+'-profile-390.png'),Buffer.from(image,'base64'));
      }
-     if(width===1366&&capture){
+     if((width===1366||width===1920&&height===880)&&capture){
       const image=(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
-      await writeFile(join(capture,phase+'-profile-1366.png'),Buffer.from(image,'base64'));
+      await writeFile(join(capture,phase+'-profile-'+width+'x'+height+'.png'),Buffer.from(image,'base64'));
      }
     }
    }
