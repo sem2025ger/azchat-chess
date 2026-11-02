@@ -174,6 +174,29 @@ export async function checkCoachChat({captureRoot}={}){
  const restore=async()=>{await evaluate('window.setAccount("restore-probe")');await wait('document.querySelectorAll(".coach-chat-message").length===0');await evaluate('window.setAccount('+JSON.stringify(account)+')');await pause();await pause();};
  await restore();await wait('document.querySelector(".coach-chat-eval")');
  assert.ok((await evaluate('document.querySelector(".coach-chat-eval").textContent'))===formatEngineScore({kind:'cp',white:43}));
+ // Legacy language-bound chat snapshots restore only for the exact FEN and archive side.
+ const legacyOriginal=JSON.parse(await evaluate('sessionStorage.getItem('+JSON.stringify(chatKey(account))+')'));
+ const legacyContext=JSON.parse(legacyOriginal.payload.context);
+ assert.equal(legacyContext.length,2,'current chat context excludes language');
+ const legacyFen=legacyContext[0],legacySide=legacyContext[1];
+ const restoreLegacy=async(savedContext)=>{
+  await evaluate('window.setAccount("restore-probe")');
+  await wait('document.querySelectorAll(".coach-chat-message").length===0');
+  const snapshot=JSON.parse(JSON.stringify(legacyOriginal));
+  snapshot.payload.context=JSON.stringify(savedContext);
+  await evaluate('sessionStorage.setItem('+JSON.stringify(chatKey(account))+','+JSON.stringify(JSON.stringify(snapshot))+')');
+  await evaluate('window.setAccount('+JSON.stringify(account)+')');
+  await pause();await pause();
+ };
+ await restoreLegacy([legacyFen,legacySide,'ru']);
+ await wait('document.querySelector(".coach-chat-eval")');
+ assert.ok(await evaluate('document.querySelectorAll(".coach-chat-message.assistant").length>0'),'legacy 3-part context restores existing messages');
+ const differentFenBoard=new Chess(legacyFen);
+ differentFenBoard.move(differentFenBoard.moves()[0]);
+ await restoreLegacy([differentFenBoard.fen(),legacySide,'ru']);
+ assert.equal(await evaluate('document.querySelectorAll(".coach-chat-message").length'),0,'different FEN legacy context is discarded');
+ await restoreLegacy(legacyContext);
+ await wait('document.querySelector(".coach-chat-eval")');
  // Corrupted session storage never throws and never renders unverified evidence.
  const original=await evaluate('sessionStorage.getItem('+JSON.stringify(chatKey(account))+')');assert.ok(original);
  const corrupt=async mutate=>{
