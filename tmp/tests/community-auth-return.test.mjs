@@ -14,7 +14,8 @@ test('club sign-in carries an explicit same-app /chat return target', () => {
   assert.match(profile, /navigate\(clubReturnTo, \{ replace: true \}\)/);
 });
 test('all email callbacks carry club intent to a stable QA host', () => {
-  assert.match(helper, /chessaz-preview-workspace\.vercel\.app/);
+  assert.match(helper, /stableQaBranchHost/);
+  assert.match(helper, /safeQaBranchOrigin/);
   assert.match(helper, /callback\.searchParams\.set\('returnTo', '\/chat'\)/);
   assert.match(profile, /emailRedirectTo: authCallbackUrl\(window\.location\.origin, '\/profile', Boolean\(clubReturnTo\), mobileReturnTo === '\/play'\)/);
   assert.match(profile, /redirectTo: authCallbackUrl\(window\.location\.origin, '\/update-password', Boolean\(clubReturnTo\), mobileReturnTo === '\/play'\)/);
