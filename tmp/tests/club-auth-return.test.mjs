@@ -12,7 +12,8 @@ test('club sign-in preserves /chat destination', () => {
   assert.match(profile, /navigate\(clubReturnTo, \{ replace: true \}\)/);
 });
 test('password and OTP callbacks keep club return on the stable QA origin', () => {
-  assert.match(helper, /chessaz-preview-workspace\.vercel\.app/);
+  assert.match(helper, /stableQaBranchHost/);
+  assert.match(helper, /safeQaBranchOrigin/);
   assert.match(helper, /current\.origin/);
   assert.match(helper, /value === '\/chat'/);
   assert.match(profile, /authCallbackUrl\(window\.location\.origin, '\/update-password', Boolean\(clubReturnTo\), mobileReturnTo === '\/play'\)/);
