@@ -15,6 +15,7 @@ import { mobileAnalysisCopy } from '../components/analysis/mobileAnalysisCopy';
 import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
 import PositionMap from '../components/analysis/PositionMap';
+import PositionMapVariations from '../components/analysis/PositionMapVariations';
 import { positionMapLabel } from '../components/analysis/positionMapLabels';
 import { reviewLayout } from '../utils/reviewLayout';
 import { annotatedPgn, type PositionEvaluation } from '../utils/positionMap';
@@ -837,13 +838,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
     };
   }, [engineResult, liveFen, mode]);
 
-  const evaluationForMove = (index: number): string | null => {
-    const evaluation = evaluations[positionHistory[index] || ''];
-    if (!evaluation) return null;
-    if (evaluation.mate != null) return `${evaluation.mate < 0 ? '-' : ''}M${Math.abs(evaluation.mate)}`;
-    return `${evaluation.evaluation > 0 ? '+' : ''}${evaluation.evaluation.toFixed(2)}`;
-  };
-
   // Keep a SINGLE set of real handlers: the toolbar stays in the analysis panel.
   // In review, navigation must not add height below
   // the main board; in live mode it stays in its existing right-side location.
@@ -1094,7 +1088,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 {mobileTool === 'map' && (
                   <PositionMap key={displayedGame.fen()} fen={displayedGame.fen()}
                     result={currentEngineResult} language={language} failed={engineFailed}
-                    onSelectLine={undefined}/>
+                    onHighlight={handleMobileMapHighlight}/>
                 )}
                 {mobileTool === 'position' && (
                   <PositionTools currentFen={displayedGame.fen()} words={words}
@@ -1387,7 +1381,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </nav>
             <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
             {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
-            {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionMap key={displayedGame.fen()} fen={displayedGame.fen()} result={engineResult} language={language} failed={engineFailed} onSelectLine={(moves) => { try { loadWorkspaceAnalysis(analysisFromMoves([...moveHistory.slice(0, viewMoveIndex === -1 ? undefined : viewMoveIndex + 1), ...moves], positionHistory[0])); } catch { /* Ignore stale PV */ } }} /></div>}
+            {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionMapVariations key={displayedGame.fen()} fen={displayedGame.fen()} result={currentEngineResult} language={language} failed={engineFailed} onSelectLine={(moves) => { try { loadWorkspaceAnalysis(analysisFromMoves([...moveHistory.slice(0, viewMoveIndex === -1 ? undefined : viewMoveIndex + 1), ...moves], positionHistory[0])); } catch { /* Ignore stale PV */ } }} /></div>}
             {workspaceTab === 'position' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionTools currentFen={displayedGame.fen()} words={words} onLoad={loadWorkspaceAnalysis} onCancel={() => { setEditingPosition(false); setWorkspaceTab(tabBeforeEditor.current); }}
               draft={positionDraftValue} selected={editorSelectedPiece} onSelected={setEditorSelectedPiece}
               onDraft={updatePositionDraft} onClear={clearPositionDraft} onUndo={undoPositionDraft}
