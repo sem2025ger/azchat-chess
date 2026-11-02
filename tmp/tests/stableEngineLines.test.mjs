@@ -12,8 +12,8 @@ test('review PV positions remain present before evaluation and through new searc
   try {
     const { default: Panel } = await server.ssrLoadModule('/src/components/AnalysisPanel.tsx');
     const { LanguageProvider } = await server.ssrLoadModule('/src/context/LanguageContext.tsx');
-    const render = (lines, pvLines = 3) => renderToStaticMarkup(createElement(LanguageProvider, null,
-      createElement(Panel, { score: 0, depth: 0, reviewLayout: true, pvLines, lines, loading: !lines?.length })));
+    const render = (lines) => renderToStaticMarkup(createElement(LanguageProvider, null,
+      createElement(Panel, { score: 0, depth: 0, reviewLayout: true, lines, loading: !lines?.length })));
     const absent = render(undefined);
     const initial = render([{ evaluation: .13, depth: 8, moves: ['1.', 'e4'] }]);
     const ready = render([
@@ -30,8 +30,8 @@ test('review PV positions remain present before evaluation and through new searc
     assert.match(initial, /\+0\.13/);
     assert.match(ready, /-0\.25/);
     assert.match(ready, /M3/);
-    assert.equal((render([], 5).match(/data-engine-slot=/g) || []).length, 5);
-    assert.equal((render([], 1).match(/data-engine-slot=/g) || []).length, 1);
+    assert.equal((render([]).match(/data-engine-slot=/g) || []).length, 3);
+    assert.equal((render([]).match(/data-engine-slot=/g) || []).length, 3);
   } finally {
     await server.close();
     if (previous) Object.defineProperty(globalThis, 'localStorage', previous); else delete globalThis.localStorage;
