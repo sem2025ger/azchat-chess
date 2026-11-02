@@ -294,3 +294,8 @@
     overflow-wrap: break-word;
   }
 }
+
+/* Desktop-only removal of Settings search/style bar. Keep mobile UI unchanged. */
+@media (min-width: 1024px) {
+  .settings-fixed-workspace .settings-command-center { display: none !important; }
+}
