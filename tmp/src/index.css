@@ -1369,6 +1369,8 @@
     max-height:calc(100% - 32px);
     margin-block:auto;
     align-items:stretch;
+    position:relative;
+    top:2px;
   }
   .settings-desktop-grid { --settings-card-gap:12px; }
   .settings-fixed-workspace .settings-options-column {
