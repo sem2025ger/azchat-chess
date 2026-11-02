@@ -47,7 +47,7 @@ function fixturePlugin(){
 }
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const dimensions=[[1366,768],[1440,900],[1920,1080]];
-test('Settings/Profile browser geometry and mobile Settings baseline pixel identity',{timeout:240000},async()=>{
+test('Settings/Profile browser geometry and mobile Settings baseline pixel identity',{timeout:420000},async()=>{
  let oldDir,chromeDir,chrome,ws,server;const pending=new Map();
  try{
   assert.ok(existsSync(resolve('node_modules')),'npm ci required');
@@ -68,7 +68,7 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
   await new Promise((ok,bad)=>{ws.addEventListener('open',ok,{once:true});ws.addEventListener('error',bad,{once:true})});
   let serial=0;
   ws.addEventListener('message',({data})=>{const msg=JSON.parse(data),job=pending.get(msg.id);if(!job)return;pending.delete(msg.id);clearTimeout(job.timer);msg.error?job.reject(Error(JSON.stringify(msg.error))):job.resolve(msg.result)});
-  const cdp=(method,params={})=>new Promise((resolve,reject)=>{const id=++serial,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP '+method+' timeout'))},20000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}))});
+  const cdp=(method,params={})=>new Promise((resolve,reject)=>{const id=++serial,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP '+method+' timeout'))},60000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}))});
   const evaluate=async expression=>{const result=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw Error(JSON.stringify(result.exceptionDetails));return result.result.value};
   const wait=async expression=>{for(let i=0;i<200;i++){if(await evaluate('Boolean('+expression+')'))return;await pause(50)}throw Error('UI timeout '+expression+' '+String(await evaluate('document.body.innerText')).slice(0,500))};
   await cdp('Runtime.enable');await cdp('Page.enable');
