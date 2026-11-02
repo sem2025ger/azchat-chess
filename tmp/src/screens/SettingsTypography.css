@@ -299,3 +299,8 @@
 @media (min-width: 1024px) {
   .settings-fixed-workspace .settings-command-center { display: none !important; }
 }
+
+/* Desktop theme canvas: only mobile retains the existing ambient gold/teal blobs. */
+@media (min-width: 1024px) {
+  .settings-fixed-workspace .settings-mobile-decor { display: none; }
+}
