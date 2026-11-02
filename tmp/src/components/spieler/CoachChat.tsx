@@ -22,9 +22,16 @@ type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated
 type Clip={url:string;item:number;autoplay:boolean};
 type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string;onVariationPreview?:(moves:string[],ply:number)=>void};
 type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number;expanded?:number[]};
+// Language changes must not replace the conversation; legacy 3-part contexts remain readable.
+function matchingChatContext(saved:string,current:string){
+ try{
+  const old=JSON.parse(saved),now=JSON.parse(current);
+  return Array.isArray(old)&&Array.isArray(now)&&old.length>=2&&now.length===2&&old[0]===now[0]&&old[1]===now[1];
+ }catch{return false;}
+}
 function restoredChat(accountId:string,context:string,fen:string){
  const saved=readPositionSearchState<SavedChat>(accountId,'chat');
- if(!saved||saved.context!==context||typeof saved.open!=='boolean'||typeof saved.voiceReplies!=='boolean'||typeof saved.draft!=='string'||saved.draft.length>500||!Number.isFinite(saved.scrollTop)||!Array.isArray(saved.items)||saved.items.length>60)return null;
+ if(!saved||!matchingChatContext(saved.context,context)||typeof saved.open!=='boolean'||typeof saved.voiceReplies!=='boolean'||typeof saved.draft!=='string'||saved.draft.length>500||!Number.isFinite(saved.scrollTop)||!Array.isArray(saved.items)||saved.items.length>60)return null;
  if(saved.items.some(m=>{
   if(!m||!['user','assistant'].includes(m.role)||typeof m.text!=='string'||m.text.length>1200)return true;
   if(m.generated!==undefined&&typeof m.generated!=='boolean')return true;
@@ -60,12 +67,11 @@ async function checked(response:Response){
  return response;
 }
 export default function CoachChat(props:Props){
- const {language}=useLanguage();
- return <CoachConversation key={JSON.stringify([props.accountId,props.fen,props.side,openingPrepLanguage(language)])} {...props}/>;
+ return <CoachConversation key={JSON.stringify([props.accountId,props.fen,props.side])} {...props}/>;
 }
 function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}:Props){
  const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId();
- const context=JSON.stringify([fen,side,lang]);
+ const context=JSON.stringify([fen,side]);
  const [storageRevision]=useState(positionSearchRevision);
  const [headerTarget,setHeaderTarget]=useState<HTMLElement|null>(null);
  useEffect(()=>{setHeaderTarget(document.querySelector('.spieler-position-workspace .chessaz-ai-coach>header'));},[]);
