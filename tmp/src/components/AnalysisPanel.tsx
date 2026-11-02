@@ -127,7 +127,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
                 </div>
                 
                 <div className="analysis-engine-pv flex-1 flex flex-col pt-0.5">
-                   <div className="analysis-engine-moves text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
+                   <div className="analysis-engine-moves text-[0.9rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
                       {(line?.moves.length ?? 0) > 0 ? (line?.moves ?? []).map((move, i) => (
                         <span key={i} className={i <= 1 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
                       )) : (
