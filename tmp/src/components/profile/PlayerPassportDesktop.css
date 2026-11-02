@@ -221,3 +221,33 @@
  .desktop-player-passport .passport-achievements > div:first-child { width:32px; height:32px; }
  .desktop-player-passport > footer { padding:0; }
 }
+
+/* Fill the available viewport with three paired desktop rows, retaining mobile geometry. */
+@media (min-width:1024px) {
+  .desktop-player-passport {
+    height:calc(100% - 24px);
+    min-height:0;
+    align-content:stretch;
+    align-items:stretch;
+    grid-template-rows:auto minmax(0,1.4fr) minmax(0,1fr) minmax(0,.85fr) auto;
+    gap:clamp(8px,1.1vh,12px);
+  }
+  .desktop-player-passport .passport-identity { align-self:stretch; justify-content:flex-end; }
+  .desktop-player-passport .passport-identity > .relative {
+    flex:1 1 auto;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
+  .desktop-player-passport .passport-rating,
+  .desktop-player-passport .passport-performance {
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-self:stretch;
+  }
+  .desktop-player-passport .passport-next,
+  .desktop-player-passport .passport-recent,
+  .desktop-player-passport .passport-achievements { align-self:stretch; justify-content:center; }
+  .desktop-player-passport .passport-recent { display:flex; flex-direction:column; }
+}

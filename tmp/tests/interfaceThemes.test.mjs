@@ -145,10 +145,10 @@ test('desktop Settings polish preserves mobile decorative layers and existing in
 });
 
 
-test('Settings rows have one compact gap and never distribute free height', () => {
+test('Settings rows stretch with fixed gaps and vertically centered content', () => {
   const site = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
   assert.match(site, /\.settings-fixed-workspace \.settings-options-column\s*\{[^}]*justify-content:flex-start/);
-  assert.match(site, /\.settings-fixed-workspace \.settings-options-column > div\s*\{[^}]*flex:0 0 auto/);
+  assert.match(site, /\.settings-fixed-workspace \.settings-options-column > div\s*\{[^}]*flex:1 1 0/);
   assert.match(site, /\.settings-fixed-workspace \.settings-options-column > div:nth-child\(2\)\s*\{[^}]*display:grid/);
   assert.match(site, /\.settings-desktop-grid \{ --settings-card-gap:12px; \}/);
   assert.match(site, /\.settings-desktop-grid \{ --settings-card-gap:16px; \}/);
@@ -174,14 +174,15 @@ test('Profile removes chess handwriting completely for all six languages on phon
   assert.match(css, /\.passport-achievements \{\s*grid-column: 1;\s*grid-row: 4;/);
 });
 
-test('Settings desktop only: preview follows the naturally sized centered options column', () => {
+test('Settings desktop preview grows with the equal-height options column', () => {
   const site = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
   const scope = site.slice(site.indexOf('/* Settings desktop: one stable viewport'));
   assert.match(scope, /@media \(min-width:1024px\)/);
-  assert.match(scope, /\.settings-desktop-grid \{[^}]*height:auto/);
+  assert.match(scope, /\.settings-desktop-grid \{[^}]*height:calc\(100% - 48px\)/);
   assert.match(scope, /\.settings-desktop-grid \{[^}]*margin-block:auto/);
   assert.match(scope, /\.settings-options-column > div \{[^}]*flex:0 0 auto/);
-  assert.match(scope, /\.settings-options-column section \{ height:auto; \}/);
+  assert.match(scope, /\.settings-options-column section \{[^}]*height:100%/);
   assert.match(scope, /\.settings-options-column > div:nth-child\(2\) \{[^}]*align-items:stretch/);
   assert.match(scope, /\.settings-preview-column > div \{ position:absolute; inset:0;/);
+  assert.match(scope, /\.settings-desktop-grid \{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/);
 });

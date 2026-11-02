@@ -1365,23 +1365,23 @@
     min-height:0;
     overflow:hidden;
     flex:0 0 auto;
-    height:auto;
-    max-height:calc(100% - 32px);
+    height:calc(100% - 48px);
+    max-height:calc(100% - 48px);
     margin-block:auto;
     align-items:stretch;
-    position:relative;
-    top:2px;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   }
   .settings-desktop-grid { --settings-card-gap:12px; }
   .settings-fixed-workspace .settings-options-column {
     min-height:0;
+    grid-column:span 1 / span 1;
     justify-content:flex-start;
-    height:auto;
+    height:100%;
     gap:var(--settings-card-gap);
   }
-  /* Content-height rows and small fixed gaps; the free space surrounds the grid. */
+  /* Three equal flexible rows with fixed gaps; free space is outside the grid. */
   .settings-fixed-workspace .settings-options-column > div {
-    flex:0 0 auto;
+    flex:1 1 0;
     min-height:0;
   }
   .settings-fixed-workspace .settings-options-column > div:nth-child(2) {
@@ -1394,7 +1394,12 @@
     min-height:0;
     height:100%;
   }
-  .settings-fixed-workspace .settings-options-column section { height:auto; }
+  .settings-fixed-workspace .settings-options-column section {
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
   .settings-fixed-workspace .settings-options-column > div:nth-child(2) > div > section { height:100%; }
   .settings-fixed-workspace #settings-section-background section { min-height:0; }
   .settings-options-column > div { min-height:0; flex-shrink:1; }
@@ -1411,14 +1416,14 @@
     background: #171717;
   }
   /* Prevent Preview intrinsic content from inflating the grid row. */
-  .settings-fixed-workspace .settings-preview-column { height:auto; min-height:0; position:relative; }
+  .settings-fixed-workspace .settings-preview-column { grid-column:span 1 / span 1; height:100%; min-height:0; position:relative; }
   .settings-preview-column > div { position:absolute; inset:0; height:100%; min-height:0; }
-  .settings-preview-column > div > div { padding:clamp(8px,1.1vh,16px) !important; gap:clamp(4px,.8vh,12px) !important; }
+  .settings-preview-column > div > div { padding:clamp(6px,.8vh,12px) !important; gap:clamp(3px,.55vh,8px) !important; }
   #settings-section-background section { min-height:0; display:flex; flex-direction:column; }
   #settings-section-background section > .grid { flex:0 1 auto; }
   #settings-section-background button { min-height:clamp(28px,4.8vh,48px); white-space:normal; }
   .settings-preview-stage { container-type:size; }
-  .settings-preview-board { width:min(100cqw,100cqh,460px); aspect-ratio:1; flex-shrink:0; }
+  .settings-preview-board { width:min(100cqw,100cqh,640px); aspect-ratio:1; flex-shrink:0; }
   .settings-command-center { margin-bottom:clamp(5px,.8vh,10px); flex-shrink:0; }
   .settings-command-center .settings-search-results,
   .settings-command-center .settings-assistant-panel {
@@ -1439,7 +1444,7 @@
   .settings-options-column h2 { font-size:0.75rem !important; margin-bottom:3px !important; }
   .settings-options-column button { padding-top:3px !important; padding-bottom:3px !important; }
   .settings-options-column .grid { gap:3px !important; }
-  .settings-preview-column > div > div { padding:7px !important; gap:4px !important; }
+  .settings-preview-column > div > div { padding:5px !important; gap:3px !important; }
   .settings-command-center { padding:6px 10px; }
 }
 @media (min-width:1024px) and (max-height:650px) {
