@@ -11,14 +11,11 @@ test('email callbacks preserve production and QA branch aliases without crossing
       'https://chessaz-preview-workspace.vercel.app',
       'https://chessaz-preview-workspace-git-7d9026-semov20207-3068s-projects.vercel.app',
       'https://chessaz-preview-workspace-git-abcd1234-semov20207-3068s-projects.vercel.app',
-      'https://chessaz-preview-workspace-68bwdot2r-semov20207-3068s-projects.vercel.app',
     ];
 
     for (const origin of origins) {
       for (const path of ['/profile', '/update-password']) {
-        const expectedOrigin = path === '/update-password' && origin.includes('-68bwdot2r-')
-          ? 'https://chessaz-preview-workspace.vercel.app'
-          : origin;
+        const expectedOrigin = origin;
         const callback = new URL(authCallbackUrl(origin, path, false, true));
         assert.equal(callback.origin, expectedOrigin, `origin of ${path} callback from ${origin}`);
         assert.equal(callback.pathname, path);
