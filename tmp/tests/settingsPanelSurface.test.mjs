@@ -28,7 +28,11 @@ test('minor font increase is confined to four desktop option cards, not headings
   const css = readFileSync(new URL('../src/screens/SettingsTypography.css', import.meta.url), 'utf8');
   const start = css.indexOf('/* Desktop option labels only:');
   assert.ok(start >= 0);
-  const rules = css.slice(start);
+  // Only inspect the option-label font block. Subsequent desktop-only layout
+  // rules intentionally mention h2 but must not change option font sizes.
+  const end = css.indexOf('/* Desktop-only removal of Settings search/style bar.', start);
+  assert.ok(end > start);
+  const rules = css.slice(start, end);
   assert.match(rules, /@media \(min-width: 1024px\)/);
   for (const [id, size] of [['board','0.75rem'], ['pieces','0.6875rem'], ['sound','0.75rem'], ['background','0.71875rem']]) {
     assert.match(rules, new RegExp('#settings-section-' + id + '[^\\{]*\\{\\s*font-size: ' + size.replace('.', '\\.') + ';'));
