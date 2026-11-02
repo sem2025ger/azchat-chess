@@ -128,3 +128,18 @@ test('desktop sidebar and Chess Arena polish preserve the existing globe animati
   assert.match(home, /#D9D6CF 39%/);
   assert.match(home, /#947D5D 100%/);
 });
+
+
+test('desktop Settings polish preserves mobile decorative layers and existing interface palettes', () => {
+  const settings = readFileSync(new URL('../src/screens/SettingsScreen.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/screens/SettingsTypography.css', import.meta.url), 'utf8');
+  const profileCss = readFileSync(new URL('../src/components/profile/PlayerPassportDesktop.css', import.meta.url), 'utf8');
+  assert.match(css, /@media \(min-width: 1024px\)\s*\{\s*\.settings-fixed-workspace \.settings-command-center \{ display: none !important; \}/);
+  assert.match(settings, /<SettingsCommandCenter language=\{language\} \/>/, 'mobile command center remains in original DOM position');
+  assert.equal((settings.match(/className="settings-mobile-decor /g) || []).length, 2);
+  assert.match(css, /\.settings-fixed-workspace \.settings-mobile-decor \{ display: none; \}/);
+  assert.match(css, /max-height: clamp\(132px, 22dvh, 220px\)/);
+  assert.match(css, /scroll-behavior: smooth/);
+  assert.match(profileCss, /@media \(min-width: 1024px\)/);
+  assert.match(profileCss, /\.desktop-player-passport \.passport-rating \.tabular-nums \{ font-size: 2\.75rem; \}/);
+});
