@@ -171,3 +171,35 @@
     font-size: 0.6875rem;
   }
 }
+
+/* Compact the authenticated desktop Passport only; mobile/tablet selectors are untouched. */
+@media (min-width: 1024px) {
+  .desktop-player-passport {
+    gap: 12px;
+    padding: 12px 18px 16px;
+    max-width: 1240px;
+  }
+  .desktop-player-passport > section:not(.passport-identity):not(.passport-recent) {
+    padding: 14px;
+  }
+  .desktop-player-passport .passport-identity > .relative {
+    padding: 16px 18px;
+  }
+  .desktop-player-passport .passport-identity > .relative > div:first-child {
+    gap: 13px;
+  }
+  .desktop-player-passport .passport-identity > .relative > div:first-child > div:first-child > div {
+    width: 72px;
+    height: 72px;
+    font-size: 2rem;
+  }
+  .desktop-player-passport .passport-identity > .relative > div + div { margin-top: 12px; }
+  .desktop-player-passport .passport-rating [role='group'] button { min-height: 40px; }
+  .desktop-player-passport .passport-rating .tabular-nums { font-size: 2.75rem; }
+  .desktop-player-passport .passport-next > p { margin-top: 6px; margin-bottom: 10px; font-size: 1rem; }
+  .desktop-player-passport .passport-next > button { min-height: 44px; }
+  .desktop-player-passport .passport-performance .text-center { padding: 8px 6px; }
+  .desktop-player-passport .passport-performance .text-center .tabular-nums { font-size: 1.625rem; }
+  .desktop-player-passport .passport-recent > div:first-child { min-height: 28px; margin-bottom: 6px; }
+  .desktop-player-passport .passport-recent .space-y-2 > div { padding: 10px; }
+}
