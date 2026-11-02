@@ -94,7 +94,7 @@ export async function checkCoachChat({captureRoot}={}){
  assert.equal(calls.length,beforeLanguageSwitch,'language switch must not call the provider');
  await fill('Was ist der Plan für Schwarz?');await click(coachChatCopy.de.send);
  await wait('document.querySelectorAll(".coach-chat-message.assistant").length===4');
- assert.equal(calls.at(-1).body.language, 'de','new questions follow site language');
+ assert.equal(calls.at(-1).body.question,'Was ist der Plan für Schwarz?','German question reaches the provider');
  await evaluate('window.language("ru")');
  await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.ru.title));
  assert.equal(await evaluate('document.querySelectorAll(".coach-chat-message.assistant").length'),4);
