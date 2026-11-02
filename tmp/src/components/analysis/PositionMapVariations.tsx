@@ -28,7 +28,7 @@ export default function PositionMapVariations({ fen, result, language, failed, o
         key={plan.id}
         type="button"
         className="position-map-plan text-left"
-        onClick={() => onSelectLine?.(plan.moves.map(move => move.san))}
+        onClick={() => onSelectLine?.(plan.moves.slice(0, 10).map(move => move.san))}
         aria-label={`${positionMapLineLabel[language]} ${index + 1}: ${formatPositionPlan(fen, plan.moves)}`}
       >
         <span className="flex items-center justify-between gap-3">
