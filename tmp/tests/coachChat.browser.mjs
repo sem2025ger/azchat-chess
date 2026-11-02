@@ -102,6 +102,21 @@ export async function checkCoachChat({captureRoot}={}){
  await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.ru.title));
  assert.equal(await evaluate('document.querySelectorAll(".coach-chat-message.assistant").length'),4);
  assert.equal(await evaluate('document.querySelector(".coach-chat-history").innerText').then(s=>s.includes('Was ist der Plan für Schwarz?')),true);
+ // An in-flight response survives a locale switch without remount, duplication, or stuck busy state.
+ const priorAssistantCount=await evaluate('document.querySelectorAll(".coach-chat-message.assistant").length');
+ const priorUserCount=await evaluate('document.querySelectorAll(".coach-chat-message.user").length');
+ mode='hold-chat';await fill('In-flight language switch question');await click(coachChatCopy.ru.send);
+ for(let i=0;i<100&&!release;i++)await pause();assert.ok(release,'provider response must be held');
+ await evaluate('window.language("de")');
+ await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.de.title));
+ release();release=null;mode='ready';
+ await wait('document.querySelectorAll(".coach-chat-message.assistant").length==='+String(priorAssistantCount+1));
+ assert.equal(await evaluate('document.querySelectorAll(".coach-chat-message.user").length'),priorUserCount+1,'one user message for in-flight request');
+ assert.equal(await evaluate('[...document.querySelectorAll(".coach-chat-message.user > p")].filter(p=>p.textContent==="In-flight language switch question").length'),1,'question is not duplicated');
+ await wait('!document.querySelector(".coach-chat-history [role=status]")');
+ assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").disabled'),false,'composer remains usable');
+ await evaluate('window.language("ru")');
+ await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.ru.title));
  mode='error';await fill('Preserve my question');await click(t.send);await wait('document.querySelector("[role=alert]")');assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").value'),'Preserve my question');assert.ok(!(await evaluate('document.body.innerText')).includes('SECRET'));mode='ready';
  clock+=61000;await click(t.voice);await wait('document.querySelector("[aria-pressed=true]")');await new Promise(r=>setTimeout(r,350));await evaluate('(()=>{const b=document.querySelector("[aria-pressed=true]");b.click();b.click();})()');await wait('document.querySelector(".coach-chat-compose input").value==="How should I develop my pieces?"');assert.equal(calls.at(-1).kind,'transcribe');assert.equal(calls.at(-1).language,'ru');assert.ok(await evaluate('window.streams.at(-1).getTracks().every(t=>t.readyState==="ended")'));
  await click(t.send);await wait('document.querySelector("audio")?.readyState>=2');assert.ok(await evaluate('document.querySelector("audio").duration>0'));assert.equal(calls.at(-1).kind,'speech');if(captureRoot){await mkdir(captureRoot,{recursive:true});const shot=await cdp('Page.captureScreenshot',{format:'png'});await writeFile(join(captureRoot,'coach-chat-voice-ru.png'),Buffer.from(shot.data,'base64'));}await click(t.stopSpeaking);await wait('!document.querySelector("audio")');
