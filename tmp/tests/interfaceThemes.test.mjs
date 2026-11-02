@@ -143,3 +143,20 @@ test('desktop Settings polish preserves mobile decorative layers and existing in
   assert.match(profileCss, /@media \(min-width: 1024px\)/);
   assert.match(profileCss, /\.desktop-player-passport \.passport-rating \.tabular-nums \{ font-size: 2\.75rem; \}/);
 });
+
+
+test('Settings rows align via equal card gap, not distributed empty space', () => {
+  const site = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+  assert.match(site, /\.settings-fixed-workspace \.settings-options-column\s*\{[^}]*justify-content:flex-start/);
+  assert.match(site, /\.settings-fixed-workspace \.settings-options-column > div\s*\{[^}]*flex:1 1 0/);
+  assert.match(site, /\.settings-fixed-workspace \.settings-options-column > div:nth-child\(2\)\s*\{[^}]*display:grid/);
+  assert.match(site, /\.settings-desktop-grid \{ --settings-card-gap:12px; \}/);
+});
+
+test('compact Passport applies only at desktop breakpoints and does not reduce text size below 11px', () => {
+  const css = readFileSync(new URL('../src/components/profile/PlayerPassportDesktop.css', import.meta.url), 'utf8');
+  assert.match(css, /@media \(min-width:1024px\) \{\s*\.desktop-player-passport \{ gap:8px/);
+  assert.match(css, /\.desktop-player-passport \.passport-identity \{ justify-content:flex-start; \}/);
+  assert.match(css, /\.desktop-player-passport \.passport-achievements \{ gap:9px; \}/);
+  assert.equal(/font-size:\s*(?:[0-9](?:\.[0-9]+)?)px/.test(css), false, 'do not introduce sub-11px font sizes');
+});
