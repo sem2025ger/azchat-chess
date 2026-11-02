@@ -1368,6 +1368,8 @@
     height:calc(100% - 48px);
     max-height:calc(100% - 48px);
     margin-block:auto;
+    position:relative;
+    top:2px;
     align-items:stretch;
     grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   }
