@@ -36,7 +36,7 @@ export function positionMap(fen: string, result?: EngineResult | null) {
       pv: [result.bestMove, ...(result.continuation || [])],
     }] : [];
     const seen = new Set<string>();
-    for (const line of lines.slice(0, 5)) {
+    for (const line of lines.slice(0, 3)) {
       if (!line.pv.length || seen.has(line.pv[0])) continue;
       try {
         const replay = new Chess(fen);
@@ -51,6 +51,23 @@ export function positionMap(fen: string, result?: EngineResult | null) {
     }
   }
   return { turn: game.turn(), ended: game.isGameOver(), white: side('w'), black: side('b'), openFiles, plans };
+}
+
+/** Chess move numbering from the actual source FEN, including black-to-move starts. */
+export function formatPositionPlan(fen: string, moves: PositionPlan['moves'], maxPlies = 10): string {
+  const fullmove = Number(fen.split(' ')[5]);
+  let number = Number.isInteger(fullmove) && fullmove >= 1 ? fullmove : 1;
+  const tokens: string[] = [];
+  for (const [index, move] of moves.slice(0, maxPlies).entries()) {
+    if (move.color === 'w') {
+      tokens.push(`${number}.`, move.san);
+    } else {
+      if (index === 0) tokens.push(`${number}...`);
+      tokens.push(move.san);
+      number += 1;
+    }
+  }
+  return tokens.join(' ');
 }
 
 export function annotatedPgn(initialFen: string, moves: string[], evaluations: Record<string, PositionEvaluation>) {
