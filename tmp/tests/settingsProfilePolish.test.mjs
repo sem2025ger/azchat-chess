@@ -82,6 +82,9 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
    await server.listen();
    const url=server.resolvedUrls.local[0]+'polish-qa';
    for(const [width,height] of (phase==='before'?[[1366,768],[390,844]]:[...dimensions,[390,844]])){
+    // Unmount the previous React screen before Chrome changes the viewport.
+    // Profile can keep the renderer busy when resized directly.
+    await cdp('Page.navigate',{url:'about:blank'});
     await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<1024});
     await cdp('Page.navigate',{url});
     await wait("typeof window.qaNavigate==='function'&&!!document.querySelector('.settings-fixed-workspace')");
