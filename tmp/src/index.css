@@ -1359,7 +1359,7 @@
 /* Settings desktop: one stable viewport, no automatic scrolling or reflow. */
 @media (min-width:1024px) {
   body:has(.settings-fixed-workspace) main > div { overflow:hidden !important; min-height:0; }
-  .settings-fixed-workspace { height:100%; max-height:100%; overflow:hidden !important; }
+  .settings-fixed-workspace { height:100%; max-height:100%; overflow:hidden !important; padding-block:6px; }
   .settings-fixed-inner { min-height:0; overflow:hidden; }
   .settings-desktop-grid {
     min-height:0;
