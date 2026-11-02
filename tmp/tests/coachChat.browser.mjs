@@ -86,6 +86,19 @@ export async function checkCoachChat({captureRoot}={}){
  await evaluate('window.navigate(-1)');await wait('document.querySelector(".coach-chat-compose input")');await wait('document.querySelector(".coach-chat-games")');await evaluate('document.querySelector(".coach-chat-games").open=true');assert.equal(await evaluate('document.querySelector(".coach-chat-history").innerText'),savedText);assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").value'),'Keep this draft');assert.equal(await evaluate('document.querySelector(".coach-chat-history").scrollTop'),savedScroll);assert.equal(calls.length,beforeNavigation);
  await evaluate('window.setToken("synthetic-rotated")');await pause();assert.equal(await evaluate('document.querySelector(".coach-chat-history").innerText'),savedText);assert.ok(!(await evaluate('JSON.stringify(sessionStorage)')).includes('synthetic-rotated'),'bearer token is never persisted');
  await evaluate('window.setAccount("other-account")');await wait('document.querySelectorAll(".coach-chat-message").length===0');await click(t.title);assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").value'),'');await evaluate('window.setAccount("account-1280-ru")');await wait('document.querySelectorAll(".coach-chat-message.assistant").length===3');
+ // Switching the site language keeps the same position conversation and draft.
+ const beforeLanguageSwitch=calls.length, beforeLanguageText=await evaluate('document.querySelector(".coach-chat-history").innerText');
+ await evaluate('window.language("de")');
+ await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.de.title));
+ assert.equal(await evaluate('document.querySelector(".coach-chat-history").innerText'),beforeLanguageText);
+ assert.equal(calls.length,beforeLanguageSwitch,'language switch must not call the provider');
+ await fill('Was ist der Plan für Schwarz?');await click(coachChatCopy.de.send);
+ await wait('document.querySelectorAll(".coach-chat-message.assistant").length===4');
+ assert.equal(calls.at(-1).body.language, 'de','new questions follow site language');
+ await evaluate('window.language("ru")');
+ await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.ru.title));
+ assert.equal(await evaluate('document.querySelectorAll(".coach-chat-message.assistant").length'),4);
+ assert.equal(await evaluate('document.querySelector(".coach-chat-history").innerText').then(s=>s.includes('Was ist der Plan für Schwarz?')),true);
  mode='error';await fill('Preserve my question');await click(t.send);await wait('document.querySelector("[role=alert]")');assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").value'),'Preserve my question');assert.ok(!(await evaluate('document.body.innerText')).includes('SECRET'));mode='ready';
  clock+=61000;await click(t.voice);await wait('document.querySelector("[aria-pressed=true]")');await new Promise(r=>setTimeout(r,350));await evaluate('(()=>{const b=document.querySelector("[aria-pressed=true]");b.click();b.click();})()');await wait('document.querySelector(".coach-chat-compose input").value==="How should I develop my pieces?"');assert.equal(calls.at(-1).kind,'transcribe');assert.equal(calls.at(-1).language,'ru');assert.ok(await evaluate('window.streams.at(-1).getTracks().every(t=>t.readyState==="ended")'));
  await click(t.send);await wait('document.querySelector("audio")?.readyState>=2');assert.ok(await evaluate('document.querySelector("audio").duration>0'));assert.equal(calls.at(-1).kind,'speech');if(captureRoot){await mkdir(captureRoot,{recursive:true});const shot=await cdp('Page.captureScreenshot',{format:'png'});await writeFile(join(captureRoot,'coach-chat-voice-ru.png'),Buffer.from(shot.data,'base64'));}await click(t.stopSpeaking);await wait('!document.querySelector("audio")');
