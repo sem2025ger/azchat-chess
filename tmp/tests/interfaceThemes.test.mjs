@@ -165,21 +165,21 @@ test('Profile removes chess handwriting completely for all six languages on phon
   const source = readFileSync(new URL('../src/components/profile/MobilePlayerPassport.tsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../src/components/profile/PlayerPassportDesktop.css', import.meta.url), 'utf8');
   for (const lang of ['de', 'en', 'az', 'tr', 'ua', 'ru']) assert.match(source, new RegExp('  ' + lang + ': \\{'));
-  assert.doesNotMatch(source, /passport-signature|words\\.signature|signatureSub|signatureInfo|ШАХМАТНЫЙ ПОЧЕРК|CHESS SIGNATURE/);
+  assert.doesNotMatch(source, /passport-signature|words\.signature|signatureSub|signatureInfo|ШАХМАТНЫЙ ПОЧЕРК|CHESS SIGNATURE/);
   assert.doesNotMatch(css, /passport-signature/);
-  assert.match(css, /\\.passport-next \\{\\s*grid-column: 1;\\s*grid-row: 3;/);
-  assert.match(css, /\\.passport-performance \\{\\s*grid-column: 2;\\s*grid-row: 3;/);
-  assert.match(css, /\\.passport-recent \\{\\s*grid-column: 2;\\s*grid-row: 4;/);
-  assert.match(css, /\\.passport-achievements \\{\\s*grid-column: 1;\\s*grid-row: 4;/);
+  assert.match(css, /\.passport-next \{\s*grid-column: 1;\s*grid-row: 3;/);
+  assert.match(css, /\.passport-performance \{\s*grid-column: 2;\s*grid-row: 3;/);
+  assert.match(css, /\.passport-recent \{\s*grid-column: 2;\s*grid-row: 4;/);
+  assert.match(css, /\.passport-achievements \{\s*grid-column: 1;\s*grid-row: 4;/);
 });
 
 test('Settings desktop only: cards follow content and Preview shares a centered 90 percent grid', () => {
   const site = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
   const scope = site.slice(site.indexOf('/* Settings desktop: one stable viewport'));
-  assert.match(scope, /@media \\(min-width:1024px\\)/);
-  assert.match(scope, /\\.settings-desktop-grid \\{[^}]*height:90%/);
-  assert.match(scope, /\\.settings-desktop-grid \\{[^}]*margin-block:auto/);
-  assert.match(scope, /\\.settings-options-column > div \\{[^}]*flex:0 0 auto/);
-  assert.match(scope, /\\.settings-options-column section \\{ height:auto; \\}/);
-  assert.match(scope, /\\.settings-options-column > div:nth-child\\(2\\) \\{[^}]*align-items:start/);
+  assert.match(scope, /@media \(min-width:1024px\)/);
+  assert.match(scope, /\.settings-desktop-grid \{[^}]*height:90%/);
+  assert.match(scope, /\.settings-desktop-grid \{[^}]*margin-block:auto/);
+  assert.match(scope, /\.settings-options-column > div \{[^}]*flex:0 0 auto/);
+  assert.match(scope, /\.settings-options-column section \{ height:auto; \}/);
+  assert.match(scope, /\.settings-options-column > div:nth-child\(2\) \{[^}]*align-items:start/);
 });
