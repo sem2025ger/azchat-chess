@@ -180,7 +180,7 @@ test('Settings desktop preview grows with the equal-height options column', () =
   assert.match(scope, /@media \(min-width:1024px\)/);
   assert.match(scope, /\.settings-desktop-grid \{[^}]*height:calc\(100% - 48px\)/);
   assert.match(scope, /\.settings-desktop-grid \{[^}]*margin-block:auto/);
-  assert.match(scope, /\.settings-options-column > div \{[^}]*flex:0 0 auto/);
+  assert.match(scope, /\.settings-options-column > div \{[^}]*flex:1 1 0/);
   assert.match(scope, /\.settings-options-column section \{[^}]*height:100%/);
   assert.match(scope, /\.settings-options-column > div:nth-child\(2\) \{[^}]*align-items:stretch/);
   assert.match(scope, /\.settings-preview-column > div \{ position:absolute; inset:0;/);
