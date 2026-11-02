@@ -145,18 +145,19 @@ test('desktop Settings polish preserves mobile decorative layers and existing in
 });
 
 
-test('Settings rows align via equal card gap, not distributed empty space', () => {
+test('Settings rows have one compact gap and never distribute free height', () => {
   const site = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
-  assert.match(site, /\.settings-fixed-workspace \.settings-options-column\s*\{[^}]*justify-content:space-between/);
+  assert.match(site, /\.settings-fixed-workspace \.settings-options-column\s*\{[^}]*justify-content:flex-start/);
   assert.match(site, /\.settings-fixed-workspace \.settings-options-column > div\s*\{[^}]*flex:0 0 auto/);
   assert.match(site, /\.settings-fixed-workspace \.settings-options-column > div:nth-child\(2\)\s*\{[^}]*display:grid/);
   assert.match(site, /\.settings-desktop-grid \{ --settings-card-gap:12px; \}/);
+  assert.match(site, /\.settings-desktop-grid \{ --settings-card-gap:16px; \}/);
 });
 
 test('compact Passport applies only at desktop breakpoints and does not reduce text size below 11px', () => {
   const css = readFileSync(new URL('../src/components/profile/PlayerPassportDesktop.css', import.meta.url), 'utf8');
   assert.match(css, /@media \(min-width:1024px\) \{\s*\.desktop-player-passport \{ gap:8px/);
-  assert.match(css, /\.desktop-player-passport \.passport-identity \{ justify-content:flex-start; \}/);
+  assert.match(css, /\.desktop-player-passport \.passport-identity \{ justify-content:flex-start; align-self:start; \}/);
   assert.match(css, /\.desktop-player-passport \.passport-achievements \{ gap:9px; \}/);
   assert.equal(/font-size:\s*(?:[0-9](?:\.[0-9]+)?)px/.test(css), false, 'do not introduce sub-11px font sizes');
 });
@@ -173,13 +174,14 @@ test('Profile removes chess handwriting completely for all six languages on phon
   assert.match(css, /\.passport-achievements \{\s*grid-column: 1;\s*grid-row: 4;/);
 });
 
-test('Settings desktop only: cards follow content and Preview shares a centered 90 percent grid', () => {
+test('Settings desktop only: preview follows the naturally sized centered options column', () => {
   const site = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
   const scope = site.slice(site.indexOf('/* Settings desktop: one stable viewport'));
   assert.match(scope, /@media \(min-width:1024px\)/);
-  assert.match(scope, /\.settings-desktop-grid \{[^}]*height:90%/);
+  assert.match(scope, /\.settings-desktop-grid \{[^}]*height:auto/);
   assert.match(scope, /\.settings-desktop-grid \{[^}]*margin-block:auto/);
   assert.match(scope, /\.settings-options-column > div \{[^}]*flex:0 0 auto/);
   assert.match(scope, /\.settings-options-column section \{ height:auto; \}/);
-  assert.match(scope, /\.settings-options-column > div:nth-child\(2\) \{[^}]*align-items:start/);
+  assert.match(scope, /\.settings-options-column > div:nth-child\(2\) \{[^}]*align-items:stretch/);
+  assert.match(scope, /\.settings-preview-column > div \{ position:absolute; inset:0;/);
 });

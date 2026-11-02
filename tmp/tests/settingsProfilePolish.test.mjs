@@ -1,5 +1,5 @@
 // Real Chromium geometry and pixel-diff regression. Requires npm ci, git and Chromium.
-// Exact owner-reviewed baseline: 37007db. Synthetic authenticated Supabase session only.
+// Owner-reviewed reference: 8a2f0f2. Both mobile screens must be pixel-identical. Synthetic authenticated Supabase session only.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawn,execFileSync} from 'node:child_process';
@@ -10,7 +10,7 @@ import {join,resolve} from 'node:path';
 import {createServer} from 'vite';
 import react from '@vitejs/plugin-react';
 
-const snapshot='37007db023f31fd583df030d77e662e308cbb23e';
+const snapshot='8a2f0f204f9ab9bbe6073af8e79d13301c221b60';
 const page=[
  "import '/src/index.css';",
  "import React from 'react';import{createRoot}from'react-dom/client';",
@@ -75,7 +75,7 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
   await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   await cdp('Page.addScriptToEvaluateOnNewDocument',{source:"localStorage.setItem('app-language','ru');document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}';document.head.appendChild(s)});"});
   const capture=process.env.SECTIONS_CAPTURE;if(capture)await mkdir(capture,{recursive:true});
-  const results={before:{},after:{}};let baselineMobile;
+  const results={before:{},after:{}};let baselineMobile,baselineProfileMobile;
   for(const phase of ['before','after']){
    const root=phase==='before'?oldRoot:process.cwd();
    server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-polish-cache-'+process.pid+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[fixturePlugin(),react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:{'import.meta.env.VITE_SERVER_URL':JSON.stringify('https://fixture.invalid')}});
@@ -90,14 +90,16 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
     await wait("typeof window.qaNavigate==='function'&&!!document.querySelector('.settings-fixed-workspace')");
     await evaluate('document.fonts.ready');await pause(150);
     if(width>=1024){
-     const geom=await evaluate("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect();const a=r('.settings-fixed-workspace'),b=r('#settings-section-board'),mid=r('.settings-options-column > div:nth-child(2)'),last=r('#settings-section-background'),p=r('.settings-preview-column');const gap=id=>{const s=document.querySelector('#settings-section-'+id+' section');return s.getBoundingClientRect().bottom-s.querySelector('.grid').getBoundingClientRect().bottom};return{top:b.top-a.top,bottom:a.bottom-last.bottom,gap1:mid.top-b.bottom,gap2:last.top-mid.bottom,previewTop:p.top-b.top,previewBottom:p.bottom-last.bottom,ratio:p.height/a.height,boardGap:gap('board'),piecesGap:gap('pieces'),soundGap:gap('sound'),documentOverflow:document.documentElement.scrollHeight-innerHeight}})()");
+     const geom=await evaluate("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect();const a=r('.settings-fixed-workspace'),b=r('#settings-section-board'),mid=r('.settings-options-column > div:nth-child(2)'),last=r('#settings-section-background'),p=r('.settings-preview-column'),left=r('.settings-options-column'),pieces=r('#settings-section-pieces'),sound=r('#settings-section-sound'),board=r('#settings-preview-board'),stage=r('.settings-preview-stage');const gap=id=>{const s=document.querySelector('#settings-section-'+id+' section');return s.getBoundingClientRect().bottom-s.querySelector('.grid').getBoundingClientRect().bottom};return{top:b.top-a.top,bottom:a.bottom-last.bottom,gap1:mid.top-b.bottom,gap2:last.top-mid.bottom,previewTop:p.top-b.top,previewBottom:p.bottom-last.bottom,previewHeight:p.height,leftHeight:left.height,piecesHeight:pieces.height,soundHeight:sound.height,configuredGap:parseFloat(getComputedStyle(document.querySelector('.settings-desktop-grid')).getPropertyValue('--settings-card-gap')),boardHeight:board.height,boardWidth:board.width,boardWithinStage:board.top>=stage.top-2&&board.bottom<=stage.bottom+2,boardGap:gap('board'),piecesGap:gap('pieces'),soundGap:gap('sound'),documentOverflow:document.documentElement.scrollHeight-innerHeight}})()");
      results[phase]['settings-'+width]=geom;
      if(phase==='after'){
       for(const name of ['boardGap','piecesGap','soundGap'])assert.ok(geom[name]>=0&&geom[name]<=16,name+': '+JSON.stringify(geom));
-      assert.ok(Math.abs(geom.gap1-geom.gap2)<=2,'unequal left gaps '+JSON.stringify(geom));
+      for(const name of ['gap1','gap2']) assert.ok(geom[name]>=geom.configuredGap-2&&geom[name]<=geom.configuredGap+2,'oversized left gap '+JSON.stringify(geom));
+      assert.ok(Math.abs(geom.piecesHeight-geom.soundHeight)<=2,'Pieces and Sound heights differ '+JSON.stringify(geom));
       assert.ok(Math.abs(geom.previewTop)<=2&&Math.abs(geom.previewBottom)<=2,'Preview alignment '+JSON.stringify(geom));
-      assert.ok(geom.top>=12&&geom.bottom>=12&&Math.abs(geom.top-geom.bottom)<=2,'outer breathing room '+JSON.stringify(geom));
-      assert.ok(geom.ratio>=.86&&geom.ratio<=.92,'Preview resize '+JSON.stringify(geom));
+      assert.ok(geom.top>=16&&geom.bottom>=16&&Math.abs(geom.top-geom.bottom)<=4,'outer breathing room '+JSON.stringify(geom));
+      assert.ok(Math.abs(geom.previewHeight-geom.leftHeight)<=2,'Preview and options heights differ '+JSON.stringify(geom));
+      assert.ok(Math.abs(geom.boardHeight-geom.boardWidth)<=2&&geom.boardWithinStage&&geom.boardWidth>120,'preview chessboard clipped or not square '+JSON.stringify(geom));
       assert.ok(geom.documentOverflow<=1,'Settings page scroll '+JSON.stringify(geom));
      }
     }
@@ -106,16 +108,22 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
      if(capture)await writeFile(join(capture,phase+'-settings-'+width+'.png'),Buffer.from(image,'base64'));
      if(width===390){if(phase==='before')baselineMobile=image;else assert.equal(image,baselineMobile,'mobile Settings differs from baseline');}
     }
-    if(width>=1024||phase==='after'&&width===390){
+    if(width>=1024||width===390){
      await evaluate("window.qaNavigate('/profile')");
      await wait("!!document.querySelector('.passport-rating')");
      await evaluate('document.fonts.ready');await pause(100);
-     const profile=await evaluate("(()=>{const p=document.querySelector('.desktop-player-passport')||document.querySelector('.passport-identity').parentElement;const main=document.querySelector('main');return{signature:!!document.querySelector('.passport-signature'),copy:/ШАХМАТНЫЙ ПОЧЕРК|CHESS SIGNATURE/.test(document.body.innerText),scroll:main.scrollHeight-main.clientHeight,bottom:p.getBoundingClientRect().bottom,sections:[...p.querySelectorAll(':scope > section')].map(s=>s.className.match(/passport-[a-z]+/)?.[0])}})()");
+     const profile=await evaluate("(()=>{const p=document.querySelector('.desktop-player-passport')||document.querySelector('.passport-identity').parentElement;const main=document.querySelector('main');return{signature:!!document.querySelector('.passport-signature'),copy:/ШАХМАТНЫЙ ПОЧЕРК|CHESS SIGNATURE/.test(document.body.innerText),scroll:main.scrollHeight-main.clientHeight,bottom:p.getBoundingClientRect().bottom,identityBlank:Math.max(0,document.querySelector('.passport-identity').getBoundingClientRect().bottom-document.querySelector('.passport-identity > .relative + div').getBoundingClientRect().bottom),sections:[...p.querySelectorAll(':scope > section')].map(s=>s.className.match(/passport-[a-z]+/)?.[0])}})()");
      results[phase]['profile-'+width]=profile;
      if(phase==='after'){
       assert.equal(profile.signature,false,'signature mounted at '+width);
       assert.equal(profile.copy,false,'signature shown at '+width);
-      if(width>=1024){assert.ok(profile.scroll<=1,'Profile scrolled '+JSON.stringify(profile));assert.ok(profile.bottom<=height,'Profile clipped '+JSON.stringify(profile));}
+      if(width>=1024){assert.ok(profile.scroll<=1,'Profile scrolled '+JSON.stringify(profile));assert.ok(profile.bottom<=height,'Profile clipped '+JSON.stringify(profile));assert.ok(profile.identityBlank<=2,'Identity has empty band '+JSON.stringify(profile));}
+     }
+     if(width===390){
+      const image=(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
+      if(phase==='before') baselineProfileMobile=image;
+      else assert.equal(image,baselineProfileMobile,'mobile Profile differs from 8a2f0f2');
+      if(capture) await writeFile(join(capture,phase+'-profile-390.png'),Buffer.from(image,'base64'));
      }
      if(width===1366&&capture){
       const image=(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
