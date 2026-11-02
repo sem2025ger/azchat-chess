@@ -1094,7 +1094,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 {mobileTool === 'map' && (
                   <PositionMap key={displayedGame.fen()} fen={displayedGame.fen()}
                     result={currentEngineResult} language={language} failed={engineFailed}
-                    onHighlight={handleMobileMapHighlight}/>
+                    onSelectLine={undefined}/>
                 )}
                 {mobileTool === 'position' && (
                   <PositionTools currentFen={displayedGame.fen()} words={words}
@@ -1387,7 +1387,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </nav>
             <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
             {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
-            {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionMap key={displayedGame.fen()} fen={displayedGame.fen()} result={engineResult} language={language} failed={engineFailed} onHighlight={setPlanHighlight} /></div>}
+            {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionMap key={displayedGame.fen()} fen={displayedGame.fen()} result={engineResult} language={language} failed={engineFailed} onSelectLine={(moves) => { const replay = new Chess(displayedGame.fen()); try { moves.forEach(san => replay.move(san)); loadWorkspaceAnalysis({ fen: displayedGame.fen(), moves }); } catch { /* Ignore stale PV */ } }} /></div>}
             {workspaceTab === 'position' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionTools currentFen={displayedGame.fen()} words={words} onLoad={loadWorkspaceAnalysis} onCancel={() => { setEditingPosition(false); setWorkspaceTab(tabBeforeEditor.current); }}
               draft={positionDraftValue} selected={editorSelectedPiece} onSelected={setEditorSelectedPiece}
               onDraft={updatePositionDraft} onClear={clearPositionDraft} onUndo={undoPositionDraft}
@@ -1445,7 +1445,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                           >
                             <div className="flex justify-between items-center group-hover/row:text-chess-gold transition-colors">
                               <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w}</span>
-                              {move.w && evaluationForMove(move.wIndex) !== null && <span className="desktop-analysis-move-eval">{evaluationForMove(move.wIndex)}</span>}
+                              
                             </div>
                           </td>
                           <td 
@@ -1458,7 +1458,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                           >
                             <div className="flex justify-between items-center group-hover/row:text-chess-active transition-colors">
                               <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.b}</span>
-                              {move.b && evaluationForMove(move.bIndex) !== null && <span className="desktop-analysis-move-eval">{evaluationForMove(move.bIndex)}</span>}
+                              
                             </div>
                           </td>
                         </tr>
