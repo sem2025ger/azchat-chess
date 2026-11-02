@@ -92,7 +92,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
             ) : <Cpu size={16} className={cx("text-neutral-400", loading && "animate-pulse")} />}
             <span className="analysis-stockfish-name text-[0.82rem] font-bold text-[#f3f1eb]">Stockfish 19</span>
             {depth > 0 && <span className="analysis-stockfish-depth rounded-full px-2.5 py-0.5 text-[0.75rem] font-semibold italic text-[#ddd9cf]">depth {depth}</span>}
-            {reviewLayout && requestedDepth && onIncreaseDepth && <button type="button" className="analysis-depth-action hidden lg:inline-flex items-center rounded-lg border border-[#8f7749]/40 px-2 py-1 text-[11px] font-bold text-[#f4dca5]" onClick={onIncreaseDepth} disabled={requestedDepth >= 36} title={`Увеличить целевую глубину с ${requestedDepth} до ${Math.min(36, requestedDepth + 6)}`}>Глубже</button>}
+            {reviewLayout && requestedDepth && onIncreaseDepth && <button type="button" className="analysis-depth-action hidden lg:inline-flex items-center rounded-lg border border-[#8f7749]/40 px-2 py-1 text-[11px] font-bold text-[#f4dca5]" onClick={onIncreaseDepth} disabled={requestedDepth >= 36} title={words.deeperHint.replace("{from}", String(requestedDepth)).replace("{to}", String(Math.min(36, requestedDepth + 6)))}>{words.deeper}</button>}
          </div>
          {!reviewLayout && (
            <div className="flex items-center gap-1.5">

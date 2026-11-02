@@ -25,3 +25,39 @@ test('real review controls show exactly three lines and retain separate scores; 
     if (storage) Object.defineProperty(globalThis, 'localStorage', storage); else delete globalThis.localStorage;
   }
 });
+
+test('depth action and tooltip are localized in all six existing analysis languages',async()=>{
+  const {createElement}=await import('react');
+  const {renderToStaticMarkup}=await import('react-dom/server');
+  const {createServer}=await import('vite');
+  const original=Object.getOwnPropertyDescriptor(globalThis,'localStorage');
+  let selected='ru';
+  Object.defineProperty(globalThis,'localStorage',{configurable:true,value:{getItem:()=>selected}});
+  const vite=await createServer({optimizeDeps:{noDiscovery:true,include:[]},server:{middlewareMode:true,hmr:false},appType:'custom'});
+  const expected={
+    en:['Deeper','Increase target depth from 24 to 30'],
+    de:['Tiefer','Zieltiefe von 24 auf 30 erhöhen'],
+    az:['Daha dərin','Hədəf dərinliyini 24-dən 30-yə artır'],
+    tr:['Daha derin','Hedef derinliği 24 seviyesinden 30 seviyesine artır'],
+    ua:['Глибше','Збільшити цільову глибину з 24 до 30'],
+    ru:['Глубже','Увеличить целевую глубину с 24 до 30'],
+  };
+  try {
+    const {default:AnalysisPanel}=await vite.ssrLoadModule('/src/components/AnalysisPanel.tsx');
+    const {LanguageProvider}=await vite.ssrLoadModule('/src/context/LanguageContext.tsx');
+    const props={score:0,depth:18,reviewLayout:true,requestedDepth:24,onIncreaseDepth:()=>{}};
+    for(const [lang,[label,hint]] of Object.entries(expected)){
+      selected=lang;
+      const html=renderToStaticMarkup(createElement(LanguageProvider,null,createElement(AnalysisPanel,props)));
+      assert.ok(html.includes('>'+label+'</button>'),lang+' button label');
+      assert.ok(html.includes('title="'+hint+'"'),lang+' localized depth hint');
+      assert.equal((html.match(/data-engine-slot=/g)||[]).length,3,'three PV slots unchanged');
+    }
+    selected='de';
+    const max=renderToStaticMarkup(createElement(LanguageProvider,null,createElement(AnalysisPanel,{...props,requestedDepth:36})));
+    assert.match(max,/disabled=""[^>]*title="Zieltiefe von 36 auf 36 erhöhen"/);
+  } finally {
+    await vite.close();
+    if(original)Object.defineProperty(globalThis,'localStorage',original);else delete globalThis.localStorage;
+  }
+});

@@ -2002,7 +2002,7 @@ aside nav{padding-top:12px!important}
 
 /* PR168 owner follow-up: layout finish */
 @media (min-width:1024px) {
-  #root .desktop-analysis-screen h2.desktop-analysis-panel-title {display:flex;align-items:center;justify-content:center;flex:0 0 44px;margin:0;padding:5px 12px;border-bottom:1px solid rgba(192,162,109,.22);font-family:'Bodoni Moda',Georgia,serif!important;font-style:normal!important;font-size:1.35rem;font-weight:600;letter-spacing:.02em;background-image:linear-gradient(110deg,#B9AA92,#E5DED3 35%,#C0AD91 70%,#DBD0C1);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+  #root .desktop-analysis-screen h2.desktop-analysis-panel-title {display:flex;align-items:center;justify-content:center;flex:0 0 44px;margin:0;padding:5px 12px;border-bottom:1px solid rgba(192,162,109,.22);font-family:'Bodoni Moda',Georgia,serif!important;font-style:normal!important;font-size:1.35rem;font-weight:600;letter-spacing:.02em;background-image:linear-gradient(110deg,#B9AA92,#D9AE5B 35%,#A98954 70%,#C0AD91);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
   .desktop-analysis-screen .desktop-analysis-move-eval {font:500 .68rem/1.2 Inter,system-ui,sans-serif;color:#aaa49a;margin-left:8px;white-space:nowrap;flex:none;}
   .desktop-analysis-screen .desktop-analysis-stockfish {height:clamp(222px,43%,274px)!important;}
   .desktop-analysis-screen .analysis-engine-variations {gap:8px!important;}
@@ -2026,4 +2026,26 @@ aside nav{padding-top:12px!important}
 @media (min-width:1280px) {
   #root aside {width:260px;min-width:260px;max-width:260px;}
   #root aside .site-nav-link .site-nav-label {white-space:nowrap;}
+}
+
+/* PR #168 final owner polish: large desktop only; baseline/mobile geometry untouched. */
+@media (min-width:1600px) and (min-height:800px) {
+  .desktop-analysis-screen .desktop-analysis-stockfish { height:235px!important; }
+  .desktop-analysis-screen .analysis-engine-variations {
+    flex:0 0 auto!important;
+    justify-content:flex-start!important;
+    gap:7px!important;
+  }
+  .desktop-analysis-screen .analysis-engine-variations > .analysis-engine-line {
+    flex:0 0 46px!important;
+    height:46px!important;
+    min-height:46px!important;
+    max-height:46px!important;
+    padding:5px 8px!important;
+  }
+  .desktop-analysis-screen .analysis-engine-moves {
+    font-size:0.828125rem!important;
+    line-height:1.35!important;
+    letter-spacing:0!important;
+  }
 }
