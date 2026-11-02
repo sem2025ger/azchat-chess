@@ -105,17 +105,8 @@
     font-size: 3.25rem;
   }
 
-  .desktop-player-passport .passport-signature {
-    grid-column: 1;
-    grid-row: 3;
-  }
-
-  .desktop-player-passport .passport-signature > p {
-    font-size: 0.75rem;
-  }
-
   .desktop-player-passport .passport-next {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 3;
     display: flex;
     flex-direction: column;
@@ -134,8 +125,8 @@
   }
 
   .desktop-player-passport .passport-performance {
-    grid-column: 1;
-    grid-row: 4;
+    grid-column: 2;
+    grid-row: 3;
   }
 
   .desktop-player-passport .passport-performance .text-center {
@@ -148,7 +139,7 @@
 
   .desktop-player-passport .passport-recent {
     grid-column: 2;
-    grid-row: 4 / span 2;
+    grid-row: 4;
     align-self: start;
   }
 
@@ -163,7 +154,7 @@
 
   .desktop-player-passport .passport-achievements {
     grid-column: 1;
-    grid-row: 5;
+    grid-row: 4;
   }
 
   .desktop-player-passport > footer {
@@ -219,9 +210,6 @@
  .desktop-player-passport .passport-rating h2 { margin-bottom:6px; }
  .desktop-player-passport .passport-rating .mt-2\.5 { margin-top:5px; }
  .desktop-player-passport .passport-rating .pt-2 { padding-top:4px; }
- .desktop-player-passport .passport-signature .mt-2\.5 { margin-top:5px; }
- .desktop-player-passport .passport-signature .min-h-\[42px\] { min-height:32px; }
- .desktop-player-passport .passport-signature .mt-2 { margin-top:4px; }
  .desktop-player-passport .passport-next > p { margin:5px 0 7px; }
  .desktop-player-passport .passport-next > button { min-height:38px; }
  .desktop-player-passport .passport-performance .mb-3 { margin-bottom:6px; }

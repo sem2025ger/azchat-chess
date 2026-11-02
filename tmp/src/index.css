@@ -1361,27 +1361,36 @@
   body:has(.settings-fixed-workspace) main > div { overflow:hidden !important; min-height:0; }
   .settings-fixed-workspace { height:100%; max-height:100%; overflow:hidden !important; }
   .settings-fixed-inner { min-height:0; overflow:hidden; }
-  .settings-desktop-grid { min-height:0; overflow:hidden; }
+  .settings-desktop-grid {
+    min-height:0;
+    overflow:hidden;
+    flex:0 1 auto;
+    height:90%;
+    margin-block:auto;
+  }
   .settings-desktop-grid { --settings-card-gap:12px; }
   .settings-fixed-workspace .settings-options-column {
     min-height:0;
-    justify-content:flex-start;
+    justify-content:space-between;
+    height:100%;
     gap:var(--settings-card-gap);
   }
-  /* Distribute available height INSIDE the three rows, never between them. */
+  /* Content-height cards; distribute only the spaces BETWEEN the rows. */
   .settings-fixed-workspace .settings-options-column > div {
-    flex:1 1 0;
+    flex:0 0 auto;
     min-height:0;
   }
   .settings-fixed-workspace .settings-options-column > div:nth-child(2) {
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
+    align-items:start;
     gap:var(--settings-card-gap);
   }
   .settings-fixed-workspace .settings-options-column > div:nth-child(2) > div {
     min-height:0;
-    height:100%;
+    height:auto;
   }
+  .settings-fixed-workspace .settings-options-column section { height:auto; }
   .settings-fixed-workspace #settings-section-background section { min-height:0; }
   .settings-options-column > div { min-height:0; flex-shrink:1; }
   .settings-options-column section { padding:clamp(7px,1.05vh,14px) !important; }
@@ -1398,8 +1407,8 @@
   }
   .settings-preview-column > div { height:100%; min-height:0; }
   .settings-preview-column > div > div { padding:clamp(8px,1.1vh,16px) !important; gap:clamp(4px,.8vh,12px) !important; }
-  #settings-section-background section { min-height:clamp(134px,19.5vh,184px); display:flex; flex-direction:column; }
-  #settings-section-background section > .grid { flex:1; }
+  #settings-section-background section { min-height:0; display:flex; flex-direction:column; }
+  #settings-section-background section > .grid { flex:0 1 auto; }
   #settings-section-background button { min-height:clamp(28px,4.8vh,48px); white-space:normal; }
   .settings-preview-stage { container-type:size; }
   .settings-preview-board { width:min(100cqw,100cqh,460px); aspect-ratio:1; flex-shrink:0; }
