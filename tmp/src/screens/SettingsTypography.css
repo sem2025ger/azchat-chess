@@ -255,9 +255,10 @@
 /* Additional palettes scroll within their section on short desktop viewports. */
 @media (min-width: 1024px) {
   .settings-fixed-workspace .settings-background-options {
-    max-height: clamp(64px, 12dvh, 112px);
+    max-height: clamp(132px, 22dvh, 220px);
     overflow-y: auto;
-    overscroll-behavior-y: contain;
+    overscroll-behavior-y: auto;
+    scroll-behavior: smooth;
     scrollbar-gutter: stable;
   }
 }
