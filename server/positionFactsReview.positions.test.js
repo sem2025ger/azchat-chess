@@ -61,3 +61,30 @@ for(const p of positions)test('master game FEN and position facts: '+p.id,()=>{
  assert.equal(facts.white.pawns.passedBlockaded.every(s=>facts.white.pawns.blockaded.includes(s)),true);
  assert.equal(facts.black.pawns.passedBlockaded.every(s=>facts.black.pawns.blockaded.includes(s)),true);
 });
+
+test('offline dry run generates complete ten-position Markdown without network or key',()=>{
+ const {spawnSync}=require('node:child_process');
+ const fs=require('node:fs');
+ const path=require('node:path');
+ const output=path.join(__dirname,'position-facts-review.md');
+ try{
+  const child=spawnSync(process.execPath,['scripts/positionFactsReview.js'],{
+   cwd:__dirname,encoding:'utf8',timeout:30000,maxBuffer:512*1024,
+   env:{...process.env,OPENAI_API_KEY:'',POSITION_FACTS_REVIEW_DRY_RUN:'1'}
+  });
+  assert.equal(child.status,0,'offline dry run exit; stderr: '+child.stderr);
+  const report=fs.readFileSync(output,'utf8');
+  assert.match(report,/DRY RUN: synthetic provider and fake engine/);
+  assert.match(report,/## Summary/);
+  assert.equal((report.match(/^## \d+\. /gm)||[]).length,10,'all ten positions must be present');
+  assert.equal((report.match(/^#### OFF/gm)||[]).length,10);
+  assert.equal((report.match(/^#### ON/gm)||[]).length,10);
+  assert.equal((report.match(/^\*\*Verified positionFacts JSON:/gm)||[]).length,10);
+  assert.equal((report.match(/^\*\*Submitted engine evidence:/gm)||[]).length,20);
+  assert.ok(report.includes('&#96;')===false,'use real Markdown code fences');
+  assert.ok(report.includes(String.fromCharCode(96).repeat(3)+'json'),'Markdown JSON fence expected');
+  assert.ok(!report.includes('sk-'),'no API key prefix in report');
+  console.log('QA dry-run report excerpt (first section):\n'+
+   report.split('\n').slice(0,21).join('\n'));
+ }finally{fs.rmSync(output,{force:true});}
+});
