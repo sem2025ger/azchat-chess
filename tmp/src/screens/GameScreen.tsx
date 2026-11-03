@@ -12,7 +12,8 @@ import AnalysisPanel from '../components/AnalysisPanel';
 import AnalysisWorkspaceHeader from '../components/analysis/AnalysisWorkspaceHeader';
 import { MobileAnalysisHeader, MobileAnalysisDetails } from '../components/analysis/MobileAnalysis';
 import { mobileAnalysisCopy } from '../components/analysis/mobileAnalysisCopy';
-import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
+import { type StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
+import { acquireAnalysisEngine, releaseAnalysisEngine } from '../utils/analysisEngineSession';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
 import PositionMap from '../components/analysis/PositionMap';
 import PositionMapVariations from '../components/analysis/PositionMapVariations';
@@ -571,7 +572,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     }
 
     if (!engineRef.current) {
-      engineRef.current = new StockfishEngine();
+      engineRef.current = acquireAnalysisEngine();
       engineRef.current.onResult((res) => {
         setEngineResult(res);
         if (mode === 'review' && res.analyzedFen && res.depth >= 5) {
@@ -590,7 +591,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       });
     }
     return () => {
-      engineRef.current?.destroy();
+      if (engineRef.current) releaseAnalysisEngine(engineRef.current);
       engineRef.current = null;
     };
   }, [isLiveMultiplayer, mode]);
