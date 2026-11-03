@@ -31,7 +31,7 @@ test('desktop Home board remains in its visual plane beside balanced Arena panel
 });
 
 test('desktop Home board sits closer to the frame without altering mobile or the 8x8 grid',()=>{
- assert.match(home,/overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3 xl:!p-2"/);
+ assert.match(home,/overrideBoardTheme="Classic Wood" homeBlackInk className="!border-none !p-1 md:!p-3 xl:!p-2"/);
  assert.match(board,/grid grid-cols-8 grid-rows-8 w-full h-full/);
  assert.match(home,/home-board-frame max-md:hidden/);
 });
