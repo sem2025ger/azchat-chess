@@ -24,7 +24,7 @@ import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSound
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
 import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
-import { analysisMovePairs, analysisFromMoves, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
+import { analysisMovePairs, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
 import { analysisCopy } from '../components/analysis/copy';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
 import { displayPlayerName } from '../utils/displayPlayerName';
