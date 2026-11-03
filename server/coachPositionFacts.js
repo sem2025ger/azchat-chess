@@ -47,7 +47,8 @@ function positionFacts(fen){
    const isolated=ownPawns.filter(p=>![p.f-1,p.f+1].some(f=>files.has(f))).map(p=>p.square);
    const doubledFiles=[...FILES].filter((_,f)=>ownPawns.filter(p=>p.f===f).length>=2);
    const passed=ownPawns.filter(p=>!enemyPawns.some(e=>Math.abs(e.f-p.f)<=1&&(e.r-p.r)*direction>0)).map(p=>p.square);
-   const passedBlockaded=passed.filter(s=>{const p=grid.get(s);return !!grid.get(square(p.f,p.r+direction));});
+   const blockaded=ownPawns.filter(p=>{const stop=grid.get(square(p.f,p.r+direction));return stop&&stop.color===enemy&&stop.type!=='p';}).map(p=>p.square);
+   const passedBlockaded=passed.filter(s=>blockaded.includes(s));
    let islands=0,last=-2;
    for(const f of [...files].sort((a,b)=>a-b)){if(f!==last+1)islands++;last=f;}
    const halfOpen=[...FILES].filter((_,f)=>!files.has(f)&&occupiedFiles[enemy].has(f));
@@ -68,9 +69,9 @@ function positionFacts(fen){
    const king=pieces[color].find(x=>x.type==='k');
    const nearby=[king.f-1,king.f,king.f+1].filter(f=>f>=0&&f<8);
    const pawnShield=ownPawns.filter(p=>nearby.includes(p.f)&&(p.r-king.r)*direction>=1&&(p.r-king.r)*direction<=2).length;
-   const openFilesNearKing=nearby.filter(f=>openFiles.includes(FILES[f])||(!occupiedFiles[enemy].has(f)&&files.has(f))).map(f=>FILES[f]);
+   const openFilesNearKing=nearby.filter(f=>openFiles.includes(FILES[f])||(!files.has(f)&&occupiedFiles[enemy].has(f))).map(f=>FILES[f]);
    result[side]={
-    pawns:{isolated,doubledFiles,passed,passedBlockaded,pawnIslands:islands},
+    pawns:{isolated,doubledFiles,passed,blockaded,passedBlockaded,pawnIslands:islands},
     files:{open:openFiles,halfOpen},
     outposts,
     hanging:{static:true,undefended,lowerValueAttacked},
