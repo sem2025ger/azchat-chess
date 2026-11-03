@@ -67,6 +67,9 @@ jobs:
         # Provide a valid session bus instead of inheriting runner-specific D-Bus state.
         run: dbus-run-session -- node tests/mobileAnalysis.browser.mjs
 
+      - name: First Analysis navigation performance (real Chromium)
+        run: dbus-run-session -- node tests/analysisNavigation.browser.mjs
+
       - name: Spieltag browser regression (synthetic private team)
         run: dbus-run-session -- node tests/spieltag.browser.mjs
 
