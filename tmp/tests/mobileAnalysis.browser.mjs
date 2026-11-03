@@ -304,7 +304,7 @@ try {
       width:document.querySelector('.desktop-analysis-panel')?.getBoundingClientRect().width};
   })()`);
   assert.deepEqual(ownerGeometry.lineHeights.map(Math.round),[46,46,46],JSON.stringify(ownerGeometry));
-  assert.ok(ownerGeometry.fontSize>=13 && ownerGeometry.fontSize<=14,JSON.stringify(ownerGeometry));
+  assert.ok(ownerGeometry.fontSize>=14 && ownerGeometry.fontSize<=14.5,JSON.stringify(ownerGeometry));
   assert.ok(ownerGeometry.topInset>=4 && ownerGeometry.bottomInset>=4,JSON.stringify(ownerGeometry));
   assert.equal(ownerGeometry.title,'Анализ');
   console.log('PASS owner final desktop 1920x880 geometry '+JSON.stringify(ownerGeometry));
