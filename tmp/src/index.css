@@ -2009,7 +2009,7 @@ aside nav{padding-top:12px!important}
   .desktop-analysis-screen .analysis-engine-variations > .analysis-engine-line {min-height:40px!important;padding:4px 8px!important;box-sizing:border-box;}
   .desktop-analysis-screen .analysis-engine-score[data-score-side] {box-sizing:border-box;height:30px!important;min-height:30px!important;max-height:30px!important;align-self:center;margin-block:auto;flex:0 0 58px;width:58px!important;min-width:58px!important;max-width:58px!important;}
   .desktop-analysis-screen .analysis-engine-line {gap:7px!important;}
-  .desktop-analysis-screen .analysis-engine-moves {gap:2px 3px!important;font-size:.73rem!important;letter-spacing:-.15px;mask-image:none!important;overflow:hidden!important;}
+  .desktop-analysis-screen .analysis-engine-moves {gap:2px 3px!important;font-size:.79rem!important;letter-spacing:-.15px;mask-image:none!important;overflow:hidden!important;}
   .desktop-analysis-screen .desktop-analysis-bottom-actions {width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;position:relative;z-index:40;box-sizing:border-box;}
   .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button,
   .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-save-wrapper {flex:1 1 0;min-width:0;margin:0;}
@@ -2044,7 +2044,7 @@ aside nav{padding-top:12px!important}
     padding:5px 8px!important;
   }
   .desktop-analysis-screen .analysis-engine-moves {
-    font-size:0.78rem!important;
+    font-size:0.84rem!important;
     line-height:1.35!important;
     letter-spacing:0!important;
   }
