@@ -24,7 +24,7 @@ import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSound
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
 import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
-import { analysisMovePairs, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
+import { analysisMovePairs, playAnalysisMoveAtView, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
 import { analysisCopy } from '../components/analysis/copy';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
 import { displayPlayerName } from '../utils/displayPlayerName';
@@ -635,7 +635,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const handleGameMove = useCallback(
     (source: string, target: string, promotion: string = 'q') => {
       if (isMultiplayer && !canSendGameAction) return false;
-      if (viewMoveIndex !== -1) {
+      // Replay of a live game is read-only. Analysis may branch at any past ply.
+      if (mode !== 'review' && viewMoveIndex !== -1) {
         setViewMoveIndex(-1);
         return false;
       }
@@ -643,6 +644,25 @@ export default function GameScreen({ mode }: GameScreenProps) {
         return false;
       }
       try {
+        if (mode === 'review') {
+          const branch = playAnalysisMoveAtView(
+            moveHistory, positionHistory, viewMoveIndex, source, target, promotion,
+          );
+          if (!branch) return false;
+          const { analysis, check, captured } = branch;
+          void playChessSound(check ? 'check' : captured ? 'capture' : 'move', sound);
+          setMapSnapshot(null);
+          setGame(analysis.game);
+          setPositionHistory(analysis.positionHistory);
+          setMoveHistory(analysis.moveHistory);
+          setViewMoveIndex(-1);
+          setGameOverMessage(analysis.game.isGameOver()
+            ? analysis.game.isCheckmate() ? 'Game over: checkmate.'
+              : analysis.game.isStalemate() ? 'Game over: stalemate.'
+              : 'Game over: draw.'
+            : null);
+          return true;
+        }
         const g = new Chess(game.fen());
         const move = g.move({ from: source, to: target, promotion });
         if (move) {
@@ -677,7 +697,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId, sound, mode, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
+    [viewMoveIndex, moveHistory, positionHistory, game, socket, roomId, sound, mode, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
   );
 
 
@@ -1256,7 +1276,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 game={displayedGame}
                 onMove={handleGameMove}
                 orientation={mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
-                readOnly={viewMoveIndex !== -1 || !!gameOverMessage || (isMultiplayer && playerColor !== game.turn())}
+                readOnly={(mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn())}
               />}
             </div>
           </div>
