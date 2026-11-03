@@ -115,6 +115,13 @@ export default function HomeScreen() {
             box-shadow: none;
           }
         }
+        /* Home-only black CBURNETT artwork retains a discreet shadow without
+           brightening or recoloring its dark SVG details on desktop. */
+        @media (min-width: 1280px) {
+          .home-screen-root .home-board img[data-home-black-ink] {
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,.3)) !important;
+          }
+        }
         /* Approved desktop Home board only: fuller white and black pawns, unchanged squares. */
         @media (min-width: 1280px) {
           .home-screen-root .home-board img[alt="wP"],
@@ -372,7 +379,7 @@ export default function HomeScreen() {
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container home-board-column xl:-mt-10">
           <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board home-board-frame max-md:hidden">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
-            <ChessBoard game={desktopGame} onMove={handleDesktopMove} overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3 xl:!p-2" />
+            <ChessBoard game={desktopGame} onMove={handleDesktopMove} overrideBoardTheme="Classic Wood" homeBlackInk className="!border-none !p-1 md:!p-3 xl:!p-2" />
           </div>
           <MobileHomeBoard />
           {/* Desktop move controls sit below the board without affecting its vertical position. */}

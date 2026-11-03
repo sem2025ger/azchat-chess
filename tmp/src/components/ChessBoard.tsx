@@ -60,6 +60,7 @@ function ChessBoard({
   overridePieceTheme,
   readOnly = false,
   confirmMovesMobile = false,
+  homeBlackInk = false,
 }: {
   className?: string;
   showCoordinates?: boolean;
@@ -72,6 +73,7 @@ function ChessBoard({
   overridePieceTheme?: PieceTheme;
   readOnly?: boolean;
   confirmMovesMobile?: boolean;
+  homeBlackInk?: boolean;
 }) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
   const [localGame, setLocalGame] = useState(() => new Chess());
@@ -453,7 +455,7 @@ function ChessBoard({
                   )}
                   style={{ left: `${fileIdx * 12.5}%`, top: `${rankIdx * 12.5}%` }}
                 >
-                  <PieceImage piece={p} theme={overridePieceTheme || pieceTheme} />
+                  <PieceImage piece={p} theme={overridePieceTheme || pieceTheme} homeBlackInk={homeBlackInk} />
                 </div>
               );
             })}
@@ -485,6 +487,7 @@ function ChessBoard({
                       <PieceImage
                         piece={{ type: pieceType, color: pendingPromotion.color }}
                         theme={overridePieceTheme || pieceTheme}
+                        homeBlackInk={homeBlackInk}
                       />
                     </button>
                   ))}
@@ -507,13 +510,20 @@ function ChessBoard({
 
 function PieceImage({
   piece,
-  theme
+  theme,
+  homeBlackInk = false,
 }: {
   piece: { type: string; color: string };
   theme: string;
+  homeBlackInk?: boolean;
 }) {
   const pieceSetName = theme || 'classic'; // Fallback only to classic if undefined
   const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
+  // Alternate SVGs are scoped to the desktop Home board, not a new global theme.
+  const homeBlackSource = homeBlackInk && piece.color === 'b' &&
+    pieceSetName === 'cburnett-classic' && ['K', 'Q', 'R', 'B', 'N'].includes(piece.type.toUpperCase())
+      ? `/pieces/home-cburnett-ink/${pieceCode}.svg`
+      : null;
   const src = pieceSetName === 'cburnett-classic'
     ? `/chess-assets/pieces/cburnett/${pieceCode}.svg`
     : pieceSetName === 'neo' || pieceSetName === 'tournament'
@@ -536,6 +546,7 @@ function PieceImage({
     <img
       src={src}
       alt={pieceCode}
+      data-home-black-ink={homeBlackSource ? '' : undefined}
       data-desktop-pawn={desktopPawnSrc ? piece.color : undefined}
       data-piece-theme={desktopPawnSrc ? pieceSetName : undefined}
       className="w-full h-full object-contain transform-gpu"
@@ -546,8 +557,9 @@ function PieceImage({
   );
   return (
     <div className="w-full h-full flex items-center justify-center p-[3%] md:p-[8%] lg:p-[5%] pointer-events-none select-none">
-      {desktopPawnSrc || mobileSrc ? (
+      {desktopPawnSrc || mobileSrc || homeBlackSource ? (
         <picture className="block w-full h-full">
+          {homeBlackSource && <source media="(min-width: 1280px)" srcSet={homeBlackSource} type="image/svg+xml" />}
           {desktopPawnSrc && <source media="(min-width: 1280px)" srcSet={desktopPawnSrc} type="image/svg+xml" />}
           {mobileSrc && <source media="(max-width: 767px)" srcSet={mobileSrc} type="image/svg+xml" />}
           {image}
