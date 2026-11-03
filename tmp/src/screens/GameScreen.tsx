@@ -16,6 +16,7 @@ import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
 import PositionMap from '../components/analysis/PositionMap';
 import PositionMapVariations from '../components/analysis/PositionMapVariations';
+import { createPositionMapSnapshot, selectPositionMapVariation, type PositionMapSnapshot } from '../utils/positionMapNavigation';
 import { positionMapLabel } from '../components/analysis/positionMapLabels';
 import { reviewLayout } from '../utils/reviewLayout';
 import { annotatedPgn, type PositionEvaluation } from '../utils/positionMap';
@@ -60,6 +61,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const { t, language } = useLanguage();
   const words = analysisCopy[language];
   const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position'>('analysis');
+  const [mapSnapshot, setMapSnapshot] = useState<PositionMapSnapshot | null>(null);
   // The mobile analysis tools open only on demand; preserve the full-size board.
   const [mobileTool, setMobileTool] = useState<'map' | 'games' | 'position' | null>(null);
   const mobileToolDialogRef = useRef<HTMLDialogElement>(null);
@@ -504,6 +506,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     engineRef.current?.stop();
     setEvaluations({});
     setPlanHighlight(null);
+    setMapSnapshot(null);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('fen');
     navigate({ search: nextParams.toString() }, { replace: true });
@@ -526,6 +529,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     engineRef.current?.stop();
     setEvaluations({});
     setPlanHighlight(null);
+    setMapSnapshot(null);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('fen');
     navigate({ search: nextParams.toString() }, { replace: true });
@@ -645,6 +649,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           const soundType: ChessSoundType = g.isCheck() ? 'check' : move.captured ? 'capture' : 'move';
           void playChessSound(soundType, sound);
 
+          if (mode === 'review') setMapSnapshot(null);
           if (socket && roomId) {
             locallyPlayedFenRef.current = g.fen();
             socket.emit('make_move', { roomId, move: { from: source, to: target, promotion } });
@@ -736,6 +741,28 @@ export default function GameScreen({ mode }: GameScreenProps) {
   }, [game, viewMoveIndex, positionHistory]);
 
   const currentEngineResult = mode === 'review' && engineResult?.analyzedFen !== displayedGame.fen() ? null : engineResult;
+  const openPositionMap = () => {
+    setEditingPosition(false);
+    setPlanHighlight(null);
+    if (mode === 'review' && !mapSnapshot?.frozen) {
+      const fen = displayedGame.fen();
+      setMapSnapshot({
+        ...createPositionMapSnapshot(fen, moveHistory, viewMoveIndex),
+        result: currentEngineResult,
+      });
+    }
+    setWorkspaceTab('map');
+  };
+
+  // Preserve the result once it has been selected; live engine updates must not
+  // overwrite the three original candidate lines during a comparison.
+  useEffect(() => {
+    if (!mapSnapshot || mapSnapshot.frozen || !currentEngineResult ||
+        currentEngineResult.analyzedFen !== mapSnapshot.fen) return;
+    setMapSnapshot(previous => previous && !previous.frozen && previous.fen === currentEngineResult.analyzedFen
+      ? { ...previous, result: currentEngineResult } : previous);
+  }, [currentEngineResult, mapSnapshot?.fen, mapSnapshot?.frozen]);
+
   const hasHistory = positionHistory.length > 1;
   const mobileReviewControlClass = 'min-h-11 flex items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] text-neutral-200 shadow-sm transition-[color,background-color,transform] duration-150 hover:bg-cyan-500/10 hover:text-cyan-100 active:scale-95 disabled:opacity-30 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60';
 
@@ -1373,7 +1400,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 <button key={tab} type="button" aria-pressed={workspaceTab === tab} onClick={() => {
                   setEditingPosition(false);
                   setPlanHighlight(null);
-                  setWorkspaceTab(tab);
+                  if (tab === 'map') openPositionMap();
+                  else setWorkspaceTab(tab);
                 }} className={cx("min-h-9 min-w-0 flex-1 rounded-xl px-2 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200", workspaceTab === tab ? "border border-amber-200/20 bg-gradient-to-br from-amber-200/10 via-[#1c1c18] to-teal-900/15 text-amber-100" : "border border-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-200")}>
                   {tab === 'map' ? positionMapLabel[language] : words[tab]}
                 </button>
@@ -1381,7 +1409,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </nav>
             <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
             {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
-            {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionMapVariations key={displayedGame.fen()} fen={displayedGame.fen()} result={currentEngineResult} language={language} failed={engineFailed} onSelectLine={(moves) => { try { loadWorkspaceAnalysis(analysisFromMoves([...moveHistory.slice(0, viewMoveIndex === -1 ? undefined : viewMoveIndex + 1), ...moves], positionHistory[0])); } catch { /* Ignore stale PV */ } }} /></div>}
+            {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col">
+              {mapSnapshot?.frozen && <button type="button" className="mx-4 mt-3 rounded-lg border border-amber-200/20 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-white/5" onClick={() => {
+                setMapSnapshot({ ...createPositionMapSnapshot(displayedGame.fen(), moveHistory, viewMoveIndex), result: currentEngineResult });
+              }}>{({ru:'Новые варианты текущей позиции',en:'New lines for current position',de:'Neue Varianten der aktuellen Stellung',az:'Cari mövqe üçün yeni variantlar',tr:'Geçerli konum için yeni varyantlar',ua:'Нові варіанти поточної позиції'} as const)[language]}</button>}
+              <PositionMapVariations key={mapSnapshot?.fen || displayedGame.fen()} fen={mapSnapshot?.fen || displayedGame.fen()} result={mapSnapshot?.result || null} language={language} failed={engineFailed}
+                onSelectLine={(moves) => { if (!mapSnapshot) return; try {
+                  const { analysis, snapshot } = selectPositionMapVariation(mapSnapshot, mapSnapshot.result, moves, positionHistory[0]);
+                  loadWorkspaceAnalysis(analysis);
+                  setMapSnapshot(snapshot);
+                } catch { /* Reject stale or illegal engine lines. */ } }} /></div>}
             {workspaceTab === 'position' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionTools currentFen={displayedGame.fen()} words={words} onLoad={loadWorkspaceAnalysis} onCancel={() => { setEditingPosition(false); setWorkspaceTab(tabBeforeEditor.current); }}
               draft={positionDraftValue} selected={editorSelectedPiece} onSelected={setEditorSelectedPiece}
               onDraft={updatePositionDraft} onClear={clearPositionDraft} onUndo={undoPositionDraft}
