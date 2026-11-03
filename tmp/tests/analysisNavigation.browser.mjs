@@ -91,6 +91,7 @@ try {
   };
   await cdp('Page.enable');
   await cdp('Runtime.enable');
+  await cdp('Emulation.setDeviceMetricsOverride', { mobile: false, width: 1440, height: 900, deviceScaleFactor: 1 });
   await cdp('Page.addScriptToEvaluateOnNewDocument', { source: `
     localStorage.setItem('app-language', 'ru');
     localStorage.setItem('chess_sound', 'Muted / Off');
