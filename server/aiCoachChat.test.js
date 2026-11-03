@@ -94,3 +94,23 @@ test('candidate lines reach model only after replay validation and return withou
  assert.equal(reply.games.length,0,'teaching should not auto-open five archive games');
  assert.equal(reply.engineVerified,false);
 });
+
+test('position-facts OFF keeps model evidence byte-identical; ON adds only verified facts',async()=>{
+ const index={status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})},seen=[];
+ const fetchImpl=async(_url,options)=>{
+  const payload=JSON.parse(options.body);
+  seen.push({evidence:JSON.parse(payload.input).evidence,instructions:payload.instructions});
+  return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Develop the pieces.'})}]}]});
+ };
+ const q={...query,message:'Explain this position'};
+ await groundedChat(index,q,{openaiApiKey:'synthetic',fetchImpl});
+ await groundedChat(index,q,{openaiApiKey:'synthetic',fetchImpl,positionFactsEnabled:false});
+ await groundedChat(index,q,{openaiApiKey:'synthetic',fetchImpl,positionFactsEnabled:true});
+ assert.equal(JSON.stringify(seen[0].evidence),JSON.stringify(seen[1].evidence),'OFF evidence retains byte-for-byte serialization');
+ assert.equal(seen[0].instructions,seen[1].instructions,'OFF instructions unchanged');
+ assert.equal(Object.hasOwn(seen[0].evidence,'positionFacts'),false);
+ assert.deepEqual(seen[2].evidence.positionFacts,require('./coachPositionFacts').positionFacts(q.fen));
+ const {positionFacts,...rest}=seen[2].evidence;
+ assert.deepEqual(rest,seen[0].evidence,'ON retains all prior evidence');
+ assert.equal(seen[2].instructions.split('evidence.positionFacts was computed deterministically').length-1,1);
+});
