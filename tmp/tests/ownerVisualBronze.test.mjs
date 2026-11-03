@@ -5,6 +5,8 @@ import { readFileSync } from 'node:fs';
 const css=readFileSync('src/screens/RegionOverview.css','utf8');
 const layout=readFileSync('src/components/Layout.tsx','utf8');
 const site=readFileSync('src/index.css','utf8');
+const home=readFileSync('src/screens/HomeScreen.tsx','utf8');
+const board=readFileSync('src/components/ChessBoard.tsx','utf8');
 
 test('NRW uses cool, light metallic bronze only within the region shell',()=>{
  assert.match(css,/\.nrw-shell\s*\{\s*--nrw-metal:#C7BBA8/);
@@ -26,4 +28,10 @@ test('desktop Home board remains in its visual plane beside balanced Arena panel
  assert.match(site,/\.home-board-column\{[^}]*perspective:1400px/);
  assert.match(site,/\.home-dashboard-column\{[^}]*max-width:420px/);
  assert.doesNotMatch(site.slice(0,site.indexOf('/* Native route scroll only')),/translateZ\(|scale\(/);
+});
+
+test('desktop Home board sits closer to the frame without altering mobile or the 8x8 grid',()=>{
+ assert.match(home,/overrideBoardTheme="Classic Wood" className="!border-none !p-1 md:!p-3 xl:!p-2"/);
+ assert.match(board,/grid grid-cols-8 grid-rows-8 w-full h-full/);
+ assert.match(home,/home-board-frame max-md:hidden/);
 });
