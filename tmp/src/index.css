@@ -2049,3 +2049,12 @@ aside nav{padding-top:12px!important}
     letter-spacing:0!important;
   }
 }
+
+/* Review PV readability: desktop only, preserving the three fixed engine slots. */
+@media (min-width:1024px) {
+  .desktop-analysis-screen .analysis-engine-moves {
+    font-size: .84rem !important;
+    letter-spacing: 0 !important;
+    line-height: 1.4 !important;
+  }
+}
