@@ -669,7 +669,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
           const soundType: ChessSoundType = g.isCheck() ? 'check' : move.captured ? 'capture' : 'move';
           void playChessSound(soundType, sound);
 
-          if (mode === 'review') setMapSnapshot(null);
           if (socket && roomId) {
             locallyPlayedFenRef.current = g.fen();
             socket.emit('make_move', { roomId, move: { from: source, to: target, promotion } });
