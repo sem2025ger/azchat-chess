@@ -18,7 +18,7 @@ const server = createServer(async (req, res) => {
   try {
     const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     const file = resolve(dist, '.' + pathname);
-    if (!file.startsWith(dist + sep)) { res.writeHead(403).end(); return; }
+    if (file !== dist && !file.startsWith(dist + sep)) { res.writeHead(403).end(); return; }
     const target = extname(file) ? file : join(dist, 'index.html');
     res.setHeader('Content-Type', mime[extname(target)] || 'application/octet-stream');
     res.end(await readFile(target));
