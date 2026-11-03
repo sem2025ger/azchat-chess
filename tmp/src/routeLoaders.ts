@@ -1,3 +1,5 @@
+import { primeAnalysisEngine } from './utils/analysisEngineSession';
+
 function cacheImport<T>(load: () => Promise<T>) {
   let pending: Promise<T> | undefined;
   return () => {
@@ -68,12 +70,34 @@ export function scheduleNavigationPreload(currentPath: string) {
       timer = undefined;
       if (cancelled || document.hidden) return;
       const next = queue.shift();
-      if (next) void destinations[next]().catch(() => {}).then(schedule);
+      if (!next) return;
+      void destinations[next]().catch(() => {}).then(() => {
+        if (cancelled) return;
+        // Finish parsing the Analysis route before warming its separate UCI worker.
+        // Staggering these cold starts avoids competing during the first navigation.
+        if (next === '/game' && (currentPath === '/' || currentPath === '/home') &&
+            window.matchMedia('(min-width: 1024px)').matches) {
+          const warm = () => {
+            idleHandle = undefined;
+            timer = undefined;
+            if (!cancelled && !document.hidden) primeAnalysisEngine();
+            schedule();
+          };
+          if ('requestIdleCallback' in window) {
+            idleHandle = window.requestIdleCallback(warm, { timeout: 1800 });
+          } else {
+            timer = setTimeout(warm, 250);
+          }
+        } else {
+          schedule();
+        }
+      });
     };
     if ('requestIdleCallback' in window) {
-      idleHandle = window.requestIdleCallback(run);
+      // Home must paint first; avoid indefinite postponement on animated pages.
+      idleHandle = window.requestIdleCallback(run, queue[0] === '/game' ? { timeout: 1600 } : undefined);
     } else {
-      timer = setTimeout(run, 800);
+      timer = setTimeout(run, queue[0] === '/game' ? 350 : 800);
     }
   };
   schedule();
