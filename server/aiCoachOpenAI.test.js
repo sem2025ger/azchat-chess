@@ -131,3 +131,25 @@ test('archive filter never implies the learner plays that colour in either promp
   }});
  }
 });
+
+test('position facts instruction is appended exactly once in both model paths and absent by default',async()=>{
+ const {positionFacts}=require('./coachPositionFacts'),facts=positionFacts(query.fen);
+ assert.ok(facts);
+ for(const useServerEngine of [false,true]){
+  const base=useServerEngine?{candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:900},candidateLines:[]}:{candidateOrigin:'untrusted_client_legality_checked',candidateLines:[]};
+  const instructionBodies=[];
+  const fetchImpl=async(_url,options)=>{
+   const body=JSON.parse(options.body);instructionBodies.push(body.instructions);
+   assert.equal(JSON.parse(body.input).evidence.positionFacts===undefined,instructionBodies.length===1);
+   return answerResponse();
+  };
+  await generateAnswer(query,base,{apiKey:key,fetchImpl});
+  await generateAnswer(query,{...base,positionFacts:facts},{apiKey:key,fetchImpl});
+  assert.equal(instructionBodies[1].startsWith(instructionBodies[0]+'\\n'),true,'ON only appends one line');
+  const suffix=instructionBodies[1].slice(instructionBodies[0].length+1);
+  assert.ok(suffix.startsWith('evidence.positionFacts was computed deterministically'));
+  assert.equal(suffix.split('evidence.positionFacts was computed deterministically').length-1,1);
+  assert.ok(suffix.includes('The hanging section is static (no pins or tactics)'));
+  assert.equal(instructionBodies[0].includes('evidence.positionFacts was computed deterministically'),false);
+ }
+});
