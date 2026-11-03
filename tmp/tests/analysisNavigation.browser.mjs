@@ -131,7 +131,7 @@ try {
   };
   const cold = await navigate('.site-nav-link[href="/game"]', '.desktop-analysis-main-board [data-square]');
   assert.equal(cold.url, '/game');
-  const back = await navigate('.site-nav-link[href="/home"]', 'a[href="/game"]');
+  const back = await navigate('.site-nav-link[href="/home"]', '.home-screen-root');
   assert.equal(back.url, '/home');
   await sleep(250);
   const warm = await navigate('.site-nav-link[href="/game"]', '.desktop-analysis-main-board [data-square]');
