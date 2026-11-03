@@ -102,9 +102,9 @@ async function run(){
     const r=runs[label];
     return '#### '+label+'\n\n'+
      '**Model answer (first attempt, unedited):**\n\n'+quote(r.answer||('[ERROR: '+r.error+']'))+
-     '\n\n**Submitted engine evidence:**\n\n'+'&#96;&#96;&#96;json\n'+
+     '\n\n**Submitted engine evidence:**\n\n'+'\x60\x60\x60json\n'+
      JSON.stringify({origin:r.origin,candidateLines:r.engineLines},null,2)+
-     '\n&#96;&#96;&#96;\n\n'+
+     '\n\x60\x60\x60\n\n'+
      '**Squares named by answer (lexical heuristic):**\n\n'+
      '| Square | Classification |\n|---|---|\n'+
      (r.squares.length?r.squares.map(z=>'| '+z.square+' | '+z.source+' |').join('\n'):'| — | None |')+
@@ -115,9 +115,9 @@ async function run(){
     '**Source game:** '+escapeCell(p.white)+' — '+escapeCell(p.black)+', '+
     p.year+', '+escapeCell(p.event)+', after '+escapeCell(p.move)+
     '. [PGN source]('+p.sourceUrl+')\n\n'+
-    '**FEN:** &#96;'+p.fen+'&#96;\n\n**Question (both runs):** '+question+
-    '\n\n**Verified positionFacts JSON:**\n\n'+'&#96;&#96;&#96;json\n'+JSON.stringify(facts,null,2)+
-    '\n&#96;&#96;&#96;\n\n'+table('OFF')+'\n'+table('ON')+
+    '**FEN:** \x60'+p.fen+'\x60\n\n**Question (both runs):** '+question+
+    '\n\n**Verified positionFacts JSON:**\n\n'+'\x60\x60\x60json\n'+JSON.stringify(facts,null,2)+
+    '\n\x60\x60\x60\n\n'+table('OFF')+'\n'+table('ON')+
     '\n**Stockfish evidence identical between runs:** '+(comparable?'YES':'NO / NOT VERIFIED')+
     '\n\n---\n');
    process.stdout.write('Position '+(i+1)+'/10: '+p.id+
@@ -127,11 +127,11 @@ async function run(){
  const failures=summary.filter(s=>s.failed).length,nonComparable=summary.filter(s=>!s.comparable).length;
  const header='# ChessAZ Position Facts V1 — manual OFF/ON review\n\n'+
   '> **'+(DRY_RUN?'DRY RUN: synthetic provider and fake engine; NOT a chess-quality result':
-   'LIVE RUN: OpenAI API and Stockfish (one first response per condition')+'**\n\n'+
+   'LIVE RUN: OpenAI API and Stockfish; first response per condition only')+'**\n\n'+
   '- Input: 10 replayable master-game FEN positions, no database, no archive, same question per position.\n'+
-  '- Model: &#96;'+MODEL+'&#96;; engine movetime: '+MOVETIME+' ms; position facts flag passed per call (OFF then ON).\n'+
+  '- Model: \x60'+MODEL+'\x60; engine movetime: '+MOVETIME+' ms; position facts flag passed per call (OFF then ON).\n'+
   '- "NONE OF THESE" is a **possible unsupported square**, not proof of hallucination; conversely a square present in FEN or engine lines does **not** validate a claimed positional feature.\n'+
-  '- Square extraction is a lexical regex &#96;[a-h][1-8]&#96;; manual chess review is mandatory.\n'+
+  '- Square extraction is a lexical regex \x60[a-h][1-8]\x60; manual chess review is mandatory.\n'+
   '- No retries, no edited answers. An engine failure or unverified evidence is explicitly labelled.\n\n'+
   '## Summary\n\n| Position | OFF: squares NONE OF THESE | ON: squares NONE OF THESE | Same engine evidence? | Any error? |\n'+
   '|---|---:|---:|---|---|\n'+summary.map(s=>'| '+s.id+' | '+s.off+' | '+s.on+' | '+
