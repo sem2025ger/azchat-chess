@@ -12,6 +12,7 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import RouteLoadingFallback from './RouteLoadingFallback';
 import { prefetchRoute, scheduleNavigationPreload } from '../routeLoaders';
+import { primeAnalysisEngine } from '../utils/analysisEngineSession';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -191,9 +192,9 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
   return (
     <NavLink
       to={destination}
-      onPointerEnter={() => prefetchRoute(to)}
-      onFocus={() => prefetchRoute(to)}
-      onPointerDown={() => prefetchRoute(to)}
+      onPointerEnter={() => { prefetchRoute(to); if (to === '/game') primeAnalysisEngine(); }}
+      onFocus={() => { prefetchRoute(to); if (to === '/game') primeAnalysisEngine(); }}
+      onPointerDown={() => { prefetchRoute(to); if (to === '/game') primeAnalysisEngine(); }}
       className={({ isActive }) =>
         cx(
           "site-nav-link flex items-center px-4 border border-transparent rounded-2xl font-semibold text-[0.94rem] normal-case tracking-normal relative group active:scale-95 sidebar-item",
