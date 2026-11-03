@@ -145,8 +145,17 @@ try {
 } finally {
   clearTimeout(deadline);
   ws?.close();
-  chrome?.kill('SIGKILL');
+  // Chrome can still write into its user-data dir after kill() returns.
+  // Wait for process shutdown before removing the ephemeral profile.
+  if (chrome && chrome.exitCode === null && chrome.signalCode === null) {
+    await new Promise(resolve => {
+      const fallback = setTimeout(() => { chrome.kill('SIGKILL'); resolve(); }, 2_500);
+      chrome.once('close', () => { clearTimeout(fallback); resolve(); });
+      chrome.kill('SIGTERM');
+    });
+  }
   server.closeAllConnections();
   await new Promise(resolve => server.close(resolve));
-  if (profile) await rm(profile, { recursive: true, force: true });
+  // Recursive removal may race Chromium's detached helper processes on Linux.
+  if (profile) await rm(profile, { recursive: true, force: true, maxRetries: 15, retryDelay: 150 });
 }
