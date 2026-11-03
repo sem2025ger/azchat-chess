@@ -62,6 +62,38 @@ export type AnalysisLoad = ReturnType<typeof analysisFromMoves>;
 
 export function analysisFromFen(fen: string): AnalysisLoad { return analysisFromMoves([], fen); }
 
+/**
+ * Start a new review line from an existing historical ply, using chess.js to
+ * validate the complete surviving prefix and the requested legal move.
+ * The caller's original history is never mutated; live games do not use this.
+ */
+export function branchAnalysisAtPly(
+  moves: string[],
+  positions: string[],
+  ply: number,
+  from: string,
+  to: string,
+  promotion = 'q',
+) {
+  if (!Number.isSafeInteger(ply) || ply < 0 || ply > moves.length ||
+      positions.length !== moves.length + 1) {
+    throw new AnalysisInputError('illegalPosition');
+  }
+  const analysis = analysisFromMoves(moves.slice(0, ply), positions[0]);
+  if (analysis.game.fen() !== positions[ply]) {
+    throw new AnalysisInputError('illegalPosition');
+  }
+  let move;
+  try {
+    move = analysis.game.move({ from, to, promotion });
+  } catch {
+    throw new AnalysisInputError('illegalPosition');
+  }
+  analysis.moveHistory.push(move.san);
+  analysis.positionHistory.push(analysis.game.fen());
+  return { analysis, move };
+}
+
 export function analysisFromPgn(pgn: string, initialFen = DEFAULT_POSITION): AnalysisLoad {
   if (pgn.length > 250_000) throw new AnalysisInputError('tooLarge');
   if (!pgn.trim()) throw new AnalysisInputError('invalidPgn');
