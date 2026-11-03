@@ -60,6 +60,43 @@ export function analysisFromMoves(moves: string[], initialFen = DEFAULT_POSITION
 }
 export type AnalysisLoad = ReturnType<typeof analysisFromMoves>;
 
+/**
+ * Play a legal move from the currently displayed analysis ply.
+ * Any later principal-line moves are replaced, never appended to the old ending.
+ * In live/multiplayer games the caller must continue using server-authoritative moves.
+ */
+export function playAnalysisMoveAtView(
+  moveHistory: string[],
+  positionHistory: string[],
+  viewMoveIndex: number,
+  source: string,
+  target: string,
+  promotion = 'q',
+): { analysis: AnalysisLoad; captured: boolean; check: boolean } | null {
+  const ply = viewMoveIndex === -1 ? moveHistory.length : viewMoveIndex;
+  if (!Number.isInteger(ply) || ply < 0 || ply > moveHistory.length ||
+      positionHistory.length !== moveHistory.length + 1) return null;
+
+  try {
+    const game = new Chess(positionHistory[ply]);
+    const move = game.move({ from: source, to: target, promotion });
+    if (!move) return null;
+    return {
+      analysis: {
+        game,
+        moveHistory: [...moveHistory.slice(0, ply), move.san],
+        positionHistory: [...positionHistory.slice(0, ply + 1), game.fen()],
+        viewMoveIndex: -1,
+      },
+      captured: Boolean(move.captured),
+      check: game.isCheck(),
+    };
+  } catch {
+    return null; // Invalid FEN or illegal move: retain the current analysis state.
+  }
+}
+
+
 export function analysisFromFen(fen: string): AnalysisLoad { return analysisFromMoves([], fen); }
 
 export function analysisFromPgn(pgn: string, initialFen = DEFAULT_POSITION): AnalysisLoad {

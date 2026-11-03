@@ -279,16 +279,36 @@ try {
   await cdp('Page.navigate', { url:base + '/game?desktop-qa=preserved' });
   console.log('CHECK desktop: navigation committed; wait for three engine lines');
   await waitFor("document.querySelectorAll('.analysis-engine-line').length === 3");
-  await evaluate("document.querySelector('[aria-label=\"Линий анализа: 5\"]').click()");
-  console.log('CHECK desktop: wait for five real Stockfish variations');
-  // Fixed slots appear immediately, before the worker can receive the new
-  // MultiPV command. Wait for the actual command and five non-placeholder
-  // scores; asserting the slot count alone would produce a false pass.
-  await waitFor("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 5')");
-  await waitFor("document.querySelectorAll('.analysis-engine-line').length === 5 && [...document.querySelectorAll('.analysis-engine-score')].every(score => score.textContent.trim() !== '—')");
-  assert.ok(await evaluate("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 5')"), 'Desktop retains five-line engine support');
+  console.log('CHECK desktop: fixed three variations and no MultiPV selector');
+  await waitFor("window.__engineCommands.some(command=>command === 'setoption name MultiPV value 3')");
+  await waitFor("document.querySelectorAll('.analysis-engine-line').length === 3 && [...document.querySelectorAll('.analysis-engine-score')].every(score => score.textContent.trim() !== '—')");
+  assert.equal(await evaluate("document.querySelectorAll('[aria-label^=\\\"Линий анализа:\\\" ]').length"),0,'Desktop has no line-count selector');
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#mobile-analysis-details')).display"), 'none', 'Mobile panel stays hidden on desktop');
-  console.log('PASS desktop retains three/five-line controls');
+  console.log('PASS desktop fixed three-line Stockfish analysis');
+  // The final owner polish must keep three PVs while making their typography readable
+  // and restoring visible score insets on a wide desktop monitor.
+  await cdp('Page.navigate', {url:'about:blank'});
+  await waitFor("location.href === 'about:blank'");
+  await cdp('Emulation.setDeviceMetricsOverride', {mobile:false,width:1920,height:880,deviceScaleFactor:1});
+  await cdp('Page.navigate', {url:base + '/game?desktop-qa=owner-final'});
+  await waitFor("document.querySelectorAll('.desktop-analysis-screen .analysis-engine-line').length === 3");
+  const ownerGeometry = await evaluate(`(() => {
+    const lines=[...document.querySelectorAll('.desktop-analysis-screen .analysis-engine-line')];
+    const text=lines[0].querySelector('.analysis-engine-moves');
+    const badge=lines[0].querySelector('.analysis-engine-score');
+    const row=lines[0].getBoundingClientRect();
+    const br=badge.getBoundingClientRect();
+    return {lineHeights:lines.map(el=>el.getBoundingClientRect().height),
+      fontSize:parseFloat(getComputedStyle(text).fontSize),topInset:br.top-row.top,
+      bottomInset:row.bottom-br.bottom,title:document.querySelector('.desktop-analysis-panel-title')?.textContent?.trim(),
+      width:document.querySelector('.desktop-analysis-panel')?.getBoundingClientRect().width};
+  })()`);
+  assert.deepEqual(ownerGeometry.lineHeights.map(Math.round),[46,46,46],JSON.stringify(ownerGeometry));
+  assert.ok(ownerGeometry.fontSize>=14 && ownerGeometry.fontSize<=14.5,JSON.stringify(ownerGeometry));
+  assert.ok(ownerGeometry.topInset>=4 && ownerGeometry.bottomInset>=4,JSON.stringify(ownerGeometry));
+  assert.equal(ownerGeometry.title,'Анализ');
+  console.log('PASS owner final desktop 1920x880 geometry '+JSON.stringify(ownerGeometry));
+
   // Lobby layout is independent of game/analysis layout and needs no account.
   await cdp('Page.navigate', { url:'about:blank' });
   await waitFor("location.href === 'about:blank'");

@@ -3,6 +3,9 @@ import { useOptionalLanguage } from '../context/LanguageContext';
 
 // Only fixed UI labels are localized; player names, club names, chat text, PGN and FIDE data are never translated.
 const regionalCopy: Record<string, Record<string, string>> = {
+  'Brett vergrößern': {de:'Brett vergrößern',en:'Expand board',az:'Lövhəni böyüt',tr:'Tahtayı büyüt',ua:'Розгорнути дошку',ru:'Развернуть доску'},
+  'Normale Brettgröße': {de:'Normale Brettgröße',en:'Restore board size',az:'Lövhəni əvvəlki ölçüyə qaytar',tr:'Tahtayı normal boyuta döndür',ua:'Повернути розмір дошки',ru:'Вернуть обычный размер'},
+
   "FIDE, Stand:": {"de": "FIDE, Stand:", "en": "FIDE list date:", "az": "FIDE, tarix:", "tr": "FIDE tarihi:", "ua": "FIDE, станом на:", "ru": "FIDE, на дату:"},
   "Lichess-Benutzername": {"de": "Lichess-Benutzername", "en": "Lichess username", "az": "Lichess istifadəçi adı", "tr": "Lichess kullanıcı adı", "ua": "Ім’я користувача Lichess", "ru": "Имя пользователя Lichess"},
   "Noch nicht bestätigt": {"de": "Noch nicht bestätigt", "en": "Not confirmed yet", "az": "Hələ təsdiqlənməyib", "tr": "Henüz doğrulanmadı", "ua": "Ще не підтверджено", "ru": "Пока не подтверждено"},
@@ -32,6 +35,9 @@ const regionalCopy: Record<string, Record<string, string>> = {
   "Eingabe: Textzüge ab Grundstellung": {"de": "Eingabe: Textzüge ab Grundstellung", "en": "Input: typed moves from the starting position", "az": "Daxiletmə: başlanğıc mövqedən yazılmış gedişlər", "tr": "Giriş: başlangıç konumundan yazılan hamleler", "ua": "Введення: текстові ходи з початкової позиції", "ru": "Ввод: текстовые ходы из начальной позиции"},
   "Gib Züge ein oder spiele auf dem Brett weiter.": {"de": "Gib Züge ein oder spiele auf dem Brett weiter.", "en": "Enter moves or continue playing on the board.", "az": "Gedişləri yazın və ya taxtada davam edin.", "tr": "Hamleleri yazın veya tahtada oynamaya devam edin.", "ua": "Введіть ходи або продовжуйте грати на дошці.", "ru": "Введите ходы или продолжайте играть на доске."},
   "Spielerbereiche": {"de": "Spielerbereiche", "en": "Player sections", "az": "Oyunçu bölmələri", "tr": "Oyuncu bölümleri", "ua": "Розділи гравців", "ru": "Разделы игроков"},
+  "Partiensuche": {"de":"Partiensuche","en":"Game search","az":"Partiya axtarışı","tr":"Parti arama","ua":"Пошук партій","ru":"Поиск партий"},
+  "Partien nach Stellung suchen": {"de":"Partien nach Stellung suchen","en":"Find games by position","az":"Mövqeyə görə partiya axtarışı","tr":"Konuma göre parti ara","ua":"Пошук партій за позицією","ru":"Поиск партий по позиции"},
+  "Suchfilter": {"de":"Suchfilter","en":"Search filters","az":"Axtarış filtrləri","tr":"Arama filtreleri","ua":"Фільтри пошуку","ru":"Фильтры поиска"},
   "Stellungssuche": {"de": "Stellungssuche", "en": "Position search", "az": "Mövqe axtarışı", "tr": "Konum arama", "ua": "Пошук позиції", "ru": "Поиск позиции"},
   "Gegnervorbereitung": {"de": "Gegnervorbereitung", "en": "Opponent preparation", "az": "Rəqibə hazırlıq", "tr": "Rakibe hazırlık", "ua": "Підготовка до суперника", "ru": "Подготовка к сопернику"},
   "Suchbereich": {"de": "Suchbereich", "en": "Search scope", "az": "Axtarış sahəsi", "tr": "Arama kapsamı", "ua": "Область пошуку", "ru": "Область поиска"},

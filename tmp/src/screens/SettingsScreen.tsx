@@ -363,9 +363,9 @@ export default function SettingsScreen() {
 
   return (
     <div data-premium-theme={premiumBackground?.id} style={premiumBackground ? { background: premiumBackground.gradient } : undefined} className="settings-fixed-workspace min-h-0 h-full w-full bg-transparent flex flex-col items-center relative overflow-hidden pt-0 px-2 pb-2 md:px-5 md:pb-2 md:pt-1">
-      {/* Background Decor */}
-      <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
+      {/* Desktop theme canvas stays neutral; decorative mobile overlays are preserved. */}
+      <div className="settings-mobile-decor absolute top-0 right-1/4 w-[600px] h-[600px] bg-chess-gold/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="settings-mobile-decor absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-chess-active/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="settings-fixed-inner w-full max-w-[85rem] z-10 flex flex-col min-h-0 h-full justify-start">
         <SettingsCommandCenter language={language} />

@@ -22,3 +22,10 @@ test('king dimensions and position remain unchanged with lightweight decorative 
   assert.match(css, /animation: sidebarKingSoftSheen 9s ease-in-out infinite;/);
   assert.match(css, /prefers-reduced-motion: reduce[\s\S]*?\.sidebar-king-sheen \{ animation: none;/);
 });
+
+test('flag globe capsule shrinks uniformly without changing king or child dimensions',()=>{
+  assert.match(layout,/xl:origin-center xl:scale-\[0\.96\]/);
+  assert.match(layout,/<SidebarGermanyFlag \/>[\s\S]*?<NightEarthGlobe \/>[\s\S]*?<SidebarAzerbaijanFlag \/>/);
+  assert.match(layout,/className="w-\[46px\] h-\[31px\]/);
+  assert.match(layout,/className="relative flex h-\[54px\] w-\[54px\]/);
+});

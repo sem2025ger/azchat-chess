@@ -76,7 +76,7 @@ export default function Layout() {
     )} data-analysis-route={isDesktopAnalysisRoute || undefined} data-reading-route={isReadingRoute || undefined} data-home-route={isHomeRoute || undefined}>
 
       {/* Premium Sidebar Navigation - Hidden on Mobile */}
-      <aside className="hidden md:flex w-20 xl:w-72 bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
+      <aside className="hidden md:flex w-20 xl:w-[260px] bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
 
           <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
@@ -94,7 +94,7 @@ export default function Layout() {
                 role="img"
                 aria-label="Germany • Azerbaijan"
                 title="Germany • Azerbaijan"
-                className="mt-6 hidden xl:flex items-center justify-center gap-[9px] w-fit xl:ml-[4px] min-h-[58px] xl:-translate-x-[2px] px-[10px] py-[7px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
+                className="mt-6 hidden xl:flex items-center justify-center gap-[9px] w-fit xl:ml-[4px] min-h-[58px] xl:-translate-x-[2px] xl:origin-center xl:scale-[0.96] px-[10px] py-[7px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
               >
                 <SidebarGermanyFlag />
                 <NightEarthGlobe />
@@ -107,7 +107,7 @@ export default function Layout() {
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
-            {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW" themeColor="theme-gold" bronzeLabel />}
+            {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" themeColor="theme-gold" bronzeLabel />}
             {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
             {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label={t("nav.spieler")} themeColor="theme-blue" />}

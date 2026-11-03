@@ -1,0 +1,81 @@
+.chessaz-ai-coach{margin-bottom:1.25rem;min-width:0}
+.chessaz-ai-coach header{margin-bottom:1rem}
+.chessaz-ai-coach header h2{margin:0 0 .4rem}
+.chessaz-ai-coach header p{margin:0}
+.chessaz-ai-coach-input,.chessaz-ai-coach-color{display:grid;gap:6px;margin:12px 0}
+.chessaz-ai-coach input,.chessaz-ai-coach select{min-width:0;max-width:100%}
+.chessaz-ai-coach-results{display:grid;gap:.8rem;margin-top:1rem;min-width:0}
+.chessaz-ai-coach-results p{margin:0}
+.chessaz-ai-coach-note{font-size:.86rem;opacity:.8}
+.chessaz-ai-coach-group{min-width:0;border:1px solid rgba(150,150,150,.25);border-radius:.65rem}
+.chessaz-ai-coach-group>summary{display:flex;align-items:center;justify-content:space-between;gap:.8rem;cursor:pointer;padding:.8rem 1rem}
+.chessaz-ai-coach-group>summary span{font-size:.85rem;opacity:.8}
+.chessaz-ai-coach-group-body{padding:0 1rem 1rem;display:grid;gap:.8rem}
+.chessaz-ai-coach-group-body ol{margin:0;padding-left:1.45rem;display:grid;gap:1rem}
+.chessaz-ai-coach-group-body li{overflow-wrap:anywhere}
+.chessaz-ai-coach-group-body li p{line-height:1.5;margin:.4rem 0}
+@media(max-width:560px){.chessaz-ai-coach-group>summary{align-items:flex-start;flex-direction:column;gap:.2rem}.chessaz-ai-coach-group-body{padding:0 .8rem .8rem}}
+
+
+/* Spieler-only metallic wordmark. Keep the original section-card surface unchanged. */
+#root .spieler-page .chessaz-ai-coach>header{
+ display:flex;align-items:center;justify-content:flex-end;text-align:right;margin-bottom:14px;
+}
+#root .spieler-page .chessaz-ai-coach h2.ai-coach-wordmark{
+ display:block;width:max-content;max-width:100%;margin:0 0 0 auto;
+ font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ font-size:clamp(1.42rem,1.8vw,1.76rem);font-weight:900;line-height:1.12;letter-spacing:-.05em;
+ color:#a6afb9;
+ background:linear-gradient(108deg,#7c8a99 0%,#b8c0c8 12%,#455363 28%,#c8ccd0 40%,#8a95a3 52%,#c1a478 66%,#e3d6bb 72%,#536273 83%,#a6afb9 100%);
+ background-size:240% 100%;-webkit-background-clip:text;background-clip:text;
+ -webkit-text-fill-color:transparent;
+ filter:drop-shadow(0 1px 1px rgba(0,0,0,.65));
+ animation:chessazCoachDarkMetal 11s ease-in-out infinite alternate;
+}
+@keyframes chessazCoachDarkMetal{
+ from{background-position:0% 50%}
+ to{background-position:100% 50%}
+}
+@media(prefers-reduced-motion:reduce){
+ #root .spieler-page .chessaz-ai-coach h2.ai-coach-wordmark{
+  animation:none;background-position:50% 50%;
+ }
+}
+
+/* Keep Coach's primary action legible even before sign-in, without enabling it. */
+#root .spieler-page .chessaz-ai-coach>button{
+ color:#f0e3cc;font-weight:700;
+}
+#root .spieler-page .chessaz-ai-coach>button:disabled{
+ opacity:.88;cursor:not-allowed;
+}
+
+/* Results grow in normal document flow; only the conversation owns an inner scroller. */
+.chessaz-ai-coach-results-panel{margin-top:12px;min-width:0;border-top:1px solid #655441}
+.chessaz-ai-coach-results-panel>summary{cursor:pointer;font-size:.85rem;font-weight:650;line-height:1.5;padding:10px 2px;color:#ddc6a3}
+.chessaz-ai-coach-results-panel .chessaz-ai-coach-results{margin-top:8px;padding-top:4px}
+.chessaz-ai-coach-results-panel :is(details,ol,li){min-width:0;max-width:100%}
+.chessaz-ai-coach-group>summary{flex-wrap:wrap}
+
+/* Keep extensive model games in their own scroller instead of pushing Coach off-screen. */
+.spieler-page .chessaz-ai-coach-results-panel[open]>.chessaz-ai-coach-results{max-height:min(34dvh,310px);overflow:auto;overscroll-behavior:contain;padding-right:5px;scrollbar-gutter:stable}
+.spieler-page .chessaz-ai-coach-close-results{display:block;width:100%;min-height:36px;margin-top:8px;background:#201f1e;border:1px solid #756449;border-radius:8px;color:#e5d0aa}
+
+/* Preserve the metallic title and align the desktop ask action alongside it. */
+@media(min-width:1024px){
+ #root .spieler-page .spieler-position-workspace .chessaz-ai-coach>header{
+  justify-content:space-between;text-align:left;flex-wrap:wrap;gap:10px;
+ }
+ #root .spieler-page .spieler-position-workspace .chessaz-ai-coach h2.ai-coach-wordmark{
+  margin:0 auto 0 0;
+ }
+}
+.chessaz-ai-coach-results-panel>summary{
+ display:list-item;min-height:42px;padding:10px 7px;
+ font-weight:700;cursor:pointer;
+}
+.chessaz-ai-coach-results-panel>summary::marker,
+.chessaz-ai-coach-group>summary::marker{
+ font-size:1.2rem;color:#c6a77d;
+}
+.chessaz-ai-coach-game-moves{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}

@@ -27,3 +27,11 @@
 - **Statement**: The published release binaries are downloaded at build time, verified byte-for-byte using the official release SHA-256 digests and served unmodified from ChessAZ. Stockfish 18 assets are retained for rollback.
 - **SHA-256 JS**: ccb130d7ff29408531c47d859a49f91d59d4f482d05a53eb1a3231a4f624c91a
 - **SHA-256 WASM**: ee4f115bdb2d32cadf96cada104a05b5ec257d7ad6f57582190b49bc71f096de
+
+## Component: Stockfish.js 19 Lite Single (server-side AI Coach engine, QA flag)
+- **Package**: npm `stockfish@19.0.1` (exact pin in `server/package.json` and `server/package-lock.json`)
+- **Files used**: `bin/stockfish-19-lite-single.js` and `bin/stockfish-19-lite-single.wasm`, executed unmodified in a separate Node.js process by `server/coachEngine.js`
+- **License**: GNU GPL v3 (package `Copying.txt`; same text as `tmp/public/stockfish-license.txt`)
+- **Source**: https://github.com/nmrugg/stockfish.js/tree/v19.0.1 and https://github.com/official-stockfish/Stockfish/releases/tag/sf_19
+- **SHA-256 JS**: ccb130d7ff29408531c47d859a49f91d59d4f482d05a53eb1a3231a4f624c91a (verified at engine start)
+- **SHA-256 WASM**: ee4f115bdb2d32cadf96cada104a05b5ec257d7ad6f57582190b49bc71f096de (verified at engine start)

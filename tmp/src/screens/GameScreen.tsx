@@ -12,21 +12,26 @@ import AnalysisPanel from '../components/AnalysisPanel';
 import AnalysisWorkspaceHeader from '../components/analysis/AnalysisWorkspaceHeader';
 import { MobileAnalysisHeader, MobileAnalysisDetails } from '../components/analysis/MobileAnalysis';
 import { mobileAnalysisCopy } from '../components/analysis/mobileAnalysisCopy';
-import { StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
+import { type StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
+import { acquireAnalysisEngine, releaseAnalysisEngine } from '../utils/analysisEngineSession';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
-import PositionMap from '../components/analysis/PositionMap';
+
+
+import { createPositionMapSnapshot, selectPositionMapVariation, type PositionMapSnapshot } from '../utils/positionMapNavigation';
 import { positionMapLabel } from '../components/analysis/positionMapLabels';
 import { reviewLayout } from '../utils/reviewLayout';
-import type { PositionEvaluation } from '../utils/positionMap';
+import { annotatedPgn, type PositionEvaluation } from '../utils/positionMap';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
 import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
-import { analysisMovePairs, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
+import { analysisMovePairs, playAnalysisMoveAtView, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
 import { analysisCopy } from '../components/analysis/copy';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
 import { displayPlayerName } from '../utils/displayPlayerName';
 import { fetchPlayerNames, readPlayerIds, type PlayerIds } from '../services/playerNames';
+const PositionMap = lazy(() => import('../components/analysis/PositionMap'));
+const PositionMapVariations = lazy(() => import('../components/analysis/PositionMapVariations'));
 const SavedGamesPanel = lazy(() => import('../components/analysis/SavedGamesPanel'));
 const PositionTools = lazy(() => import('../components/analysis/PositionTools'));
 const EditorBoard = lazy(() => import('../components/analysis/EditorBoard'));
@@ -59,6 +64,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const { t, language } = useLanguage();
   const words = analysisCopy[language];
   const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position'>('analysis');
+  const [mapSnapshot, setMapSnapshot] = useState<PositionMapSnapshot | null>(null);
   // The mobile analysis tools open only on demand; preserve the full-size board.
   const [mobileTool, setMobileTool] = useState<'map' | 'games' | 'position' | null>(null);
   const mobileToolDialogRef = useRef<HTMLDialogElement>(null);
@@ -71,7 +77,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = previousOverflow; };
   }, [mobileTool]);
-  const [pvLines, setPvLines] = useState(3);
   const [mobileOrientation, setMobileOrientation] = useState<'w' | 'b'>('w');
   const [planHighlight, setPlanHighlight] = useState<{ fen: string; squares: Square[] } | null>(null);
   const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
@@ -131,7 +136,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       ? window.matchMedia('(min-width: 768px)').matches
       : false
   );
-  const effectivePvLines = mode === 'review' && !isDesktop ? 2 : pvLines;
+  const effectivePvLines = mode === 'review' && !isDesktop ? 2 : 3;
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
@@ -504,6 +509,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     engineRef.current?.stop();
     setEvaluations({});
     setPlanHighlight(null);
+    setMapSnapshot(null);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('fen');
     navigate({ search: nextParams.toString() }, { replace: true });
@@ -526,6 +532,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     engineRef.current?.stop();
     setEvaluations({});
     setPlanHighlight(null);
+    setMapSnapshot(null);
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('fen');
     navigate({ search: nextParams.toString() }, { replace: true });
@@ -567,7 +574,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     }
 
     if (!engineRef.current) {
-      engineRef.current = new StockfishEngine();
+      engineRef.current = acquireAnalysisEngine();
       engineRef.current.onResult((res) => {
         setEngineResult(res);
         if (mode === 'review' && res.analyzedFen && res.depth >= 5) {
@@ -586,7 +593,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       });
     }
     return () => {
-      engineRef.current?.destroy();
+      if (engineRef.current) releaseAnalysisEngine(engineRef.current);
       engineRef.current = null;
     };
   }, [isLiveMultiplayer, mode]);
@@ -631,7 +638,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const handleGameMove = useCallback(
     (source: string, target: string, promotion: string = 'q') => {
       if (isMultiplayer && !canSendGameAction) return false;
-      if (viewMoveIndex !== -1) {
+      // Replay of a live game is read-only. Analysis may branch at any past ply.
+      if (mode !== 'review' && viewMoveIndex !== -1) {
         setViewMoveIndex(-1);
         return false;
       }
@@ -639,6 +647,25 @@ export default function GameScreen({ mode }: GameScreenProps) {
         return false;
       }
       try {
+        if (mode === 'review') {
+          const branch = playAnalysisMoveAtView(
+            moveHistory, positionHistory, viewMoveIndex, source, target, promotion,
+          );
+          if (!branch) return false;
+          const { analysis, check, captured } = branch;
+          void playChessSound(check ? 'check' : captured ? 'capture' : 'move', sound);
+          setMapSnapshot(null);
+          setGame(analysis.game);
+          setPositionHistory(analysis.positionHistory);
+          setMoveHistory(analysis.moveHistory);
+          setViewMoveIndex(-1);
+          setGameOverMessage(analysis.game.isGameOver()
+            ? analysis.game.isCheckmate() ? 'Game over: checkmate.'
+              : analysis.game.isStalemate() ? 'Game over: stalemate.'
+              : 'Game over: draw.'
+            : null);
+          return true;
+        }
         const g = new Chess(game.fen());
         const move = g.move({ from: source, to: target, promotion });
         if (move) {
@@ -672,7 +699,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
+    [viewMoveIndex, moveHistory, positionHistory, game, socket, roomId, sound, mode, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
   );
 
 
@@ -736,6 +763,28 @@ export default function GameScreen({ mode }: GameScreenProps) {
   }, [game, viewMoveIndex, positionHistory]);
 
   const currentEngineResult = mode === 'review' && engineResult?.analyzedFen !== displayedGame.fen() ? null : engineResult;
+  const openPositionMap = () => {
+    setEditingPosition(false);
+    setPlanHighlight(null);
+    if (mode === 'review' && !mapSnapshot?.frozen) {
+      const fen = displayedGame.fen();
+      setMapSnapshot({
+        ...createPositionMapSnapshot(fen, moveHistory, viewMoveIndex),
+        result: currentEngineResult,
+      });
+    }
+    setWorkspaceTab('map');
+  };
+
+  // Preserve the result once it has been selected; live engine updates must not
+  // overwrite the three original candidate lines during a comparison.
+  useEffect(() => {
+    if (!mapSnapshot || mapSnapshot.frozen || !currentEngineResult ||
+        currentEngineResult.analyzedFen !== mapSnapshot.fen) return;
+    setMapSnapshot(previous => previous && !previous.frozen && previous.fen === currentEngineResult.analyzedFen
+      ? { ...previous, result: currentEngineResult } : previous);
+  }, [currentEngineResult, mapSnapshot?.fen, mapSnapshot?.frozen]);
+
   const hasHistory = positionHistory.length > 1;
   const mobileReviewControlClass = 'min-h-11 flex items-center justify-center rounded-xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] text-neutral-200 shadow-sm transition-[color,background-color,transform] duration-150 hover:bg-cyan-500/10 hover:text-cyan-100 active:scale-95 disabled:opacity-30 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60';
 
@@ -841,7 +890,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   // Keep a SINGLE set of real handlers: the toolbar stays in the analysis panel.
   // In review, navigation must not add height below
   // the main board; in live mode it stays in its existing right-side location.
-  const desktopAnalysisTransport = (
+  const desktopTransportControls = (
               <div className={cx("h-14 bg-black/50 border-t border-white/[0.03] flex items-center justify-center gap-8 px-6 shrink-0 shadow-[0_-15px_30px_rgba(0,0,0,0.5)]", mode === 'review' && "desktop-analysis-transport")}>
                 <button type="button" aria-label="К началу партии" title="К началу партии" disabled={!hasHistory} onClick={() => { if (hasHistory) setViewMoveIndex(0); }} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><Rewind size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
                 <button type="button" aria-label="Предыдущий ход" title="Предыдущий ход" disabled={!hasHistory} onClick={() => {
@@ -861,7 +910,19 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 <button type="button" aria-label="К концу партии" title="К концу партии" disabled={!hasHistory} onClick={() => setViewMoveIndex(-1)} className="text-neutral-500 hover:text-white p-2 bg-gradient-to-br from-teal-500/10 via-neutral-800/60 to-violet-500/10 hover:from-teal-500/30 hover:via-blue-500/25 hover:to-violet-500/30 rounded-2xl transition-all duration-500 shadow-xl hover:shadow-[0_0_25px_rgba(0,206,209,0.45)] active:scale-95 group disabled:opacity-30 disabled:pointer-events-none border border-white/5 hover:border-cyan-400/50 ring-1 ring-teal-500/20 hover:ring-cyan-400/40"><FastForward size={22} className="group-hover:scale-110 transition-transform group-hover:drop-shadow-[0_0_8px_rgba(0,206,209,0.8)]" /></button>
               </div>
   );
-  const analysisWorkspaceHeader = (mobile = false) => mode === 'review' ? (
+  const desktopAnalysisTransport = mode === 'review' ? (
+    <div className="desktop-analysis-transport-stack">
+      {desktopTransportControls}
+      <div className="desktop-analysis-bottom-actions">
+        <button type="button" onClick={startNewAnalysis} className="desktop-analysis-new-button inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 text-xs font-semibold text-neutral-300">
+          <RotateCcw size={17} aria-hidden="true" />{t('game.analysis.new')}
+        </button>
+        <DesktopAnalysisSave initialFen={positionHistory[0] || DEFAULT_POSITION} moveHistory={moveHistory} evaluations={evaluations} />
+        {analysisWorkspaceHeader()}
+      </div>
+    </div>
+  ) : desktopTransportControls;
+  function analysisWorkspaceHeader(mobile = false) { return mode === 'review' ? (
     <AnalysisWorkspaceHeader
           mobile={mobile}
           onMobileTool={mobile ? openMobileTool : undefined}
@@ -883,7 +944,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             setWorkspaceTab('position');
           }}
         />
-  ) : null;
+  ) : null; }
   const openMobileTool = (tool: 'map' | 'games' | 'position') => {
     if (tool === 'position') {
       resetPositionDraft(displayedGame.fen());
@@ -1217,7 +1278,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 game={displayedGame}
                 onMove={handleGameMove}
                 orientation={mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
-                readOnly={viewMoveIndex !== -1 || !!gameOverMessage || (isMultiplayer && playerColor !== game.turn())}
+                readOnly={(mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn())}
               />}
             </div>
           </div>
@@ -1327,7 +1388,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Professional Sidebar Sidebar Tabs */}
       <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' ? "desktop-analysis-panel" : "animate-fade-in-right transition-all")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
-        {mode === 'review' && <div className="hidden lg:block shrink-0">{analysisWorkspaceHeader()}</div>}
+        {mode === 'review' && <h2 className="desktop-analysis-panel-title hidden lg:flex" aria-label={words.analysis}>{words.analysis}</h2>}
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">
@@ -1361,7 +1422,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 <button key={tab} type="button" aria-pressed={workspaceTab === tab} onClick={() => {
                   setEditingPosition(false);
                   setPlanHighlight(null);
-                  setWorkspaceTab(tab);
+                  if (tab === 'map') openPositionMap();
+                  else setWorkspaceTab(tab);
                 }} className={cx("min-h-9 min-w-0 flex-1 rounded-xl px-2 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200", workspaceTab === tab ? "border border-amber-200/20 bg-gradient-to-br from-amber-200/10 via-[#1c1c18] to-teal-900/15 text-amber-100" : "border border-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-200")}>
                   {tab === 'map' ? positionMapLabel[language] : words[tab]}
                 </button>
@@ -1369,7 +1431,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </nav>
             <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
             {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
-            {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionMap key={displayedGame.fen()} fen={displayedGame.fen()} result={engineResult} language={language} failed={engineFailed} onHighlight={setPlanHighlight} /></div>}
+            {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col">
+              {mapSnapshot?.frozen && <button type="button" className="mx-4 mt-3 rounded-lg border border-amber-200/20 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-white/5" onClick={() => {
+                setMapSnapshot({ ...createPositionMapSnapshot(displayedGame.fen(), moveHistory, viewMoveIndex), result: currentEngineResult });
+              }}>{({ru:'Новые варианты текущей позиции',en:'New lines for current position',de:'Neue Varianten der aktuellen Stellung',az:'Cari mövqe üçün yeni variantlar',tr:'Geçerli konum için yeni varyantlar',ua:'Нові варіанти поточної позиції'} as const)[language]}</button>}
+              <PositionMapVariations key={mapSnapshot?.fen || displayedGame.fen()} fen={mapSnapshot?.fen || displayedGame.fen()} result={mapSnapshot?.result || null} language={language} failed={engineFailed}
+                onSelectLine={(moves) => { if (!mapSnapshot) return; try {
+                  const { analysis, snapshot } = selectPositionMapVariation(mapSnapshot, mapSnapshot.result, moves, positionHistory[0]);
+                  loadWorkspaceAnalysis(analysis);
+                  setMapSnapshot(snapshot);
+                } catch { /* Reject stale or illegal engine lines. */ } }} /></div>}
             {workspaceTab === 'position' && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><PositionTools currentFen={displayedGame.fen()} words={words} onLoad={loadWorkspaceAnalysis} onCancel={() => { setEditingPosition(false); setWorkspaceTab(tabBeforeEditor.current); }}
               draft={positionDraftValue} selected={editorSelectedPiece} onSelected={setEditorSelectedPiece}
               onDraft={updatePositionDraft} onClear={clearPositionDraft} onUndo={undoPositionDraft}
@@ -1380,16 +1451,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
         <div className={cx("hidden md:flex flex-1 min-h-0 flex-col overflow-hidden bg-black/[0.05]", !isMultiplayer && "xl:bg-white/[0.015]", mode === 'review' && workspaceTab !== 'analysis' && "lg:hidden")}>
           {mode === 'review' && loadedGameTitle && <p role="status" className="hidden lg:block truncate px-4 pt-2 text-[11px] text-amber-100/60" title={loadedGameTitle}>{loadedGameTitle}</p>}
 
-          {mode === 'review' && (
-            // Never add/remove controls as a historic move is selected: reflow used
-            // to shift the Stockfish panel when stepping onto/off the last move.
-            <div className="desktop-analysis-review-controls flex h-10 shrink-0 flex-nowrap items-center justify-end gap-1.5 px-3">
-              <button type="button" onClick={startNewAnalysis} className="desktop-analysis-new-button flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 px-2 text-xs font-bold text-neutral-300 transition-colors duration-150 hover:bg-white/10 hover:text-white">
-                <RotateCcw size={14} aria-hidden="true" />
-                {t('game.analysis.new')}
-              </button>
-            </div>
-          )}
 
           <div className={cx("shrink-0 flex flex-col border-b border-white/[0.06]", mode === "review" && "desktop-analysis-stockfish")}>
             {!isLiveMultiplayer && (
@@ -1404,8 +1465,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 reviewLayout={mode === 'review'}
                 requestedDepth={mode === 'review' ? analysisDepth : undefined}
                 onIncreaseDepth={mode === 'review' ? () => setAnalysisDepth(depth => Math.min(36, depth + 6)) : undefined}
-                pvLines={mode === 'review' ? pvLines : undefined}
-                onPvLinesChange={mode === 'review' ? setPvLines : undefined}
                 error={engineFailed}
               />
             )}
@@ -1438,8 +1497,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
                             }}
                           >
                             <div className="flex justify-between items-center group-hover/row:text-chess-gold transition-colors">
-                              <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w || '…'}</span>
-                              <span className="text-[0.65rem] text-neutral-700 font-mono italic opacity-40 group-hover:opacity-80">{move.wTime}</span>
+                              <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.w}</span>
+                              
                             </div>
                           </td>
                           <td 
@@ -1452,7 +1511,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                           >
                             <div className="flex justify-between items-center group-hover/row:text-chess-active transition-colors">
                               <span className="text-neutral-300 group-hover/row:scale-105 transition-transform origin-left">{move.b}</span>
-                              <span className="text-[0.65rem] text-neutral-700 font-mono italic opacity-40 group-hover:opacity-80">{move.bTime}</span>
+                              
                             </div>
                           </td>
                         </tr>
@@ -1603,3 +1662,71 @@ export default function GameScreen({ mode }: GameScreenProps) {
   );
 }
 
+
+
+/** Desktop-only PGN actions; mobile actions stay in AnalysisWorkspaceHeader. */
+function DesktopAnalysisSave({ initialFen, moveHistory, evaluations }: {
+  initialFen: string;
+  moveHistory: string[];
+  evaluations: Record<string, PositionEvaluation>;
+}) {
+  const { language } = useLanguage();
+  const words = analysisCopy[language];
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [feedback, setFeedback] = useState<'copied' | 'failed' | null>(null);
+  useEffect(() => () => { if (feedbackTimer.current) clearTimeout(feedbackTimer.current); }, []);
+
+  const report = (state: 'copied' | 'failed') => {
+    setFeedback(state);
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+    feedbackTimer.current = setTimeout(() => setFeedback(null), 1800);
+  };
+  const buildPgn = () => {
+    // Reuse the existing legal-move PGN exporter; its principal line is the game history.
+    if (moveHistory.length) return annotatedPgn(initialFen, moveHistory, evaluations);
+    const game = new Chess(initialFen);
+    game.header('Event', 'ChessAZ Analysis');
+    game.header('Result', '*');
+    return game.pgn();
+  };
+  const copyPgn = async () => {
+    menuRef.current?.removeAttribute('open');
+    try {
+      const pgn = buildPgn();
+      if (!pgn.trim()) throw new Error('empty PGN');
+      await navigator.clipboard.writeText(pgn);
+      report('copied');
+    } catch { report('failed'); }
+  };
+  const downloadPgn = () => {
+    menuRef.current?.removeAttribute('open');
+    try {
+      const pgn = buildPgn();
+      if (!pgn.trim()) throw new Error('empty PGN');
+      const date = new Date();
+      const day = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+      const blobUrl = URL.createObjectURL(new Blob([pgn], { type: 'application/x-chess-pgn;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `chessaz-analysis-${day}.pgn`;
+      document.body.appendChild(link);
+      try { link.click(); } finally { link.remove(); setTimeout(() => URL.revokeObjectURL(blobUrl), 0); }
+      setFeedback(null);
+    } catch { report('failed'); }
+  };
+  return (
+    <div className="desktop-analysis-save-wrapper">
+      <details ref={menuRef} className="desktop-analysis-save-menu-root"
+        onKeyDown={event => { if (event.key === 'Escape') { menuRef.current?.removeAttribute('open'); menuRef.current?.querySelector('summary')?.focus(); } }}
+        onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) menuRef.current?.removeAttribute('open'); }}>
+        <summary aria-label={words.save} className="desktop-analysis-save-button">{words.save}</summary>
+        <div className="desktop-analysis-save-menu">
+          <button type="button" onClick={() => void copyPgn()}>{words.copyPgn}</button>
+          <button type="button" onClick={downloadPgn}>{words.downloadPgn}</button>
+        </div>
+      </details>
+      <span role="status" className="desktop-analysis-save-feedback">{feedback ? words[feedback === 'copied' ? 'copied' : 'exportFailed'] : ''}</span>
+    </div>
+  );
+}

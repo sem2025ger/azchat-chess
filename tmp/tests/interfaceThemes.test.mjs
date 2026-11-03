@@ -128,3 +128,61 @@ test('desktop sidebar and Chess Arena polish preserve the existing globe animati
   assert.match(home, /#D9D6CF 39%/);
   assert.match(home, /#947D5D 100%/);
 });
+
+
+test('desktop Settings polish preserves mobile decorative layers and existing interface palettes', () => {
+  const settings = readFileSync(new URL('../src/screens/SettingsScreen.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/screens/SettingsTypography.css', import.meta.url), 'utf8');
+  const profileCss = readFileSync(new URL('../src/components/profile/PlayerPassportDesktop.css', import.meta.url), 'utf8');
+  assert.match(css, /@media \(min-width: 1024px\)\s*\{\s*\.settings-fixed-workspace \.settings-command-center \{ display: none !important; \}/);
+  assert.match(settings, /<SettingsCommandCenter language=\{language\} \/>/, 'mobile command center remains in original DOM position');
+  assert.equal((settings.match(/className="settings-mobile-decor /g) || []).length, 2);
+  assert.match(css, /\.settings-fixed-workspace \.settings-mobile-decor \{ display: none; \}/);
+  assert.match(css, /max-height: clamp\(132px, 22dvh, 220px\)/);
+  assert.match(css, /scroll-behavior: smooth/);
+  assert.match(profileCss, /@media \(min-width: 1024px\)/);
+  assert.match(profileCss, /\.desktop-player-passport \.passport-rating \.tabular-nums \{ font-size: 2\.75rem; \}/);
+});
+
+
+test('Settings rows stretch with fixed gaps and vertically centered content', () => {
+  const site = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+  assert.match(site, /\.settings-fixed-workspace \.settings-options-column\s*\{[^}]*justify-content:flex-start/);
+  assert.match(site, /\.settings-fixed-workspace \.settings-options-column > div\s*\{[^}]*flex:1 1 0/);
+  assert.match(site, /\.settings-fixed-workspace \.settings-options-column > div:nth-child\(2\)\s*\{[^}]*display:grid/);
+  assert.match(site, /\.settings-desktop-grid \{ --settings-card-gap:12px; \}/);
+  assert.match(site, /\.settings-desktop-grid \{ --settings-card-gap:16px; \}/);
+});
+
+test('compact Passport applies only at desktop breakpoints and does not reduce text size below 11px', () => {
+  const css = readFileSync(new URL('../src/components/profile/PlayerPassportDesktop.css', import.meta.url), 'utf8');
+  assert.match(css, /@media \(min-width:1024px\) \{\s*\.desktop-player-passport \{ gap:8px/);
+  assert.match(css, /\.desktop-player-passport \.passport-identity \{ justify-content:flex-start; align-self:start; \}/);
+  assert.match(css, /\.desktop-player-passport \.passport-achievements \{ gap:9px; \}/);
+  assert.equal(/font-size:\s*(?:[0-9](?:\.[0-9]+)?)px/.test(css), false, 'do not introduce sub-11px font sizes');
+});
+
+test('Profile removes chess handwriting completely for all six languages on phone and desktop', () => {
+  const source = readFileSync(new URL('../src/components/profile/MobilePlayerPassport.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/components/profile/PlayerPassportDesktop.css', import.meta.url), 'utf8');
+  for (const lang of ['de', 'en', 'az', 'tr', 'ua', 'ru']) assert.match(source, new RegExp('  ' + lang + ': \\{'));
+  assert.doesNotMatch(source, /passport-signature|words\.signature|signatureSub|signatureInfo|ШАХМАТНЫЙ ПОЧЕРК|CHESS SIGNATURE/);
+  assert.doesNotMatch(css, /passport-signature/);
+  assert.match(css, /\.passport-next \{\s*grid-column: 1;\s*grid-row: 3;/);
+  assert.match(css, /\.passport-performance \{\s*grid-column: 2;\s*grid-row: 3;/);
+  assert.match(css, /\.passport-recent \{\s*grid-column: 2;\s*grid-row: 4;/);
+  assert.match(css, /\.passport-achievements \{\s*grid-column: 1;\s*grid-row: 4;/);
+});
+
+test('Settings desktop preview grows with the equal-height options column', () => {
+  const site = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+  const scope = site.slice(site.indexOf('/* Settings desktop: one stable viewport'));
+  assert.match(scope, /@media \(min-width:1024px\)/);
+  assert.match(scope, /\.settings-desktop-grid \{[^}]*height:calc\(100% - 48px\)/);
+  assert.match(scope, /\.settings-desktop-grid \{[^}]*margin-block:auto/);
+  assert.match(scope, /\.settings-options-column > div \{[^}]*flex:1 1 0/);
+  assert.match(scope, /\.settings-options-column section \{[^}]*height:100%/);
+  assert.match(scope, /\.settings-options-column > div:nth-child\(2\) \{[^}]*align-items:stretch/);
+  assert.match(scope, /\.settings-preview-column > div \{ position:absolute; inset:0;/);
+  assert.match(scope, /\.settings-desktop-grid \{[^}]*grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/);
+});

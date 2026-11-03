@@ -6,9 +6,9 @@ export class PositionSearchError extends Error {code:string;retryAfter:number;co
 export function positionSearchEnabled(value:unknown){return value==='true';}
 export function createPositionSearchApi(base:string,fetchImpl:typeof fetch=fetch){
  const root=new URL(base);if(root.protocol!=='https:'&&!(root.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(root.hostname)))throw new PositionSearchError('configuration');
- return {async search({fen,side,fideId,scope='all',sort='newest'}:{fen:string;side:PositionSide;fideId:string;scope?:'all'|'nrw';sort?:'newest'|'strongest'},token:string,signal:AbortSignal):Promise<PositionSearchResult>{
+ return {async search({fen,side,fideId,scope='all',sort='newest',limit=10}:{fen:string;side:PositionSide;fideId:string;scope?:'all'|'nrw';sort?:'newest'|'strongest';limit?:number},token:string,signal:AbortSignal):Promise<PositionSearchResult>{
   if(!token)throw new PositionSearchError('authentication_required');
-  const query=new URLSearchParams({fen,side,scope,sort,limit:'10'});if(fideId)query.set('fideId',fideId);
+  const query=new URLSearchParams({fen,side,scope,sort,limit:String(Math.max(1,Math.min(50,Math.trunc(limit))))});if(fideId)query.set('fideId',fideId);
   const response=await fetchImpl(new URL('/api/positions/search?'+query,root),{signal,cache:'no-store',headers:{Authorization:'Bearer '+token}}),data=await response.json();
   if(!response.ok)throw new PositionSearchError(typeof data.code==='string'?data.code:'index_unavailable',Number(response.headers.get('Retry-After'))||0);
   if(!Array.isArray(data.games)||data.games.length>50||!Array.isArray(data.nextMoves))throw new PositionSearchError('index_unavailable');

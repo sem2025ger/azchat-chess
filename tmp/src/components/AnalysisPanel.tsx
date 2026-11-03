@@ -2,6 +2,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Ghost, Cpu, AlertCircle, ScanSearch } from 'lucide-react';
+import { analysisCopy } from './analysis/copy';
 
 function cx(...inputs: (string | undefined | null | false)[]) {
   return twMerge(clsx(inputs));
@@ -26,17 +27,15 @@ interface AnalysisPanelProps {
   reviewLayout?: boolean;
   requestedDepth?: number;
   onIncreaseDepth?: () => void;
-  pvLines?: number;
-  onPvLinesChange?: (count: number) => void;
 }
 
-export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves, reviewLayout = false, requestedDepth, onIncreaseDepth, pvLines = 3, onPvLinesChange }: AnalysisPanelProps) {
-  const { t } = useLanguage();
-  const visiblePvLines = pvLines;
+export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves, reviewLayout = false, requestedDepth, onIncreaseDepth }: AnalysisPanelProps) {
+  const { t, language } = useLanguage();
+  const words = analysisCopy[language];
   // Reserve stable PV slots during each new search; never collapse the rows while
   // the worker is finding the next position. The slot index is its stable key.
   const displayedLines = reviewLayout
-    ? Array.from({ length: visiblePvLines }, (_, index) => lines?.[index] ?? null)
+    ? Array.from({ length: 3 }, (_, index) => lines?.[index] ?? null)
     : lines;
 
   if (noMoves) {
@@ -86,27 +85,17 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
       {/* Header */}
       <header className="analysis-engine-status flex items-center justify-between border-b border-white/[0.04] pb-3 shrink-0">
          <div className="flex items-center gap-2.5">
-            <Cpu size={16} className={cx("text-neutral-400", loading && "animate-pulse")} />
+            {reviewLayout ? (
+              <span role="img" aria-label={loading ? words.engineCalculating : words.engineReady} className={cx("analysis-engine-indicator", loading && "analysis-engine-indicator--working")}>
+                <span className="analysis-engine-indicator-core" aria-hidden="true" />
+              </span>
+            ) : <Cpu size={16} className={cx("text-neutral-400", loading && "animate-pulse")} />}
             <span className="analysis-stockfish-name text-[0.82rem] font-bold text-[#f3f1eb]">Stockfish 19</span>
             {depth > 0 && <span className="analysis-stockfish-depth rounded-full px-2.5 py-0.5 text-[0.75rem] font-semibold italic text-[#ddd9cf]">depth {depth}</span>}
-            {reviewLayout && requestedDepth && onIncreaseDepth && <button type="button" className="analysis-depth-action hidden lg:inline-flex items-center rounded-lg border border-[#8f7749]/40 px-2 py-1 text-[11px] font-bold text-[#f4dca5]" onClick={onIncreaseDepth} disabled={requestedDepth >= 36} title={`Увеличить целевую глубину с ${requestedDepth} до ${Math.min(36, requestedDepth + 6)}`}>Глубже</button>}
+            {reviewLayout && requestedDepth && onIncreaseDepth && <button type="button" className="analysis-depth-action hidden lg:inline-flex items-center rounded-lg border border-[#8f7749]/40 px-2 py-1 text-[11px] font-bold text-[#f4dca5]" onClick={onIncreaseDepth} disabled={requestedDepth >= 36} title={words.deeperHint.replace("{from}", String(requestedDepth)).replace("{to}", String(Math.min(36, requestedDepth + 6)))}>{words.deeper}</button>}
          </div>
-         <div className="flex items-center gap-1.5">
-            {reviewLayout && (
-              <div className="hidden lg:inline-flex items-center gap-0.5 rounded-lg border border-[#8f7749]/50 bg-[#101116] p-0.5" role="group" aria-label="Количество линий Stockfish">
-                {([1, 2, 3, 4, 5] as const).map(count => (
-                  <button key={count} type="button" aria-label={`Линий анализа: ${count}`} aria-pressed={visiblePvLines === count}
-                    onClick={() => onPvLinesChange?.(count)}
-                    className={cx(
-                      "min-h-7 min-w-7 rounded-md border px-1.5 text-xs font-bold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200",
-                      visiblePvLines === count
-                        ? "border-[#d0aa65]/60 bg-gradient-to-b from-[#41382b] via-[#28231d] to-[#111217] text-[#f8dfab] shadow-[inset_0_1px_0_rgba(255,228,158,0.35),0_0_8px_rgba(214,169,84,0.19)]"
-                        : "border-transparent bg-[#17171c] text-[#a8a196] hover:border-[#af945f]/45 hover:text-[#f2dfbd]"
-                    )}
-                  >{count}</button>
-                ))}
-              </div>
-            )}
+         {!reviewLayout && (
+           <div className="flex items-center gap-1.5">
             {loading ? (
               <>
                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-500/80 animate-pulse" />
@@ -118,7 +107,8 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
                  <span className="text-[0.6rem] font-bold text-neutral-500 uppercase tracking-wider">{t('game.analysis.ready')}</span>
               </>
             )}
-         </div>
+           </div>
+         )}
       </header>
 
       {/* Main evaluation row */}
@@ -126,7 +116,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
          {displayedLines && displayedLines.length > 0 ? (
            displayedLines.map((line, idx) => (
              <div key={idx} data-engine-slot={idx + 1} className="analysis-engine-line flex items-start gap-4">
-                <div className={cx(
+                <div data-score-side={!line ? "pending" : (line.mate != null ? line.mate >= 0 : line.evaluation >= 0) ? "white" : "black"} className={cx(
                   "analysis-engine-score px-2.5 py-1 rounded-lg font-mono text-[0.95rem] leading-5 font-black shadow-md min-w-[3.5rem] text-center shrink-0 border md:px-3 md:py-1.5 md:text-[1.1rem] md:leading-normal md:min-w-[4rem]",
                   line?.mate != null ? "bg-chess-gold/10 text-chess-gold border-chess-gold/30" : 
                   (line?.evaluation ?? 0) > 0 ? "bg-white text-black border-white" : 
@@ -137,7 +127,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
                 </div>
                 
                 <div className="analysis-engine-pv flex-1 flex flex-col pt-0.5">
-                   <div className="analysis-engine-moves text-[0.8rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
+                   <div className="analysis-engine-moves text-[0.9rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
                       {(line?.moves.length ?? 0) > 0 ? (line?.moves ?? []).map((move, i) => (
                         <span key={i} className={i <= 1 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
                       )) : (

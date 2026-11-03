@@ -1,0 +1,156 @@
+.coach-chat{min-width:0;display:grid;gap:9px}
+.coach-chat-toggle{display:flex;justify-content:center;align-items:center;gap:9px;min-height:40px;width:100%;border:1px solid #756449;border-radius:9px;background:#17191c;color:#e3d9cc;font-weight:650}
+.coach-chat-panel{min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;border:1px solid #655441;border-radius:10px;padding:12px;background:#171a1d}
+.coach-chat-history{display:grid;align-content:start;gap:12px;min-height:120px;max-height:min(52dvh,440px);overflow-y:auto;overscroll-behavior-y:auto;scrollbar-gutter:stable;padding:2px 6px 3px 0}
+.coach-chat-message{min-width:0;max-width:100%;border:1px solid #4e4840;border-radius:9px;padding:10px 12px;background:#26292b;overflow-wrap:anywhere}
+.coach-chat-message.user{justify-self:end;max-width:92%;background:#332e28}
+.coach-chat-message p{margin:0;font-size:.86rem;line-height:1.55;white-space:pre-wrap}
+.coach-chat-message button{display:block;width:100%;margin-top:8px;text-align:left;font-size:.78rem;white-space:normal;overflow-wrap:anywhere}
+.coach-chat-games{margin-top:10px;min-width:0;border-top:1px solid #655441;padding-top:6px}
+.coach-chat-games>summary{cursor:pointer;font-size:.8rem;font-weight:600;line-height:1.5;padding:7px 2px;color:#ddc6a3;overflow-wrap:anywhere}
+.coach-chat-games[open]>summary{margin-bottom:6px}
+.coach-chat-compose{display:grid!important;grid-template-columns:minmax(0,1fr) 42px 42px;gap:7px!important;align-items:center!important;flex-wrap:nowrap!important}
+.coach-chat-compose input{min-width:0;width:100%;min-height:42px;font-size:.82rem}
+.coach-chat-compose button{display:flex;align-items:center;justify-content:center;width:42px;height:42px;min-height:42px;padding:5px}
+.coach-chat .coach-chat-error{font-size:.8rem;line-height:1.5;color:#e4b69e;margin:0;padding:8px 10px}
+.coach-chat-notice{display:block;margin:0;font-size:.72rem;line-height:1.5;color:var(--text-secondary,#c4bcb0)}
+.coach-chat .coach-chat-voice-option{display:flex!important;min-width:0;align-items:center;gap:8px!important;font-size:.78rem;line-height:1.4}
+.coach-chat-voice-option input{width:17px;min-height:17px;accent-color:#ad9067;flex:none}
+.coach-chat-message .coach-chat-listen{display:flex;align-items:center;gap:7px;min-height:39px}
+.coach-chat-stream{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:8px;align-items:center;font-size:.8rem;min-width:0}
+.coach-chat-stream button{display:flex;align-items:center;justify-content:center;min-height:42px;padding:6px}
+.coach-chat-audio{display:grid;grid-template-columns:minmax(0,1fr) 42px;align-items:center;gap:7px;min-width:0}
+.coach-chat-audio audio{width:100%;min-width:0;height:38px}
+.coach-chat-audio small{grid-column:1/-1;font-size:.72rem;color:var(--text-secondary,#c4bcb0)}
+@media(max-width:600px){.coach-chat-panel{padding:10px}.coach-chat-history{max-height:52dvh}.coach-chat-message{padding:9px}.coach-chat-compose{gap:5px!important;grid-template-columns:minmax(0,1fr) 40px 40px}.coach-chat-compose button{width:40px}}
+
+/* Compact, accessible actions preserve the existing conversation layout. */
+.coach-chat-actions{display:flex;justify-content:flex-end;gap:8px}
+.coach-chat-actions button,.coach-chat-message-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:6px 10px;font-size:.75rem;line-height:1.3;width:auto;white-space:nowrap}
+.coach-chat-message-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.coach-chat-message .coach-chat-message-actions button{width:auto;margin-top:0;text-align:center}
+.coach-chat-actions button:focus-visible,.coach-chat-message-actions button:focus-visible{outline:2px solid #d8b77e;outline-offset:2px}
+@media(max-width:600px){.coach-chat-message-actions button{min-height:40px}}
+
+.coach-chat-message .coach-chat-archive-heading{text-align:center;color:#d5b889;font-weight:750;letter-spacing:.012em;padding:4px 0 9px;border-bottom:1px solid #655441}
+.coach-chat-variations{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px;min-width:0}
+.coach-chat-variations li{border:1px solid #544a3d;background:#1c2022;border-radius:8px;min-width:0}
+.coach-chat-variations summary{display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px 10px;color:#e7e2d7;font:600 .82rem/1.45 Inter,system-ui,sans-serif;overflow-wrap:anywhere}
+.coach-chat-variations summary:focus-visible{outline:2px solid #d9b780;outline-offset:2px;border-radius:7px}
+.coach-chat-variations summary>span:first-child{color:#cbaa73;flex:none}
+.coach-chat-variation-full{padding:0 10px 10px;display:flex;flex-wrap:wrap;gap:8px}
+.coach-chat-message .coach-chat-variation-full p{width:100%;font:500 .82rem/1.65 Inter,system-ui,sans-serif;color:#ebe6dc;overflow-wrap:anywhere}
+.coach-chat-message .coach-chat-variation-full button{display:inline-flex;align-items:center;gap:6px;width:auto;margin:0;padding:7px 9px;min-height:36px;text-align:center}
+
+/* On opening, the whole coach panel fits inside the available viewport; history scrolls independently. */
+.spieler-page .coach-chat[aria-label]{min-height:0;scroll-margin-top:12px}
+.spieler-page .coach-chat-panel{max-height:clamp(260px,calc(100dvh - 190px),610px);min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.spieler-page .coach-chat-history{flex:1 1 120px;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}
+@media(max-width:800px){.spieler-page .coach-chat-panel{max-height:calc(100dvh - 175px)}}
+
+.spieler-page .coach-chat-collapse-bottom{display:block;width:100%;flex:none;min-height:34px;border:1px solid #756449;border-radius:8px;background:#201f1e;color:#e7d3af;font-size:.77rem}
+
+
+/* Spieler desktop: one detachable-looking chat surface. It never expands the
+   board/search document, and its own history is the only inner scroller. */
+@media (min-width:1024px) {
+ .spieler-page .spieler-position-workspace .coach-chat[aria-label] {
+  position:fixed;
+  inset:auto 18px 18px auto;
+  z-index:90;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:8px;
+  width:min(408px,calc(100dvw - 36px));
+  max-height:calc(100dvh - 36px);
+  pointer-events:none;
+ }
+ .spieler-page .spieler-position-workspace .coach-chat-toggle {
+  width:max-content;
+  max-width:100%;
+  align-self:flex-end;
+  padding:8px 15px;
+  pointer-events:auto;
+  box-shadow:0 5px 22px rgba(0,0,0,.34);
+ }
+ .spieler-page .spieler-position-workspace .coach-chat:has(.coach-chat-panel) {
+  height:min(625px,calc(100dvh - 36px));
+ }
+ .spieler-page .spieler-position-workspace .coach-chat:has(.coach-chat-panel) .coach-chat-toggle{
+  width:100%;
+  align-self:stretch;
+  justify-content:space-between;
+ }
+ .spieler-page .spieler-position-workspace .coach-chat-panel {
+  position:relative;
+  width:100%;
+  flex:1 1 auto;
+  min-height:0;
+  height:auto;
+  max-height:none;
+  pointer-events:auto;
+  border-color:#8a7255;
+  box-shadow:0 16px 55px rgba(0,0,0,.65),0 0 0 1px rgba(197,156,98,.1);
+ }
+ .spieler-page .spieler-position-workspace .coach-chat-history{
+  flex:1 1 80px;
+  min-height:0;
+  scrollbar-gutter:stable;
+ }
+}
+/* AI Coach is reserved for desktop; the mobile chessboard and game search remain. */
+@media (max-width:1023px){
+ .spieler-page .spieler-position-workspace .coach-chat,
+ .spieler-page .spieler-position-workspace .chessaz-ai-coach{
+  display:none!important;
+ }
+}
+
+/* Spieler desktop overlay stays within the right study rail; the board remains visible. */
+@media (min-width:1024px) {
+ .spieler-page .spieler-position-workspace .global-position-right-rail{position:relative;isolation:isolate}
+ .spieler-page .spieler-position-workspace .chessaz-ai-coach>header{justify-content:space-between;gap:12px;flex-wrap:wrap}
+ .spieler-page .spieler-position-workspace .chessaz-ai-coach .coach-chat-toggle{
+  display:inline-flex;width:auto;min-width:130px;min-height:38px;flex:none;
+  padding:7px 12px;pointer-events:auto;font-size:.78rem;
+ }
+ .spieler-page .spieler-position-workspace .coach-chat[aria-label]{
+  position:static;inset:auto;width:auto;height:0;min-height:0;max-height:none;
+  padding:0;margin:0;display:block;pointer-events:none;
+ }
+ .spieler-page .spieler-position-workspace .coach-chat:has(.coach-chat-panel){height:0}
+ .spieler-page .spieler-position-workspace .coach-chat-panel{
+  position:absolute;inset:0 0 auto 0;z-index:20;width:100%;
+  height:min(720px,calc(100dvh - 125px));max-height:none;
+  pointer-events:auto;display:flex;flex-direction:column;
+  box-shadow:0 18px 60px rgba(0,0,0,.72);
+ }
+ .spieler-page .spieler-position-workspace .coach-chat-history{
+  flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto;
+ }
+ .spieler-page .spieler-position-workspace .coach-chat-voice-option{order:20;margin-top:auto;flex:none}
+ .spieler-page .spieler-position-workspace .coach-chat-compose{order:21;flex:none}
+ .spieler-page .spieler-position-workspace .coach-chat-collapse-bottom{order:22;flex:none}
+}
+.coach-chat-variation-rule{
+ height:1px;width:calc(100% - 16px);margin:3px 8px 5px;
+ background:linear-gradient(90deg,transparent,rgba(185,158,122,.65),rgba(198,204,208,.55),transparent);
+}
+.coach-chat-variations summary>span:first-child{white-space:nowrap}
+
+/* Scoped, optional study replay: no changes to the main board or theme tokens. */
+.coach-chat-study{display:grid;gap:8px;margin-top:10px;min-width:0;border-top:1px solid #655441;padding-top:10px}
+.coach-chat-study-choices{display:grid;gap:5px;min-width:0}
+.coach-chat-message .coach-chat-study-choices button{width:100%;margin:0;padding:8px 10px;border:1px solid #5b5248;border-radius:7px;background:#222629;color:#ded9ce;line-height:1.4;text-align:left}
+.coach-chat-message .coach-chat-study-choices button[aria-pressed="true"]{border-color:#bda078}
+.coach-chat-study-nav{display:flex;justify-content:center;align-items:center;gap:12px}
+.coach-chat-message .coach-chat-study-nav button{width:42px;height:38px;margin:0;text-align:center}
+.coach-chat-study-nav span{font-variant-numeric:tabular-nums}
+
+.coach-chat-study-nav{flex-wrap:wrap}
+.coach-chat-message .coach-chat-study-nav button:last-child{width:auto;min-width:110px;padding-inline:10px}
+
+/* Source attribution for the two replayable engine variations. */
+.coach-chat-engine-source{display:block;color:#bda078;font-size:11px;font-weight:600;letter-spacing:.065em;line-height:1.4}
+.coach-chat-eval{font-variant-numeric:tabular-nums;font-weight:600;color:#e6d3b1;white-space:nowrap}

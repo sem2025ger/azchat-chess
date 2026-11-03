@@ -255,9 +255,10 @@
 /* Additional palettes scroll within their section on short desktop viewports. */
 @media (min-width: 1024px) {
   .settings-fixed-workspace .settings-background-options {
-    max-height: clamp(64px, 12dvh, 112px);
+    max-height: clamp(132px, 22dvh, 220px);
     overflow-y: auto;
-    overscroll-behavior-y: contain;
+    overscroll-behavior-y: auto;
+    scroll-behavior: smooth;
     scrollbar-gutter: stable;
   }
 }
@@ -292,5 +293,53 @@
     font-size: 0.71875rem;
     line-height: 1.25;
     overflow-wrap: break-word;
+  }
+}
+
+/* Desktop-only removal of Settings search/style bar. Keep mobile UI unchanged. */
+@media (min-width: 1024px) {
+  .settings-fixed-workspace .settings-command-center { display: none !important; }
+}
+
+/* Desktop theme canvas: only mobile retains the existing ambient gold/teal blobs. */
+@media (min-width: 1024px) {
+  .settings-fixed-workspace .settings-mobile-decor { display: none; }
+}
+
+/* Owner design pass A: identical top inset and centered control area in
+   each of the four desktop cards. No geometry or mobile rules change. */
+@media (min-width: 1024px) {
+  .settings-fixed-workspace :is(
+    #settings-section-board,
+    #settings-section-pieces,
+    #settings-section-sound,
+    #settings-section-background
+  ) > section {
+    display: flex;
+    flex-direction: column;
+    padding-top: 14px;
+  }
+
+  .settings-fixed-workspace :is(
+    #settings-section-board,
+    #settings-section-pieces,
+    #settings-section-sound,
+    #settings-section-background
+  ) > section > h2 {
+    flex: 0 0 auto;
+    margin-bottom: 0;
+    text-align: left;
+    justify-content: flex-start;
+  }
+
+  .settings-fixed-workspace :is(
+    #settings-section-board,
+    #settings-section-pieces,
+    #settings-section-sound,
+    #settings-section-background
+  ) > section > .grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-content: center;
   }
 }

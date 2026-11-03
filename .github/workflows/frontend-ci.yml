@@ -46,6 +46,9 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Server dependencies for Coach browser integration
+        run: npm ci --ignore-scripts --prefix ../server
+
       - name: Frontend tests
         run: npm test
         env:
@@ -63,6 +66,9 @@ jobs:
       - name: Mobile analysis browser regression
         # Provide a valid session bus instead of inheriting runner-specific D-Bus state.
         run: dbus-run-session -- node tests/mobileAnalysis.browser.mjs
+
+      - name: First Analysis navigation performance (real Chromium)
+        run: dbus-run-session -- node tests/analysisNavigation.browser.mjs
 
       - name: Spieltag browser regression (synthetic private team)
         run: dbus-run-session -- node tests/spieltag.browser.mjs

@@ -1,0 +1,37 @@
+name: AI Coach isolated QA auth smoke
+
+on:
+  pull_request:
+    branches:
+      - feat/ai-coach-v1-qa-20261029
+    paths:
+      - 'server/scripts/verifyOpeningPrepReadiness.js'
+      - 'server/scripts/verifyOpeningPrepQa.js'
+      - 'server/openingPrepReadiness.test.js'
+      - 'server/openingPrepQa.test.js'
+      - '.github/workflows/ai-coach-isolated-auth-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-auth:
+    name: Token-free isolated QA auth boundary
+    # No outside forks; never use a shared or production QA endpoint.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Checkout reviewed PR source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Setup pinned Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.19.0
+      - name: Verify unauthenticated Coach route only
+        working-directory: server
+        env:
+          QA_BASE_URL: https://chessaz-ai-coach-v1-isolated-qa.onrender.com/
+        run: node scripts/verifyOpeningPrepReadiness.js
