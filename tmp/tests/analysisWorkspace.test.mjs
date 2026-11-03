@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Chess, DEFAULT_POSITION } from 'chess.js';
-import { analysisFromFen, analysisFromPgn, analysisMovePairs, placeDraftPiece, positionDraft, positionDraftFen, validateAnalysisFen } from '../src/utils/analysisWorkspace.ts';
+import { analysisFromFen, analysisFromPgn, analysisMovePairs, branchAnalysisAtPly, placeDraftPiece, positionDraft, positionDraftFen, validateAnalysisFen } from '../src/utils/analysisWorkspace.ts';
 import { loadAnalysisSession, saveAnalysisSession } from '../src/utils/analysisSession.ts';
 const BLACK_START = '4k3/8/8/8/8/8/4P3/4K3 b - - 0 17';
 
@@ -82,3 +82,45 @@ test('custom origins preserve castling, en passant captures and promotion on rep
   const promoted = analysisFromPgn('[SetUp "1"]\n[FEN "4k3/P7/8/8/8/8/8/4K3 w - - 0 1"]\n1. a8=Q+ *');
   assert.equal(promoted.game.get('a8').type, 'q');
 });
+
+test('review branch starts from the selected historical ply without modifying the original game', () => {
+  const original = analysisFromMovesForBranchTest(['e4','e5','Nf3','Nc6','Bb5','a6']);
+  const savedMoves = [...original.moveHistory];
+  const savedPositions = [...original.positionHistory];
+  const { analysis, move } = branchAnalysisAtPly(original.moveHistory, original.positionHistory, 4, 'f1', 'c4');
+  assert.equal(move.san, 'Bc4');
+  assert.deepEqual(analysis.moveHistory, ['e4','e5','Nf3','Nc6','Bc4']);
+  assert.equal(analysis.positionHistory.length, 6);
+  const replay = new Chess(); for (const san of analysis.moveHistory) replay.move(san);
+  assert.equal(analysis.game.fen(), replay.fen());
+  assert.deepEqual(original.moveHistory, savedMoves);
+  assert.deepEqual(original.positionHistory, savedPositions);
+  assert.equal(analysis.viewMoveIndex, -1);
+});
+
+test('review branch rejects illegal, out-of-range and stale historical positions', () => {
+  const initial = analysisFromMovesForBranchTest(['e4','e5','Nf3','Nc6']);
+  assert.throws(() => branchAnalysisAtPly(initial.moveHistory, initial.positionHistory, 2, 'e2', 'e5'));
+  assert.throws(() => branchAnalysisAtPly(initial.moveHistory, initial.positionHistory, -1, 'g1', 'f3'));
+  assert.throws(() => branchAnalysisAtPly(initial.moveHistory, initial.positionHistory, 99, 'g1', 'f3'));
+  assert.throws(() => branchAnalysisAtPly(initial.moveHistory, [DEFAULT_POSITION, ...initial.positionHistory.slice(1).map(() => DEFAULT_POSITION)], 2, 'g1', 'f3'));
+});
+
+test('review branch supports black-to-move FEN and persists the selected continuation', () => {
+  const initial = analysisFromFen(BLACK_START);
+  const { analysis } = branchAnalysisAtPly(initial.moveHistory, initial.positionHistory, 0, 'e8', 'f7');
+  const storageMap = new Map();
+  const storage = { getItem: key => storageMap.get(key), setItem: (key, value) => storageMap.set(key, value) };
+  saveAnalysisSession(analysis.moveHistory, -1, storage, BLACK_START);
+  const restored = loadAnalysisSession(storage);
+  assert.equal(restored.game.fen(), analysis.game.fen());
+  assert.equal(restored.positionHistory[0], BLACK_START);
+  assert.deepEqual(analysisMovePairs(restored.moveHistory, BLACK_START).map(row => [row.n,row.b]), [[17,'Kf7']]);
+});
+
+function analysisFromMovesForBranchTest(moves) {
+  const game = new Chess();
+  const positionHistory = [game.fen()];
+  for (const san of moves) { game.move(san); positionHistory.push(game.fen()); }
+  return { moveHistory: [...moves], positionHistory };
+}
