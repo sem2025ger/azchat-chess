@@ -145,7 +145,7 @@ test('position facts instruction is appended exactly once in both model paths an
   };
   await generateAnswer(query,base,{apiKey:key,fetchImpl});
   await generateAnswer(query,{...base,positionFacts:facts},{apiKey:key,fetchImpl});
-  assert.equal(instructionBodies[1].startsWith(instructionBodies[0]+'\\n'),true,'ON only appends one line');
+  assert.equal(instructionBodies[1].startsWith(instructionBodies[0]+'\n'),true,'ON only appends one line');
   const suffix=instructionBodies[1].slice(instructionBodies[0].length+1);
   assert.ok(suffix.startsWith('evidence.positionFacts was computed deterministically'));
   assert.equal(suffix.split('evidence.positionFacts was computed deterministically').length-1,1);
