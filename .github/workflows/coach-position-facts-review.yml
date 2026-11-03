@@ -1,0 +1,88 @@
+name: Position Facts V1 QA review (manual only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: OpenAI coach model
+        required: true
+        type: string
+        default: gpt-6-sol
+      movetime_ms:
+        description: Stockfish movetime per position (milliseconds, 100-5000)
+        required: true
+        type: string
+        default: '900'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: position-facts-qa-review
+  cancel-in-progress: false
+
+jobs:
+  position-facts-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Checkout selected revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.14.1
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install locked dependencies (no install scripts)
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Require QA OpenAI secret
+        env:
+          OPENAI_API_KEY: ${{ secrets.QA_OPENAI_API_KEY }}
+        shell: bash
+        run: |
+          if [[ -z "$OPENAI_API_KEY" ]]; then
+            echo '::error::Missing repository secret QA_OPENAI_API_KEY. No review requests were made.'
+            exit 1
+          fi
+
+      - name: Run OFF/ON comparison — no database, first answers only
+        timeout-minutes: 25
+        env:
+          OPENAI_API_KEY: ${{ secrets.QA_OPENAI_API_KEY }}
+          POSITION_FACTS_REVIEW_MODEL: ${{ inputs.model }}
+          POSITION_FACTS_REVIEW_MOVETIME_MS: ${{ inputs.movetime_ms }}
+          NODE_NO_WARNINGS: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          # Inputs are data: passed only as environment variables, never shell-evaluated.
+          node scripts/positionFactsReview.js
+
+      - name: Upload Markdown report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: position-facts-review
+          path: server/position-facts-review.md
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Publish review summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f position-facts-review.md ]]; then
+            cat position-facts-review.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Position Facts review report not produced; check the job logs (no key values logged).' >> "$GITHUB_STEP_SUMMARY"
+          fi
