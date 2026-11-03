@@ -677,7 +677,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId, sound, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
+    [viewMoveIndex, game, socket, roomId, sound, mode, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
   );
 
 
