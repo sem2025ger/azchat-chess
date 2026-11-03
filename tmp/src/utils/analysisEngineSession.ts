@@ -1,4 +1,4 @@
-import { StockfishEngine } from './StockfishEngine';
+import { StockfishEngine } from './StockfishEngine.ts';
 
 // One idle browser worker may be reused across analysis navigation.
 // Never search in the background or prewarm on low-bandwidth/mobile connections.
