@@ -60,6 +60,22 @@ const fixtures=[
  {name:'three separate pawn islands',fen:'4k3/8/8/8/8/8/P1PP1P2/4K3 w - - 0 1',expect:{
   'white.pawns.pawnIslands':3,'white.pawns.isolated':['a2','f2'],
   'white.king.pawnShield':2}},
+ {name:'A: own h-pawn and no enemy h-pawn do not expose white king',fen:'6k1/5pp1/8/8/8/8/5PPP/6K1 w - - 0 1',expect:{
+  'white.king.openFilesNearKing':[]}},
+ {name:'B: enemy g-pawn on a half-open file exposes white king',fen:'6k1/5ppp/8/8/8/8/5P1P/6K1 w - - 0 1',expect:{
+  'white.king.openFilesNearKing':['g']}},
+ {name:'C: friendly knight in front of white passed pawn is not a blockade',fen:'4k3/8/3N4/3P4/8/8/8/4K3 w - - 0 1',expect:{
+  'white.pawns.passed':['d5'],'white.pawns.blockaded':[],'white.pawns.passedBlockaded':[]}},
+ {name:'mirrored black: enemy g-pawn on a half-open file exposes black king',fen:'6k1/5p1p/8/8/8/8/5PPP/6K1 b - - 0 1',expect:{
+  'black.king.openFilesNearKing':['g']}},
+ {name:'D: black knight blockades a non-passed white pawn',fen:'4k3/4p3/8/3n4/3P4/8/8/4K3 w - - 0 1',expect:{
+  'white.pawns.blockaded':['d4'],'white.pawns.passed':[],'white.pawns.passedBlockaded':[]}},
+ {name:'E: own knight on stop square is an obstruction, not a blockade',fen:'4k3/8/8/3N4/3P4/8/8/4K3 w - - 0 1',expect:{
+  'white.pawns.blockaded':[],'white.pawns.passedBlockaded':[]}},
+ {name:'F: enemy pawn directly ahead is a pawn ram, not a piece blockade',fen:'4k3/8/8/3p4/3P4/8/8/4K3 w - - 0 1',expect:{
+  'white.pawns.blockaded':[],'black.pawns.blockaded':[]}},
+ {name:'G: white bishop blockades black passed pawn',fen:'4k3/8/8/3p4/3B4/8/8/4K3 b - - 0 1',expect:{
+  'black.pawns.blockaded':['d5'],'black.pawns.passed':['d5'],'black.pawns.passedBlockaded':['d5']}},
  {name:'doubled black f pawns, black to move',fen:'4k3/5p2/5p2/8/8/8/8/4K3 b - - 0 1',expect:{
   'black.pawns.doubledFiles':['f'],'black.pawns.passed':['f6','f7'],
   'black.pawns.isolated':['f6','f7'],'material.balanceWhite':-2}}
@@ -74,7 +90,10 @@ for(const fixture of fixtures)test('fixed FEN: '+fixture.name,()=>{
  assert.ok(Buffer.byteLength(JSON.stringify(result),'utf8')<=4096,'position facts must fit within 4KB');
  for(const side of ['white','black']){
   assert.equal(result[side].hanging.static,true);
-  for(const key of ['isolated','passed','passedBlockaded'])assert.deepEqual(
+  assert.deepEqual(result[side].pawns.passedBlockaded,
+   result[side].pawns.blockaded.filter(square=>result[side].pawns.passed.includes(square)),
+   'passedBlockaded must equal blockaded ∩ passed for '+fixture.name+' / '+side);
+  for(const key of ['isolated','passed','blockaded','passedBlockaded'])assert.deepEqual(
    result[side].pawns[key],[...result[side].pawns[key]].sort(),'stable square ordering');
   for(const key of ['open','halfOpen'])assert.deepEqual(
    result[side].files[key],[...result[side].files[key]].sort(),'stable file ordering');
