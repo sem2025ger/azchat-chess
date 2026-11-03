@@ -15,8 +15,8 @@ import { mobileAnalysisCopy } from '../components/analysis/mobileAnalysisCopy';
 import { type StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { acquireAnalysisEngine, releaseAnalysisEngine } from '../utils/analysisEngineSession';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
-import PositionMap from '../components/analysis/PositionMap';
-import PositionMapVariations from '../components/analysis/PositionMapVariations';
+
+
 import { createPositionMapSnapshot, selectPositionMapVariation, type PositionMapSnapshot } from '../utils/positionMapNavigation';
 import { positionMapLabel } from '../components/analysis/positionMapLabels';
 import { reviewLayout } from '../utils/reviewLayout';
@@ -30,6 +30,8 @@ import { analysisCopy } from '../components/analysis/copy';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
 import { displayPlayerName } from '../utils/displayPlayerName';
 import { fetchPlayerNames, readPlayerIds, type PlayerIds } from '../services/playerNames';
+const PositionMap = lazy(() => import('../components/analysis/PositionMap'));
+const PositionMapVariations = lazy(() => import('../components/analysis/PositionMapVariations'));
 const SavedGamesPanel = lazy(() => import('../components/analysis/SavedGamesPanel'));
 const PositionTools = lazy(() => import('../components/analysis/PositionTools'));
 const EditorBoard = lazy(() => import('../components/analysis/EditorBoard'));
