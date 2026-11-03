@@ -147,9 +147,9 @@ test('position facts instruction is appended exactly once in both model paths an
   await generateAnswer(query,{...base,positionFacts:facts},{apiKey:key,fetchImpl});
   assert.equal(instructionBodies[1].startsWith(instructionBodies[0]+'\n'),true,'ON only appends one line');
   const suffix=instructionBodies[1].slice(instructionBodies[0].length+1);
-  assert.ok(suffix.startsWith('evidence.positionFacts was computed deterministically'));
+  assert.equal(suffix,"evidence.positionFacts was computed deterministically by the ChessAZ server. Mention a pawn-structure, file, outpost, hanging-piece or king-safety feature only if it is listed in positionFacts, and use its exact squares. Never assert such a feature that is not listed. The hanging section is static (no pins or tactics); for tactics rely on candidateLines. Call a pawn blockaded only if it is listed in pawns.blockaded; an own piece in front of a pawn is not a blockade.",'ON instruction must equal exactly the approved grounding rule');
   assert.equal(suffix.split('evidence.positionFacts was computed deterministically').length-1,1);
-  assert.ok(suffix.includes('The hanging section is static (no pins or tactics)'));
+  assert.equal(suffix.split("Call a pawn blockaded only if it is listed in pawns.blockaded; an own piece in front of a pawn is not a blockade.").length-1,1);
   assert.equal(instructionBodies[0].includes('evidence.positionFacts was computed deterministically'),false);
  }
 });
