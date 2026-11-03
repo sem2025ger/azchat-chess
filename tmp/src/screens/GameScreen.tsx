@@ -24,7 +24,7 @@ import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSound
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
 import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
-import { analysisMovePairs, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
+import { analysisMovePairs, branchAnalysisAtPly, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
 import { analysisCopy } from '../components/analysis/copy';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
 import { displayPlayerName } from '../utils/displayPlayerName';
@@ -635,7 +635,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const handleGameMove = useCallback(
     (source: string, target: string, promotion: string = 'q') => {
       if (isMultiplayer && !canSendGameAction) return false;
-      if (viewMoveIndex !== -1) {
+      if (viewMoveIndex !== -1 && mode !== 'review') {
         setViewMoveIndex(-1);
         return false;
       }
@@ -643,13 +643,20 @@ export default function GameScreen({ mode }: GameScreenProps) {
         return false;
       }
       try {
-        const g = new Chess(game.fen());
-        const move = g.move({ from: source, to: target, promotion });
+        const branching = mode === 'review' && viewMoveIndex !== -1
+          ? branchAnalysisAtPly(moveHistory, positionHistory, viewMoveIndex, source, target, promotion)
+          : null;
+        const g = branching?.analysis.game ?? new Chess(game.fen());
+        const move = branching?.move ?? g.move({ from: source, to: target, promotion });
         if (move) {
           const soundType: ChessSoundType = g.isCheck() ? 'check' : move.captured ? 'capture' : 'move';
           void playChessSound(soundType, sound);
 
-          if (mode === 'review') setMapSnapshot(null);
+          if (mode === 'review') {
+            // Keep a frozen three-line comparison available after branching.
+            setMapSnapshot(previous => previous?.frozen ? previous : null);
+            setGameOverMessage(null);
+          }
           if (socket && roomId) {
             locallyPlayedFenRef.current = g.fen();
             socket.emit('make_move', { roomId, move: { from: source, to: target, promotion } });
@@ -658,8 +665,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
             setViewMoveIndex(-1);
           } else {
             setGame(g);
-            setPositionHistory(prev => prev[prev.length - 1] === g.fen() ? prev : [...prev, g.fen()]);
-            setMoveHistory(prev => [...prev, move.san]);
+            setPositionHistory(prev => branching?.analysis.positionHistory ?? (prev[prev.length - 1] === g.fen() ? prev : [...prev, g.fen()]));
+            setMoveHistory(prev => branching?.analysis.moveHistory ?? [...prev, move.san]);
             setViewMoveIndex(-1);
           }
           
@@ -677,7 +684,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, game, socket, roomId, sound, mode, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
+    [viewMoveIndex, game, moveHistory, positionHistory, socket, roomId, sound, mode, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
   );
 
 
@@ -1256,7 +1263,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 game={displayedGame}
                 onMove={handleGameMove}
                 orientation={mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
-                readOnly={viewMoveIndex !== -1 || !!gameOverMessage || (isMultiplayer && playerColor !== game.turn())}
+                readOnly={(mode !== 'review' && viewMoveIndex !== -1) || !!gameOverMessage || (isMultiplayer && playerColor !== game.turn())}
               />}
             </div>
           </div>
