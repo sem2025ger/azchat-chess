@@ -7,6 +7,7 @@ const MAX_SPEECH_BYTES=6*1024*1024; // At most 131 seconds of 24 kHz mono PCM.
 const SPEECH_TIMEOUT_MS=90000;
 const AUDIO_TYPES=new Map([['audio/webm','webm'],['audio/mp4','mp4'],['audio/ogg','ogg'],['audio/wav','wav'],['audio/mpeg','mp3']]);
 const providerError=(code='provider_unavailable')=>Object.assign(Error(code),{code});
+const POSITION_FACTS_INSTRUCTION='evidence.positionFacts was computed deterministically by the ChessAZ server. Mention a pawn-structure, file, outpost, hanging-piece or king-safety feature only if it is listed in positionFacts, and use its exact squares. Never assert such a feature that is not listed. The hanging section is static (no pins or tactics); for tactics rely on candidateLines. Call a pawn blockaded only if it is listed in pawns.blockaded; an own piece in front of a pawn is not a blockade.';
 
 // Check actual streamed bytes, including when Content-Length is absent or false.
 async function readBytes(response,limit){
@@ -57,7 +58,7 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
   'Do not claim a move is illegal if it appears in legalMoves. Explain uncertainty and offer the analysis board for engine verification.',
   'No links, HTML or markdown. Return JSON with exactly one string property answer, between 2 and 1200 characters.'
  ].join('\n'):null;
- const instructions=serverEngine?serverInstructions:legacyInstructions;
+ const instructions=(serverEngine?serverInstructions:legacyInstructions)+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'');
  const response=await fetchImpl('https://api.openai.com/v1/responses',{
   method:'POST',redirect:'error',signal:requestSignal(signal),headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
   body:JSON.stringify({model,store:false,instructions,reasoning:{effort:'low'},max_output_tokens:1800,

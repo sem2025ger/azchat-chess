@@ -2,6 +2,7 @@
 const {Chess,validateFen}=require('chess.js');
 const {LANGUAGE_CODES,safeGame}=require('./aiCoachCore');
 const {generateAnswer}=require('./aiCoachOpenAI');
+const {positionFacts}=require('./coachPositionFacts');
 
 const fallback={
  de:(total)=>'In dieser Stellung wurden '+total+' öffentliche Partien gefunden. Du kannst die Beispiele unten in der Analyse öffnen. Eine Stockfish-Bewertung liegt hier nicht vor.',
@@ -69,7 +70,7 @@ function publicChatGames(result,fen,count=5){
 function serverEngineLines(analysis){
  return analysis.lines.map((line,i)=>({id:'L'+(i+1),moves:line.sanPv,scoreKind:line.scoreKind,scoreWhite:line.scoreWhite,depth:line.depth,wdlWhite:line.wdlWhite}));
 }
-async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null}={}){
+async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null,positionFactsEnabled=false}={}){
  const requested=gameRequest(query.message);
  let result=null,analysis=null,engineError=null;
  const engineRun=engine&&!requested?engine.analyze(query.fen,{signal}).then(value=>{analysis=value.lines.length?value:null;if(!analysis)engineError='engine_unavailable';},e=>{engineError=e.code||'engine_unavailable';}):null;
@@ -82,7 +83,8 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
  const evidence={archiveAvailable:!!result,matched:result?.total??null,
   ...(analysis?{candidateLines:serverEngineLines(analysis),candidateOrigin:'server_stockfish_19',engine:{name:analysis.engine,budgetMs:analysis.budget.movetimeMs,perspective:'white'}}:{candidateLines:clientLines,candidateOrigin:'untrusted_client_legality_checked'}),
   nextMoves:(result?.nextMoves||[]).slice(0,8).map(x=>({move:x.move,count:x.count})),
-  games:games.map(({white,black,result,date,ply,pgn})=>{const board=new Chess();board.loadPgn(pgn);return {white,black,result,date,hasPgn:true,matchedPly:ply,continuation:board.history().slice(ply,ply+6)};})};
+  games:games.map(({white,black,result,date,ply,pgn})=>{const board=new Chess();board.loadPgn(pgn);return {white,black,result,date,hasPgn:true,matchedPly:ply,continuation:board.history().slice(ply,ply+6)};}),
+  ...(positionFactsEnabled?{positionFacts:positionFacts(query.fen)}:{})};
  const archiveOnly=!!requested&&!!result;
  const answer=archiveOnly?gameHeadings[language]:openaiApiKey?await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal}):fallback[language](result.total||0);
  return {answer,generated:archiveOnly||!!openaiApiKey,provider:archiveOnly?null:openaiApiKey?'openai':null,providerStatus:archiveOnly?'archive':openaiApiKey?'ready':'not_configured',
