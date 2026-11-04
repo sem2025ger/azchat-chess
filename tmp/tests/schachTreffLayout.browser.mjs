@@ -5,10 +5,14 @@ import {mkdtemp,readFile,writeFile,mkdir,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 
-const fixture=`import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{MemoryRouter}from'react-router-dom';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Chat from'/src/screens/ChessAZCommunityScreen.tsx';localStorage.setItem('app-language','ru');function Probe(){const {setLanguage}=useLanguage();window.setFixtureLanguage=setLanguage;return null}createRoot(document.getElementById('root')).render(<LanguageProvider><MemoryRouter><Probe/><Chat/></MemoryRouter></LanguageProvider>);`;
+const fixture=`import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{BrowserRouter,MemoryRouter,Route,Routes}from'react-router-dom';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Chat from'/src/screens/ChessAZCommunityScreen.tsx';import Invite from'/src/screens/ClubInviteScreen.tsx';localStorage.setItem('app-language','ru');function Probe(){const {setLanguage}=useLanguage();window.setFixtureLanguage=setLanguage;return null}createRoot(document.getElementById('root')).render(<LanguageProvider>{location.pathname==='/room-fixture'?<MemoryRouter><Probe/><Chat/></MemoryRouter>:<BrowserRouter><Routes><Route path='/schach-treff/einladung/:token' element={<Invite/>}/><Route path='/chat' element={<Chat/>}/></Routes></BrowserRouter>}</LanguageProvider>);`;
 const db=`const uid='11111111-1111-4111-8111-111111111111', room='22222222-2222-4222-8222-222222222222';
-export const supabase={rpc(name){if(name==='create_club_invite'){window.inviteRequests=(window.inviteRequests||0)+1;return Promise.resolve({data:'0123456789abcdef0123456789abcdef',error:null})}return Promise.resolve({data:[],error:null})},from(table){let single=false,filters=[];const q={select(){return q},eq(k,v){filters.push([k,v]);return q},in(){return q},gte(){return q},order(){return q},limit(){return q},maybeSingle(){single=true;return q},then(resolve,reject){let rows=[];if(table==='chess_clubs'){if(filters.some(([k,v])=>k==='kind'&&v==='room'))rows=[{id:room,name:'shax'}];else if(filters.some(([k,v])=>k==='id'&&v===room))rows=[{id:room,name:'shax'}];else rows=[{id:uid,name:'ChessAZ Deutsch'}]}else if(table==='chess_club_members')rows=[{user_id:uid,role:(new URLSearchParams(window.location.search).get('role')==='member'?'member':'admin')}];else if(table==='profiles')rows=[{id:uid,username:'QA User'}];return Promise.resolve({data:single?(rows[0]||null):rows,error:null}).then(resolve,reject)}};return q}};`;
-const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!req.url.startsWith('/room-fixture'))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
+export const supabase={rpc(name){if(name==='create_club_invite'){window.inviteRequests=(window.inviteRequests||0)+1;return Promise.resolve({data:'0123456789abcdef0123456789abcdef',error:null})}return Promise.resolve({data:[],error:null})},from(table){let single=false,filters=[];const q={select(){return q},eq(k,v){filters.push([k,v]);return q},in(){return q},gte(){return q},order(){return q},limit(){return q},maybeSingle(){single=true;return q},insert(row){
+  if(table!=='chess_club_messages') throw Error('Unexpected insert '+table);
+  sessionStorage.setItem('sentMessage',JSON.stringify(row));
+  return Promise.resolve({error:null});
+},then(resolve,reject){let rows=[];if(table==='chess_clubs'){if(filters.some(([k,v])=>k==='kind'&&v==='room'))rows=[{id:room,name:'shax'}];else if(filters.some(([k,v])=>k==='id'&&v===room))rows=[{id:room,name:'shax'}];else rows=[{id:uid,name:'ChessAZ Deutsch'}]}else if(table==='chess_club_members')rows=[{user_id:uid,role:(new URLSearchParams(window.location.search).get('role')==='member'?'member':'admin')}];else if(table==='profiles')rows=[{id:uid,username:'QA User'}];return Promise.resolve({data:single?(rows[0]||null):rows,error:null}).then(resolve,reject)}};return q}};`;
+const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user:new URLSearchParams(location.search).has('guest')?null:user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!['/room-fixture','/chat','/schach-treff/einladung/'].some(path=>req.url.startsWith(path)))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
 export async function checkRoomLayout(){
  const server=await createServer({configFile:false,cacheDir:join(tmpdir(),'room-vite-'+process.pid),optimizeDeps:{noDiscovery:true,include:['react','react-dom/client','react-router-dom','lucide-react']},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}}});let chrome,ws,profile;const pending=new Map();
  try{await server.listen();const bin=process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(existsSync);assert.ok(bin,'Chromium required for Schach-Treff layout');profile=await mkdtemp(join(tmpdir(),'schach-rooms-'));chrome=spawn(bin,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--remote-allow-origins=*','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});let stderr='';chrome.stderr.on('data',c=>stderr=(stderr+c).slice(-4000));const pause=ms=>new Promise(r=>setTimeout(r,ms));let port;for(let i=0;i<300;i++){if(chrome.exitCode!==null)throw Error(stderr);try{port=Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]);if(port)break}catch{}await pause(50)}assert.ok(port,stderr);const targets=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();ws=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await new Promise((r,j)=>{ws.addEventListener('open',r,{once:true});ws.addEventListener('error',j,{once:true})});let seq=0;ws.addEventListener('message',({data})=>{const m=JSON.parse(data),p=pending.get(m.id);if(p){pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result)}});const cdp=(method,params={})=>new Promise((resolve,reject)=>{const id=++seq,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},20000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}))});const evaluate=async expression=>{let x=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(x.exceptionDetails)throw Error(JSON.stringify(x.exceptionDetails));return x.result.value};const wait=async expression=>{for(let i=0;i<240;i++){if(await evaluate('Boolean('+expression+')'))return;await pause(50)}throw Error('Fixture did not load '+expression)};await cdp('Runtime.enable');await cdp('Page.enable');if(process.env.SECTIONS_CAPTURE)await mkdir(process.env.SECTIONS_CAPTURE,{recursive:true});
@@ -28,5 +32,46 @@ export async function checkRoomLayout(){
   assert.equal(await evaluate("!!document.querySelector('.st-invite')"),false);
  }
 
+ const origin = server.resolvedUrls.local[0];
+ const invitePath = 'schach-treff/einladung/' + 'a'.repeat(32);
+ const roomId = '22222222-2222-4222-8222-222222222222';
+ const navigate = path => cdp('Page.navigate', {url: origin + path});
+
+ for (const width of [1280, 375]) {
+   await cdp('Emulation.setDeviceMetricsOverride', {width, height:844, deviceScaleFactor:1, mobile:width===375});
+   await evaluate('sessionStorage.clear()');
+   await navigate(invitePath + '?guest');
+   await wait("document.querySelector('a[href^=\"/profile?returnTo=\"]')");
+   assert.equal(await evaluate("new URL(document.querySelector('a').href).searchParams.get('returnTo')"), '/' + invitePath);
+   assert.equal(await evaluate("sessionStorage.getItem('lastInvite')"), null);
+
+   await navigate(invitePath);
+   await wait("document.querySelector('.st-chat h2')?.textContent === 'shax'");
+   assert.equal(await evaluate('location.pathname + location.search'), '/chat?club=' + roomId);
+   assert.equal(await evaluate("document.querySelector('.st-room-list a[aria-current=page]').textContent"), 'shax');
+   assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth + 1'));
+   assert.equal(await evaluate("sessionStorage.getItem('lastInvite')"), 'a'.repeat(32));
+
+   await evaluate(`(() => {
+     const form = document.querySelector('.st-composer');
+     const input = form.querySelector('input');
+     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'invite test');
+     input.dispatchEvent(new Event('input', {bubbles:true}));
+   })()`);
+   await wait("!document.querySelector('.st-composer button[type=submit], .st-composer button:last-child').disabled");
+   await evaluate("document.querySelector('.st-composer').requestSubmit()");
+   await wait("document.querySelector('.st-messages')?.textContent.includes('invite test')");
+   assert.equal(await evaluate("JSON.parse(sessionStorage.getItem('sentMessage')).club_id"), roomId);
+   await navigate('chat');
+   await wait("document.querySelector('.st-general-link[aria-current=page],.st-mobile-general[aria-current=page]')");
+   await wait(width===375 ? "document.querySelector('#club-panel-discussions input')" : "document.querySelector('.st-composer input')");
+   assert.equal(await evaluate("document.body.innerText.includes('invite test')"), false);
+ }
+
+ const expiredPath = 'schach-treff/einladung/' + 'b'.repeat(32);
+ await navigate(expiredPath);
+ await wait("document.querySelector('[role=alert]')");
+ assert.equal(await evaluate('location.pathname'), '/' + expiredPath);
+ assert.match(await evaluate("document.querySelector('[role=alert]').textContent"), /ист[ёе]к|просроч/iu);
  }finally{try{ws?.close()}catch{}chrome?.kill('SIGKILL');for(const p of pending.values())clearTimeout(p.timer);await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100})}
 }
