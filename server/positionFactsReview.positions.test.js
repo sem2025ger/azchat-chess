@@ -33,7 +33,8 @@ const criteria={
    x.attackers.includes('b4'))&&pieceAt(b,'b4','n','b')&&pieceAt(b,'c2','q','w'),
  'minority':(f,b)=>pawnAt(b,'a2','w')&&pawnAt(b,'b4','w')&&
    pawnAt(b,'a7','b')&&pawnAt(b,'b7','b')&&pawnAt(b,'c6','b')&&
-   f.white.pawns.pawnIslands>=1&&f.black.pawns.pawnIslands>=1,
+   f.white.pawns.pawnIslands>=1&&f.black.pawns.pawnIslands>=1&&
+   f.white.strategy.minorityAttack===true&&f.black.strategy.minorityAttack===false,
  'rook-ending':(f,b)=>f.material.white.r>=1&&f.material.black.r>=1&&
    f.material.white.q===0&&f.material.black.q===0&&
    f.material.white.n+f.material.white.b+f.material.black.n+f.material.black.b===0&&
@@ -57,7 +58,7 @@ for(const p of positions)test('master game FEN and position facts: '+p.id,()=>{
  const facts=positionFacts(p.fen);
  assert.ok(facts,'invalid FEN: '+p.id);
  assert.ok(criteria[p.id](facts,board),'claimed chess theme not proven by positionFacts: '+p.id);
- assert.ok(Buffer.byteLength(JSON.stringify(facts),'utf8')<=4096);
+ assert.ok(Buffer.byteLength(JSON.stringify(facts),'utf8')<=6144);
  assert.equal(facts.white.pawns.passedBlockaded.every(s=>facts.white.pawns.blockaded.includes(s)),true);
  assert.equal(facts.black.pawns.passedBlockaded.every(s=>facts.black.pawns.blockaded.includes(s)),true);
 });

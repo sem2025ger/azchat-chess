@@ -81,9 +81,9 @@ function withLineEndFacts(lines,fen){
    const finalFen=board.fen(),facts=positionFacts(finalFen);
    if(!facts)return line;
    return {...line,endFacts:{
-    fen:finalFen,plies:line.moves.length,material:facts.material,
-    white:{pawns:facts.white.pawns,king:facts.white.king},
-    black:{pawns:facts.black.pawns,king:facts.black.king}
+    fen:finalFen,plies:line.moves.length,material:facts.material,majorities:facts.majorities,
+    white:{pawns:facts.white.pawns,king:facts.white.king,minorityAttack:facts.white.strategy.minorityAttack},
+    black:{pawns:facts.black.pawns,king:facts.black.king,minorityAttack:facts.black.strategy.minorityAttack}
    }};
   }catch{return line;} // A corrupt SAN cannot compromise the chat request.
  });
