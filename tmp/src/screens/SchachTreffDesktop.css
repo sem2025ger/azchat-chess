@@ -104,8 +104,11 @@
 .schach-treff .st-message-heading .st-name{min-height:0;min-width:0;padding:1px 0;border:0;color:#F2EEE3;background:transparent;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .schach-treff .st-message-content>p{margin:0;color:#F2EEE3;font-size:15px;line-height:1.5;white-space:pre-wrap}
 .schach-treff .st-chat .st-challenge-icon{display:grid;place-items:center;flex:none;width:32px;height:32px;min-height:32px;margin-left:auto;padding:0;border:1px solid #ffffff17;border-radius:8px;background:#222224;color:#E3D3B4}
-@media(min-width:1024px) and (hover:hover) and (pointer:fine){
+@media(min-width:1024px){
   .schach-treff .st-message:not(:hover) .st-challenge-icon:not(:focus){opacity:0}
+}
+@media(any-pointer:coarse){
+  .schach-treff .st-message:not(:hover) .st-challenge-icon:not(:focus){opacity:1}
 }
 .schach-treff .st-challenge-card{margin-top:4px;padding:10px;border:1px solid #b8916a40;border-radius:8px;background:#0E100F}
 .schach-treff .st-chat .st-composer{display:flex;flex:none;flex-wrap:nowrap;gap:8px;padding:8px 0 0;border-top:1px solid #ffffff12}
@@ -113,6 +116,7 @@
 .schach-treff .st-chat .st-composer button{white-space:nowrap;flex:none}
 .schach-treff .st-chat .st-composer .st-composer-challenge{color:#E3D3B4;background:#222224;border:1px solid #ffffff1a;border-radius:8px}
 .schach-treff .st-chat .st-composer .st-send{color:#17130e;background:var(--st-bronze);border:1px solid transparent;border-radius:8px;font-weight:700}
+.schach-treff .st-chat .st-composer .st-send:disabled{opacity:.55;cursor:not-allowed}
 .schach-treff .st-chat .st-composer .st-send:hover:not(:disabled){background:var(--st-soft-bronze)}
 .schach-treff .st-invite-dialog{width:min(100% - 24px,380px);max-width:none}
 .schach-treff .st-invite-fields{display:grid;gap:8px;margin:10px 0}
@@ -124,7 +128,7 @@
   .schach-treff .st-chat .st-back-general,.schach-treff .st-chat .st-invite-trigger{padding-inline:4px;gap:4px;font-size:12px}
   .schach-treff .st-chat .st-composer{gap:5px}
   .schach-treff .st-chat .st-composer button{padding-inline:6px;font-size:12px}
-  .schach-treff .st-chat .st-composer input{padding-inline:6px}
+  .schach-treff .st-chat .st-composer input{padding-inline:6px;font-size:13px}
   .schach-treff dialog{margin:auto;padding:16px;max-height:80dvh;overflow:auto;border:1px solid #ffffff22;border-radius:12px;background:#1b1c1f;color:#F2EEE3}
   .schach-treff dialog::backdrop{background:#000b}
   .schach-treff dialog form{display:grid;gap:8px}

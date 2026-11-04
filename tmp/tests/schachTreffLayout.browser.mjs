@@ -62,6 +62,7 @@ export async function checkRoomLayout(){
    assert.ok(await evaluate("Array.from(document.querySelectorAll('.st-challenge-icon')).every(b=>b.parentElement.classList.contains('st-message-heading') && b.getAttribute('aria-label') && b.querySelector('svg') && b.offsetWidth===32)"));
    assert.equal(await evaluate("document.querySelector('.st-composer .st-send').disabled"), true);
    assert.ok(await evaluate("document.querySelector('.st-messages').scrollTop > 0"));
+   assert.equal(await evaluate("getComputedStyle(document.querySelector('.st-challenge-icon')).opacity"), width===375?'1':'0');
    await evaluate("document.querySelector('.st-message .st-challenge-icon').focus()");
    assert.equal(await evaluate("getComputedStyle(document.activeElement).opacity"), '1');
    assert.equal(await evaluate("document.querySelector('.st-invite-dialog').open"), false);
@@ -89,14 +90,18 @@ export async function checkRoomLayout(){
      assert.ok(await evaluate(`(()=>{
        const form=document.querySelector('.st-composer'), header=document.querySelector('.st-chat-header');
        const [challenge,send]=form.querySelectorAll('button');
+       const input=form.querySelector('input'), style=getComputedStyle(input);
+       const canvas=document.createElement('canvas').getContext('2d');
+       canvas.font=style.font;
+       const placeholderFits=innerWidth>=1024 || canvas.measureText(input.placeholder).width<=input.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight)+1;
        return document.documentElement.scrollWidth<=innerWidth+1 && header.scrollWidth<=header.clientWidth+1 &&
          form.scrollWidth<=form.clientWidth+1 && form.querySelector('input').offsetWidth>35 &&
-         [challenge,send].every(b=>getComputedStyle(b).whiteSpace==='nowrap') &&
+         placeholderFits && [challenge,send].every(b=>getComputedStyle(b).whiteSpace==='nowrap') &&
          challenge.offsetTop===send.offsetTop;
      })()`), 'header and composer fit at '+width+' in '+lang);
    }
    if(process.env.SECTIONS_CAPTURE && width!==1280) {
-     await evaluate("document.querySelector('.st-messages').scrollTop = document.querySelector('.st-messages').scrollHeight");
+     await evaluate("document.activeElement?.blur(); document.querySelector('.st-messages').scrollTop = document.querySelector('.st-messages').scrollHeight");
      if(width===375) await evaluate("document.querySelector('.st-chat').scrollIntoView({block:'end'})");
      const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
      await writeFile(join(process.env.SECTIONS_CAPTURE,width===375?'schach-treff-mobile-club-375.png':'schach-treff-desktop-club-1920.png'),Buffer.from(image.data,'base64'));

@@ -191,7 +191,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         </div>
         <form className="st-composer" onSubmit={send}>
           <ChallengeButton composer />
-          <input aria-label={t.placeholder} placeholder={t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required />
+          <input aria-label={t.placeholder} placeholder={hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required />
           <button className="st-send" disabled={busy || !body.trim()}>{t.send}</button>
         </form>
       </section>

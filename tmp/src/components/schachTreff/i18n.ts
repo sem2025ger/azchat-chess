@@ -1,5 +1,6 @@
 import type { Language } from '../../translations';
 const fixedCopy: Record<string, Record<Language,string>> = {
+  "Nachricht": {de:"Nachricht",en:"Message",az:"Mesaj",tr:"Mesaj",ua:"Текст",ru:"Сообщение"},
   "Einladen": {de:"Einladen",en:"Invite",az:"Dəvət et",tr:"Davet et",ua:"Запросити",ru:"Пригласить"},
   "Angeheftete Nachricht bearbeiten": {de:"Angeheftete Nachricht bearbeiten",en:"Edit pinned message",az:"Bərkidilmiş mesajı redaktə et",tr:"Sabitlenen mesajı düzenle",ua:"Редагувати закріплене повідомлення",ru:"Редактировать закреплённое сообщение"},
   "Spieler herausfordern": {de:"Spieler herausfordern",en:"Challenge player",az:"Oyunçuya meydan oxu",tr:"Oyuncuya meydan oku",ua:"Кинути виклик гравцю",ru:"Вызвать игрока"},

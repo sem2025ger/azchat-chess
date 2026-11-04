@@ -2,7 +2,7 @@ import { useOptionalLanguage } from '../../context/LanguageContext';
 import { translateSchachTreff } from './i18n';
 export const copy = {
   invite: 'Einladen', editPin: 'Angeheftete Nachricht bearbeiten', challengePlayer: 'Spieler herausfordern',
-  showMore: 'Mehr anzeigen', showLess: 'Weniger anzeigen',
+  showMore: 'Mehr anzeigen', showLess: 'Weniger anzeigen', shortPlaceholder: 'Nachricht',
   createClub: '+ Vereinschat erstellen', clubEmpty: 'Geschlossener Chat nur für Mitglieder deines Vereins. Erstelle einen Vereinschat oder nimm eine Einladung an.', backGeneral: '← Allgemeiner Chat', clubName: 'Name des Vereins', createRoom: 'Raum erstellen',
   copyLink: 'Link kopieren', linkCopied: 'Link kopiert', inviteLink: 'Einladungslink', inviteReady: 'Dein Einladungslink ist bereit.',
   openChat: 'Chat öffnen', mobileRoomNotice: 'Vereinsräume sind vorerst in der Desktop-Version verfügbar.',
