@@ -85,6 +85,9 @@ function positionFacts(fen){
     // A pawn can attack this target only from the preceding rank on an adjacent file.
     // Pawns already level with the target cannot turn back to attack it.
     if(ownPawns.some(p=>Math.abs(p.f-f)===1&&(r-p.r)*direction>=1))continue;
+    // Owner amendment: a same-file pawn behind the square can still advance
+    // onto it, so the square must not be labelled permanently weak.
+    if(ownPawns.some(p=>p.f===f&&(r-p.r)*direction>=1))continue;
     holes.push(target);
    }
    const holesOccupiedByEnemyPiece=holes.filter(s=>{
