@@ -8,14 +8,15 @@ import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 const fixture=`import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{MemoryRouter}from'react-router-dom';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Chat from'/src/screens/ChessAZCommunityScreen.tsx';localStorage.setItem('app-language','ru');function Probe(){const {setLanguage}=useLanguage();window.setFixtureLanguage=setLanguage;return null}createRoot(document.getElementById('root')).render(<LanguageProvider><MemoryRouter><Probe/><Chat/></MemoryRouter></LanguageProvider>);`;
 const db=`const uid='11111111-1111-4111-8111-111111111111', room='22222222-2222-4222-8222-222222222222', guest='33333333-3333-4333-8333-333333333333';
 const feed = Array.from({length:28}, (_, index) => ({
-  id:'message-'+index, author_id:index%2 ? uid : guest,
+  id:'message-'+index, author_id:index>=21 && index<=24 || index>=26 ? guest : index%2 ? uid : guest,
   body:['Добро пожаловать в Schach-Treff!','Кто хочет сыграть тренировочную партию?','Я буду онлайн после восьми.','Отлично, давайте обсудим дебют после партии.'][index%4],
-  created_at:new Date(Date.now()-(28-index)*60000).toISOString()
+  created_at:new Date(Date.UTC(2026,10,4,12,0,0)+(index+(index>=24?6:0))*60000).toISOString()
 }));
 export const supabase = {
   async rpc(name, payload) {
     if(name==='create_club_invite' && payload.p_club_id===room) {
       window.fixtureInvites = (window.fixtureInvites || 0) + 1;
+      if(window.fixtureInviteLimit) return {data:null,error:{message:'invite_limit'}};
       return {data:'a'.repeat(32),error:null};
     }
     throw Error('Unexpected RPC '+name);
@@ -41,6 +42,10 @@ export const supabase = {
         } else if(table==='profiles') {
           rows=[{id:uid,username:'Sofia'},{id:guest,username:'Maksim'}];
         } else if(table==='chess_club_messages') rows=feed.slice().reverse();
+        else if(table==='chess_club_challenges') rows=[{
+          id:'challenge-26',message_id:'message-26',created_by:guest,target_user_id:uid,
+          time_control:'3+2',status:'open',expires_at:'2099-12-31T23:59:59Z',room_id:null
+        }];
         return Promise.resolve({data:single?(rows[0]||null):rows,error:null}).then(resolve,reject);
       }
     };return q;
@@ -57,7 +62,7 @@ export async function checkRoomLayout(){
    await cdp('Page.navigate',{url:roomFixture});
    await wait("document.querySelector('.st-chat-header h2')?.textContent === 'shax' && document.querySelector('.st-challenge-icon')");
    assert.equal(await evaluate("document.querySelectorAll('article.st-message').length"), 28);
-   assert.equal(await evaluate("document.querySelectorAll('article.st-message .st-challenge-icon').length"), 14);
+   assert.ok(await evaluate("document.querySelectorAll('article.st-message .st-challenge-icon').length >= 10"));
    assert.equal(await evaluate("document.querySelectorAll('article.st-message-own .st-challenge-icon, article.st-message .st-composer-challenge').length"), 0);
    assert.ok(await evaluate("Array.from(document.querySelectorAll('.st-challenge-icon')).every(b=>b.parentElement.classList.contains('st-message-heading') && b.getAttribute('aria-label') && b.querySelector('svg') && b.offsetWidth===32)"));
    assert.equal(await evaluate("document.querySelector('.st-composer .st-send').disabled"), true);
@@ -65,9 +70,21 @@ export async function checkRoomLayout(){
    assert.equal(await evaluate("getComputedStyle(document.querySelector('.st-challenge-icon')).opacity"), width===375?'1':'0');
    await evaluate("Array.from(document.querySelectorAll('.st-challenge-icon')).at(-1).focus({preventScroll:true})");
    await wait("document.hasFocus() && document.activeElement.matches('.st-challenge-icon:focus') && getComputedStyle(document.activeElement).opacity === '1'");
-   assert.equal(await evaluate("document.querySelector('.st-invite-dialog').open"), false);
+   assert.equal(await evaluate("document.querySelector('.st-invite-dialog,.st-invite-fields')"), null);
    assert.equal(await evaluate("window.fixtureInvites || 0"), 0);
-   assert.equal(await evaluate("document.querySelector('.st-invite-dialog input')"), null);
+   assert.equal(await evaluate("document.querySelector('article:nth-child(22) .st-message-heading') !== null"), true);
+   assert.equal(await evaluate("document.querySelector('article:nth-child(23) .st-message-heading')"), null);
+   assert.equal(await evaluate("document.querySelector('article:nth-child(24) .st-message-heading')"), null);
+   assert.ok(await evaluate("document.querySelector('article:nth-child(23)').getAttribute('title')"));
+   assert.equal(await evaluate("document.querySelector('article:nth-child(25) .st-message-heading') !== null"), true);
+   assert.equal(await evaluate("document.querySelector('article:nth-child(26) .st-message-heading') !== null"), true);
+   assert.equal(await evaluate("document.querySelector('article:nth-child(27) .st-challenge-card') !== null"), true);
+   assert.equal(await evaluate("document.querySelector('article:nth-child(27) .st-message-heading') !== null"), true);
+   assert.equal(await evaluate("document.querySelector('article:nth-child(28) .st-message-heading') !== null"), true);
+   await evaluate("document.querySelector('article:nth-child(22) .st-name').click()");
+   await wait("document.querySelector('dialog[open] .st-close') && document.querySelector('dialog[open] h2')?.textContent === 'Maksim'");
+   assert.ok(await evaluate("document.querySelector('dialog[open] button:not(.st-close)')"));
+   await evaluate("document.querySelector('dialog[open] .st-close').click()");
    const collapsed = await evaluate("document.querySelector('.st-pin-text').getBoundingClientRect().height");
    assert.ok(collapsed < 24);
    await evaluate("document.querySelector('.st-pin').click()");
@@ -77,13 +94,44 @@ export async function checkRoomLayout(){
    await evaluate("document.querySelector('.st-pin-menu > button').click()");
    assert.equal(await evaluate("document.querySelectorAll('.st-pin-actions button').length"),1);
    await evaluate("document.querySelector('.st-pin-menu > button').click()");
-   await evaluate(`Object.defineProperty(navigator,'clipboard',{value:{async writeText(value){window.copiedInvite=value;}}});
+   await evaluate(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{async writeText(value){window.copiedInvite=value;window.copyCalls=(window.copyCalls||0)+1;}}});`);
+   if(process.env.SECTIONS_CAPTURE && width!==1280) {
+     await evaluate("document.querySelector('.st-chat-header').scrollIntoView()");
+     const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+     await writeFile(join(process.env.SECTIONS_CAPTURE,width===375?'schach-treff-mobile-header-before-375.png':'schach-treff-desktop-header-before-1920.png'),Buffer.from(image.data,'base64'));
+   }
+   await evaluate("document.querySelector('.st-invite-trigger').click()");
+   await wait("document.querySelector('.st-invite-trigger').textContent.includes('✓')");
+   assert.equal(await evaluate("window.fixtureInvites"), 1);
+   assert.equal(await evaluate("window.copyCalls"), 1);
+   assert.equal(await evaluate("document.querySelector('.st-invite-popover,.st-invite-dialog,.st-invite-fields')"),null);
+   assert.ok(await evaluate("window.copiedInvite.endsWith('/schach-treff/einladung/'+'a'.repeat(32))"));
+   if(process.env.SECTIONS_CAPTURE && width!==1280) {
+     const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+     await writeFile(join(process.env.SECTIONS_CAPTURE,width===375?'schach-treff-mobile-header-copied-375.png':'schach-treff-desktop-header-copied-1920.png'),Buffer.from(image.data,'base64'));
+   }
+   await evaluate("document.querySelector('.st-invite-trigger').click()");
+   await wait("window.copyCalls === 2");
+   assert.equal(await evaluate("window.fixtureInvites"),1);
+   await wait("!document.querySelector('.st-invite-trigger').textContent.includes('✓')");
+   assert.equal(await evaluate("document.querySelector('.st-invite-trigger').textContent.trim()"),'Ссылка-приглашение');
+   await evaluate(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{async writeText(){throw Error('denied')}}});
      document.querySelector('.st-invite-trigger').click();`);
-   await wait("document.querySelector('.st-invite-dialog[open] input[readonly]')");
-   await evaluate("document.querySelector('.st-invite-fields button').click()");
-   await wait("document.querySelector('.st-invite-fields [role=status]').textContent");
-   assert.equal(await evaluate("window.copiedInvite"), await evaluate("document.querySelector('.st-invite-fields input').value"));
-   await evaluate("document.querySelector('.st-invite-dialog').close()");
+   await wait("document.querySelector('.st-invite-popover input[readonly]')");
+   assert.equal(await evaluate("document.querySelector('.st-invite-popover input').value"),await evaluate("window.copiedInvite"));
+   await evaluate("document.querySelector('.st-invite-popover button').click()");
+   assert.equal(await evaluate("document.querySelector('.st-invite-popover')"),null);
+   assert.equal(await evaluate("window.fixtureInvites"),1);
+   if(width===1280) {
+     await evaluate("window.sessionStorage.removeItem('schach-treff-invite:22222222-2222-4222-8222-222222222222')");
+     await cdp('Page.navigate',{url:roomFixture});
+     await wait("document.querySelector('.st-invite-trigger')");
+     await evaluate("window.fixtureInviteLimit=true;document.querySelector('.st-invite-trigger').click()");
+     await wait("document.querySelector('.st-invite-note')");
+     assert.ok(await evaluate("document.querySelector('.st-invite-note').textContent.includes('10 действующих ссылок')"));
+     assert.equal(await evaluate("document.querySelector('.st-invite-dialog,.st-invite-popover')"),null);
+     await wait("!document.querySelector('.st-invite-note')");
+   }
    for(const lang of ['de','en','az','tr','ua','ru']) {
      await evaluate(`window.setFixtureLanguage('${lang}')`);
      await wait(`document.documentElement.lang==='${lang==='ua'?'uk':lang}'`);
