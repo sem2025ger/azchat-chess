@@ -81,10 +81,27 @@ test('offline dry run generates complete ten-position Markdown without network o
   assert.equal((report.match(/^#### ON/gm)||[]).length,10);
   assert.equal((report.match(/^\*\*Verified positionFacts JSON:/gm)||[]).length,10);
   assert.equal((report.match(/^\*\*Submitted engine evidence:/gm)||[]).length,20);
+  const slices=report.split(/^#### (OFF|ON)\s*$/m);
+  for(let i=1;i<slices.length;i+=2){
+   if(slices[i]==='ON')assert.match(slices[i+1],/"endFacts"\s*:/,'ON evidence must show endFacts');
+   else assert.doesNotMatch(slices[i+1],/"endFacts"\s*:/,'OFF evidence must omit endFacts');
+  }
+  assert.match(report,/\| iqp \|[^\n]*\| YES \| NO \|/,'dry run same engine core should compare YES');
   assert.ok(report.includes('&#96;')===false,'use real Markdown code fences');
   assert.ok(report.includes(String.fromCharCode(96).repeat(3)+'json'),'Markdown JSON fence expected');
   assert.ok(!report.includes('sk-'),'no API key prefix in report');
   console.log('QA dry-run report excerpt (first section):\n'+
    report.split('\n').slice(0,21).join('\n'));
  }finally{fs.rmSync(output,{force:true});}
+});
+
+test('review comparison ignores ON-only endFacts but detects move and score changes',()=>{
+ const {comparableEngineEvidence}=require('./scripts/positionFactsReview');
+ const base={id:'L1',moves:['O-O','Bxc3','bxc3','O-O','Re1'],scoreKind:'cp',scoreWhite:32,depth:14,wdlWhite:[350,420,230]};
+ const off={origin:'server_stockfish_19',engineLines:[base]};
+ const on={origin:'server_stockfish_19',engineLines:[{...base,endFacts:{fen:'test-only',plies:5,white:{pawns:{doubledFiles:[]}}}}]};
+ assert.equal(comparableEngineEvidence(off,on),true,'endFacts must not make engine lines non-comparable');
+ assert.equal(comparableEngineEvidence(off,{...on,engineLines:[{...on.engineLines[0],moves:['O-O','Be6']}]}),false,'different moves');
+ assert.equal(comparableEngineEvidence(off,{...on,engineLines:[{...on.engineLines[0],scoreWhite:base.scoreWhite+1}]}),false,'different engine score');
+ assert.equal(comparableEngineEvidence(off,{...on,origin:'untrusted_client_legality_checked'}),false,'origin must be server Stockfish');
 });

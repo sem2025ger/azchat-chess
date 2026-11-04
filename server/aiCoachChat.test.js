@@ -114,3 +114,72 @@ test('position-facts OFF keeps model evidence byte-identical; ON adds only verif
  assert.deepEqual(rest,seen[0].evidence,'ON retains all prior evidence');
  assert.equal(seen[2].instructions.split('evidence.positionFacts was computed deterministically').length-1,1);
 });
+
+const STEINITZ_FEN='r1bqk2r/ppp2ppp/2n5/3n4/1bBP4/2N2N2/PP3PPP/R1BQK2R w KQkq - 0 9';
+const STEINITZ_END_FEN='r1bq1rk1/ppp2ppp/2n5/3n4/2BP4/2P2N2/P4PPP/R1BQR1K1 b - - 2 11';
+const STEINITZ_PV=['O-O','Bxc3','bxc3','O-O','Re1'];
+const verifiedReply=()=>Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Verified QA fixture.'})}]}]});
+const lineFixture=(moves)=>({sanPv:moves,scoreKind:'cp',scoreWhite:28,depth:14,wdlWhite:[350,420,230]});
+
+test('V1.1 Steinitz: replay server PV and expose only verified endpoint facts to model',async()=>{
+ const observed=[];
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:[lineFixture(STEINITZ_PV)]})};
+ const q={fen:STEINITZ_FEN,message:'Какой план здесь у белых?',language:'ru',side:'any'};
+ const fetchImpl=async(_url,options)=>{
+  const payload=JSON.parse(options.body),evidence=JSON.parse(payload.input).evidence;
+  observed.push({evidence,instructions:payload.instructions});
+  return verifiedReply();
+ };
+ const off=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:false});
+ const on=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true});
+ assert.equal(off.engineVerified,true);
+ assert.equal(on.engineVerified,true);
+ const offFacts=observed[0].evidence.candidateLines[0].endFacts;
+ assert.equal(offFacts,undefined);
+ assert.equal(Object.hasOwn(observed[0].evidence,'positionFacts'),false);
+ const result=observed[1].evidence.candidateLines[0].endFacts;
+ assert.equal(result.fen,STEINITZ_END_FEN);
+ assert.equal(result.plies,5);
+ assert.deepEqual(result.white.pawns.doubledFiles,[]);
+ assert.deepEqual(result.white.pawns.isolated,['a2']);
+ assert.deepEqual(result.white.pawns.blockaded,['d4']);
+ assert.equal(result.white.pawns.pawnIslands,3);
+ const {positionFacts,...onWithoutFacts}=observed[1].evidence;
+ assert.deepEqual({...onWithoutFacts,candidateLines:onWithoutFacts.candidateLines.map(({endFacts,...line})=>line)},observed[0].evidence);
+ assert.equal(JSON.stringify(off.engineLines),JSON.stringify(on.engineLines));
+ assert.equal(JSON.stringify(on.engineLines).includes('endFacts'),false,'never expose endFacts in engineLines');
+ assert.equal(JSON.stringify(on.candidateLines).includes('endFacts'),false,'never expose endFacts in candidateLines');
+ assert.equal(JSON.stringify(on).includes('endFacts'),false,'no endFacts anywhere in browser response');
+ assert.ok(observed[1].instructions.includes('Never infer the pawn structure after captures yourself.'));
+ assert.ok(!observed[0].instructions.includes('endFacts'));
+});
+
+test('V1.1 malformed SAN cannot crash chat, and cannot get endFacts',async()=>{
+ const q={fen:STEINITZ_FEN,message:'Какой план здесь у белых?',language:'ru',side:'any'};
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},
+  lines:[lineFixture(['O-O','BAD-SAN-STRING'])]})};
+ const reply=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,positionFactsEnabled:true,
+  fetchImpl:async(_url,options)=>{
+   const evidence=JSON.parse(JSON.parse(options.body).input).evidence;
+   assert.equal(Object.hasOwn(evidence.candidateLines[0],'endFacts'),false);
+   assert.equal(evidence.candidateLines[0].moves[1],'BAD-SAN-STRING');
+   return verifiedReply();
+  }});
+ assert.equal(reply.answer,'Verified QA fixture.');
+ assert.equal(reply.engineVerified,true);
+});
+
+test('V1.1 three independent 10-ply PVs keep model evidence under 16KB',async()=>{
+ const q={fen:STEINITZ_FEN,message:'Какой план здесь у белых?',language:'ru',side:'any'};
+ const moves=['O-O','Be6','Bg5','Be7','Bxd5','Bxd5','Nxd5','Qxd5','Bxe7','Nxe7'];
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},
+  lines:[lineFixture(moves),lineFixture(moves),lineFixture(moves)]})};
+ await groundedChat(null,q,{openaiApiKey:'synthetic',engine,positionFactsEnabled:true,
+  fetchImpl:async(_url,options)=>{
+   const evidence=JSON.parse(JSON.parse(options.body).input).evidence;
+   assert.equal(evidence.candidateLines.length,3);
+   for(const line of evidence.candidateLines)assert.equal(line.endFacts.plies,10);
+   assert.ok(Buffer.byteLength(JSON.stringify(evidence),'utf8')<16*1024);
+   return verifiedReply();
+  }});
+});

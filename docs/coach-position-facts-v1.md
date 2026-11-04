@@ -29,3 +29,13 @@ Only when the fact gate is ON does the model receive the additional positional-f
 
 ## Coverage
 29 hand-specified fixed FEN positions cover start position, IQP, isolated/doubled and passed pawns, blockade, pawns that prevent passage, open and half-open files, both-colour knight outposts, bishop outpost, enemy pawn potential to challenge an outpost, undefended vs defended hanging pieces, lower-value attackers, castled/uncastled king, full/broken pawn shields, both sides to move, pawn islands, bishop pair, material balance and sparse endgames. Invalid FEN, repeatability, bounded size, and legacy flag-OFF behavior are also tested.
+
+
+## endFacts (V1.1) — facts at the END of a verified Stockfish variation
+When the exact server flag \`AI_COACH_POSITION_FACTS_ENABLED=true\` is set and a server Stockfish analysis exists, each model-only \`evidence.candidateLines[]\` entry may include \`endFacts\`. The server replays every SAN move from the queried FEN with chess.js strict notation. If a move is illegal or fact extraction returns \`null\`, that line has **no** \`endFacts\`; the request continues without fabricating results.
+
+\`endFacts\` contains \`fen\`, \`plies\`, \`material\`, and \`white\` / \`black\` with only \`pawns\` and \`king\`. It intentionally omits \`files\`, \`outposts\`, and \`hanging\`. For statements about a resulting pawn structure, the model is instructed to rely exclusively on the matching line's verified \`endFacts\`, not on generalized capture heuristics.
+
+This extension is **model evidence only**: the browser-facing \`engineLines\` and \`candidateLines\` remain unchanged. Flag OFF produces exactly the earlier evidence and prompt; non-server client lines never receive endpoint facts. The supplied chess data cannot guarantee the language model follows the instruction, so QA must still check its actual answer.
+
+Regression: Steinitz–von Bardeleben 1895, after 8...Nxd5, engine line \`9.O-O Bxc3 10.bxc3 O-O 11.Re1\`. The resulting position has exactly one white c-pawn (c3), **no** doubled c-pawns, an isolated pawn a2, and blocked d4.
