@@ -1,7 +1,7 @@
 import {useRegionalCopy} from '../i18n/regionalCopy';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Pin, UserPlus } from 'lucide-react';
+import { ArrowLeft, Link2, Pin } from 'lucide-react';
 import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalLanguage } from '../context/LanguageContext';
@@ -9,7 +9,7 @@ import { supabase } from '../services/supabase';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
 import './SchachTreffDesktop.css';
-import { ChallengeProvider, ChallengeButton, ChallengeMessage } from '../components/schachTreff/Challenges';
+import { ChallengeProvider, ChallengeButton, ChallengeMessage, useChallengeMessageIds } from '../components/schachTreff/Challenges';
 import PlayerSummary from '../components/schachTreff/PlayerSummary';
 import ClubRooms, { RoomTitle } from '../components/schachTreff/ClubRooms';
 import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
@@ -173,21 +173,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
           followFeed.current = feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
         }}>
           {!messages.length && !error && <p>{t.empty}</p>}
-          {messages.map(message => {
-            const author = profiles.find(p => p.id === message.author_id);
-            const own = message.author_id === user?.id;
-            return <article key={message.id} className={own ? 'st-message st-message-own' : 'st-message'}>
-              <span className="st-avatar" aria-hidden="true">{Array.from(author?.username ?? '?')[0]?.toLocaleUpperCase()}</span>
-              <div className="st-message-content">
-                <div className="st-message-heading">
-                  {author && <button type="button" className="st-name" onClick={() => setPlayer(author)}>{author.username}</button>}
-                  <time dateTime={message.created_at}>{stamp(message.created_at)}</time>
-                  {!own && <ChallengeButton targetUserId={message.author_id} icon />}
-                </div>
-                <ChallengeMessage messageId={message.id} body={message.body} />
-              </div>
-            </article>;
-          })}
+          <MessageItems messages={messages} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} />
         </div>
         <form className="st-composer" onSubmit={send}>
           <ChallengeButton composer />
@@ -205,58 +191,126 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   </section>;
 }
 
+function MessageItems({ messages, profiles, me, onPlayer, stamp }: {
+  messages: Message[]; profiles: Profile[]; me?: string;
+  onPlayer: (profile: Profile) => void; stamp: (value: string) => string;
+}) {
+  const challengeIds = useChallengeMessageIds();
+  return <>{messages.map((message, index) => {
+    const previous = messages[index - 1];
+    const currentDate = new Date(message.created_at);
+    const previousDate = previous && new Date(previous.created_at);
+    const groupStart = !previous || previous.author_id !== message.author_id
+      || challengeIds.has(message.id) || challengeIds.has(previous.id)
+      || !previousDate || currentDate.toDateString() !== previousDate.toDateString()
+      || currentDate.getTime() - previousDate.getTime() < 0
+      || currentDate.getTime() - previousDate.getTime() > 5 * 60 * 1000;
+    const author = profiles.find(profile => profile.id === message.author_id);
+    const own = message.author_id === me;
+    const exactTime = currentDate.toLocaleString('de-DE', { dateStyle: 'full', timeStyle: 'medium' });
+    return <article key={message.id}
+      className={['st-message', own && 'st-message-own', !groupStart && 'st-message-grouped'].filter(Boolean).join(' ')}
+      title={exactTime} tabIndex={groupStart ? undefined : 0}>
+      {groupStart && <span className="st-avatar" aria-hidden="true">{Array.from(author?.username ?? '?')[0]?.toLocaleUpperCase()}</span>}
+      <div className="st-message-content">
+        {groupStart && <div className="st-message-heading">
+          {author && <button type="button" className="st-name" onClick={() => onPlayer(author)}>{author.username}</button>}
+          <time dateTime={message.created_at}>{stamp(message.created_at)}</time>
+          {!own && <ChallengeButton targetUserId={message.author_id} icon />}
+        </div>}
+        <ChallengeMessage messageId={message.id} body={message.body} />
+      </div>
+    </article>;
+  })}</>;
+}
 
 function RoomInvite({ clubId }: { clubId: string }) {
   const t = useSchachTreffCopy();
-  const dialog = useRef<HTMLDialogElement>(null);
-  const [link, setLink] = useState('');
+  const cacheKey = 'schach-treff-invite:' + clubId;
+  const remembered = useRef('');
+  const inFlight = useRef(false);
+  const copyTimer = useRef<number | undefined>(undefined);
+  const noteTimer = useRef<number | undefined>(undefined);
+  const fallbackInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState('');
+  const [fallback, setFallback] = useState('');
+  const [note, setNote] = useState('');
 
-  async function open() {
-    dialog.current?.showModal();
-    if (busy || link) return;
-    setBusy(true);
-    setError('');
+  useEffect(() => () => {
+    window.clearTimeout(copyTimer.current);
+    window.clearTimeout(noteTimer.current);
+  }, []);
+  useEffect(() => {
+    if (fallback) { fallbackInput.current?.focus(); fallbackInput.current?.select(); }
+  }, [fallback]);
+
+  function savedLink(): string | null {
+    const valid = (value: string) => {
+      try {
+        const url = new URL(value);
+        return url.origin === window.location.origin
+          && /^\/schach-treff\/einladung\/[0-9a-f]{32}$/.test(url.pathname)
+          && !url.search && !url.hash;
+      } catch { return false; }
+    };
+    if (valid(remembered.current)) return remembered.current;
     try {
-      const { data, error } = await supabase.rpc('create_club_invite', { p_club_id: clubId });
-      if (error) throw error;
-      if (typeof data !== 'string' || !/^[0-9a-f]{32}$/.test(data)) throw new Error();
-      setLink(window.location.origin + '/schach-treff/einladung/' + data);
+      const stored = window.sessionStorage.getItem(cacheKey);
+      if (stored && valid(stored)) { remembered.current = stored; return stored; }
+    } catch { /* Disabled or unavailable storage: retain in-memory link. */ }
+    return null;
+  }
+
+  async function copyInvite() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy(true);
+    setCopied(false);
+    setFallback('');
+    setNote('');
+    window.clearTimeout(copyTimer.current);
+    window.clearTimeout(noteTimer.current);
+    try {
+      let link = savedLink();
+      if (!link) {
+        const { data, error } = await supabase.rpc('create_club_invite', { p_club_id: clubId });
+        if (error) throw error;
+        if (typeof data !== 'string' || !/^[0-9a-f]{32}$/.test(data)) throw new Error();
+        link = window.location.origin + '/schach-treff/einladung/' + data;
+        remembered.current = link;
+        try { window.sessionStorage.setItem(cacheKey, link); }
+        catch { /* Clipboard copying works without storage. */ }
+      }
+      try {
+        await navigator.clipboard.writeText(link);
+        setCopied(true);
+        copyTimer.current = window.setTimeout(() => setCopied(false), 2500);
+      } catch {
+        setFallback(link);
+      }
     } catch (error) {
       const code = (error as { message?: string }).message;
-      setError(code && Object.hasOwn(t.roomErrors, code) ? t.roomErrors[code as keyof typeof t.roomErrors] : t.error);
+      setNote(code && Object.hasOwn(t.roomErrors, code)
+        ? t.roomErrors[code as keyof typeof t.roomErrors] : t.error);
+      if (code === 'invite_limit') noteTimer.current = window.setTimeout(() => setNote(''), 5000);
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }
 
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(link);
-      setError('');
-      setCopied(true);
-    } catch {
-      setCopied(false);
-      setError(t.error);
-    }
-  }
-
-  return <>
-    <button type="button" className="st-invite-trigger" aria-haspopup="dialog" aria-label={t.invite} onClick={() => void open()}>
-      <UserPlus size={16} aria-hidden="true" /><span>{t.invite}</span>
+  return <div className="st-invite-control">
+    <button type="button" className="st-invite-trigger" disabled={busy}
+      aria-label={copied ? t.linkCopied : t.inviteLink} onClick={() => void copyInvite()}>
+      <Link2 size={16} aria-hidden="true" />
+      <span>{copied ? '✓ ' + t.linkCopied : t.inviteLink}</span>
     </button>
-    <dialog className="st-invite-dialog" ref={dialog} aria-label={t.invite} onClose={() => { setCopied(false); setError(''); }}>
-      <h2>{t.invite}</h2>
-      {busy && <p role="status">{t.loading}</p>}
-      {link && <div className="st-invite-fields">
-        <label>{t.inviteLink}<input value={link} readOnly onFocus={e => e.currentTarget.select()} /></label>
-        <button type="button" onClick={() => void copyLink()}>{t.copyLink}</button>
-        <span role="status">{copied ? t.linkCopied : ''}</span>
-      </div>}
-      {error && <p role="alert">{error}</p>}
-      <button type="button" onClick={() => dialog.current?.close()}>{t.close}</button>
-    </dialog>
-  </>;
+    {note && <p className="st-invite-note" role="status">{note}</p>}
+    {fallback && <div className="st-invite-popover" role="group" aria-label={t.inviteLink}>
+      <input ref={fallbackInput} value={fallback} readOnly aria-label={t.inviteLink}
+        onFocus={event => event.currentTarget.select()} />
+      <button type="button" onClick={() => setFallback('')}>{t.close}</button>
+    </div>}
+  </div>;
 }
