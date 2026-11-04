@@ -7,11 +7,54 @@ import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 
 const fixture=`import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{BrowserRouter,MemoryRouter,Route,Routes}from'react-router-dom';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Chat from'/src/screens/ChessAZCommunityScreen.tsx';import Invite from'/src/screens/ClubInviteScreen.tsx';localStorage.setItem('app-language','ru');function Probe(){const {setLanguage}=useLanguage();window.setFixtureLanguage=setLanguage;return null}createRoot(document.getElementById('root')).render(<LanguageProvider>{location.pathname==='/room-fixture'?<MemoryRouter><Probe/><Chat/></MemoryRouter>:<BrowserRouter><Routes><Route path='/schach-treff/einladung/:token' element={<Invite/>}/><Route path='/chat' element={<Chat/>}/></Routes></BrowserRouter>}</LanguageProvider>);`;
 const db=`const uid='11111111-1111-4111-8111-111111111111', room='22222222-2222-4222-8222-222222222222';
-export const supabase={rpc(name){if(name==='create_club_invite'){window.inviteRequests=(window.inviteRequests||0)+1;return Promise.resolve({data:'0123456789abcdef0123456789abcdef',error:null})}return Promise.resolve({data:[],error:null})},from(table){let single=false,filters=[];const q={select(){return q},eq(k,v){filters.push([k,v]);return q},in(){return q},gte(){return q},order(){return q},limit(){return q},maybeSingle(){single=true;return q},insert(row){
-  if(table!=='chess_club_messages') throw Error('Unexpected insert '+table);
-  sessionStorage.setItem('sentMessage',JSON.stringify(row));
-  return Promise.resolve({error:null});
-},then(resolve,reject){let rows=[];if(table==='chess_clubs'){if(filters.some(([k,v])=>k==='kind'&&v==='room'))rows=[{id:room,name:'shax'}];else if(filters.some(([k,v])=>k==='id'&&v===room))rows=[{id:room,name:'shax'}];else rows=[{id:uid,name:'ChessAZ Deutsch'}]}else if(table==='chess_club_members')rows=[{user_id:uid,role:(new URLSearchParams(window.location.search).get('role')==='member'?'member':'admin')}];else if(table==='profiles')rows=[{id:uid,username:'QA User'}];return Promise.resolve({data:single?(rows[0]||null):rows,error:null}).then(resolve,reject)}};return q}};`;
+export const supabase = {
+  async rpc(name, args) {
+    if (name === 'create_club_invite') {
+      window.inviteRequests = (window.inviteRequests || 0) + 1;
+      return {data:'0123456789abcdef0123456789abcdef',error:null};
+    }
+    if (name !== 'join_club_by_invite') throw Error('Unexpected RPC ' + name);
+    sessionStorage.setItem('lastInvite', args.p_token);
+    if (args.p_token !== 'a'.repeat(32)) return {data:null,error:{message:'invite_expired'}};
+    sessionStorage.setItem('joinedRoom', room);
+    return {data:room,error:null};
+  },
+  from(table) {
+    let single = false;
+    const filters = new Map();
+    const q = {
+      select(){return q},eq(k,v){filters.set(k,v);return q},in(){return q},gte(){return q},order(){return q},limit(){return q},
+      maybeSingle(){single=true;return q},
+      insert(row) {
+        if (table !== 'chess_club_messages') throw Error('Unexpected insert ' + table);
+        sessionStorage.setItem('sentMessage', JSON.stringify(row));
+        return Promise.resolve({error:null});
+      },
+      then(resolve,reject) {
+        let rows = [];
+        if (table === 'chess_clubs') {
+          rows = filters.get('kind') === 'room' || filters.get('id') === room
+            ? [{id:room,name:'shax'}] : [{id:uid,name:'ChessAZ Deutsch'}];
+        } else if (table === 'chess_club_members') {
+          const layout = location.pathname === '/room-fixture';
+          const memberRole = !layout || new URLSearchParams(location.search).get('role') === 'member';
+          if (layout || filters.get('club_id') !== room || sessionStorage.getItem('joinedRoom') === room) {
+            rows = [{user_id:uid,role:memberRole?'member':'admin'}];
+          }
+        } else if (table === 'chess_club_messages') {
+          const message = JSON.parse(sessionStorage.getItem('sentMessage') || 'null');
+          if (message && filters.get('club_id') === message.club_id) {
+            rows = [{...message,id:'fixture-message',created_at:'2026-11-01T15:00:00Z'}];
+          }
+        } else if (table === 'profiles') {
+          rows = [{id:uid,username:'QA User'}];
+        }
+        return Promise.resolve({data:single?(rows[0]||null):rows,error:null}).then(resolve,reject);
+      }
+    };
+    return q;
+  }
+};`;
 const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user:new URLSearchParams(location.search).has('guest')?null:user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!['/room-fixture','/chat','/schach-treff/einladung/'].some(path=>req.url.startsWith(path)))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
 export async function checkRoomLayout(){
  const server=await createServer({configFile:false,cacheDir:join(tmpdir(),'room-vite-'+process.pid),optimizeDeps:{noDiscovery:true,include:['react','react-dom/client','react-router-dom','lucide-react']},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}}});let chrome,ws,profile;const pending=new Map();
@@ -58,7 +101,7 @@ export async function checkRoomLayout(){
      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'invite test');
      input.dispatchEvent(new Event('input', {bubbles:true}));
    })()`);
-   await wait("!document.querySelector('.st-composer button[type=submit], .st-composer button:last-child').disabled");
+   await wait("document.querySelector('.st-composer button:last-child')?.disabled === false");
    await evaluate("document.querySelector('.st-composer').requestSubmit()");
    await wait("document.querySelector('.st-messages')?.textContent.includes('invite test')");
    assert.equal(await evaluate("JSON.parse(sessionStorage.getItem('sentMessage')).club_id"), roomId);
