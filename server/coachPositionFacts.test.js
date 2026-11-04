@@ -128,10 +128,12 @@ const v2Cases=[
   verify:f=>{assert.ok(f.white.strategy.holes.includes('d4'));assert.ok(f.white.strategy.holesOccupiedByEnemyPiece.includes('d4'));}},
  {name:'white pawn c2 can advance to protect d4: not a hole',fen:'6k1/8/8/4P3/8/8/2P5/6K1 w - - 0 1',
   verify:f=>{assert.ok(!f.white.strategy.holes.includes('d4'));}},
- {name:'black f6 and h6 are not holes if f7 and h7 pawns can occupy them',fen:'6k1/5p1p/6p1/8/8/8/5PPP/6K1 w - - 0 1',
-  verify:f=>{assert.ok(!f.black.strategy.holes.includes('f6'));assert.ok(!f.black.strategy.holes.includes('h6'));}},
- {name:'black h6 remains a hole without a same-file h-pawn',fen:'6k1/5p2/6p1/8/8/8/5PPP/6K1 w - - 0 1',
-  verify:f=>{assert.ok(!f.black.strategy.holes.includes('f6'));assert.ok(f.black.strategy.holes.includes('h6'));}},
+ {name:'black f6 and h6 are holes that own f7 and h7 pawns may occupy',fen:'6k1/5p1p/6p1/8/8/8/5PPP/6K1 w - - 0 1',
+  verify:f=>{for(const s of ['f6','h6']){assert.ok(f.black.strategy.holes.includes(s));assert.ok(f.black.strategy.holesPawnCanOccupy.includes(s));}}},
+ {name:'black h6 is a hole without an h-pawn to occupy it',fen:'6k1/5p2/6p1/8/8/8/5PPP/6K1 w - - 0 1',
+  verify:f=>{for(const s of ['f6','h6'])assert.ok(f.black.strategy.holes.includes(s));assert.ok(f.black.strategy.holesPawnCanOccupy.includes('f6'));assert.ok(!f.black.strategy.holesPawnCanOccupy.includes('h6'));}},
+ {name:'Najdorf-type white knight d5 occupies black hole but d6 pawn can advance onto it',fen:'6k1/8/3p4/3Np3/8/8/8/6K1 w - - 0 1',
+  verify:f=>{assert.ok(f.black.strategy.holes.includes('d5'));assert.ok(f.black.strategy.holesOccupiedByEnemyPiece.includes('d5'));assert.ok(f.black.strategy.holesPawnCanOccupy.includes('d5'));}},
  {name:'queenside white majority 3 versus 2',fen:'4k3/pp6/8/8/8/8/PPP5/4K3 w - - 0 1',
   verify:f=>{assert.deepEqual(f.majorities.queenside,{white:3,black:2,majority:'white'});assert.equal(f.majorities.centre.majority,null);assert.equal(f.majorities.kingside.majority,null);}},
  {name:'queenside black majority 3 versus 2',fen:'4k3/ppp5/8/8/8/8/PP6/4K3 w - - 0 1',
@@ -154,6 +156,7 @@ test('V2 start: no bad bishops, no holes, no minority attack and equal majoritie
   assert.equal(f[color].strategy.bishops.every(x=>x.bad===false),true);
   assert.deepEqual(f[color].strategy.holes,[]);
   assert.deepEqual(f[color].strategy.holesOccupiedByEnemyPiece,[]);
+  assert.deepEqual(f[color].strategy.holesPawnCanOccupy,[]);
   assert.equal(f[color].strategy.minorityAttack,false);
  }
  for(const wing of Object.values(f.majorities))assert.deepEqual(wing,{white:wing.white,black:wing.black,majority:null});
