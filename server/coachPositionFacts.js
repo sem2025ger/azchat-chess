@@ -70,15 +70,44 @@ function positionFacts(fen){
    const nearby=[king.f-1,king.f,king.f+1].filter(f=>f>=0&&f<8);
    const pawnShield=ownPawns.filter(p=>nearby.includes(p.f)&&(p.r-king.r)*direction>=1&&(p.r-king.r)*direction<=2).length;
    const openFilesNearKing=nearby.filter(f=>openFiles.includes(FILES[f])||(!files.has(f)&&occupiedFiles[enemy].has(f))).map(f=>FILES[f]);
+   // V2 deterministic geometric descriptors. No engine, game history or move search.
+   const bishops=pieces[color].filter(p=>p.type==='b').map(b=>{
+    const squareColor=(b.f+b.r)%2===0?'light':'dark';
+    const same=ownPawns.filter(p=>((p.f+p.r)%2===0)===(squareColor==='light'));
+    const fixed=same.filter(p=>{const stop=grid.get(square(p.f,p.r+direction));return stop?.color===enemy&&stop.type==='p';});
+    return {square:b.square,squareColor,sameColorPawns:same.map(p=>p.square),
+     fixedSameColorPawns:fixed.map(p=>p.square),bad:same.length>=3&&fixed.length>=2};
+   });
+   const holes=[];
+   for(let f=0;f<8;f++)for(const r of (color==='w'?[3,4]:[5,6])){
+    const target=square(f,r),occupant=grid.get(target);
+    if(occupant?.color===color&&occupant.type==='p')continue;
+    // A pawn can attack this target only from the preceding rank on an adjacent file.
+    // Pawns already level with the target cannot turn back to attack it.
+    if(ownPawns.some(p=>Math.abs(p.f-f)===1&&(r-p.r)*direction>=1))continue;
+    holes.push(target);
+   }
+   const holesOccupiedByEnemyPiece=holes.filter(s=>{
+    const p=grid.get(s);return p?.color===enemy&&['n','b'].includes(p.type);
+   });
+   const minorityAttack=ownPawns.filter(p=>p.f<=2).length===2&&enemyPawns.filter(p=>p.f<=2).length===3&&
+    ownPawns.some(p=>p.f===3&&enemyPawns.some(e=>e.f===3&&e.r===p.r+direction));
    result[side]={
     pawns:{isolated,doubledFiles,passed,blockaded,passedBlockaded,pawnIslands:islands},
     files:{open:openFiles,halfOpen},
     outposts,
     hanging:{static:true,undefended,lowerValueAttacked},
-    king:{square:king.square,castled:(color==='w'?['g1','c1','b1']:['g8','c8','b8']).includes(king.square),pawnShield,openFilesNearKing}
+    king:{square:king.square,castled:(color==='w'?['g1','c1','b1']:['g8','c8','b8']).includes(king.square),pawnShield,openFilesNearKing},
+    strategy:{bishops,holes,holesOccupiedByEnemyPiece,minorityAttack}
    };
   }
-  return Buffer.byteLength(JSON.stringify(result),'utf8')<=4096?result:null;
+  const wing=(from,to)=>{
+   const white=pawns.w.filter(p=>p.f>=from&&p.f<=to).length;
+   const black=pawns.b.filter(p=>p.f>=from&&p.f<=to).length;
+   return {white,black,majority:white===black?null:white>black?'white':'black'};
+  };
+  result.majorities={queenside:wing(0,2),centre:wing(3,4),kingside:wing(5,7)};
+  return Buffer.byteLength(JSON.stringify(result),'utf8')<=6144?result:null;
  }catch{return null;}
 }
 module.exports={positionFacts};
