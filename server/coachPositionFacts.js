@@ -92,7 +92,8 @@ function positionFacts(fen){
     const p=grid.get(s);return p?.color===enemy&&['n','b'].includes(p.type);
    });
    const minorityAttack=ownPawns.filter(p=>p.f<=2).length===2&&enemyPawns.filter(p=>p.f<=2).length===3&&
-    ownPawns.some(p=>p.f===3&&enemyPawns.some(e=>e.f===3&&e.r===p.r+direction));
+    ownPawns.some(p=>p.square===(color==='w'?'d4':'d5'))&&
+    enemyPawns.some(p=>p.square===(color==='w'?'d5':'d4'));
    result[side]={
     pawns:{isolated,doubledFiles,passed,blockaded,passedBlockaded,pawnIslands:islands},
     files:{open:openFiles,halfOpen},
