@@ -8,7 +8,7 @@ import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 const fixture=`import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{MemoryRouter}from'react-router-dom';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Chat from'/src/screens/ChessAZCommunityScreen.tsx';localStorage.setItem('app-language','ru');function Probe(){const {setLanguage}=useLanguage();window.setFixtureLanguage=setLanguage;return null}createRoot(document.getElementById('root')).render(<LanguageProvider><MemoryRouter><Probe/><Chat/></MemoryRouter></LanguageProvider>);`;
 const db=`const uid='11111111-1111-4111-8111-111111111111', room='22222222-2222-4222-8222-222222222222', guest='33333333-3333-4333-8333-333333333333';
 const feed = Array.from({length:28}, (_, index) => ({
-  id:'message-'+index, author_id:index>=21 && index<=24 || index>=26 ? guest : index%2 ? uid : guest,
+  id:'message-'+index, author_id:index===20 ? uid : index>=21 && index<=24 || index>=26 ? guest : index%2 ? uid : guest,
   body:['Добро пожаловать в Schach-Treff!','Кто хочет сыграть тренировочную партию?','Я буду онлайн после восьми.','Отлично, давайте обсудим дебют после партии.'][index%4],
   created_at:new Date(Date.UTC(2026,10,4,12,0,0)+(index+(index>=24?6:0))*60000).toISOString()
 }));
