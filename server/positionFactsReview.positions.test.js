@@ -81,6 +81,12 @@ test('offline dry run generates complete ten-position Markdown without network o
   assert.equal((report.match(/^#### ON/gm)||[]).length,10);
   assert.equal((report.match(/^\*\*Verified positionFacts JSON:/gm)||[]).length,10);
   assert.equal((report.match(/^\*\*Submitted engine evidence:/gm)||[]).length,20);
+  const slices=report.split(/^#### (OFF|ON)\s*$/m);
+  for(let i=1;i<slices.length;i+=2){
+   if(slices[i]==='ON')assert.match(slices[i+1],/"endFacts"\s*:/,'ON evidence must show endFacts');
+   else assert.doesNotMatch(slices[i+1],/"endFacts"\s*:/,'OFF evidence must omit endFacts');
+  }
+  assert.match(report,/\| iqp \|[^\n]*\| YES \| NO \|/,'dry run same engine core should compare YES');
   assert.ok(report.includes('&#96;')===false,'use real Markdown code fences');
   assert.ok(report.includes(String.fromCharCode(96).repeat(3)+'json'),'Markdown JSON fence expected');
   assert.ok(!report.includes('sk-'),'no API key prefix in report');
