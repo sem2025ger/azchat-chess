@@ -70,6 +70,24 @@ function publicChatGames(result,fen,count=5){
 function serverEngineLines(analysis){
  return analysis.lines.map((line,i)=>({id:'L'+(i+1),moves:line.sanPv,scoreKind:line.scoreKind,scoreWhite:line.scoreWhite,depth:line.depth,wdlWhite:line.wdlWhite}));
 }
+// Only server-verified Stockfish lines may receive deterministic end-position facts.
+// End facts are model evidence, never exposed in the browser-facing response.
+function withLineEndFacts(lines,fen){
+ return lines.map(line=>{
+  try{
+   if(!Array.isArray(line.moves)||line.moves.length===0||line.moves.length>10)return line;
+   const board=new Chess(fen);
+   for(const san of line.moves)board.move(san,{strict:true});
+   const finalFen=board.fen(),facts=positionFacts(finalFen);
+   if(!facts)return line;
+   return {...line,endFacts:{
+    fen:finalFen,plies:line.moves.length,material:facts.material,
+    white:{pawns:facts.white.pawns,king:facts.white.king},
+    black:{pawns:facts.black.pawns,king:facts.black.king}
+   }};
+  }catch{return line;} // A corrupt SAN cannot compromise the chat request.
+ });
+}
 async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null,positionFactsEnabled=false}={}){
  const requested=gameRequest(query.message);
  let result=null,analysis=null,engineError=null;
@@ -81,7 +99,7 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
  const games=result?publicChatGames(result,query.fen,requested??5):[],language=normalizeLanguage(query.language);
  const clientLines=legalCandidateLines(query.candidateLines,query.fen)||[];
  const evidence={archiveAvailable:!!result,matched:result?.total??null,
-  ...(analysis?{candidateLines:serverEngineLines(analysis),candidateOrigin:'server_stockfish_19',engine:{name:analysis.engine,budgetMs:analysis.budget.movetimeMs,perspective:'white'}}:{candidateLines:clientLines,candidateOrigin:'untrusted_client_legality_checked'}),
+  ...(analysis?{candidateLines:positionFactsEnabled?withLineEndFacts(serverEngineLines(analysis),query.fen):serverEngineLines(analysis),candidateOrigin:'server_stockfish_19',engine:{name:analysis.engine,budgetMs:analysis.budget.movetimeMs,perspective:'white'}}:{candidateLines:clientLines,candidateOrigin:'untrusted_client_legality_checked'}),
   nextMoves:(result?.nextMoves||[]).slice(0,8).map(x=>({move:x.move,count:x.count})),
   games:games.map(({white,black,result,date,ply,pgn})=>{const board=new Chess();board.loadPgn(pgn);return {white,black,result,date,hasPgn:true,matchedPly:ply,continuation:board.history().slice(ply,ply+6)};}),
   ...(positionFactsEnabled?{positionFacts:positionFacts(query.fen)}:{})};
