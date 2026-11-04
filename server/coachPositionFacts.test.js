@@ -122,15 +122,15 @@ const v2Cases=[
   verify:f=>{const b=f.white.strategy.bishops.find(x=>x.square==='c1');assert.equal(b.bad,false);assert.deepEqual(b.fixedSameColorPawns,['d4']);}},
  {name:'black hole d5 is occupied by enemy white knight',fen:'6k1/8/8/2pNp3/8/8/8/6K1 w - - 0 1',
   verify:f=>{assert.ok(f.black.strategy.holes.includes('d5'));assert.ok(f.black.strategy.holesOccupiedByEnemyPiece.includes('d5'));}},
- {name:'black hole d5 is empty',fen:'6k1/8/8/2p1p3/8/8/8/6K1 w - - 0 1',
+ {name:'black hole d5 is empty',fen:'6k1/8/8/2p1p3/8/N7/8/6K1 w - - 0 1',
   verify:f=>{assert.ok(f.black.strategy.holes.includes('d5'));assert.ok(!f.black.strategy.holesOccupiedByEnemyPiece.includes('d5'));}},
  {name:'white hole d4 occupied by enemy black knight',fen:'6k1/8/8/2P1P3/3n4/8/8/6K1 w - - 0 1',
   verify:f=>{assert.ok(f.white.strategy.holes.includes('d4'));assert.ok(f.white.strategy.holesOccupiedByEnemyPiece.includes('d4'));}},
- {name:'white pawn c2 can advance to protect d4: not a hole',fen:'6k1/8/8/4P3/8/8/2P5/6K1 w - - 0 1',
+ {name:'white pawn c2 can advance to protect d4: not a hole',fen:'n5k1/8/8/4P3/8/8/2P5/6K1 w - - 0 1',
   verify:f=>{assert.ok(!f.white.strategy.holes.includes('d4'));}},
- {name:'black f6 and h6 are holes that own f7 and h7 pawns may occupy',fen:'6k1/5p1p/6p1/8/8/8/5PPP/6K1 w - - 0 1',
+ {name:'black f6 and h6 are holes that own f7 and h7 pawns may occupy',fen:'6k1/5p1p/6p1/8/8/N7/5PPP/6K1 w - - 0 1',
   verify:f=>{for(const s of ['f6','h6']){assert.ok(f.black.strategy.holes.includes(s));assert.ok(f.black.strategy.holesPawnCanOccupy.includes(s));}}},
- {name:'black h6 is a hole without an h-pawn to occupy it',fen:'6k1/5p2/6p1/8/8/8/5PPP/6K1 w - - 0 1',
+ {name:'black h6 is a hole without an h-pawn to occupy it',fen:'6k1/5p2/6p1/8/8/N7/5PPP/6K1 w - - 0 1',
   verify:f=>{for(const s of ['f6','h6'])assert.ok(f.black.strategy.holes.includes(s));assert.ok(f.black.strategy.holesPawnCanOccupy.includes('f6'));assert.ok(!f.black.strategy.holesPawnCanOccupy.includes('h6'));}},
  {name:'Najdorf-type white knight d5 occupies black hole but d6 pawn can advance onto it',fen:'6k1/8/3p4/3Np3/8/8/8/6K1 w - - 0 1',
   verify:f=>{assert.ok(f.black.strategy.holes.includes('d5'));assert.ok(f.black.strategy.holesOccupiedByEnemyPiece.includes('d5'));assert.ok(f.black.strategy.holesPawnCanOccupy.includes('d5'));}},
@@ -160,6 +160,36 @@ test('V2 start: no bad bishops, no holes, no minority attack and equal majoritie
   assert.equal(f[color].strategy.minorityAttack,false);
  }
  for(const wing of Object.values(f.majorities))assert.deepEqual(wing,{white:wing.white,black:wing.black,majority:null});
+});
+test('V2 holes do not invent weak squares in pure rook or pawn endings',()=>{
+ const endings=[
+  ['bare kings','6k1/8/8/8/8/8/8/6K1 w - - 0 1'],
+  ['king-and-pawn ending','6k1/8/8/2p1p3/8/8/8/6K1 w - - 0 1'],
+  ['Janowski–Rubinstein rook ending','5rk1/1pp3p1/3p1r1p/3Pp3/2P5/1Pp1RPP1/4R1KP/8 w - - 0 39'],
+  ['no pawn structure despite a white knight','6k1/8/8/8/8/8/8/N5K1 w - - 0 1']
+ ];
+ for(const [name,fen] of endings){
+  const facts=positionFacts(fen);assert.ok(facts,name+' invalid FEN');
+  for(const side of ['white','black']){
+   assert.deepEqual(facts[side].strategy.holes,[],name+' / '+side);
+   assert.deepEqual(facts[side].strategy.holesPawnCanOccupy,[],name+' / '+side);
+   assert.deepEqual(facts[side].strategy.holesOccupiedByEnemyPiece,[],name+' / '+side);
+  }
+ }
+});
+test('V2 holes remain local to pawn structure and companion lists are subsets',()=>{
+ const facts=positionFacts('6k1/5p1p/6p1/8/8/N7/5PPP/6K1 w - - 0 1');assert.ok(facts);
+ const black=facts.black.strategy;
+ assert.equal(black.holes.includes('a5'),false,'remote empty square is not a pawn weakness');
+ for(const target of ['f6','h6']){
+  assert.ok(black.holes.includes(target),target+' is locally supported by pawn structure');
+  assert.ok(black.holesPawnCanOccupy.includes(target),target+' can be occupied by own pawn');
+ }
+ for(const side of ['white','black']){
+  const strategy=facts[side].strategy;
+  for(const key of ['holesPawnCanOccupy','holesOccupiedByEnemyPiece'])
+   assert.ok(strategy[key].every(square=>strategy.holes.includes(square)),side+' / '+key);
+ }
 });
 test('V2 review minority Capablanca–Golombek has white 2-vs-3 with d-file ram',()=>{
  const fen='r2qrnk1/pp2bpn1/2p3pp/3pNb2/1P1P4/2NBP2P/P1Q2PPB/1R3RK1 w - - 1 18';
