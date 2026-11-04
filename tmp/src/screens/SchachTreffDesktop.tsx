@@ -128,7 +128,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     {error && <p role="alert">{error}</p>}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
     <div className="st-columns">{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} /></aside>}
-      <section className="st-surface st-chat">{new URLSearchParams(window.location.search).has('club') && <a className="st-back-general" href="/chat">{t.backGeneral}</a>}<h2><RoomTitle clubId={clubId} /></h2>
+      <section className="st-surface st-chat">{new URLSearchParams(window.location.search).has('club') && <><a className="st-back-general" href="/chat">{t.backGeneral}</a><h2><RoomTitle clubId={clubId} /></h2></>}
         {pinAvailable && (pin || canPin) && <div className="st-pin">
           <div className="st-pin-title">{t.pinned}{pin?.author && ' · '}{pin?.author ? profiles.find(p => p.id === pin.author)?.username ?? '' : ''}
             {canPin && <button onClick={() => { setPinEdit(true); setPinDraft(pin?.body ?? ''); }}>{t.change}</button>}
@@ -143,7 +143,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         {!messages.length && !error && <p>{t.empty}</p>}{messages.map(message => {
           const author = profiles.find(p => p.id === message.author_id);
           return <article key={message.id}><div className="st-message-heading">{author && <button className="st-name" onClick={() => setPlayer(author)}>{author.username}</button>}<time dateTime={message.created_at}>{stamp(message.created_at)}</time></div><ChallengeMessage messageId={message.id} body={message.body} />{message.author_id !== user?.id && <ChallengeButton targetUserId={message.author_id} />}</article>;
-        })}</div><form onSubmit={send}><ChallengeButton /><input aria-label={t.placeholder} placeholder={t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required /><button disabled={busy || !body.trim()}>{t.send}</button></form></section>
+        })}</div><form className="st-composer" onSubmit={send}><ChallengeButton /><input aria-label={t.placeholder} placeholder={t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required /><button disabled={busy || !body.trim()}>{t.send}</button></form></section>
       <aside className="st-right" />
     </div>}
     <dialog ref={dialog} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
