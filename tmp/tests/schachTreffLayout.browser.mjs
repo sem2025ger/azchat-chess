@@ -13,7 +13,8 @@ const feed = Array.from({length:28}, (_, index) => ({
   created_at:new Date(Date.UTC(2026,10,4,12,0,0)+(index+(index>=24?6:0))*60000).toISOString()
 }));
 export const supabase = {
-  async rpc(name, payload) {
+  rpc(name, payload) {
+    if(name==='club_player_summary') return {abortSignal(){return Promise.resolve({data:{completed_games:0,last_games:[]},error:null})}};
     if(name==='create_club_invite' && payload.p_club_id===room) {
       window.fixtureInvites = (window.fixtureInvites || 0) + 1;
       if(window.fixtureInviteLimit) return {data:null,error:{message:'invite_limit'}};
