@@ -154,3 +154,51 @@ test('position facts instruction is appended exactly once in both model paths an
   assert.equal(instructionBodies[0].includes('evidence.positionFacts was computed deterministically'),false);
  }
 });
+
+test('rejects observed Janowski–Rubinstein Thai spam and leaked JSON/reasoning without retry',async()=>{
+ const observed='План чёрных — сначала снять давление пешки f5 ходом Rxf5, затем активизировать коня и ладьи. На 23.c4 возможна последовательность 23...Ne7 24.Re3 Raf8: чёрные усиливают давление, не торопясь с пешечным прорывом. После 25.Ne4 R5f7 26.c3 Qg4 у них появляется активная игра ферзём; белые могут ответить 27.Qe2. В отличие от Rxf5, ход Qxf5 допускает размен ферзей после Qxf5, поэтому оставляет меньше возможностей для давления.»} Фสล็อตออนไลน์? Wait malformed? Need ensure JSON only. I wrote closing correct? actual text has';
+ let calls=0;
+ await assert.rejects(generateAnswer(query,{},{
+  apiKey:key,fetchImpl:async()=>{calls++;return answerResponse(observed);}
+ }),{code:'provider_unavailable'});
+ assert.equal(calls,1,'invalid model output must not trigger a retry');
+});
+
+test('rejects foreign-script spam and leaked answer-JSON fragments',async()=>{
+ const invalid=[
+  'Развивайте фигуры. สล็อตออนไลน์',
+  'После O-O у белых активная игра. 中国',
+  'After Nxe5+ Black is under pressure. العربية',
+  'Развивайте фигуры: "} попало внутрь ответа.',
+  'Оценка верна.»} Следующая фраза',
+  'The answer is "answer": "play e4"',
+ ];
+ for(const answer of invalid)await assert.rejects(
+  generateAnswer(query,{}, {apiKey:key,fetchImpl:async()=>answerResponse(answer)}),
+  {code:'provider_unavailable'},answer
+ );
+});
+
+test('preserves valid coach answers for six languages, SAN and typography unchanged',async()=>{
+ const valid=[
+  'RU: «После Nxe5+ или O-O-O рассмотрите e8=Q# — шах!»',
+  'DE: Für Weiß ist O-O-O möglich — später Nxe5+.',
+  'AZ: Ağ şahı qoruyun: ə, ğ, ş, ı; «Nxe5+» və O-O-O.',
+  'TR: Şahınızı koruyun: ğ, ş, ı, ö, ü; O-O-O.',
+  'UK: Білі ходять Nxe5+: ї, є, ґ, і — «добре».',
+  'EN: Try e8=Q#; then compare O-O-O — «strong».',
+ ];
+ for(const answer of valid){
+  const got=await generateAnswer(query,{}, {apiKey:key,fetchImpl:async()=>answerResponse(answer)});
+  assert.equal(got,answer,'valid response must be returned exactly');
+ }
+});
+
+test('invalid coach response maps to safe HTTP 503 provider_unavailable',async()=>{
+ await serve({openaiApiKey:key,fetchImpl:async()=>answerResponse('Шах — สล็อตออนไลน์')},async base=>{
+  const response=await post(base+'/chat',query);
+  assert.equal(response.status,503);
+  assert.deepEqual(await response.json(),{code:'provider_unavailable'});
+  assert.equal(response.headers.get('cache-control'),'no-store');
+ });
+});
