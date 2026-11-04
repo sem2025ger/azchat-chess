@@ -118,13 +118,23 @@
 .schach-treff .st-chat .st-composer .st-send{color:#17130e;background:var(--st-bronze);border:1px solid transparent;border-radius:8px;font-weight:700}
 .schach-treff .st-chat .st-composer .st-send:disabled{opacity:.55;cursor:not-allowed}
 .schach-treff .st-chat .st-composer .st-send:hover:not(:disabled){background:var(--st-soft-bronze)}
-.schach-treff .st-invite-dialog{width:min(100% - 24px,380px);max-width:none}
-.schach-treff .st-invite-fields{display:grid;gap:8px;margin:10px 0}
-.schach-treff .st-invite-fields label{display:grid;gap:4px;min-width:0}
-.schach-treff .st-invite-fields input{width:100%}
+.schach-treff .st-invite-control{position:relative;flex:none;min-width:0}
+.schach-treff .st-invite-note,.schach-treff .st-invite-popover{
+  position:absolute;right:0;top:calc(100% + 6px);z-index:12;width:min(310px,calc(100vw - 44px));
+  box-sizing:border-box;margin:0;padding:10px;background:#222224;border:1px solid #B8916A;
+  border-radius:12px;color:#F2EEE3;font-size:12px;line-height:1.5;overflow-wrap:anywhere;
+  box-shadow:0 8px 22px #0008;
+}
+.schach-treff .st-invite-popover{display:flex;flex-direction:column;gap:8px}
+.schach-treff .st-invite-popover input{box-sizing:border-box;min-width:0;width:100%;font-size:12px}
+.schach-treff .st-invite-popover button{align-self:flex-end;min-height:36px}
+.schach-treff .st-message .st-message-content{grid-column:2;min-width:0}
+.schach-treff .st-message-grouped{padding-top:2px;padding-bottom:2px}
+.schach-treff .st-message-grouped:focus-visible{outline:2px solid var(--st-soft-bronze);outline-offset:1px}
 @media(max-width:1023px){
   .schach-treff .st-chat{padding:10px;min-height:350px}
-  .schach-treff .st-chat-header{gap:6px}
+  .schach-treff .st-chat-header{gap:6px;flex-wrap:wrap}
+  .schach-treff .st-chat-header .st-invite-control{margin-left:auto}
   .schach-treff .st-chat .st-back-general,.schach-treff .st-chat .st-invite-trigger{padding-inline:4px;gap:4px;font-size:12px}
   .schach-treff .st-chat .st-composer{gap:5px}
   .schach-treff .st-chat .st-composer button{padding-inline:6px;font-size:12px}
