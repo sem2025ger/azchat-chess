@@ -73,7 +73,7 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
  const texts=(data.output||[]).filter(x=>x.type==='message'&&x.role==='assistant').flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text);
  if(texts.length!==1)throw providerError();
  const value=JSON.parse(texts[0]);
- if(typeof value.answer!=='string'||value.answer.trim().length<2||value.answer.length>1200||/https?:\/\/|<[^>]*>/.test(value.answer))throw providerError();
+ if(typeof value.answer!=='string'||value.answer.trim().length<2||value.answer.length>1200||/https?:\/\/|<[^>]*>/.test(value.answer)||/[^\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Common}\p{Script=Inherited}]/u.test(value.answer)||/["»]\s*\}|"answer"\s*:/.test(value.answer))throw providerError();
  return value.answer.trim();
 }
 async function transcribeAudio(bytes,type,language,{apiKey,fetchImpl=fetch,signal}={}){
