@@ -79,9 +79,16 @@ function positionFacts(fen){
      fixedSameColorPawns:fixed.map(p=>p.square),bad:same.length>=3&&fixed.length>=2};
    });
    const holes=[],holesPawnCanOccupy=[];
+   // Missing pawn control does not by itself make an empty square a useful outpost.
+   // Suppress speculative holes in pawn/rook endings without opposing minor pieces or queens.
+   // Else require nearby pawn structure or an enemy minor actually on the square.
+   const exploitable=pieces[enemy].some(p=>p.type==='n'||p.type==='b'||p.type==='q');
    for(let f=0;f<8;f++)for(const r of (color==='w'?[3,4]:[5,6])){
     const target=square(f,r),occupant=grid.get(target);
     if(occupant?.color===color&&occupant.type==='p')continue;
+    const enemyMinor=occupant?.color===enemy&&(occupant.type==='n'||occupant.type==='b');
+    const pawnContext=ownPawns.some(p=>Math.abs(p.f-f)<=1&&Math.abs(p.r-r)<=1);
+    if(!exploitable||(!pawnContext&&!enemyMinor))continue;
     // A hole cannot be attacked by an own pawn advancing on an adjacent file.
     // A same-file pawn may occupy it later, but cannot defend it by pawn attack.
     if(ownPawns.some(p=>Math.abs(p.f-f)===1&&(r-p.r)*direction>=1))continue;
