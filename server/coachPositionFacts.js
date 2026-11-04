@@ -78,17 +78,15 @@ function positionFacts(fen){
     return {square:b.square,squareColor,sameColorPawns:same.map(p=>p.square),
      fixedSameColorPawns:fixed.map(p=>p.square),bad:same.length>=3&&fixed.length>=2};
    });
-   const holes=[];
+   const holes=[],holesPawnCanOccupy=[];
    for(let f=0;f<8;f++)for(const r of (color==='w'?[3,4]:[5,6])){
     const target=square(f,r),occupant=grid.get(target);
     if(occupant?.color===color&&occupant.type==='p')continue;
-    // A pawn can attack this target only from the preceding rank on an adjacent file.
-    // Pawns already level with the target cannot turn back to attack it.
+    // A hole cannot be attacked by an own pawn advancing on an adjacent file.
+    // A same-file pawn may occupy it later, but cannot defend it by pawn attack.
     if(ownPawns.some(p=>Math.abs(p.f-f)===1&&(r-p.r)*direction>=1))continue;
-    // Owner amendment: a same-file pawn behind the square can still advance
-    // onto it, so the square must not be labelled permanently weak.
-    if(ownPawns.some(p=>p.f===f&&(r-p.r)*direction>=1))continue;
     holes.push(target);
+    if(ownPawns.some(p=>p.f===f&&(r-p.r)*direction>=1))holesPawnCanOccupy.push(target);
    }
    const holesOccupiedByEnemyPiece=holes.filter(s=>{
     const p=grid.get(s);return p?.color===enemy&&['n','b'].includes(p.type);
@@ -101,7 +99,7 @@ function positionFacts(fen){
     outposts,
     hanging:{static:true,undefended,lowerValueAttacked},
     king:{square:king.square,castled:(color==='w'?['g1','c1','b1']:['g8','c8','b8']).includes(king.square),pawnShield,openFilesNearKing},
-    strategy:{bishops,holes,holesOccupiedByEnemyPiece,minorityAttack}
+    strategy:{bishops,holes,holesOccupiedByEnemyPiece,holesPawnCanOccupy,minorityAttack}
    };
   }
   const wing=(from,to)=>{
