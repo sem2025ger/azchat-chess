@@ -3,7 +3,7 @@
 ## Gate and scope
 `AI_COACH_POSITION_FACTS_ENABLED` must equal the exact string `'true'` to attach `evidence.positionFacts` to AI Coach requests. Otherwise, neither the evidence nor either model instruction string changes. The gate is **OFF by default** and is not set by this change. The existing AI Coach gate and authentication remain unchanged.
 
-`positionFacts(fen)` is pure, deterministic, built with the existing `chess.js@1.4.0`, uses no network, engine, archive or move search, and returns `null` for invalid FEN. Objects have fixed field order; arrays are sorted by squares (file then rank) or by file. JSON is limited to 4096 UTF-8 bytes; over-limit results fail closed as `null`.
+`positionFacts(fen)` is pure, deterministic, built with the existing `chess.js@1.4.0`, uses no network, engine, archive or move search, and returns `null` for invalid FEN. Objects have fixed field order; arrays are sorted by squares (file then rank) or by file. JSON is limited to 6144 UTF-8 bytes in V2; over-limit results fail closed as `null`.
 
 ## JSON interpretation
 - `material.white` / `material.black`: counts of `p,n,b,r,q` and `bishopPair` (two or more bishops); `balanceWhite` is White's material minus Black's using P=1, N=3, B=3, R=5, Q=9.
@@ -39,3 +39,14 @@ When the exact server flag \`AI_COACH_POSITION_FACTS_ENABLED=true\` is set and a
 This extension is **model evidence only**: the browser-facing \`engineLines\` and \`candidateLines\` remain unchanged. Flag OFF produces exactly the earlier evidence and prompt; non-server client lines never receive endpoint facts. The supplied chess data cannot guarantee the language model follows the instruction, so QA must still check its actual answer.
 
 Regression: Steinitz–von Bardeleben 1895, after 8...Nxd5, engine line \`9.O-O Bxc3 10.bxc3 O-O 11.Re1\`. The resulting position has exactly one white c-pawn (c3), **no** doubled c-pawns, an isolated pawn a2, and blocked d4.
+
+
+## V2 strategy rules
+All four rules are deterministic static board descriptors computed from the supplied FEN. They do not independently prove strategic advantage or calculate a plan. Existing V1 and V1.1 fields remain unchanged.
+
+1. **Bad bishop** — for each bishop of side S, report \`{square, squareColor, sameColorPawns, fixedSameColorPawns, bad}\`. \`squareColor\` is \`light\` or \`dark\`. \`sameColorPawns\` lists S pawns standing on the same colour as the bishop's square. \`fixedSameColorPawns\` is the subset with an enemy pawn on the immediately forward square. A bishop is marked \`bad: true\` exactly when \`sameColorPawns.length >= 3\` AND \`fixedSameColorPawns.length >= 2\`.
+2. **Holes** — \`strategy.holes\` lists squares on S's 3rd and 4th ranks (White: ranks 3–4; Black: ranks 6–5), files a–h, that can never again be attacked by an S pawn: no S pawn on an adjacent file behind the square that can advance to attack it. A pawn already level with the square cannot turn backward. Exclude squares occupied by an S pawn. \`holesOccupiedByEnemyPiece\` is the subset of holes occupied by an opposing knight or bishop. Lists are sorted by square.
+3. **Pawn majorities** — \`majorities\` contains \`queenside\` (a–c), \`centre\` (d–e), and \`kingside\` (f–h), each \`{white, black, majority}\` with \`majority\` \`'white'\`, \`'black'\`, or \`null\` on equality. Counts include all pawns standing on those files, regardless of rank.
+4. **Queenside minority-attack structure** — \`strategy.minorityAttack\` is true for side S if and only if S has **exactly 2** pawns on files a–c, the opponent has **exactly 3** on files a–c, and an S d-file pawn has an enemy pawn immediately in front of it (a d-file pawn ram). Otherwise false. This is a structural pattern only, not proof of a successful attack.
+
+The V2 fields are \`positionFacts.majorities\` and \`positionFacts.white.strategy\` / \`black.strategy\` containing \`{bishops, holes, holesOccupiedByEnemyPiece, minorityAttack}\`. For the ending of a strictly replayed server-verified Stockfish line, model-only \`endFacts\` contains \`majorities\` and each side's \`minorityAttack\` alongside the existing \`fen\`, \`plies\`, \`material\`, \`pawns\` and \`king\`. Bishop and hole fields are intentionally absent from \`endFacts\`. All V2 evidence remains flag-gated; the flag-OFF path is unchanged. The complete JSON size cap rises from 4096 to 6144 UTF-8 bytes.
