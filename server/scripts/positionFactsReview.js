@@ -36,6 +36,9 @@ function squareChecks(answer,f,engineLines,fen){
  const inFacts=factSquares(f);
  return stated.map(square=>({square,source:inFacts.has(square)?'in facts':engineSquares.has(square)?'in engine lines':occupied.has(square)?'occupied in FEN':'NONE OF THESE'}));
 }
+const coreEngineFields=lines=>(lines||[]).map(({id,moves,scoreKind,scoreWhite,depth,wdlWhite})=>({id,moves,scoreKind,scoreWhite,depth,wdlWhite}));
+const comparableEngineEvidence=(off,on)=>off.origin==='server_stockfish_19'&&on.origin==='server_stockfish_19'&&
+ JSON.stringify(coreEngineFields(off.engineLines))===JSON.stringify(coreEngineFields(on.engineLines));
 const ungrounded=checks=>checks.filter(x=>x.source==='NONE OF THESE').length;
 function stubEngine(movetimeMs){
  return {
@@ -94,8 +97,7 @@ async function run(){
      factsTransmitted:submittedEvidence?.positionFacts!==undefined,
      squares:squareChecks(response,facts,submittedEvidence?.candidateLines,p.fen)};
    }
-   const comparable=JSON.stringify(runs.OFF.engineLines)===JSON.stringify(runs.ON.engineLines)
-     &&runs.OFF.origin==='server_stockfish_19'&&runs.ON.origin==='server_stockfish_19';
+   const comparable=comparableEngineEvidence(runs.OFF,runs.ON);
    summary.push({id:p.id,off:ungrounded(runs.OFF.squares),on:ungrounded(runs.ON.squares),
     comparable,failed:!!runs.OFF.error||!!runs.ON.error});
    const table=label=>{
@@ -142,4 +144,4 @@ async function run(){
  process.stdout.write('Report written: '+OUTPUT+' (10 positions; no secrets)\n');
 }
 if(require.main===module)run().catch(e=>{console.error('Position facts review crashed: '+safeError(e));process.exitCode=1;});
-module.exports={squareChecks,factSquares,run};
+module.exports={squareChecks,factSquares,comparableEngineEvidence,run};
