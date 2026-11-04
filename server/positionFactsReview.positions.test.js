@@ -38,7 +38,8 @@ const criteria={
  'rook-ending':(f,b)=>f.material.white.r>=1&&f.material.black.r>=1&&
    f.material.white.q===0&&f.material.black.q===0&&
    f.material.white.n+f.material.white.b+f.material.black.n+f.material.black.b===0&&
-   f.black.pawns.passed.includes('c3')&&pawnAt(b,'c3','b')
+   f.black.pawns.passed.includes('c3')&&pawnAt(b,'c3','b')&&
+   f.white.strategy.holes.length===0&&f.black.strategy.holes.length===0
 };
 
 test('position facts review: exactly ten documented themes and replayable games',()=>{
