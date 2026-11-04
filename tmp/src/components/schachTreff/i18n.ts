@@ -1,5 +1,10 @@
 import type { Language } from '../../translations';
 const fixedCopy: Record<string, Record<Language,string>> = {
+  "Einladen": {de:"Einladen",en:"Invite",az:"Dəvət et",tr:"Davet et",ua:"Запросити",ru:"Пригласить"},
+  "Angeheftete Nachricht bearbeiten": {de:"Angeheftete Nachricht bearbeiten",en:"Edit pinned message",az:"Bərkidilmiş mesajı redaktə et",tr:"Sabitlenen mesajı düzenle",ua:"Редагувати закріплене повідомлення",ru:"Редактировать закреплённое сообщение"},
+  "Spieler herausfordern": {de:"Spieler herausfordern",en:"Challenge player",az:"Oyunçuya meydan oxu",tr:"Oyuncuya meydan oku",ua:"Кинути виклик гравцю",ru:"Вызвать игрока"},
+  "Mehr anzeigen": {de:"Mehr anzeigen",en:"Show more",az:"Daha çox göstər",tr:"Daha fazla göster",ua:"Показати більше",ru:"Показать больше"},
+  "Weniger anzeigen": {de:"Weniger anzeigen",en:"Show less",az:"Daha az göstər",tr:"Daha az göster",ua:"Показати менше",ru:"Показать меньше"},
   "+ Vereinschat erstellen": {de:"+ Vereinschat erstellen",en:"+ Create club chat",az:"+ Klub söhbəti yarat",tr:"+ Kulüp sohbeti oluştur",ua:"+ Створити чат клубу",ru:"+ Создать чат клуба"},
   "Allgemeiner Chat": {de:"Allgemeiner Chat",en:"General chat",az:"Ümumi söhbət",tr:"Genel sohbet",ua:"Загальний чат",ru:"Общий чат"},
   "Vereinschats": {de:"Vereinschats",en:"Club chats",az:"Klub söhbətləri",tr:"Kulüp sohbetleri",ua:"Клубні чати",ru:"Клубные чаты"},

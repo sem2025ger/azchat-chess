@@ -86,6 +86,7 @@ const ru: Words = {
 export default function ChessAZCommunityScreen() {
   const desktop = useDesktop();
   const t = useSchachTreffCopy();
+  const [showCommunity, setShowCommunity] = useState(false);
   if (desktop) return <CommunityRouter />;
   const params = new URLSearchParams(window.location.search);
   const club = params.get('club');
@@ -94,7 +95,8 @@ export default function ChessAZCommunityScreen() {
     <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
       <ClubRooms currentClubId={club} />
     </aside>
-    {club ? <SchachTreffDesktop hideRooms /> : <div className="st-mobile-legacy"><CommunityRouter /></div>}
+    {!club && <button type="button" className="st-mobile-community" aria-pressed={showCommunity} onClick={() => setShowCommunity(!showCommunity)}>{showCommunity ? t.backGeneral : t.more}</button>}
+    {!club && showCommunity ? <div className="st-mobile-legacy"><CommunityRouter /></div> : <SchachTreffDesktop hideRooms />}
   </div>;
 }
 function CommunityRouter() {

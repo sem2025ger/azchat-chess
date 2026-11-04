@@ -1,6 +1,7 @@
 import {useRegionalCopy} from '../i18n/regionalCopy';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowLeft, Pin, UserPlus } from 'lucide-react';
 import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalLanguage } from '../context/LanguageContext';
@@ -26,6 +27,9 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const [pin, setPin] = useState<{ body: string; author: string | null } | null>(null);
   const [canPin, setCanPin] = useState(false);
   const [pinAvailable, setPinAvailable] = useState(false);
+  const [pinExpanded, setPinExpanded] = useState(false);
+  const [pinMenu, setPinMenu] = useState(false);
+  const [canInvite, setCanInvite] = useState(false);
   const [pinEdit, setPinEdit] = useState(false);
   const [pinDraft, setPinDraft] = useState('');
   const [member, setMember] = useState(false);
@@ -41,6 +45,14 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const [panel, setPanel] = useState<Panel | null>(null);
   const [player, setPlayer] = useState<Profile | null>(null);
   const [notify, setNotify] = useState(false);
+  const isClub = new URLSearchParams(window.location.search).has('club');
+  const feedRef = useRef<HTMLDivElement>(null);
+  const followFeed = useRef(true);
+  const newestMessage = messages.at(-1)?.id;
+  useLayoutEffect(() => {
+    const feed = feedRef.current;
+    if (feed && followFeed.current) feed.scrollTop = feed.scrollHeight;
+  }, [clubId, member, newestMessage, loading]);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, [t.title]);
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
@@ -64,10 +76,11 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
       } else { pinMigrationAvailable = true; pinnedAuthor = pinInfo.data?.pinned_by ?? null; setPin(pinInfo.data?.pinned_body ? { body: pinInfo.data.pinned_body, author: pinnedAuthor } : null); }
     } else setPin(null);
     setPinAvailable(pinMigrationAvailable);
-    if (!user || !club.data) { setCanPin(false); setMember(false); setMessages([]); setProfiles([]); return; }
+    if (!user || !club.data) { setCanInvite(false); setCanPin(false); setMember(false); setMessages([]); setProfiles([]); return; }
     const membership = await supabase.from('chess_club_members').select('user_id,role').eq('club_id', club.data.id).eq('user_id', user.id).maybeSingle();
     if (membership.error) throw membership.error;
     setMember(Boolean(membership.data));
+    setCanInvite(Boolean(requested) && ['admin','moderator'].includes(membership.data?.role ?? ''));
     setCanPin(pinMigrationAvailable && ['admin','moderator'].includes(membership.data?.role ?? ''));
     if (!membership.data) { setMessages([]); setProfiles([]); return; }
     const [feed, members] = await Promise.all([
@@ -128,23 +141,60 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     {error && <p role="alert">{error}</p>}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
     <div className="st-columns">{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} /></aside>}
-      <section className="st-surface st-chat">{new URLSearchParams(window.location.search).has('club') && <><a className="st-back-general" href="/chat">{t.backGeneral}</a><h2><RoomTitle clubId={clubId} /></h2></>}
-        {pinAvailable && (pin || canPin) && <div className="st-pin">
-          <div className="st-pin-title">{t.pinned}{pin?.author && ' · '}{pin?.author ? profiles.find(p => p.id === pin.author)?.username ?? '' : ''}
-            {canPin && <button onClick={() => { setPinEdit(true); setPinDraft(pin?.body ?? ''); }}>{t.change}</button>}
-          </div>
-          {pinEdit ? <form onSubmit={savePin} className="st-pin-form">
-            <input aria-label={t.pinned} value={pinDraft} maxLength={500} onChange={e => setPinDraft(e.target.value)} />
-            <button disabled={busy}>{t.pinAction}</button>
-            <button type="button" onClick={() => setPinEdit(false)}>{t.cancel}</button>
-          </form> : pin && <p>{pin.body}</p>}
+      <section className="st-surface st-chat">
+        {(isClub || canPin) && <div className="st-chat-header">
+          {isClub && <>
+            <a className="st-back-general" href="/chat"><ArrowLeft size={16} aria-hidden="true" /><span>{t.general}</span></a>
+            <h2><RoomTitle clubId={clubId} /></h2>
+            {canInvite && <RoomInvite key={clubId} clubId={clubId} />}
+          </>}
+          {canPin && <div className="st-pin-menu" onKeyDown={event => {
+            if (event.key === 'Escape' && pinMenu) {
+              setPinMenu(false);
+              event.currentTarget.querySelector('button')?.focus();
+            }
+          }}>
+            <button type="button" aria-label={t.editPin} aria-expanded={pinMenu} onClick={() => setPinMenu(!pinMenu)}>⋯</button>
+            {pinMenu && <div className="st-pin-actions"><button type="button" onClick={() => {
+              setPinMenu(false); setPinEdit(true); setPinDraft(pin?.body ?? '');
+            }}>{t.editPin}</button></div>}
+          </div>}
         </div>}
-        <div className="st-messages" aria-live="polite">
-        {!messages.length && !error && <p>{t.empty}</p>}{messages.map(message => {
-          const author = profiles.find(p => p.id === message.author_id);
-          return <article key={message.id}><div className="st-message-heading">{author && <button className="st-name" onClick={() => setPlayer(author)}>{author.username}</button>}<time dateTime={message.created_at}>{stamp(message.created_at)}</time></div><ChallengeMessage messageId={message.id} body={message.body} />{message.author_id !== user?.id && <ChallengeButton targetUserId={message.author_id} />}</article>;
-        })}</div><form className="st-composer" onSubmit={send}><ChallengeButton /><input aria-label={t.placeholder} placeholder={t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required /><button disabled={busy || !body.trim()}>{t.send}</button></form></section>
-      <aside className="st-right" />
+        {pinAvailable && (pin || canPin) && (pinEdit && canPin ? <form onSubmit={savePin} className="st-pin-form">
+          <input autoFocus aria-label={t.pinned} value={pinDraft} maxLength={500} onChange={e => setPinDraft(e.target.value)} />
+          <button disabled={busy}>{t.pinAction}</button>
+          <button type="button" onClick={() => setPinEdit(false)}>{t.cancel}</button>
+        </form> : pin && <button type="button" className="st-pin" aria-expanded={pinExpanded}
+          title={pinExpanded ? t.showLess : t.showMore} onClick={() => setPinExpanded(!pinExpanded)}>
+          <Pin size={15} aria-hidden="true" /><span className="st-pin-title">{t.pinned}</span><span className="st-pin-text">{pin.body}</span>
+        </button>)}
+        <div className="st-messages" aria-live="polite" ref={feedRef} onScroll={event => {
+          const feed = event.currentTarget;
+          followFeed.current = feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
+        }}>
+          {!messages.length && !error && <p>{t.empty}</p>}
+          {messages.map(message => {
+            const author = profiles.find(p => p.id === message.author_id);
+            const own = message.author_id === user?.id;
+            return <article key={message.id} className={own ? 'st-message st-message-own' : 'st-message'}>
+              <span className="st-avatar" aria-hidden="true">{Array.from(author?.username ?? '?')[0]?.toLocaleUpperCase()}</span>
+              <div className="st-message-content">
+                <div className="st-message-heading">
+                  {author && <button type="button" className="st-name" onClick={() => setPlayer(author)}>{author.username}</button>}
+                  <time dateTime={message.created_at}>{stamp(message.created_at)}</time>
+                  {!own && <ChallengeButton targetUserId={message.author_id} icon />}
+                </div>
+                <ChallengeMessage messageId={message.id} body={message.body} />
+              </div>
+            </article>;
+          })}
+        </div>
+        <form className="st-composer" onSubmit={send}>
+          <ChallengeButton composer />
+          <input aria-label={t.placeholder} placeholder={t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required />
+          <button className="st-send" disabled={busy || !body.trim()}>{t.send}</button>
+        </form>
+      </section>
     </div>}
     <dialog ref={dialog} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
       <button className="st-close" onClick={() => { setPanel(null); setPlayer(null); }}>{t.close}</button>
@@ -153,4 +203,60 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     </dialog>
     </ChallengeProvider>
   </section>;
+}
+
+
+function RoomInvite({ clubId }: { clubId: string }) {
+  const t = useSchachTreffCopy();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [link, setLink] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+
+  async function open() {
+    dialog.current?.showModal();
+    if (busy || link) return;
+    setBusy(true);
+    setError('');
+    try {
+      const { data, error } = await supabase.rpc('create_club_invite', { p_club_id: clubId });
+      if (error) throw error;
+      if (typeof data !== 'string' || !/^[0-9a-f]{32}$/.test(data)) throw new Error();
+      setLink(window.location.origin + '/schach-treff/einladung/' + data);
+    } catch (error) {
+      const code = (error as { message?: string }).message;
+      setError(code && Object.hasOwn(t.roomErrors, code) ? t.roomErrors[code as keyof typeof t.roomErrors] : t.error);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(link);
+      setError('');
+      setCopied(true);
+    } catch {
+      setCopied(false);
+      setError(t.error);
+    }
+  }
+
+  return <>
+    <button type="button" className="st-invite-trigger" aria-haspopup="dialog" aria-label={t.invite} onClick={() => void open()}>
+      <UserPlus size={16} aria-hidden="true" /><span>{t.invite}</span>
+    </button>
+    <dialog className="st-invite-dialog" ref={dialog} aria-label={t.invite} onClose={() => { setCopied(false); setError(''); }}>
+      <h2>{t.invite}</h2>
+      {busy && <p role="status">{t.loading}</p>}
+      {link && <div className="st-invite-fields">
+        <label>{t.inviteLink}<input value={link} readOnly onFocus={e => e.currentTarget.select()} /></label>
+        <button type="button" onClick={() => void copyLink()}>{t.copyLink}</button>
+        <span role="status">{copied ? t.linkCopied : ''}</span>
+      </div>}
+      {error && <p role="alert">{error}</p>}
+      <button type="button" onClick={() => dialog.current?.close()}>{t.close}</button>
+    </dialog>
+  </>;
 }
