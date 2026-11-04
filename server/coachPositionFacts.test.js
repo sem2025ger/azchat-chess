@@ -168,6 +168,23 @@ test('V2 review minority Capablanca–Golombek has white 2-vs-3 with d-file ram'
  assert.equal(f.white.strategy.minorityAttack,true);
  assert.equal(f.black.strategy.minorityAttack,false);
 });
+test('V2 minority attack rejects Benoni d5-d6 ram in Averbakh–Tal review',()=>{
+ const f=positionFacts('r1bqr1k1/pp3pbp/3p1np1/2pP4/1n2PB2/2N2N2/PPQ1BPPP/R4RK1 w - - 10 12');
+ assert.ok(f);
+ assert.equal(f.white.strategy.minorityAttack,false);
+});
+test('V2 minority attack rejects d5-d6 ram in Janowski–Rubinstein rook ending',()=>{
+ const f=positionFacts('5rk1/1pp3p1/3p1r1p/3Pp3/2P5/1Pp1RPP1/4R1KP/8 w - - 0 39');
+ assert.ok(f);
+ assert.equal(f.white.strategy.minorityAttack,false);
+});
+test('V2 minority attack keeps the exact Carlsbad d4-d5 ram',()=>{
+ const f=positionFacts('r2qrnk1/pp2bpn1/2p3pp/3pNb2/1P1P4/2NBP2P/P1Q2PPB/1R3RK1 w - - 1 18');
+ assert.ok(f);
+ assert.equal(f.white.strategy.minorityAttack,true);
+ assert.equal(f.black.strategy.minorityAttack,false);
+});
+
 test('V2 facts stay under 6144 UTF-8 bytes for old, new and all 10 review fixtures',()=>{
  const review=require('./scripts/positionFactsReview.positions.json');
  const all=[...fixtures.map(x=>({name:x.name,fen:x.fen})),...v2Cases.map(x=>({name:x.name,fen:x.fen})),...review.map(x=>({name:x.id,fen:x.fen}))];
