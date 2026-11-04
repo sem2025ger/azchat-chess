@@ -14,4 +14,7 @@
 .st-mobile-page>.schach-treff{min-width:0;color:#F2EEE3}.st-mobile-page>.schach-treff>header{display:none}
 .st-mobile-page .st-chat{padding:16px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:#121413;min-width:0;overflow-wrap:anywhere}
 .st-mobile-page .st-chat h2{font-size:1rem;margin:12px 0}.st-mobile-page .st-back-general{display:inline-block;min-height:44px;color:#F4EEE2}.st-mobile-page .st-chat form{display:flex;flex-wrap:wrap;gap:8px}.st-mobile-page .st-chat .st-composer{flex-wrap:nowrap}.st-mobile-page .st-chat .st-composer button{white-space:nowrap;flex-shrink:0}.st-mobile-page .st-chat input{min-width:0;flex:1;background:#0E100F;color:#F2EEE3;border:1px solid #666;padding:10px}.st-mobile-page .st-chat button{min-height:44px;padding:8px;color:#F2EEE3}
+.st-mobile-page .st-invite{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.st-mobile-page .st-invite label{display:flex;flex:1 1 180px;min-width:0;flex-direction:column;gap:4px;font-size:.875rem}
+.st-mobile-page .st-invite input{width:100%;box-sizing:border-box}
 }
