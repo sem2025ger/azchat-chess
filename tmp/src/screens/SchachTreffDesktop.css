@@ -74,6 +74,7 @@
 .schach-treff .st-rooms,.schach-treff .st-rooms a,.schach-treff .st-rooms h2,.schach-treff .st-rooms p,.schach-treff .st-rooms button,.schach-treff .st-room-list{box-sizing:border-box;width:100%;max-width:100%}
 .schach-treff .st-room-list>a{font-size:15px;font-weight:400;color:#D8D3C8}
 .schach-treff .st-room-list .st-create-room{font-size:16px;font-weight:600;color:#E3D3B4;padding-left:4px;padding-right:4px}
+.schach-treff[lang=ru] .st-room-list .st-create-room,.schach-treff[lang=de] .st-room-list .st-create-room{white-space:nowrap;overflow-wrap:normal;letter-spacing:-.3px}
 .schach-treff .st-composer input{flex:1 1 0;min-width:0;width:auto}
 .schach-treff .st-composer button{white-space:nowrap;flex-shrink:0}
 }
