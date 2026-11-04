@@ -25,6 +25,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const [clubId, setClubId] = useState<string | null>(null);
   const [pin, setPin] = useState<{ body: string; author: string | null } | null>(null);
   const [canPin, setCanPin] = useState(false);
+  const [canInvite, setCanInvite] = useState(false);
   const [pinAvailable, setPinAvailable] = useState(false);
   const [pinEdit, setPinEdit] = useState(false);
   const [pinDraft, setPinDraft] = useState('');
@@ -64,10 +65,11 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
       } else { pinMigrationAvailable = true; pinnedAuthor = pinInfo.data?.pinned_by ?? null; setPin(pinInfo.data?.pinned_body ? { body: pinInfo.data.pinned_body, author: pinnedAuthor } : null); }
     } else setPin(null);
     setPinAvailable(pinMigrationAvailable);
-    if (!user || !club.data) { setCanPin(false); setMember(false); setMessages([]); setProfiles([]); return; }
+    if (!user || !club.data) { setCanPin(false); setCanInvite(false); setMember(false); setMessages([]); setProfiles([]); return; }
     const membership = await supabase.from('chess_club_members').select('user_id,role').eq('club_id', club.data.id).eq('user_id', user.id).maybeSingle();
     if (membership.error) throw membership.error;
     setMember(Boolean(membership.data));
+    setCanInvite(Boolean(requested) && ['admin','moderator'].includes(membership.data?.role ?? ''));
     setCanPin(pinMigrationAvailable && ['admin','moderator'].includes(membership.data?.role ?? ''));
     if (!membership.data) { setMessages([]); setProfiles([]); return; }
     const [feed, members] = await Promise.all([
@@ -128,7 +130,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     {error && <p role="alert">{error}</p>}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
     <div className="st-columns">{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} /></aside>}
-      <section className="st-surface st-chat">{new URLSearchParams(window.location.search).has('club') && <><a className="st-back-general" href="/chat">{t.backGeneral}</a><h2><RoomTitle clubId={clubId} /></h2></>}
+      <section className="st-surface st-chat">{new URLSearchParams(window.location.search).has('club') && <><a className="st-back-general" href="/chat">{t.backGeneral}</a><h2><RoomTitle clubId={clubId} /></h2>{canInvite && <RoomInvite key={clubId} clubId={clubId} />}</>}
         {pinAvailable && (pin || canPin) && <div className="st-pin">
           <div className="st-pin-title">{t.pinned}{pin?.author && ' · '}{pin?.author ? profiles.find(p => p.id === pin.author)?.username ?? '' : ''}
             {canPin && <button onClick={() => { setPinEdit(true); setPinDraft(pin?.body ?? ''); }}>{t.change}</button>}
@@ -153,4 +155,29 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     </dialog>
     </ChallengeProvider>
   </section>;
+}
+
+function RoomInvite({clubId}: {clubId: string}) {
+  const t = useSchachTreffCopy();
+  const [link, setLink] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  async function createInvite() {
+    if (busy) return;
+    setBusy(true); setError('');
+    try {
+      const result = await supabase.rpc('create_club_invite', {p_club_id: clubId});
+      if (result.error) throw result.error;
+      setLink(window.location.origin + '/schach-treff/einladung/' + result.data);
+      setCopied(false);
+    } catch (e) {
+      setError(t.roomErrors[(e as {message?: string}).message as keyof typeof t.roomErrors] ?? t.error);
+    } finally { setBusy(false); }
+  }
+  return <div className="st-invite">
+    {!link && <button type="button" disabled={busy} onClick={() => void createInvite()}>{t.inviteLink}</button>}
+    {link && <><label>{t.inviteLink}<input value={link} readOnly onFocus={event => event.currentTarget.select()} /></label><button type="button" onClick={() => { if (!navigator.clipboard) { setError(t.error); return; } void navigator.clipboard.writeText(link).then(() => setCopied(true), () => setError(t.error)); }}>{copied ? t.linkCopied : t.copyLink}</button></>}
+    {error && <p role="alert">{error}</p>}
+  </div>;
 }
