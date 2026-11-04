@@ -70,6 +70,35 @@ export async function checkRoomLayout(){
   await wait("document.querySelector('.st-invite input')");
   assert.equal(await evaluate('window.inviteRequests'),1);
   assert.ok(await evaluate("document.querySelector('.st-invite input').value.includes('/schach-treff/einladung/')"));
+  const inviteUrl = await evaluate("document.querySelector('.st-invite input').value");
+  const inviteLabel = await evaluate("document.querySelector('.st-invite label').firstChild.textContent");
+  await evaluate(`Object.defineProperty(navigator, 'clipboard', {value: {
+    async writeText(url) {
+      if (!window.allowInviteCopy) throw new DOMException('Clipboard denied', 'NotAllowedError');
+      window.copiedInviteUrl = url;
+    }
+  }});`);
+  await evaluate("document.querySelector('.st-invite button').click()");
+  await wait("document.querySelector('.st-invite [role=alert]')");
+  assert.equal(await evaluate("document.querySelector('.st-invite input').value"), inviteUrl);
+  assert.equal(await evaluate("!!document.querySelector('.st-invite button svg')"), false);
+
+  await evaluate(`window.allowInviteCopy = true;
+    const copyButton = document.querySelector('.st-invite button');
+    copyButton.focus();
+    copyButton.click();`);
+  await wait("document.querySelector('.st-invite button svg')");
+  assert.equal(await evaluate('window.copiedInviteUrl'), inviteUrl);
+  assert.ok(await evaluate("document.querySelector('.st-invite [role=status]').textContent"));
+  assert.equal(await evaluate("!!document.querySelector('.st-invite [role=alert]')"), false);
+  assert.equal(await evaluate("!!document.querySelector('.st-invite input')"), true);
+  await wait("!document.querySelector('.st-invite input')");
+  assert.equal(await evaluate("document.querySelector('.st-invite button').textContent.trim()"), inviteLabel);
+  assert.equal(await evaluate("document.activeElement === document.querySelector('.st-invite button')"), true);
+  await evaluate("document.querySelector('.st-invite button').click()");
+  await wait("document.querySelector('.st-invite input')");
+  assert.equal(await evaluate("document.querySelector('.st-invite input').value"), inviteUrl);
+  assert.equal(await evaluate('window.inviteRequests'), 1);
   await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'room-fixture?club=22222222-2222-4222-8222-222222222222&role=member'});
   await wait("document.querySelector('.st-chat')");
   assert.equal(await evaluate("!!document.querySelector('.st-invite')"),false);

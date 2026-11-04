@@ -17,4 +17,5 @@
 .st-mobile-page .st-invite{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .st-mobile-page .st-invite label{display:flex;flex:1 1 180px;min-width:0;flex-direction:column;gap:4px;font-size:.875rem}
 .st-mobile-page .st-invite input{width:100%;box-sizing:border-box}
+.st-mobile-page .st-invite button,.st-mobile-page .st-pin-title{color:var(--st-chat-accent)}
 }

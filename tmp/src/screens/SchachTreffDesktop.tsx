@@ -1,6 +1,7 @@
 import {useRegionalCopy} from '../i18n/regionalCopy';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalLanguage } from '../context/LanguageContext';
@@ -161,23 +162,60 @@ function RoomInvite({clubId}: {clubId: string}) {
   const t = useSchachTreffCopy();
   const [link, setLink] = useState('');
   const [busy, setBusy] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [inviteState, setInviteState] = useState<'closed' | 'open' | 'copied'>('closed');
   const [error, setError] = useState('');
-  async function createInvite() {
+  const copied = inviteState === 'copied';
+  const expanded = inviteState !== 'closed';
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setInviteState('closed'), 2500);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  async function openInvite() {
     if (busy) return;
+    if (link) {
+      setInviteState('open');
+      return;
+    }
     setBusy(true); setError('');
     try {
       const result = await supabase.rpc('create_club_invite', {p_club_id: clubId});
       if (result.error) throw result.error;
       setLink(window.location.origin + '/schach-treff/einladung/' + result.data);
-      setCopied(false);
+      setInviteState('open');
     } catch (e) {
       setError(t.roomErrors[(e as {message?: string}).message as keyof typeof t.roomErrors] ?? t.error);
     } finally { setBusy(false); }
   }
+
+  async function copyInvite() {
+    if (copying || copied) return;
+    setCopying(true);
+    setError('');
+    try {
+      await navigator.clipboard.writeText(link);
+      setInviteState('copied');
+    } catch {
+      setError(t.error);
+    } finally {
+      setCopying(false);
+    }
+  }
+
   return <div className="st-invite">
-    {!link && <button type="button" disabled={busy} onClick={() => void createInvite()}>{t.inviteLink}</button>}
-    {link && <><label>{t.inviteLink}<input value={link} readOnly onFocus={event => event.currentTarget.select()} /></label><button type="button" onClick={() => { if (!navigator.clipboard) { setError(t.error); return; } void navigator.clipboard.writeText(link).then(() => setCopied(true), () => setError(t.error)); }}>{copied ? t.linkCopied : t.copyLink}</button></>}
+    {expanded && <label>{t.inviteLink}<input value={link} readOnly onFocus={event => event.currentTarget.select()} /></label>}
+    <button
+      type="button"
+      aria-disabled={busy || copying || copied}
+      onClick={() => void (expanded ? copyInvite() : openInvite())}
+    >
+      {copied && <Check size={16} className="mr-1 inline-block align-text-bottom" aria-hidden="true" />}
+      {expanded ? (copied ? t.linkCopied : t.copyLink) : t.inviteLink}
+    </button>
+    <span role="status" className="sr-only">{copied ? t.linkCopied : ''}</span>
     {error && <p role="alert">{error}</p>}
   </div>;
 }
