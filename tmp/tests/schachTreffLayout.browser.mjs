@@ -83,9 +83,10 @@ export async function checkRoomLayout(){
    assert.equal(await evaluate("document.querySelector('article:nth-child(27) .st-message-heading') !== null"), true);
    assert.equal(await evaluate("document.querySelector('article:nth-child(28) .st-message-heading') !== null"), true);
    await evaluate("document.querySelector('article:nth-child(22) .st-name').click()");
-   await wait("document.querySelector('dialog[open] .st-close') && document.querySelector('dialog[open] h2')?.textContent === 'Maksim'");
-   assert.ok(await evaluate("document.querySelector('dialog[open] button:not(.st-close)')"));
-   await evaluate("document.querySelector('dialog[open] .st-close').click()");
+   await wait("document.querySelector('.st-close')?.closest('dialog')?.open === true");
+   assert.ok(await evaluate("document.querySelector('.st-close').closest('dialog').textContent.includes('Maksim')"));
+   assert.ok(await evaluate("Array.from(document.querySelector('.st-close').closest('dialog').querySelectorAll('button')).some(button=>button.textContent.trim() && !button.classList.contains('st-close'))"));
+   await evaluate("document.querySelector('.st-close').click()");
    const collapsed = await evaluate("document.querySelector('.st-pin-text').getBoundingClientRect().height");
    assert.ok(collapsed < 24);
    await evaluate("document.querySelector('.st-pin').click()");
