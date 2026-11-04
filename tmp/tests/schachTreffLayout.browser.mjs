@@ -64,7 +64,7 @@ export async function checkRoomLayout(){
    assert.ok(await evaluate("document.querySelector('.st-messages').scrollTop > 0"));
    assert.equal(await evaluate("getComputedStyle(document.querySelector('.st-challenge-icon')).opacity"), width===375?'1':'0');
    await evaluate("document.querySelector('.st-message .st-challenge-icon').focus()");
-   assert.equal(await evaluate("getComputedStyle(document.activeElement).opacity"), '1');
+   await wait("document.activeElement.matches('.st-challenge-icon') && getComputedStyle(document.activeElement).opacity === '1'");
    assert.equal(await evaluate("document.querySelector('.st-invite-dialog').open"), false);
    assert.equal(await evaluate("window.fixtureInvites || 0"), 0);
    assert.equal(await evaluate("document.querySelector('.st-invite-dialog input')"), null);
@@ -103,6 +103,7 @@ export async function checkRoomLayout(){
    if(process.env.SECTIONS_CAPTURE && width!==1280) {
      await evaluate("document.activeElement?.blur(); document.querySelector('.st-messages').scrollTop = document.querySelector('.st-messages').scrollHeight");
      if(width===375) await evaluate("document.querySelector('.st-chat').scrollIntoView({block:'end'})");
+     else await wait("Array.from(document.querySelectorAll('.st-challenge-icon')).every(button=>getComputedStyle(button).opacity==='0')");
      const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
      await writeFile(join(process.env.SECTIONS_CAPTURE,width===375?'schach-treff-mobile-club-375.png':'schach-treff-desktop-club-1920.png'),Buffer.from(image.data,'base64'));
    }
