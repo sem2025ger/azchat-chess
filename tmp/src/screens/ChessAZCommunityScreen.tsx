@@ -3,9 +3,10 @@ import SchachTreffDesktop from './SchachTreffDesktop';
 import { displayPlayerName } from '../utils/displayPlayerName';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { Globe, Users, MessageCircle, Trophy, Loader2, BarChart3, Info, LockKeyhole } from 'lucide-react';
+import { Globe, Users, MessageCircle, Trophy, Loader2, BarChart3, Info } from 'lucide-react';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import ClubRooms from '../components/schachTreff/ClubRooms';
+import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
 import './SchachTreffMobileRooms.css';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -86,13 +87,14 @@ export default function ChessAZCommunityScreen() {
   const desktop = useDesktop();
   const t = useSchachTreffCopy();
   if (desktop) return <CommunityRouter />;
-  const club = new URLSearchParams(window.location.search).get('club');
+  const params = new URLSearchParams(window.location.search);
+  const club = params.get('club');
   return <div className="st-mobile-page">
     <header className="st-mobile-header"><h1>{t.title}</h1></header>
-    <aside className="st-mobile-rooms"><a className="st-mobile-general" href="/chat">{t.general}</a>
-      <h2><LockKeyhole size={15} aria-hidden="true" />{t.clubs}</h2><ClubRooms currentClubId={club} />
+    <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
+      <ClubRooms currentClubId={club} />
     </aside>
-    {club ? <SchachTreffDesktop /> : <div className="st-mobile-legacy"><CommunityRouter /></div>}
+    {club ? <SchachTreffDesktop hideRooms /> : <div className="st-mobile-legacy"><CommunityRouter /></div>}
   </div>;
 }
 function CommunityRouter() {

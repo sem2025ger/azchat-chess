@@ -6,11 +6,12 @@
 .st-mobile-general{display:block;min-height:44px;padding:10px 0;font-weight:600;color:#F4EEE2;background:linear-gradient(110deg,#F4EEE2,#fff,#CFCBC3);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;overflow-wrap:anywhere}
 .st-mobile-rooms h2{display:flex;align-items:center;gap:8px;margin:40px 0 12px;padding-top:16px;border-top:1px solid rgba(227,211,180,.25);font-size:14px;font-weight:600;color:#E3D3B4}
 .st-mobile-rooms h2 svg{flex:none}.st-mobile-rooms .st-room-list>a{display:block;overflow-wrap:anywhere;padding:10px 0;color:#F2EEE3}
+.st-mobile-rooms .st-mobile-general[aria-current=page],.st-mobile-rooms .st-room-list>a[aria-current=page]{border:1px solid #D9AE5B;border-radius:12px;padding-left:10px;padding-right:10px}
 .st-mobile-rooms .st-club-empty{padding:10px;border:1px solid rgba(227,211,180,.2);border-radius:10px;color:#E3D3B4;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
 .st-mobile-rooms button,.st-mobile-rooms input{max-width:100%;min-height:44px;padding:10px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:#0E100F;color:#E3D3B4;overflow-wrap:anywhere}
 .st-mobile-rooms .st-create-room{width:100%;margin-top:12px;white-space:normal;text-align:left}.st-mobile-rooms form{display:flex;flex-direction:column;gap:8px}.st-mobile-rooms input{width:100%}
 .st-mobile-legacy>div{padding:0}.st-mobile-legacy>div>header{display:none}
-.st-mobile-page>.schach-treff{min-width:0;color:#F2EEE3}.st-mobile-page>.schach-treff>header,.st-mobile-page>.schach-treff .st-rooms{display:none}
+.st-mobile-page>.schach-treff{min-width:0;color:#F2EEE3}.st-mobile-page>.schach-treff>header{display:none}
 .st-mobile-page .st-chat{padding:16px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:#121413;min-width:0;overflow-wrap:anywhere}
 .st-mobile-page .st-chat h2{font-size:1rem;margin:12px 0}.st-mobile-page .st-back-general{display:inline-block;min-height:44px;color:#F4EEE2}.st-mobile-page .st-chat form{display:flex;flex-wrap:wrap;gap:8px}.st-mobile-page .st-chat input{min-width:0;flex:1;background:#0E100F;color:#F2EEE3;border:1px solid #666;padding:10px}.st-mobile-page .st-chat button{min-height:44px;padding:8px;color:#F2EEE3}
 }

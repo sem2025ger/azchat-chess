@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
+import { useAuth } from '../../context/AuthContext';
+import { LockKeyhole } from 'lucide-react';
 type Room = { id: string; name: string };
 export default function ClubRooms({ currentClubId }: { currentClubId: string | null }) {
   const t=useSchachTreffCopy();
+  const {user}=useAuth();
   const [rooms,setRooms]=useState<Room[]>([]), [available,setAvailable]=useState(false);
   const [name,setName]=useState(''), [form,setForm]=useState(false), [busy,setBusy]=useState(false), [error,setError]=useState('');
   const [link,setLink]=useState(''), [copied,setCopied]=useState(false);
-  const warned=useRef(false);
+  const warned=useRef(false), requestVersion=useRef(0);
   const load=useCallback(async () => {
+    const version=++requestVersion.current;
+    if (!user) { setAvailable(false); setRooms([]); setError(''); return; }
     const result=await supabase.from('chess_clubs').select('id,name').eq('kind','room').order('created_at');
+    if (version !== requestVersion.current) return;
     if (result.error) {
       if (['42703','PGRST204','PGRST205'].includes(result.error.code)) {
         if (!warned.current) { warned.current=true; console.warn('Schach-Treff rooms unavailable:',result.error.code); }
@@ -17,8 +23,8 @@ export default function ClubRooms({ currentClubId }: { currentClubId: string | n
       setAvailable(false); return;
     }
     setAvailable(true); setRooms(result.data as Room[]);
-  },[]);
-  useEffect(() => { void load(); },[load]);
+  },[user]);
+  useEffect(() => { void load(); return () => { requestVersion.current++; }; },[load]);
   async function create() {
     if (busy || name.trim().length<3) return;
     setBusy(true); setError(''); setLink('');
@@ -32,8 +38,8 @@ export default function ClubRooms({ currentClubId }: { currentClubId: string | n
     } catch (e) { setError(t.roomErrors[(e as {message?:string}).message as keyof typeof t.roomErrors] ?? t.error); }
     finally { setBusy(false); }
   }
-  if (!available && !error) return null;
-  return <div className="st-room-list">{rooms.map(room => <a key={room.id} href={'/chat?club='+room.id} aria-current={currentClubId===room.id ? 'page' : undefined}>{room.name}</a>)}
+  if (!user || (!available && !error)) return null;
+  return <div className="st-room-list">{available && <h2 className="st-club-heading"><LockKeyhole size={15} aria-hidden="true" />{t.clubs}</h2>}{rooms.map(room => <a key={room.id} href={'/chat?club='+room.id} aria-current={currentClubId===room.id ? 'page' : undefined}>{room.name}</a>)}
     {available && rooms.length === 0 && <p className="st-club-empty">{t.clubEmpty}</p>}
     {available && <button type="button" className="st-create-room" onClick={() => setForm(!form)}>{t.createClub}</button>}
     {form && <form onSubmit={event => { event.preventDefault(); void create(); }}><label>{t.clubName}<input value={name} onChange={event => setName(event.target.value)} minLength={3} maxLength={60} required /></label><button disabled={busy}>{t.createRoom}</button><button type="button" onClick={() => setForm(false)}>{t.cancel}</button></form>}

@@ -1,7 +1,6 @@
 import {useRegionalCopy} from '../i18n/regionalCopy';
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { LockKeyhole } from 'lucide-react';
 import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalLanguage } from '../context/LanguageContext';
@@ -12,12 +11,13 @@ import './SchachTreffDesktop.css';
 import { ChallengeProvider, ChallengeButton, ChallengeMessage } from '../components/schachTreff/Challenges';
 import PlayerSummary from '../components/schachTreff/PlayerSummary';
 import ClubRooms, { RoomTitle } from '../components/schachTreff/ClubRooms';
+import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
 
 type Profile = { id: string; username: string };
 type Message = { id: string; author_id: string; body: string; created_at: string };
 type Panel = 'tournaments' | 'members' | 'ranking' | 'about';
 const warned = new Set<string>();
-export default function SchachTreffDesktop() {
+export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: boolean } = {}) {
  const regional=useRegionalCopy();
   const t=useSchachTreffCopy();
   const language=useOptionalLanguage()?.language||'de';
@@ -127,7 +127,7 @@ export default function SchachTreffDesktop() {
     </div></header>
     {error && <p role="alert">{error}</p>}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
-    <div className="st-columns"><aside className="st-surface st-rooms"><a className="st-general-link" href="/chat">{t.general}</a><h2 className="st-club-heading"><LockKeyhole size={15} aria-hidden="true" />{t.clubs}</h2><ClubRooms currentClubId={clubId} /></aside>
+    <div className="st-columns">{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} /></aside>}
       <section className="st-surface st-chat">{new URLSearchParams(window.location.search).has('club') && <a className="st-back-general" href="/chat">{t.backGeneral}</a>}<h2><RoomTitle clubId={clubId} /></h2>
         {pinAvailable && (pin || canPin) && <div className="st-pin">
           <div className="st-pin-title">{t.pinned}{pin?.author && ' · '}{pin?.author ? profiles.find(p => p.id === pin.author)?.username ?? '' : ''}
