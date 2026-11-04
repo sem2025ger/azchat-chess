@@ -1,7 +1,7 @@
 import { useOptionalLanguage } from '../../context/LanguageContext';
 import { translateSchachTreff } from './i18n';
 export const copy = {
-  createClub: 'Verein erstellen', clubName: 'Name des Vereins', createRoom: 'Raum erstellen',
+  createClub: '+ Vereinschat erstellen', clubEmpty: 'Geschlossener Chat nur für Mitglieder deines Vereins. Erstelle einen Vereinschat oder nimm eine Einladung an.', backGeneral: '← Allgemeiner Chat', clubName: 'Name des Vereins', createRoom: 'Raum erstellen',
   copyLink: 'Link kopieren', linkCopied: 'Link kopiert', inviteLink: 'Einladungslink', inviteReady: 'Dein Einladungslink ist bereit.',
   openChat: 'Chat öffnen', mobileRoomNotice: 'Vereinsräume sind vorerst in der Desktop-Version verfügbar.',
   roomErrors: { invite_limit: 'Dieser Raum hat bereits zehn aktive Einladungen.', not_allowed: 'Diese Aktion ist nicht erlaubt.', invalid_room_name: 'Der Name muss 3–60 Zeichen lang sein.',
@@ -21,7 +21,7 @@ export const copy = {
     rate_limit_exceeded: 'Bitte warte kurz und versuche es erneut.', storage_unavailable: 'Die Partie kann gerade nicht sicher gestartet werden.',
   },
   pinned: 'Angeheftet', change: 'Ändern', pinAction: 'Anheften', cancel: 'Abbrechen',
-  title: 'Schach-Treff', more: 'Weitere Bereiche', rooms: 'Räume', general: 'Allgemein', clubs: 'Meine Vereine',
+  title: 'Schach-Treff', more: 'Weitere Bereiche', rooms: 'Räume', general: 'Allgemeiner Chat', clubs: 'Vereinschats',
   tournaments: 'Turniere', soon: 'bald', members: 'Mitglieder', ranking: 'Rangliste', about: 'Über uns',
   rankingSoon: 'Rangliste folgt mit der Elo-Wertung',
   tournamentTitle: 'Turniere starten bald', tournamentText: 'Schweizer System und Arena direkt im Schach-Treff. Wir sagen dir Bescheid, sobald das erste Turnier offen ist.',

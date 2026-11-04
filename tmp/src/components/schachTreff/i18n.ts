@@ -1,5 +1,10 @@
 import type { Language } from '../../translations';
 const fixedCopy: Record<string, Record<Language,string>> = {
+  "+ Vereinschat erstellen": {de:"+ Vereinschat erstellen",en:"+ Create club chat",az:"+ Klub söhbəti yarat",tr:"+ Kulüp sohbeti oluştur",ua:"+ Створити чат клубу",ru:"+ Создать чат клуба"},
+  "Allgemeiner Chat": {de:"Allgemeiner Chat",en:"General chat",az:"Ümumi söhbət",tr:"Genel sohbet",ua:"Загальний чат",ru:"Общий чат"},
+  "Vereinschats": {de:"Vereinschats",en:"Club chats",az:"Klub söhbətləri",tr:"Kulüp sohbetleri",ua:"Клубні чати",ru:"Клубные чаты"},
+  "← Allgemeiner Chat": {de:"← Allgemeiner Chat",en:"← General chat",az:"← Ümumi söhbət",tr:"← Genel sohbet",ua:"← Загальний чат",ru:"← Общий чат"},
+  "Geschlossener Chat nur für Mitglieder deines Vereins. Erstelle einen Vereinschat oder nimm eine Einladung an.": {de:"Geschlossener Chat nur für Mitglieder deines Vereins. Erstelle einen Vereinschat oder nimm eine Einladung an.",en:"A private chat for your club members. Create a club chat or accept an invitation.",az:"Qapalı söhbət yalnız klubunuzun üzvləri üçündür. Klub söhbəti yaradın və ya dəvəti qəbul edin.",tr:"Yalnızca kulübünün üyelerine özel sohbet. Bir kulüp sohbeti oluştur veya daveti kabul et.",ua:"Закритий чат лише для учасників вашого клубу. Створіть чат клубу або прийміть запрошення.",ru:"Закрытый чат только для участников вашего клуба. Создайте чат клуба или примите приглашение."},
   "Verein erstellen": {
     "de": "Verein erstellen",
     "en": "Create club",
