@@ -72,6 +72,7 @@ export async function checkRoomLayout(){
    await wait("document.hasFocus() && document.activeElement.matches('.st-challenge-icon:focus') && getComputedStyle(document.activeElement).opacity === '1'");
    assert.equal(await evaluate("document.querySelector('.st-invite-dialog,.st-invite-fields')"), null);
    assert.equal(await evaluate("window.fixtureInvites || 0"), 0);
+   await evaluate("window.sessionStorage.removeItem('schach-treff-invite:22222222-2222-4222-8222-222222222222')");
    assert.equal(await evaluate("document.querySelector('article:nth-child(22) .st-message-heading') !== null"), true);
    assert.equal(await evaluate("document.querySelector('article:nth-child(23) .st-message-heading')"), null);
    assert.equal(await evaluate("document.querySelector('article:nth-child(24) .st-message-heading')"), null);
