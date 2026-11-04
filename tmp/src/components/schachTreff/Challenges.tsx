@@ -83,6 +83,10 @@ export function ChallengeButton({ targetUserId,beforeOpen,icon,composer }: { tar
     {icon ? <Swords size={16} aria-hidden="true" /> : composer ? t.challengePlayer : t.challengeAction}
   </button>;
 }
+export function useChallengeMessageIds(): ReadonlySet<string> {
+  const context = useContext(Context);
+  return new Set(context?.rows.map(row => row.message_id) ?? []);
+}
 export function ChallengeMessage({ messageId,body }: { messageId: string; body: string }) {
   const context=useContext(Context), row=context?.rows.find(item => item.message_id===messageId);
   if (!context || !row) return <p>{body}</p>;
