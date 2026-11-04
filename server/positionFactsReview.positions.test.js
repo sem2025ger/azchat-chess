@@ -88,3 +88,14 @@ test('offline dry run generates complete ten-position Markdown without network o
    report.split('\n').slice(0,21).join('\n'));
  }finally{fs.rmSync(output,{force:true});}
 });
+
+test('review comparison ignores ON-only endFacts but detects move and score changes',()=>{
+ const {comparableEngineEvidence}=require('./scripts/positionFactsReview');
+ const base={id:'L1',moves:['O-O','Bxc3','bxc3','O-O','Re1'],scoreKind:'cp',scoreWhite:32,depth:14,wdlWhite:[350,420,230]};
+ const off={origin:'server_stockfish_19',engineLines:[base]};
+ const on={origin:'server_stockfish_19',engineLines:[{...base,endFacts:{fen:'test-only',plies:5,white:{pawns:{doubledFiles:[]}}}}]};
+ assert.equal(comparableEngineEvidence(off,on),true,'endFacts must not make engine lines non-comparable');
+ assert.equal(comparableEngineEvidence(off,{...on,engineLines:[{...on.engineLines[0],moves:['O-O','Be6']}]}),false,'different moves');
+ assert.equal(comparableEngineEvidence(off,{...on,engineLines:[{...on.engineLines[0],scoreWhite:base.scoreWhite+1}]}),false,'different engine score');
+ assert.equal(comparableEngineEvidence(off,{...on,origin:'untrusted_client_legality_checked'}),false,'origin must be server Stockfish');
+});
