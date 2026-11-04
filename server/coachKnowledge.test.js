@@ -54,3 +54,22 @@ test('bibliography instruction is absent by default, and ON cannot imply pages, 
  assert.equal(input.evidence.coachBibliography.works[0].contentIngested,false);
  assert.equal(packets[0].instructions.includes('evidence.coachBibliography'),false);
 });
+
+test('chat catalog gate preserves OFF evidence; ON adds bibliography only for matching author questions',async()=>{
+ const {groundedChat}=require('./aiCoachChat');
+ const index={status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})};
+ const received=[];
+ const fetchImpl=async(_url,options)=>{received.push(JSON.parse(JSON.parse(options.body).input).evidence);return ok();};
+ const q={message:'Расскажи о книгах Капабланки',fen:new Chess().fen(),side:'white',language:'ru'};
+ await groundedChat(index,q,{openaiApiKey:'synthetic',fetchImpl});
+ await groundedChat(index,q,{openaiApiKey:'synthetic',fetchImpl,knowledgeCatalogEnabled:false});
+ await groundedChat(index,q,{openaiApiKey:'synthetic',fetchImpl,knowledgeCatalogEnabled:true});
+ await groundedChat(index,{...q,message:'Объясни развитие фигур в этой позиции'},{openaiApiKey:'synthetic',fetchImpl,knowledgeCatalogEnabled:true});
+ assert.deepEqual(received[0],received[1]);
+ assert.equal(Object.hasOwn(received[0],'coachBibliography'),false);
+ assert.equal(received[2].coachBibliography.kind,'bibliography_only');
+ assert.equal(received[2].coachBibliography.works.length,5);
+ assert.equal(Object.hasOwn(received[3],'coachBibliography'),false);
+ const {coachBibliography,...rest}=received[2];
+ assert.deepEqual(rest,received[0]);
+});
