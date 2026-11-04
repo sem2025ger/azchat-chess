@@ -515,13 +515,13 @@ const fixedCopy: Record<string, Record<Language,string>> = {
     "ua": "Приєднайтеся до клубу, щоб бачити повідомлення.",
     "ru": "Вступите в клуб, чтобы видеть сообщения."
   },
-  "Dieser Raum hat bereits zehn aktive Einladungen.": {
-    "de": "Dieser Raum hat bereits zehn aktive Einladungen.",
-    "en": "This room already has ten active invites.",
-    "az": "Bu otaqda artıq on aktiv dəvət var.",
-    "tr": "Bu odada zaten on aktif davet var.",
-    "ua": "У кімнаті вже десять активних запрошень.",
-    "ru": "В комнате уже десять активных приглашений."
+  "Dieser Raum hat bereits zehn aktive Links. Verwende einen bereits versendeten Link; neue sind nach Ablauf der alten möglich.": {
+    "de": "Es gibt bereits 10 aktive Einladungslinks. Verwende einen bereits versendeten; neue können erstellt werden, sobald die alten abgelaufen sind.",
+    "en": "There are already 10 active invitation links. Use one you've sent before; new ones can be created when the old ones expire.",
+    "az": "Artıq 10 aktiv dəvət linki var. Daha əvvəl göndərilən linkdən istifadə edin; köhnələrin vaxtı bitdikdə yenilərini yaratmaq olar.",
+    "tr": "Zaten 10 etkin davet bağlantısı var. Daha önce gönderdiğinizi kullanın; eskileri sona erince yenilerini oluşturabilirsiniz.",
+    "ua": "Уже є 10 активних посилань-запрошень. Скористайтеся раніше надісланим; нові можна буде створити після завершення терміну дії старих.",
+    "ru": "Уже есть 10 действующих ссылок. Используйте ранее отправленную — новые можно будет создать, когда старые истекут."
   },
   "Diese Aktion ist nicht erlaubt.": {
     "de": "Diese Aktion ist nicht erlaubt.",
