@@ -47,7 +47,9 @@ export const supabase = {
       then(resolve,reject) {
         let rows=[];
         if(table==='chess_clubs') {
-          rows=filters.get('kind')==='room'||filters.get('id')===room ? [{id:room,name:'Schachverein'}] : [{id:uid,name:'ChessAZ Deutsch'}];
+          rows=filters.get('kind')==='room'||filters.get('id')===room
+            ? [{id:room,name:'Schachverein'},...(new URLSearchParams(location.search).has('duplicate') ? [{id:guest,name:'Schachverein'}] : [])]
+            : [{id:uid,name:'ChessAZ Deutsch'}];
           if(columns==='pinned_body,pinned_by' && filters.get('id')===room) rows=[{pinned_by:guest,pinned_body:('В пятницу тренировка по эндшпилю. Присоединяйтесь к разбору партий. ').repeat(6)}];
         } else if(table==='chess_club_members') {
           const params=new URLSearchParams(location.search);
@@ -209,6 +211,16 @@ export async function checkRoomLayout(){
        const composer=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
        await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-mobile-composer-375.png'),Buffer.from(composer.data,'base64'));
      }
+   }
+   if(width===375 || width===1920) {
+     await cdp('Page.navigate',{url:roomFixture+'&duplicate=1'});
+     await wait("document.querySelectorAll('.st-room-list>a').length===2 && document.querySelector('.st-chat-header h2')?.textContent.includes('#222222')");
+     assert.deepEqual(await evaluate("Array.from(document.querySelectorAll('.st-room-list>a')).map(a=>a.textContent)"),
+       ['Schachverein · #222222','Schachverein · #333333']);
+     assert.equal(await evaluate("document.querySelector('.st-chat-header h2')?.textContent"),'Schachverein · #222222');
+     assert.equal(await evaluate("document.querySelector('.st-room-list>a').getAttribute('href')"),'/chat?club=22222222-2222-4222-8222-222222222222');
+     assert.equal(await evaluate("document.querySelectorAll('.st-room-list>a')[1].getAttribute('href')"),'/chat?club=33333333-3333-4333-8333-333333333333');
+     assert.ok(await evaluate("document.documentElement.scrollWidth<=innerWidth+1"),'duplicate room names must not overflow at '+width);
    }
    if(width===1280) {
      const isAtBottom = "(() => {const e=document.querySelector('.st-messages');return e.scrollHeight-e.clientHeight-e.scrollTop<=2;})()";

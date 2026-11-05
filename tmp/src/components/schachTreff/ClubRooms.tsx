@@ -3,6 +3,7 @@ import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
 import { useAuth } from '../../context/AuthContext';
 import { LockKeyhole } from 'lucide-react';
+import { roomDisplayLabel } from './roomIdentity';
 type Room = { id: string; name: string };
 export default function ClubRooms({ currentClubId }: { currentClubId: string | null }) {
   const t=useSchachTreffCopy();
@@ -39,7 +40,7 @@ export default function ClubRooms({ currentClubId }: { currentClubId: string | n
     finally { setBusy(false); }
   }
   if (!user || (!available && !error)) return null;
-  return <div className="st-room-list">{available && <h2 className="st-club-heading"><LockKeyhole size={16} aria-hidden="true" />{t.clubs}</h2>}{rooms.map(room => <a key={room.id} href={'/chat?club='+room.id} aria-current={currentClubId===room.id ? 'page' : undefined}>{room.name}</a>)}
+  return <div className="st-room-list">{available && <h2 className="st-club-heading"><LockKeyhole size={16} aria-hidden="true" />{t.clubs}</h2>}{rooms.map(room => <a key={room.id} href={'/chat?club='+room.id} aria-current={currentClubId===room.id ? 'page' : undefined}>{roomDisplayLabel(room,rooms)}</a>)}
     {available && rooms.length === 0 && <p className="st-club-empty">{t.clubEmpty}</p>}
     {available && <button type="button" className="st-create-room" onClick={() => setForm(!form)}>{t.createClub}</button>}
     {form && <form onSubmit={event => { event.preventDefault(); void create(); }}><label>{t.clubName}<input value={name} onChange={event => setName(event.target.value)} minLength={3} maxLength={60} required /></label><button disabled={busy}>{t.createRoom}</button><button type="button" onClick={() => setForm(false)}>{t.cancel}</button></form>}
@@ -53,8 +54,20 @@ export function RoomTitle({ clubId }: { clubId: string | null }) {
   useEffect(() => {
     if (!clubId) return;
     let current=true;
-    void supabase.from('chess_clubs').select('name').eq('id',clubId).maybeSingle().then(result => {
-      if (current && !result.error && result.data) setRoom({id:clubId,name:result.data.name});
+    // Use the same membership-filtered room list as the sidebar, so identical
+    // names receive the same stable marker in the header and the room list.
+    void supabase.from('chess_clubs').select('id,name').eq('kind','room').order('created_at').then(result => {
+      if (!current) return;
+      const rooms=(result.data ?? []) as Room[];
+      const selected=rooms.find(item => item.id === clubId);
+      if (!result.error && selected) {
+        setRoom({id:clubId,name:roomDisplayLabel(selected,rooms)});
+      } else {
+        // Preserve the previous direct lookup for rooms outside this listing.
+        void supabase.from('chess_clubs').select('name').eq('id',clubId).maybeSingle().then(fallback => {
+          if (current && !fallback.error && fallback.data) setRoom({id:clubId,name:fallback.data.name});
+        });
+      }
     });
     return () => { current=false; };
   },[clubId]);
