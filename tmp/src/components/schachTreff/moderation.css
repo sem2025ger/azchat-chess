@@ -1,3 +1,14 @@
+[data-schach-treff-unread] a.site-nav-link[href="/chat"] > div:first-child { position: relative; }
+[data-schach-treff-unread] a.site-nav-link[href="/chat"] > div:first-child::after {
+  content: "";
+  position: absolute;
+  top: -.15rem;
+  right: -.2rem;
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: #f1bb6b;
+}
 .st-unread-badge {
   display: inline-block;
   margin-inline-start: .45rem;

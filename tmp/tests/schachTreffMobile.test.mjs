@@ -19,8 +19,7 @@ test('mobile navigation preserves its routes and interactions with the approved 
   const baseline = execFileSync('git', ['show', '4af51e5:tmp/src/components/Layout.tsx'], {encoding:'utf8'}).replace(/\r\n/g, '\n');
   const current = read('../src/components/Layout.tsx');
   const nav = source => source.split('<nav data-mobile-app-nav')[1].split('</nav>')[0];
-  assert.equal(nav(current).replace("<ChatNavIcon />", "<MessageSquare size={20} />").replace('label="Schach-Treff"', "label={t('nav.chat')}"), nav(baseline));
-  assert.match(current, /return moderationEnabled \? .* : <MessageSquare size=\{20\} \/>;/);
+  assert.equal(nav(current).replace('label="Schach-Treff"', "label={t('nav.chat')}"), nav(baseline));
   const mobileNavItem = source => source.split('function MobileNavItem')[1].split('function SidebarGermanyFlag')[0];
   const newLabel='site-nav-label text-[0.75rem] font-semibold normal-case tracking-normal';
   assert.ok(mobileNavItem(current).includes(newLabel));
@@ -89,7 +88,7 @@ test('missing pin migration disables admin/moderator controls while chat still l
 
 test('saving a pin cannot call the RPC when its migration is unavailable', async () => {
   const current = read('../src/screens/SchachTreffDesktop.tsx');
-  const saveBody = current.split('async function savePin(event: FormEvent) {')[1].split('\n  function stamp')[0].replace(/\n  }\s*$/, '');
+  const saveBody = current.split('async function savePin(event: FormEvent) {')[1].split('\n  function openChatAction')[0].replace(/\n  }\s*$/, '');
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
   let attempted = false;
   await new AsyncFunction('event', 'clubId', 'pinAvailable', 'canPin', 'busy', 'perform', saveBody)(

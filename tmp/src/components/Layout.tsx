@@ -1,4 +1,3 @@
-import { moderationEnabled, UnreadContext, UnreadDot, useUnreadCounts } from './schachTreff/unread';
 import { useDesktop } from './schachTreff/useDesktop';
 import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react';
 import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
@@ -28,7 +27,6 @@ const languageActiveClass: Record<Language, string> = {
 };
 
 export default function Layout() {
-  const unreadRooms = useUnreadCounts();
   const location = useLocation();
   const desktop = useDesktop();
   const routeScrollRef = useRef<HTMLDivElement>(null);
@@ -68,7 +66,6 @@ export default function Layout() {
   const currentBgClass = specialThemesEnabled ? (bgClasses[background] || bgClasses['Void Black']) : bgClasses['Void Black'];
 
   return (
-    <UnreadContext.Provider value={unreadRooms}>
     <div className={cx(
       needsConstrainedScroll ? "h-[100dvh] overflow-hidden" : "min-h-screen max-md:h-[100dvh] max-md:min-h-0 max-md:overflow-hidden",
       isDesktopAnalysisRoute && "lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden",
@@ -109,7 +106,7 @@ export default function Layout() {
           <nav className="px-3 xl:px-5 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
-            <NavItem to="/chat" icon={<ChatNavIcon />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
+            <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
             {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" themeColor="theme-gold" bronzeLabel />}
             {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
@@ -162,7 +159,7 @@ export default function Layout() {
       <nav data-mobile-app-nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} premiumHome />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} accent="analysis" />
-        <MobileNavItem to="/chat" icon={<ChatNavIcon />} label="Schach-Treff" accent="chat" />
+        <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" accent="chat" />
         <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} accent="profile" />
         <MobileNavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} accent="settings" />
       </nav>
@@ -185,12 +182,7 @@ export default function Layout() {
       </main>
 
     </div>
-    </UnreadContext.Provider>
   );
-}
-
-function ChatNavIcon() {
-  return moderationEnabled ? <span className="relative"><MessageSquare size={20} /><UnreadDot /></span> : <MessageSquare size={20} />;
 }
 
 function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = false, bronzeLabel = false }: { to: string, icon: React.ReactNode, label: string, themeColor?: string, alwaysGlow?: boolean, bronzeLabel?: boolean }) {

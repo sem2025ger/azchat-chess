@@ -1,3 +1,4 @@
+import { ClubUnreadProvider, moderationEnabled } from '../components/schachTreff/unread';
 import {clearPositionSearchState} from '../utils/positionSearchState';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, type UserProfile } from '../services/supabase';
@@ -84,7 +85,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ session, user, profile, isLoading, signOut }}>
-      {children}
+      {moderationEnabled ? <ClubUnreadProvider userId={user?.id}>{children}</ClubUnreadProvider> : children}
     </AuthContext.Provider>
   );
 };

@@ -2,7 +2,6 @@ import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
 import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
 import { moderationEnabled, refreshUnreadCounts } from './unread';
-import './moderation.css';
 
 export type ClubMessage = {
   id: string;

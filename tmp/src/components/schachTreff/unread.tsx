@@ -1,20 +1,18 @@
-import { createContext, useContext, useEffect, useRef, useState, type RefObject } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
+import './moderation.css';
 
 export const moderationEnabled = import.meta.env.VITE_SCHACH_TREFF_MODERATION_ENABLED === 'true';
 type UnreadRoom = { club_id: string; is_general: boolean; unread_count: number };
-export const UnreadContext = createContext<UnreadRoom[]>([]);
+const UnreadContext = createContext<UnreadRoom[]>([]);
 const unreadChanged = 'schach-treff-unread-changed';
 
 export function refreshUnreadCounts() {
   window.dispatchEvent(new Event(unreadChanged));
 }
 
-export function useUnreadCounts() {
-  const { user } = useAuth();
-  const userId = user?.id;
+function useUnreadCounts(userId?: string) {
   const [result, setResult] = useState<{ userId: string; rooms: UnreadRoom[] } | null>(null);
 
   useEffect(() => {
@@ -95,9 +93,20 @@ export function UnreadBadge({ clubId }: { clubId?: string }) {
   return count ? <span className="st-unread-badge" role="img" aria-label={t.unreadMessages + ' ' + count}>{count > 99 ? '99+' : count}</span> : null;
 }
 
-export function UnreadDot() {
-  const rooms = useContext(UnreadContext);
+export function ClubUnreadProvider({ userId, children }: { userId?: string; children: ReactNode }) {
+  const rooms = useUnreadCounts(userId);
   const t = useSchachTreffCopy();
-  return rooms.some(room => room.unread_count > 0) ?
-    <span role="img" className="absolute -right-1 -top-1 size-2 rounded-full bg-[#f1bb6b]" aria-label={t.unreadMessages} /> : null;
+  const unread = rooms.some(room => room.unread_count > 0);
+
+  useEffect(() => {
+    if (!unread) return;
+    const root = document.documentElement;
+    root.setAttribute('data-schach-treff-unread', '');
+    return () => root.removeAttribute('data-schach-treff-unread');
+  }, [unread]);
+
+  return <UnreadContext.Provider value={rooms}>
+    {children}
+    {unread && <span className="sr-only" role="status">{t.title} · {t.unreadMessages}</span>}
+  </UnreadContext.Provider>;
 }
