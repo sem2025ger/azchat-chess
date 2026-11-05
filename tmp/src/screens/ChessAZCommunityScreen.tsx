@@ -1,7 +1,7 @@
 import { useDesktop } from '../components/schachTreff/useDesktop';
 import SchachTreffDesktop from './SchachTreffDesktop';
 import { displayPlayerName } from '../utils/displayPlayerName';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Globe, Users, MessageCircle, Trophy, Loader2, BarChart3, Info } from 'lucide-react';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
@@ -13,7 +13,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { supabase } from '../services/supabase';
 
 type Club = { id: string; name: string; description: string };
-type Message = { id: string; author_id: string; body: string; created_at: string };
+import { MessageActions, ModerationDialog, type ClubMessage, type ModerationAction } from '../components/schachTreff/Moderation';
+import { moderationEnabled, useMarkClubRead } from '../components/schachTreff/unread';
 type ClubEvent = {
   id: string; title: string; format: 'bullet' | 'blitz' | 'rapid';
   min_players: number; max_players: number; status: string; created_at: string;
@@ -110,7 +111,7 @@ function LegacyCommunityScreen() {
   const { user, isLoading: authLoading } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
   const [member, setMember] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ClubMessage[]>([]);
   const [events, setEvents] = useState<ClubEvent[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [tournaments, setTournaments] = useState<ScheduledTournament[]>([]);
@@ -127,6 +128,13 @@ function LegacyCommunityScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [moderationAction, setModerationAction] = useState<ModerationAction | null>(null);
+  const [moderationNotice, setModerationNotice] = useState('');
+  const feed = useRef<HTMLDivElement>(null);
+  const role = members.find(row => row.user_id === user?.id)?.role;
+  const moderator = role === 'admin' || role === 'moderator';
+  const schach = useSchachTreffCopy();
+  useMarkClubRead(club?.id ?? null, messages.at(-1)?.id, member && !loading && !authLoading && activeTab === 'discussions', feed, user?.id);
 
   const refresh = useCallback(async () => {
     const { data: found, error: clubError } = await supabase.from('chess_clubs')
@@ -151,7 +159,9 @@ function LegacyCommunityScreen() {
       return;
     }
     const [messageResult, eventResult, tournamentResult, membersResult] = await Promise.all([
-      supabase.from('chess_club_messages').select('id,author_id,body,created_at')
+      (moderationEnabled
+        ? supabase.from('chess_club_messages').select('id,author_id,body,created_at,kind,deleted_at,hidden_at')
+        : supabase.from('chess_club_messages').select('id,author_id,body,created_at'))
         .eq('club_id', found.id).order('created_at', { ascending: false }).limit(50),
       supabase.from('chess_club_events')
         .select('id,title,format,min_players,max_players,status,created_at')
@@ -186,7 +196,7 @@ function LegacyCommunityScreen() {
     } else {
       setTournamentEntries([]);
     }
-    const nextMessages = (messageResult.data ?? []) as Message[];
+    const nextMessages = (messageResult.data ?? []) as ClubMessage[];
     const nextEvents = (eventResult.data ?? []) as ClubEvent[];
     setMessages([...nextMessages].reverse());
     setEvents(nextEvents);
@@ -328,7 +338,14 @@ function LegacyCommunityScreen() {
           <div id="club-panel-discussions" role="tabpanel" aria-labelledby="club-tab-discussions" hidden={activeTab !== 'discussions'} className={activeTab === 'discussions' ? '' : 'hidden'}>
           <section className={surface} aria-label={t.messages}>
             <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold"><MessageCircle size={20} />{t.messages}</h2>
-            <div aria-live="polite" className="mb-4 max-h-[26rem] min-h-48 space-y-3 overflow-y-auto">
+            {moderationEnabled && moderator && <details className="st-message-actions">
+              <summary aria-label={schach.moderation}>⋯</summary>
+              <button type="button" onClick={event => {
+                event.currentTarget.closest('details')?.removeAttribute('open');
+                setModerationAction({ kind: 'reports' });
+              }}>{schach.reports}</button>
+            </details>}
+            <div ref={feed} aria-live="polite" className="mb-4 max-h-[26rem] min-h-48 space-y-3 overflow-y-auto">
               {!messages.length && <p className="text-neutral-400">{t.emptyMessages}</p>}
               {messages.map(item => (
                 <article key={item.id} className="rounded-xl border border-white/5 bg-black/30 p-3">
@@ -337,10 +354,15 @@ function LegacyCommunityScreen() {
                       {new Date(item.created_at).toLocaleString(language === 'de' ? 'de-DE' : 'ru-RU')}
                     </time>
                   </p>
-                  <p className="whitespace-pre-wrap break-words text-sm">{item.body}</p>
+                  <p className="whitespace-pre-wrap break-words text-sm">{moderationEnabled && item.deleted_at ? schach.deleted : item.body}</p>
+                  {moderationEnabled && item.hidden_at && <small>{schach.hiddenMessage}</small>}
+                  {moderationEnabled && <MessageActions message={item} own={item.author_id === user?.id} moderator={moderator} open={setModerationAction} t={schach} />}
                 </article>
               ))}
             </div>
+            {moderationEnabled && moderationNotice && <p role="status">{moderationNotice}</p>}
+            {moderationEnabled && club && moderationAction && <ModerationDialog clubId={club.id} action={moderationAction}
+              close={() => setModerationAction(null)} refresh={refresh} onNotice={setModerationNotice} />}
             <form onSubmit={sendMessage} className="flex gap-2">
               <input aria-label={t.messagePlaceholder} maxLength={1200} required value={message}
                 onChange={e => setMessage(e.target.value)} placeholder={t.messagePlaceholder} className={input} />
