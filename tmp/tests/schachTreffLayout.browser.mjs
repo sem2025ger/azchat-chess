@@ -261,7 +261,7 @@ export async function checkRoomLayout(){
     await reset();
     await cdp('Page.navigate',{url:root+'schach-treff/einladung/'+inviteToken+'?scenario=slow'});
     await wait("location.pathname.startsWith('/schach-treff/einladung/') && sessionStorage.getItem('fixtureJoinCalls')==='1'");
-    assert.equal(await evaluate("document.body.innerText.includes('Schach-Treff') || document.body.innerText.includes('Загрузка')"),false,'invite waiting screen must not flash visible text at '+width);
+    assert.equal(await evaluate("Boolean(document.querySelector('h1')) || document.querySelector('[role=status]')?.getBoundingClientRect().width>2"),false,'invite waiting screen must not flash visible text at '+width);
     await wait("location.pathname==='/chat' && new URLSearchParams(location.search).get('club')==='22222222-2222-4222-8222-222222222222' && document.querySelector('.st-chat-header h2')?.textContent==='Schachverein'");
     assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinCalls')"),'1','delayed join still calls RPC once');
 
