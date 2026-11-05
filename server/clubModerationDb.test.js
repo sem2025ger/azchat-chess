@@ -50,7 +50,7 @@ test('Schach-Treff moderation enforces membership, redaction, quotas and read st
     '20261026142707_schach_treff_private_rooms.sql',
     '20261026145050_schach_treff_summary_and_challenge_recovery.sql',
     '20261026145100_schach_treff_invite_limits.sql',
-    '20261105160000_schach_treff_moderation.sql',
+    '20261105154705_schach_treff_moderation.sql',
   ]) await db.pool.query(readFileSync(join(__dirname, '../supabase/migrations', file), 'utf8'));
 
   const [{ id: general }] = (await db.pool.query("SELECT id FROM public.chess_clubs WHERE slug='chessaz-deutsch'")).rows;
@@ -158,9 +158,6 @@ test('Schach-Treff moderation enforces membership, redaction, quotas and read st
   });
 
   await t.test('only a private room admin can clear messages or revoke invite links', async () => {
-    await as('service_role', null, "SELECT public.club_challenge_action('create',$1,$2,NULL,'3+2')", [author, room]);
-    const [{ message_id: challengeId }] = (await db.pool.query(
-      'SELECT message_id FROM public.chess_club_challenges WHERE club_id=$1', [room])).rows;
     const id = await post(author, 'Message in private room');
     const other = await post(author, 'Message in general room', general);
     const links = [];
@@ -172,13 +169,32 @@ test('Schach-Treff moderation enforces membership, redaction, quotas and read st
     await assert.rejects(rpc(admin, 'clear_club_chat', [general]), /not_allowed/);
     await rpc(admin, 'clear_club_chat', [room]);
     assert.deepEqual(await read(member, id), [{ body: null, deleted_by: admin, hidden_at: null }]);
-    assert.equal((await read(member, challengeId))[0].body, null);
     assert.equal((await read(member, other))[0].body, 'Message in general room');
     assert.equal((await unread(member))[room], 0);
     await rpc(admin, 'revoke_club_invites', [room]);
     for (const token of links) await assert.rejects(rpc(outsider, 'join_club_by_invite', [token]), /invite_expired/);
     const [{ create_club_invite: next }] = await rpc(admin, 'create_club_invite', [room]);
     assert.equal((await rpc(outsider, 'join_club_by_invite', [next]))[0].join_club_by_invite, room);
+  });
+
+  await t.test('clearing private chat preserves open challenges and their reports', async () => {
+    await as('service_role', null, "SELECT public.club_challenge_action('create',$1,$2,NULL,'3+2')", [author, room]);
+    const [{ id: challengeId, message_id: challengeMessageId }] = (await db.pool.query(
+      'SELECT id, message_id FROM public.chess_club_challenges WHERE club_id=$1', [room])).rows;
+    const [original] = await read(member, challengeMessageId);
+    assert.ok(original.body);
+    const textId = await post(author, 'Clear this text message');
+    await rpc(member, 'report_club_message', [challengeMessageId, 'other']);
+    await rpc(member, 'report_club_message', [textId, 'spam']);
+
+    await rpc(admin, 'clear_club_chat', [room]);
+
+    assert.deepEqual((await authed(member, 'SELECT kind, body, deleted_at, deleted_by FROM public.chess_club_messages WHERE id=$1',
+      [challengeMessageId]))[0], { kind: 'challenge', body: original.body, deleted_at: null, deleted_by: null });
+    assert.deepEqual(await read(member, textId), [{ body: null, deleted_by: admin, hidden_at: null }]);
+    assert.equal((await db.pool.query('SELECT status FROM public.chess_club_challenges WHERE id=$1', [challengeId])).rows[0].status, 'open');
+    const reports = await rpc(admin, 'list_club_message_reports', [room]);
+    assert.deepEqual(reports.map(report => report.message_id), [challengeMessageId]);
   });
 
   await t.test('no anonymous access or direct table writes', async () => {

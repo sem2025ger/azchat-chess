@@ -189,7 +189,7 @@ BEGIN
   WITH cleared AS (
     UPDATE public.chess_club_messages
       SET body = NULL, deleted_at = now(), deleted_by = actor, hidden_at = NULL
-      WHERE club_id = p_club_id AND deleted_at IS NULL RETURNING id
+      WHERE club_id = p_club_id AND deleted_at IS NULL AND kind <> 'challenge' RETURNING id
   )
   UPDATE public.chess_club_message_reports SET resolved_at = now()
     WHERE resolved_at IS NULL AND message_id IN (SELECT id FROM cleared);
