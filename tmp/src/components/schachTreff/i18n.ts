@@ -67,14 +67,6 @@ const fixedCopy: Record<string, Record<Language,string>> = {
     "ua": "Ваше посилання-запрошення готове.",
     "ru": "Ваша ссылка-приглашение готова."
   },
-  "Chat öffnen": {
-    "de": "Chat öffnen",
-    "en": "Open chat",
-    "az": "Çatı aç",
-    "tr": "Sohbeti aç",
-    "ua": "Відкрити чат",
-    "ru": "Открыть чат"
-  },
   "Herausforderung": {
     "de": "Herausforderung",
     "en": "Challenge",
@@ -450,14 +442,6 @@ const fixedCopy: Record<string, Record<Language,string>> = {
     "tr": "dün",
     "ua": "вчора",
     "ru": "вчера"
-  },
-  "Vereinsräume sind vorerst in der Desktop-Version verfügbar.": {
-    "de": "Vereinsräume sind vorerst in der Desktop-Version verfügbar.",
-    "en": "Club rooms are available on desktop for now.",
-    "az": "Klub otaqları hələlik yalnız kompüterdə əlçatandır.",
-    "tr": "Kulüp odaları şimdilik masaüstünde kullanılabilir.",
-    "ua": "Клубні кімнати поки доступні лише на комп’ютері.",
-    "ru": "Клубные комнаты пока доступны только на компьютере."
   },
   "Rangliste folgt mit der Elo-Wertung": {
     "de": "Rangliste folgt mit der Elo-Wertung",
