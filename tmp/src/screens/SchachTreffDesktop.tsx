@@ -1,7 +1,7 @@
 import {useRegionalCopy} from '../i18n/regionalCopy';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Link2, Pin } from 'lucide-react';
+import { ArrowLeft, Check, Link2, Pin } from 'lucide-react';
 import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalLanguage } from '../context/LanguageContext';
@@ -196,31 +196,42 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp }: {
   onPlayer: (profile: Profile) => void; stamp: (value: string) => string;
 }) {
   const challengeIds = useChallengeMessageIds();
-  return <>{messages.map((message, index) => {
-    const previous = messages[index - 1];
-    const currentDate = new Date(message.created_at);
+  const groups: Message[][] = [];
+  for (const message of messages) {
+    const previous = groups.at(-1)?.at(-1);
+    const date = new Date(message.created_at);
     const previousDate = previous && new Date(previous.created_at);
-    const groupStart = !previous || previous.author_id !== message.author_id
+    const newGroup = !previous || previous.author_id !== message.author_id
       || challengeIds.has(message.id) || challengeIds.has(previous.id)
-      || !previousDate || currentDate.toDateString() !== previousDate.toDateString()
-      || currentDate.getTime() - previousDate.getTime() < 0
-      || currentDate.getTime() - previousDate.getTime() > 5 * 60 * 1000;
-    const author = profiles.find(profile => profile.id === message.author_id);
-    const own = message.author_id === me;
-    const exactTime = currentDate.toLocaleString('de-DE', { dateStyle: 'full', timeStyle: 'medium' });
-    return <article key={message.id}
-      className={['st-message', own && 'st-message-own', !groupStart && 'st-message-grouped'].filter(Boolean).join(' ')}
-      title={exactTime} tabIndex={groupStart ? undefined : 0}>
-      {groupStart && <span className="st-avatar" aria-hidden="true">{Array.from(author?.username ?? '?')[0]?.toLocaleUpperCase()}</span>}
-      <div className="st-message-content">
-        {groupStart && <div className="st-message-heading">
-          {author && <button type="button" className="st-name" onClick={() => onPlayer(author)}>{author.username}</button>}
-          <time dateTime={message.created_at}>{stamp(message.created_at)}</time>
-          {!own && <ChallengeButton targetUserId={message.author_id} icon />}
-        </div>}
-        <ChallengeMessage messageId={message.id} body={message.body} />
-      </div>
-    </article>;
+      || !previousDate || date.toDateString() !== previousDate.toDateString()
+      || date.getTime() - previousDate.getTime() < 0
+      || date.getTime() - previousDate.getTime() > 5 * 60 * 1000;
+    if (newGroup) groups.push([message]);
+    else groups[groups.length - 1].push(message);
+  }
+  return <>{groups.map(group => {
+    const own = group[0].author_id === me;
+    return <div key={group[0].id} className={own ? 'st-message-group st-message-group-own' : 'st-message-group'}>
+      {group.map((message, index) => {
+        const author = profiles.find(profile => profile.id === message.author_id);
+        const first = index === 0;
+        const date = new Date(message.created_at);
+        const exactTime = date.toLocaleString('de-DE', { dateStyle: 'full', timeStyle: 'medium' });
+        return <article key={message.id}
+          className={['st-message', own && 'st-message-own', !first && 'st-message-grouped'].filter(Boolean).join(' ')}
+          title={exactTime} tabIndex={first ? undefined : 0}>
+          {first && <span className="st-avatar" aria-hidden="true">{Array.from(author?.username ?? '?')[0]?.toLocaleUpperCase()}</span>}
+          <div className="st-message-content">
+            {first && <div className="st-message-heading">
+              {author && <button type="button" className="st-name" onClick={() => onPlayer(author)}>{author.username}</button>}
+              <time dateTime={message.created_at}>{stamp(message.created_at)}</time>
+              {!own && <ChallengeButton targetUserId={message.author_id} icon />}
+            </div>}
+            <ChallengeMessage messageId={message.id} body={message.body} />
+          </div>
+        </article>;
+      })}
+    </div>;
   })}</>;
 }
 
@@ -303,8 +314,9 @@ function RoomInvite({ clubId }: { clubId: string }) {
   return <div className="st-invite-control">
     <button type="button" className="st-invite-trigger" disabled={busy}
       aria-label={copied ? t.linkCopied : t.inviteLink} onClick={() => void copyInvite()}>
-      <Link2 size={16} aria-hidden="true" />
-      <span>{copied ? '✓ ' + t.linkCopied : t.inviteLink}</span>
+      {copied ? <Check size={16} aria-hidden="true" /> : <Link2 size={16} aria-hidden="true" />}
+      <span className="st-invite-label">{copied ? '✓ ' + t.linkCopied : t.inviteLink}</span>
+      <span className="st-invite-mobile-status" role="status">{copied ? t.linkCopied : ''}</span>
     </button>
     {note && <p className="st-invite-note" role="status">{note}</p>}
     {fallback && <div className="st-invite-popover" role="group" aria-label={t.inviteLink}>

@@ -79,8 +79,10 @@ export function ChallengeButton({ targetUserId,beforeOpen,icon,composer }: { tar
   const context=useContext(Context);
   if (!context?.available || targetUserId===context.me) return null;
   return <button type="button" className={icon ? 'st-challenge-icon' : composer ? 'st-composer-challenge' : undefined}
-    aria-label={icon ? t.challengePlayer : undefined} onClick={() => { beforeOpen?.(); context.open(targetUserId); }}>
-    {icon ? <Swords size={16} aria-hidden="true" /> : composer ? t.challengePlayer : t.challengeAction}
+    aria-label={icon || composer ? t.challengePlayer : undefined} onClick={() => { beforeOpen?.(); context.open(targetUserId); }}>
+    {icon ? <Swords size={16} aria-hidden="true" /> : composer
+      ? <><Swords className="st-composer-challenge-icon" size={18} aria-hidden="true" /><span className="st-composer-challenge-label">{t.challengePlayer}</span></>
+      : t.challengeAction}
   </button>;
 }
 export function useChallengeMessageIds(): ReadonlySet<string> {

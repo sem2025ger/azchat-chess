@@ -35,7 +35,7 @@ export const supabase = {
       then(resolve,reject) {
         let rows=[];
         if(table==='chess_clubs') {
-          rows=filters.get('kind')==='room'||filters.get('id')===room ? [{id:room,name:'shax'}] : [{id:uid,name:'ChessAZ Deutsch'}];
+          rows=filters.get('kind')==='room'||filters.get('id')===room ? [{id:room,name:'Schachverein'}] : [{id:uid,name:'ChessAZ Deutsch'}];
           if(columns==='pinned_body,pinned_by' && filters.get('id')===room) rows=[{pinned_by:guest,pinned_body:('В пятницу тренировка по эндшпилю. Присоединяйтесь к разбору партий. ').repeat(6)}];
         } else if(table==='chess_club_members') {
           const params=new URLSearchParams(location.search);
@@ -61,8 +61,34 @@ export async function checkRoomLayout(){
  for (const width of [1280,1920,375]) {
    await cdp('Emulation.setDeviceMetricsOverride',{width,height:width===375?844:1080,deviceScaleFactor:1,mobile:width===375});
    await cdp('Page.navigate',{url:roomFixture});
-   await wait("document.querySelector('.st-chat-header h2')?.textContent === 'shax' && document.querySelector('.st-challenge-icon')");
+   await wait("document.querySelector('.st-chat-header h2')?.textContent === 'Schachverein' && document.querySelector('.st-challenge-icon')");
    assert.equal(await evaluate("document.querySelectorAll('article.st-message').length"), 28);
+   assert.ok(await evaluate(`(()=>{
+     const groups=[...document.querySelectorAll('.st-message-group')];
+     const one=groups.find(g=>g.querySelectorAll('.st-message').length>=3);
+     if(!one) return false;
+     const items=[...one.querySelectorAll('.st-message')].map(e=>e.getBoundingClientRect());
+     const gaps=items.slice(1).map((rect,i)=>rect.top-items[i].bottom);
+     const own=document.querySelector('.st-message-group-own');
+     const ownBackground=getComputedStyle(own).backgroundColor;
+     const childBackground=getComputedStyle(own.querySelector('article')).backgroundColor;
+     const between=groups[1].getBoundingClientRect().top-groups[0].getBoundingClientRect().bottom;
+     return gaps.length>=2 && gaps.every(n=>Math.abs(n-6)<1) && Math.abs(between-14)<1
+       && ownBackground !== 'rgba(0, 0, 0, 0)' && childBackground === 'rgba(0, 0, 0, 0)';
+   })()`));
+   if(width===375) assert.ok(await evaluate(`(()=>{
+     const h=document.querySelector('.st-chat-header'),back=h.querySelector('.st-back-general'),
+       pin=h.querySelector('.st-pin-menu'),room=h.querySelector('h2'),invite=h.querySelector('.st-invite-trigger'),
+       f=document.querySelector('.st-composer'),input=f.querySelector('input'),challenge=f.querySelector('.st-composer-challenge');
+     const r=e=>e.getBoundingClientRect();
+     return room.textContent.trim()==='Schachverein' && room.scrollWidth<=room.clientWidth+1
+       && Math.abs(r(back).top-r(pin).top)<1 && Math.abs(r(room).top-r(invite).top)<1
+       && parseFloat(getComputedStyle(room).fontSize)===18
+       && r(input).width/r(f).width>=0.55 && r(challenge).width===44
+       && Boolean(challenge.querySelector('svg'))
+       && challenge.getAttribute('aria-label')===challenge.textContent.trim()
+       && document.documentElement.scrollWidth<=innerWidth+1;
+   })()`));
    assert.ok(await evaluate("document.querySelectorAll('article.st-message .st-challenge-icon').length >= 10"));
    assert.equal(await evaluate("document.querySelectorAll('article.st-message-own .st-challenge-icon, article.st-message .st-composer-challenge').length"), 0);
    assert.ok(await evaluate("Array.from(document.querySelectorAll('.st-challenge-icon')).every(b=>b.parentElement.classList.contains('st-message-heading') && b.getAttribute('aria-label') && b.querySelector('svg') && b.offsetWidth===32)"));
@@ -74,16 +100,16 @@ export async function checkRoomLayout(){
    assert.equal(await evaluate("document.querySelector('.st-invite-dialog,.st-invite-fields')"), null);
    assert.equal(await evaluate("window.fixtureInvites || 0"), 0);
    await evaluate("window.sessionStorage.removeItem('schach-treff-invite:22222222-2222-4222-8222-222222222222')");
-   assert.equal(await evaluate("document.querySelector('article:nth-child(22) .st-message-heading') !== null"), true);
-   assert.equal(await evaluate("document.querySelector('article:nth-child(23) .st-message-heading')"), null);
-   assert.equal(await evaluate("document.querySelector('article:nth-child(24) .st-message-heading')"), null);
-   assert.ok(await evaluate("document.querySelector('article:nth-child(23)').getAttribute('title')"));
-   assert.equal(await evaluate("document.querySelector('article:nth-child(25) .st-message-heading') !== null"), true);
-   assert.equal(await evaluate("document.querySelector('article:nth-child(26) .st-message-heading') !== null"), true);
-   assert.equal(await evaluate("document.querySelector('article:nth-child(27) .st-challenge-card') !== null"), true);
-   assert.equal(await evaluate("document.querySelector('article:nth-child(27) .st-message-heading') !== null"), true);
-   assert.equal(await evaluate("document.querySelector('article:nth-child(28) .st-message-heading') !== null"), true);
-   await evaluate("document.querySelector('article:nth-child(22) .st-name').click()");
+   assert.equal(await evaluate("document.querySelectorAll('.st-messages article.st-message')[21].querySelector('.st-message-heading') !== null"), true);
+   assert.equal(await evaluate("document.querySelectorAll('.st-messages article.st-message')[22].querySelector('.st-message-heading')"), null);
+   assert.equal(await evaluate("document.querySelectorAll('.st-messages article.st-message')[23].querySelector('.st-message-heading')"), null);
+   assert.ok(await evaluate("document.querySelectorAll('.st-messages article.st-message')[22].getAttribute('title')"));
+   assert.equal(await evaluate("document.querySelectorAll('.st-messages article.st-message')[24].querySelector('.st-message-heading') !== null"), true);
+   assert.equal(await evaluate("document.querySelectorAll('.st-messages article.st-message')[25].querySelector('.st-message-heading') !== null"), true);
+   assert.equal(await evaluate("document.querySelectorAll('.st-messages article.st-message')[26].querySelector('.st-challenge-card') !== null"), true);
+   assert.equal(await evaluate("document.querySelectorAll('.st-messages article.st-message')[26].querySelector('.st-message-heading') !== null"), true);
+   assert.equal(await evaluate("document.querySelectorAll('.st-messages article.st-message')[27].querySelector('.st-message-heading') !== null"), true);
+   await evaluate("document.querySelectorAll('.st-messages article.st-message')[21].querySelector('.st-name').click()");
    await wait("document.querySelector('.st-close')?.closest('dialog')?.open === true");
    assert.ok(await evaluate("document.querySelector('.st-close').closest('dialog').textContent.includes('Maksim')"));
    assert.ok(await evaluate("Array.from(document.querySelector('.st-close').closest('dialog').querySelectorAll('button')).some(button=>button.textContent.trim() && !button.classList.contains('st-close'))"));
@@ -105,6 +131,14 @@ export async function checkRoomLayout(){
    }
    await evaluate("document.querySelector('.st-invite-trigger').click()");
    await wait("document.querySelector('.st-invite-trigger').textContent.includes('✓')");
+   if(width===375) assert.ok(await evaluate(`(()=>{
+     const h=document.querySelector('.st-chat-header'),back=h.querySelector('.st-back-general'),
+      pin=h.querySelector('.st-pin-menu'),invite=h.querySelector('.st-invite-trigger'),
+      room=h.querySelector('h2'),r=e=>e.getBoundingClientRect();
+     return Math.abs(r(back).top-r(pin).top)<1 && Math.abs(r(invite).top-r(room).top)<1
+      && invite.offsetWidth===44 && getComputedStyle(invite.querySelector('.st-invite-label')).position==='absolute'
+      && invite.querySelector('svg.lucide-check') && document.documentElement.scrollWidth<=innerWidth+1;
+   })()`));
    assert.equal(await evaluate("window.fixtureInvites"), 1);
    assert.equal(await evaluate("window.copyCalls"), 1);
    assert.equal(await evaluate("document.querySelector('.st-invite-popover,.st-invite-dialog,.st-invite-fields')"),null);
@@ -155,8 +189,14 @@ export async function checkRoomLayout(){
      await evaluate("document.activeElement?.blur(); document.querySelector('.st-messages').scrollTop = document.querySelector('.st-messages').scrollHeight");
      if(width===375) await evaluate("document.querySelector('.st-chat').scrollIntoView({block:'end'})");
      else await wait("Array.from(document.querySelectorAll('.st-challenge-icon')).every(button=>getComputedStyle(button).opacity==='0')");
+     if(width===1920) await evaluate("document.querySelectorAll('.st-messages article.st-message')[21].scrollIntoView({block:'center'})");
      const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
      await writeFile(join(process.env.SECTIONS_CAPTURE,width===375?'schach-treff-mobile-club-375.png':'schach-treff-desktop-club-1920.png'),Buffer.from(image.data,'base64'));
+     if(width===375) {
+       await evaluate("document.querySelector('.st-composer').scrollIntoView({block:'center'})");
+       const composer=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+       await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-mobile-composer-375.png'),Buffer.from(composer.data,'base64'));
+     }
    }
    if(width===1280) {
      const isAtBottom = "(() => {const e=document.querySelector('.st-messages');return e.scrollHeight-e.clientHeight-e.scrollTop<=2;})()";
@@ -183,7 +223,7 @@ export async function checkRoomLayout(){
      assert.equal(await evaluate("document.querySelector('.st-messages').scrollTop"),0);
      for(const role of ['moderator','member']) {
        await cdp('Page.navigate',{url:roomFixture+'&role='+role});
-       await wait("document.querySelector('.st-chat-header h2')?.textContent === 'shax'");
+       await wait("document.querySelector('.st-chat-header h2')?.textContent === 'Schachverein'");
        assert.equal(await evaluate("Boolean(document.querySelector('.st-pin-menu, .st-invite-trigger'))"), role==='moderator');
      }
    }
