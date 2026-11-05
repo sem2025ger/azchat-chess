@@ -103,3 +103,63 @@
 .nrw-club-link,.nrw-club-page .text-amber-300{color:#D2C3AF}
 .nrw-club-link{text-decoration:underline}
 .nrw-club-button{color:#161719;background:#D2C3AF}
+
+/* Link directory and RSS headlines on the NRW landing page only. */
+.nrw-overview{
+ --nrw-overview-surface:#1C1C19;
+ /* The original darkest bronze falls below 4.5:1 even on black. Lift only the edge stops. */
+ --nrw-heading-bronze-start:color-mix(in srgb,#8C6A4A 78%,#E9D3A8);
+ --nrw-heading-bronze-end:color-mix(in srgb,#9C7A56 92%,#E9D3A8);
+ background:var(--nrw-overview-surface);
+}
+.nrw-overview .nrw-header{margin-bottom:24px}
+.nrw-overview .nrw-header h1{
+ width:fit-content;max-width:100%;margin:0;
+ background-image:linear-gradient(110deg,var(--nrw-heading-bronze-start),#B8916A,#E9D3A8,#C9A574,var(--nrw-heading-bronze-end));
+}
+.nrw-overview .nrw-header p{
+ max-width:640px;margin:12px 0 28px;color:#D8D3C8;font-size:17px;font-weight:400;line-height:1.5;
+}
+.nrw-overview .nrw-links{display:flex;align-items:stretch;gap:10px;margin:0}
+.nrw-overview .nrw-links a{
+ display:flex;flex:0 1 234px;max-width:100%;justify-content:center;min-height:44px;
+ padding:8px 12px;font-size:15px;font-weight:600;text-align:center;overflow-wrap:anywhere;
+}
+.nrw-overview .nrw-card{gap:8px}
+.nrw-overview .nrw-card-head{min-height:0;align-items:center}
+.nrw-overview .nrw-card-icon{margin:0}
+.nrw-overview .nrw-card-subtitle{min-height:0;margin:0;color:#C9C7C1;font-size:.875rem;line-height:1.45}
+.nrw-official-links,.nrw-news-links{display:flex;flex-wrap:wrap;gap:6px 10px}
+.nrw-official-links{margin-top:auto;padding-top:4px}
+.nrw-overview :is(.nrw-official-links,.nrw-news-links) a{
+ display:inline-flex;align-items:center;gap:6px;min-height:38px;max-width:100%;font-size:.8125rem;
+ font-weight:600;color:#E0CCAF;overflow-wrap:anywhere;
+}
+.nrw-overview a svg{flex-shrink:0}
+.nrw-overview .nrw-official-links .nrw-calendar-link{
+ padding:5px 10px;border:1px solid #B8916A;border-radius:8px;background:#3A2B20;color:#F1DAB8;
+}
+.nrw-overview :is(.nrw-official-links,.nrw-news-links) a:hover{text-decoration:underline}
+.nrw-overview .nrw-news{padding:16px 18px}
+.nrw-overview .nrw-news h2{
+ display:flex;align-items:center;gap:8px;margin:0 0 10px;color:#D6D8D7;font-size:1rem;font-weight:650;
+}
+.nrw-overview .nrw-news .nrw-items{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 16px}
+.nrw-overview .nrw-news .nrw-items li{padding:0;border:0}
+.nrw-overview .nrw-news .nrw-items a{display:flex;align-items:flex-start;gap:6px}
+.nrw-overview .nrw-news .nrw-items a svg{margin-top:2px;color:#D2C3AF}
+.nrw-overview .nrw-news .nrw-muted{margin:0}
+.nrw-news-links{margin-top:8px}
+@media(max-width:1023px){
+ .nrw-overview .nrw-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:767px){
+ .nrw-overview .nrw-grid,.nrw-overview .nrw-news .nrw-items{grid-template-columns:minmax(0,1fr)}
+ .nrw-overview .nrw-header{margin-bottom:16px}
+ .nrw-overview .nrw-news{padding:14px 16px}
+ .nrw-overview .nrw-news .nrw-items li+li{padding-top:8px;border-top:1px solid #ffffff12}
+ .nrw-overview :is(.nrw-official-links,.nrw-news-links) a{min-height:44px}
+}
+@media(prefers-contrast:more){
+ .nrw-overview .nrw-header h1{background-image:none;-webkit-text-fill-color:currentColor;color:#EAE2D7}
+}

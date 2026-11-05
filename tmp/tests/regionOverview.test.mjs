@@ -29,10 +29,19 @@ test('NRW dashboard sources are scoped and transparent about unavailable data',(
  assert.match(region,/to=\{'\/clubs-nrw\/'/);
 });
 
+test('NRW static external destinations are defined once in the shared config',()=>{
+ const start=region.indexOf('const NRW_EXTERNAL_URLS = {');
+ const end=region.indexOf('} as const;',start);
+ assert.ok(start>=0&&end>start);
+ const config=region.slice(start,end);
+ assert.equal((config.match(/https:\/\//g)||[]).length,6,'five official sources and the existing live route destination');
+ assert.doesNotMatch(region.slice(0,start)+region.slice(end),/['"]https:\/\//);
+});
+
 test('NRW links to national chat without embedding it and the chat retains its membership guard',()=>{
  const rail=read('src/components/schachTreff/NationwideChatRail.tsx');
  assert.doesNotMatch(region,/NationwideChatRail/);
- assert.match(region,/<footer className="nrw-footer">/);
+ assert.match(region,/<div className="nrw-links">[\s\S]*?to="\/vorbereitung"[\s\S]*?to="\/chat"/);
  assert.match(region,/to="\/chat"/);
  assert.match(rail,/NATIONAL_ROOM_SLUG = 'chessaz-deutsch'/);
  assert.match(rail,/\.eq\('club_id',id\)/);
