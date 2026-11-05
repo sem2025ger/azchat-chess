@@ -1,0 +1,89 @@
+import type { Language } from '../../translations';
+
+const columns: Record<Language, number> = { de: 0, en: 1, az: 2, tr: 3, ua: 4, ru: 5 };
+const labels = {
+  tab: ['Turniere', 'Tournaments', 'Turnirlər', 'Turnuvalar', 'Турніри', 'Турниры'],
+  workspace: ['Meine Mannschaft', 'My team', 'Komandam', 'Takımım', 'Моя команда', 'Моя команда'],
+  loading: ['Wird geladen …', 'Loading…', 'Yüklənir…', 'Yükleniyor…', 'Завантаження…', 'Загрузка…'],
+  empty: ['Noch keine Turniere verfügbar.', 'No tournaments available yet.', 'Hələ turnir yoxdur.', 'Henüz turnuva yok.', 'Турнірів поки немає.', 'Турниров пока нет.'],
+  back: ['Alle Turniere', 'All tournaments', 'Bütün turnirlər', 'Tüm turnuvalar', 'Усі турніри', 'Все турниры'],
+  refresh: ['Neu laden', 'Reload', 'Yenilə', 'Yenile', 'Оновити', 'Обновить'],
+  signIn: ['Anmelden', 'Sign in', 'Daxil ol', 'Giriş yap', 'Увійти', 'Войти'],
+  unavailable: ['Turnierdaten sind momentan nicht verfügbar.', 'Tournament data is currently unavailable.', 'Turnir məlumatları hazırda əlçatan deyil.', 'Turnuva verilerine şu anda ulaşılamıyor.', 'Дані турніру зараз недоступні.', 'Данные турнира пока недоступны.'],
+  disabled: ['Der Turnierdienst ist nicht aktiviert.', 'The tournament service is disabled.', 'Turnir xidməti deaktivdir.', 'Turnuva hizmeti devre dışı.', 'Службу турнірів вимкнено.', 'Сервис турниров выключен.'],
+  access: ['Dieses Turnier oder diese Aktion ist für dich nicht verfügbar.', 'This tournament or action is unavailable to you.', 'Bu turnir və ya əməliyyat sizə açıq deyil.', 'Bu turnuva veya işlem size açık değil.', 'Цей турнір або дія вам недоступні.', 'Этот турнир или действие вам недоступны.'],
+  invalid: ['Bitte prüfe deine Eingaben.', 'Check your entries.', 'Məlumatları yoxlayın.', 'Girdilerinizi kontrol edin.', 'Перевірте введені дані.', 'Проверьте введённые данные.'],
+  conflict: ['Das Ergebnis wurde inzwischen geändert. Lade das Turnier neu, bevor du weiterarbeitest.', 'The result has changed. Reload the tournament before continuing.', 'Nəticə dəyişib. Davam etməzdən əvvəl turniri yeniləyin.', 'Sonuç değişti. Devam etmeden önce turnuvayı yenileyin.', 'Результат змінився. Оновіть турнір перед продовженням.', 'Результат изменился. Обновите турнир перед продолжением.'],
+  again: ['Bitte melde dich erneut an.', 'Please sign in again.', 'Yenidən daxil olun.', 'Tekrar giriş yapın.', 'Увійдіть знову.', 'Войдите снова.'],
+  draft: ['Entwurf', 'Draft', 'Qaralama', 'Taslak', 'Чернетка', 'Черновик'],
+  registration: ['Anmeldung offen', 'Registration open', 'Qeydiyyat açıqdır', 'Kayıt açık', 'Реєстрація відкрита', 'Регистрация открыта'],
+  locked: ['Teilnehmerliste fixiert', 'Teams locked', 'Komanda siyahısı bağlanıb', 'Takım listesi kilitli', 'Список команд зафіксовано', 'Список команд зафиксирован'],
+  published: ['Veröffentlicht', 'Published', 'Dərc edilib', 'Yayımlandı', 'Опубліковано', 'Опубликовано'],
+  finished: ['Abgeschlossen', 'Finished', 'Tamamlanıb', 'Tamamlandı', 'Завершено', 'Завершён'],
+  round: ['Runde', 'Round', 'Tur', 'Tur', 'Тур', 'Тур'],
+  rounds: ['Runden', 'Rounds', 'Turlar', 'Turlar', 'Тури', 'Туры'],
+  name: ['Turniername', 'Tournament name', 'Turnirin adı', 'Turnuva adı', 'Назва турніру', 'Название турнира'],
+  team: ['Mannschaft', 'Team', 'Komanda', 'Takım', 'Команда', 'Команда'],
+  teams: ['Mannschaften', 'Teams', 'Komandalar', 'Takımlar', 'Команди', 'Команды'],
+  create: ['Turnier anlegen', 'Create tournament', 'Turnir yarat', 'Turnuva oluştur', 'Створити турнір', 'Создать турнир'],
+  boards: ['Bretter pro Match', 'Boards per match', 'Görüşdə lövhə sayı', 'Maç başına tahta', 'Дощок у матчі', 'Досок в матче'],
+  board: ['Brett', 'Board', 'Lövhə', 'Tahta', 'Дошка', 'Доска'],
+  firstWhite: ['Erste Mannschaft hat Weiß an Brett 1', 'First team has White on board 1', 'İlk komanda 1-ci lövhədə ağlarla oynayır', 'İlk takım 1. tahtada beyaz oynar', 'Перша команда грає білими на дошці 1', 'Первая команда играет белыми на доске 1'],
+  winPoints: ['Matchpunkte bei Sieg', 'Match points for a win', 'Qələbəyə görə görüş xalı', 'Galibiyet maç puanı', 'Матчеві очки за перемогу', 'Матчевые очки за победу'],
+  drawPoints: ['Matchpunkte bei Remis', 'Match points for a draw', 'Heç-heçəyə görə görüş xalı', 'Beraberlik maç puanı', 'Матчеві очки за нічию', 'Матчевые очки за ничью'],
+  lossPoints: ['Matchpunkte bei Niederlage', 'Match points for a loss', 'Məğlubiyyətə görə görüş xalı', 'Yenilgi maç puanı', 'Матчеві очки за поразку', 'Матчевые очки за поражение'],
+  forfeitWin: ['Brettpunkte bei kampflosem Sieg', 'Board points for a forfeit win', 'Texniki qələbəyə görə lövhə xalı', 'Hükmen galibiyet tahta puanı', 'Очки за технічну перемогу', 'Очки за техническую победу'],
+  forfeitLoss: ['Brettpunkte bei kampfloser Niederlage', 'Board points for a forfeit loss', 'Texniki məğlubiyyətə görə lövhə xalı', 'Hükmen yenilgi tahta puanı', 'Очки за технічну поразку', 'Очки за техническое поражение'],
+  organizer: ['Turnierleitung', 'Organizer', 'Təşkilatçı', 'Organizatör', 'Організатор', 'Организатор'],
+  arbiter: ['Schiedsrichter', 'Arbiter', 'Hakim', 'Hakem', 'Суддя', 'Судья'],
+  captain: ['Kapitän', 'Captain', 'Kapitan', 'Kaptan', 'Капітан', 'Капитан'],
+  captainId: ['Kapitän-ID (optional)', 'Captain ID (optional)', 'Kapitan ID-si (istəyə bağlı)', 'Kaptan kimliği (isteğe bağlı)', 'ID капітана (необов’язково)', 'ID капитана (необязательно)'],
+  arbiterId: ['Schiedsrichter-ID', 'Arbiter ID', 'Hakim ID-si', 'Hakem kimliği', 'ID судді', 'ID судьи'],
+  approve: ['Mannschaft zulassen', 'Approve team', 'Komandanı təsdiqlə', 'Takımı onayla', 'Затвердити команду', 'Утвердить команду'],
+  assign: ['Schiedsrichter zuweisen', 'Assign arbiter', 'Hakim təyin et', 'Hakem ata', 'Призначити суддю', 'Назначить судью'],
+  register: ['Anmeldung öffnen', 'Open registration', 'Qeydiyyatı aç', 'Kaydı aç', 'Відкрити реєстрацію', 'Открыть регистрацию'],
+  lock: ['Mannschaften fixieren', 'Lock teams', 'Komanda siyahısını bağla', 'Takım listesini kilitle', 'Зафіксувати команди', 'Зафиксировать команды'],
+  preview: ['Spielplan ansehen', 'Preview schedule', 'Təqvimə bax', 'Fikstürü önizle', 'Переглянути розклад', 'Просмотреть расписание'],
+  schedule: ['Spielplanvorschau', 'Schedule preview', 'Təqvimin önbaxışı', 'Fikstür önizlemesi', 'Попередній розклад', 'Предварительное расписание'],
+  publish: ['Spielplan veröffentlichen', 'Publish schedule', 'Təqvimi dərc et', 'Fikstürü yayımla', 'Опублікувати розклад', 'Опубликовать расписание'],
+  finish: ['Turnier abschließen', 'Finish tournament', 'Turniri bitir', 'Turnuvayı bitir', 'Завершити турнір', 'Завершить турнир'],
+  bye: ['Spielfrei', 'Bye', 'Oyun yoxdur', 'Bay', 'Пропуск туру', 'Пропуск тура'],
+  official: ['Offizielle Tabelle', 'Official standings', 'Rəsmi cədvəl', 'Resmî sıralama', 'Офіційна таблиця', 'Официальная таблица'],
+  provisional: ['Vorläufig', 'Provisional', 'İlkin', 'Geçici', 'Попередньо', 'Предварительно'],
+  rank: ['Platz', 'Rank', 'Yer', 'Sıra', 'Місце', 'Место'],
+  mp: ['MP', 'MP', 'GX', 'MP', 'МО', 'МО'],
+  bp: ['BP', 'BP', 'LX', 'TP', 'ОД', 'ОД'],
+  berlin: ['Berliner Wertung', 'Berlin tie-break', 'Berlin göstəricisi', 'Berlin eşitlik bozma', 'Берлінський показник', 'Берлинский показатель'],
+  white: ['Weiß', 'White', 'Ağlar', 'Beyaz', 'Білі', 'Белые'],
+  black: ['Schwarz', 'Black', 'Qaralar', 'Siyah', 'Чорні', 'Чёрные'],
+  whiteWins: ['Weiß gewinnt', 'White wins', 'Ağlar qalib gəlir', 'Beyaz kazanır', 'Перемога білих', 'Белые выиграли'],
+  blackWins: ['Schwarz gewinnt', 'Black wins', 'Qaralar qalib gəlir', 'Siyah kazanır', 'Перемога чорних', 'Чёрные выиграли'],
+  draw: ['Remis', 'Draw', 'Heç-heçə', 'Beraberlik', 'Нічия', 'Ничья'],
+  whiteForfeit: ['Weiß gewinnt kampflos', 'White wins by forfeit', 'Ağlar texniki qələbə qazanır', 'Beyaz hükmen kazanır', 'Технічна перемога білих', 'Техническая победа белых'],
+  blackForfeit: ['Schwarz gewinnt kampflos', 'Black wins by forfeit', 'Qaralar texniki qələbə qazanır', 'Siyah hükmen kazanır', 'Технічна перемога чорних', 'Техническая победа чёрных'],
+  doubleForfeit: ['Beide nicht angetreten', 'Double forfeit', 'Hər iki tərəf gəlməyib', 'Çifte hükmen yenilgi', 'Обидві сторони не з’явилися', 'Обе стороны не явились'],
+  pending: ['Offen', 'Pending', 'Gözlənilir', 'Beklemede', 'Очікується', 'Ожидается'],
+  record: ['Vorläufig erfassen', 'Record provisional result', 'İlkin nəticəni yaz', 'Geçici sonucu kaydet', 'Внести попередній результат', 'Внести предварительный результат'],
+  confirm: ['Bestätigen', 'Confirm', 'Təsdiqlə', 'Onayla', 'Підтвердити', 'Подтвердить'],
+  correct: ['Korrigieren', 'Correct', 'Düzəlt', 'Düzelt', 'Виправити', 'Исправить'],
+  reason: ['Begründung', 'Reason', 'Səbəb', 'Gerekçe', 'Причина', 'Причина'],
+  result: ['Ergebnis', 'Result', 'Nəticə', 'Sonuç', 'Результат', 'Результат'],
+  remaining: ['Offene Bretter', 'Boards remaining', 'Qalan lövhələr', 'Kalan tahtalar', 'Залишилося дощок', 'Осталось досок'],
+  drawNeed: ['noch {n} für Remis', '{n} more for a draw', 'heç-heçə üçün daha {n}', 'beraberlik için {n} daha', 'ще {n} для нічиєї', 'ещё {n} для ничьей'],
+  winNeed: ['noch {n} für Sieg', '{n} more for a win', 'qələbə üçün daha {n}', 'galibiyet için {n} daha', 'ще {n} для перемоги', 'ещё {n} для победы'],
+  secured: ['Remis bereits gesichert', 'At least a draw secured', 'Ən azı heç-heçə təmin edilib', 'En az beraberlik garantilendi', 'Щонайменше нічию забезпечено', 'Как минимум ничья обеспечена'],
+  winner: ['Sieg gesichert', 'Win secured', 'Qələbə təmin edilib', 'Galibiyet garantilendi', 'Перемогу забезпечено', 'Победа обеспечена'],
+  saved: ['Gespeichert.', 'Saved.', 'Yadda saxlanıldı.', 'Kaydedildi.', 'Збережено.', 'Сохранено.'],
+} as const;
+
+export type TournamentCopy = (key: keyof typeof labels) => string;
+export const tournamentCopy = (language: Language): TournamentCopy => key => labels[key][columns[language]];
+
+export function tournamentErrorMessage(code: string, tr: TournamentCopy) {
+  if (code === 'result_conflict' || code === 'invalid_state') return tr('conflict');
+  if (code === 'invalid_input' || code === 'already_exists') return tr('invalid');
+  if (code === 'not_found' || code === 'not_allowed') return tr('access');
+  if (code === 'feature_disabled') return tr('disabled');
+  if (code === 'authentication_required') return tr('again');
+  return tr('unavailable');
+}

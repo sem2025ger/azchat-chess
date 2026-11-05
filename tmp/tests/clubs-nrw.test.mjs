@@ -8,8 +8,16 @@ import {nrwAuthReturnTarget} from '../src/lib/nrwAuthReturn.ts';
 
 test('all NRW flags off preserves the main routing and navigation entry points',()=>{
  const baseline='3a44fde7f6218827e382d07381f337f76d065e6a';
+ const spieltagGate="import.meta.env.VITE_SPIELTAG_ENABLED === 'true'";
+ const tournamentGate="("+spieltagGate+" || import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true')";
  for(const path of ['src/App.tsx','src/components/Layout.tsx','src/routeLoaders.ts','scripts/buildQaPreview.mjs']){
-  assert.equal(readFileSync(path,'utf8'),execFileSync('git',['show',baseline+':tmp/'+path],{encoding:'utf8'}),path);
+  let current=readFileSync(path,'utf8');
+  if(path==='src/App.tsx'||path==='src/components/Layout.tsx'){
+   // With tournaments off, only the original Spieltag gate controls this entry.
+   assert.ok(current.includes(tournamentGate),path);
+   current=current.replace(tournamentGate,spieltagGate);
+  }
+  assert.equal(current,execFileSync('git',['show',baseline+':tmp/'+path],{encoding:'utf8'}),path);
  }
  const home='src/screens/HomeScreen.tsx';
  const homeBaseline=execFileSync('git',['show',baseline+':tmp/'+home],{encoding:'utf8'});

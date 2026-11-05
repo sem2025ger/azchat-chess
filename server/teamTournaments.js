@@ -62,11 +62,53 @@ function makeClient(env, key, factory, token) {
   });
 }
 
-async function rpc(client, name, args) {
-  if (!client) fail(503, 'storage_unavailable');
-  const { data, error } = await client.rpc(name, args).abortSignal(AbortSignal.timeout(8000));
+async function readQuery(query) {
+  const { data, error } = await query.abortSignal(AbortSignal.timeout(8000));
   if (error) fail(...(RESPONSE_ERRORS[error.code] ?? [503, 'temporarily_unavailable']));
   return data;
+}
+
+function rpc(client, name, args) {
+  if (!client) fail(503, 'storage_unavailable');
+  return readQuery(client.rpc(name, args));
+}
+
+async function listTournaments(client, actor, commandClient) {
+  if (!client) fail(503, 'storage_unavailable');
+  const fields = actor ? 'id,name,status,assignments:team_tournament_roles(role,team_id)' : 'id,name,status';
+  let query = client.from('team_tournaments').select(fields)
+    .order('published_at', { ascending: false, nullsFirst: true }).order('id').limit(50);
+  if (actor) query = query.eq('assignments.user_id', actor);
+  const [events, organizer] = await Promise.all([
+    readQuery(query),
+    actor && commandClient ? readQuery(commandClient.from('team_tournament_organizers')
+      .select('user_id').eq('user_id', actor).limit(1)) : [],
+  ]);
+  const published = events.filter(e => e.status === 'published' || e.status === 'finished');
+  // PostgREST keeps all visible rounds. The inner board embed selects only
+  // matches with pending confirmation, with one marker per round.
+  const rounds = published.length ? await readQuery(client.from('team_tournament_rounds')
+    .select('tournament_id,round_no,matches:team_tournament_matches(boards:team_tournament_board_results!inner(board_no))')
+    .in('tournament_id', published.map(e => e.id))
+    .eq('matches.boards.confirmed', false)
+    .limit(1, { referencedTable: 'matches' })
+    .limit(1, { referencedTable: 'matches.boards' })
+    .order('round_no').limit(50 * 15)) : [];
+  const byEvent = new Map();
+  for (const round of rounds) {
+    const state = byEvent.get(round.tournament_id) ?? { firstOpen: null, last: null };
+    if (round.matches.length) state.firstOpen ??= round.round_no;
+    state.last = round.round_no;
+    byEvent.set(round.tournament_id, state);
+  }
+  return {
+    can_create: organizer.length > 0,
+    tournaments: events.map(({ id, name, status, assignments }) => {
+      const round = byEvent.get(id);
+      return { id, name, status, current_round: (status === 'finished' ? round?.last : round?.firstOpen ?? round?.last) ?? null,
+        ...(actor ? { captain_team_id: assignments?.find(role => role.role === 'captain')?.team_id ?? null } : {}) };
+    }),
+  };
 }
 
 function installTeamTournaments(app, {
@@ -112,7 +154,7 @@ function installTeamTournaments(app, {
   router.get('/:tournament', wrap(async (req, res) => res.json(withStandings(
     await snapshot(publicClient, req.tournamentId, false)))));
 
-  router.use(wrap(async (req, res, next) => {
+  async function authenticate(req) {
     const header = req.headers.authorization || '';
     let user;
     if (header.length <= 8192 && /^Bearer [^\s]+$/.test(header)) {
@@ -122,6 +164,14 @@ function installTeamTournaments(app, {
     if (limited('user:' + user.id, 60)) fail(429, 'rate_limit');
     req.tournamentActor = user.id;
     req.tournamentClient = clientForToken?.(header.slice(7));
+  }
+  router.get('/', wrap(async (req, res) => {
+    if (req.headers.authorization !== undefined) await authenticate(req);
+    const client = req.tournamentActor ? req.tournamentClient : publicClient;
+    res.json(await listTournaments(client, req.tournamentActor, commandClient));
+  }));
+  router.use(wrap(async (req, res, next) => {
+    await authenticate(req);
     next();
   }));
   router.use(express.json({ limit: '12kb' }));
