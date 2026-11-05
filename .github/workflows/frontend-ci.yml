@@ -50,7 +50,8 @@ jobs:
         run: npm ci --ignore-scripts --prefix ../server
 
       - name: Frontend tests
-        run: npm test
+        # Bound concurrent Chromium launches on the hosted runner.
+        run: node --test --test-concurrency=2 tests/*.test.mjs
         env:
           SECTIONS_CAPTURE: ${{ runner.temp }}/sections-layouts
 
