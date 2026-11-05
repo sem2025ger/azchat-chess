@@ -63,7 +63,7 @@ export async function checkRoomLayout(){
    await cdp('Page.navigate',{url:roomFixture});
    await wait("document.querySelector('.st-chat-header h2')?.textContent === 'Schachverein' && document.querySelector('.st-challenge-icon')");
    assert.equal(await evaluate("document.querySelectorAll('article.st-message').length"), 28);
-   assert.ok(await evaluate(`(()=>{
+   assert.equal(await evaluate(`(()=>{
      const groups=[...document.querySelectorAll('.st-message-group')];
      const one=groups.find(g=>g.querySelectorAll('.st-message').length>=3);
      if(!one) return false;
@@ -75,8 +75,8 @@ export async function checkRoomLayout(){
      const between=groups[1].getBoundingClientRect().top-groups[0].getBoundingClientRect().bottom;
      return gaps.length>=2 && gaps.every(n=>Math.abs(n-6)<1) && Math.abs(between-14)<1
        && ownBackground !== 'rgba(0, 0, 0, 0)' && childBackground === 'rgba(0, 0, 0, 0)';
-   })()`));
-   if(width===375) assert.ok(await evaluate(`(()=>{
+   })()`),true,'group spacing / unified background geometry');
+   if(width===375) assert.equal(await evaluate(`(()=>{
      const h=document.querySelector('.st-chat-header'),back=h.querySelector('.st-back-general'),
        pin=h.querySelector('.st-pin-menu'),room=h.querySelector('h2'),invite=h.querySelector('.st-invite-trigger'),
        f=document.querySelector('.st-composer'),input=f.querySelector('input'),challenge=f.querySelector('.st-composer-challenge');
@@ -88,7 +88,7 @@ export async function checkRoomLayout(){
        && Boolean(challenge.querySelector('svg'))
        && challenge.getAttribute('aria-label')===challenge.textContent.trim()
        && document.documentElement.scrollWidth<=innerWidth+1;
-   })()`));
+   })()`),true,'mobile header and composer layout');
    assert.ok(await evaluate("document.querySelectorAll('article.st-message .st-challenge-icon').length >= 10"));
    assert.equal(await evaluate("document.querySelectorAll('article.st-message-own .st-challenge-icon, article.st-message .st-composer-challenge').length"), 0);
    assert.ok(await evaluate("Array.from(document.querySelectorAll('.st-challenge-icon')).every(b=>b.parentElement.classList.contains('st-message-heading') && b.getAttribute('aria-label') && b.querySelector('svg') && b.offsetWidth===32)"));
@@ -138,7 +138,7 @@ export async function checkRoomLayout(){
      return Math.abs(r(back).top-r(pin).top)<1 && Math.abs(r(invite).top-r(room).top)<1
       && invite.offsetWidth===44 && getComputedStyle(invite.querySelector('.st-invite-label')).position==='absolute'
       && invite.querySelector('svg.lucide-check') && document.documentElement.scrollWidth<=innerWidth+1;
-   })()`));
+   })()`),true,'mobile copied state / menu row');
    assert.equal(await evaluate("window.fixtureInvites"), 1);
    assert.equal(await evaluate("window.copyCalls"), 1);
    assert.equal(await evaluate("document.querySelector('.st-invite-popover,.st-invite-dialog,.st-invite-fields')"),null);
