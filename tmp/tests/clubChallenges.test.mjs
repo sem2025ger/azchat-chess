@@ -30,9 +30,9 @@ test('actual challenge cards render only permitted actions and German lifecycle 
   } finally { await server.close(); }
 });
 
-test('legacy mobile community renders challenge bodies as text without new controls', () => {
+test('legacy mobile community keeps challenge bodies as text', () => {
   const source = readFileSync(new URL('../src/screens/ChessAZCommunityScreen.tsx', import.meta.url), 'utf8');
   const legacy = source.split('function LegacyCommunityScreen() {')[1];
-  assert.match(legacy, /<p className="whitespace-pre-wrap break-words text-sm">\{item.body\}<\/p>/);
+  assert.match(legacy, /<p className="whitespace-pre-wrap break-words text-sm">\{moderationEnabled && item.deleted_at \? schach.deleted : item.body\}<\/p>/);
   assert.doesNotMatch(legacy, /ChallengeProvider|ChallengeMessage|ChallengeButton/);
 });

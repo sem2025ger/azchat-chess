@@ -15,7 +15,8 @@ import ClubRooms, { RoomTitle } from '../components/schachTreff/ClubRooms';
 import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
 
 type Profile = { id: string; username: string };
-type Message = { id: string; author_id: string; body: string; created_at: string };
+import { inviteCacheKey, MessageActions, ModerationDialog, type ClubMessage, type ModerationAction } from '../components/schachTreff/Moderation';
+import { moderationEnabled, useMarkClubRead } from '../components/schachTreff/unread';
 type Panel = 'tournaments' | 'members' | 'ranking' | 'about';
 const warned = new Set<string>();
 export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: boolean } = {}) {
@@ -29,11 +30,18 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const [pinAvailable, setPinAvailable] = useState(false);
   const [pinExpanded, setPinExpanded] = useState(false);
   const [pinMenu, setPinMenu] = useState(false);
+  const [moderator, setModerator] = useState(false);
+  const [privateAdmin, setPrivateAdmin] = useState(false);
+  const [moderationAction, setModerationAction] = useState<ModerationAction | null>(null);
+  const [moderationNotice, setModerationNotice] = useState('');
+  const [inviteRevision, setInviteRevision] = useState(0);
+  const refreshVersion = useRef(0);
+  const chatMenuButton = useRef<HTMLButtonElement>(null);
   const [canInvite, setCanInvite] = useState(false);
   const [pinEdit, setPinEdit] = useState(false);
   const [pinDraft, setPinDraft] = useState('');
   const [member, setMember] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ClubMessage[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [roster, setRoster] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +57,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const feedRef = useRef<HTMLDivElement>(null);
   const followFeed = useRef(true);
   const newestMessage = messages.at(-1)?.id;
+  useMarkClubRead(clubId, newestMessage, member && !loading && !isLoading, feedRef, user?.id);
   useLayoutEffect(() => {
     const feed = feedRef.current;
     if (feed && followFeed.current) feed.scrollTop = feed.scrollHeight;
@@ -57,15 +66,18 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, [t.title]);
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
   const refresh = useCallback(async () => {
+    const version = ++refreshVersion.current;
     const requested = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('club');
-    const query = supabase.from('chess_clubs').select('id');
+    const query = moderationEnabled ? supabase.from('chess_clubs').select('id,kind,is_open,slug') : supabase.from('chess_clubs').select('id');
     const club = await (requested && /^[0-9a-f-]{36}$/i.test(requested) ? query.eq('id',requested) : query.eq('slug','chessaz-deutsch')).maybeSingle();
     if (club.error) throw club.error;
-    setClubId(club.data?.id ?? null);
+    const clubData = club.data as { id: string; kind?: string; is_open?: boolean; slug?: string } | null;
+    if (moderationEnabled && version !== refreshVersion.current) return;
+    setClubId(clubData?.id ?? null);
     let pinnedAuthor: string | null = null;
     let pinMigrationAvailable = false;
-    if (club.data) {
-      const pinInfo = await supabase.from('chess_clubs').select('pinned_body,pinned_by').eq('id',club.data.id).maybeSingle();
+    if (clubData) {
+      const pinInfo = await supabase.from('chess_clubs').select('pinned_body,pinned_by').eq('id',clubData.id).maybeSingle();
       if (pinInfo.error) {
         const code = pinInfo.error.code;
         if (['42703','PGRST204','PGRST205'].includes(code)) {
@@ -76,24 +88,32 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
       } else { pinMigrationAvailable = true; pinnedAuthor = pinInfo.data?.pinned_by ?? null; setPin(pinInfo.data?.pinned_body ? { body: pinInfo.data.pinned_body, author: pinnedAuthor } : null); }
     } else setPin(null);
     setPinAvailable(pinMigrationAvailable);
-    if (!user || !club.data) { setCanInvite(false); setCanPin(false); setMember(false); setMessages([]); setProfiles([]); return; }
-    const membership = await supabase.from('chess_club_members').select('user_id,role').eq('club_id', club.data.id).eq('user_id', user.id).maybeSingle();
+    if (!user || !clubData) { setModerator(false); setPrivateAdmin(false); setCanInvite(false); setCanPin(false); setMember(false); setMessages([]); setProfiles([]); return; }
+    const membership = await supabase.from('chess_club_members').select('user_id,role').eq('club_id', clubData.id).eq('user_id', user.id).maybeSingle();
     if (membership.error) throw membership.error;
+    if (moderationEnabled && version !== refreshVersion.current) return;
+    if (moderationEnabled) {
+      setModerator(['admin', 'moderator'].includes(membership.data?.role ?? ''));
+      setPrivateAdmin(membership.data?.role === 'admin' && clubData.kind === 'room' && !clubData.is_open && clubData.slug !== 'chessaz-deutsch');
+    }
     setMember(Boolean(membership.data));
     setCanInvite(Boolean(requested) && ['admin','moderator'].includes(membership.data?.role ?? ''));
     setCanPin(pinMigrationAvailable && ['admin','moderator'].includes(membership.data?.role ?? ''));
     if (!membership.data) { setMessages([]); setProfiles([]); return; }
     const [feed, members] = await Promise.all([
-      supabase.from('chess_club_messages').select('id,author_id,body,created_at').eq('club_id', club.data.id).order('created_at', { ascending: false }).limit(50),
-      supabase.from('chess_club_members').select('user_id').eq('club_id', club.data.id).order('joined_at').limit(200),
+      (moderationEnabled
+        ? supabase.from('chess_club_messages').select('id,author_id,body,created_at,kind,deleted_at,hidden_at')
+        : supabase.from('chess_club_messages').select('id,author_id,body,created_at')).eq('club_id', clubData.id).order('created_at', { ascending: false }).limit(50),
+      supabase.from('chess_club_members').select('user_id').eq('club_id', clubData.id).order('joined_at').limit(200),
     ]);
     if (feed.error) throw feed.error;
     if (members.error) throw members.error;
     const ids = [...new Set([...members.data.map(m => m.user_id), ...feed.data.map(m => m.author_id), ...(pinnedAuthor ? [pinnedAuthor] : [])])];
     const people = ids.length ? await supabase.from('profiles').select('id,username').in('id', ids) : { data: [], error: null };
     if (people.error) throw people.error;
+    if (moderationEnabled && version !== refreshVersion.current) return;
     setProfiles(people.data ?? []); setRoster(members.data.map(m => m.user_id));
-    setMessages([...feed.data].reverse());
+    setMessages([...feed.data].reverse() as ClubMessage[]);
   }, [user]);
   useEffect(() => {
     let active = true;
@@ -109,7 +129,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     };
     if (!isLoading) void update();
     const timer = window.setInterval(() => { if (!document.hidden && !isLoading) void update(); }, 12000);
-    return () => { active = false; window.clearInterval(timer); };
+    return () => { active = false; if (moderationEnabled) refreshVersion.current++; window.clearInterval(timer); };
   }, [refresh, isLoading]);
   async function perform(action: () => PromiseLike<{ error: unknown }>) {
     setBusy(true); setError('');
@@ -126,12 +146,19 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     if (!clubId || !pinAvailable || !canPin || busy) return;
     if (await perform(() => supabase.rpc('set_club_pin', { p_club_id: clubId, p_body: pinDraft }))) setPinEdit(false);
   }
+  function openChatAction(action: ModerationAction) {
+    chatMenuButton.current?.focus();
+    setPinMenu(false);
+    setModerationNotice('');
+    setModerationAction(action);
+  }
   function stamp(value: string) {
     const date = new Date(value), now = new Date(), yesterday = new Date(); yesterday.setDate(now.getDate() - 1);
     const time = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     return date.toDateString() === now.toDateString() ? time : date.toDateString() === yesterday.toDateString() ? `${t.yesterday} ${time}` : `${date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${time}`;
   }
   if (missing) return null;
+  const hasChatActions = canPin || (moderationEnabled && (moderator || privateAdmin));
   const members = profiles.filter(p => roster.includes(p.id));
   return <section className="schach-treff" lang={language==="ua"?"uk":language} data-schach-treff-desktop>
     <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member}>
@@ -142,22 +169,29 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
     <div className="st-columns">{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} /></aside>}
       <section className="st-surface st-chat">
-        {(isClub || canPin) && <div className="st-chat-header">
+        {(isClub || hasChatActions) && <div className="st-chat-header">
           {isClub && <>
             <a className="st-back-general" href="/chat"><ArrowLeft size={16} aria-hidden="true" /><span>{t.general}</span></a>
             <h2><RoomTitle clubId={clubId} /></h2>
-            {canInvite && <RoomInvite key={clubId} clubId={clubId} />}
+            {canInvite && <RoomInvite key={clubId + '-' + inviteRevision} clubId={clubId} />}
           </>}
-          {canPin && <div className="st-pin-menu" onKeyDown={event => {
+          {hasChatActions && <div className="st-pin-menu" onKeyDown={event => {
             if (event.key === 'Escape' && pinMenu) {
               setPinMenu(false);
               event.currentTarget.querySelector('button')?.focus();
             }
           }}>
-            <button type="button" aria-label={t.editPin} aria-expanded={pinMenu} onClick={() => setPinMenu(!pinMenu)}>⋯</button>
-            {pinMenu && <div className="st-pin-actions"><button type="button" onClick={() => {
-              setPinMenu(false); setPinEdit(true); setPinDraft(pin?.body ?? '');
-            }}>{t.editPin}</button></div>}
+            <button type="button" ref={chatMenuButton} aria-label={moderationEnabled ? t.moderation : t.editPin} aria-expanded={pinMenu} onClick={() => setPinMenu(!pinMenu)}>⋯</button>
+            {pinMenu && <div className="st-pin-actions">
+              {canPin && <button type="button" onClick={() => {
+                setPinMenu(false); setPinEdit(true); setPinDraft(pin?.body ?? '');
+              }}>{t.editPin}</button>}
+              {moderationEnabled && moderator && <button type="button" onClick={() => openChatAction({ kind: 'reports' })}>{t.reports}</button>}
+              {moderationEnabled && privateAdmin && <>
+                <button type="button" onClick={() => openChatAction({ kind: 'clear' })}>{t.clearChat}</button>
+                <button type="button" onClick={() => openChatAction({ kind: 'revoke' })}>{t.revokeInvites}</button>
+              </>}
+            </div>}
           </div>}
         </div>}
         {pinAvailable && (pin || canPin) && (pinEdit && canPin ? <form onSubmit={savePin} className="st-pin-form">
@@ -173,8 +207,12 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
           followFeed.current = feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
         }}>
           {!messages.length && !error && <p>{t.empty}</p>}
-          <MessageItems messages={messages} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} />
+          <MessageItems messages={messages} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} moderator={moderator} openModeration={setModerationAction} />
         </div>
+        {moderationEnabled && moderationNotice && <p role="status">{moderationNotice}</p>}
+        {moderationEnabled && moderationAction && <ModerationDialog clubId={clubId} action={moderationAction}
+          close={() => setModerationAction(null)} refresh={refresh} onNotice={setModerationNotice}
+          onRevoked={() => setInviteRevision(value => value + 1)} />}
         <form className="st-composer" onSubmit={send}>
           <ChallengeButton composer />
           <input aria-label={t.placeholder} placeholder={hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required />
@@ -191,12 +229,14 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   </section>;
 }
 
-function MessageItems({ messages, profiles, me, onPlayer, stamp }: {
-  messages: Message[]; profiles: Profile[]; me?: string;
+function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, openModeration }: {
+  messages: ClubMessage[]; profiles: Profile[]; me?: string;
   onPlayer: (profile: Profile) => void; stamp: (value: string) => string;
+  moderator: boolean; openModeration: (action: ModerationAction) => void;
 }) {
   const challengeIds = useChallengeMessageIds();
-  const groups: Message[][] = [];
+  const t = useSchachTreffCopy();
+  const groups: ClubMessage[][] = [];
   for (const message of messages) {
     const previous = groups.at(-1)?.at(-1);
     const date = new Date(message.created_at);
@@ -227,7 +267,11 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp }: {
               <time dateTime={message.created_at}>{stamp(message.created_at)}</time>
               {!own && <ChallengeButton targetUserId={message.author_id} icon />}
             </div>}
-            <ChallengeMessage messageId={message.id} body={message.body} />
+            {moderationEnabled && message.deleted_at ? <p className="st-moderation-status">{t.deleted}</p>
+              : <ChallengeMessage messageId={message.id} body={message.body ?? ''} />}
+            {moderationEnabled && message.hidden_at && <p className="st-moderation-status">{t.hiddenMessage}</p>}
+            {moderationEnabled && <MessageActions message={message} own={own} moderator={moderator}
+              challenge={challengeIds.has(message.id)} open={openModeration} t={t} />}
           </div>
         </article>;
       })}
@@ -237,7 +281,8 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp }: {
 
 function RoomInvite({ clubId }: { clubId: string }) {
   const t = useSchachTreffCopy();
-  const cacheKey = 'schach-treff-invite:' + clubId;
+  const cacheKey = inviteCacheKey(clubId);
+  const mounted = useRef(false);
   const remembered = useRef('');
   const inFlight = useRef(false);
   const copyTimer = useRef<number | undefined>(undefined);
@@ -248,9 +293,13 @@ function RoomInvite({ clubId }: { clubId: string }) {
   const [fallback, setFallback] = useState('');
   const [note, setNote] = useState('');
 
-  useEffect(() => () => {
-    window.clearTimeout(copyTimer.current);
-    window.clearTimeout(noteTimer.current);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      window.clearTimeout(copyTimer.current);
+      window.clearTimeout(noteTimer.current);
+    };
   }, []);
   useEffect(() => {
     if (fallback) { fallbackInput.current?.focus(); fallbackInput.current?.select(); }
@@ -287,6 +336,7 @@ function RoomInvite({ clubId }: { clubId: string }) {
       if (!link) {
         const { data, error } = await supabase.rpc('create_club_invite', { p_club_id: clubId });
         if (error) throw error;
+        if (moderationEnabled && !mounted.current) return;
         if (typeof data !== 'string' || !/^[0-9a-f]{32}$/.test(data)) throw new Error();
         link = window.location.origin + '/schach-treff/einladung/' + data;
         remembered.current = link;

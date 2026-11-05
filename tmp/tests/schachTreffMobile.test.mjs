@@ -3,10 +3,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 const read = p => readFileSync(new URL(p, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
-test('legacy community implementation remains byte-identical to approved main', () => {
+test('legacy community keeps the approved non-chat tabs and message composer', () => {
   const baseline = execFileSync('git', ['show', '4af51e5:tmp/src/screens/ChessAZCommunityScreen.tsx'], {encoding:'utf8'}).replace(/\r\n/g, '\n');
   const current = read('../src/screens/ChessAZCommunityScreen.tsx');
-  assert.equal(current.split('function LegacyCommunityScreen() {')[1], baseline.split('export default function ChessAZCommunityScreen() {')[1]);
+  const nonChatTabs = source => source.split('<div id="club-panel-tournaments"')[1];
+  assert.equal(nonChatTabs(current), nonChatTabs(baseline));
+  const composer = source => source.split('<form onSubmit={sendMessage}')[1].split('</form>')[0];
+  assert.equal(composer(current), composer(baseline));
+  assert.match(current, /: supabase.from\('chess_club_messages'\).select\('id,author_id,body,created_at'\)/);
   assert.match(current, /return desktop \? <SchachTreffDesktop \/> : <LegacyCommunityScreen \/>/);
   assert.match(read('../src/components/schachTreff/useDesktop.ts'), /\(min-width: 1024px\)/);
   for (const width of [360,390,430,768]) assert.equal(width >= 1024, false);
@@ -43,7 +47,9 @@ test('desktop ranking shows the upcoming-rating note without rating data or memb
 test('missing pin migration disables admin/moderator controls while chat still loads', async () => {
   const current = read('../src/screens/SchachTreffDesktop.tsx');
   const refreshBody = current.split('const refresh = useCallback(async () => {')[1].split('}, [user]);')[0]
-    .replace('let pinnedAuthor: string | null', 'let pinnedAuthor');
+    .replace('let pinnedAuthor: string | null', 'let pinnedAuthor')
+    .replace(/club.data as \{[^}]+\} \| null/, 'club.data')
+    .replace(' as ClubMessage[]', '');
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
   for (const code of ['42703', 'PGRST204', 'PGRST205', null]) {
     for (const role of ['admin', 'moderator', 'member']) {
@@ -66,8 +72,8 @@ test('missing pin migration disables admin/moderator controls while chat still l
         };
         return query;
       } };
-      await new AsyncFunction('supabase', 'user', 'warned', 'console', ...setters, refreshBody)(
-        supabase, { id: 'user' }, new Set(), { warn() {} },
+      await new AsyncFunction('supabase', 'user', 'warned', 'console', 'moderationEnabled', 'refreshVersion', ...setters, refreshBody)(
+        supabase, { id: 'user' }, new Set(), { warn() {} }, false, { current: 0 },
         ...setters.map(name => value => { state[name] = value; }),
       );
       assert.equal(state.setPinAvailable, code === null);
@@ -82,7 +88,7 @@ test('missing pin migration disables admin/moderator controls while chat still l
 
 test('saving a pin cannot call the RPC when its migration is unavailable', async () => {
   const current = read('../src/screens/SchachTreffDesktop.tsx');
-  const saveBody = current.split('async function savePin(event: FormEvent) {')[1].split('\n  function stamp')[0].replace(/\n  }\s*$/, '');
+  const saveBody = current.split('async function savePin(event: FormEvent) {')[1].split('\n  function openChatAction')[0].replace(/\n  }\s*$/, '');
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
   let attempted = false;
   await new AsyncFunction('event', 'clubId', 'pinAvailable', 'canPin', 'busy', 'perform', saveBody)(

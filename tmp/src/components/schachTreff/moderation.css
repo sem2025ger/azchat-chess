@@ -1,0 +1,72 @@
+[data-schach-treff-unread] a.site-nav-link[href="/chat"] > div:first-child { position: relative; }
+[data-schach-treff-unread] a.site-nav-link[href="/chat"] > div:first-child::after {
+  content: "";
+  position: absolute;
+  top: -.15rem;
+  right: -.2rem;
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  background: #f1bb6b;
+}
+.st-unread-badge {
+  display: inline-block;
+  margin-inline-start: .45rem;
+  padding: 0 .42rem;
+  border-radius: 1rem;
+  background: #d6b076;
+  color: #241b10;
+  -webkit-text-fill-color: #241b10;
+  font: 600 .75rem/1.5 system-ui, sans-serif;
+  vertical-align: middle;
+}
+.st-message-actions { margin-block-start: .15rem; min-width: 0; }
+.st-message-actions summary {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2rem;
+  min-height: 1.65rem;
+  cursor: pointer;
+  border-radius: .4rem;
+  list-style: none;
+}
+.st-message-actions summary::-webkit-details-marker { display: none; }
+.st-message-actions summary:focus-visible { outline: 2px solid #d6b076; }
+.st-message-action-buttons, .st-moderation-buttons { display: flex; flex-wrap: wrap; gap: .4rem; }
+.st-message-action-buttons button, .st-moderation-buttons button { white-space: normal; overflow-wrap: anywhere; }
+dialog.st-moderation-dialog {
+  box-sizing: border-box;
+  position: fixed;
+  inset: 0;
+  width: min(32rem, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  max-height: 80dvh;
+  margin: auto;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding: clamp(1rem, 4vw, 1.75rem);
+  border: 1px solid #695438;
+  border-radius: 1rem;
+  background: #191816;
+  color: #f2eee3;
+}
+.st-moderation-dialog::backdrop { background: #000b; }
+.st-moderation-dialog h2 { font-size: 1.2rem; font-weight: 650; }
+.st-moderation-dialog form, .st-moderation-dialog label { display: grid; gap: .65rem; }
+.st-moderation-dialog form { margin-top: .8rem; }
+.st-moderation-dialog button, .st-moderation-dialog select {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.75rem;
+  padding: .4rem .65rem;
+  border: 1px solid #695438;
+  border-radius: .55rem;
+  background: #24211c;
+  color: #f2eee3;
+}
+.st-moderation-dialog button:disabled { opacity: .55; }
+.st-moderation-dialog p { margin-block: .6rem; }
+.st-moderation-reports { display: grid; gap: .65rem; margin-block: .8rem; }
+.st-moderation-reports li { padding: .65rem; border: 1px solid #625643; border-radius: .5rem; }
+.st-moderation-reports small { display: block; margin-block-end: .5rem; color: #e2caa4; }
+.schach-treff .st-message-content > .st-moderation-status { color: #c5b9a7; font-style: italic; }
