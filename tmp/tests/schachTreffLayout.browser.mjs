@@ -24,6 +24,7 @@ export const supabase = {
       sessionStorage.setItem('fixtureJoinCalls',String(Number(sessionStorage.getItem('fixtureJoinCalls')||0)+1));
       sessionStorage.setItem('fixtureInviteToken',payload.p_token);
       const q=new URLSearchParams(location.search).get('scenario');
+      if(q==='slow')return new Promise(resolve=>setTimeout(()=>resolve({data:room,error:null}),750));
       if(q==='expired')return Promise.resolve({data:null,error:{message:'invite_expired'}});
       if(q==='unexpected')return Promise.resolve({data:null,error:{message:'unknown_error'}});
       if(q==='badroom')return Promise.resolve({data:'bad-room-id',error:null});
@@ -256,6 +257,13 @@ export async function checkRoomLayout(){
     assert.equal(await evaluate("sessionStorage.getItem('fixtureInviteToken')"),inviteToken);
     assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinedRoom')"),roomId);
     assert.ok(await evaluate("document.querySelector('.st-composer input') && document.documentElement.scrollWidth<=innerWidth+1"),'invited room opened at '+width);
+
+    await reset();
+    await cdp('Page.navigate',{url:root+'schach-treff/einladung/'+inviteToken+'?scenario=slow'});
+    await wait("location.pathname.startsWith('/schach-treff/einladung/') && sessionStorage.getItem('fixtureJoinCalls')==='1'");
+    assert.equal(await evaluate("document.body.innerText.includes('Schach-Treff') || document.body.innerText.includes('Загрузка')"),false,'invite waiting screen must not flash visible text at '+width);
+    await wait("location.pathname==='/chat' && new URLSearchParams(location.search).get('club')==='22222222-2222-4222-8222-222222222222' && document.querySelector('.st-chat-header h2')?.textContent==='Schachverein'");
+    assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinCalls')"),'1','delayed join still calls RPC once');
 
     await reset();
     await cdp('Page.navigate',{url:root+'schach-treff/einladung/invalid-token'});
