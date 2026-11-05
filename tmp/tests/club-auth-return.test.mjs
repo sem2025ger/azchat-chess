@@ -29,3 +29,16 @@ test('play magic-link callbacks preserve /play and return after signing in', () 
   assert.match(password, /requestedReturn === '\/play' \? '\/play'/);
   assert.match(password, /clubReturnTarget\(requestedReturn\)/);
 });
+
+test('validated email return does not paint the profile before redirect', () => {
+  assert.match(profile, /const redirectingAfterSignIn = Boolean\(session && !isLoading/);
+  assert.match(profile, /clubReturnTo \|\| \(mobileReturnTo/);
+  assert.match(profile, /if \(redirectingAfterSignIn\) \{/);
+  const guard = profile.indexOf('if (redirectingAfterSignIn)');
+  const passport = profile.indexOf('if (showMobilePassport || showDesktopPassport)');
+  const login = profile.indexOf('if (!session)');
+  assert.ok(guard >= 0 && guard < login && login < passport,
+    'return overlay guard must precede both login and player passport rendering');
+  assert.match(profile, /prefetchRoute\('\/chat'\)/);
+  assert.match(profile, /navigate\(clubReturnTo, \{ replace: true \}\)/);
+});
