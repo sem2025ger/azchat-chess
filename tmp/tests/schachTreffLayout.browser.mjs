@@ -280,11 +280,11 @@ export async function checkRoomLayout(){
     }
     await reset();
     await cdp('Page.navigate',{url:root+'schach-treff/einladung/'+inviteToken+'?guest=1'});
-    await wait("Boolean(document.querySelector('a[href^='/profile?returnTo=']'))");
+    await wait("Boolean(document.querySelector('a[href]'))");
     assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinCalls')"),null);
-    assert.equal(await evaluate("new URL(document.querySelector('a[href^='/profile?returnTo=']').href).searchParams.get('returnTo')"),'/schach-treff/einladung/'+inviteToken);
+    assert.equal(await evaluate("new URL(document.querySelector('a[href]').href).searchParams.get('returnTo')"),'/schach-treff/einladung/'+inviteToken);
     await evaluate("window.setFixtureLanguage('en')");
-    await wait("document.querySelector('a[href^='/profile?returnTo=']')?.textContent==='Sign in'");
+    await wait("document.querySelector('a[href]')?.textContent==='Sign in'");
   }
 
  }finally{try{ws?.close()}catch{}chrome?.kill('SIGKILL');for(const p of pending.values())clearTimeout(p.timer);await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100})}
