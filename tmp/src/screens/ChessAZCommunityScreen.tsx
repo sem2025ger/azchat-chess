@@ -4,6 +4,10 @@ import { displayPlayerName } from '../utils/displayPlayerName';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Globe, Users, MessageCircle, Trophy, Loader2, BarChart3, Info } from 'lucide-react';
+import { useSchachTreffCopy } from '../components/schachTreff/copy';
+import ClubRooms from '../components/schachTreff/ClubRooms';
+import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
+import './SchachTreffMobileRooms.css';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { supabase } from '../services/supabase';
@@ -80,6 +84,22 @@ const ru: Words = {
 };
 
 export default function ChessAZCommunityScreen() {
+  const desktop = useDesktop();
+  const t = useSchachTreffCopy();
+  const [showCommunity, setShowCommunity] = useState(false);
+  if (desktop) return <CommunityRouter />;
+  const params = new URLSearchParams(window.location.search);
+  const club = params.get('club');
+  return <div className="st-mobile-page">
+    <header className="st-mobile-header"><h1>{t.title}</h1></header>
+    <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
+      <ClubRooms currentClubId={club} />
+    </aside>
+    {!club && <button type="button" className="st-mobile-community" aria-pressed={showCommunity} onClick={() => setShowCommunity(!showCommunity)}>{showCommunity ? t.backGeneral : t.more}</button>}
+    {!club && showCommunity ? <div className="st-mobile-legacy"><CommunityRouter /></div> : <SchachTreffDesktop hideRooms />}
+  </div>;
+}
+function CommunityRouter() {
   const desktop = useDesktop();
   return desktop ? <SchachTreffDesktop /> : <LegacyCommunityScreen />;
 }

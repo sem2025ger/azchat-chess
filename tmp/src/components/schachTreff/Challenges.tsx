@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Swords } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
 import { supabase } from '../../services/supabase';
@@ -73,11 +74,20 @@ export function ChallengeProvider({ clubId, me, people, enabled, children }: { c
     </dialog>
   </Context.Provider>;
 }
-export function ChallengeButton({ targetUserId,beforeOpen }: { targetUserId?: string; beforeOpen?: () => void }) {
+export function ChallengeButton({ targetUserId,beforeOpen,icon,composer }: { targetUserId?: string; beforeOpen?: () => void; icon?: boolean; composer?: boolean }) {
   const t=useSchachTreffCopy();
   const context=useContext(Context);
   if (!context?.available || targetUserId===context.me) return null;
-  return <button type="button" onClick={() => { beforeOpen?.(); context.open(targetUserId); }}>{t.challengeAction}</button>;
+  return <button type="button" className={icon ? 'st-challenge-icon' : composer ? 'st-composer-challenge' : undefined}
+    aria-label={icon || composer ? t.challengePlayer : undefined} onClick={() => { beforeOpen?.(); context.open(targetUserId); }}>
+    {icon ? <Swords size={16} aria-hidden="true" /> : composer
+      ? <><Swords className="st-composer-challenge-icon" size={18} aria-hidden="true" /><span className="st-composer-challenge-label">{t.challengePlayer}</span></>
+      : t.challengeAction}
+  </button>;
+}
+export function useChallengeMessageIds(): ReadonlySet<string> {
+  const context = useContext(Context);
+  return new Set(context?.rows.map(row => row.message_id) ?? []);
 }
 export function ChallengeMessage({ messageId,body }: { messageId: string; body: string }) {
   const context=useContext(Context), row=context?.rows.find(item => item.message_id===messageId);

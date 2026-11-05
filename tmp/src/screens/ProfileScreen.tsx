@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { calculateMatchStats, getMatchResultForPlayer } from '../utils/profileContract';
 import { authCallbackUrl, clubReturnTarget, inviteReturnTarget, inviteAuthCallbackUrl } from '../lib/authCallbackUrl';
+import { prefetchRoute } from '../routeLoaders';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -50,6 +51,11 @@ export default function ProfileScreen() {
       navigate(mobileReturnTo, { replace: true });
     }
   }, [session, isLoading, mobileReturnTo, navigate]);
+
+  useEffect(() => {
+    // Warm the destination without altering the secure allowlisted return target.
+    if (clubReturnTo) prefetchRoute('/chat');
+  }, [clubReturnTo]);
 
   useEffect(() => {
     if (session && !isLoading && clubReturnTo) navigate(clubReturnTo, { replace: true });
@@ -222,6 +228,15 @@ export default function ProfileScreen() {
       setAuthLoading(false);
     }
   };
+
+  // React effects run after the browser has painted. Never expose the profile
+  // passport for one frame while a validated email return destination is pending.
+  const redirectingAfterSignIn = Boolean(session && !isLoading && (
+    clubReturnTo || (mobileReturnTo && (mobileReturnTo === '/play' || window.matchMedia('(max-width: 767px)').matches))
+  ));
+  if (redirectingAfterSignIn) {
+    return <span className="sr-only" role="status" aria-live="polite">{t('auth.signIn')}</span>;
+  }
 
   if (isLoading) {
     return (

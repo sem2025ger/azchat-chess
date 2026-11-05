@@ -1,6 +1,7 @@
 import {useRegionalCopy} from '../i18n/regionalCopy';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowLeft, Check, Link2, Pin } from 'lucide-react';
 import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalLanguage } from '../context/LanguageContext';
@@ -8,15 +9,16 @@ import { supabase } from '../services/supabase';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
 import './SchachTreffDesktop.css';
-import { ChallengeProvider, ChallengeButton, ChallengeMessage } from '../components/schachTreff/Challenges';
+import { ChallengeProvider, ChallengeButton, ChallengeMessage, useChallengeMessageIds } from '../components/schachTreff/Challenges';
 import PlayerSummary from '../components/schachTreff/PlayerSummary';
 import ClubRooms, { RoomTitle } from '../components/schachTreff/ClubRooms';
+import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
 
 type Profile = { id: string; username: string };
 type Message = { id: string; author_id: string; body: string; created_at: string };
 type Panel = 'tournaments' | 'members' | 'ranking' | 'about';
 const warned = new Set<string>();
-export default function SchachTreffDesktop() {
+export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: boolean } = {}) {
  const regional=useRegionalCopy();
   const t=useSchachTreffCopy();
   const language=useOptionalLanguage()?.language||'de';
@@ -25,6 +27,9 @@ export default function SchachTreffDesktop() {
   const [pin, setPin] = useState<{ body: string; author: string | null } | null>(null);
   const [canPin, setCanPin] = useState(false);
   const [pinAvailable, setPinAvailable] = useState(false);
+  const [pinExpanded, setPinExpanded] = useState(false);
+  const [pinMenu, setPinMenu] = useState(false);
+  const [canInvite, setCanInvite] = useState(false);
   const [pinEdit, setPinEdit] = useState(false);
   const [pinDraft, setPinDraft] = useState('');
   const [member, setMember] = useState(false);
@@ -40,6 +45,14 @@ export default function SchachTreffDesktop() {
   const [panel, setPanel] = useState<Panel | null>(null);
   const [player, setPlayer] = useState<Profile | null>(null);
   const [notify, setNotify] = useState(false);
+  const isClub = new URLSearchParams(window.location.search).has('club');
+  const feedRef = useRef<HTMLDivElement>(null);
+  const followFeed = useRef(true);
+  const newestMessage = messages.at(-1)?.id;
+  useLayoutEffect(() => {
+    const feed = feedRef.current;
+    if (feed && followFeed.current) feed.scrollTop = feed.scrollHeight;
+  }, [clubId, member, newestMessage, loading]);
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, [t.title]);
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
@@ -63,10 +76,11 @@ export default function SchachTreffDesktop() {
       } else { pinMigrationAvailable = true; pinnedAuthor = pinInfo.data?.pinned_by ?? null; setPin(pinInfo.data?.pinned_body ? { body: pinInfo.data.pinned_body, author: pinnedAuthor } : null); }
     } else setPin(null);
     setPinAvailable(pinMigrationAvailable);
-    if (!user || !club.data) { setCanPin(false); setMember(false); setMessages([]); setProfiles([]); return; }
+    if (!user || !club.data) { setCanInvite(false); setCanPin(false); setMember(false); setMessages([]); setProfiles([]); return; }
     const membership = await supabase.from('chess_club_members').select('user_id,role').eq('club_id', club.data.id).eq('user_id', user.id).maybeSingle();
     if (membership.error) throw membership.error;
     setMember(Boolean(membership.data));
+    setCanInvite(Boolean(requested) && ['admin','moderator'].includes(membership.data?.role ?? ''));
     setCanPin(pinMigrationAvailable && ['admin','moderator'].includes(membership.data?.role ?? ''));
     if (!membership.data) { setMessages([]); setProfiles([]); return; }
     const [feed, members] = await Promise.all([
@@ -126,24 +140,47 @@ export default function SchachTreffDesktop() {
     </div></header>
     {error && <p role="alert">{error}</p>}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
-    <div className="st-columns"><aside className="st-surface st-rooms"><h2>{t.rooms}</h2><a href="/chat">{t.general}</a><h2>{t.clubs}</h2><ClubRooms currentClubId={clubId} /></aside>
-      <section className="st-surface st-chat"><h2><RoomTitle clubId={clubId} /></h2>
-        {pinAvailable && (pin || canPin) && <div className="st-pin">
-          <div className="st-pin-title">{t.pinned}{pin?.author && ' · '}{pin?.author ? profiles.find(p => p.id === pin.author)?.username ?? '' : ''}
-            {canPin && <button onClick={() => { setPinEdit(true); setPinDraft(pin?.body ?? ''); }}>{t.change}</button>}
-          </div>
-          {pinEdit ? <form onSubmit={savePin} className="st-pin-form">
-            <input aria-label={t.pinned} value={pinDraft} maxLength={500} onChange={e => setPinDraft(e.target.value)} />
-            <button disabled={busy}>{t.pinAction}</button>
-            <button type="button" onClick={() => setPinEdit(false)}>{t.cancel}</button>
-          </form> : pin && <p>{pin.body}</p>}
+    <div className="st-columns">{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} /></aside>}
+      <section className="st-surface st-chat">
+        {(isClub || canPin) && <div className="st-chat-header">
+          {isClub && <>
+            <a className="st-back-general" href="/chat"><ArrowLeft size={16} aria-hidden="true" /><span>{t.general}</span></a>
+            <h2><RoomTitle clubId={clubId} /></h2>
+            {canInvite && <RoomInvite key={clubId} clubId={clubId} />}
+          </>}
+          {canPin && <div className="st-pin-menu" onKeyDown={event => {
+            if (event.key === 'Escape' && pinMenu) {
+              setPinMenu(false);
+              event.currentTarget.querySelector('button')?.focus();
+            }
+          }}>
+            <button type="button" aria-label={t.editPin} aria-expanded={pinMenu} onClick={() => setPinMenu(!pinMenu)}>⋯</button>
+            {pinMenu && <div className="st-pin-actions"><button type="button" onClick={() => {
+              setPinMenu(false); setPinEdit(true); setPinDraft(pin?.body ?? '');
+            }}>{t.editPin}</button></div>}
+          </div>}
         </div>}
-        <div className="st-messages" aria-live="polite">
-        {!messages.length && !error && <p>{t.empty}</p>}{messages.map(message => {
-          const author = profiles.find(p => p.id === message.author_id);
-          return <article key={message.id}><div className="st-message-heading">{author && <button className="st-name" onClick={() => setPlayer(author)}>{author.username}</button>}<time dateTime={message.created_at}>{stamp(message.created_at)}</time></div><ChallengeMessage messageId={message.id} body={message.body} />{message.author_id !== user?.id && <ChallengeButton targetUserId={message.author_id} />}</article>;
-        })}</div><form onSubmit={send}><ChallengeButton /><input aria-label={t.placeholder} placeholder={t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required /><button disabled={busy || !body.trim()}>{t.send}</button></form></section>
-      <aside className="st-right" />
+        {pinAvailable && (pin || canPin) && (pinEdit && canPin ? <form onSubmit={savePin} className="st-pin-form">
+          <input autoFocus aria-label={t.pinned} value={pinDraft} maxLength={500} onChange={e => setPinDraft(e.target.value)} />
+          <button disabled={busy}>{t.pinAction}</button>
+          <button type="button" onClick={() => setPinEdit(false)}>{t.cancel}</button>
+        </form> : pin && <button type="button" className="st-pin" aria-expanded={pinExpanded}
+          title={pinExpanded ? t.showLess : t.showMore} onClick={() => setPinExpanded(!pinExpanded)}>
+          <Pin size={15} aria-hidden="true" /><span className="st-pin-title">{t.pinned}</span><span className="st-pin-text">{pin.body}</span>
+        </button>)}
+        <div className="st-messages" aria-live="polite" ref={feedRef} onScroll={event => {
+          const feed = event.currentTarget;
+          followFeed.current = feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
+        }}>
+          {!messages.length && !error && <p>{t.empty}</p>}
+          <MessageItems messages={messages} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} />
+        </div>
+        <form className="st-composer" onSubmit={send}>
+          <ChallengeButton composer />
+          <input aria-label={t.placeholder} placeholder={hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required />
+          <button className="st-send" disabled={busy || !body.trim()}>{t.send}</button>
+        </form>
+      </section>
     </div>}
     <dialog ref={dialog} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
       <button className="st-close" onClick={() => { setPanel(null); setPlayer(null); }}>{t.close}</button>
@@ -152,4 +189,140 @@ export default function SchachTreffDesktop() {
     </dialog>
     </ChallengeProvider>
   </section>;
+}
+
+function MessageItems({ messages, profiles, me, onPlayer, stamp }: {
+  messages: Message[]; profiles: Profile[]; me?: string;
+  onPlayer: (profile: Profile) => void; stamp: (value: string) => string;
+}) {
+  const challengeIds = useChallengeMessageIds();
+  const groups: Message[][] = [];
+  for (const message of messages) {
+    const previous = groups.at(-1)?.at(-1);
+    const date = new Date(message.created_at);
+    const previousDate = previous && new Date(previous.created_at);
+    const newGroup = !previous || previous.author_id !== message.author_id
+      || challengeIds.has(message.id) || challengeIds.has(previous.id)
+      || !previousDate || date.toDateString() !== previousDate.toDateString()
+      || date.getTime() - previousDate.getTime() < 0
+      || date.getTime() - previousDate.getTime() > 5 * 60 * 1000;
+    if (newGroup) groups.push([message]);
+    else groups[groups.length - 1].push(message);
+  }
+  return <>{groups.map(group => {
+    const own = group[0].author_id === me;
+    return <div key={group[0].id} className={own ? 'st-message-group st-message-group-own' : 'st-message-group'}>
+      {group.map((message, index) => {
+        const author = profiles.find(profile => profile.id === message.author_id);
+        const first = index === 0;
+        const date = new Date(message.created_at);
+        const exactTime = date.toLocaleString('de-DE', { dateStyle: 'full', timeStyle: 'medium' });
+        return <article key={message.id}
+          className={['st-message', own && 'st-message-own', !first && 'st-message-grouped'].filter(Boolean).join(' ')}
+          title={exactTime} tabIndex={first ? undefined : 0}>
+          {first && <span className="st-avatar" aria-hidden="true">{Array.from(author?.username ?? '?')[0]?.toLocaleUpperCase()}</span>}
+          <div className="st-message-content">
+            {first && <div className="st-message-heading">
+              {author && <button type="button" className="st-name" onClick={() => onPlayer(author)}>{author.username}</button>}
+              <time dateTime={message.created_at}>{stamp(message.created_at)}</time>
+              {!own && <ChallengeButton targetUserId={message.author_id} icon />}
+            </div>}
+            <ChallengeMessage messageId={message.id} body={message.body} />
+          </div>
+        </article>;
+      })}
+    </div>;
+  })}</>;
+}
+
+function RoomInvite({ clubId }: { clubId: string }) {
+  const t = useSchachTreffCopy();
+  const cacheKey = 'schach-treff-invite:' + clubId;
+  const remembered = useRef('');
+  const inFlight = useRef(false);
+  const copyTimer = useRef<number | undefined>(undefined);
+  const noteTimer = useRef<number | undefined>(undefined);
+  const fallbackInput = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [fallback, setFallback] = useState('');
+  const [note, setNote] = useState('');
+
+  useEffect(() => () => {
+    window.clearTimeout(copyTimer.current);
+    window.clearTimeout(noteTimer.current);
+  }, []);
+  useEffect(() => {
+    if (fallback) { fallbackInput.current?.focus(); fallbackInput.current?.select(); }
+  }, [fallback]);
+
+  function savedLink(): string | null {
+    const valid = (value: string) => {
+      try {
+        const url = new URL(value);
+        return url.origin === window.location.origin
+          && /^\/schach-treff\/einladung\/[0-9a-f]{32}$/.test(url.pathname)
+          && !url.search && !url.hash;
+      } catch { return false; }
+    };
+    if (valid(remembered.current)) return remembered.current;
+    try {
+      const stored = window.sessionStorage.getItem(cacheKey);
+      if (stored && valid(stored)) { remembered.current = stored; return stored; }
+    } catch { /* Disabled or unavailable storage: retain in-memory link. */ }
+    return null;
+  }
+
+  async function copyInvite() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy(true);
+    setCopied(false);
+    setFallback('');
+    setNote('');
+    window.clearTimeout(copyTimer.current);
+    window.clearTimeout(noteTimer.current);
+    try {
+      let link = savedLink();
+      if (!link) {
+        const { data, error } = await supabase.rpc('create_club_invite', { p_club_id: clubId });
+        if (error) throw error;
+        if (typeof data !== 'string' || !/^[0-9a-f]{32}$/.test(data)) throw new Error();
+        link = window.location.origin + '/schach-treff/einladung/' + data;
+        remembered.current = link;
+        try { window.sessionStorage.setItem(cacheKey, link); }
+        catch { /* Clipboard copying works without storage. */ }
+      }
+      try {
+        await navigator.clipboard.writeText(link);
+        setCopied(true);
+        copyTimer.current = window.setTimeout(() => setCopied(false), 2500);
+      } catch {
+        setFallback(link);
+      }
+    } catch (error) {
+      const code = (error as { message?: string }).message;
+      setNote(code && Object.hasOwn(t.roomErrors, code)
+        ? t.roomErrors[code as keyof typeof t.roomErrors] : t.error);
+      if (code === 'invite_limit') noteTimer.current = window.setTimeout(() => setNote(''), 5000);
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+  }
+
+  return <div className="st-invite-control">
+    <button type="button" className="st-invite-trigger" disabled={busy}
+      aria-label={copied ? t.linkCopied : t.inviteLink} onClick={() => void copyInvite()}>
+      {copied ? <Check size={16} aria-hidden="true" /> : <Link2 size={16} aria-hidden="true" />}
+      <span className="st-invite-label">{copied ? '✓ ' + t.linkCopied : t.inviteLink}</span>
+      <span className="st-invite-mobile-status" role="status">{copied ? t.linkCopied : ''}</span>
+    </button>
+    {note && <p className="st-invite-note" role="status">{note}</p>}
+    {fallback && <div className="st-invite-popover" role="group" aria-label={t.inviteLink}>
+      <input ref={fallbackInput} value={fallback} readOnly aria-label={t.inviteLink}
+        onFocus={event => event.currentTarget.select()} />
+      <button type="button" onClick={() => setFallback('')}>{t.close}</button>
+    </div>}
+  </div>;
 }

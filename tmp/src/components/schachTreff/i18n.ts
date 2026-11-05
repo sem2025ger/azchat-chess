@@ -1,5 +1,16 @@
 import type { Language } from '../../translations';
 const fixedCopy: Record<string, Record<Language,string>> = {
+  "Nachricht": {de:"Nachricht",en:"Message",az:"Mesaj",tr:"Mesaj",ua:"Текст",ru:"Сообщение"},
+  "Einladen": {de:"Einladen",en:"Invite",az:"Dəvət et",tr:"Davet et",ua:"Запросити",ru:"Пригласить"},
+  "Angeheftete Nachricht bearbeiten": {de:"Angeheftete Nachricht bearbeiten",en:"Edit pinned message",az:"Bərkidilmiş mesajı redaktə et",tr:"Sabitlenen mesajı düzenle",ua:"Редагувати закріплене повідомлення",ru:"Редактировать закреплённое сообщение"},
+  "Spieler herausfordern": {de:"Spieler herausfordern",en:"Challenge player",az:"Oyunçuya meydan oxu",tr:"Oyuncuya meydan oku",ua:"Кинути виклик гравцю",ru:"Вызвать игрока"},
+  "Mehr anzeigen": {de:"Mehr anzeigen",en:"Show more",az:"Daha çox göstər",tr:"Daha fazla göster",ua:"Показати більше",ru:"Показать больше"},
+  "Weniger anzeigen": {de:"Weniger anzeigen",en:"Show less",az:"Daha az göstər",tr:"Daha az göster",ua:"Показати менше",ru:"Показать меньше"},
+  "+ Vereinschat erstellen": {de:"+ Vereinschat erstellen",en:"+ Create club chat",az:"+ Klub söhbəti yarat",tr:"+ Kulüp sohbeti oluştur",ua:"+ Створити чат клубу",ru:"+ Создать чат клуба"},
+  "Allgemeiner Chat": {de:"Allgemeiner Chat",en:"General chat",az:"Ümumi söhbət",tr:"Genel sohbet",ua:"Загальний чат",ru:"Общий чат"},
+  "Vereinschats": {de:"Vereinschats",en:"Club chats",az:"Klub söhbətləri",tr:"Kulüp sohbetleri",ua:"Клубні чати",ru:"Клубные чаты"},
+  "← Allgemeiner Chat": {de:"← Allgemeiner Chat",en:"← General chat",az:"← Ümumi söhbət",tr:"← Genel sohbet",ua:"← Загальний чат",ru:"← Общий чат"},
+  "Geschlossener Chat nur für Mitglieder deines Vereins. Erstelle einen Vereinschat oder nimm eine Einladung an.": {de:"Geschlossener Chat nur für Mitglieder deines Vereins. Erstelle einen Vereinschat oder nimm eine Einladung an.",en:"A private chat for your club members. Create a club chat or accept an invitation.",az:"Qapalı söhbət yalnız klubunuzun üzvləri üçündür. Klub söhbəti yaradın və ya dəvəti qəbul edin.",tr:"Yalnızca kulübünün üyelerine özel sohbet. Bir kulüp sohbeti oluştur veya daveti kabul et.",ua:"Закритий чат лише для учасників вашого клубу. Створіть чат клубу або прийміть запрошення.",ru:"Закрытый чат только для участников вашего клуба. Создайте чат клуба или примите приглашение."},
   "Verein erstellen": {
     "de": "Verein erstellen",
     "en": "Create club",
@@ -55,14 +66,6 @@ const fixedCopy: Record<string, Record<Language,string>> = {
     "tr": "Davet bağlantınız hazır.",
     "ua": "Ваше посилання-запрошення готове.",
     "ru": "Ваша ссылка-приглашение готова."
-  },
-  "Chat öffnen": {
-    "de": "Chat öffnen",
-    "en": "Open chat",
-    "az": "Çatı aç",
-    "tr": "Sohbeti aç",
-    "ua": "Відкрити чат",
-    "ru": "Открыть чат"
   },
   "Herausforderung": {
     "de": "Herausforderung",
@@ -440,14 +443,6 @@ const fixedCopy: Record<string, Record<Language,string>> = {
     "ua": "вчора",
     "ru": "вчера"
   },
-  "Vereinsräume sind vorerst in der Desktop-Version verfügbar.": {
-    "de": "Vereinsräume sind vorerst in der Desktop-Version verfügbar.",
-    "en": "Club rooms are available on desktop for now.",
-    "az": "Klub otaqları hələlik yalnız kompüterdə əlçatandır.",
-    "tr": "Kulüp odaları şimdilik masaüstünde kullanılabilir.",
-    "ua": "Клубні кімнати поки доступні лише на комп’ютері.",
-    "ru": "Клубные комнаты пока доступны только на компьютере."
-  },
   "Rangliste folgt mit der Elo-Wertung": {
     "de": "Rangliste folgt mit der Elo-Wertung",
     "en": "Rankings will arrive with Elo ratings",
@@ -504,13 +499,13 @@ const fixedCopy: Record<string, Record<Language,string>> = {
     "ua": "Приєднайтеся до клубу, щоб бачити повідомлення.",
     "ru": "Вступите в клуб, чтобы видеть сообщения."
   },
-  "Dieser Raum hat bereits zehn aktive Einladungen.": {
-    "de": "Dieser Raum hat bereits zehn aktive Einladungen.",
-    "en": "This room already has ten active invites.",
-    "az": "Bu otaqda artıq on aktiv dəvət var.",
-    "tr": "Bu odada zaten on aktif davet var.",
-    "ua": "У кімнаті вже десять активних запрошень.",
-    "ru": "В комнате уже десять активных приглашений."
+  "Dieser Raum hat bereits zehn aktive Links. Verwende einen bereits versendeten Link; neue sind nach Ablauf der alten möglich.": {
+    "de": "Es gibt bereits 10 aktive Einladungslinks. Verwende einen bereits versendeten; neue können erstellt werden, sobald die alten abgelaufen sind.",
+    "en": "There are already 10 active invitation links. Use one you've sent before; new ones can be created when the old ones expire.",
+    "az": "Artıq 10 aktiv dəvət linki var. Daha əvvəl göndərilən linkdən istifadə edin; köhnələrin vaxtı bitdikdə yenilərini yaratmaq olar.",
+    "tr": "Zaten 10 etkin davet bağlantısı var. Daha önce gönderdiğinizi kullanın; eskileri sona erince yenilerini oluşturabilirsiniz.",
+    "ua": "Уже є 10 активних посилань-запрошень. Скористайтеся раніше надісланим; нові можна буде створити після завершення терміну дії старих.",
+    "ru": "Уже есть 10 действующих ссылок. Используйте ранее отправленную — новые можно будет создать, когда старые истекут."
   },
   "Diese Aktion ist nicht erlaubt.": {
     "de": "Diese Aktion ist nicht erlaubt.",
