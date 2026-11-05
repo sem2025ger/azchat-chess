@@ -14,7 +14,7 @@ export function createSpieltagApi(base: string, token: string, fetchImpl: typeof
   const number = (value: number) => { if (!Number.isInteger(value) || value<1 || value>32) throw new SpieltagError('invalid_input'); return value; };
   async function request(path: string, signal: AbortSignal, method = 'GET', body?: object) {
     if (!token) throw new SpieltagError('authentication_required');
-    const response = await fetchImpl(new URL('/api/spieltag/' + path,root), { signal,method,cache:'no-store',
+    const response = await fetchImpl(new URL('/api/spieltag/' + path,root), { signal:method==='GET'?AbortSignal.any([signal,AbortSignal.timeout(15000)]):signal,method,cache:'no-store',
       headers: { Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{}) },body:body?JSON.stringify(body):undefined });
     const data = await response.json();
     if (!response.ok) throw new SpieltagError(typeof data.code==='string'?data.code:'temporarily_unavailable');

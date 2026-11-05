@@ -12,10 +12,10 @@ test('Vorbereitung name/ECO/colour/time filters share server logic, including no
 });
 test('Vorbereitung API rejects absent login/unsafe username, uses header token, propagates cooldown and AbortSignal',async()=>{
  for(const value of [undefined,true,false,'false','1'])assert.equal(vorbereitungEnabled(value),false);assert.equal(vorbereitungEnabled('true'),true);
- const calls=[],signal=new AbortController().signal;
+ const calls=[],controller=new AbortController(),signal=controller.signal;
  const api=createVorbereitungApi('https://qa.example',async(url,options)=>{calls.push({url:String(url),options});return new Response(JSON.stringify({nickname:'target',games,rejected:0}));});
- await api.load('target','private-token',signal);assert.equal(calls[0].options.headers.Authorization,'Bearer private-token');assert.equal(calls[0].options.signal,signal);assert.ok(!calls[0].url.includes('private-token'));assert.equal(calls[0].options.cache,'no-store');
- await assert.rejects(api.load('target','',signal));await assert.rejects(api.load('../evil','token',signal));assert.equal(calls.length,1);
+ await api.load('target','private-token',signal);assert.equal(calls[0].options.headers.Authorization,'Bearer private-token');assert.equal(calls[0].options.signal.aborted,false);assert.ok(!calls[0].url.includes('private-token'));assert.equal(calls[0].options.cache,'no-store');
+ await assert.rejects(api.load('target','',signal));await assert.rejects(api.load('../evil','token',signal));assert.equal(calls.length,1);controller.abort();assert.equal(calls[0].options.signal.aborted,true);
  const cooldown=createVorbereitungApi('https://qa.example',async()=>new Response(JSON.stringify({code:'lichess_rate_limit',retryAfter:60}),{status:429}));
  await assert.rejects(cooldown.load('target','token',signal),e=>e.code==='lichess_rate_limit'&&e.retryAfter===60);
 });
@@ -32,4 +32,12 @@ test('Vorbereitung UI empty variant message, WDL table, optional links and team-
   const {default:Card}=await server.ssrLoadModule('/src/components/spieler/SpielerCard.tsx');
   const card=renderToStaticMarkup(createElement(MemoryRouter,null,createElement(Card,{player:{fide_id:1,name:'Fixture',federation:'GER',club:null,title:null,fide_rating:2100,source_date:'2026-10-25'}})));assert.ok(card.includes('href="/vorbereitung"'));
  }finally{await server.close();}
+});
+
+test('both preparation reads stop when their time budget expires',async t=>{
+ t.mock.method(AbortSignal,'timeout',ms=>{assert.equal(ms,20000);return AbortSignal.abort();});
+ const api=createVorbereitungApi('https://qa.example',async(_url,{signal})=>signal.throwIfAborted());
+ const signal=new AbortController().signal;
+ await assert.rejects(api.named({name:'Fixture'},'fixture',signal),{name:'AbortError'});
+ await assert.rejects(api.load('fixture','fixture',signal),{name:'AbortError'});
 });

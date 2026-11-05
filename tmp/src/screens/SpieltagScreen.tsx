@@ -2,6 +2,7 @@ import { translateSectionCopy } from '../i18n/sectionCopy';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useRegionalCopy } from '../i18n/regionalCopy';
 import { useAuth } from '../context/AuthContext';
 import { createSpieltagApi,spieltagEnabled,SpieltagError,scheduleFromMatch,boardInput,type SpieltagTeam,type SpieltagClub,type SpieltagMatch,type SpieltagBoard,type SpieltagSchedule,type SpieltagBoardInput } from '../services/spieltag';
 import { createSpielerApi,type SpielerPlayer } from '../services/spieler';
@@ -25,11 +26,15 @@ function message(error: unknown) {
   }
   return 'Spieltag konnte nicht geladen oder gespeichert werden. Bitte erneut versuchen.';
 }
+function NrwOverviewLink() {
+  const tr=useRegionalCopy();
+  return import.meta.env.VITE_CLUBS_NRW_ENABLED==='true' ? <Link to="/region/nrw">{tr('NRW-Übersicht')}</Link> : null;
+}
 export default function SpieltagScreen() {
   const {language}=useLanguage();const tr=(v:string)=>translateMatchday(v,language);
   const {session}=useAuth();
   if (!spieltagEnabled(import.meta.env.VITE_SPIELTAG_ENABLED)) return <p role="status">{tr("Spieltag ist noch nicht aktiviert.")}</p>;
-  if (!session) return <section className="spieltag-page"><h1>{tr('Spieltag')}</h1><Link to="/profile">{tr("Bitte zuerst anmelden")}</Link></section>;
+  if (!session) return <section className="spieltag-page"><NrwOverviewLink/><h1>{tr('Spieltag')}</h1><Link to="/profile?returnTo=%2Fspieltag">{tr("Bitte zuerst anmelden")}</Link></section>;
   // Remounting on identity/token change immediately discards private state and
   // aborts every pending load/save/card request from the previous session.
   return <SpieltagWorkspace key={session.access_token} token={session.access_token}/>;
@@ -76,15 +81,15 @@ function SpieltagWorkspace({token}: {token: string}) {
     cardRequest.current?.abort();const c=new AbortController();cardRequest.current=c;setPlayer(null);setCardError('');
     try{const card=await createSpielerApi(import.meta.env.VITE_SERVER_URL || '').card(id,token,c.signal);if(!c.signal.aborted)setPlayer(card);}catch{if(!c.signal.aborted)setCardError('Spielerkarte nicht verfügbar. Das Profil kann ausgeblendet oder Spieler deaktiviert sein.');}
   }
-  return <section className="spieltag-page section-page"><header><p className="spieler-eyebrow">{tr('Mannschaft intern')}</p><h1>{tr('Spieltag')}</h1><p>{tr('Termine, Aufstellung und Nachbesprechung deiner Mannschaft.')}</p></header>
+  return <section className="spieltag-page section-page"><header><NrwOverviewLink/><p className="spieler-eyebrow">{tr('Mannschaft intern')}</p><h1>{tr('Spieltag')}</h1><p>{tr('Termine, Aufstellung und Nachbesprechung deiner Mannschaft.')}</p></header>
     {error&&<p role="alert">{tr(error)}</p>}{notice&&<p role="status">{tr(notice)}</p>}{loading&&<p role="status">{tr('Wird geladen …')}</p>}
-    {!loading&&!teams.length&&<p>{tr('Du bist noch keiner Mannschaft zugeordnet. Bitte wende dich an die Vereinsleitung.')}</p>}
+    {!loading&&!error&&!teams.length&&<p>{tr('Du bist noch keiner Mannschaft zugeordnet. Bitte wende dich an die Vereinsleitung.')}</p>}
     {!!teams.length&&<div className="spieltag-workspace"><section className="section-card spieltag-controls"><h2>{tr('Deine Mannschaft')}</h2><label>{tr('Mannschaft')}<select value={teamId} disabled={busy} onChange={e=>setTeamId(e.target.value)}>{teams.map(t=><option key={t.id} value={t.id}>{clubs.find(c=>c.id===t.club_id)?.name || tr('Verein')} · {t.name}</option>)}</select></label>
       <p className="spieltag-role">{tr(captain?'Du pflegst diese Mannschaft als Kapitänin oder Kapitän.':'Nur für bestätigte Mannschaftsmitglieder.')}</p>
       {captain&&<button disabled={busy||loading} onClick={()=>setScheduleEdit(null)}>{tr('Spieltermin eintragen')}</button>}
       {scheduleEdit!==undefined&&captain&&<ScheduleForm key={scheduleEdit?.id || 'new'} match={scheduleEdit} clubs={clubs} busy={busy} onSave={v=>void saveSchedule(v)} onCancel={()=>setScheduleEdit(undefined)}/>}
       {!!matches.length&&<label>{tr('Begegnung')}<select value={matchId} disabled={busy} onChange={e=>{setMatchId(e.target.value);setScheduleEdit(undefined);}}>{matches.map(m=><option key={m.id} value={m.id}>{m.round_label} · {m.opponent_name}</option>)}</select></label>}
-      {!loading&&!matches.length&&<p>{tr('Noch keine Spieltermine eingetragen.')}</p>}
+      {!loading&&!error&&!matches.length&&<p>{tr('Noch keine Spieltermine eingetragen.')}</p>}
       {match&&captain&&<div className="spieltag-actions"><button disabled={busy} onClick={()=>setScheduleEdit(match)}>{tr('Termin bearbeiten')}</button><button disabled={busy||loading} onClick={()=>setBoardEdit(null)}>{tr('Brett hinzufügen')}</button></div>}
 
         {boardEdit!==undefined&&captain&&<BoardForm key={boardEdit?.board_number || 'new'} board={boardEdit} busy={busy} onSave={(n,v)=>void saveBoard(n,v)} onCancel={()=>setBoardEdit(undefined)}/>}

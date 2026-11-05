@@ -3,6 +3,19 @@ import { useOptionalLanguage } from '../context/LanguageContext';
 
 // Only fixed UI labels are localized; player names, club names, chat text, PGN and FIDE data are never translated.
 const regionalCopy: Record<string, Record<string, string>> = {
+  "NRW-Übersicht": {"de": "NRW-Übersicht", "en": "NRW overview", "az": "NRW icmalı", "tr": "NRW genel görünümü", "ua": "Огляд NRW", "ru": "Обзор NRW"},
+  "Vereine werden geladen …": {"de": "Vereine werden geladen …", "en": "Loading clubs…", "az": "Klublar yüklənir…", "tr": "Kulüpler yükleniyor…", "ua": "Завантаження клубів…", "ru": "Загрузка клубов…"},
+  "Vereinsdetails werden geladen …": {"de": "Vereinsdetails werden geladen …", "en": "Loading club details…", "az": "Klub məlumatları yüklənir…", "tr": "Kulüp bilgileri yükleniyor…", "ua": "Завантаження даних клубу…", "ru": "Загрузка данных клуба…"},
+  "Vereinsdetails nach Anmeldung verfügbar.": {"de": "Vereinsdetails nach Anmeldung verfügbar.", "en": "Sign in to see club details.", "az": "Klub məlumatlarına baxmaq üçün daxil olun.", "tr": "Kulüp bilgilerini görmek için giriş yapın.", "ua": "Увійдіть, щоб переглянути дані клубу.", "ru": "Войдите, чтобы увидеть сведения о клубе."},
+  "Noch keine Turniertermine eingetragen.": {"de": "Noch keine Turniertermine eingetragen.", "en": "No tournaments scheduled yet.", "az": "Hələ turnir tarixi qeyd edilməyib.", "tr": "Henüz turnuva planlanmadı.", "ua": "Турнірів ще не заплановано.", "ru": "Турниры пока не запланированы."},
+  "Noch keine Tabellen eingetragen.": {"de": "Noch keine Tabellen eingetragen.", "en": "No standings entered yet.", "az": "Hələ turnir cədvəli əlavə edilməyib.", "tr": "Henüz puan tablosu eklenmedi.", "ua": "Турнірних таблиць ще немає.", "ru": "Турнирные таблицы пока не добавлены."},
+  "Noch keine Duelle vorgeschlagen.": {"de": "Noch keine Duelle vorgeschlagen.", "en": "No club duels proposed yet.", "az": "Hələ klub dueli təklif olunmayıb.", "tr": "Henüz kulüp düellosu önerilmedi.", "ua": "Клубних дуелей ще не запропоновано.", "ru": "Предложений о матчах между клубами пока нет."},
+  "Kein Vereinsraum verfügbar.": {"de": "Kein Vereinsraum verfügbar.", "en": "No club room available.", "az": "Klub otağı əlçatan deyil.", "tr": "Kullanılabilir kulüp odası yok.", "ua": "Немає доступної клубної кімнати.", "ru": "Нет доступной клубной комнаты."},
+  "Vorschlag": {"de": "Vorschlag", "en": "Proposed", "az": "Təklif edilib", "tr": "Önerildi", "ua": "Запропоновано", "ru": "Предложен"},
+  "Zurückgezogen": {"de": "Zurückgezogen", "en": "Withdrawn", "az": "Geri götürülüb", "tr": "Geri çekildi", "ua": "Відкликано", "ru": "Отозван"},
+  "Keine aktuellen Meldungen verfügbar.": {"de": "Keine aktuellen Meldungen verfügbar.", "en": "No current news available.", "az": "Hazırda xəbər yoxdur.", "tr": "Güncel haber yok.", "ua": "Немає актуальних новин.", "ru": "Актуальных новостей нет."},
+  "Nachrichten derzeit nicht verfügbar.": {"de": "Nachrichten derzeit nicht verfügbar.", "en": "News is currently unavailable.", "az": "Xəbərlər hazırda əlçatan deyil.", "tr": "Haberler şu anda kullanılamıyor.", "ua": "Новини зараз недоступні.", "ru": "Новости сейчас недоступны."},
+  "Nachrichten werden geladen …": {"de": "Nachrichten werden geladen …", "en": "Loading news…", "az": "Xəbərlər yüklənir…", "tr": "Haberler yükleniyor…", "ua": "Завантаження новин…", "ru": "Загрузка новостей…"},
   'Brett vergrößern': {de:'Brett vergrößern',en:'Expand board',az:'Lövhəni böyüt',tr:'Tahtayı büyüt',ua:'Розгорнути дошку',ru:'Развернуть доску'},
   'Normale Brettgröße': {de:'Normale Brettgröße',en:'Restore board size',az:'Lövhəni əvvəlki ölçüyə qaytar',tr:'Tahtayı normal boyuta döndür',ua:'Повернути розмір дошки',ru:'Вернуть обычный размер'},
 

@@ -29,11 +29,9 @@ test('NRW dashboard sources are scoped and transparent about unavailable data',(
  assert.match(region,/to=\{'\/clubs-nrw\/'/);
 });
 
-test('NRW restores the national chat rail and retains the original membership guard',()=>{
+test('NRW links to national chat without embedding it and the chat retains its membership guard',()=>{
  const rail=read('src/components/schachTreff/NationwideChatRail.tsx');
- assert.match(region,/import NationwideChatRail from/);
- assert.match(region,/<NationwideChatRail \/>/);
- assert.match(region,/className="nrw-layout"/);
+ assert.doesNotMatch(region,/NationwideChatRail/);
  assert.match(region,/<footer className="nrw-footer">/);
  assert.match(region,/to="\/chat"/);
  assert.match(rail,/NATIONAL_ROOM_SLUG = 'chessaz-deutsch'/);
@@ -47,7 +45,7 @@ test('NRW restores the national chat rail and retains the original membership gu
 
 test('eight merged screens have complete six-language copy for fixed labels and stored notices',async()=>{
  const {default:ts}=await import('typescript');
- const sources=[['src/i18n/sectionCopy.ts','sectionCopy'],['src/i18n/regionalCopy.ts','regionalCopy'],['src/components/schachTreff/NationwideChatRail.tsx','chatUiText'],['src/screens/SpielerScreen.tsx','playerUiCopy'],['src/screens/SpieltagScreen.tsx','matchdayText'],['src/screens/RegionOverview.tsx','regionText'],['src/screens/VorbereitungScreen.tsx','preparationText']];
+ const sources=[['src/i18n/sectionCopy.ts','sectionCopy'],['src/i18n/regionalCopy.ts','regionalCopy'],['src/components/schachTreff/NationwideChatRail.tsx','chatUiText'],['src/screens/SpielerScreen.tsx','playerUiCopy'],['src/screens/SpieltagScreen.tsx','matchdayText'],['src/screens/RegionOverview.tsx','regionText'],['src/screens/VorbereitungScreen.tsx','preparationText'],['src/screens/ClubsNRWScreen.tsx','clubUiText']];
  const maps={};
  for(const [path,name] of sources){
   const source=read(path),ast=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);

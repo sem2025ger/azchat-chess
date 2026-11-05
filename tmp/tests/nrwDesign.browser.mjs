@@ -13,15 +13,17 @@ export async function checkNRWDesign({root=process.cwd(),captureRoot,phase='afte
   let code=load(id);
   if(id==='/__sections_fixture.tsx'){
    code=code.replace('import{LanguageProvider}', 'import{LanguageProvider,useLanguage}').replace('<LanguageProvider><MemoryRouter>', '<LanguageProvider><LanguageProbe/><MemoryRouter initialEntries={["/region/nrw"]}>').replace("<Route path='/region/:regionId' element={<NRW/>}/>","<Route path='/region/:regionId' element={<NRW/>}/><Route path='/region/:regionId/:section' element={<NRW/>}/>");
+   code=code.replace("import NRW from", "import Clubs from '/src/screens/ClubsNRWScreen.tsx';import Profile from '/src/screens/ProfileScreen.tsx';import NRW from")
+    .replace("<Route path='/region/:regionId' element={<NRW/>}/>", "<Route path='/clubs-nrw' element={<Clubs/>}/><Route path='/clubs-nrw/:slug' element={<Clubs/>}/><Route path='/profile' element={<Profile/>}/><Route path='/chat' element={<h1>Chat destination</h1>}/><Route path='/region/:regionId' element={<NRW/>}/>");
    code+=`function LanguageProbe(){const {setLanguage}=useLanguage();window.fixtureLanguage=setLanguage;return null;}`;
-   code=code.replace("data={items:[]}","data={items:window.nrwEmpty?[]:[{title:'QA: Mannschaftsmeisterschaft — neue Termine',url:'https://example.org/nrw-qa-news'},{title:'QA: Jugendtraining im Verein',url:'https://example.org/nrw-qa-training'}]}");
+   code=code.replace("data={items:[]}","data={items:window.nrwEmpty||window.nrwNoClubDetails?[]:[{title:'QA: Mannschaftsmeisterschaft — neue Termine',url:'https://example.org/nrw-qa-news'},{title:'QA: Jugendtraining im Verein',url:'https://example.org/nrw-qa-training'}]}");
   }
   if(id==='\0sections-auth')return `export function useAuth(){return{user:window.nrwGuest?null:{id:'qa-user'},session:window.nrwGuest?null:{access_token:'nrw-fixture-only'},isLoading:false};}`;
   if(id==='\0sections-db')return `
 const clubs=[{id:'qa-bochum',slug:'qa-bochum',name:'QA Schachgesellschaft Bochum — Mannschaft und Nachwuchs',city:'Bochum'},{id:'qa-essen',slug:'qa-essen',name:'QA Schachverein Essen',city:'Essen'},{id:'qa-duesseldorf',slug:'qa-duesseldorf',name:'QA Düsseldorfer Schachklub',city:'Düsseldorf'},{id:'qa-other',slug:'qa-other',name:'QA Schachverein Bochum',city:'Bochum'}];
 const events=Array.from({length:5},(_,n)=>({id:'qa-event-'+n,club_id:clubs[n%4].id,title:'QA Turnier '+(n+1)+' — Offene Stadtmeisterschaft',starts_at:'2026-12-0'+(n+1)+'T18:30:00Z',venue:'QA Vereinsheim'}));
 const leagues=Array.from({length:5},(_,n)=>({id:'qa-league-'+n,club_id:clubs[n%4].id,season:'2026/27',league:'QA NRW-Klasse',team:'QA Mannschaft '+(n+1),place:n+1,played:4,match_points:6-n}));
-export const supabase={from(table){let single=false,filters=[];const q={select(){return q},eq(k,v){filters.push(r=>r[k]===v);return q},in(k,v){filters.push(r=>v.includes(r[k]));return q},gte(){return q},order(){return q},limit(){return q},abortSignal(){return q},maybeSingle(){single=true;return q},then(resolve,reject){const tables={clubs_nrw:clubs.map(c=>({...c,published:true})),clubs_nrw_calendar:events,clubs_nrw_league_rows:leagues,clubs_nrw_members:[{user_id:'qa-user',club_id:'qa-bochum'}]};let rows=window.nrwEmpty?[]:(tables[table]||[]).filter(r=>filters.every(f=>f(r)));return Promise.resolve({data:single?(rows[0]||null):rows,error:window.nrwFailure?{message:'synthetic unavailable'}:null}).then(resolve,reject)}};return q}};
+export const supabase={from(table){let single=false,filters=[];const q={select(){return q},eq(k,v){filters.push(r=>r[k]===v);return q},in(k,v){filters.push(r=>v.includes(r[k]));return q},or(){return q},gte(){return q},order(){return q},limit(){return q},abortSignal(){return q},maybeSingle(){single=true;return q},then(resolve,reject){const tables={clubs_nrw:clubs.map(c=>({...c,published:true})),clubs_nrw_calendar:events,clubs_nrw_league_rows:leagues,clubs_nrw_members:[{user_id:'qa-user',club_id:'qa-bochum'}],clubs_nrw_room_links:window.nrwNoClubDetails?[]:[{club_id:'qa-bochum',room_id:'qa-room'}],clubs_nrw_duels:window.nrwNoClubDetails?[]:[{id:'qa-duel',home_club_id:'qa-bochum',away_club_id:'qa-essen',title:'QA duel',status:'proposed'}]};let rows=window.nrwEmpty||window.nrwNoClubDetails&&['clubs_nrw_calendar','clubs_nrw_league_rows'].includes(table)?[]:(tables[table]||[]).filter(r=>filters.every(f=>f(r)));return new Promise(r=>setTimeout(r,window.nrwClubDelay||0)).then(()=>({data:single?(rows[0]||null):rows,error:window.nrwFailure?{message:'synthetic unavailable'}:null})).then(resolve,reject)}};return q}};
 `;
   return code;
  };
@@ -49,8 +51,8 @@ export const supabase={from(table){let single=false,filters=[];const q={select()
   await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   if(captureRoot)await mkdir(captureRoot,{recursive:true});
   const capture=async name=>{if(captureRoot){const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(captureRoot,phase+'-'+name+'.png'),Buffer.from(shot.data,'base64'));}};
-  for(const [width,height] of [[1280,720],[1280,900],[390,844]]){
-   await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
+  for(const [width,height] of [[1280,720],[1920,950],[375,844]]){
+   await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===375});
    await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
    await wait("document.querySelector('.nrw-items a')");
    for(const lang of (verify?['de','en','az','tr','ua','ru']:['de','ru'])){
@@ -80,10 +82,10 @@ export const supabase={from(table){let single=false,filters=[];const q={select()
      }
     }
     if(verify){
-     assert.ok(metric.documentWidth<=width+1,'NRW overflow '+JSON.stringify(metric));assert.equal(metric.cards.length,3,'only three core panels');assert.equal(metric.rail,true,'national chat rail restored');assert.equal(metric.newsClosed,true,'news is secondary and closed initially');assert.equal(metric.scrolls,0,'no nested NRW scrolling');
-     assert.ok(metric.links.includes('/vorbereitung'),'preparation entry preserved');assert.ok(!await evaluate("!!document.querySelector('.nrw-grid .nrw-card--live')"),'no unavailable broadcast card');
+     assert.ok(metric.documentWidth<=width+1,'NRW overflow '+JSON.stringify(metric));assert.equal(metric.cards.length,3,'only three core panels');assert.equal(metric.rail,false,'nationwide chat stays outside the regional dashboard');assert.equal(metric.newsClosed,true,'news is secondary and closed initially');assert.equal(metric.scrolls,0,'no nested NRW scrolling');
+     assert.ok(metric.links.includes('/vorbereitung'),'preparation entry preserved');assert.ok(metric.links.includes('/chat'),'Schach-Treff remains one link away');assert.ok(!await evaluate("!!document.querySelector('.nrw-grid .nrw-card--live')"),'no unavailable broadcast card');
      assert.ok(metric.cityLines.every(r=>r.city.y>=r.title.bottom-1),'club city has its own line');
-     if(width===1280){assert.ok(Math.abs(metric.cards[0].y-metric.cards[1].y)<=1,'first two core panels align beside chat');assert.ok(metric.cards[2].y>=metric.cards[0].bottom-1,'third core panel flows below with restored chat rail');assert.ok(metric.cards.every(r=>r.width>=240),'readable panel width');}
+     if(width>=1280){assert.ok(Math.abs(metric.cards[0].y-metric.cards[1].y)<=1,'first two core panels align');assert.ok(Math.abs(metric.cards[2].y-metric.cards[0].y)<=1,'three core panels share the desktop row');assert.ok(metric.cards.every(r=>r.width>=240),'readable panel width');}
      else assert.ok(metric.cards.every((r,i)=>!i||r.y>=metric.cards[i-1].bottom),'mobile panels stack');
      const gaps=await evaluate(`(()=>{const root=document.querySelector('.nrw-content'),all=[...root.querySelectorAll('a,summary,select')].filter(e=>e.getClientRects().length);return all.every(e=>e.getBoundingClientRect().height>=32)})()`);assert.ok(gaps,'comfortable targets '+lang+' '+width);
     }
@@ -95,18 +97,43 @@ export const supabase={from(table){let single=false,filters=[];const q={select()
    await evaluate("document.querySelector('.nrw-news summary').click()");await wait("document.querySelector('.nrw-news').open");assert.ok(await evaluate("document.querySelector('.nrw-news').innerText.includes('QA: Mannschaftsmeisterschaft')"),'news accessible on demand');
    await evaluate("document.querySelector('.nrw-news a[href=\"/region/nrw/news\"]').click()");await wait("document.querySelector('.nrw-grid--detail .nrw-card--news')");
    assert.equal(await evaluate("document.querySelectorAll('.nrw-card').length"),1,'news details route retains one focused panel');
+   assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'news details overflow');
    for(const section of ['turniere','ligen','vereine','live']){
     await evaluate('window.fixtureNavigate('+JSON.stringify('/region/nrw/'+section)+')');await wait('document.querySelector('+JSON.stringify('.nrw-grid--detail .nrw-card--'+section)+')');
     assert.equal(await evaluate("document.querySelectorAll('.nrw-card').length"),1,'legacy route '+section);assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'details overflow '+section);
     await evaluate("document.querySelector('.nrw-back a').click()");await wait("document.querySelectorAll('.nrw-grid>.nrw-card').length===3");
    }
+   await evaluate("window.fixtureNavigate('/region/nrw/vereine')");await wait("document.querySelector('.nrw-card--vereine a[href=\"/clubs-nrw\"]')");
+   await evaluate("document.querySelector('.nrw-card--vereine a[href=\"/clubs-nrw\"]').click()");await wait("document.querySelector('.nrw-club-page a[href=\"/clubs-nrw/qa-bochum\"]')");
+   await evaluate("window.nrwClubDelay=350;document.querySelector('.nrw-club-page a[href=\"/clubs-nrw/qa-bochum\"]').click()");
+   await wait("document.querySelector('.nrw-club-page [role=status]')");assert.doesNotMatch(await evaluate("document.querySelector('.nrw-club-page').innerText"),/Verein nicht gefunden/);
+   await wait("document.querySelector('.nrw-club-page a[href=\"/chat?club=qa-room\"]')");
+   assert.ok(await evaluate("document.documentElement.scrollWidth<=innerWidth+1"),'club detail overflow');
+   assert.match(await evaluate("document.querySelector('.nrw-club-page').innerText"),/QA duel · Vorschlag/);
+   await evaluate("document.querySelector('.nrw-club-page a[href=\"/chat?club=qa-room\"]').click()");await wait("document.body.innerText.includes('Chat destination')");
+   await evaluate("window.nrwNoClubDetails=true;window.nrwClubDelay=0;window.fixtureNavigate('/clubs-nrw/qa-bochum')");
+   await wait("document.querySelector('.nrw-club-page')?.innerText.includes('Noch keine Turniertermine eingetragen.')");
+   for(const phrase of ['Noch keine Tabellen eingetragen.','Kein Vereinsraum verfügbar.','Noch keine Duelle vorgeschlagen.'])assert.ok(await evaluate("document.querySelector('.nrw-club-page').innerText.includes("+JSON.stringify(phrase)+")"),phrase);
+   await evaluate("window.fixtureLanguage('ru')");await wait("document.querySelector('.nrw-club-page')?.innerText.includes('Турниры пока не запланированы.')");
+   for(const [locale,copy] of [['en','No tournaments scheduled yet.'],['az','Hələ turnir tarixi qeyd edilməyib.'],['tr','Henüz turnuva planlanmadı.'],['ua','Турнірів ще не заплановано.']]){
+    await evaluate('window.fixtureLanguage('+JSON.stringify(locale)+')');
+    await wait("document.querySelector('.nrw-club-page')?.innerText.includes("+JSON.stringify(copy)+")");
+   }
+   await evaluate("window.nrwNoClubDetails=false;window.fixtureLanguage('de');window.fixtureNavigate('/profile?returnTo=%2Fregion%2Fnrw%2Fturniere')");
+   await wait("document.querySelector('.nrw-grid--detail .nrw-card--turniere')");
+   assert.ok(!await evaluate("document.querySelector('.nrw-card--turniere .nrw-signin')"),'authenticated NRW return destination');
    await evaluate("window.nrwGuest=true;window.fixtureNavigate('/region/invalid')");await wait("!document.querySelector('[data-region-overview]')");await evaluate("window.fixtureNavigate('/region/nrw')");await wait("document.querySelector('.nrw-signin')");
    assert.equal(await evaluate("document.querySelectorAll('.nrw-signin').length"),2,'guest has actionable access explanations');assert.ok(await evaluate("[...document.querySelectorAll('.nrw-signin')].every(a=>a.getAttribute('href').startsWith('/profile?returnTo='))"),'login return destinations');await capture('guest-'+width);
    await evaluate("window.nrwGuest=false;window.nrwEmpty=true;window.fixtureNavigate('/region/invalid')");await wait("!document.querySelector('[data-region-overview]')");await evaluate("window.fixtureNavigate('/region/nrw')");await wait("document.querySelector('.nrw-card--vereine .nrw-muted')&&!document.querySelector('.nrw-card [role=status]')");assert.equal(await evaluate("document.querySelectorAll('.nrw-grid>.nrw-card').length"),3,'empty state retains clear tasks');
+   for(const [section,phrase] of [['turniere','Keine bestätigten kommenden Termine'],['ligen','Noch keine Tabellen'],['vereine','Keine veröffentlichten Vereine'],['news','Keine aktuellen Meldungen'],['live','Derzeit keine für NRW']]){
+    await evaluate('window.fixtureNavigate('+JSON.stringify('/region/nrw/'+section)+')');
+    await wait('document.querySelector('+JSON.stringify('.nrw-card--'+section)+')?.innerText.includes('+JSON.stringify(phrase)+')');
+    assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'empty detail overflow '+section);
+   }
    await evaluate("window.nrwEmpty=false;window.nrwFailure=true;window.fixtureNavigate('/region/invalid')");await wait("!document.querySelector('[data-region-overview]')");await evaluate("window.fixtureNavigate('/region/nrw')");await wait("document.querySelector('.nrw-error[role=alert]')");assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'failure state overflow');
   }
   if(captureRoot)await writeFile(join(captureRoot,phase+'-measurements.json'),JSON.stringify(measurements,null,2));
-  assert.equal(exceptions.length,0,JSON.stringify(exceptions));console.log(verify?'PASS NRW design: six locales; 1280x720, 1280x900 and 390px; core hierarchy, city filter, collapsible news, legacy routes, guest, empty and error states':'Captured NRW baseline in DE and RU');
+  assert.equal(exceptions.length,0,JSON.stringify(exceptions));console.log(verify?'PASS NRW design: six locales; 1280px, 1920px and 375px; core hierarchy, city filter, collapsible news, legacy routes, guest, empty and error states':'Captured NRW baseline in DE and RU');
  }finally{for(const p of pending.values())clearTimeout(p.timer);try{ws?.close();}catch{}chrome?.kill('SIGKILL');await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
 }
 if(process.argv[1]===fileURLToPath(import.meta.url))await checkNRWDesign({captureRoot:process.env.NRW_CAPTURE,phase:process.env.NRW_PHASE||'after',verify:process.env.NRW_PHASE!=='before'});

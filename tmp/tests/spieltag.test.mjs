@@ -5,13 +5,15 @@ const team='11111111-1111-4111-8111-111111111111',match='22222222-2222-4222-8222
 test('Spieltag default-off flag and Bearer-only API, bounded identifiers, explicit write payloads',async()=>{
  for(const value of [undefined,false,true,'false','1'])assert.equal(spieltagEnabled(value),false);assert.equal(spieltagEnabled('true'),true);
  const calls=[],api=createSpieltagApi('https://qa.example','private-token',async(url,options)=>{calls.push({url:String(url),options});return new Response(JSON.stringify({teams:[],matches:[],boards:[]}));});
- const signal=new AbortController().signal;
+ const controller=new AbortController(),signal=controller.signal;
  await api.teams(signal);await api.matches(team,signal);await api.boards(match,signal);
  const schedule={round_label:'Runde 1',opponent_name:'Guests',opponent_club_id:null,starts_at:'2026-11-08T10:00:00Z',venue:'Bochum',notes:'Short note'};
  await api.saveMatch(team,null,schedule,signal);await api.saveMatch(team,match,schedule,signal);
- for(const c of calls){assert.equal(c.options.headers.Authorization,'Bearer private-token');assert.ok(!c.url.includes('private-token'));assert.equal(c.options.cache,'no-store');assert.equal(c.options.signal,signal);}
+ for(const c of calls){assert.equal(c.options.headers.Authorization,'Bearer private-token');assert.ok(!c.url.includes('private-token'));assert.equal(c.options.cache,'no-store');if(c.options.method!=='GET')assert.equal(c.options.signal,signal);}
+ assert.ok(calls.slice(0,3).every(c=>!c.options.signal.aborted));
  assert.equal(calls[3].options.method,'POST');assert.equal(calls[4].options.method,'PATCH');
  await assert.rejects(api.matches('../foreign',signal));await assert.rejects(api.saveBoard(match,33,false,{home_name:'Name'},signal));assert.equal(calls.length,5);
+ controller.abort();assert.ok(calls.slice(0,3).every(c=>c.options.signal.aborted));
  const empty=createSpieltagApi('https://qa.example','',async()=>{throw Error('should not fetch');});await assert.rejects(empty.teams(signal),e=>e.code==='authentication_required');
  assert.deepEqual(scheduleFromMatch({...schedule,id:match,team_id:team,created_by:'must not copy'}),schedule);
  assert.deepEqual(boardInput({match_id:match,board_number:1,home_name:'Home',home_fide_id:null,opponent_name:'Guest',opponent_fide_id:13404431,result:'1-0'}),{home_name:'Home',home_fide_id:null,opponent_name:'Guest',opponent_fide_id:13404431,result:'1-0'});
@@ -39,4 +41,13 @@ test('three Spieltag tabs render correct private content; member cannot edit, no
   const captain=renderToStaticMarkup(createElement(View,{...base,captain:true,initialTab:'round'}));assert.match(captain,/<textarea/);assert.match(captain,/<select/);
   const disabled=renderToStaticMarkup(createElement(View,{...base,spielerAvailable:false,initialTab:'opponent'}));assert.ok(!disabled.includes('Spielerkarte'));
  }finally{await server.close();}
+});
+
+test('Spieltag read stops when its time budget expires',async t=>{
+ const timeout=new AbortController();
+ t.mock.method(AbortSignal,'timeout',ms=>{assert.equal(ms,15000);return timeout.signal;});
+ const api=createSpieltagApi('https://qa.example','fixture',async(_url,{signal})=>{
+  timeout.abort();signal.throwIfAborted();
+ });
+ await assert.rejects(api.teams(new AbortController().signal),{name:'AbortError'});
 });

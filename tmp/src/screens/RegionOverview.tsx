@@ -4,9 +4,9 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, CalendarDays, Radio, Newspaper, ShieldCheck, MapPin, Trophy, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
-import NationwideChatRail from '../components/schachTreff/NationwideChatRail';
 import './RegionOverview.css';
 import { useLanguage } from '../context/LanguageContext';
+import { useRegionalCopy } from '../i18n/regionalCopy';
 const regionText: Record<string,Record<'en'|'de'|'az'|'tr'|'ua'|'ru',string>> = {
  "Turniere & Termine": {"de": "Turniere & Termine", "en": "Tournaments & dates", "az": "Turnirlər və tarixlər", "tr": "Turnuvalar ve tarihler", "ua": "Турніри та дати", "ru": "Турниры и даты"},
  "Ligen & Mannschaften": {"de": "Ligen & Mannschaften", "en": "Leagues & teams", "az": "Liqalar və komandalar", "tr": "Ligler ve takımlar", "ua": "Ліги та команди", "ru": "Лиги и команды"},
@@ -115,7 +115,7 @@ function Tile({section,icon,children,count,detail=false}:{section:Section;icon:R
  </section>;
 }
 export default function RegionOverview(){
- const {language}=useLanguage();const tr=(x:string)=>regionText[x]?.[language]||translateSectionCopy(x,language);
+ const {language}=useLanguage();const regional=useRegionalCopy();const tr=(x:string)=>regionText[x]?.[language]||regional(x);
  const {regionId,section}=useParams();
  const {user}=useAuth();
  const [clubs,setClubs]=useState<Club[]>([]);
@@ -128,18 +128,20 @@ export default function RegionOverview(){
  const [error,setError]=useState('');
  const [newsError,setNewsError]=useState(false);
  const [newsLoading,setNewsLoading]=useState(true);
+ const [sectionFailures,setSectionFailures]=useState({turniere:false,ligen:false,vereine:false});
  const validRegion=regionId==='nrw';
  const detail=sections.includes(section as Section)?section as Section:null;
  useEffect(()=>{
   if(!validRegion)return;
   let active=true;
   const abort=new AbortController();
+  const signal=AbortSignal.any([abort.signal,AbortSignal.timeout(15000)]);
   const load=async()=>{
-   setLoading(true);setError('');
+   setLoading(true);setError('');setSectionFailures({turniere:false,ligen:false,vereine:false});
    // Public directory is authoritative for this region. All secondary rows are
    // constrained to published NRW club IDs; no global or cross-region fallback.
    try {
-    const base=await supabase.from('clubs_nrw').select('id,slug,name,city').eq('published',true).order('name').abortSignal(abort.signal);
+    const base=await supabase.from('clubs_nrw').select('id,slug,name,city').eq('published',true).order('name').abortSignal(signal);
     if(base.error)throw base.error;
     const published=regionalClubs((base.data||[]) as Club[]);
     if(!active)return;
@@ -149,17 +151,20 @@ export default function RegionOverview(){
     const ids=published.map(c=>c.id);
     const [calendar,rows,membership]=await Promise.all([
      supabase.from('clubs_nrw_calendar').select('id,club_id,title,starts_at,venue')
-      .in('club_id',ids).gte('starts_at',new Date().toISOString()).order('starts_at').limit(80).abortSignal(abort.signal),
+      .in('club_id',ids).gte('starts_at',new Date().toISOString()).order('starts_at').limit(80).abortSignal(signal),
      supabase.from('clubs_nrw_league_rows').select('id,club_id,season,league,team,place,played,match_points')
-      .in('club_id',ids).order('season',{ascending:false}).limit(80).abortSignal(abort.signal),
-     supabase.from('clubs_nrw_members').select('club_id').eq('user_id',user.id).abortSignal(abort.signal).maybeSingle(),
+      .in('club_id',ids).order('season',{ascending:false}).limit(80).abortSignal(signal),
+     supabase.from('clubs_nrw_members').select('club_id').eq('user_id',user.id).abortSignal(signal).maybeSingle(),
     ]);
     if(!active)return;
-    if(calendar.error||rows.error)setError('Einige Vereinsangaben sind derzeit nicht verfügbar.');
+    if(calendar.error||rows.error){
+     setSectionFailures({turniere:!!calendar.error,ligen:!!rows.error,vereine:false});
+     setError('Einige Vereinsangaben sind derzeit nicht verfügbar.');
+    }
     setEvents(calendar.error?[]:(calendar.data||[]) as Event[]);
     setLeagues(rows.error?[]:(rows.data||[]) as League[]);
     if(!membership.error)setSelectedClub(membership.data?.club_id||null);
-   }catch {if(active)setError('NRW-Daten können derzeit nicht geladen werden.');}
+   }catch {if(active){setSectionFailures({turniere:true,ligen:true,vereine:true});setError('NRW-Daten können derzeit nicht geladen werden.');}}
    finally{if(active)setLoading(false);}
   };
   void load();
@@ -171,11 +176,11 @@ export default function RegionOverview(){
   const abort=new AbortController();
   setNewsLoading(true);setNewsError(false);setNews([]);
   if(!server){setNewsLoading(false);setNewsError(true);return;}
-  void fetch(server+'/api/clubs-nrw/news',{signal:abort.signal,headers:{Accept:'application/json'}})
+  void fetch(server+'/api/clubs-nrw/news',{signal:AbortSignal.any([abort.signal,AbortSignal.timeout(12000)]),headers:{Accept:'application/json'}})
    .then(r=>r.ok?r.json():Promise.reject())
    .then((data:{items?:News[]})=>{
     if(!active)return;
-    setNews(Array.isArray(data.items)?data.items.filter(n=>typeof n.title==='string'&&n.title.trim()&&httpsLink(n.url)).slice(0,12):[]);
+    setNews(Array.isArray(data.items)?data.items.filter(n=>n&&typeof n.title==='string'&&n.title.trim()&&httpsLink(n.url)).slice(0,12):[]);
    }).catch(()=>{if(active)setNewsError(true);})
    .finally(()=>{if(active)setNewsLoading(false);});
   return ()=>{active=false;abort.abort();};
@@ -189,10 +194,11 @@ export default function RegionOverview(){
  const clubName=(id:string)=>clubs.find(c=>c.id===id)?.name||tr('Verein');
  const signIn=(target:Section)=><Link className="nrw-inline nrw-signin" to={'/profile?returnTo='+encodeURIComponent('/region/nrw/'+target)}>{tr('Anmelden')}<ArrowUpRight aria-hidden="true" size={15}/></Link>;
  if(!validRegion)return <section className="nrw-shell"><h1>{tr("Region nicht verfügbar")}</h1><p>{tr("Weitere Regionen werden erst nach der Freigabe ihrer Datenquellen aktiviert.")}</p><Link to="/chat">{tr("Zurück zu Schach-Treff")}</Link></section>;
+ const unavailable=<p className="nrw-muted">{tr('Einige Vereinsangaben sind derzeit nicht verfügbar.')}</p>;
  const content:Record<Section,React.ReactNode>={
-  turniere:<>{loading?<p className="nrw-muted" role="status">{tr('Termine werden geladen …')}</p>:!user?<><p className="nrw-muted">{tr('Turnierkalender nach Anmeldung verfügbar.')}</p>{signIn('turniere')}</>:events.length?<ul className="nrw-items">{events.slice(0,detail==='turniere'?40:2).map(e=><li key={e.id}><time dateTime={e.starts_at}>{eventTime(e.starts_at,language)}</time><strong>{e.title}</strong><small>{clubName(e.club_id)}{e.venue?' · '+e.venue:''}</small></li>)}</ul>:<p className="nrw-muted">{tr('Keine bestätigten kommenden Termine eingetragen.')}</p>}</>,
-  ligen:<>{loading?<p className="nrw-muted" role="status">{tr('Tabellen werden geladen …')}</p>:!user?<><p className="nrw-muted">{tr('Vereinsliga-Daten nach Anmeldung verfügbar.')}</p>{signIn('ligen')}</>:featuredLeagues.length?<ul className="nrw-items">{featuredLeagues.slice(0,detail==='ligen'?40:2).map(r=><li key={r.id}><span className="nrw-league-meta">{r.season} · {r.league}</span><strong>{r.place}. {r.team}</strong><small>{clubName(r.club_id)}</small><span className="nrw-score">{r.match_points} {tr('MP')}<span> · {r.played} {tr('Spiele')}</span></span></li>)}</ul>:<p className="nrw-muted">{tr('Noch keine Tabellen eingetragen.')}</p>}<details className="section-info"><summary>{tr('Datenquelle')}</summary><small className="nrw-source">{tr('Von Vereinen gepflegt · keine offizielle Live-Tabelle.')}</small></details>{user&&import.meta.env.VITE_SPIELTAG_ENABLED==='true'&&<Link className="nrw-inline" to="/spieltag">{tr('Mein Spieltag')} <ArrowUpRight aria-hidden="true" size={14}/></Link>}</>,
-  vereine:<><label className="nrw-select">{tr('Stadt')} <select value={city} onChange={e=>setCity(e.target.value)}><option value="">{tr('Alle Städte in NRW')}</option>{cities.map(c=><option key={c}>{c}</option>)}</select></label>{loading?<p className="nrw-muted" role="status">{tr('Vereine werden geladen …')}</p>:visibleClubs.length?<ul className="nrw-items">{visibleClubs.slice(0,detail==='vereine'?100:2).map(c=><li key={c.id}><Link to={'/clubs-nrw/'+encodeURIComponent(c.slug)}><strong>{c.name}</strong><small>{c.city}</small></Link></li>)}</ul>:<p className="nrw-muted">{tr('Keine veröffentlichten Vereine für diese Auswahl.')}</p>}</>,
+  turniere:<>{loading?<p className="nrw-muted" role="status">{tr('Termine werden geladen …')}</p>:!user?<><p className="nrw-muted">{tr('Turnierkalender nach Anmeldung verfügbar.')}</p>{signIn('turniere')}</>:sectionFailures.turniere?unavailable:events.length?<ul className="nrw-items">{events.slice(0,detail==='turniere'?40:2).map(e=><li key={e.id}><time dateTime={e.starts_at}>{eventTime(e.starts_at,language)}</time><strong>{e.title}</strong><small>{clubName(e.club_id)}{e.venue?' · '+e.venue:''}</small></li>)}</ul>:<p className="nrw-muted">{tr('Keine bestätigten kommenden Termine eingetragen.')}</p>}</>,
+  ligen:<>{loading?<p className="nrw-muted" role="status">{tr('Tabellen werden geladen …')}</p>:!user?<><p className="nrw-muted">{tr('Vereinsliga-Daten nach Anmeldung verfügbar.')}</p>{signIn('ligen')}</>:sectionFailures.ligen?unavailable:featuredLeagues.length?<ul className="nrw-items">{featuredLeagues.slice(0,detail==='ligen'?40:2).map(r=><li key={r.id}><span className="nrw-league-meta">{r.season} · {r.league}</span><strong>{r.place}. {r.team}</strong><small>{clubName(r.club_id)}</small><span className="nrw-score">{r.match_points} {tr('MP')}<span> · {r.played} {tr('Spiele')}</span></span></li>)}</ul>:<p className="nrw-muted">{tr('Noch keine Tabellen eingetragen.')}</p>}<details className="section-info"><summary>{tr('Datenquelle')}</summary><small className="nrw-source">{tr('Von Vereinen gepflegt · keine offizielle Live-Tabelle.')}</small></details>{import.meta.env.VITE_SPIELTAG_ENABLED==='true'&&<Link className="nrw-inline" to="/spieltag">{tr('Mein Spieltag')} <ArrowUpRight aria-hidden="true" size={14}/></Link>}</>,
+  vereine:<><label className="nrw-select">{tr('Stadt')} <select value={city} onChange={e=>setCity(e.target.value)}><option value="">{tr('Alle Städte in NRW')}</option>{cities.map(c=><option key={c}>{c}</option>)}</select></label>{loading?<p className="nrw-muted" role="status">{tr('Vereine werden geladen …')}</p>:sectionFailures.vereine?unavailable:visibleClubs.length?<ul className="nrw-items">{visibleClubs.slice(0,detail==='vereine'?100:2).map(c=><li key={c.id}><Link to={'/clubs-nrw/'+encodeURIComponent(c.slug)}><strong>{c.name}</strong><small>{c.city}</small></Link></li>)}</ul>:<p className="nrw-muted">{tr('Keine veröffentlichten Vereine für diese Auswahl.')}</p>}{detail==='vereine'&&<Link className="nrw-inline" to="/clubs-nrw">{tr('Alle Vereine')} <ArrowUpRight aria-hidden="true" size={14}/></Link>}</>,
   news:<>{newsLoading?<p className="nrw-muted" role="status">{tr('Nachrichten werden geladen …')}</p>:news.length?<ul className="nrw-items">{news.slice(0,detail==='news'?12:3).map(n=><li key={n.url}><a href={httpsLink(n.url)!} target="_blank" rel="noopener noreferrer"><strong>{n.title}</strong><small>{tr('Schachbezirk Bochum · externe Quelle')}</small></a></li>)}</ul>:<p className="nrw-muted">{tr(newsError?'Nachrichten derzeit nicht verfügbar.':'Keine aktuellen Meldungen verfügbar.')}</p>}<details className="section-info"><summary>{tr('Info')}</summary><small className="nrw-source">{tr('Aktuell angebunden: Schachbezirk Bochum (NRW). Keine bundesweiten Meldungen.')}</small></details></>,
   live:<><p className="nrw-muted">{tr('Derzeit keine für NRW verifizierte Live-Übertragung eingebunden.')}</p><a className="nrw-inline" href="https://lichess.org/broadcast" target="_blank" rel="noopener noreferrer">{tr('Öffentliche Übertragungen bei Lichess')} <ArrowUpRight aria-hidden="true" size={14}/></a><details className="section-info"><summary>{tr('Info')}</summary><small className="nrw-source">{tr('Lichess-Übersicht ist weltweit und nicht nach NRW gefiltert.')}</small></details></>,
 
@@ -206,8 +212,7 @@ export default function RegionOverview(){
   </header>
   {detail&&<div className="nrw-back"><Link to="/region/nrw"><ArrowLeft size={16} aria-hidden="true"/> {tr("Alle NRW-Themen")}</Link><span>{tr(sectionLabels[detail])}</span></div>}
   {error&&<p className="nrw-error" role="alert">{tr(error)}</p>}
-   <div className="nrw-layout">
-    <div className="nrw-content">
+   <div className="nrw-content">
     <div className={'nrw-grid'+(detail?' nrw-grid--detail':'')}>
     {(!detail||detail==='turniere')&&<Tile section="turniere" icon={<CalendarDays size={19}/>} detail={!!detail} count={events.length?String(events.length):undefined}>{content.turniere}</Tile>}
     {(!detail||detail==='ligen')&&<Tile section="ligen" icon={<Trophy size={19}/>} detail={!!detail} count={featuredLeagues.length?String(featuredLeagues.length):undefined}>{content.ligen}</Tile>}
@@ -220,8 +225,6 @@ export default function RegionOverview(){
     <div className="nrw-news-content">{content.news}<DashboardLink section="news">{tr(sectionActions.news)}</DashboardLink><DashboardLink section="live">{tr(sectionLabels.live)}</DashboardLink></div>
    </details>}
      <footer className="nrw-footer"><span>{tr('Vereinsangaben aus NRW · von Vereinen gepflegt.')}</span><Link to="/chat"><MessageSquare size={16} aria-hidden="true"/>{tr('Schach-Treff Deutschland')}<ArrowUpRight size={14} aria-hidden="true"/></Link></footer>
-    </div>
-    <NationwideChatRail />
    </div>
  </div>;
 }

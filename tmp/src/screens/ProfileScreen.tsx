@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { calculateMatchStats, getMatchResultForPlayer } from '../utils/profileContract';
 import { authCallbackUrl, clubReturnTarget, inviteReturnTarget, inviteAuthCallbackUrl } from '../lib/authCallbackUrl';
+import { nrwAuthReturnTarget } from '../lib/nrwAuthReturn';
 import { prefetchRoute } from '../routeLoaders';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -42,6 +43,11 @@ export default function ProfileScreen() {
   const requestedReturn = searchParams.get('returnTo');
   const inviteReturnTo = inviteReturnTarget(requestedReturn);
   const clubReturnTo = clubReturnTarget(requestedReturn) ?? inviteReturnTo;
+  const nrwReturnTo = nrwAuthReturnTarget(requestedReturn, {
+    clubs: import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true',
+    spieltag: import.meta.env.VITE_SPIELTAG_ENABLED === 'true',
+    preparation: import.meta.env.VITE_VORBEREITUNG_ENABLED === 'true',
+  });
   const mobileReturnTo = requestedReturn === '/play' || requestedReturn?.startsWith('/play?room=') || requestedReturn?.startsWith('/play?invite=1&tc=')
     ? requestedReturn
     : null;
@@ -60,6 +66,17 @@ export default function ProfileScreen() {
   useEffect(() => {
     if (session && !isLoading && clubReturnTo) navigate(clubReturnTo, { replace: true });
   }, [session, isLoading, clubReturnTo, navigate]);
+
+  useEffect(() => {
+    if (session && !isLoading && nrwReturnTo) navigate(nrwReturnTo, { replace: true });
+  }, [session, isLoading, nrwReturnTo, navigate]);
+
+  function nrwEmailRedirect() {
+    if (!nrwReturnTo) return {};
+    const url = new URL(authCallbackUrl(window.location.origin, '/profile'));
+    url.searchParams.set('returnTo', nrwReturnTo);
+    return { emailRedirectTo: url.toString() };
+  }
 
   const [recentGames, setRecentGames] = useState<any[]>([]);
   const [dbStats, setDbStats] = useState({ wins: 0, losses: 0, draws: 0, rate: 0 });
@@ -147,7 +164,7 @@ export default function ProfileScreen() {
           options: {
             data: { username: requestedName },
             emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play'),
-            ...(inviteReturnTo ? { emailRedirectTo: inviteAuthCallbackUrl(window.location.origin, '/profile', inviteReturnTo) } : {})
+            ...(inviteReturnTo ? { emailRedirectTo: inviteAuthCallbackUrl(window.location.origin, '/profile', inviteReturnTo) } : nrwEmailRedirect())
           }
         });
         if (error) throw error;
@@ -218,7 +235,7 @@ export default function ProfileScreen() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play'),
-            ...(inviteReturnTo ? { emailRedirectTo: inviteAuthCallbackUrl(window.location.origin, '/profile', inviteReturnTo) } : {}) }
+            ...(inviteReturnTo ? { emailRedirectTo: inviteAuthCallbackUrl(window.location.origin, '/profile', inviteReturnTo) } : nrwEmailRedirect()) }
       });
       if (error) throw error;
       setAuthMessage(t('auth.magicLinkSent'));
@@ -232,7 +249,7 @@ export default function ProfileScreen() {
   // React effects run after the browser has painted. Never expose the profile
   // passport for one frame while a validated email return destination is pending.
   const redirectingAfterSignIn = Boolean(session && !isLoading && (
-    clubReturnTo || (mobileReturnTo && (mobileReturnTo === '/play' || window.matchMedia('(max-width: 767px)').matches))
+    nrwReturnTo || clubReturnTo || (mobileReturnTo && (mobileReturnTo === '/play' || window.matchMedia('(max-width: 767px)').matches))
   ));
   if (redirectingAfterSignIn) {
     return <span className="sr-only" role="status" aria-live="polite">{t('auth.signIn')}</span>;
