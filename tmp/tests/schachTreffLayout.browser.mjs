@@ -82,7 +82,7 @@ export async function checkRoomLayout(){
        f=document.querySelector('.st-composer'),input=f.querySelector('input'),challenge=f.querySelector('.st-composer-challenge');
      const r=e=>e.getBoundingClientRect();
      return room.textContent.trim()==='Schachverein' && room.scrollWidth<=room.clientWidth+1
-       && Math.abs(r(back).top-r(pin).top)<1 && Math.abs(r(room).top-r(invite).top)<1
+       && Math.abs(r(back).top-r(pin).top)<1 && Math.abs((r(room).top+r(room).bottom-r(invite).top-r(invite).bottom)/2)<1
        && parseFloat(getComputedStyle(room).fontSize)===18
        && r(input).width/r(f).width>=0.55 && r(challenge).width===44
        && Boolean(challenge.querySelector('svg'))
@@ -135,7 +135,7 @@ export async function checkRoomLayout(){
      const h=document.querySelector('.st-chat-header'),back=h.querySelector('.st-back-general'),
       pin=h.querySelector('.st-pin-menu'),invite=h.querySelector('.st-invite-trigger'),
       room=h.querySelector('h2'),r=e=>e.getBoundingClientRect();
-     return Math.abs(r(back).top-r(pin).top)<1 && Math.abs(r(invite).top-r(room).top)<1
+     return Math.abs(r(back).top-r(pin).top)<1 && Math.abs((r(room).top+r(room).bottom-r(invite).top-r(invite).bottom)/2)<1
       && invite.offsetWidth===44 && getComputedStyle(invite.querySelector('.st-invite-label')).position==='absolute'
       && invite.querySelector('svg.lucide-check') && document.documentElement.scrollWidth<=innerWidth+1;
    })()`),true,'mobile copied state / menu row');
