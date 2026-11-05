@@ -253,15 +253,15 @@ function useClubNews(enabled:boolean){
 
 const officialCards = [
  {section:'turniere',Icon:CalendarDays,description:'Offizieller NRW-Turnierkalender des Deutschen Schachbunds.',
-  links:[{label:'NRW-Kalender öffnen',href:NRW_EXTERNAL_URLS.official.calendar}]},
- {section:'ligen',Icon:Trophy,description:'Tabellen und Spielergebnisse auf den offiziellen Portalen.',
+  links:[{label:'NRW-Kalender öffnen',href:NRW_EXTERNAL_URLS.official.calendar}],linkStyle:'nrw-calendar-link'},
+ {section:'ligen',Icon:Trophy,description:'Tabellen und Spielergebnisse auf den offiziellen Portalen.',linkStyle:undefined,
   links:[
    {label:'Schach-Bundesliga',href:NRW_EXTERNAL_URLS.official.bundesliga},
    {label:'NRW-Ligen',href:NRW_EXTERNAL_URLS.official.nrwLeagues},
    {label:'Ruhr-Ligen',href:NRW_EXTERNAL_URLS.official.ruhrLeagues},
   ]},
  {section:'vereine',Icon:Users,description:'Verein in der Nähe finden. Trainingszeiten und Kontakte stehen auf der Vereinswebsite.',
-  links:[{label:'Verein finden',href:NRW_EXTERNAL_URLS.official.clubFinder}]},
+  links:[{label:'Verein finden',href:NRW_EXTERNAL_URLS.official.clubFinder}],linkStyle:'nrw-club-finder-link'},
 ] as const;
 
 function NrwLanding(){
@@ -281,14 +281,14 @@ function NrwLanding(){
   </header>
 
   <div className="nrw-grid">
-   {officialCards.map(({section,Icon,description,links})=><section key={section} className="nrw-card" aria-labelledby={'nrw-'+section}>
+   {officialCards.map(({section,Icon,description,links,linkStyle})=><section key={section} className="nrw-card" aria-labelledby={'nrw-'+section}>
     <div className="nrw-card-head">
      <Icon aria-hidden="true" size={19} className="nrw-card-icon"/>
      <h2 id={'nrw-'+section}>{tr(sectionLabels[section])}</h2>
     </div>
     <p className="nrw-card-subtitle">{tr(description)}</p>
     <div className="nrw-official-links">
-     {links.map(({label,href})=><ExternalLink key={href} href={href} className={section==='turniere'?'nrw-calendar-link':undefined}>{tr(label)}</ExternalLink>)}
+     {links.map(({label,href})=><ExternalLink key={href} href={href} className={linkStyle}>{tr(label)}</ExternalLink>)}
     </div>
    </section>)}
   </div>

@@ -122,7 +122,7 @@
 }
 .nrw-overview .nrw-links{display:flex;align-items:stretch;gap:10px;margin:0}
 .nrw-overview .nrw-links a{
- display:flex;flex:0 1 234px;max-width:100%;justify-content:center;min-height:44px;
+ display:flex;flex:0 1 282px;max-width:100%;justify-content:center;min-height:44px;
  padding:8px 12px;font-size:15px;font-weight:600;text-align:center;overflow-wrap:anywhere;
 }
 .nrw-overview .nrw-card{gap:8px}
@@ -138,6 +138,9 @@
 .nrw-overview a svg{flex-shrink:0}
 .nrw-overview .nrw-official-links .nrw-calendar-link{
  padding:5px 10px;border:1px solid #B8916A;border-radius:8px;background:#3A2B20;color:#F1DAB8;
+}
+.nrw-overview .nrw-official-links .nrw-club-finder-link{
+ padding:5px 10px;border:1px solid var(--nrw-metal-stroke);border-radius:8px;background:#222426;
 }
 .nrw-overview :is(.nrw-official-links,.nrw-news-links) a:hover{text-decoration:underline}
 .nrw-overview .nrw-news{padding:16px 18px}

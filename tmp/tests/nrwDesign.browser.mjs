@@ -139,7 +139,8 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      assert.deepEqual(metric.newsLinks,['/region/nrw/news','/region/nrw/live']);
      assert.deepEqual(metric.actions.map(link=>link.href),['/vorbereitung','/chat']);
      assert.ok(metric.actions.every(link=>link.icon&&link.height>=44));
-     assert.equal(metric.actions[0].width,metric.actions[1].width,'equal top actions');
+     assert.equal(metric.actions[0].width,metric.actions[1].width,'equal top action widths');
+     assert.equal(metric.actions[0].height,metric.actions[1].height,'equal top action heights');
      assert.ok(metric.gradient.startsWith('linear-gradient')&&Number.isFinite(metric.contrast)&&metric.contrast>=4.5,'heading gradient contrast: '+JSON.stringify({gradient:metric.gradient,contrast:metric.contrast}));
      assert.deepEqual(metric.subtitle,['17px','400','rgb(216, 211, 200)','640px','12px','28px']);
      if(width>=1280){
