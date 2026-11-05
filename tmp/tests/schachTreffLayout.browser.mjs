@@ -213,7 +213,7 @@ export async function checkRoomLayout(){
        })()`);
        await wait("!document.querySelector('.st-send').disabled");
        await evaluate("document.querySelector('.st-composer').requestSubmit()");
-       await wait(`document.querySelector('.st-message:last-child p')?.textContent === ${JSON.stringify(body)}`);
+       await wait(`Array.from(document.querySelectorAll('.st-messages article.st-message')).at(-1)?.querySelector('p')?.textContent === ${JSON.stringify(body)}`);
      };
      await setFeedPosition("feed.scrollHeight");
      await sendMessage('followed message');
