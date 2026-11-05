@@ -5,7 +5,7 @@ import {mkdtemp,readFile,writeFile,mkdir,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 
-const fixture=`import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{MemoryRouter}from'react-router-dom';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Chat from'/src/screens/ChessAZCommunityScreen.tsx';localStorage.setItem('app-language','ru');function Probe(){const {setLanguage}=useLanguage();window.setFixtureLanguage=setLanguage;return null}createRoot(document.getElementById('root')).render(<LanguageProvider><MemoryRouter><Probe/><Chat/></MemoryRouter></LanguageProvider>);`;
+const fixture=`import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{MemoryRouter,BrowserRouter,Routes,Route}from'react-router-dom';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Chat from'/src/screens/ChessAZCommunityScreen.tsx';import Invite from'/src/screens/ClubInviteScreen.tsx';localStorage.setItem('app-language','ru');function Probe(){const {setLanguage}=useLanguage();window.setFixtureLanguage=setLanguage;return null}createRoot(document.getElementById('root')).render(<LanguageProvider>{location.pathname==='/room-fixture'?<MemoryRouter><Probe/><Chat/></MemoryRouter>:<BrowserRouter><Probe/><Routes><Route path='/schach-treff/einladung/:token' element={<Invite/>}/><Route path='/chat' element={<Chat/>}/></Routes></BrowserRouter>}</LanguageProvider>);`;
 const db=`const uid='11111111-1111-4111-8111-111111111111', room='22222222-2222-4222-8222-222222222222', guest='33333333-3333-4333-8333-333333333333';
 const feed = Array.from({length:28}, (_, index) => ({
   id:'message-'+index, author_id:index===20 ? uid : index>=21 && index<=24 || index>=26 ? guest : index%2 ? uid : guest,
@@ -19,6 +19,17 @@ export const supabase = {
       window.fixtureInvites = (window.fixtureInvites || 0) + 1;
       if(window.fixtureInviteLimit) return {data:null,error:{message:'invite_limit'}};
       return {data:'a'.repeat(32),error:null};
+    }
+    if(name==='join_club_by_invite'){
+      sessionStorage.setItem('fixtureJoinCalls',String(Number(sessionStorage.getItem('fixtureJoinCalls')||0)+1));
+      sessionStorage.setItem('fixtureInviteToken',payload.p_token);
+      const q=new URLSearchParams(location.search).get('scenario');
+      if(q==='expired')return Promise.resolve({data:null,error:{message:'invite_expired'}});
+      if(q==='unexpected')return Promise.resolve({data:null,error:{message:'unknown_error'}});
+      if(q==='badroom')return Promise.resolve({data:'bad-room-id',error:null});
+      if(q==='rejected')return Promise.reject(Error('fixture denied'));
+      sessionStorage.setItem('fixtureJoinedRoom',room);
+      return Promise.resolve({data:room,error:null});
     }
     throw Error('Unexpected RPC '+name);
   },
@@ -52,7 +63,7 @@ export const supabase = {
     };return q;
   }
 };`;
-const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!req.url.startsWith('/room-fixture'))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
+const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user:new URLSearchParams(location.search).has('guest')?null:user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!/^\/(?:room-fixture(?:\?|$)|schach-treff\/einladung\/|chat(?:\?|$))/.test(req.url))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
 export async function checkRoomLayout(){
  const server=await createServer({configFile:false,cacheDir:join(tmpdir(),'room-vite-'+process.pid),optimizeDeps:{noDiscovery:true,include:['react','react-dom/client','react-router-dom','lucide-react']},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}}});let chrome,ws,profile;const pending=new Map();
  try{await server.listen();const bin=process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(existsSync);assert.ok(bin,'Chromium required for Schach-Treff layout');profile=await mkdtemp(join(tmpdir(),'schach-rooms-'));chrome=spawn(bin,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--remote-allow-origins=*','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});let stderr='';chrome.stderr.on('data',c=>stderr=(stderr+c).slice(-4000));const pause=ms=>new Promise(r=>setTimeout(r,ms));let port;for(let i=0;i<300;i++){if(chrome.exitCode!==null)throw Error(stderr);try{port=Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]);if(port)break}catch{}await pause(50)}assert.ok(port,stderr);const targets=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();ws=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await new Promise((r,j)=>{ws.addEventListener('open',r,{once:true});ws.addEventListener('error',j,{once:true})});let seq=0;ws.addEventListener('message',({data})=>{const m=JSON.parse(data),p=pending.get(m.id);if(p){pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result)}});const cdp=(method,params={})=>new Promise((resolve,reject)=>{const id=++seq,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},20000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}))});const evaluate=async expression=>{let x=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(x.exceptionDetails)throw Error(JSON.stringify(x.exceptionDetails));return x.result.value};const wait=async expression=>{for(let i=0;i<240;i++){if(await evaluate('Boolean('+expression+')'))return;await pause(50)}throw Error('Fixture did not load '+expression)};await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Page.bringToFront');await cdp('Emulation.setFocusEmulationEnabled',{enabled:true});if(process.env.SECTIONS_CAPTURE)await mkdir(process.env.SECTIONS_CAPTURE,{recursive:true});
@@ -228,6 +239,53 @@ export async function checkRoomLayout(){
      }
    }
  }
+
+  // Validate invite route on both desktop and 375 px with an isolated fake RPC.
+  const inviteToken='a'.repeat(32),root=server.resolvedUrls.local[0],roomId='22222222-2222-4222-8222-222222222222';
+  for(const width of [1920,375]){
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height:width===375?844:1080,deviceScaleFactor:1,mobile:width===375});
+    const reset=async()=>{
+      await cdp('Page.navigate',{url:root+'room-fixture'});
+      await wait("document.querySelector('.st-composer')");
+      await evaluate("sessionStorage.removeItem('fixtureJoinCalls');sessionStorage.removeItem('fixtureInviteToken');sessionStorage.removeItem('fixtureJoinedRoom')");
+    };
+    await reset();
+    await cdp('Page.navigate',{url:root+'schach-treff/einladung/'+inviteToken});
+    await wait("location.pathname==='/chat' && new URLSearchParams(location.search).get('club')==='22222222-2222-4222-8222-222222222222' && document.querySelector('.st-chat-header h2')?.textContent==='Schachverein'");
+    assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinCalls')"),'1','join called once at '+width);
+    assert.equal(await evaluate("sessionStorage.getItem('fixtureInviteToken')"),inviteToken);
+    assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinedRoom')"),roomId);
+    assert.ok(await evaluate("document.querySelector('.st-composer input') && document.documentElement.scrollWidth<=innerWidth+1"),'invited room opened at '+width);
+
+    await reset();
+    await cdp('Page.navigate',{url:root+'schach-treff/einladung/invalid-token'});
+    await wait("document.querySelector('[role=alert]')?.textContent==='Недействительная ссылка-приглашение.'");
+    assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinCalls')"),null);
+    await evaluate("window.setFixtureLanguage('en')");
+    await wait("document.querySelector('[role=alert]')?.textContent==='Invalid invitation link.'");
+
+    await reset();
+    await cdp('Page.navigate',{url:root+'schach-treff/einladung/'+inviteToken+'?scenario=expired'});
+    await wait("document.querySelector('[role=alert]')?.textContent==='Срок действия приглашения истёк.'");
+    assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinCalls')"),'1');
+    await evaluate("window.setFixtureLanguage('de')");
+    await wait("document.querySelector('[role=alert]')?.textContent==='Dieser Einladungslink ist abgelaufen.'");
+
+    for(const scenario of ['unexpected','badroom','rejected']){
+      await reset();
+      await cdp('Page.navigate',{url:root+'schach-treff/einladung/'+inviteToken+'?scenario='+scenario});
+      await wait("document.querySelector('[role=alert]')?.textContent==='Не удалось загрузить или сохранить данные. Пожалуйста, попробуйте ещё раз.'");
+      assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinCalls')"),'1',scenario);
+      assert.ok(await evaluate("location.pathname.startsWith('/schach-treff/einladung/')"));
+    }
+    await reset();
+    await cdp('Page.navigate',{url:root+'schach-treff/einladung/'+inviteToken+'?guest=1'});
+    await wait("Boolean(document.querySelector('a[href^='/profile?returnTo=']'))");
+    assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinCalls')"),null);
+    assert.equal(await evaluate("new URL(document.querySelector('a[href^='/profile?returnTo=']').href).searchParams.get('returnTo')"),'/schach-treff/einladung/'+inviteToken);
+    await evaluate("window.setFixtureLanguage('en')");
+    await wait("document.querySelector('a[href^='/profile?returnTo=']')?.textContent==='Sign in'");
+  }
 
  }finally{try{ws?.close()}catch{}chrome?.kill('SIGKILL');for(const p of pending.values())clearTimeout(p.timer);await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100})}
 }
