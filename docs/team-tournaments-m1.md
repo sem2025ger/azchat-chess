@@ -58,7 +58,9 @@ limited to the assigned team. Unassigned authenticated users have spectator acce
 Spectators can read published event data. Tournament roles, drafts, and the
 audit are excluded from the public API. M1 stores no player lineups or team notes.
 
-RLS governs reads with the anonymous or verified user JWT. Browser roles have
+RLS governs reads with the anonymous or verified user JWT. The tournament,
+team, and result-audit policies independently match role rows to the caller
+even if the role table read policy is broadened. Browser roles have
 no write privileges and cannot invoke the command RPC. The API verifies the
 bearer token and derives the actor ID from it. It calls the command RPC with a
 server-held service key. The RPC checks event-specific permissions on every

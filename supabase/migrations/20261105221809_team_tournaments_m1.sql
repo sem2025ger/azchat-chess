@@ -126,13 +126,15 @@ CREATE POLICY own_tournament_roles ON public.team_tournament_roles FOR SELECT TO
   USING (user_id = (SELECT auth.uid()));
 CREATE POLICY published_or_assigned ON public.team_tournaments FOR SELECT TO anon, authenticated
   USING (status IN ('published','finished') OR EXISTS (
-    SELECT 1 FROM public.team_tournament_roles r WHERE r.tournament_id = team_tournaments.id));
+    SELECT 1 FROM public.team_tournament_roles r WHERE r.tournament_id = team_tournaments.id
+      AND r.user_id = (SELECT auth.uid())));
 CREATE POLICY visible_ruleset ON public.team_tournament_rulesets FOR SELECT TO anon, authenticated
   USING (EXISTS (SELECT 1 FROM public.team_tournaments t WHERE t.id = tournament_id));
 CREATE POLICY visible_team ON public.team_tournament_teams FOR SELECT TO anon, authenticated
   USING (EXISTS (SELECT 1 FROM public.team_tournaments t
     WHERE t.id = tournament_id AND t.status IN ('published','finished')) OR EXISTS (
     SELECT 1 FROM public.team_tournament_roles r WHERE r.tournament_id = team_tournament_teams.tournament_id
+      AND r.user_id = (SELECT auth.uid())
       AND (r.role IN ('organizer','arbiter') OR r.team_id = team_tournament_teams.id)));
 CREATE POLICY published_rounds ON public.team_tournament_rounds FOR SELECT TO anon, authenticated
   USING (EXISTS (SELECT 1 FROM public.team_tournaments t
@@ -145,7 +147,9 @@ CREATE POLICY published_board_results ON public.team_tournament_board_results FO
     WHERE t.id = tournament_id AND t.status IN ('published','finished')));
 CREATE POLICY staff_result_audit ON public.team_tournament_result_audit FOR SELECT TO authenticated
   USING (EXISTS (SELECT 1 FROM public.team_tournament_roles r
-    WHERE r.tournament_id = team_tournament_result_audit.tournament_id AND r.role IN ('organizer','arbiter')));
+    WHERE r.tournament_id = team_tournament_result_audit.tournament_id
+      AND r.user_id = (SELECT auth.uid())
+      AND r.role IN ('organizer','arbiter')));
 
 -- The invoking anon/user JWT keeps RLS authoritative for every table read.
 CREATE FUNCTION public.team_tournament_snapshot(p_id uuid, p_workspace boolean)

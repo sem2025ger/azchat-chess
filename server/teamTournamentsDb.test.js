@@ -160,6 +160,32 @@ test('Team tournaments on isolated PostgreSQL: scoped access, atomic publication
     await assert.rejects(as('service_role', null, 'DELETE FROM public.team_tournament_result_audit'), pgError('42501'));
   });
 
+  await t.test('broader role visibility does not expose unpublished tournaments, teams or audit rows', async () => {
+    const { id: draftId } = await command(otherOwner, 'create', null, { name: 'Private draft', rules });
+    await command(otherOwner, 'register', otherId);
+    await command(otherOwner, 'approve_team', otherId, { name: 'Unpublished team' });
+    await db.pool.query('ALTER POLICY own_tournament_roles ON public.team_tournament_roles TO anon, authenticated USING (true)');
+    try {
+      const draft = 'SELECT id FROM public.team_tournaments WHERE id = $1';
+      const unpublished = 'SELECT id FROM public.team_tournament_teams WHERE tournament_id = $1';
+      const audit = 'SELECT revision FROM public.team_tournament_result_audit WHERE tournament_id = $1';
+      assert.equal((await as('authenticated', otherOwner, draft, [draftId])).length, 1);
+      assert.equal((await as('authenticated', otherOwner, unpublished, [otherId])).length, 1);
+      assert.ok((await as('authenticated', owner, audit, [id])).length > 0);
+      for (const [role, who] of [['authenticated', outsider], ['anon', null]]) {
+        const roles = await as(role, who, 'SELECT user_id FROM public.team_tournament_roles WHERE tournament_id = $1', [draftId]);
+        assert.deepEqual(roles, [{ user_id: otherOwner }], 'fixture exposes a foreign role row');
+        assert.deepEqual(await as(role, who, draft, [draftId]), [], role + ' draft access');
+        assert.deepEqual(await as(role, who, unpublished, [otherId]), [], role + ' unpublished team access');
+      }
+      assert.deepEqual(await as('authenticated', outsider, audit, [id]), [], 'outsider audit access');
+      await assert.rejects(as('anon', null, audit, [id]), pgError('42501'));
+    } finally {
+      await db.pool.query(`ALTER POLICY own_tournament_roles ON public.team_tournament_roles
+        TO authenticated USING (user_id = (SELECT auth.uid()))`);
+    }
+  });
+
   await t.test('the complete pilot finishes with six matches and correct shared standings', async () => {
     const published = await snapshot(null, id, false);
     for (const match of published.matches) {
