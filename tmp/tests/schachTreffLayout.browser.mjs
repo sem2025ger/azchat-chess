@@ -274,7 +274,7 @@ export async function checkRoomLayout(){
     for(const scenario of ['unexpected','badroom','rejected']){
       await reset();
       await cdp('Page.navigate',{url:root+'schach-treff/einladung/'+inviteToken+'?scenario='+scenario});
-      await wait("document.querySelector('[role=alert]')?.textContent==='Не удалось загрузить или сохранить данные. Пожалуйста, попробуйте ещё раз.'");
+      await wait("document.querySelector('[role=alert]')?.textContent==='Не удалось загрузить или сохранить данные. Повторите попытку.'");
       assert.equal(await evaluate("sessionStorage.getItem('fixtureJoinCalls')"),'1',scenario);
       assert.ok(await evaluate("location.pathname.startsWith('/schach-treff/einladung/')"));
     }
