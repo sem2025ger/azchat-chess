@@ -1,3 +1,5 @@
+import { abortWithTimeout } from '../lib/abortWithTimeout.ts';
+
 export type SpieltagTeam = { id: string; club_id: string; name: string; role: 'captain' | 'member' };
 export type SpieltagClub = { id: string; name: string; slug: string };
 export type SpieltagSchedule = { round_label: string; opponent_name: string; opponent_club_id: string | null; starts_at: string; venue: string; notes: string };
@@ -14,11 +16,16 @@ export function createSpieltagApi(base: string, token: string, fetchImpl: typeof
   const number = (value: number) => { if (!Number.isInteger(value) || value<1 || value>32) throw new SpieltagError('invalid_input'); return value; };
   async function request(path: string, signal: AbortSignal, method = 'GET', body?: object) {
     if (!token) throw new SpieltagError('authentication_required');
-    const response = await fetchImpl(new URL('/api/spieltag/' + path,root), { signal,method,cache:'no-store',
-      headers: { Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{}) },body:body?JSON.stringify(body):undefined });
-    const data = await response.json();
-    if (!response.ok) throw new SpieltagError(typeof data.code==='string'?data.code:'temporarily_unavailable');
-    return data;
+    const timeout = method === 'GET' ? abortWithTimeout(signal, 15000) : null;
+    try {
+      const response = await fetchImpl(new URL('/api/spieltag/' + path,root), { signal:timeout?.signal ?? signal,method,cache:'no-store',
+        headers: { Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{}) },body:body?JSON.stringify(body):undefined });
+      const data = await response.json();
+      if (!response.ok) throw new SpieltagError(typeof data.code==='string'?data.code:'temporarily_unavailable');
+      return data;
+    } finally {
+      timeout?.cancel();
+    }
   }
   return {
     teams: async (s: AbortSignal): Promise<SpieltagTeam[]> => (await request('teams',s)).teams,

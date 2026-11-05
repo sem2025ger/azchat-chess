@@ -29,12 +29,19 @@ test('NRW dashboard sources are scoped and transparent about unavailable data',(
  assert.match(region,/to=\{'\/clubs-nrw\/'/);
 });
 
-test('NRW restores the national chat rail and retains the original membership guard',()=>{
+test('NRW static external destinations are defined once in the shared config',()=>{
+ const start=region.indexOf('const NRW_EXTERNAL_URLS = {');
+ const end=region.indexOf('} as const;',start);
+ assert.ok(start>=0&&end>start);
+ const config=region.slice(start,end);
+ assert.equal((config.match(/https:\/\//g)||[]).length,6,'five official sources and the existing live route destination');
+ assert.doesNotMatch(region.slice(0,start)+region.slice(end),/['"]https:\/\//);
+});
+
+test('NRW links to national chat without embedding it and the chat retains its membership guard',()=>{
  const rail=read('src/components/schachTreff/NationwideChatRail.tsx');
- assert.match(region,/import NationwideChatRail from/);
- assert.match(region,/<NationwideChatRail \/>/);
- assert.match(region,/className="nrw-layout"/);
- assert.match(region,/<footer className="nrw-footer">/);
+ assert.doesNotMatch(region,/NationwideChatRail/);
+ assert.match(region,/<div className="nrw-links">[\s\S]*?to="\/vorbereitung"[\s\S]*?to="\/chat"/);
  assert.match(region,/to="\/chat"/);
  assert.match(rail,/NATIONAL_ROOM_SLUG = 'chessaz-deutsch'/);
  assert.match(rail,/\.eq\('club_id',id\)/);
@@ -47,7 +54,7 @@ test('NRW restores the national chat rail and retains the original membership gu
 
 test('eight merged screens have complete six-language copy for fixed labels and stored notices',async()=>{
  const {default:ts}=await import('typescript');
- const sources=[['src/i18n/sectionCopy.ts','sectionCopy'],['src/i18n/regionalCopy.ts','regionalCopy'],['src/components/schachTreff/NationwideChatRail.tsx','chatUiText'],['src/screens/SpielerScreen.tsx','playerUiCopy'],['src/screens/SpieltagScreen.tsx','matchdayText'],['src/screens/RegionOverview.tsx','regionText'],['src/screens/VorbereitungScreen.tsx','preparationText']];
+ const sources=[['src/i18n/sectionCopy.ts','sectionCopy'],['src/i18n/regionalCopy.ts','regionalCopy'],['src/components/schachTreff/NationwideChatRail.tsx','chatUiText'],['src/screens/SpielerScreen.tsx','playerUiCopy'],['src/screens/SpieltagScreen.tsx','matchdayText'],['src/screens/RegionOverview.tsx','regionText'],['src/screens/VorbereitungScreen.tsx','preparationText'],['src/screens/ClubsNRWScreen.tsx','clubUiText']];
  const maps={};
  for(const [path,name] of sources){
   const source=read(path),ast=ts.createSourceFile(path,source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
