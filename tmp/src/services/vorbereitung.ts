@@ -1,3 +1,4 @@
+import { abortWithTimeout } from '../lib/abortWithTimeout.ts';
 import type { PreparationGame } from '../../../shared/vorbereitung.mjs';
 export type { PreparationGame } from '../../../shared/vorbereitung.mjs';
 export function vorbereitungEnabled(value:unknown){return value==='true';}
@@ -7,12 +8,22 @@ export function createVorbereitungApi(base:string,fetchImpl:typeof fetch=fetch){
  return {async named({fideId,name}:{fideId?:string|null;name?:string|null},token:string,signal:AbortSignal):Promise<{fideId:string|null;name:string|null;games:PreparationGame[];rejected:number;candidates:{fideId:string;name:string}[];ambiguous?:boolean}>{
   if(!token)throw new VorbereitungError('authentication_required');
   const query=new URLSearchParams();if(fideId){if(!/^[1-9]\d{0,9}$/.test(fideId))throw new VorbereitungError('invalid_query');query.set('fideId',fideId);}else if(name)query.set('name',name);
-  const r=await fetchImpl(new URL('/api/vorbereitung/player?'+query,root),{signal:AbortSignal.any([signal,AbortSignal.timeout(20000)]),cache:'no-store',headers:{Authorization:'Bearer '+token}});const data=await r.json();
-  if(!r.ok)throw new VorbereitungError(data.code||'provider_unavailable');return data;
+  const timeout = abortWithTimeout(signal, 20000);
+  try {
+   const r=await fetchImpl(new URL('/api/vorbereitung/player?'+query,root),{signal:timeout.signal,cache:'no-store',headers:{Authorization:'Bearer '+token}});const data=await r.json();
+   if(!r.ok)throw new VorbereitungError(data.code||'provider_unavailable');return data;
+  } finally {
+   timeout.cancel();
+  }
  },async load(username:string,token:string,signal:AbortSignal):Promise<{nickname:string;games:PreparationGame[];rejected:number}>{
   if(!token)throw new VorbereitungError('authentication_required');if(!/^[A-Za-z0-9_-]{2,30}$/.test(username))throw new VorbereitungError('invalid_query');
-  const response=await fetchImpl(new URL('/api/vorbereitung/'+encodeURIComponent(username),root),{signal:AbortSignal.any([signal,AbortSignal.timeout(20000)]),cache:'no-store',headers:{Authorization:'Bearer '+token}});
-  const data=await response.json();if(!response.ok)throw new VorbereitungError(typeof data.code==='string'?data.code:'provider_unavailable',Number(data.retryAfter)||0);
-  if(!Array.isArray(data.games)||data.games.length>200)throw new VorbereitungError('provider_unavailable');return data;
+  const timeout = abortWithTimeout(signal, 20000);
+  try {
+   const response=await fetchImpl(new URL('/api/vorbereitung/'+encodeURIComponent(username),root),{signal:timeout.signal,cache:'no-store',headers:{Authorization:'Bearer '+token}});
+   const data=await response.json();if(!response.ok)throw new VorbereitungError(typeof data.code==='string'?data.code:'provider_unavailable',Number(data.retryAfter)||0);
+   if(!Array.isArray(data.games)||data.games.length>200)throw new VorbereitungError('provider_unavailable');return data;
+  } finally {
+   timeout.cancel();
+  }
  }};
 }
