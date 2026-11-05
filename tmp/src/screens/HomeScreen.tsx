@@ -413,6 +413,12 @@ export default function HomeScreen() {
             </h1>
           </div>
 
+          {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && (
+            <Link to="/region/nrw" className="mx-auto mt-2 flex min-h-11 items-center text-sm font-semibold text-[#D2C3AF] underline underline-offset-4 md:hidden">
+              NRW – Schach
+            </Link>
+          )}
+
           {/* Text-only play action, shared with the mobile Arena. */}
           <Link
             to="/play"

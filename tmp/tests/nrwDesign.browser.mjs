@@ -125,6 +125,12 @@ export const supabase={from(table){let single=false,filters=[];const q={select()
    await evaluate("window.nrwGuest=true;window.fixtureNavigate('/region/invalid')");await wait("!document.querySelector('[data-region-overview]')");await evaluate("window.fixtureNavigate('/region/nrw')");await wait("document.querySelector('.nrw-signin')");
    assert.equal(await evaluate("document.querySelectorAll('.nrw-signin').length"),2,'guest has actionable access explanations');assert.ok(await evaluate("[...document.querySelectorAll('.nrw-signin')].every(a=>a.getAttribute('href').startsWith('/profile?returnTo='))"),'login return destinations');await capture('guest-'+width);
    await evaluate("window.nrwGuest=false;window.nrwEmpty=true;window.fixtureNavigate('/region/invalid')");await wait("!document.querySelector('[data-region-overview]')");await evaluate("window.fixtureNavigate('/region/nrw')");await wait("document.querySelector('.nrw-card--vereine .nrw-muted')&&!document.querySelector('.nrw-card [role=status]')");assert.equal(await evaluate("document.querySelectorAll('.nrw-grid>.nrw-card').length"),3,'empty state retains clear tasks');
+   if(width===375){
+    await evaluate("window.fixtureNavigate('/')");
+    await wait("document.querySelector('.home-screen-root a[href=\"/region/nrw\"]')?.getBoundingClientRect().height>=44");
+    await evaluate("document.querySelector('.home-screen-root a[href=\"/region/nrw\"]').click()");
+    await wait("document.querySelector('[data-region-overview]')");
+   }
    for(const [section,phrase] of [['turniere','Keine bestätigten kommenden Termine'],['ligen','Noch keine Tabellen'],['vereine','Keine veröffentlichten Vereine'],['news','Keine aktuellen Meldungen'],['live','Derzeit keine für NRW']]){
     await evaluate('window.fixtureNavigate('+JSON.stringify('/region/nrw/'+section)+')');
     await wait('document.querySelector('+JSON.stringify('.nrw-card--'+section)+')?.innerText.includes('+JSON.stringify(phrase)+')');

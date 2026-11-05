@@ -11,6 +11,11 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  for(const path of ['src/App.tsx','src/components/Layout.tsx','src/routeLoaders.ts','scripts/buildQaPreview.mjs']){
   assert.equal(readFileSync(path,'utf8'),execFileSync('git',['show',baseline+':tmp/'+path],{encoding:'utf8'}),path);
  }
+ const home='src/screens/HomeScreen.tsx';
+ const homeBaseline=execFileSync('git',['show',baseline+':tmp/'+home],{encoding:'utf8'});
+ const flagGatedLink=/ {10}\{import\.meta\.env\.VITE_CLUBS_NRW_ENABLED === 'true' && \(\n {12}<Link to="\/region\/nrw"[^>]+md:hidden">\n {14}NRW – Schach\n {12}<\/Link>\n {10}\)\}\n\n/;
+ assert.match(readFileSync(home,'utf8'),flagGatedLink);
+ assert.equal(readFileSync(home,'utf8').replace(flagGatedLink,''),homeBaseline);
  for(const path of ['/region/nrw','/region/nrw/turniere','/region/nrw/ligen','/region/nrw/vereine','/region/nrw/news','/region/nrw/live','/clubs-nrw/bochumer-sv-02','/spieltag','/vorbereitung']){
   assert.equal(nrwAuthReturnTarget(path,{clubs:false,spieltag:false,preparation:false}),null);
   assert.equal(nrwAuthReturnTarget(path,{clubs:true,spieltag:true,preparation:true}),path);
