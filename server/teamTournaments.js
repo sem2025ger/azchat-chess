@@ -1,0 +1,201 @@
+'use strict';
+
+const express = require('express');
+const { createClient } = require('@supabase/supabase-js');
+const { RESULTS, bergerSchedule, calculateTable } = require('./teamRoundRobin');
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const RULES = {
+  board_count: 4, home_white_board_one: true, win_points: 2, draw_points: 1, loss_points: 0,
+  forfeit_win_units: 2, forfeit_loss_units: 0,
+};
+const RESPONSE_ERRORS = {
+  '42501': [403, 'not_allowed'], P0002: [404, 'not_found'], '55000': [409, 'invalid_state'],
+  '40001': [409, 'result_conflict'], '23505': [409, 'already_exists'],
+  '23503': [400, 'invalid_input'], '23514': [400, 'invalid_input'], '22023': [400, 'invalid_input'],
+};
+
+function fail(status, code) {
+  throw Object.assign(new Error(code), { status, code });
+}
+
+function fields(value, allowed) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) ||
+      Object.keys(value).some(key => !allowed.includes(key))) fail(400, 'invalid_input');
+}
+
+function label(value, maximum) {
+  if (typeof value !== 'string' || !value.trim() || value.length > maximum ||
+      /[\x00-\x1f\x7f]/.test(value)) fail(400, 'invalid_input');
+  return value.trim();
+}
+
+function uuid(value) {
+  if (typeof value !== 'string' || !UUID.test(value)) fail(400, 'invalid_input');
+  return value.toLowerCase();
+}
+
+function integer(value, min, max) {
+  if (!Number.isSafeInteger(value) || value < min || value > max) fail(400, 'invalid_input');
+  return value;
+}
+
+function createInput(body) {
+  fields(body, ['name', 'rules']);
+  const overrides = body.rules ?? {};
+  fields(overrides, Object.keys(RULES));
+  const rules = { ...RULES, ...overrides };
+  integer(rules.board_count, 1, 16);
+  for (const key of ['win_points', 'draw_points', 'loss_points']) integer(rules[key], 0, 10);
+  for (const key of ['forfeit_win_units', 'forfeit_loss_units']) integer(rules[key], 0, 2);
+  if (typeof rules.home_white_board_one !== 'boolean' ||
+      rules.win_points <= rules.draw_points || rules.draw_points <= rules.loss_points ||
+      rules.forfeit_win_units <= rules.forfeit_loss_units ||
+      rules.forfeit_win_units + rules.forfeit_loss_units > 2) fail(400, 'invalid_input');
+  return { name: label(body.name, 120), rules };
+}
+
+function makeClient(env, key, factory, token) {
+  return factory(env.SUPABASE_URL, key, {
+    ...(token ? { accessToken: async () => token } : {}),
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+}
+
+async function rpc(client, name, args) {
+  if (!client) fail(503, 'storage_unavailable');
+  const { data, error } = await client.rpc(name, args).abortSignal(AbortSignal.timeout(8000));
+  if (error) fail(...(RESPONSE_ERRORS[error.code] ?? [503, 'temporarily_unavailable']));
+  return data;
+}
+
+function installTeamTournaments(app, {
+  enabled = false, verifyToken = async () => null, clientForToken, publicClient, commandClient, now = Date.now,
+} = {}) {
+  const router = express();
+  const budgets = new Map();
+  router.set('trust proxy', 1);
+  function limited(key, limit) {
+    const time = now();
+    let entry = budgets.get(key);
+    if (entry && time - entry.start < 60000) return ++entry.count > limit;
+    if (budgets.size >= 2000) {
+      for (const [id, budget] of budgets) if (time - budget.start >= 60000) budgets.delete(id);
+      if (budgets.size >= 2000) return true;
+    }
+    entry = { start: time, count: 1 };
+    budgets.set(key, entry);
+    return false;
+  }
+
+  const wrap = fn => (req, res, next) => Promise.resolve().then(() => fn(req, res, next)).catch(next);
+  router.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    if (!enabled) return next(Object.assign(new Error(), { status: 404, code: 'feature_disabled' }));
+    if (limited('ip:' + req.ip, 120)) return next(Object.assign(new Error(), { status: 429, code: 'rate_limit' }));
+    next();
+  });
+  router.param('tournament', wrap((req, res, next) => {
+    req.tournamentId = uuid(req.params.tournament);
+    next();
+  }));
+
+  async function snapshot(client, tournament, workspace) {
+    const data = await rpc(client, 'team_tournament_snapshot', { p_id: tournament, p_workspace: workspace });
+    if (!data) fail(404, 'not_found');
+    return data;
+  }
+  function withStandings(data) {
+    return { ...data, official: calculateTable(data.teams, data.matches, data.rules),
+      provisional: calculateTable(data.teams, data.matches, data.rules, true) };
+  }
+  router.get('/:tournament', wrap(async (req, res) => res.json(withStandings(
+    await snapshot(publicClient, req.tournamentId, false)))));
+
+  router.use(wrap(async (req, res, next) => {
+    const header = req.headers.authorization || '';
+    let user;
+    if (header.length <= 8192 && /^Bearer [^\s]+$/.test(header)) {
+      try { user = await verifyToken(header.slice(7)); } catch { /* Fail closed. */ }
+    }
+    if (!UUID.test(user?.id ?? '') || user.is_anonymous) fail(401, 'authentication_required');
+    if (limited('user:' + user.id, 60)) fail(429, 'rate_limit');
+    req.tournamentActor = user.id;
+    req.tournamentClient = clientForToken?.(header.slice(7));
+    next();
+  }));
+  router.use(express.json({ limit: '12kb' }));
+  const command = (req, action, input) => rpc(commandClient, 'team_tournament_command', {
+    p_actor: req.tournamentActor, p_action: action, p_id: req.tournamentId ?? null, p_input: input,
+  });
+  router.post('/', wrap(async (req, res) => res.status(201).json(await command(req, 'create', createInput(req.body)))));
+  router.get('/:tournament/workspace', wrap(async (req, res) => res.json(withStandings(
+    await snapshot(req.tournamentClient, req.tournamentId, true)))));
+  router.post('/:tournament/teams', wrap(async (req, res) => {
+    fields(req.body, ['name', 'captain_id']);
+    const captain = req.body.captain_id == null ? null : uuid(req.body.captain_id);
+    res.status(201).json(await command(req, 'approve_team', { name: label(req.body.name, 120), captain_id: captain }));
+  }));
+  router.post('/:tournament/arbiters', wrap(async (req, res) => {
+    fields(req.body, ['user_id']);
+    res.json(await command(req, 'assign_arbiter', { user_id: uuid(req.body.user_id) }));
+  }));
+  for (const action of ['register', 'lock', 'finish']) {
+    router.post('/:tournament/' + action, wrap(async (req, res) => {
+      fields(req.body ?? {}, []);
+      res.json(await command(req, action, {}));
+    }));
+  }
+  async function organizerWorkspace(req) {
+    const data = await snapshot(req.tournamentClient, req.tournamentId, true);
+    if (!data.roles.includes('organizer')) fail(403, 'not_allowed');
+    return data;
+  }
+  router.get('/:tournament/preview', wrap(async (req, res) => {
+    const data = await organizerWorkspace(req);
+    if (data.status !== 'locked') fail(409, 'invalid_state');
+    res.json({ ruleset_version: data.rules.version, rounds: bergerSchedule(data.teams.map(team => team.id), data.rules) });
+  }));
+  router.post('/:tournament/publish', wrap(async (req, res) => {
+    fields(req.body ?? {}, []);
+    const data = await organizerWorkspace(req);
+    if (!['locked', 'published', 'finished'].includes(data.status)) fail(409, 'invalid_state');
+    const rounds = data.status === 'locked' ? bergerSchedule(data.teams.map(team => team.id), data.rules) : [];
+    res.json(await command(req, 'publish', { rounds }));
+  }));
+
+  for (const action of ['record', 'confirm', 'correct']) {
+    router.post('/:tournament/matches/:match/boards/:board/' + action, wrap(async (req, res) => {
+      fields(req.body, ['result', 'reason', 'revision']);
+      if (!RESULTS.includes(req.body.result) || req.body.result === 'pending' ||
+          !/^(?:[1-9]|1[0-6])$/.test(req.params.board)) fail(400, 'invalid_input');
+      res.json(await command(req, action, {
+        match_id: uuid(req.params.match), board_no: Number(req.params.board), result: req.body.result,
+        reason: label(req.body.reason, 500), revision: integer(req.body.revision, 0, 2147483646),
+      }));
+    }));
+  }
+  router.use((error, req, res, next) => {
+    if (res.headersSent) return next(error);
+    if (error.type === 'entity.too.large') return res.status(413).json({ code: 'invalid_input' });
+    if (error.type === 'entity.parse.failed') return res.status(400).json({ code: 'invalid_input' });
+    if (!error.status || !error.code) return res.status(503).json({ code: 'temporarily_unavailable' });
+    res.status(error.status).json({ code: error.code });
+  });
+  app.use('/api/team-tournaments', router);
+}
+
+function installTeamTournamentsFromEnv(app, verifyToken, env = process.env, factory = createClient) {
+  const enabled = env.TEAM_TOURNAMENTS_ENABLED === 'true';
+  const publicKey = env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY;
+  const serviceKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+  const configured = enabled && env.SUPABASE_URL && publicKey;
+  return installTeamTournaments(app, {
+    enabled, verifyToken,
+    publicClient: configured ? makeClient(env, publicKey, factory) : null,
+    clientForToken: configured ? token => makeClient(env, publicKey, factory, token) : null,
+    commandClient: configured && serviceKey ? makeClient(env, serviceKey, factory) : null,
+  });
+}
+
+module.exports = { installTeamTournaments, installTeamTournamentsFromEnv };
