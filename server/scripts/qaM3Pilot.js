@@ -42,9 +42,9 @@ function safeFailure(error) {
   return error instanceof PilotFailure ? error.message : 'Unexpected HTTP, PostgreSQL or runner error. Diagnostics withheld.';
 }
 
-async function request(origin, path, { method = 'GET', headers = {}, body } = {}) {
+async function request(origin, path, { method = 'GET', headers = {}, body, timeout = 15000 } = {}) {
   const response = await fetch(origin + path, {
-    method, redirect: 'error', signal: AbortSignal.timeout(15000),
+    method, redirect: 'error', signal: AbortSignal.timeout(timeout),
     headers: { ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...headers },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -102,6 +102,9 @@ async function runPilot({ target, db, tag, email, anonKey, serviceKey, step, sig
   };
   const admin = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
 
+  // Render Free may cold-start before any route is ready. This public read carries no credentials.
+  const health = expect(await request(target.api, '/health', { timeout: 90000 }), 200);
+  check(health?.ok === true && health.service === 'aztr-chess-server', 'M3 QA server is not healthy.');
   expect(await api('/user-search?q=m3'), 401, 'authentication_required');
   for (const role of roles) {
     signal.throwIfAborted();
