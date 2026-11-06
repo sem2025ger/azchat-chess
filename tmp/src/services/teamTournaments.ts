@@ -121,6 +121,18 @@ export type MyTournamentBoard = {
   opponent_report: BoardResult | null;
   opponent_kind: 'game' | 'forfeit' | null;
 };
+export type M3TeamEntry = { id: string; club_name: string; captain_id: string; submitted_at: string | null };
+export type M3Lineup = { entry_id: string; board_no: number; player_id: string; consented_at: string | null };
+export type M3Event = {
+  id: string; name: string; status: TournamentStatus | 'cancelled';
+  starts_at: string; registration_deadline: string; min_teams: number; max_teams: number;
+  teams: { id: string; name: string }[]; remaining_spots: number;
+  entries?: M3TeamEntry[]; roles?: { role: TournamentRole; team_id: string | null }[];
+  lineups?: M3Lineup[]; profiles?: { id: string; username: string }[];
+  matches?: { id: string; round_no: number; home_team_id: string; away_team_id: string }[];
+  states?: { match_id: string; board_no: number; status: string }[];
+  reports?: { match_id: string; board_no: number; side: 'white' | 'black'; result: BoardResult; kind: string }[];
+};
 export type M3EventInput = {
   name: string;
   start_time: string;
@@ -162,8 +174,12 @@ export function createTournamentM3Api(base: string, token: string, fetchImpl: ty
     create: (input: M3EventInput, signal: AbortSignal) =>
       request<{ id: string; status: string }>('/self-service', signal, input),
     publicEvent: (event: string, signal: AbortSignal) =>
-      request(at(event) + '/self-service/public', signal),
-    event: (event: string, signal: AbortSignal) => request(at(event) + '/self-service', signal),
+      request<M3Event>(at(event) + '/self-service/public', signal),
+    event: (event: string, signal: AbortSignal) => request<M3Event>(at(event) + '/self-service', signal),
+    userSearch: (term: string, signal: AbortSignal) => {
+      if (!/^[A-Za-z0-9_-]{2,30}$/.test(term)) throw new TournamentError('invalid_input');
+      return request<{ users: { id: string; username: string }[] }>('/user-search?q=' + encodeURIComponent(term), signal);
+    },
     invite: (event: string, club_name: string, signal: AbortSignal) =>
       request<{ token: string; invite_id: string }>(at(event) + '/invites', signal, { club_name }),
     revoke: (event: string, invite: string, signal: AbortSignal) =>
