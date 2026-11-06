@@ -523,14 +523,14 @@ DECLARE
   new_state text;
   old_value jsonb;
   new_value jsonb;
-  side text;
+  v_side text;
   opposite text;
   actor_role text;
   selected_result text;
   new_source text;
   reason text;
-  match_id uuid;
-  board_no smallint;
+  v_match_id uuid;
+  v_board_no smallint;
   first_player uuid;
   second_player uuid;
   white_team uuid;
@@ -549,13 +549,13 @@ BEGIN
   IF event.status <> 'published' THEN
     RAISE EXCEPTION 'invalid_state' USING ERRCODE = '55000';
   END IF;
-  match_id := (p_input->>'match_id')::uuid;
-  board_no := (p_input->>'board_no')::smallint;
+  v_match_id := (p_input->>'match_id')::uuid;
+  v_board_no := (p_input->>'board_no')::smallint;
   SELECT * INTO match_row FROM public.team_tournament_matches
-    WHERE tournament_id = p_id AND id = team_tournament_m3_result.match_id;
+    WHERE tournament_id = p_id AND id = v_match_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0002'; END IF;
   SELECT * INTO board FROM public.team_tournament_board_results b
-    WHERE b.match_id = match_row.id AND b.board_no = team_tournament_m3_result.board_no;
+    WHERE b.match_id = match_row.id AND b.board_no = v_board_no;
   IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0002'; END IF;
   selected_result := p_input->>'result';
   reason := nullif(btrim(p_input->>'reason'), '');
@@ -567,9 +567,9 @@ BEGIN
   white_team := CASE WHEN board.home_white THEN match_row.home_team_id ELSE match_row.away_team_id END;
   black_team := CASE WHEN board.home_white THEN match_row.away_team_id ELSE match_row.home_team_id END;
   SELECT player_id INTO first_player FROM public.team_tournament_m3_lineups
-    WHERE entry_id = white_team AND team_tournament_m3_lineups.board_no = team_tournament_m3_result.board_no;
+    WHERE entry_id = white_team AND team_tournament_m3_lineups.board_no = v_board_no;
   SELECT player_id INTO second_player FROM public.team_tournament_m3_lineups
-    WHERE entry_id = black_team AND team_tournament_m3_lineups.board_no = team_tournament_m3_result.board_no;
+    WHERE entry_id = black_team AND team_tournament_m3_lineups.board_no = v_board_no;
   IF first_player IS NULL OR second_player IS NULL THEN
     RAISE EXCEPTION 'invalid_state' USING ERRCODE = '55000';
   END IF;
@@ -580,21 +580,21 @@ BEGIN
     WHERE tournament_id = p_id AND user_id = p_actor AND role = 'arbiter') THEN
     actor_role := 'arbiter';
   ELSIF p_actor = first_player THEN
-    actor_role := 'player'; side := 'white';
+    actor_role := 'player'; v_side := 'white';
   ELSIF p_actor = second_player THEN
     actor_role := 'player'; side := 'black';
   ELSE
     SELECT CASE WHEN team_id = white_team THEN 'white' ELSE 'black' END
-    INTO side FROM public.team_tournament_roles
+    INTO v_side FROM public.team_tournament_roles
       WHERE tournament_id = p_id AND user_id = p_actor AND role = 'captain'
         AND team_id IN (white_team,black_team) LIMIT 1;
-    IF side IS NOT NULL THEN actor_role := 'captain'; END IF;
+    IF v_side IS NOT NULL THEN actor_role := 'captain'; END IF;
   END IF;
   IF actor_role IS NULL OR (
       p_action IN ('decide','correct') AND actor_role NOT IN ('organizer','arbiter')
     ) OR (
       p_action IN ('report','confirm','reject','forfeit')
-        AND (side IS NULL OR actor_role NOT IN ('player','captain'))
+        AND (v_side IS NULL OR actor_role NOT IN ('player','captain'))
     ) OR (p_action = 'forfeit' AND actor_role <> 'captain') THEN
     RAISE EXCEPTION 'not_allowed' USING ERRCODE = '42501';
   END IF;
@@ -623,15 +623,15 @@ BEGIN
     RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023';
   END IF;
   SELECT status INTO old_state FROM public.team_tournament_m3_board_states st
-    WHERE st.match_id = match_row.id AND st.board_no = team_tournament_m3_result.board_no;
+    WHERE st.match_id = match_row.id AND st.board_no = v_board_no;
   old_state := coalesce(old_state, 'pending');
-  IF side IS NOT NULL THEN
-    opposite := CASE WHEN side = 'white' THEN 'black' ELSE 'white' END;
+  IF v_side IS NOT NULL THEN
+    opposite := CASE WHEN v_side = 'white' THEN 'black' ELSE 'white' END;
     SELECT * INTO self_report FROM public.team_tournament_m3_board_reports
-      WHERE team_tournament_m3_board_reports.match_id = match_row.id AND team_tournament_m3_board_reports.board_no = team_tournament_m3_result.board_no AND
-        team_tournament_m3_board_reports.side = team_tournament_m3_result.side;
+      WHERE team_tournament_m3_board_reports.match_id = match_row.id AND team_tournament_m3_board_reports.board_no = v_board_no AND
+        team_tournament_m3_board_reports.side = v_side;
     SELECT * INTO peer_report FROM public.team_tournament_m3_board_reports
-      WHERE team_tournament_m3_board_reports.match_id = match_row.id AND team_tournament_m3_board_reports.board_no = team_tournament_m3_result.board_no AND
+      WHERE team_tournament_m3_board_reports.match_id = match_row.id AND team_tournament_m3_board_reports.board_no = v_board_no AND
         team_tournament_m3_board_reports.side = opposite;
   END IF;
   old_value := jsonb_build_object('board_result', board.result, 'confirmed', board.confirmed,
@@ -669,28 +669,28 @@ BEGIN
     new_source := CASE WHEN actor_role = 'captain' OR peer_report.actor_role = 'captain'
       THEN 'captain' ELSE 'player_report' END;
   END IF;
-  IF side IS NOT NULL THEN
+  IF v_side IS NOT NULL THEN
     INSERT INTO public.team_tournament_m3_board_reports
       (match_id, board_no, side, result, kind, actor_id, actor_role)
-      VALUES (match_row.id, team_tournament_m3_result.board_no, side, selected_result,
+      VALUES (match_row.id, v_board_no, v_side, selected_result,
         CASE WHEN is_forfeit THEN 'forfeit' ELSE 'game' END, p_actor, actor_role)
     ON CONFLICT (match_id, board_no, side) DO UPDATE
       SET result = excluded.result, kind = excluded.kind, actor_id = excluded.actor_id,
         actor_role = excluded.actor_role, reported_at = clock_timestamp();
   END IF;
   INSERT INTO public.team_tournament_m3_board_states(match_id, board_no, status)
-    VALUES (match_row.id, team_tournament_m3_result.board_no, new_state)
+    VALUES (match_row.id, v_board_no, new_state)
     ON CONFLICT (match_id, board_no) DO UPDATE SET status = excluded.status;
 
   IF confirm_now THEN
     UPDATE public.team_tournament_board_results b
       SET result = selected_result, confirmed = true, source = new_source,
         revision = board.revision + 1
-      WHERE b.match_id = match_row.id AND b.board_no = team_tournament_m3_result.board_no;
+      WHERE b.match_id = match_row.id AND b.board_no = v_board_no;
     INSERT INTO public.team_tournament_result_audit
       (tournament_id, match_id, board_no, revision, actor_id, action,
        old_result, new_result, old_confirmed, new_confirmed, reason)
-      VALUES (p_id, match_row.id, team_tournament_m3_result.board_no, board.revision + 1, p_actor,
+      VALUES (p_id, match_row.id, v_board_no, board.revision + 1, p_actor,
         CASE WHEN board.confirmed THEN 'correct' ELSE 'confirm' END,
         board.result, selected_result, board.confirmed, true,
         coalesce(reason, 'Matching player or captain reports'));
@@ -698,13 +698,13 @@ BEGIN
   new_value := jsonb_build_object('board_result',
     CASE WHEN confirm_now THEN selected_result ELSE board.result END,
     'confirmed', confirm_now, 'source', CASE WHEN confirm_now THEN new_source ELSE board.source END,
-    'status', new_state, 'reported_result', selected_result, 'side', side);
+    'status', new_state, 'reported_result', selected_result, 'side', v_side);
   INSERT INTO public.team_tournament_m3_action_audit
     (tournament_id, match_id, board_no, actor_id, actor_role, action,
      old_value, new_value, reason)
-    VALUES (p_id, match_row.id, team_tournament_m3_result.board_no, p_actor, actor_role, p_action,
+    VALUES (p_id, match_row.id, v_board_no, p_actor, actor_role, p_action,
       old_value, new_value, reason);
-  RETURN jsonb_build_object('match_id', match_row.id, 'board_no', team_tournament_m3_result.board_no,
+  RETURN jsonb_build_object('match_id', match_row.id, 'board_no', v_board_no,
     'status', new_state, 'confirmed', confirm_now,
     'result', CASE WHEN confirm_now THEN selected_result ELSE board.result END);
 END;
