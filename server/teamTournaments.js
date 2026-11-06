@@ -359,8 +359,9 @@ function installTeamTournaments(app, {
   ]) {
     router.post('/:tournament/lineup/' + route, wrap(async (req, res) => {
       requireM3();
-      fields(req.body ?? {}, []);
-      res.json(await m3command(req, action));
+      fields(req.body ?? {}, action === 'consent' ? ['entry_id'] : []);
+      const input = action === 'consent' ? { entry_id: uuid(req.body.entry_id) } : {};
+      res.json(await m3command(req, action, input));
     }));
   }
 
