@@ -239,7 +239,7 @@ function installTeamTournaments(app, {
     }
     res.json({ ...event, ...config, board_count: ruleset.board_count, teams,
       remaining_spots: Math.max(0, config.max_teams - teams.length),
-      ...(event.status === 'published' || event.status === 'finished' ? { lineups: publishedLineups } : {}),
+      ...(event.status === 'published' || event.status === 'finished' ? { published_lineups: publishedLineups } : {}),
     });
   }));
   async function authenticate(req) {
