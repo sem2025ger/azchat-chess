@@ -169,9 +169,8 @@ function installTeamTournaments(app, {
   async function tickDueEvents() {
     if (!m3Enabled) return;
     if (!commandClient) fail(503, 'storage_unavailable');
-    const due = await readQuery(commandClient.from('team_tournament_m3_config')
-      .select('tournament_id').lte('registration_deadline', new Date(now()).toISOString()).limit(50));
-    for (const event of due) await tickEvent(event.tournament_id);
+    const due = await rpc(commandClient, 'team_tournament_m3_due_events', {});
+    for (const eventId of due) await tickEvent(eventId);
   }
   router.param('tournament', wrap(async (req, res, next) => {
     req.tournamentId = uuid(req.params.tournament);
