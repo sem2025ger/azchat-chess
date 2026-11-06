@@ -3,6 +3,7 @@
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const { RESULTS, bergerSchedule, calculateTable } = require('./teamRoundRobin');
+const { validateEventTimes } = require('./teamTournamentTime');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RULES = {
@@ -179,6 +180,28 @@ function installTeamTournaments(app, {
     p_actor: req.tournamentActor, p_action: action, p_id: req.tournamentId ?? null, p_input: input,
   });
   router.post('/', wrap(async (req, res) => res.status(201).json(await command(req, 'create', createInput(req.body)))));
+  // M3 creation is atomic: M1 event, ruleset, M3 deadlines and registration
+  // commit or roll back together. Local wall times are checked again server-side.
+  router.post('/self-service', wrap(async (req, res) => {
+    fields(req.body, ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams']);
+    const name = label(req.body.name, 120);
+    const boardCount = integer(req.body.boards_per_team ?? 4, 1, 16);
+    const minimum = integer(req.body.min_teams ?? 2, 2, 16);
+    const maximum = integer(req.body.max_teams ?? 4, minimum, 16);
+    let times;
+    try {
+      times = validateEventTimes(req.body.start_time, req.body.registration_deadline, now());
+    } catch { fail(400, 'invalid_time'); }
+    res.status(201).json(await rpc(commandClient, 'team_tournament_m3_create', {
+      p_actor: req.tournamentActor,
+      p_name: name,
+      p_rules: { ...RULES, board_count: boardCount },
+      p_starts_at: times.starts_at,
+      p_registration_deadline: times.registration_deadline,
+      p_min_teams: minimum,
+      p_max_teams: maximum,
+    }));
+  }));
   router.get('/:tournament/workspace', wrap(async (req, res) => res.json(withStandings(
     await snapshot(req.tournamentClient, req.tournamentId, true)))));
   router.post('/:tournament/teams', wrap(async (req, res) => {
