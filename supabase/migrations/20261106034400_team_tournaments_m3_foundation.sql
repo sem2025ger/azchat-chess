@@ -509,3 +509,192 @@ CREATE POLICY m3_board_audit_staff ON public.team_tournament_m3_action_audit
       WHERE r.tournament_id = team_tournament_m3_action_audit.tournament_id
         AND r.user_id = (SELECT auth.uid()) AND r.role IN ('organizer','arbiter')
   ));
+
+CREATE FUNCTION public.team_tournament_m3_result(
+  p_actor uuid, p_action text, p_id uuid, p_input jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$
+DECLARE
+  event public.team_tournaments%ROWTYPE;
+  match_row public.team_tournament_matches%ROWTYPE;
+  board public.team_tournament_board_results%ROWTYPE;
+  self_report public.team_tournament_m3_board_reports%ROWTYPE;
+  peer_report public.team_tournament_m3_board_reports%ROWTYPE;
+  old_state text := 'pending';
+  new_state text;
+  old_value jsonb;
+  new_value jsonb;
+  side text;
+  opposite text;
+  actor_role text;
+  selected_result text;
+  new_source text;
+  reason text;
+  match_id uuid;
+  board_no smallint;
+  first_player uuid;
+  second_player uuid;
+  white_team uuid;
+  black_team uuid;
+  is_forfeit boolean;
+  confirm_now boolean := false;
+BEGIN
+  IF p_actor IS NULL OR p_id IS NULL OR p_action NOT IN
+    ('report','confirm','reject','forfeit','decide','correct') OR p_input IS NULL THEN
+    RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023';
+  END IF;
+  SELECT * INTO event FROM public.team_tournaments WHERE id = p_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0002'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.team_tournament_m3_config c WHERE c.tournament_id = p_id)
+    THEN RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0002'; END IF;
+  IF event.status <> 'published' THEN
+    RAISE EXCEPTION 'invalid_state' USING ERRCODE = '55000';
+  END IF;
+  match_id := (p_input->>'match_id')::uuid;
+  board_no := (p_input->>'board_no')::smallint;
+  SELECT * INTO match_row FROM public.team_tournament_matches
+    WHERE tournament_id = p_id AND id = match_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0002'; END IF;
+  SELECT * INTO board FROM public.team_tournament_board_results
+    WHERE match_id = match_row.id AND board_no = team_tournament_m3_result.board_no;
+  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0002'; END IF;
+  selected_result := p_input->>'result';
+  reason := nullif(btrim(p_input->>'reason'), '');
+  IF selected_result IS NOT NULL AND selected_result NOT IN ('1-0','0-1','1/2-1/2','+/-','-/+','-/-')
+    THEN RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023'; END IF;
+  IF reason IS NOT NULL AND length(reason) > 500 THEN
+    RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023';
+  END IF;
+  white_team := CASE WHEN board.home_white THEN match_row.home_team_id ELSE match_row.away_team_id END;
+  black_team := CASE WHEN board.home_white THEN match_row.away_team_id ELSE match_row.home_team_id END;
+  SELECT player_id INTO first_player FROM public.team_tournament_m3_lineups
+    WHERE entry_id = white_team AND board_no = team_tournament_m3_result.board_no;
+  SELECT player_id INTO second_player FROM public.team_tournament_m3_lineups
+    WHERE entry_id = black_team AND board_no = team_tournament_m3_result.board_no;
+  IF first_player IS NULL OR second_player IS NULL THEN
+    RAISE EXCEPTION 'invalid_state' USING ERRCODE = '55000';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.team_tournament_roles
+    WHERE tournament_id = p_id AND user_id = p_actor AND role = 'organizer') THEN
+    actor_role := 'organizer';
+  ELSIF EXISTS (SELECT 1 FROM public.team_tournament_roles
+    WHERE tournament_id = p_id AND user_id = p_actor AND role = 'arbiter') THEN
+    actor_role := 'arbiter';
+  ELSIF p_actor = first_player THEN
+    actor_role := 'player'; side := 'white';
+  ELSIF p_actor = second_player THEN
+    actor_role := 'player'; side := 'black';
+  ELSE
+    SELECT CASE WHEN team_id = white_team THEN 'white' ELSE 'black' END
+    INTO side FROM public.team_tournament_roles
+      WHERE tournament_id = p_id AND user_id = p_actor AND role = 'captain'
+        AND team_id IN (white_team,black_team) LIMIT 1;
+    IF side IS NOT NULL THEN actor_role := 'captain'; END IF;
+  END IF;
+  IF actor_role IS NULL OR (
+      p_action IN ('decide','correct') AND actor_role NOT IN ('organizer','arbiter')
+    ) OR (
+      p_action IN ('report','confirm','reject','forfeit')
+        AND (side IS NULL OR actor_role NOT IN ('player','captain'))
+    ) OR (p_action = 'forfeit' AND actor_role <> 'captain') THEN
+    RAISE EXCEPTION 'not_allowed' USING ERRCODE = '42501';
+  END IF;
+  IF p_action IN ('decide','correct') AND (reason IS NULL OR selected_result IS NULL) THEN
+    RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023';
+  END IF;
+  IF p_action IN ('decide','correct') AND
+      (p_action = 'correct') IS DISTINCT FROM board.confirmed THEN
+    RAISE EXCEPTION 'invalid_state' USING ERRCODE = '55000';
+  END IF;
+  IF p_action NOT IN ('decide','correct') AND board.confirmed THEN
+    RAISE EXCEPTION 'invalid_state' USING ERRCODE = '55000';
+  END IF;
+  SELECT status INTO old_state FROM public.team_tournament_m3_board_states
+    WHERE match_id = match_row.id AND board_no = team_tournament_m3_result.board_no;
+  old_state := coalesce(old_state, 'pending');
+  IF side IS NOT NULL THEN
+    opposite := CASE WHEN side = 'white' THEN 'black' ELSE 'white' END;
+    SELECT * INTO self_report FROM public.team_tournament_m3_board_reports
+      WHERE match_id = match_row.id AND board_no = team_tournament_m3_result.board_no AND
+        team_tournament_m3_board_reports.side = team_tournament_m3_result.side;
+    SELECT * INTO peer_report FROM public.team_tournament_m3_board_reports
+      WHERE match_id = match_row.id AND board_no = team_tournament_m3_result.board_no AND
+        team_tournament_m3_board_reports.side = opposite;
+  END IF;
+  old_value := jsonb_build_object('board_result', board.result, 'confirmed', board.confirmed,
+    'source', board.source, 'status', old_state,
+    'own_report', to_jsonb(self_report), 'opponent_report', to_jsonb(peer_report));
+  is_forfeit := p_action = 'forfeit';
+  IF p_action IN ('decide','correct') THEN
+    new_state := 'confirmed';
+    new_source := CASE WHEN actor_role = 'arbiter' THEN 'arbiter' ELSE 'organizer_decision' END;
+    confirm_now := true;
+  ELSIF p_action = 'confirm' THEN
+    IF peer_report.match_id IS NULL OR
+       (peer_report.kind = 'forfeit' AND actor_role <> 'captain') THEN
+      RAISE EXCEPTION 'invalid_state' USING ERRCODE = '55000';
+    END IF;
+    selected_result := peer_report.result;
+    is_forfeit := peer_report.kind = 'forfeit';
+    new_state := 'confirmed';
+    new_source := CASE WHEN is_forfeit OR peer_report.actor_role = 'captain' THEN 'captain'
+      ELSE 'player_report' END;
+    confirm_now := true;
+  ELSE
+    IF selected_result IS NULL THEN
+      RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023';
+    END IF;
+    IF p_action = 'reject' AND (peer_report.match_id IS NULL OR selected_result = peer_report.result) THEN
+      RAISE EXCEPTION 'invalid_state' USING ERRCODE = '55000';
+    END IF;
+    new_state := CASE
+      WHEN peer_report.match_id IS NULL THEN 'reported'
+      WHEN selected_result <> peer_report.result OR p_action = 'reject' THEN 'disputed'
+      WHEN is_forfeit OR peer_report.kind = 'forfeit' THEN 'reported'
+      ELSE 'confirmed' END;
+    confirm_now := new_state = 'confirmed';
+    new_source := CASE WHEN actor_role = 'captain' OR peer_report.actor_role = 'captain'
+      THEN 'captain' ELSE 'player_report' END;
+  END IF;
+  IF side IS NOT NULL THEN
+    INSERT INTO public.team_tournament_m3_board_reports
+      (match_id, board_no, side, result, kind, actor_id, actor_role)
+      VALUES (match_row.id, board_no, side, selected_result,
+        CASE WHEN is_forfeit THEN 'forfeit' ELSE 'game' END, p_actor, actor_role)
+    ON CONFLICT (match_id, board_no, side) DO UPDATE
+      SET result = excluded.result, kind = excluded.kind, actor_id = excluded.actor_id,
+        actor_role = excluded.actor_role, reported_at = clock_timestamp();
+  END IF;
+  INSERT INTO public.team_tournament_m3_board_states(match_id, board_no, status)
+    VALUES (match_row.id, board_no, new_state)
+    ON CONFLICT (match_id, board_no) DO UPDATE SET status = excluded.status;
+
+  IF confirm_now THEN
+    UPDATE public.team_tournament_board_results b
+      SET result = selected_result, confirmed = true, source = new_source,
+        revision = board.revision + 1
+      WHERE b.match_id = match_row.id AND b.board_no = team_tournament_m3_result.board_no;
+    INSERT INTO public.team_tournament_result_audit
+      (tournament_id, match_id, board_no, revision, actor_id, action,
+       old_result, new_result, old_confirmed, new_confirmed, reason)
+      VALUES (p_id, match_row.id, board_no, board.revision + 1, p_actor,
+        CASE WHEN board.confirmed THEN 'correct' ELSE 'confirm' END,
+        board.result, selected_result, board.confirmed, true,
+        coalesce(reason, 'Matching player or captain reports'));
+  END IF;
+  new_value := jsonb_build_object('board_result',
+    CASE WHEN confirm_now THEN selected_result ELSE board.result END,
+    'confirmed', confirm_now, 'source', CASE WHEN confirm_now THEN new_source ELSE board.source END,
+    'status', new_state, 'reported_result', selected_result, 'side', side);
+  INSERT INTO public.team_tournament_m3_action_audit
+    (tournament_id, match_id, board_no, actor_id, actor_role, action,
+     old_value, new_value, reason)
+    VALUES (p_id, match_row.id, board_no, p_actor, actor_role, p_action,
+      old_value, new_value, reason);
+  RETURN jsonb_build_object('match_id', match_row.id, 'board_no', board_no,
+    'status', new_state, 'confirmed', confirm_now,
+    'result', CASE WHEN confirm_now THEN selected_result ELSE board.result END);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.team_tournament_m3_result(uuid, text, uuid, jsonb)
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.team_tournament_m3_result(uuid, text, uuid, jsonb) TO service_role;
