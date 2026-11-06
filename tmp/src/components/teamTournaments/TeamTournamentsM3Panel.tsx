@@ -154,7 +154,9 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
   const active = event.status === 'registration' && Date.parse(event.registration_deadline) > Date.now();
   const boardCount = event.board_count;
   const myLineups = (event.lineups ?? []).filter(row => row.entry_id === myEntry?.id);
-  const myConsent = (event.lineups ?? []).some(row => row.player_id === userId && !row.consented_at);
+  const pendingConsents = [...new Set((event.lineups ?? [])
+    .filter(row => row.player_id === userId && !row.consented_at)
+    .map(row => row.entry_id))];
   const people = new Map((event.profiles ?? []).map(row => [row.id, row.username]));
   const invitationToken = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('invite') : null;
@@ -208,8 +210,11 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
           })}>{tr('m3Withdraw')}</button>
       </>}
     </form>}
-    {myConsent && api && active && <button className="mt-3 min-h-11" type="button" disabled={busy}
-      onClick={() => void mutate(signal => api.lineupAction(id,'consent',signal))}>{tr('m3Consent')}</button>}
+    {api && active && pendingConsents.map(entryId =>
+      <button key={entryId} className="mt-3 min-h-11" type="button" disabled={busy}
+        onClick={() => void mutate(signal => api.consent(id, entryId, signal))}>
+        {tr('m3Consent')} · {event.entries?.find(entry => entry.id === entryId)?.club_name ?? '—'}
+      </button>)}
     {myEntry && active && api && <section className="mt-4 grid gap-2">
       <h3>{tr('m3Lineup')} · {myEntry.club_name}</h3>
       {myEntry.submitted_at && <p role="status">{tr('m3Submitted')}</p>}
