@@ -24,13 +24,20 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  const flagGatedLink=/ {10}\{import\.meta\.env\.VITE_CLUBS_NRW_ENABLED === 'true' && \(\n {12}<Link to="\/region\/nrw"[^>]+md:hidden">\n {14}NRW – Schach\n {12}<\/Link>\n {10}\)\}\n\n/;
  assert.match(readFileSync(home,'utf8'),flagGatedLink);
  // A disabled M3 must leave the approved Home byte-for-byte unchanged.
- const m3Import="import MyTournamentCard from '../components/teamTournaments/MyTournamentCard';\\n";
- const m3Block=/ {10}\\{\\/\\* M3 HOME CARD START \\*\\/\\}\\n[\\s\\S]*? {10}\\{\\/\\* M3 HOME CARD END \\*\\/\\}\\n\\n/;
+ const m3Import="import MyTournamentCard from '../components/teamTournaments/MyTournamentCard';"+String.fromCharCode(10);
+ const m3Start='          {/* M3 HOME CARD START */}';
+ const m3End='          {/* M3 HOME CARD END */}'+String.fromCharCode(10,10);
  const currentHome=readFileSync(home,'utf8');
- assert.match(currentHome,m3Block);
+ const start=currentHome.indexOf(m3Start);
+ const finish=currentHome.indexOf(m3End,start);
+ assert.ok(start>=0 && finish>start,'M3 block must be bounded');
  assert.match(currentHome,/VITE_TEAM_TOURNAMENTS_ENABLED === 'true'/);
  assert.match(currentHome,/VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true'/);
- assert.equal(currentHome.replace(m3Import,'').replace(m3Block,'').replace(flagGatedLink,''),homeBaseline);
+ const disabledHome=currentHome.replace(m3Import,'');
+ const disabledStart=disabledHome.indexOf(m3Start);
+ const disabledFinish=disabledHome.indexOf(m3End,disabledStart);
+ const withoutM3=disabledHome.slice(0,disabledStart)+disabledHome.slice(disabledFinish+m3End.length);
+ assert.equal(withoutM3.replace(flagGatedLink,''),homeBaseline);
  for(const path of ['/region/nrw','/region/nrw/turniere','/region/nrw/ligen','/region/nrw/vereine','/region/nrw/news','/region/nrw/live','/clubs-nrw/bochumer-sv-02','/spieltag','/vorbereitung']){
   assert.equal(nrwAuthReturnTarget(path,{clubs:false,spieltag:false,preparation:false}),null);
   assert.equal(nrwAuthReturnTarget(path,{clubs:true,spieltag:true,preparation:true}),path);
