@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import {
@@ -21,6 +21,7 @@ export default function TeamTournamentsTab(props: ScopeProps) {
 }
 
 function TournamentScope({ selected, onSelect, token, actorId, tr }: ScopeProps & { token?: string; actorId?: string; tr: TournamentCopy }) {
+  const location = useLocation();
   const [list, setList] = useState<TournamentList | null>(null);
   const [event, setEvent] = useState<Tournament | null>(null);
   const [preview, setPreview] = useState<TournamentPreview | null>(null);
@@ -105,7 +106,13 @@ function TournamentScope({ selected, onSelect, token, actorId, tr }: ScopeProps 
   const current = list?.tournaments.find(x => x.id === selected);
   const conflict = error instanceof TournamentError && ['result_conflict', 'invalid_state'].includes(error.code);
   const locked = busy || conflict || loading;
-  const signIn = '/profile?returnTo=%2Fspieltag';
+  // A captain's single-use invitation must survive the sign-in redirect.
+  // Restrict the return location to our own Spieltag route (never an external URL).
+  const invite = new URLSearchParams(location.search).get('invite');
+  const returnTo = selected && invite && /^[a-f0-9]{64}$/.test(invite)
+    ? '/spieltag?tab=turniere&tournament=' + encodeURIComponent(selected) + '&invite=' + invite
+    : '/spieltag?tab=turniere' + (selected ? '&tournament=' + encodeURIComponent(selected) : '');
+  const signIn = '/profile?returnTo=' + encodeURIComponent(returnTo);
   return <section className="section-page team-tournament-page">
     <header>
       <h1>{event?.name ?? tr('tab')}</h1>
