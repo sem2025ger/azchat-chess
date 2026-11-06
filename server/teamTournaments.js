@@ -333,16 +333,35 @@ function installTeamTournaments(app, {
     if (!config || !event) fail(404, 'not_found');
     const teams = await readQuery(client.from('team_tournament_teams')
       .select('id,name').eq('tournament_id', req.tournamentId).order('seed').limit(16));
-    const entries = await readQuery(client.from('team_tournament_m3_entries')
-      .select('id,club_name,submitted_at').eq('tournament_id', req.tournamentId).limit(16));
+    const [entries, roles] = await Promise.all([
+      readQuery(client.from('team_tournament_m3_entries')
+        .select('id,club_name,captain_id,submitted_at').eq('tournament_id', req.tournamentId).limit(16)),
+      readQuery(client.from('team_tournament_roles')
+        .select('role,team_id').eq('tournament_id', req.tournamentId)
+        .eq('user_id', req.tournamentActor).limit(3)),
+    ]);
     const ownRows = await readQuery(client.from('team_tournament_m3_lineups')
       .select('entry_id,board_no,player_id').eq('player_id', req.tournamentActor).limit(32));
     const rosterIds = [...new Set([...teams.map(team => team.id),
       ...entries.map(entry => entry.id), ...ownRows.map(row => row.entry_id)])];
     const lineups = rosterIds.length ? await readQuery(client.from('team_tournament_m3_lineups')
       .select('entry_id,board_no,player_id').in('entry_id', rosterIds).order('board_no').limit(256)) : [];
+    const playerIds = [...new Set(lineups.map(row => row.player_id))];
+    const profiles = playerIds.length ? await readQuery(client.from('profiles')
+      .select('id,username').in('id', playerIds).limit(256)) : [];
+    // Staff can see all reports, other authenticated callers only board rows
+    // their JWT may read under m3_board_reader RLS.
+    const matches = event.status === 'published' || event.status === 'finished'
+      ? await readQuery(client.from('team_tournament_matches')
+        .select('id,round_no,home_team_id,away_team_id')
+        .eq('tournament_id', req.tournamentId).limit(120)) : [];
+    const matchIds = matches.map(match => match.id);
+    const states = matchIds.length ? await readQuery(client.from('team_tournament_m3_board_states')
+      .select('match_id,board_no,status').in('match_id', matchIds).limit(256)) : [];
+    const reports = matchIds.length ? await readQuery(client.from('team_tournament_m3_board_reports')
+      .select('match_id,board_no,side,result,kind').in('match_id', matchIds).limit(512)) : [];
     res.json({ ...event, ...config, teams, remaining_spots: config.max_teams - teams.length,
-      entries, lineups });
+      entries, roles, lineups, profiles, matches, states, reports });
   }));
 
   router.post('/:tournament/teams', wrap(async (req, res) => {
