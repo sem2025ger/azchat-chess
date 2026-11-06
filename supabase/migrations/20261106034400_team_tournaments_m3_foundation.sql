@@ -698,3 +698,50 @@ $$;
 REVOKE ALL ON FUNCTION public.team_tournament_m3_result(uuid, text, uuid, jsonb)
   FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.team_tournament_m3_result(uuid, text, uuid, jsonb) TO service_role;
+
+-- User-JWT, RLS-invoker home card read. Returns at most one active OTB board.
+CREATE FUNCTION public.team_tournament_m3_my_board()
+RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $$
+  SELECT jsonb_build_object(
+    'tournament_id', t.id, 'tournament_name', t.name,
+    'match_id', m.id, 'round_no', m.round_no, 'board_no', l.board_no,
+    'opponent', opponent.username,
+    'side', CASE WHEN (l.entry_id = m.home_team_id) = b.home_white THEN 'white' ELSE 'black' END,
+    'result', b.result, 'confirmed', b.confirmed,
+    'status', coalesce(state.status, 'pending'),
+    'opponent_report', peer.result, 'opponent_kind', peer.kind
+  )
+  FROM public.team_tournament_m3_lineups l
+  JOIN public.team_tournament_m3_entries e ON e.id = l.entry_id
+  JOIN public.team_tournaments t ON t.id = e.tournament_id
+  JOIN public.team_tournament_matches m ON m.tournament_id = t.id
+    AND l.entry_id IN (m.home_team_id,m.away_team_id)
+  JOIN public.team_tournament_board_results b ON b.match_id = m.id
+    AND b.board_no = l.board_no
+  JOIN public.team_tournament_m3_lineups other_player
+    ON other_player.entry_id = CASE
+      WHEN l.entry_id = m.home_team_id THEN m.away_team_id ELSE m.home_team_id END
+    AND other_player.board_no = l.board_no
+  JOIN public.profiles opponent ON opponent.id = other_player.player_id
+  LEFT JOIN public.team_tournament_m3_board_states state
+    ON state.match_id = m.id AND state.board_no = l.board_no
+  LEFT JOIN public.team_tournament_m3_board_reports peer
+    ON peer.match_id = m.id AND peer.board_no = l.board_no
+      AND peer.side <> CASE
+        WHEN (l.entry_id = m.home_team_id) = b.home_white THEN 'white' ELSE 'black' END
+  WHERE l.player_id = (SELECT auth.uid()) AND t.status = 'published'
+    AND m.round_no = (
+      SELECT min(r.round_no) FROM public.team_tournament_rounds r
+      WHERE r.tournament_id = t.id AND EXISTS (
+        SELECT 1 FROM public.team_tournament_matches pending_match
+        JOIN public.team_tournament_board_results pending_board
+          ON pending_board.match_id = pending_match.id
+        WHERE pending_match.tournament_id = t.id AND pending_match.round_no = r.round_no
+          AND NOT pending_board.confirmed
+      )
+    )
+  ORDER BY t.published_at DESC, t.id, m.round_no, l.board_no LIMIT 1;
+$$;
+REVOKE ALL ON FUNCTION public.team_tournament_m3_my_board()
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.team_tournament_m3_my_board() TO authenticated;
