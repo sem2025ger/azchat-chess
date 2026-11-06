@@ -187,6 +187,13 @@ function installTeamTournaments(app, {
     return { ...data, official: calculateTable(data.teams, data.matches, data.rules),
       provisional: calculateTable(data.teams, data.matches, data.rules, true) };
   }
+  router.get('/my-board', wrap(async (req, res) => {
+    requireM3();
+    await authenticate(req);
+    await tickDueEvents();
+    const board = await rpc(req.tournamentClient, 'team_tournament_m3_my_board', {});
+    res.json({ board: board ?? null });
+  }));
   router.get('/:tournament', wrap(async (req, res) => res.json(withStandings(
     await snapshot(publicClient, req.tournamentId, false)))));
 
