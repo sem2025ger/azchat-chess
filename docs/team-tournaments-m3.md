@@ -18,21 +18,22 @@ M1 and M2 command, round-robin, audit and UI are the compatibility baseline.
 - All pairings exist after publication. Current round advances only after **every board** in the preceding round is confirmed; no re-pairing.
 - Existing `VITE_TEAM_TOURNAMENTS_ENABLED` and server-side flag remain default **OFF**. Keep the six languages, existing themes and responsive behavior.
 
-## Current implementation — verified by code review, not acceptance tested
+## Implemented on the Draft branch (not deployed)
 
-- Forward-only migration `supabase/migrations/20261106034400_team_tournaments_m3_foundation.sql`: tables for event configuration, token digests, captain entries and draft lineups; RLS foundation; atomic event creation using the existing M1 command. This migration is **incomplete** and is **not applied**.
-- `server/teamTournamentTime.js`: server-side Berlin local-time round-trip validation, mirroring existing Spieltag behavior.
-- `server/teamTournaments.js`: authenticated `POST /api/team-tournaments/self-service` accepts `name`, `start_time`, `registration_deadline`, `boards_per_team`, `min_teams`, `max_teams`; delegates to atomic service-held RPC. This endpoint is available only while the existing server feature flag is true. The M3 database RPC **must exist** before using it.
-- `server/teamTournamentTime.test.js`, `server/teamTournamentM3Api.test.js`: focused time, auth, input and flag tests. Full database acceptance testing has **not** been performed.
+- New forward-only `supabase/migrations/20261106034400_team_tournaments_m3_foundation.sql`: event configuration, hashed/revocable captain invites, captain entries, user-consented board-ordered lineups, concurrent capacity enforcement, deadline transition, private result reports, audited decisions and RLS. It modifies no applied M1 migrations and **has not been applied to QA**.
+- `server/teamTournamentTime.js`: Berlin wall-time conversion that rejects DST overlaps/gaps; matching M1 Spieltag convention.
+- `server/teamTournaments.js`: M3 endpoints for event creation, invites, redemption, lineup drafts, previous lineup, consent, submit/withdraw, bounded username lookup, current user board, signed reports, captain forfeit and organizer/arbiter decisions.
+- Existing M1 Berger round-robin engine and M1 command transaction are reused for publication, not forked. Every deadline read/command uses an event row lock and idempotent state check.
+- Existing Turniere UI has organizer and captain forms, roster search and consent flows, board-result view and dispute decisions. Home card is double-gated by `VITE_TEAM_TOURNAMENTS_ENABLED` and `VITE_TEAM_TOURNAMENTS_M3_ENABLED`. Backend M3 requires `TEAM_TOURNAMENTS_M3_ENABLED=true` in addition to the original tournament flag. **Both M3 flags default OFF.**
+- `tmp/src/components/teamTournaments/copy.ts` extends the existing DE/EN/AZ/TR/UA/RU copy; `tmp/tests/clubs-nrw.test.mjs` removes only the precisely bounded M3 block before comparing the prior Home baseline byte-for-byte.
 
-## Not yet implemented — block release
+## Test evidence and remaining release blockers
 
-- Invite creation/revocation/redemption and token delivery; lineup editing, previous draft and player consent; atomic submit/withdraw/capacity enforcement.
-- Automatic publication/cancellation and a fully published M1 schedule under concurrency.
-- Per-player reporting, captain substitution of actor, forfeits, disputes, source attribution and audit; user-JWT visibility and safe public responses.
-- Home card, owner tournament UI, localized copy and the narrowly revised `clubs-nrw.test.mjs` homepage regression.
-- Transactional PostgreSQL regression, REST/RPC penetration checks, clean security advisors, owner pilot, matching QA server and Vercel Preview.
-- Do not assert the requested 5-for-4 capacity, 1/2/3-team transitions or round-advancement acceptance until tests run.
+- Intermediate Server CI `42157857391` (`421f8fe3`) completed **445/445 tests, 0 failures, 0 skips**. It covered 5 concurrent captains competing for 4 places, single-use tokens, player consent/role visibility, 1-team cancellation, 2-team publication, 3-team byes, concurrent deadline publication and audited reports/decisions/forfeits. A later commit added revoked-invite, anonymous-visibility and published-roster checks; its **new full CI must pass independently**.
+- Intermediate frontend CI was green before later UI and API test changes. Do **not** infer current frontend or browser QA success from those earlier runs.
+- Still required: latest frontend and server CI green with zero skips; direct hosted PostgREST/RPC checks of RLS; QA migration application and rolled-back regression; security advisor review; responsive browser inspection and full owner pilot with four captains and sixteen players.
+- Particularly verify actual public-vs-private API payloads, the event's exact board count in editor, captain-driven forfeit confirmations, unresolved dispute highlighting and promotion to next round only after all boards are confirmed. Do not call these complete solely from static code review.
+- Do not apply the M3 migration or enable any M3 flag before a full green CI run at a single commit. No production deployment or merge is authorized.
 
 ## Database and deployment safety
 
