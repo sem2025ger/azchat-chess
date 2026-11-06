@@ -82,12 +82,13 @@ export default function MyTournamentCard() {
       <p className="text-sm mt-1">{tr('opponent')} {board.opponent} · {tr('myColor')}: {board.side === 'white' ? tr('white') : tr('black')}</p>
       {board.status === 'confirmed' || board.confirmed ? <p role="status" className="text-xs mt-2">{tr('confirmedResult')}</p> :
         board.status === 'disputed' ? <p role="alert" className="text-xs mt-2">{tr('disputed')}</p> :
-        opponentResult ? <>
-          <p className="text-xs mt-2">{tr('opponentReported')}: {ownLabel(opponentResult)}</p>
-          <button type="button" disabled={pending}
-            className="mt-2 min-h-11 rounded-lg border border-[#9A825F] px-4 text-sm"
-            onClick={() => void submit('confirm', null)}>{tr('confirm')}</button>
-        </> : <>
+        <>
+          {opponentResult && <div className="mt-2">
+            <p className="text-xs">{tr('opponentReported')}: {ownLabel(opponentResult)}</p>
+            <button type="button" disabled={pending}
+              className="mt-2 min-h-11 rounded-lg border border-[#9A825F] px-4 text-sm"
+              onClick={() => void submit('confirm', null)}>{tr('confirm')}</button>
+          </div>}
           <p className="text-xs mt-2">{tr('reporting')}</p>
           <div className="flex flex-wrap gap-2 mt-2">
             {(['win', 'draw', 'loss'] as const).map(choice =>
