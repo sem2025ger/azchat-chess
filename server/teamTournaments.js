@@ -148,23 +148,34 @@ function installTeamTournaments(app, {
   async function tickEvent(eventId) {
     if (!m3Enabled) return;
     if (!commandClient) fail(503, 'storage_unavailable');
-    const [config, event] = await Promise.all([
-      readQuery(commandClient.from('team_tournament_m3_config')
-        .select('registration_deadline,min_teams').eq('tournament_id', eventId).maybeSingle()),
-      readQuery(commandClient.from('team_tournaments')
-        .select('status').eq('id', eventId).maybeSingle()),
-    ]);
-    if (!config || event?.status !== 'registration' ||
-        Date.parse(config.registration_deadline) > now()) return;
-    const [teams, rules] = await Promise.all([
-      readQuery(commandClient.from('team_tournament_teams')
-        .select('id').eq('tournament_id', eventId).order('seed').limit(16)),
-      readQuery(commandClient.from('team_tournament_rulesets')
-        .select('*').eq('tournament_id', eventId).single()),
-    ]);
-    const rounds = teams.length >= config.min_teams ?
-      bergerSchedule(teams.map(team => team.id), rules) : [];
-    await rpc(commandClient, 'team_tournament_m3_tick', { p_id: eventId, p_rounds: rounds });
+    // The schedule is assembled in JS using the existing Berger engine.
+    // A captain submission can commit between this read and PostgreSQL's
+    // FOR UPDATE lock. Retry a rejected schedule with a *fresh* team list;
+    // the SQL transaction itself never publishes a partial schedule.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const [config, event] = await Promise.all([
+        readQuery(commandClient.from('team_tournament_m3_config')
+          .select('registration_deadline,min_teams').eq('tournament_id', eventId).maybeSingle()),
+        readQuery(commandClient.from('team_tournaments')
+          .select('status').eq('id', eventId).maybeSingle()),
+      ]);
+      if (!config || event?.status !== 'registration' ||
+          Date.parse(config.registration_deadline) > now()) return;
+      const [teams, rules] = await Promise.all([
+        readQuery(commandClient.from('team_tournament_teams')
+          .select('id').eq('tournament_id', eventId).order('seed').limit(16)),
+        readQuery(commandClient.from('team_tournament_rulesets')
+          .select('*').eq('tournament_id', eventId).single()),
+      ]);
+      const rounds = teams.length >= config.min_teams ?
+        bergerSchedule(teams.map(team => team.id), rules) : [];
+      try {
+        await rpc(commandClient, 'team_tournament_m3_tick', { p_id: eventId, p_rounds: rounds });
+        return;
+      } catch (error) {
+        if (error.code !== 'invalid_input' || attempt === 2) throw error;
+      }
+    }
   }
   async function tickDueEvents() {
     if (!m3Enabled) return;
