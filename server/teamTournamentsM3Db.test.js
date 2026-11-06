@@ -78,7 +78,7 @@ test('M3 isolated PostgreSQL migration, 5-for-4 capacity and deadline transition
         error => error.code === 'P0001');
       await command(captains[i], 'set_lineup', id, { players: players.slice(i * 4, i * 4 + 4) });
       for (const player of players.slice(i * 4, i * 4 + 4)) {
-        await command(player, 'consent', id);
+        await command(player, 'consent', id, { entry_id: redeemed.entry_id });
       }
     }
     const visible = await as('authenticated', captains[0],
