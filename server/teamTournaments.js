@@ -143,8 +143,39 @@ function installTeamTournaments(app, {
     if (limited('ip:' + req.ip, 120)) return next(Object.assign(new Error(), { status: 429, code: 'rate_limit' }));
     next();
   });
-  router.param('tournament', wrap((req, res, next) => {
+  // Always derive deadline state on access, never through an in-process timer.
+  // The stored deadline and PostgreSQL event-row lock are authoritative.
+  async function tickEvent(eventId) {
+    if (!m3Enabled) return;
+    if (!commandClient) fail(503, 'storage_unavailable');
+    const [config, event] = await Promise.all([
+      readQuery(commandClient.from('team_tournament_m3_config')
+        .select('registration_deadline,min_teams').eq('tournament_id', eventId).maybeSingle()),
+      readQuery(commandClient.from('team_tournaments')
+        .select('status').eq('id', eventId).maybeSingle()),
+    ]);
+    if (!config || event?.status !== 'registration' ||
+        Date.parse(config.registration_deadline) > now()) return;
+    const [teams, rules] = await Promise.all([
+      readQuery(commandClient.from('team_tournament_teams')
+        .select('id').eq('tournament_id', eventId).order('seed').limit(16)),
+      readQuery(commandClient.from('team_tournament_rulesets')
+        .select('*').eq('tournament_id', eventId).single()),
+    ]);
+    const rounds = teams.length >= config.min_teams ?
+      bergerSchedule(teams.map(team => team.id), rules) : [];
+    await rpc(commandClient, 'team_tournament_m3_tick', { p_id: eventId, p_rounds: rounds });
+  }
+  async function tickDueEvents() {
+    if (!m3Enabled) return;
+    if (!commandClient) fail(503, 'storage_unavailable');
+    const due = await readQuery(commandClient.from('team_tournament_m3_config')
+      .select('tournament_id').lte('registration_deadline', new Date(now()).toISOString()).limit(50));
+    for (const event of due) await tickEvent(event.tournament_id);
+  }
+  router.param('tournament', wrap(async (req, res, next) => {
     req.tournamentId = uuid(req.params.tournament);
+    await tickEvent(req.tournamentId);
     next();
   }));
 
@@ -188,6 +219,7 @@ function installTeamTournaments(app, {
   }
   router.get('/', wrap(async (req, res) => {
     if (req.headers.authorization !== undefined) await authenticate(req);
+    await tickDueEvents();
     const client = req.tournamentActor ? req.tournamentClient : publicClient;
     res.json(await listTournaments(client, req.tournamentActor, commandClient));
   }));
