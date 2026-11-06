@@ -117,9 +117,10 @@ async function listTournaments(client, actor, commandClient) {
 }
 
 function installTeamTournaments(app, {
-  enabled = false, verifyToken = async () => null, clientForToken, publicClient, commandClient, now = Date.now,
+  enabled = false, m3Enabled = false, verifyToken = async () => null, clientForToken, publicClient, commandClient, now = Date.now,
 } = {}) {
   const router = express();
+  const requireM3 = () => { if (!m3Enabled) fail(404, 'feature_disabled'); };
   const budgets = new Map();
   router.set('trust proxy', 1);
   function limited(key, limit) {
@@ -161,6 +162,7 @@ function installTeamTournaments(app, {
 
   // Anonymous registration overview: never include lineup rows, consent or captain IDs.
   router.get('/:tournament/self-service/public', wrap(async (req, res) => {
+    requireM3();
     const [event, config] = await Promise.all([
       readQuery(publicClient.from('team_tournaments').select('id,name,status')
         .eq('id', req.tournamentId).maybeSingle()),
@@ -201,6 +203,7 @@ function installTeamTournaments(app, {
   // M3 creation is atomic: M1 event, ruleset, M3 deadlines and registration
   // commit or roll back together. Local wall times are checked again server-side.
   router.post('/self-service', wrap(async (req, res) => {
+    requireM3();
     fields(req.body, ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams']);
     const name = label(req.body.name, 120);
     const boardCount = integer(req.body.boards_per_team ?? 4, 1, 16);
@@ -222,10 +225,14 @@ function installTeamTournaments(app, {
   }));
   router.get('/:tournament/workspace', wrap(async (req, res) => res.json(withStandings(
     await snapshot(req.tournamentClient, req.tournamentId, true)))));
-  const m3command = (req, action, input = {}) => rpc(commandClient, 'team_tournament_m3_command', {
-    p_actor: req.tournamentActor, p_action: action, p_id: req.tournamentId, p_input: input,
-  });
+  const m3command = (req, action, input = {}) => {
+    requireM3();
+    return rpc(commandClient, 'team_tournament_m3_command', {
+      p_actor: req.tournamentActor, p_action: action, p_id: req.tournamentId, p_input: input,
+    });
+  };
   router.post('/:tournament/invites', wrap(async (req, res) => {
+    requireM3();
     fields(req.body, ['club_name']);
     const token = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(token).digest('hex');
@@ -236,10 +243,12 @@ function installTeamTournaments(app, {
     res.status(201).json({ ...result, token });
   }));
   router.post('/:tournament/invites/:invite/revoke', wrap(async (req, res) => {
+    requireM3();
     fields(req.body ?? {}, []);
     res.json(await m3command(req, 'revoke_invite', { invite_id: uuid(req.params.invite) }));
   }));
   router.post('/:tournament/redeem', wrap(async (req, res) => {
+    requireM3();
     fields(req.body, ['token']);
     if (typeof req.body.token !== 'string' || !/^[a-f0-9]{64}$/.test(req.body.token)) {
       fail(400, 'invalid_input');
@@ -249,6 +258,7 @@ function installTeamTournaments(app, {
     }));
   }));
   router.post('/:tournament/lineup', wrap(async (req, res) => {
+    requireM3();
     fields(req.body, ['players']);
     if (!Array.isArray(req.body.players) || req.body.players.length > 16) fail(400, 'invalid_input');
     res.json(await m3command(req, 'set_lineup', { players: req.body.players.map(uuid) }));
@@ -258,12 +268,14 @@ function installTeamTournaments(app, {
     ['submit', 'submit'], ['withdraw', 'withdraw'],
   ]) {
     router.post('/:tournament/lineup/' + route, wrap(async (req, res) => {
+      requireM3();
       fields(req.body ?? {}, []);
       res.json(await m3command(req, action));
     }));
   }
 
   router.get('/:tournament/self-service', wrap(async (req, res) => {
+    requireM3();
     const client = req.tournamentClient;
     const [config, event] = await Promise.all([
       readQuery(client.from('team_tournament_m3_config').select(
@@ -345,7 +357,7 @@ function installTeamTournamentsFromEnv(app, verifyToken, env = process.env, fact
   const serviceKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
   const configured = enabled && env.SUPABASE_URL && publicKey;
   return installTeamTournaments(app, {
-    enabled, verifyToken,
+    enabled, m3Enabled: env.TEAM_TOURNAMENTS_M3_ENABLED === 'true', verifyToken,
     publicClient: configured ? makeClient(env, publicKey, factory) : null,
     clientForToken: configured ? token => makeClient(env, publicKey, factory, token) : null,
     commandClient: configured && serviceKey ? makeClient(env, serviceKey, factory) : null,
