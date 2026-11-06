@@ -81,6 +81,13 @@ test('M3 isolated PostgreSQL migration, 5-for-4 capacity and deadline transition
         await command(player, 'consent', id, { entry_id: redeemed.entry_id });
       }
     }
+    const wrongEntry = (await db.pool.query(
+      'SELECT id FROM public.team_tournament_m3_entries WHERE tournament_id=$1 AND captain_id=$2',
+      [id, captains[1]])).rows[0].id;
+    await assert.rejects(command(players[0], 'consent', id, {}),
+      error => error.code === '22023');
+    await assert.rejects(command(players[0], 'consent', id, { entry_id: wrongEntry }),
+      error => error.code === '42501');
     const visible = await as('authenticated', captains[0],
       'SELECT board_no,player_id FROM public.team_tournament_m3_lineups ORDER BY board_no');
     assert.equal(visible.length, 4);
