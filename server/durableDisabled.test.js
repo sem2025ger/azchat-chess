@@ -65,7 +65,7 @@ test('disabled durability preserves HTTP and real socket starts during optional 
         child.send({ type: 'recover' }); await recovered;
         const response = await fetch(`http://127.0.0.1:${port}/health`);
         assert.equal(response.status, 200);
-        assert.deepEqual(await response.json(), { ok: true, service: 'aztr-chess-server' });
+        assert.deepEqual(await response.json(), { ok: true, service: 'aztr-chess-server', commit: null });
         const connect = async user => {
           const socket = io(`http://127.0.0.1:${port}`, { transports: ['websocket'],
             auth: { accessToken: user }, reconnection: false });
