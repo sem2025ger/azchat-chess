@@ -194,6 +194,10 @@ export function createTournamentM3Api(base: string, token: string, fetchImpl: ty
       result: BoardResult | null, reason: string | null, signal: AbortSignal) =>
       request(boardPath(board.tournament_id, board.match_id, board.board_no) + '/' + action, signal,
         { result, reason }),
+    boardAction: (event: string, match: string, board: number,
+      action: 'report' | 'confirm' | 'reject' | 'forfeit' | 'decide' | 'correct',
+      result: BoardResult | null, reason: string | null, signal: AbortSignal) =>
+      request(boardPath(event, match, board) + '/' + action, signal, { result, reason }),
   };
 }
 
