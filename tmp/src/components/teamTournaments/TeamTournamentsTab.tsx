@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { isTournamentReturnPath } from '../../lib/nrwAuthReturn';
 import {
   createTournamentApi, TournamentError, type Tournament, type TournamentApi, type TournamentList, type TournamentPreview,
 } from '../../services/teamTournaments';
@@ -14,10 +15,13 @@ type ScopeProps = { selected: string | null; onSelect: (id: string | null) => vo
 // Preserve a one-use captain token after login without accepting an external
 // return URL or forwarding unrelated search parameters.
 export function tournamentSignInPath(selected: string | null, search: string): string {
+  const tab = '/spieltag?tab=turniere';
+  const event = selected ? tab + '&tournament=' + encodeURIComponent(selected) : tab;
   const invite = new URLSearchParams(search).get('invite');
-  const returnTo = selected && invite && /^[a-f0-9]{64}$/.test(invite)
-    ? '/spieltag?tab=turniere&tournament=' + encodeURIComponent(selected) + '&invite=' + invite
-    : '/spieltag?tab=turniere' + (selected ? '&tournament=' + encodeURIComponent(selected) : '');
+  const invitedEvent = invite ? event + '&invite=' + encodeURIComponent(invite) : null;
+  const returnTo = invitedEvent && isTournamentReturnPath(invitedEvent)
+    ? invitedEvent
+    : isTournamentReturnPath(event) ? event : tab;
   return '/profile?returnTo=' + encodeURIComponent(returnTo);
 }
 export default function TeamTournamentsTab(props: ScopeProps) {
