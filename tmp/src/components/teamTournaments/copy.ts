@@ -100,6 +100,20 @@ const labels = {
   m3Decide: ['Ergebnis entscheiden', 'Decide result', 'Nəticə barədə qərar ver', 'Sonucu karara bağla', 'Вирішити результат', 'Принять решение по результату'],
   m3Correction: ['Ergebnis korrigieren', 'Correct result', 'Nəticəni düzəlt', 'Sonucu düzelt', 'Виправити результат', 'Исправить результат'],
   m3PlayerNotFound: ['Kein Spieler gefunden', 'No user found', 'Oyunçu tapılmadı', 'Oyuncu bulunamadı', 'Гравця не знайдено', 'Игрок не найден'],
+  m3Pending: ['Ausstehend', 'Pending', 'Gözləyir', 'Bekliyor', 'Очікується', 'Ожидается'],
+  m3Reported: ['Gemeldet', 'Reported', 'Bildirilib', 'Bildirildi', 'Повідомлено', 'Сообщено'],
+  m3Confirmed: ['Bestätigt', 'Confirmed', 'Təsdiqlənib', 'Onaylandı', 'Підтверджено', 'Подтверждено'],
+  m3DisputedStatus: ['Strittig', 'Disputed', 'Mübahisəlidir', 'İtirazlı', 'Спірний', 'Спорный'],
+  m3Forfeit: ['Kampflos', 'Forfeit', 'Texniki nəticə', 'Hükmen', 'Технічний результат', 'Технический результат'],
+  m3Played: ['Gespielt', 'Played', 'Oynanılıb', 'Oynandı', 'Зіграно', 'Сыграно'],
+  m3Full: ['Alle Plätze sind belegt.', 'The event is full.', 'Bütün yerlər doludur.', 'Tüm yerler dolu.', 'Усі місця зайняті.', 'Все места заняты.'],
+  m3InvalidInvite: ['Einladung ungültig, abgelaufen oder bereits verwendet.', 'Invitation invalid, expired or already used.', 'Dəvət etibarsızdır, vaxtı bitib və ya istifadə edilib.', 'Davet geçersiz, süresi dolmuş veya kullanılmış.', 'Запрошення недійсне, прострочене або використане.', 'Приглашение недействительно, просрочено или уже использовано.'],
+  m3LineupIncomplete: ['Aufstellung oder Einwilligungen fehlen.', 'Lineup or player consent is incomplete.', 'Heyət və ya oyunçu razılığı tamamlanmayıb.', 'Kadro veya oyuncu onayı eksik.', 'Склад або згода гравців неповні.', 'Состав или согласия игроков неполные.'],
+  m3DuplicatePlayer: ['Ein Spieler ist bereits in einer anderen Mannschaft angemeldet.', 'A player is already registered for another team.', 'Oyunçu artıq başqa komandada qeydiyyatdan keçib.', 'Bir oyuncu başka takımda kayıtlı.', 'Гравець уже зареєстрований за іншу команду.', 'Игрок уже заявлен за другую команду.'],
+  m3NoPrevious: ['Keine frühere Aufstellung vorhanden.', 'No previous lineup available.', 'Əvvəlki heyət tapılmadı.', 'Önceki kadro bulunamadı.', 'Попереднього складу немає.', 'Предыдущий состав не найден.'],
+  m3MoveUp: ['Spieler nach oben verschieben', 'Move player up', 'Oyunçunu yuxarı keçir', 'Oyuncuyu yukarı taşı', 'Перемістити гравця вище', 'Переместить игрока вверх'],
+  m3MoveDown: ['Spieler nach unten verschieben', 'Move player down', 'Oyunçunu aşağı keçir', 'Oyuncuyu aşağı taşı', 'Перемістити гравця нижче', 'Переместить игрока вниз'],
+  m3RemovePlayer: ['Spieler entfernen', 'Remove player', 'Oyunçunu sil', 'Oyuncuyu çıkar', 'Вилучити гравця', 'Удалить игрока'],
   myTournament: ['Mein Turnier', 'My tournament', 'Mənim turnirim', 'Turnuvam', 'Мій турнір', 'Мой турнир'],
   opponent: ['Gegen', 'vs', 'Rəqib', 'Rakip', 'Проти', 'Против'],
   myColor: ['Du spielst', 'You play', 'Sən oynayırsan', 'Oynadığın renk', 'Ви граєте', 'Вы играете'],
@@ -119,6 +133,12 @@ export type TournamentCopy = (key: keyof typeof labels) => string;
 export const tournamentCopy = (language: Language): TournamentCopy => key => labels[key][columns[language]];
 
 export function tournamentErrorMessage(code: string, tr: TournamentCopy) {
+  if (code === 'event_full') return tr('m3Full');
+  if (code === 'invalid_invite') return tr('m3InvalidInvite');
+  if (code === 'lineup_incomplete') return tr('m3LineupIncomplete');
+  if (code === 'player_already_registered') return tr('m3DuplicatePlayer');
+  if (code === 'no_previous_lineup') return tr('m3NoPrevious');
+  if (code === 'invalid_time') return tr('invalid');
   if (code === 'result_conflict' || code === 'invalid_state') return tr('conflict');
   if (code === 'invalid_input' || code === 'already_exists') return tr('invalid');
   if (code === 'not_found' || code === 'not_allowed') return tr('access');
