@@ -582,7 +582,7 @@ BEGIN
   ELSIF p_actor = first_player THEN
     actor_role := 'player'; v_side := 'white';
   ELSIF p_actor = second_player THEN
-    actor_role := 'player'; side := 'black';
+    actor_role := 'player'; v_side := 'black';
   ELSE
     SELECT CASE WHEN team_id = white_team THEN 'white' ELSE 'black' END
     INTO v_side FROM public.team_tournament_roles
