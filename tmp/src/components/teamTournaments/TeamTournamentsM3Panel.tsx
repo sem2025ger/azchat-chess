@@ -258,7 +258,9 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
           const homePlayer=(event.lineups??[]).find(row=>row.entry_id===match.home_team_id&&row.board_no===board.board_no);
           const awayPlayer=(event.lineups??[]).find(row=>row.entry_id===match.away_team_id&&row.board_no===board.board_no);
           const isOwnTeam = !!myEntry && [match.home_team_id,match.away_team_id].includes(myEntry.id);
-          return <div key={board.board_no} className="py-3 border-t border-current/10">
+          return <div key={board.board_no} className={state?.status === 'disputed'
+            ? 'rounded-lg border-2 border-red-500/80 bg-red-950/20 px-2 py-3'
+            : 'py-3 border-t border-current/10'}>
             <p>{tr('board')} {board.board_no}: {people.get(homePlayer?.player_id ?? '')??'–'} – {people.get(awayPlayer?.player_id ?? '')??'–'}</p>
             <p>{tr('white')}: {board.home_white ? people.get(homePlayer?.player_id??'') : people.get(awayPlayer?.player_id??'')}</p>
             <p>{board.result} · {state?.status ?? 'pending'}</p>
