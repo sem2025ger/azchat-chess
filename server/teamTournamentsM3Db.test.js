@@ -118,4 +118,66 @@ test('M3 isolated PostgreSQL migration, 5-for-4 capacity and deadline transition
     await assert.rejects(command(captains[0],'withdraw',id),error=>error.code==='55000');
     assert.equal((await as('authenticated',stranger,'SELECT count(*)::int n FROM public.team_tournament_m3_lineups')).length,1);
   });
+  await t.test('players confirm, conflict disputes, staff adjudicates, captains proxy and audit sources stay distinct', async () => {
+    const pairs = await db.pool.query(
+      'SELECT id,home_team_id,away_team_id FROM public.team_tournament_matches WHERE tournament_id=$1 ORDER BY round_no,id LIMIT 1',[id]);
+    const match = pairs.rows[0];
+    const boards = await db.pool.query(
+      'SELECT board_no,home_white FROM public.team_tournament_board_results WHERE match_id=$1 ORDER BY board_no',[match.id]);
+    const whiteTeam = boards.rows[0].home_white ? match.home_team_id : match.away_team_id;
+    const blackTeam = boards.rows[0].home_white ? match.away_team_id : match.home_team_id;
+    async function player(team, boardNo) {
+      const result = await db.pool.query(
+        'SELECT player_id FROM public.team_tournament_m3_lineups WHERE entry_id=$1 AND board_no=$2',
+        [team, boardNo]);
+      return result.rows[0].player_id;
+    }
+    const white = await player(whiteTeam,1);
+    const black = await player(blackTeam,1);
+    async function result(who, action, boardNo, outcome, reason = null) {
+      const [row] = await as('service_role',null,
+        'SELECT public.team_tournament_m3_result($1,$2,$3,$4::jsonb) AS data',
+        [who,action,id,JSON.stringify({match_id:match.id,board_no:boardNo,result:outcome,reason})]);
+      return row.data;
+    }
+    await assert.rejects(result(stranger,'report',1,'1-0'),error=>error.code==='42501');
+    assert.equal((await result(white,'report',1,'1-0')).status,'reported');
+    assert.equal((await result(black,'confirm',1,null)).status,'confirmed');
+    const official = await db.pool.query(
+      'SELECT result,source,confirmed FROM public.team_tournament_board_results WHERE match_id=$1 AND board_no=1',[match.id]);
+    assert.deepEqual(official.rows[0],{result:'1-0',source:'player_report',confirmed:true});
+    const white2 = await player(whiteTeam,2);
+    const black2 = await player(blackTeam,2);
+    assert.equal((await result(white2,'report',2,'1-0')).status,'reported');
+    assert.equal((await result(black2,'report',2,'0-1')).status,'disputed');
+    assert.equal((await db.pool.query(
+      'SELECT confirmed FROM public.team_tournament_board_results WHERE match_id=$1 AND board_no=2',[match.id])).rows[0].confirmed,false);
+    assert.equal((await result(owner,'decide',2,'1/2-1/2','Signed scoresheets')).status,'confirmed');
+    assert.equal((await db.pool.query(
+      'SELECT source FROM public.team_tournament_board_results WHERE match_id=$1 AND board_no=2',[match.id])).rows[0].source,'organizer_decision');
+    await assert.rejects(result(white2,'report',2,'1-0'),error=>error.code==='55000');
+    await result(owner,'correct',2,'0-1','Appeal reviewed');
+    const audit = await db.pool.query(
+      'SELECT actor_id, actor_role, action, old_value, new_value, changed_at FROM public.team_tournament_m3_action_audit WHERE tournament_id=$1 ORDER BY id',[id]);
+    assert.deepEqual(audit.rows.map(row=>row.action),
+      ['report','confirm','report','report','decide','correct']);
+    assert.ok(audit.rows.every(row=>row.actor_id && row.actor_role && row.changed_at && row.old_value && row.new_value));
+    assert.equal((await as('authenticated',stranger,
+      'SELECT * FROM public.team_tournament_m3_action_audit WHERE tournament_id=$1',[id])).length,0);
+    assert.equal((await as('authenticated',owner,
+      'SELECT * FROM public.team_tournament_m3_action_audit WHERE tournament_id=$1',[id])).length,6);
+    const captainWhite = (await db.pool.query(
+      'SELECT captain_id FROM public.team_tournament_m3_entries WHERE id=$1',[whiteTeam])).rows[0].captain_id;
+    const captainBlack = (await db.pool.query(
+      'SELECT captain_id FROM public.team_tournament_m3_entries WHERE id=$1',[blackTeam])).rows[0].captain_id;
+    await assert.rejects(result(stranger,'forfeit',3,'+/-'),error=>error.code==='42501');
+    assert.equal((await result(captainWhite,'forfeit',3,'+/-')).status,'reported');
+    assert.equal((await result(captainBlack,'confirm',3,null)).status,'confirmed');
+    const forfeit = (await db.pool.query(
+      'SELECT source,confirmed,result FROM public.team_tournament_board_results WHERE match_id=$1 AND board_no=3',[match.id])).rows[0];
+    assert.deepEqual(forfeit,{source:'captain',confirmed:true,result:'+/-'});
+    assert.equal((await db.pool.query(
+      'SELECT count(*)::int n FROM public.team_tournament_board_results WHERE tournament_id=$1 AND NOT confirmed',[id])).rows[0].n,21);
+  });
+
 });
