@@ -361,6 +361,42 @@ function installTeamTournaments(app, {
     res.json(await command(req, 'publish', { rounds }));
   }));
 
+  // M3 over-the-board reporting is independent of online-game ingestion.
+  // The database derives the player's board/side and captain/staff permissions.
+  for (const action of ['report','confirm','reject','forfeit','decide','correct']) {
+    router.post('/:tournament/matches/:match/boards/:board/m3/' + action, wrap(async (req, res) => {
+      requireM3();
+      fields(req.body ?? {}, ['result','reason']);
+      if (!/^(?:[1-9]|1[0-6])$/.test(req.params.board)) fail(400, 'invalid_input');
+      if (req.body.result != null &&
+          (!RESULTS.includes(req.body.result) || req.body.result === 'pending')) {
+        fail(400, 'invalid_input');
+      }
+      if (action !== 'confirm' && req.body.result == null) fail(400, 'invalid_input');
+      const reason = req.body.reason == null ? null : label(req.body.reason, 500);
+      if (['decide','correct'].includes(action) && !reason) fail(400, 'invalid_input');
+      res.json(await rpc(commandClient, 'team_tournament_m3_result', {
+        p_actor: req.tournamentActor, p_action: action, p_id: req.tournamentId,
+        p_input: { match_id: uuid(req.params.match), board_no: Number(req.params.board),
+          result: req.body.result ?? null, reason },
+      }));
+    }));
+  }
+  router.get('/:tournament/matches/:match/boards/:board/m3/reports', wrap(async (req, res) => {
+    requireM3();
+    if (!/^(?:[1-9]|1[0-6])$/.test(req.params.board)) fail(400, 'invalid_input');
+    const match = uuid(req.params.match);
+    const board = Number(req.params.board);
+    const [states, reports] = await Promise.all([
+      readQuery(req.tournamentClient.from('team_tournament_m3_board_states')
+        .select('status').eq('match_id', match).eq('board_no', board).limit(1)),
+      readQuery(req.tournamentClient.from('team_tournament_m3_board_reports')
+        .select('side,result,kind,actor_role,reported_at').eq('match_id', match).eq('board_no', board)
+        .order('side').limit(2)),
+    ]);
+    res.json({ status: states[0]?.status ?? 'pending', reports });
+  }));
+
   for (const action of ['record', 'confirm', 'correct']) {
     router.post('/:tournament/matches/:match/boards/:board/' + action, wrap(async (req, res) => {
       fields(req.body, ['result', 'reason', 'revision']);
