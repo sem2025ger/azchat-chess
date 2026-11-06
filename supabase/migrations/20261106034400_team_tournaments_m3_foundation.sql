@@ -80,15 +80,20 @@ CREATE POLICY published_or_assigned ON public.team_tournaments FOR SELECT TO ano
     OR EXISTS (SELECT 1 FROM public.team_tournament_roles r
       WHERE r.tournament_id = team_tournaments.id AND r.user_id = (SELECT auth.uid())));
 
+-- Configuration has no private data. An unconditional policy also avoids an
+-- RLS recursion (the event's registration policy itself checks this table).
 CREATE POLICY m3_config_visible ON public.team_tournament_m3_config FOR SELECT TO anon, authenticated
-  USING (EXISTS (SELECT 1 FROM public.team_tournaments e WHERE e.id = tournament_id));
+  USING (true);
 
 -- Public sees submitted club names (from M1 team table), never draft lineups.
 CREATE POLICY m3_submitted_team_names ON public.team_tournament_teams FOR SELECT TO anon, authenticated
   USING (EXISTS (SELECT 1 FROM public.team_tournament_m3_config c
     JOIN public.team_tournaments e ON e.id = c.tournament_id
     WHERE c.tournament_id = team_tournament_teams.tournament_id
-      AND e.status IN ('registration', 'published', 'finished')));
+      AND e.status IN ('registration', 'published', 'finished')
+      AND EXISTS (SELECT 1 FROM public.team_tournament_m3_entries joined
+        WHERE joined.tournament_id = e.id AND joined.id = team_tournament_teams.id
+          AND joined.submitted_at IS NOT NULL)));
 
 CREATE POLICY m3_entry_private ON public.team_tournament_m3_entries FOR SELECT TO authenticated
   USING (captain_id = (SELECT auth.uid())
