@@ -402,3 +402,15 @@ $$;
 REVOKE ALL ON FUNCTION public.team_tournament_m3_tick(uuid, jsonb)
   FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.team_tournament_m3_tick(uuid, jsonb) TO service_role;
+
+-- Bounded due-event discovery for list reads: never rescan finished events.
+CREATE FUNCTION public.team_tournament_m3_due_events()
+RETURNS SETOF uuid LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $$
+  SELECT c.tournament_id FROM public.team_tournament_m3_config c
+  JOIN public.team_tournaments t ON t.id = c.tournament_id
+  WHERE t.status = 'registration' AND c.registration_deadline <= clock_timestamp()
+  ORDER BY c.registration_deadline, c.tournament_id LIMIT 50;
+$$;
+REVOKE ALL ON FUNCTION public.team_tournament_m3_due_events()
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.team_tournament_m3_due_events() TO service_role;
