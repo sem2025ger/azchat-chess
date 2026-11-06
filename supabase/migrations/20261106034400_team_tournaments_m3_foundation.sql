@@ -104,12 +104,12 @@ CREATE POLICY m3_entry_private ON public.team_tournament_m3_entries FOR SELECT T
 -- entire draft board order. The helper uses auth.uid(), never caller input
 -- as an actor, and lives outside the exposed API schemas.
 CREATE FUNCTION private.team_tournament_m3_is_teammate(p_entry uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.team_tournament_m3_lineups
       WHERE entry_id = p_entry AND player_id = (SELECT auth.uid())
   );
-$;
+$$;
 REVOKE ALL ON FUNCTION private.team_tournament_m3_is_teammate(uuid)
   FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION private.team_tournament_m3_is_teammate(uuid) TO authenticated;
