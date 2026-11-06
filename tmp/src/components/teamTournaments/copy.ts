@@ -74,6 +74,19 @@ const labels = {
   secured: ['Remis bereits gesichert', 'At least a draw secured', 'Ən azı heç-heçə təmin edilib', 'En az beraberlik garantilendi', 'Щонайменше нічию забезпечено', 'Как минимум ничья обеспечена'],
   winner: ['Sieg gesichert', 'Win secured', 'Qələbə təmin edilib', 'Galibiyet garantilendi', 'Перемогу забезпечено', 'Победа обеспечена'],
   saved: ['Gespeichert.', 'Saved.', 'Yadda saxlanıldı.', 'Kaydedildi.', 'Збережено.', 'Сохранено.'],
+  myTournament: ['Mein Turnier', 'My tournament', 'Mənim turnirim', 'Turnuvam', 'Мій турнір', 'Мой турнир'],
+  opponent: ['Gegen', 'vs', 'Rəqib', 'Rakip', 'Проти', 'Против'],
+  myColor: ['Du spielst', 'You play', 'Sən oynayırsan', 'Oynadığın renk', 'Ви граєте', 'Вы играете'],
+  reporting: ['Mein Ergebnis melden', 'Report my result', 'Nəticəmi bildir', 'Sonucumu bildir', 'Повідомити результат', 'Сообщить результат'],
+  homeWin: ['Sieg', 'Win', 'Qələbə', 'Galibiyet', 'Перемога', 'Победа'],
+  homeDraw: ['Remis', 'Draw', 'Heç-heçə', 'Beraberlik', 'Нічия', 'Ничья'],
+  homeLoss: ['Niederlage', 'Loss', 'Məğlubiyyət', 'Mağlubiyet', 'Поразка', 'Поражение'],
+  opponentReported: ['Gegner meldet', 'Opponent reported', 'Rəqib bildirdi', 'Rakib bildirdi', 'Суперник повідомив', 'Соперник сообщил'],
+  disputed: ['Ergebnis strittig', 'Result disputed', 'Nəticə mübahisəlidir', 'Sonuç itirazlı', 'Результат спірний', 'Результат оспаривается'],
+  confirmedResult: ['Ergebnis bestätigt', 'Result confirmed', 'Nəticə təsdiqlənib', 'Sonuç onaylandı', 'Результат підтверджено', 'Результат подтверждён'],
+  reportSaved: ['Meldung gespeichert', 'Report saved', 'Nəticə saxlandı', 'Bildirim kaydedildi', 'Повідомлення збережено', 'Сообщение сохранено'],
+  reportError: ['Meldung nicht gespeichert. Bitte neu laden.', 'Report not saved. Please reload.', 'Nəticə saxlanmadı. Yenilə.', 'Sonuç kaydedilmedi. Yenile.', 'Не збережено. Оновіть.', 'Не сохранено. Обновите.'],
+
 } as const;
 
 export type TournamentCopy = (key: keyof typeof labels) => string;
