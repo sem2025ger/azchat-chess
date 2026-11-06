@@ -11,6 +11,15 @@ import { M3Create, M3EventPanel } from './TeamTournamentsM3Panel';
 import '../../styles/sections.css';
 
 type ScopeProps = { selected: string | null; onSelect: (id: string | null) => void };
+// Preserve a one-use captain token after login without accepting an external
+// return URL or forwarding unrelated search parameters.
+export function tournamentSignInPath(selected: string | null, search: string): string {
+  const invite = new URLSearchParams(search).get('invite');
+  const returnTo = selected && invite && /^[a-f0-9]{64}$/.test(invite)
+    ? '/spieltag?tab=turniere&tournament=' + encodeURIComponent(selected) + '&invite=' + invite
+    : '/spieltag?tab=turniere' + (selected ? '&tournament=' + encodeURIComponent(selected) : '');
+  return '/profile?returnTo=' + encodeURIComponent(returnTo);
+}
 export default function TeamTournamentsTab(props: ScopeProps) {
   const { session, isLoading } = useAuth();
   const { language } = useLanguage();
@@ -106,13 +115,7 @@ function TournamentScope({ selected, onSelect, token, actorId, tr }: ScopeProps 
   const current = list?.tournaments.find(x => x.id === selected);
   const conflict = error instanceof TournamentError && ['result_conflict', 'invalid_state'].includes(error.code);
   const locked = busy || conflict || loading;
-  // A captain's single-use invitation must survive the sign-in redirect.
-  // Restrict the return location to our own Spieltag route (never an external URL).
-  const invite = new URLSearchParams(location.search).get('invite');
-  const returnTo = selected && invite && /^[a-f0-9]{64}$/.test(invite)
-    ? '/spieltag?tab=turniere&tournament=' + encodeURIComponent(selected) + '&invite=' + invite
-    : '/spieltag?tab=turniere' + (selected ? '&tournament=' + encodeURIComponent(selected) : '');
-  const signIn = '/profile?returnTo=' + encodeURIComponent(returnTo);
+  const signIn = tournamentSignInPath(selected, location.search);
   return <section className="section-page team-tournament-page">
     <header>
       <h1>{event?.name ?? tr('tab')}</h1>
