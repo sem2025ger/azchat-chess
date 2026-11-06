@@ -1,39 +1,41 @@
 name: QA M3 hosted pilot
 
 on:
-  workflow_dispatch:
-    inputs:
-      render_sha:
-        description: Full SHA of the live chessaz-m3-qa-api deployment
-        required: true
-        type: string
+  pull_request:
+    types: [labeled]
 
 permissions:
   contents: read
 
 concurrency:
-  group: qa-m3-hosted-pilot
+  group: qa-m3-hosted-pilot-${{ github.event.pull_request.number }}-${{ github.event.label.name }}
   cancel-in-progress: false
 
 jobs:
   pilot:
-    if: github.repository == 'sem2025ger/azchat-chess' && github.ref == 'refs/heads/feat/team-tournaments-m3-self-service-20261106'
+    if: >-
+      github.repository == 'sem2025ger/azchat-chess' &&
+      github.event.label.name == 'run-qa-m3-pilot' &&
+      github.event.pull_request.number == 194 &&
+      github.event.pull_request.head.repo.full_name == 'sem2025ger/azchat-chess' &&
+      github.event.pull_request.head.ref == 'feat/team-tournaments-m3-self-service-20261106'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Check reviewed branch and Render deploy SHA
+      - name: Check reviewed PR head
         env:
-          RENDER_SHA: ${{ inputs.render_sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          if [[ "$RENDER_SHA" != "$GITHUB_SHA" ]] ||
+          if [[ "$(git rev-parse HEAD)" != "$PR_HEAD_SHA" ]] ||
              ! git merge-base --is-ancestor 392f9109e36ce50d48c33ad5d59f3c7512e74b19 HEAD; then
-            echo '::error::Deploy this reviewed branch SHA on the dedicated M3 QA service first.'
+            echo '::error::The checkout does not match the reviewed M3 PR history.'
             exit 1
           fi
 
@@ -42,11 +44,14 @@ jobs:
           node-version: 24.19.0
 
       - name: Install exact server dependencies
+        id: install
         working-directory: server
         run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Exercise hosted QA API and verify cleanup
         id: pilot
+        # Re-run all jobs replays the old event. Only a fresh label runs the pilot.
+        if: github.run_attempt == 1
         timeout-minutes: 13
         env:
           QA_SUPABASE_URL: ${{ secrets.QA_SUPABASE_URL }}
@@ -54,10 +59,15 @@ jobs:
           QA_SUPABASE_SERVICE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_KEY }}
           QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
           M3_QA_API_URL: ${{ secrets.M3_QA_API_URL }}
+          M3_QA_EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
         run: node server/scripts/qaM3Pilot.js
 
       - name: Retry cleanup after failure or interruption
-        if: always() && (steps.pilot.outcome == 'failure' || steps.pilot.outcome == 'cancelled')
+        if: >-
+          always() && steps.install.outcome == 'success' &&
+          (github.run_attempt > 1 ||
+          (steps.pilot.outputs.fixture_cleanup_needed == 'true' &&
+          (steps.pilot.outcome == 'failure' || steps.pilot.outcome == 'cancelled')))
         timeout-minutes: 4
         env:
           QA_SUPABASE_URL: ${{ secrets.QA_SUPABASE_URL }}
@@ -66,3 +76,32 @@ jobs:
           QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
           M3_QA_API_URL: ${{ secrets.M3_QA_API_URL }}
         run: node server/scripts/qaM3Pilot.js --cleanup
+
+  remove-label:
+    needs: pilot
+    if: >-
+      always() && needs.pilot.result != 'skipped' && github.run_attempt == 1 &&
+      github.repository == 'sem2025ger/azchat-chess' &&
+      github.event.label.name == 'run-qa-m3-pilot' &&
+      github.event.pull_request.number == 194 &&
+      github.event.pull_request.head.repo.full_name == 'sem2025ger/azchat-chess' &&
+      github.event.pull_request.head.ref == 'feat/team-tournaments-m3-self-service-20261106'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Remove the one-use pilot label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --max-time 20 --request DELETE \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            "$GITHUB_API_URL/repos/sem2025ger/azchat-chess/issues/194/labels/run-qa-m3-pilot")
+          case "$status" in
+            204|404) ;;
+            *) echo "::error::Could not remove the pilot label (HTTP $status)."; exit 1 ;;
+          esac
