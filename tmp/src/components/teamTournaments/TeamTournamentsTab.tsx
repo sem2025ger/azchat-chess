@@ -7,6 +7,7 @@ import {
 } from '../../services/teamTournaments';
 import { tournamentCopy, tournamentErrorMessage, type TournamentCopy } from './copy';
 import { CreateTournament, TournamentDetail } from './TeamTournamentViews';
+import { M3Create, M3EventPanel } from './TeamTournamentsM3Panel';
 import '../../styles/sections.css';
 
 type ScopeProps = { selected: string | null; onSelect: (id: string | null) => void };
@@ -16,10 +17,10 @@ export default function TeamTournamentsTab(props: ScopeProps) {
   const tr = tournamentCopy(language);
   if (isLoading) return <p role="status">{tr('loading')}</p>;
   return <TournamentScope key={props.selected + ':' + (session?.user.id ?? 'spectator')}
-    {...props} token={session?.access_token} tr={tr} />;
+    {...props} token={session?.access_token} actorId={session?.user.id} tr={tr} />;
 }
 
-function TournamentScope({ selected, onSelect, token, tr }: ScopeProps & { token?: string; tr: TournamentCopy }) {
+function TournamentScope({ selected, onSelect, token, actorId, tr }: ScopeProps & { token?: string; actorId?: string; tr: TournamentCopy }) {
   const [list, setList] = useState<TournamentList | null>(null);
   const [event, setEvent] = useState<Tournament | null>(null);
   const [preview, setPreview] = useState<TournamentPreview | null>(null);
@@ -54,7 +55,14 @@ function TournamentScope({ selected, onSelect, token, tr }: ScopeProps & { token
           if (!(error instanceof TournamentError) || error.code !== 'not_found') throw error;
         }
       }
-      return { rows, detail: detail ?? await api.detail(selected, signal) };
+      if (detail) return { rows, detail };
+      try { detail = await api.detail(selected, signal); }
+      catch (error) {
+        if (import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED !== 'true' ||
+            !(error instanceof TournamentError) || error.code !== 'not_found') throw error;
+        // Registration has a separate M3 public view; no M1 pairing exists yet.
+      }
+      return { rows, detail };
     }
     void load().then(({ rows, detail }) => {
       if (!signal.aborted) { setList(rows); setEvent(detail); }
@@ -125,7 +133,13 @@ function TournamentScope({ selected, onSelect, token, tr }: ScopeProps & { token
         const result = await api.create(name, rules, signal);
         if (!signal.aborted) onSelect(result.id);
       }, false)} />}
+      {import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' && token && list.can_create &&
+        <M3Create tr={tr} token={token} onCreated={id => onSelect(id)} />}
     </>}
+    {selected && import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' &&
+      <M3EventPanel tr={tr} id={selected} token={token}
+        userId={actorId}
+        onUpdated={reload} />}
     {event && <TournamentDetail event={event} preview={preview} tr={tr} busy={locked}
       captainId={current?.captain_team_id} activeRound={current?.current_round} actions={{
         team: (name, captainId) => void run((api, signal) => api.team(event.id, name, captainId, signal)),
