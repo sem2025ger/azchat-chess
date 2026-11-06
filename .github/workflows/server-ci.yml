@@ -12,6 +12,7 @@ on:
       - feat/spieltag-v1
       - feat/vorbereitung-v1
       - feat/vorbereitung-names-v1
+      - feat/team-tournaments-m2-qa
   workflow_dispatch:
 
 permissions:
