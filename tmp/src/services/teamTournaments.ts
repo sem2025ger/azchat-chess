@@ -125,6 +125,7 @@ export type M3TeamEntry = { id: string; club_name: string; captain_id: string; s
 export type M3Lineup = { entry_id: string; board_no: number; player_id: string; consented_at: string | null };
 export type M3Event = {
   id: string; name: string; status: TournamentStatus | 'cancelled';
+  board_count: number;
   starts_at: string; registration_deadline: string; min_teams: number; max_teams: number;
   teams: { id: string; name: string }[]; remaining_spots: number;
   entries?: M3TeamEntry[]; roles?: { role: TournamentRole; team_id: string | null }[];
