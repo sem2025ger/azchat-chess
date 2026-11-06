@@ -608,6 +608,20 @@ BEGIN
   IF p_action NOT IN ('decide','correct') AND board.confirmed THEN
     RAISE EXCEPTION 'invalid_state' USING ERRCODE = '55000';
   END IF;
+  IF p_action NOT IN ('decide','correct') AND EXISTS (
+    SELECT 1 FROM public.team_tournament_matches previous_match
+    JOIN public.team_tournament_board_results previous_board
+      ON previous_board.match_id = previous_match.id
+    WHERE previous_match.tournament_id = p_id
+      AND previous_match.round_no < match_row.round_no AND NOT previous_board.confirmed
+  ) THEN
+    RAISE EXCEPTION 'invalid_state' USING ERRCODE = '55000';
+  END IF;
+  -- No-show outcomes are exclusively captain actions, never player reports.
+  IF (p_action = 'forfeit' AND selected_result NOT IN ('+/-','-/+','-/-')) OR
+     (p_action IN ('report','reject') AND selected_result IN ('+/-','-/+','-/-')) THEN
+    RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023';
+  END IF;
   SELECT status INTO old_state FROM public.team_tournament_m3_board_states
     WHERE match_id = match_row.id AND board_no = team_tournament_m3_result.board_no;
   old_state := coalesce(old_state, 'pending');
