@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import {
   createTournamentM3Api, createTournamentApi,
-  type M3Event, type M3EventInput, type Tournament, type BoardResult, type TournamentError,
+  type M3Event, type M3EventInput, type Tournament, type BoardResult,
 } from '../../services/teamTournaments';
 import type { TournamentCopy } from './copy';
 
@@ -152,7 +152,7 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
   const staff = organizer || arbiter;
   const myEntry = event.entries?.find(entry => entry.captain_id === userId);
   const active = event.status === 'registration' && Date.parse(event.registration_deadline) > Date.now();
-  const boardCount = published?.rules.board_count ?? 4;
+  const boardCount = event.board_count;
   const myLineups = (event.lineups ?? []).filter(row => row.entry_id === myEntry?.id);
   const myConsent = (event.lineups ?? []).some(row => row.player_id === userId && !row.consented_at);
   const people = new Map((event.profiles ?? []).map(row => [row.id, row.username]));
