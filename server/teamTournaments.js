@@ -1,6 +1,7 @@
 'use strict';
 
 const express = require('express');
+const { randomBytes, createHash } = require('node:crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { RESULTS, bergerSchedule, calculateTable } = require('./teamRoundRobin');
 const { validateEventTimes } = require('./teamTournamentTime');
@@ -13,7 +14,7 @@ const RULES = {
 const RESPONSE_ERRORS = {
   '42501': [403, 'not_allowed'], P0002: [404, 'not_found'], '55000': [409, 'invalid_state'],
   '40001': [409, 'result_conflict'], '23505': [409, 'already_exists'],
-  '23503': [400, 'invalid_input'], '23514': [400, 'invalid_input'], '22023': [400, 'invalid_input'],
+  '23503': [400, 'invalid_input'], '23514': [400, 'invalid_input'], '22023': [400, 'invalid_input'], '22P02': [400, 'invalid_input'],
 };
 
 function fail(status, code) {
@@ -65,6 +66,9 @@ function makeClient(env, key, factory, token) {
 
 async function readQuery(query) {
   const { data, error } = await query.abortSignal(AbortSignal.timeout(8000));
+  if (error?.code === 'P0001' && [
+    'event_full', 'invalid_invite', 'lineup_incomplete', 'player_already_registered', 'no_previous_lineup',
+  ].includes(error.message)) fail(error.message === 'no_previous_lineup' ? 404 : 409, error.message);
   if (error) fail(...(RESPONSE_ERRORS[error.code] ?? [503, 'temporarily_unavailable']));
   return data;
 }
@@ -204,6 +208,69 @@ function installTeamTournaments(app, {
   }));
   router.get('/:tournament/workspace', wrap(async (req, res) => res.json(withStandings(
     await snapshot(req.tournamentClient, req.tournamentId, true)))));
+  const m3command = (req, action, input = {}) => rpc(commandClient, 'team_tournament_m3_command', {
+    p_actor: req.tournamentActor, p_action: action, p_id: req.tournamentId, p_input: input,
+  });
+  router.post('/:tournament/invites', wrap(async (req, res) => {
+    fields(req.body, ['club_name']);
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const result = await m3command(req, 'create_invite', {
+      club_name: label(req.body.club_name, 120), token_hash: tokenHash,
+    });
+    // The raw token is returned exactly once and never stored by the API.
+    res.status(201).json({ ...result, token });
+  }));
+  router.post('/:tournament/invites/:invite/revoke', wrap(async (req, res) => {
+    fields(req.body ?? {}, []);
+    res.json(await m3command(req, 'revoke_invite', { invite_id: uuid(req.params.invite) }));
+  }));
+  router.post('/:tournament/redeem', wrap(async (req, res) => {
+    fields(req.body, ['token']);
+    if (typeof req.body.token !== 'string' || !/^[a-f0-9]{64}$/.test(req.body.token)) {
+      fail(400, 'invalid_input');
+    }
+    res.json(await m3command(req, 'redeem_invite', {
+      token_hash: createHash('sha256').update(req.body.token).digest('hex'),
+    }));
+  }));
+  router.post('/:tournament/lineup', wrap(async (req, res) => {
+    fields(req.body, ['players']);
+    if (!Array.isArray(req.body.players) || req.body.players.length > 16) fail(400, 'invalid_input');
+    res.json(await m3command(req, 'set_lineup', { players: req.body.players.map(uuid) }));
+  }));
+  for (const [route, action] of [
+    ['previous', 'copy_previous'], ['consent', 'consent'],
+    ['submit', 'submit'], ['withdraw', 'withdraw'],
+  ]) {
+    router.post('/:tournament/lineup/' + route, wrap(async (req, res) => {
+      fields(req.body ?? {}, []);
+      res.json(await m3command(req, action));
+    }));
+  }
+
+  router.get('/:tournament/self-service', wrap(async (req, res) => {
+    const client = req.tournamentClient;
+    const [config, event] = await Promise.all([
+      readQuery(client.from('team_tournament_m3_config').select(
+        'starts_at,registration_deadline,min_teams,max_teams').eq('tournament_id', req.tournamentId).maybeSingle()),
+      readQuery(client.from('team_tournaments').select('id,name,status').eq('id', req.tournamentId).maybeSingle()),
+    ]);
+    if (!config || !event) fail(404, 'not_found');
+    const teams = await readQuery(client.from('team_tournament_teams')
+      .select('id,name').eq('tournament_id', req.tournamentId).order('seed').limit(16));
+    const entries = await readQuery(client.from('team_tournament_m3_entries')
+      .select('id,club_name,submitted_at').eq('tournament_id', req.tournamentId).limit(16));
+    const ownRows = await readQuery(client.from('team_tournament_m3_lineups')
+      .select('entry_id,board_no,player_id').eq('player_id', req.tournamentActor).limit(32));
+    const rosterIds = [...new Set([...teams.map(team => team.id),
+      ...entries.map(entry => entry.id), ...ownRows.map(row => row.entry_id)])];
+    const lineups = rosterIds.length ? await readQuery(client.from('team_tournament_m3_lineups')
+      .select('entry_id,board_no,player_id').in('entry_id', rosterIds).order('board_no').limit(256)) : [];
+    res.json({ ...event, ...config, teams, remaining_spots: config.max_teams - teams.length,
+      entries, lineups });
+  }));
+
   router.post('/:tournament/teams', wrap(async (req, res) => {
     fields(req.body, ['name', 'captain_id']);
     const captain = req.body.captain_id == null ? null : uuid(req.body.captain_id);
