@@ -3,7 +3,7 @@ import {
   createTournamentM3Api, createTournamentApi,
   type M3Event, type M3EventInput, type Tournament, type BoardResult,
 } from '../../services/teamTournaments';
-import type { TournamentCopy } from './copy';
+import { tournamentErrorMessage, type TournamentCopy } from './copy';
 
 const outcomes: { result: BoardResult; text: string }[] = [
   { result: '1-0', text: '1–0' },
@@ -13,6 +13,20 @@ const outcomes: { result: BoardResult; text: string }[] = [
   { result: '-/+', text: '−/+' },
   { result: '-/-', text: '−/−' },
 ];
+
+function m3Error(failure: unknown, tr: TournamentCopy): string {
+  const code = failure instanceof Error ? failure.message : '';
+  return tournamentErrorMessage(code, tr);
+}
+
+function boardStatus(status: string | undefined, tr: TournamentCopy): string {
+  switch (status) {
+    case 'reported': return tr('m3Reported');
+    case 'confirmed': return tr('m3Confirmed');
+    case 'disputed': return tr('m3DisputedStatus');
+    default: return tr('m3Pending');
+  }
+}
 
 export function M3Create({ tr, token, onCreated }: {
   tr: TournamentCopy; token: string; onCreated: (event: string) => void;
@@ -38,7 +52,7 @@ export function M3Create({ tr, token, onCreated }: {
       const created = await createTournamentM3Api(import.meta.env.VITE_SERVER_URL, token).create(input, controller.signal);
       onCreated(created.id);
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'temporarily_unavailable');
+      setError(m3Error(failure, tr));
     } finally { setBusy(false); }
   }
   return <section className="section-card">
@@ -116,7 +130,7 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
         .sort((a,b) => a.board_no-b.board_no).map(row => row.player_id));
     }, failure => {
       if (!controller.signal.aborted && (!(failure instanceof Error) || failure.message !== 'not_found')) {
-        setError(failure instanceof Error ? failure.message : 'temporarily_unavailable');
+        setError(m3Error(failure, tr));
       }
     });
     return () => controller.abort();
@@ -130,7 +144,7 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
     setError('');
     const controller = new AbortController();
     try { await action(controller.signal); reload(); }
-    catch (failure) { setError(failure instanceof Error ? failure.message : 'temporarily_unavailable'); }
+    catch (failure) { setError(m3Error(failure, tr)); }
     finally { setBusy(false); }
   }
   async function searchPlayers() {
@@ -141,7 +155,7 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
       const result = await api.userSearch(search, new AbortController().signal);
       setChoices(result.users);
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'temporarily_unavailable');
+      setError(m3Error(failure, tr));
     } finally { setBusy(false); }
   }
 
@@ -225,15 +239,15 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
       {myEntry.submitted_at && <p role="status">{tr('m3Submitted')}</p>}
       <ol className="list-decimal list-inside">{draft.map((player,index)=><li key={player}>
         {people.get(player) ?? player}
-        <button type="button" className="min-h-11 mx-2" disabled={busy || index===0}
+        <button type="button" className="min-h-11 mx-2" aria-label={tr('m3MoveUp')+' '+(index+1)} disabled={busy || index===0}
           onClick={()=>setDraft(curr=>{
             const next=[...curr];[next[index-1],next[index]]=[next[index],next[index-1]];return next;
           })}>↑</button>
-        <button type="button" className="min-h-11 mx-2" disabled={busy || index===draft.length-1}
+        <button type="button" className="min-h-11 mx-2" aria-label={tr('m3MoveDown')+' '+(index+1)} disabled={busy || index===draft.length-1}
           onClick={()=>setDraft(curr=>{
             const next=[...curr];[next[index],next[index+1]]=[next[index+1],next[index]];return next;
           })}>↓</button>
-        <button type="button" className="min-h-11" disabled={busy}
+        <button type="button" className="min-h-11" aria-label={tr('m3RemovePlayer')+' '+(index+1)} disabled={busy}
           onClick={()=>setDraft(curr=>curr.filter((_,i)=>i!==index))}>×</button>
       </li>)}</ol>
       <div className="flex flex-wrap gap-2">
@@ -273,8 +287,10 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
             : 'py-3 border-t border-current/10'}>
             <p>{tr('board')} {board.board_no}: {people.get(homePlayer?.player_id ?? '')??'–'} – {people.get(awayPlayer?.player_id ?? '')??'–'}</p>
             <p>{tr('white')}: {board.home_white ? people.get(homePlayer?.player_id??'') : people.get(awayPlayer?.player_id??'')}</p>
-            <p>{board.result} · {state?.status ?? 'pending'}</p>
-            {reported.map(report => <p key={report.side}>{report.side}: {report.result} ({report.kind})</p>)}
+            <p>{board.result} · {boardStatus(state?.status, tr)}</p>
+            {reported.map(report => <p key={report.side}>
+              {report.side === 'white' ? tr('white') : tr('black')}: {report.result} ({report.kind === 'forfeit' ? tr('m3Forfeit') : tr('m3Played')})
+            </p>)}
             {isOwnTeam && !board.confirmed && <div className="flex flex-wrap gap-2">
               {(['1-0','1/2-1/2','0-1'] as const).map(result=><button type="button" key={result}
                 className="min-h-11" disabled={busy} onClick={()=>void mutate(signal=>
