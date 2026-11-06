@@ -244,9 +244,20 @@ function installTeamTournaments(app, {
     next();
   }));
   router.use(express.json({ limit: '12kb' }));
-  const command = (req, action, input) => rpc(commandClient, 'team_tournament_command', {
-    p_actor: req.tournamentActor, p_action: action, p_id: req.tournamentId ?? null, p_input: input,
-  });
+  async function assertLegacyEvent(req) {
+    if (!m3Enabled || !req.tournamentId) return;
+    const config = await readQuery(commandClient.from('team_tournament_m3_config')
+      .select('tournament_id').eq('tournament_id', req.tournamentId).maybeSingle());
+    if (config) fail(409, 'invalid_state');
+  }
+  const command = async (req, action, input) => {
+    if (action !== 'create' && action !== 'assign_arbiter' && action !== 'finish') {
+      await assertLegacyEvent(req);
+    }
+    return rpc(commandClient, 'team_tournament_command', {
+      p_actor: req.tournamentActor, p_action: action, p_id: req.tournamentId ?? null, p_input: input,
+    });
+  };
   router.post('/', wrap(async (req, res) => res.status(201).json(await command(req, 'create', createInput(req.body)))));
   // M3 creation is atomic: M1 event, ruleset, M3 deadlines and registration
   // commit or roll back together. Local wall times are checked again server-side.
