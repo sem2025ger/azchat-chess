@@ -255,6 +255,12 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
               {(['1-0','1/2-1/2','0-1'] as const).map(result=><button type="button" key={result}
                 className="min-h-11" disabled={busy} onClick={()=>void mutate(signal=>
                   api.boardAction(id,match.id,board.board_no,'report',result,null,signal))}>{result}</button>)}
+              {(['+/-','-/+','-/-'] as const).map(result=><button type="button" key={'forfeit-'+result}
+                className="min-h-11" disabled={busy}
+                aria-label={tr('whiteForfeit')+' / '+tr('blackForfeit')+': '+result}
+                onClick={()=>void mutate(signal=>
+                  api.boardAction(id,match.id,board.board_no,'forfeit',result,null,signal))}>
+                {result}</button>)}
               <button type="button" className="min-h-11" disabled={busy}
                 onClick={()=>void mutate(signal=>api.boardAction(id,match.id,board.board_no,'confirm',null,null,signal))}>
                 {tr('confirm')}</button>
