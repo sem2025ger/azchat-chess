@@ -111,7 +111,7 @@ test('M3 isolated PostgreSQL migration, 5-for-4 capacity and deadline transition
       'SELECT id FROM public.team_tournament_teams WHERE tournament_id=$1 ORDER BY seed',[id]);
     const rounds = bergerSchedule(entries.map(x => x.id), rules);
     const publication = await Promise.all(Array.from({ length: 4 }, () =>
-      as('service_role', null, 'SELECT public.team_tournament_m3_tick($1,$2) AS data',[id,rounds])));
+      as('service_role', null, 'SELECT public.team_tournament_m3_tick($1,$2::jsonb) AS data',[id,JSON.stringify(rounds)])));
     assert.ok(publication.every(x => x[0].data.status === 'published'));
     assert.equal((await db.pool.query('SELECT count(*)::int n FROM public.team_tournament_rounds WHERE tournament_id=$1',[id])).rows[0].n,3);
     assert.equal((await db.pool.query('SELECT count(*)::int n FROM public.team_tournament_board_results WHERE tournament_id=$1',[id])).rows[0].n,24);
