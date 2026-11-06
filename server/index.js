@@ -125,7 +125,7 @@ require('./aiCoach').installAiCoachFromEnv(app,verifyTokenProxy,coachIndex);
 
 app.get('/health', (req, res) => {
   const ok = durableGames.ready();
-  res.status(ok ? 200 : 503).json({ ok, service: "aztr-chess-server" });
+  res.status(ok ? 200 : 503).json({ ok, service: "aztr-chess-server", commit: process.env.RENDER_GIT_COMMIT || null });
 });
 
 const io = new Server(server, {

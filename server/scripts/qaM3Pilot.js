@@ -102,9 +102,6 @@ async function runPilot({ target, db, tag, email, anonKey, serviceKey, step, sig
   };
   const admin = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
 
-  // Render Free may cold-start before any route is ready. This public read carries no credentials.
-  const health = expect(await request(target.api, '/health', { timeout: 90000 }), 200);
-  check(health?.ok === true && health.service === 'aztr-chess-server', 'M3 QA server is not healthy.');
   expect(await api('/user-search?q=m3'), 401, 'authentication_required');
   for (const role of roles) {
     signal.throwIfAborted();
@@ -588,7 +585,7 @@ async function main() {
   const controller = new AbortController();
   for (const signal of ['SIGTERM', 'SIGINT']) process.once(signal, () => controller.abort());
   const { QA_SUPABASE_ANON_KEY: anonKey, QA_SUPABASE_SERVICE_KEY: serviceKey,
-    QA_DATABASE_URL: databaseUrl, GITHUB_RUN_ID: runId } = process.env;
+    QA_DATABASE_URL: databaseUrl, GITHUB_RUN_ID: runId, M3_QA_EXPECTED_SHA: expectedSha } = process.env;
   const cleanupOnly = process.argv[2] === '--cleanup';
   const tag = 'QA-M3-' + runId;
   const email = role => tag.toLowerCase() + '-' + role.toLowerCase() + '@example.com';
@@ -610,6 +607,15 @@ async function main() {
     check(anonKey && serviceKey && databaseUrl && anonKey !== serviceKey, 'Required QA credentials are missing or invalid.');
     for (const value of [anonKey, serviceKey, databaseUrl]) mask(value);
     console.log(`QA Supabase project: ${QA_REF}; Render host: ${M3_RENDER_HOST}`);
+    if (!cleanupOnly) {
+      check(/^[0-9a-f]{40}$/.test(expectedSha ?? ''), 'The reviewed PR head SHA is required.');
+      // Render Free may cold-start. This public read carries no credentials.
+      const health = expect(await request(target.api, '/health', { timeout: 90000 }), 200);
+      check(health?.ok === true && health.service === 'aztr-chess-server', 'M3 QA server is not healthy.');
+      check(health.commit === expectedSha, 'Render QA commit does not match the reviewed PR head.');
+      controller.signal.throwIfAborted();
+      if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, 'fixture_cleanup_needed=true\n');
+    }
     db = connect(databaseUrl);
     await db.connect();
     connected = true;
