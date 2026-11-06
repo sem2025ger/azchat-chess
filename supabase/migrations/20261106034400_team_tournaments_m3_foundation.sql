@@ -360,3 +360,45 @@ $$;
 REVOKE ALL ON FUNCTION public.team_tournament_m3_command(uuid, text, uuid, jsonb)
   FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.team_tournament_m3_command(uuid, text, uuid, jsonb) TO service_role;
+
+-- Triggered by the first ordinary read or command at/after deadline.
+-- M1's locked transaction and Berger schedule are reused (no scheduler or
+-- second pairing engine). The API supplies canonical Berger rounds after
+-- reading the now-immutable submitted-team list.
+CREATE FUNCTION public.team_tournament_m3_tick(p_id uuid, p_rounds jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$
+DECLARE
+  event public.team_tournaments%ROWTYPE;
+  config public.team_tournament_m3_config%ROWTYPE;
+  organizer_id uuid;
+  team_count integer;
+BEGIN
+  SELECT * INTO event FROM public.team_tournaments WHERE id = p_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE = 'P0002'; END IF;
+  SELECT * INTO config FROM public.team_tournament_m3_config WHERE tournament_id = p_id;
+  IF NOT FOUND THEN RETURN jsonb_build_object('status', event.status, 'm3', false); END IF;
+  IF event.status <> 'registration' OR clock_timestamp() < config.registration_deadline THEN
+    RETURN jsonb_build_object('status', event.status, 'm3', true);
+  END IF;
+  SELECT count(*) INTO team_count FROM public.team_tournament_teams
+    WHERE tournament_id = p_id;
+  IF team_count < config.min_teams THEN
+    UPDATE public.team_tournaments SET status = 'cancelled' WHERE id = p_id;
+    RETURN jsonb_build_object('status', 'cancelled', 'm3', true);
+  END IF;
+  IF team_count > config.max_teams OR p_rounds IS NULL OR jsonb_typeof(p_rounds) <> 'array' THEN
+    RAISE EXCEPTION 'invalid_schedule' USING ERRCODE = '22023';
+  END IF;
+  SELECT user_id INTO organizer_id FROM public.team_tournament_roles
+    WHERE tournament_id = p_id AND role = 'organizer' ORDER BY user_id LIMIT 1;
+  IF organizer_id IS NULL THEN
+    RAISE EXCEPTION 'not_allowed' USING ERRCODE = '42501';
+  END IF;
+  PERFORM public.team_tournament_command(organizer_id, 'lock', p_id, '{}'::jsonb);
+  RETURN public.team_tournament_command(organizer_id, 'publish', p_id,
+    jsonb_build_object('rounds', p_rounds));
+END;
+$$;
+REVOKE ALL ON FUNCTION public.team_tournament_m3_tick(uuid, jsonb)
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.team_tournament_m3_tick(uuid, jsonb) TO service_role;
