@@ -1,0 +1,68 @@
+name: QA M3 hosted pilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      render_sha:
+        description: Full SHA of the live chessaz-m3-qa-api deployment
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-m3-hosted-pilot
+  cancel-in-progress: false
+
+jobs:
+  pilot:
+    if: github.repository == 'sem2025ger/azchat-chess' && github.ref == 'refs/heads/feat/team-tournaments-m3-self-service-20261106'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Check reviewed branch and Render deploy SHA
+        env:
+          RENDER_SHA: ${{ inputs.render_sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$RENDER_SHA" != "$GITHUB_SHA" ]] ||
+             ! git merge-base --is-ancestor 392f9109e36ce50d48c33ad5d59f3c7512e74b19 HEAD; then
+            echo '::error::Deploy this reviewed branch SHA on the dedicated M3 QA service first.'
+            exit 1
+          fi
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.19.0
+
+      - name: Install exact server dependencies
+        working-directory: server
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Exercise hosted QA API and verify cleanup
+        id: pilot
+        timeout-minutes: 13
+        env:
+          QA_SUPABASE_URL: ${{ secrets.QA_SUPABASE_URL }}
+          QA_SUPABASE_ANON_KEY: ${{ secrets.QA_SUPABASE_ANON_KEY }}
+          QA_SUPABASE_SERVICE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_KEY }}
+          QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
+          M3_QA_API_URL: ${{ secrets.M3_QA_API_URL }}
+        run: node server/scripts/qaM3Pilot.js
+
+      - name: Retry cleanup after failure or interruption
+        if: always() && (steps.pilot.outcome == 'failure' || steps.pilot.outcome == 'cancelled')
+        timeout-minutes: 4
+        env:
+          QA_SUPABASE_URL: ${{ secrets.QA_SUPABASE_URL }}
+          QA_SUPABASE_ANON_KEY: ${{ secrets.QA_SUPABASE_ANON_KEY }}
+          QA_SUPABASE_SERVICE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_KEY }}
+          QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
+          M3_QA_API_URL: ${{ secrets.M3_QA_API_URL }}
+        run: node server/scripts/qaM3Pilot.js --cleanup
