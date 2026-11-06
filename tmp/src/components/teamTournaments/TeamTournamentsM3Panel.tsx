@@ -169,6 +169,18 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
     <p>{tr('m3Spots')}: {event.remaining_spots}/{event.max_teams}</p>
     {event.status === 'cancelled' && <p role="status">{tr('m3Cancelled')}</p>}
     <ul>{event.teams.map(team => <li key={team.id}>{team.name}</li>)}</ul>
+    {(event.status === 'published' || event.status === 'finished') &&
+      !!event.published_lineups?.length && <div className="mt-3 grid gap-2">
+        <h3>{tr('m3Lineup')}</h3>
+        {event.teams.map(team => <section key={team.id} className="rounded-lg border border-current/20 p-2">
+          <h4>{team.name}</h4>
+          <ol className="list-decimal list-inside">
+            {event.published_lineups?.filter(line => line.entry_id === team.id)
+              .sort((a,b) => a.board_no-b.board_no)
+              .map(line => <li key={line.board_no}>{tr('board')} {line.board_no}: {line.username ?? '—'}</li>)}
+          </ol>
+        </section>)}
+      </div>}
     {error && <p role="alert">{error}</p>}
     {active && !!invitationToken && !myEntry && !!api && <button type="button" className="min-h-11"
       disabled={busy} onClick={() => void mutate(signal => api.redeem(id, invitationToken, signal))}>
