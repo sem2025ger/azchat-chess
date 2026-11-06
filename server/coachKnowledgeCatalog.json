@@ -1,0 +1,288 @@
+{
+  "schemaVersion": 1,
+  "project": "ChessAZ AI Coach Knowledge Base V1",
+  "lastReviewed": "2026-11-04",
+  "scope": "Bibliographic manifest only. No copyrighted page text, translations, analysis excerpts or PGN has been copied.",
+  "ingestionStatus": "metadata_only_not_model_enabled",
+  "rightsPolicy": "The original works of long-deceased authors may be public domain in Germany/EU. Each edition, translation, editorial contribution, photograph and scan must be checked separately. Kotov and Petrosian texts remain restricted absent a licence.",
+  "works": [
+    {
+      "id": "steinitz-modern-chess-instructor",
+      "author": "Wilhelm Steinitz",
+      "titleRu": "Стейниц: Современный шахматный наставник",
+      "titleOriginal": "The Modern Chess Instructor",
+      "firstPublicationYear": 1889,
+      "commentaryType": "author_original",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://books.google.com/books/about/The_Modern_Chess_Instructor.html?id=e4IiyAEACAAJ"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "philidor-analyse",
+      "author": "François-André Danican Philidor",
+      "titleRu": "Анализ шахматной игры",
+      "titleOriginal": "L'Analyse des Échecs",
+      "firstPublicationYear": 1749,
+      "commentaryType": "author_original",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://museum.fide.com/exhibits/lanalyse-des-echecs"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "nimzowitsch-mein-system",
+      "author": "Aron Nimzowitsch",
+      "titleRu": "Моя система",
+      "titleOriginal": "Mein System",
+      "firstPublicationYear": 1925,
+      "commentaryType": "author_original",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://nimzowitsch.net/mein-system.html"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "nimzowitsch-praxis",
+      "author": "Aron Nimzowitsch",
+      "titleRu": "Моя система на практике",
+      "titleOriginal": "Die Praxis meines Systems",
+      "firstPublicationYear": 1928,
+      "commentaryType": "author_original",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://nimzowitsch.net/die-praxis-meines-systems.html"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "alekhine-best-games-1908-1923",
+      "author": "Alexander Alekhine",
+      "titleRu": "Мои лучшие партии 1908–1923",
+      "titleOriginal": "My Best Games of Chess 1908–1923",
+      "firstPublicationYear": null,
+      "commentaryType": "author_annotated_games",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://openlibrary.org/works/OL2635569W/My_best_games_of_chess_1908-1937"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "alekhine-best-games-1924-1937",
+      "author": "Alexander Alekhine",
+      "titleRu": "Мои лучшие партии 1924–1937",
+      "titleOriginal": "My Best Games of Chess 1924–1937",
+      "firstPublicationYear": 1939,
+      "commentaryType": "author_annotated_games",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://openlibrary.org/works/OL2635569W/My_best_games_of_chess_1908-1937"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "alekhine-road-to-championship",
+      "author": "Alexander Alekhine",
+      "titleRu": "На пути к первенству мира",
+      "titleOriginal": "Auf dem Wege zur Weltmeisterschaft",
+      "firstPublicationYear": 1932,
+      "commentaryType": "author_annotated_games",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://www.niggemann.com/en/auf-dem-wege-zur-weltmeisterschaft-1923-1927-18514.html"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "alekhine-new-york-1924",
+      "author": "Alexander Alekhine",
+      "titleRu": "Международный шахматный турнир Нью-Йорк 1924",
+      "titleOriginal": "The Book of the New York International Chess Tournament 1924",
+      "firstPublicationYear": null,
+      "commentaryType": "author_annotated_games",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://www.russell-enterprises.com/russell-enterprises/new-york-1924"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "alekhine-new-york-1927",
+      "author": "Alexander Alekhine",
+      "titleRu": "Международный шахматный турнир Нью-Йорк 1927",
+      "titleOriginal": "New York 1927",
+      "firstPublicationYear": 1928,
+      "commentaryType": "author_annotated_games",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://www.russell-enterprises.com/russell-enterprises/new-york-1927"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "kotov-alehkine-heritage-v1",
+      "author": "Alexander Kotov",
+      "titleRu": "Шахматное наследие А. А. Алехина. Том 1: Дебют; комбинация; атака на короля",
+      "titleOriginal": "Шахматное наследие А. А. Алехина, т. 1",
+      "firstPublicationYear": 1953,
+      "commentaryType": "third_party_analysis",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://search.rsl.ru/ru/record/01005622511"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "kotov-alehkine-heritage-v2",
+      "author": "Alexander Kotov",
+      "titleRu": "Шахматное наследие А. А. Алехина. Том 2: Позиционная игра; эндшпиль",
+      "titleOriginal": "Шахматное наследие А. А. Алехина, т. 2",
+      "firstPublicationYear": 1958,
+      "commentaryType": "third_party_analysis",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://search.rsl.ru/ru/record/01005622506"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "capablanca-my-chess-career",
+      "author": "José Raúl Capablanca",
+      "titleRu": "Моя шахматная карьера",
+      "titleOriginal": "My Chess Career",
+      "firstPublicationYear": 1920,
+      "commentaryType": "author_annotated_games",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://onlinebooks.library.upenn.edu/webbin/book/lookupid?key=olbp86202"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "capablanca-fundamentals",
+      "author": "José Raúl Capablanca",
+      "titleRu": "Основы шахматной игры",
+      "titleOriginal": "Chess Fundamentals",
+      "firstPublicationYear": 1921,
+      "commentaryType": "author_original",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://en.wikisource.org/wiki/Chess_Fundamentals"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "capablanca-primer",
+      "author": "José Raúl Capablanca",
+      "titleRu": "Учебник шахматной игры",
+      "titleOriginal": "A Primer of Chess",
+      "firstPublicationYear": 1935,
+      "commentaryType": "author_original",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://catalogue.nli.ie/Record/vtls000402763"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "capablanca-havana-1913",
+      "author": "José Raúl Capablanca",
+      "titleRu": "Шахматный турнир в Гаване 1913",
+      "titleOriginal": "The Book of the Havana International Masters' Tournament 1913",
+      "firstPublicationYear": null,
+      "commentaryType": "author_annotated_games",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://search.worldcat.org/title/The-book-of-the-Havana-international-masters%27-tournament-1913/oclc/5523737"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "capablanca-lasker-1921",
+      "author": "José Raúl Capablanca",
+      "titleRu": "Матч за первенство мира Капабланка — Ласкер, 1921",
+      "titleOriginal": "The World's Championship Chess Match Played at Havana",
+      "firstPublicationYear": 1921,
+      "commentaryType": "author_annotated_games",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://www.emanuellasker.online/books-on-lasker/"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "petrosian-strategy-of-reliability",
+      "author": "Tigran Petrosian",
+      "titleRu": "Стратегия надёжности",
+      "titleOriginal": "Стратегия надежности",
+      "firstPublicationYear": 1985,
+      "commentaryType": "posthumous_edited_collection",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://www.scacco.it/data/attachments/9905/petrosian_vol_1_sample.pdf"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "petrosian-chess-lectures",
+      "author": "Tigran Petrosian",
+      "titleRu": "Шахматные лекции",
+      "titleOriginal": "Шахматные лекции",
+      "firstPublicationYear": 1989,
+      "commentaryType": "posthumous_edited_collection",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://rgub.ru/searchopac/book.php?id=RGUB%5CBIBL%5C0000753863"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "petrosian-chess-philosophy",
+      "author": "Tigran Petrosian",
+      "titleRu": "Шахматы и философия",
+      "titleOriginal": "Шахматы и философия",
+      "firstPublicationYear": 1968,
+      "commentaryType": "attribution_needs_review",
+      "bibliographicStatus": "bibliography_requires_verification",
+      "sources": [],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    },
+    {
+      "id": "petrosian-my-best-games-2015",
+      "author": "Tigran Petrosian",
+      "titleRu": "Мои лучшие партии (редакторское издание)",
+      "titleOriginal": "Мои лучшие партии",
+      "firstPublicationYear": 2015,
+      "commentaryType": "posthumous_edited_collection",
+      "bibliographicStatus": "candidate_source_recorded",
+      "sources": [
+        "https://www.scacco.it/data/attachments/9905/petrosian_vol_1_sample.pdf"
+      ],
+      "contentIngested": false,
+      "rightsClearedForFullText": false
+    }
+  ]
+}
