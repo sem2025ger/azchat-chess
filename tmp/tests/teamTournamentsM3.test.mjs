@@ -20,7 +20,7 @@ test('M3 typed API transmits authenticated no-store actions; denies unsafe value
   await api.invite(event, 'Fixture Club', signal);
   await api.redeem(event, 'a'.repeat(64), signal);
   await api.lineup(event, [event], signal);
-  await api.lineupAction(event, 'consent', signal);
+  await api.consent(event, event, signal);
   await api.userSearch('check_user', signal);
   await api.boardAction(event, match, 1, 'report', '1-0', null, signal);
   assert.equal(calls.length, 7);
