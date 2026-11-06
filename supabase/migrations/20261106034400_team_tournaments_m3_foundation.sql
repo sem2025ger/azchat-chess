@@ -115,7 +115,7 @@ REVOKE ALL ON FUNCTION private.team_tournament_m3_is_teammate(uuid)
 GRANT EXECUTE ON FUNCTION private.team_tournament_m3_is_teammate(uuid) TO authenticated;
 
 GRANT SELECT (entry_id, board_no, player_id) ON public.team_tournament_m3_lineups TO anon;
-CREATE POLICY m3_lineup_private ON public.team_tournament_m3_lineups FOR SELECT TO anon, authenticated
+CREATE POLICY m3_lineup_private ON public.team_tournament_m3_lineups FOR SELECT TO authenticated
   USING ((SELECT auth.uid()) = player_id
     OR (SELECT private.team_tournament_m3_is_teammate(entry_id))
     OR EXISTS (SELECT 1 FROM public.team_tournament_m3_entries e
@@ -127,6 +127,24 @@ CREATE POLICY m3_lineup_private ON public.team_tournament_m3_lineups FOR SELECT 
     OR EXISTS (SELECT 1 FROM public.team_tournament_teams team
       JOIN public.team_tournaments event ON event.id = team.tournament_id
       WHERE team.id = entry_id AND event.status IN ('published','finished')));
+
+CREATE POLICY m3_published_lineups_public
+  ON public.team_tournament_m3_lineups FOR SELECT TO anon
+  USING (EXISTS (SELECT 1 FROM public.team_tournament_teams team
+    JOIN public.team_tournaments event ON event.id = team.tournament_id
+    WHERE team.id = entry_id AND event.status IN ('published','finished')));
+CREATE POLICY m3_entry_player_team
+  ON public.team_tournament_m3_entries FOR SELECT TO authenticated
+  USING ((SELECT private.team_tournament_m3_is_teammate(id)));
+
+-- Show cancellation to captains and spectators without exposing any draft lineup.
+DROP POLICY published_or_assigned ON public.team_tournaments;
+CREATE POLICY published_or_assigned ON public.team_tournaments FOR SELECT TO anon, authenticated
+  USING (status IN ('published', 'finished')
+    OR (status IN ('registration','cancelled') AND EXISTS (
+      SELECT 1 FROM public.team_tournament_m3_config c WHERE c.tournament_id = id))
+    OR EXISTS (SELECT 1 FROM public.team_tournament_roles r
+      WHERE r.tournament_id = team_tournaments.id AND r.user_id = (SELECT auth.uid())));
 
 -- Atomic M1-create + M3 configuration + opening of registration.
 -- Calls are service-held only; the API authenticates p_actor.
