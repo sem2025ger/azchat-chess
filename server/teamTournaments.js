@@ -363,7 +363,7 @@ function installTeamTournaments(app, {
     const rosterIds = [...new Set([...teams.map(team => team.id),
       ...entries.map(entry => entry.id), ...ownRows.map(row => row.entry_id)])];
     const lineups = rosterIds.length ? await readQuery(client.from('team_tournament_m3_lineups')
-      .select('entry_id,board_no,player_id').in('entry_id', rosterIds).order('board_no').limit(256)) : [];
+      .select('entry_id,board_no,player_id,consented_at').in('entry_id', rosterIds).order('board_no').limit(256)) : [];
     const playerIds = [...new Set(lineups.map(row => row.player_id))];
     const profiles = playerIds.length ? await readQuery(client.from('profiles')
       .select('id,username').in('id', playerIds).limit(256)) : [];
