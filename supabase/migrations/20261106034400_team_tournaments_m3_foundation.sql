@@ -100,17 +100,33 @@ CREATE POLICY m3_entry_private ON public.team_tournament_m3_entries FOR SELECT T
     OR EXISTS (SELECT 1 FROM public.team_tournaments e
       WHERE e.id = tournament_id AND e.status IN ('published','finished')));
 
-CREATE POLICY m3_lineup_private ON public.team_tournament_m3_lineups FOR SELECT TO authenticated
-  USING (player_id = (SELECT auth.uid())
+-- Authenticated teammates need read-only visibility of their own club's
+-- entire draft board order. The helper uses auth.uid(), never caller input
+-- as an actor, and lives outside the exposed API schemas.
+CREATE FUNCTION private.team_tournament_m3_is_teammate(p_entry uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $
+  SELECT EXISTS (
+    SELECT 1 FROM public.team_tournament_m3_lineups
+      WHERE entry_id = p_entry AND player_id = (SELECT auth.uid())
+  );
+$;
+REVOKE ALL ON FUNCTION private.team_tournament_m3_is_teammate(uuid)
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION private.team_tournament_m3_is_teammate(uuid) TO authenticated;
+
+GRANT SELECT (entry_id, board_no, player_id) ON public.team_tournament_m3_lineups TO anon;
+CREATE POLICY m3_lineup_private ON public.team_tournament_m3_lineups FOR SELECT TO anon, authenticated
+  USING ((SELECT auth.uid()) = player_id
+    OR (SELECT private.team_tournament_m3_is_teammate(entry_id))
     OR EXISTS (SELECT 1 FROM public.team_tournament_m3_entries e
       WHERE e.id = entry_id AND (
         e.captain_id = (SELECT auth.uid())
         OR EXISTS (SELECT 1 FROM public.team_tournament_roles r
           WHERE r.tournament_id = e.tournament_id AND r.user_id = (SELECT auth.uid())
             AND r.role IN ('organizer','arbiter'))))
-    OR EXISTS (SELECT 1 FROM public.team_tournament_m3_entries e
-      JOIN public.team_tournaments t ON t.id = e.tournament_id
-      WHERE e.id = entry_id AND t.status IN ('published','finished')));
+    OR EXISTS (SELECT 1 FROM public.team_tournament_teams team
+      JOIN public.team_tournaments event ON event.id = team.tournament_id
+      WHERE team.id = entry_id AND event.status IN ('published','finished')));
 
 -- Atomic M1-create + M3 configuration + opening of registration.
 -- Calls are service-held only; the API authenticates p_actor.
