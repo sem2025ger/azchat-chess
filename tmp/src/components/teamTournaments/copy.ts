@@ -17,6 +17,7 @@ const labels = {
   again: ['Bitte melde dich erneut an.', 'Please sign in again.', 'Yenidən daxil olun.', 'Tekrar giriş yapın.', 'Увійдіть знову.', 'Войдите снова.'],
   draft: ['Entwurf', 'Draft', 'Qaralama', 'Taslak', 'Чернетка', 'Черновик'],
   registration: ['Anmeldung offen', 'Registration open', 'Qeydiyyat açıqdır', 'Kayıt açık', 'Реєстрація відкрита', 'Регистрация открыта'],
+  cancelled: ['Abgesagt', 'Cancelled', 'Ləğv edilib', 'İptal edildi', 'Скасовано', 'Отменён'],
   locked: ['Teilnehmerliste fixiert', 'Teams locked', 'Komanda siyahısı bağlanıb', 'Takım listesi kilitli', 'Список команд зафіксовано', 'Список команд зафиксирован'],
   published: ['Veröffentlicht', 'Published', 'Dərc edilib', 'Yayımlandı', 'Опубліковано', 'Опубликовано'],
   finished: ['Abgeschlossen', 'Finished', 'Tamamlanıb', 'Tamamlandı', 'Завершено', 'Завершён'],
