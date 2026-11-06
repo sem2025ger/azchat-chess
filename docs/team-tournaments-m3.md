@@ -39,10 +39,10 @@ M1 and M2 command, round-robin, audit and UI are the compatibility baseline.
 ## Unverified — release blockers (do not assert the owner pilot passed)
 
 - **Render QA backend is NOT on M3:** `chessaz-deutsch-qa-api` (`srv-dbcktr0473hc739d5qn0`) currently runs `b8d2cbe5` (M2); configured branch is `feat/global-position-search-v1`, autoDeploy OFF. An ordinary manual redeploy would use that configured branch, **not** reviewed M3. Production `chessaz-api` must not be changed.
-- A dedicated, reviewed M3 QA backend needs a safe Supabase QA binding, server feature flags and matching **branch-scoped** Vercel Preview settings. No production credentials may be copied, exported or reused. Connector does not provide a safe way to transfer protected QA secrets or update a Render service's Git branch to this exact SHA. Creating an unbound service would not make it pilot-ready.
-- No live hosted end-to-end JWT/REST/RPC checks or 21-account organizer/captain/player browser pilot have run. The transaction smoke uses existing QA user records under a trusted SQL transaction, **not live signed-in player sessions**. Desktop/mobile and real-device results remain unverified.
+- The owner must create the dedicated Render service `chessaz-m3-qa-api`, bind it to Supabase QA, enable both server flags and deploy the reviewed PR head. The pilot checks the live `/health` commit against that head before connecting to the QA database. The manual browser check also needs a matching **branch-scoped** Vercel Preview.
+- The hosted JWT/REST/RPC pilot still needs the QA repository secrets and the owner to apply `run-qa-m3-pilot` to PR #194 after CI and the Render deployment are green. The workflow runs from the PR branch. The 23-account hosted scenario and the separate desktop/mobile browser check remain unverified.
 - The invitation link is a bearer token; verify sign-in redirects and expiration in the owner pilot. Team identity for previous lineup reuse is currently based on club name, not an independently verified club registry ID. Confirm that this identity convention is acceptable before expanding to third-party club events.
-- Pilot instructions remain in `docs/team-tournaments-m3-pilot.md`. Do not merge or enable production feature flags. M3 implementation and QA SQL verification can be **marked code/DB complete**, but **hosted acceptance cannot be signed off** before the above checks.
+- See the [owner setup checklist](team-tournaments-m3-qa-setup.md) for the label flow and organizer grant/revoke SQL, and the [pilot scenarios](team-tournaments-m3-pilot.md) for acceptance. Hosted acceptance is pending these checks.
 
 ## Database and deployment safety
 
