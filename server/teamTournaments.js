@@ -224,8 +224,23 @@ function installTeamTournaments(app, {
       readQuery(publicClient.from('team_tournament_rulesets')
         .select('board_count').eq('tournament_id', req.tournamentId).single()),
     ]);
+    let publishedLineups = [];
+    if (['published', 'finished'].includes(event.status) && teams.length) {
+      const ids = teams.map(team => team.id);
+      const lines = await readQuery(publicClient.from('team_tournament_m3_lineups')
+        .select('entry_id,board_no,player_id').in('entry_id', ids).order('board_no').limit(256));
+      const playerIds = [...new Set(lines.map(line => line.player_id))];
+      const publicProfiles = playerIds.length ? await readQuery(publicClient.from('profiles')
+        .select('id,username').in('id', playerIds).limit(256)) : [];
+      const byId = new Map(publicProfiles.map(user => [user.id, user.username]));
+      publishedLineups = lines.map(line => ({
+        entry_id: line.entry_id, board_no: line.board_no, username: byId.get(line.player_id) ?? null,
+      }));
+    }
     res.json({ ...event, ...config, board_count: ruleset.board_count, teams,
-      remaining_spots: Math.max(0, config.max_teams - teams.length) });
+      remaining_spots: Math.max(0, config.max_teams - teams.length),
+      ...(event.status === 'published' || event.status === 'finished' ? { lineups: publishedLineups } : {}),
+    });
   }));
   async function authenticate(req) {
     const header = req.headers.authorization || '';
