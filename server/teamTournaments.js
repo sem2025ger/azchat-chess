@@ -187,6 +187,16 @@ function installTeamTournaments(app, {
     return { ...data, official: calculateTable(data.teams, data.matches, data.rules),
       provisional: calculateTable(data.teams, data.matches, data.rules, true) };
   }
+  router.get('/user-search', wrap(async (req, res) => {
+    requireM3();
+    await authenticate(req);
+    const input = req.query.q;
+    if (typeof input !== 'string' || input.length < 2 || input.length > 30 ||
+        !/^[A-Za-z0-9_-]+$/.test(input)) fail(400, 'invalid_input');
+    const data = await readQuery(req.tournamentClient.from('profiles')
+      .select('id,username').ilike('username', input + '%').order('username').limit(10));
+    res.json({ users: data });
+  }));
   router.get('/my-board', wrap(async (req, res) => {
     requireM3();
     await authenticate(req);
