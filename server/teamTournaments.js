@@ -218,9 +218,14 @@ function installTeamTournaments(app, {
         .eq('tournament_id', req.tournamentId).maybeSingle()),
     ]);
     if (!event || !config) fail(404, 'not_found');
-    const teams = await readQuery(publicClient.from('team_tournament_teams')
-      .select('id,name').eq('tournament_id', req.tournamentId).order('seed').limit(16));
-    res.json({ ...event, ...config, teams, remaining_spots: Math.max(0, config.max_teams - teams.length) });
+    const [teams, ruleset] = await Promise.all([
+      readQuery(publicClient.from('team_tournament_teams')
+        .select('id,name').eq('tournament_id', req.tournamentId).order('seed').limit(16)),
+      readQuery(publicClient.from('team_tournament_rulesets')
+        .select('board_count').eq('tournament_id', req.tournamentId).single()),
+    ]);
+    res.json({ ...event, ...config, board_count: ruleset.board_count, teams,
+      remaining_spots: Math.max(0, config.max_teams - teams.length) });
   }));
   async function authenticate(req) {
     const header = req.headers.authorization || '';
@@ -336,10 +341,12 @@ function installTeamTournaments(app, {
   router.get('/:tournament/self-service', wrap(async (req, res) => {
     requireM3();
     const client = req.tournamentClient;
-    const [config, event] = await Promise.all([
+    const [config, event, ruleset] = await Promise.all([
       readQuery(client.from('team_tournament_m3_config').select(
         'starts_at,registration_deadline,min_teams,max_teams').eq('tournament_id', req.tournamentId).maybeSingle()),
       readQuery(client.from('team_tournaments').select('id,name,status').eq('id', req.tournamentId).maybeSingle()),
+      readQuery(client.from('team_tournament_rulesets')
+        .select('board_count').eq('tournament_id', req.tournamentId).maybeSingle()),
     ]);
     if (!config || !event) fail(404, 'not_found');
     const teams = await readQuery(client.from('team_tournament_teams')
@@ -371,7 +378,8 @@ function installTeamTournaments(app, {
       .select('match_id,board_no,status').in('match_id', matchIds).limit(256)) : [];
     const reports = matchIds.length ? await readQuery(client.from('team_tournament_m3_board_reports')
       .select('match_id,board_no,side,result,kind').in('match_id', matchIds).limit(512)) : [];
-    res.json({ ...event, ...config, teams, remaining_spots: config.max_teams - teams.length,
+    res.json({ ...event, ...config, board_count: ruleset?.board_count ?? 4,
+      teams, remaining_spots: Math.max(0, config.max_teams - teams.length),
       entries, roles, lineups, profiles, matches, states, reports });
   }));
 
