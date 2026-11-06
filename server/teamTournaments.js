@@ -159,6 +159,20 @@ function installTeamTournaments(app, {
   router.get('/:tournament', wrap(async (req, res) => res.json(withStandings(
     await snapshot(publicClient, req.tournamentId, false)))));
 
+  // Anonymous registration overview: never include lineup rows, consent or captain IDs.
+  router.get('/:tournament/self-service/public', wrap(async (req, res) => {
+    const [event, config] = await Promise.all([
+      readQuery(publicClient.from('team_tournaments').select('id,name,status')
+        .eq('id', req.tournamentId).maybeSingle()),
+      readQuery(publicClient.from('team_tournament_m3_config')
+        .select('starts_at,registration_deadline,min_teams,max_teams')
+        .eq('tournament_id', req.tournamentId).maybeSingle()),
+    ]);
+    if (!event || !config) fail(404, 'not_found');
+    const teams = await readQuery(publicClient.from('team_tournament_teams')
+      .select('id,name').eq('tournament_id', req.tournamentId).order('seed').limit(16));
+    res.json({ ...event, ...config, teams, remaining_spots: Math.max(0, config.max_teams - teams.length) });
+  }));
   async function authenticate(req) {
     const header = req.headers.authorization || '';
     let user;
