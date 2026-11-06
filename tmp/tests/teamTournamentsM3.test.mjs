@@ -41,10 +41,23 @@ test('M3 organizer form uses six existing locale translations and defaults', asy
     server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
     const { M3Create } = await vite.ssrLoadModule('/src/components/teamTournaments/TeamTournamentsM3Panel.tsx');
-    const { tournamentCopy } = await vite.ssrLoadModule('/src/components/teamTournaments/copy.ts');
+    const { tournamentCopy, tournamentErrorMessage } = await vite.ssrLoadModule('/src/components/teamTournaments/copy.ts');
     for (const language of ['de','en','az','tr','ua','ru']) {
       const tr = tournamentCopy(language);
       assert.ok(tr('m3Create') && tr('m3Consent') && tr('m3Disputes') && tr('myTournament'));
+      for (const [code, label] of [
+        ['event_full', 'm3Full'],
+        ['invalid_invite', 'm3InvalidInvite'],
+        ['lineup_incomplete', 'm3LineupIncomplete'],
+        ['player_already_registered', 'm3DuplicatePlayer'],
+        ['no_previous_lineup', 'm3NoPrevious'],
+      ]) {
+        assert.equal(tournamentErrorMessage(code, tr), tr(label), language + ': ' + code);
+      }
+      for (const key of ['m3Pending','m3Reported','m3Confirmed','m3DisputedStatus',
+        'm3Forfeit','m3Played','m3MoveUp','m3MoveDown','m3RemovePlayer']) {
+        assert.ok(tr(key), language + ': ' + key);
+      }
       const html = renderToStaticMarkup(createElement(M3Create, {
         tr, token: 'fixture', onCreated() {},
       }));
