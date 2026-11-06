@@ -261,12 +261,19 @@ BEGIN
         SET redeemed_at = clock_timestamp(), redeemed_by = p_actor WHERE id = invitation.id;
       RETURN jsonb_build_object('entry_id', entry.id, 'club_name', entry.club_name);
     WHEN 'consent' THEN
-      UPDATE public.team_tournament_m3_lineups l SET consented_at = coalesce(l.consented_at, clock_timestamp())
+      -- Consent is specific to a club entry, never a blanket approval of all
+      -- draft entries that currently contain this player.
+      IF p_input->>'entry_id' IS NULL THEN
+        RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023';
+      END IF;
+      UPDATE public.team_tournament_m3_lineups l
+        SET consented_at = coalesce(l.consented_at, clock_timestamp())
         FROM public.team_tournament_m3_entries e
         WHERE e.id = l.entry_id AND e.tournament_id = p_id
+          AND e.id = (p_input->>'entry_id')::uuid
           AND e.submitted_at IS NULL AND l.player_id = p_actor;
       IF NOT FOUND THEN RAISE EXCEPTION 'not_allowed' USING ERRCODE = '42501'; END IF;
-      RETURN jsonb_build_object('consented', true);
+      RETURN jsonb_build_object('consented', true, 'entry_id', p_input->>'entry_id');
     ELSE
       SELECT * INTO entry FROM public.team_tournament_m3_entries e
         WHERE e.tournament_id = p_id AND e.captain_id = p_actor;
