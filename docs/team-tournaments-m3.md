@@ -27,20 +27,22 @@ M1 and M2 command, round-robin, audit and UI are the compatibility baseline.
 - Existing Turniere UI has organizer and captain forms, roster search and consent flows, board-result view and dispute decisions. Home card is double-gated by `VITE_TEAM_TOURNAMENTS_ENABLED` and `VITE_TEAM_TOURNAMENTS_M3_ENABLED`. Backend M3 requires `TEAM_TOURNAMENTS_M3_ENABLED=true` in addition to the original tournament flag. **Both M3 flags default OFF.**
 - `tmp/src/components/teamTournaments/copy.ts` extends the existing DE/EN/AZ/TR/UA/RU copy; `tmp/tests/clubs-nrw.test.mjs` removes only the precisely bounded M3 block before comparing the prior Home baseline byte-for-byte.
 
-## Test evidence — 2026-11-06
+## Final verified QA evidence — 2026-11-06
 
-- Reviewed SHA `84b85bc84248dbbd62d5ffd76a6225bb6832949e`: **Frontend CI 263/263**, **Server CI 446/446**, **isolated PostgreSQL regression 446/446**. All three report zero failures and zero skips. Workflow runs: [Frontend CI](https://github.com/sem2025ger/azchat-chess/actions/runs/42159800308), [Server CI](https://github.com/sem2025ger/azchat-chess/actions/runs/42159800263).
-- CI covers concurrent 5-for-4 submissions, locked publication, 1/2/3-team cancellation/publication/bye, hashed single-use/revocable invitations, signed consent for a specific captain entry, role-scoped rosters, player report/confirmation, conflicting results and adjudicator decisions, forfeit confirmation and auditable result corrections. Existing frontend/server tests were also executed.
-- QA migration applied **after** CI was green, under Supabase migration version `20261106040436`. Transactional QA smoke-test created a fixture event and invitation and rolled back both. After rollback: **1 original M1 event, 0 M3 events, 0 invites, 0 M3 audit rows**.
-- QA roles tested with `SET LOCAL ROLE`: `anon` and `authenticated` cannot query invite token hashes or invoke service-held M3 commands directly; `anon` cannot access audit rows. Service-held command RPC privileges retained. Current security-advisor WARN findings unchanged from pre-migration baseline. New `rls_enabled_no_policy` INFO is expected for service-only invite table.
-- A Preview build on `chessaz-preview-workspace` was requested for the tested source SHA. Existing production projects `azchat-chess`, `chessaz-api` and Supabase production were not modified.
+- Reviewed source SHA `bc84397e0af4c7b19a13ef1028c096d2043fb6c0`, Draft PR #194. [Frontend CI](https://github.com/sem2025ger/azchat-chess/actions/runs/42162398053): **263/263**; [Server CI](https://github.com/sem2025ger/azchat-chess/actions/runs/42162398099): **446/446**; frontend workflow isolated PostgreSQL regression **446/446**. All zero failures, zero skips.
+- CI includes 5 captains / 4 places under concurrency; 1-team cancellation, 2-team and 3-team Berger schedules with byes; simultaneous deadline publication; hashed, revocable, single-use invites; roster ownership, user-specific consent and prepublication RLS; conflicting reports, captain forfeits, adjudication and structured audit.
+- QA-only migration `20261106040436_team_tournaments_m3_foundation` applied to Supabase `iukmpcytsuofqhxsumbu`; M1 baseline unchanged. Current QA schema, RLS policies and constraints were inspected directly.
+- **Additional live QA SQL transaction (not merely isolated test runner):** existing QA organizer and six existing QA profile records acted as two captains and four players. Created a synthetic 2-team / 2-board event with two invitations, two completed/consented lineups; submitted both, changed its deadline inside the transaction, published one Berger round and a match, submitted and confirmed board 1 (1–0), submitted conflicting board 2 reports (1–0 versus 0–1), and organizer decided a draw (½–½) with a reason. Asserted **five M3 action audit rows** and both boards confirmed. **ROLLBACK** completed; QA subsequently reported **0 M3 events, entries, invites and audit rows**.
+- Additional direct QA database checks under `SET LOCAL ROLE` denied `anon`/`authenticated` command RPC calls and reads of hashed invites. Earlier QA security-advisor WARN count was unchanged after the migration. One `rls_enabled_no_policy` INFO is expected for the server-only invite table.
+- [QA-only Vercel Preview](https://chessaz-preview-workspace-4hjbrajb5-semov20207-3068s-projects.vercel.app) **READY**, deployment `dpl_8H1w4yLqDddY2utJLy7p3ANVKHcZ`, source SHA `bc84397e`, production target **not** used. Both frontend M3 flags remain OFF.
 
-## Unverified — do not claim acceptance
+## Unverified — release blockers (do not assert the owner pilot passed)
 
-- Hosted QA backend deployment with `TEAM_TOURNAMENTS_M3_ENABLED` and matching Vercel Preview build flags (both default OFF); Vercel branch-specific QA environment for the M3 branch not yet configured. No secrets or branch-scoped environments were changed.
-- Direct hosted HTTP/JWT/PostgREST end-to-end tests (as distinct from isolated PostgreSQL grants and RLS tests); real browser desktop/mobile owner pilot with one organizer, one arbiter, four captains and sixteen players; actual email/token redemption workflow.
-- Manual browser verification of public/private payloads, client-specific saved rosters, disputes, forfeits, schedule progression and corrected results; all owner steps in `docs/team-tournaments-m3-pilot.md`.
-- QA pilot is blocked pending confirmed Render workspace/service and QA-only feature flag environment setup. **Do not enable this feature in production.**
+- **Render QA backend is NOT on M3:** `chessaz-deutsch-qa-api` (`srv-dbcktr0473hc739d5qn0`) currently runs `b8d2cbe5` (M2); configured branch is `feat/global-position-search-v1`, autoDeploy OFF. An ordinary manual redeploy would use that configured branch, **not** reviewed M3. Production `chessaz-api` must not be changed.
+- A dedicated, reviewed M3 QA backend needs a safe Supabase QA binding, server feature flags and matching **branch-scoped** Vercel Preview settings. No production credentials may be copied, exported or reused. Connector does not provide a safe way to transfer protected QA secrets or update a Render service's Git branch to this exact SHA. Creating an unbound service would not make it pilot-ready.
+- No live hosted end-to-end JWT/REST/RPC checks or 21-account organizer/captain/player browser pilot have run. The transaction smoke uses existing QA user records under a trusted SQL transaction, **not live signed-in player sessions**. Desktop/mobile and real-device results remain unverified.
+- The invitation link is a bearer token; verify sign-in redirects and expiration in the owner pilot. Team identity for previous lineup reuse is currently based on club name, not an independently verified club registry ID. Confirm that this identity convention is acceptable before expanding to third-party club events.
+- Pilot instructions remain in `docs/team-tournaments-m3-pilot.md`. Do not merge or enable production feature flags. M3 implementation and QA SQL verification can be **marked code/DB complete**, but **hosted acceptance cannot be signed off** before the above checks.
 
 ## Database and deployment safety
 
@@ -49,11 +51,9 @@ Do not rename or edit that applied migration. M3 is a *new* forward-only migrati
 
 No writes to production Supabase `kmwfvvliundhuovoakoa`, production Render `chessaz-api` or production Vercel `azchat-chess`; no merge, no force push. The entire new workflow requires security and regression acceptance before enabling any QA feature flag.
 
-## Proposed finish gate
+## Engineering gate outcome
 
-1. Complete the transactional M3 commands and row-level permission model, with negative direct REST/RPC tests and 5-concurrent-captain integration test.
-2. Implement an idempotent deadline transition, cancellation, Berger schedule and odd-team byes; test concurrent first reads and commands.
-3. Implement signed player reports, captain proxy rules, staff adjudication and structured audit. Verify board-scoped permissions and round progression.
-4. Integrate the existing Turniere tab, six-locale copy and responsive home card; revise exactly the homepage equality test while preserving flag-OFF equivalence.
-5. Run full frontend, server and isolated PostgreSQL CI with zero skips, migration apply and rolled-back QA regression, security advisors and hosted pilot.
-6. Publish final PR SHA, diff stat, per-job test counts, logs and matching Preview URL; keep Draft for owner review.
+- **Alpha:** implemented the reviewed M3 workflows using existing tournament infrastructure, flag-gated UI and six existing locales.
+- **Omega:** automated CI, isolated PostgreSQL, live QA rollback transaction and permission checks passed.
+- **Not complete:** separate QA backend deployment, hosted multi-account/security/browser pilot and owner sign-off.
+- **Stop condition:** protected environment configuration and existing applied migrations must remain unchanged without scoped authorization. This is not a production release or approval to merge.
