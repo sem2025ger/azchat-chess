@@ -190,8 +190,10 @@ export function createTournamentM3Api(base: string, token: string, fetchImpl: ty
       request(at(event) + '/redeem', signal, { token: tokenValue }),
     lineup: (event: string, players: string[], signal: AbortSignal) =>
       request(at(event) + '/lineup', signal, { players: players.map(tournamentId) }),
-    lineupAction: (event: string, action: 'previous' | 'consent' | 'submit' | 'withdraw', signal: AbortSignal) =>
+    lineupAction: (event: string, action: 'previous' | 'submit' | 'withdraw', signal: AbortSignal) =>
       request(at(event) + '/lineup/' + action, signal, {}),
+    consent: (event: string, entry: string, signal: AbortSignal) =>
+      request(at(event) + '/lineup/consent', signal, { entry_id: tournamentId(entry) }),
     report: (board: MyTournamentBoard, action: 'report' | 'confirm' | 'reject' | 'forfeit' | 'decide' | 'correct',
       result: BoardResult | null, reason: string | null, signal: AbortSignal) =>
       request(boardPath(board.tournament_id, board.match_id, board.board_no) + '/' + action, signal,
