@@ -7,6 +7,7 @@ const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { isolatedPostgres } = require('./test-support/durablePostgres.cjs');
 const { bergerSchedule } = require('./teamRoundRobin');
+const { cleanupEvents } = require('./scripts/qaM3PilotDb');
 
 const rules = {
   board_count: 4, home_white_board_one: true, win_points: 2, draw_points: 1,
@@ -237,6 +238,26 @@ test('M3 isolated PostgreSQL migration, 5-for-4 capacity and deadline transition
     assert.deepEqual(forfeit,{source:'captain',confirmed:true,result:'+/-'});
     assert.equal((await db.pool.query(
       'SELECT count(*)::int n FROM public.team_tournament_board_results WHERE tournament_id=$1 AND NOT confirmed',[id])).rows[0].n,21);
+  });
+
+  await t.test('hosted cleanup removes the fixture graph and preserves unrelated tournaments', async () => {
+    const tag = 'QA-M3-123';
+    await db.pool.query('UPDATE public.team_tournaments SET name=$1 WHERE id=$2', [`[${tag}] Scope`, id]);
+    const remaining = () => db.pool.query(
+      'SELECT id, name FROM public.team_tournaments WHERE id<>$1 ORDER BY id', [id]).then(res => res.rows);
+    const otherEvents = await remaining();
+    assert.ok(otherEvents.length > 0);
+    const client = await db.pool.connect();
+    try {
+      await assert.rejects(cleanupEvents(client, tag, [stranger]), /unexpected_fixture_event_owner/);
+      assert.equal((await client.query('SELECT id FROM public.team_tournaments WHERE id=$1', [id])).rowCount, 1);
+      await cleanupEvents(client, tag, [owner]);
+      await cleanupEvents(client, tag, [owner]);
+      assert.equal((await client.query('SELECT id FROM public.team_tournaments WHERE id=$1', [id])).rowCount, 0);
+      assert.deepEqual(await remaining(), otherEvents);
+    } finally {
+      client.release();
+    }
   });
 
 });
