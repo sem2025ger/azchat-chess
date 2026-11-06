@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-import { createTournamentM3Api, TournamentError } from '../src/services/teamTournaments.ts';
+import { createTournamentM3Api } from '../src/services/teamTournaments.ts';
 
 const event = '11111111-1111-4111-8111-111111111111';
 const match = '22222222-2222-4222-8222-222222222222';
@@ -31,9 +31,9 @@ test('M3 typed API transmits authenticated no-store actions; denies unsafe value
   assert.deepEqual(JSON.parse(calls[6].body), { result: '1-0', reason: null });
   assert.throws(() => createTournamentM3Api('https://qa.example', ''), {code:'authentication_required'});
   assert.throws(() => createTournamentM3Api('https://attacker:password@qa.example', 'token'), {code:'configuration'});
-  await assert.rejects(api.lineup(event, ['../../../'], signal), {code:'invalid_input'});
-  await assert.rejects(api.userSearch('%', signal), {code:'invalid_input'});
-  await assert.rejects(api.boardAction(event, match, 17, 'report', '1-0', null, signal), {code:'invalid_input'});
+  assert.throws(() => api.lineup(event, ['../../../'], signal), {code:'invalid_input'});
+  assert.throws(() => api.userSearch('%', signal), {code:'invalid_input'});
+  assert.throws(() => api.boardAction(event, match, 17, 'report', '1-0', null, signal), {code:'invalid_input'});
 });
 
 test('M3 organizer form uses six existing locale translations and defaults', async () => {
