@@ -3,11 +3,18 @@ import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
-import { createTournamentM3Api } from '../src/services/teamTournaments.ts';
+import { createTournamentM3Api, tournamentsEnabled } from '../src/services/teamTournaments.ts';
+import { nrwAuthReturnTarget } from '../src/lib/nrwAuthReturn.ts';
 
 const event = '11111111-1111-4111-8111-111111111111';
 const match = '22222222-2222-4222-8222-222222222222';
 const signal = new AbortController().signal;
+const tab = '/spieltag?tab=turniere';
+const eventTarget = tab + '&tournament=' + event;
+const invite = 'a'.repeat(64);
+const inviteTarget = eventTarget + '&invite=' + invite;
+const legacyReturns = { clubs: true, spieltag: true, preparation: true };
+const returnsEnabled = { ...legacyReturns, tournaments: tournamentsEnabled('true') };
 
 test('M3 typed API transmits authenticated no-store actions; denies unsafe values', async () => {
   const calls = [];
@@ -36,22 +43,60 @@ test('M3 typed API transmits authenticated no-store actions; denies unsafe value
   assert.throws(() => api.boardAction(event, match, 17, 'report', '1-0', null, signal), {code:'invalid_input'});
 });
 
-test('single-use captain invitation survives login without open redirect', async () => {
+test('tournament auth accepts only canonical return paths with the flag enabled', () => {
+  for (const target of [tab, eventTarget, inviteTarget]) {
+    assert.equal(nrwAuthReturnTarget(target, returnsEnabled), target);
+    for (const flag of [undefined, 'false', '1', true]) {
+      assert.equal(nrwAuthReturnTarget(target, { ...legacyReturns, tournaments: tournamentsEnabled(flag) }), null);
+    }
+  }
+
+  const rejected = {
+    'embedded CR': tab + '\r&tournament=' + event,
+    'trailing CRLF': inviteTarget + '\r\n',
+    'trailing line separator': inviteTarget + '\u2028',
+    'extra parameter': inviteTarget + '&next=/profile',
+    'duplicate parameter': eventTarget + '&tournament=' + event,
+    'reordered parameters': '/spieltag?tournament=' + event + '&tab=turniere',
+    'invite before tournament': tab + '&invite=' + invite + '&tournament=' + event,
+    'invite without tournament': tab + '&invite=' + invite,
+    'encoded slash': '%2fspieltag?tab=turniere',
+    'encoded slash inside target': tab + '&tournament=%2f' + event,
+    'absolute URL': 'https://chessaz.de' + inviteTarget,
+    'protocol-relative URL': '//foreign.example' + inviteTarget,
+    'backslash': '/\\spieltag?tab=turniere',
+    'fragment': inviteTarget + '#extra',
+    'non-v4 UUID': tab + '&tournament=' + event.replace('-4111-', '-5111-'),
+    'invalid UUID variant': tab + '&tournament=' + event.replace('-8111-', '-7111-'),
+    'uppercase UUID': tab + '&tournament=' + event.replace(/^1/, 'A'),
+    'uppercase token': eventTarget + '&invite=' + invite.toUpperCase(),
+    'short token': eventTarget + '&invite=' + invite.slice(1),
+    'long token': inviteTarget + 'a',
+  };
+  for (const [reason, target] of Object.entries(rejected)) {
+    assert.equal(nrwAuthReturnTarget(target, returnsEnabled), null, reason);
+  }
+});
+
+test('tournament sign-in links round-trip through the ProfileScreen allowlist', async () => {
   const vite = await createServer({ optimizeDeps: { noDiscovery: true, include: [] },
     server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
     const { tournamentSignInPath } = await vite.ssrLoadModule('/src/components/teamTournaments/TeamTournamentsTab.tsx');
-    const invite = 'a'.repeat(64);
-    const url = tournamentSignInPath(event, '?tab=turniere&tournament=' + event + '&invite=' + invite);
-    const parsed = new URL(url, 'https://chessaz.de');
-    assert.equal(parsed.pathname, '/profile');
-    assert.equal(parsed.searchParams.get('returnTo'),
-      '/spieltag?tab=turniere&tournament=' + event + '&invite=' + invite);
-    assert.equal(new URL(tournamentSignInPath(event, '?invite=https://evil.example'),
-      'https://chessaz.de').searchParams.get('returnTo'),
-      '/spieltag?tab=turniere&tournament=' + event);
-    assert.equal(new URL(tournamentSignInPath(null, '?invite=' + invite),
-      'https://chessaz.de').searchParams.get('returnTo'), '/spieltag?tab=turniere');
+    for (const [selected, search, expected] of [
+      [null, '?tab=turniere', tab],
+      [event, '?tab=turniere&tournament=' + event, eventTarget],
+      [event, '?tab=turniere&tournament=' + event + '&invite=' + invite, inviteTarget],
+      [event, '?invite=https://foreign.example', eventTarget],
+      [null, '?invite=' + invite, tab],
+      ['invalid-id', '?invite=' + invite, tab],
+    ]) {
+      const link = new URL(tournamentSignInPath(selected, search), 'https://fixture.invalid');
+      assert.equal(link.pathname, '/profile');
+      const target = link.searchParams.get('returnTo');
+      assert.equal(target, expected);
+      assert.equal(nrwAuthReturnTarget(target, returnsEnabled), target);
+    }
   } finally { await vite.close(); }
 });
 

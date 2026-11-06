@@ -6,6 +6,7 @@ import {existsSync} from 'node:fs';
 import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
+import {checkTournamentAuth} from './teamTournamentsAuth.browser.mjs';
 // SpielerScreen cannot be mounted without its own auth fixture: validate its existing copy map here.
 const playerCopySource=await readFile(new URL('../src/screens/SpielerScreen.tsx',import.meta.url),'utf8');
 const playerCopyLine=playerCopySource.split('\n').find(line=>line.startsWith('const playerUiCopy: '));
@@ -184,6 +185,9 @@ try{
  await evaluate(`window.changeSession('captain-test-only')`);await wait(`document.querySelector('[role="tablist"]')`);await click('Gegner');await evaluate('window.delayCard=true');await click('Spielerkarte · 13404431');await wait('typeof window.releaseCard==="function"');await evaluate(`window.changeSession('outsider-test-only');window.releaseCard()`);await wait(`document.body.innerText.includes('noch keiner Mannschaft zugeordnet')`);assert.equal(await evaluate(`document.body.innerText.includes('Guest player')||document.body.innerText.includes('Fixture FIDE Player')`),false);
  await evaluate('window.changeSession(null)');await wait(`document.body.innerText.includes('Bitte zuerst anmelden')`);assert.equal(exceptions.length,0,exceptions.join('\n'));
  console.log('PASS Spieltag/Vorbereitung browser: captain schedule/lineup/opponents/card/results/notes, primary FIDE/name fallback, German moves/transpositions, next moves, FEN/setup/palette/illegal position, matched-ply analysis, secondary nickname/name/ECO/empty, member read-only, 390/1280 widths, identity changes and stale-card cleanup');
+ await checkTournamentAuth({cdp,evaluate,wait,click});
+ assert.equal(exceptions.length,0,exceptions.join('\n'));
+ console.log('PASS tournament invite browser: password sign-in, signup confirmation, email-link sign-in, invitation redemption and foreign return rejection');
 }finally{
  try{ws?.close();}catch{}chrome?.kill('SIGKILL');await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});clearTimeout(deadline);
 }
