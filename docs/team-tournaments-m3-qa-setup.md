@@ -33,7 +33,7 @@ PR [№194](https://github.com/sem2025ger/azchat-chess/pull/194) остаётс�
 
    Render сам предоставляет `PORT` и `RENDER_GIT_COMMIT`. Для пилота оставьте опциональные `SUPABASE_PUBLISHABLE_KEY` и `SUPABASE_SERVICE_ROLE_KEY` пустыми, чтобы ключи выбирались из таблицы выше. Опциональные настройки Sentry, ИИ, архива, профилей игроков, частного Spieltag и durable games оставьте незаполненными. Для M3 достаточно двух флагов из таблицы. Pre-Deploy Command оставьте пустым.
 
-4. Нажмите **Deploy Web Service**. На странице нового сервиса скопируйте назначенный публичный URL. Если Render назначил имя с суффиксом, перед запуском автоматики потребуется согласовать точный домен. Сейчас workflow разрешает только `chessaz-m3-qa-api.onrender.com`.
+4. Нажмите **Create Web Service**. На странице нового сервиса скопируйте назначенный публичный URL. Если Render назначил имя с суффиксом, перед запуском автоматики потребуется согласовать точный домен. Сейчас workflow разрешает только `chessaz-m3-qa-api.onrender.com`.
 5. В **Deploys** откройте успешное развёртывание. Если нужен новый SHA ветки, выберите **Manual Deploy → Deploy a specific commit**. Сохраните полный SHA и убедитесь, что `/health` возвращает HTTP 200. Для пилота используйте SHA, который выберете в GitHub Actions. Существующий `chessaz-deutsch-qa-api` оставьте на M2.
 
 ## 2. Подготовьте ручной запуск в GitHub
@@ -68,7 +68,7 @@ PR [№194](https://github.com/sem2025ger/azchat-chess/pull/194) остаётс�
 
    Проверяющий (Claude) может установить URL и флаги через Vercel connector при наличии доступа. Ключ вводит владелец. `VITE_*` встраиваются в браузерную сборку. В этих настройках допустим только публичный ключ `anon`.
 
-2. В **Deployments** выберите Preview этой ветки и нужного SHA → **⋯ → Redeploy**. После статуса **Ready** откройте его ссылку. Для регистрации с подтверждением письма в Supabase QA откройте **Authentication → URL Configuration → Redirect URLs → Add URL** и разрешите возврат на `/profile` этого конкретного Preview. Укажите `https://<stable-preview-host>/profile` и откройте этот же стабильный домен для ручной проверки. **Site URL** менять не требуется. Если меняется домен после пересборки, перепроверьте разрешённый адрес.
+2. В **Deployments** выберите Preview этой ветки и нужного SHA → **⋯ → Redeploy**. Если сборки для этого SHA ещё нет, нажмите **Create Deployment**, укажите полное имя ветки M3 и проверьте, что выбран **Preview** и нужный SHA. После статуса **Ready** откройте ссылку. [Создание сборки из ветки](https://vercel.com/docs/git#creating-a-deployment-from-a-git-reference) Для регистрации с подтверждением письма в Supabase QA откройте **Authentication → URL Configuration → Redirect URLs → Add URL** и разрешите возврат на `/profile` этого конкретного Preview. Укажите `https://<stable-preview-host>/profile` и откройте этот же стабильный домен для ручной проверки. **Site URL** менять не требуется. Если меняется домен после пересборки, перепроверьте разрешённый адрес.
 3. Проверьте совпадение SHA у Vercel и Render. На десктопе используйте **Spieltag → Turniere**. На телефоне откройте на том же Preview `/spieltag?tab=turniere` напрямую.
 
 ## 4. Короткая ручная проверка на компьютере и телефоне
