@@ -153,7 +153,12 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
   const myEntry = event.entries?.find(entry => entry.captain_id === userId);
   const active = event.status === 'registration' && Date.parse(event.registration_deadline) > Date.now();
   const boardCount = event.board_count;
-  const myLineups = (event.lineups ?? []).filter(row => row.entry_id === myEntry?.id);
+  const myLineups = (event.lineups ?? [])
+    .filter(row => row.entry_id === myEntry?.id)
+    .sort((a, b) => a.board_no - b.board_no);
+  const canSubmit = draft.length === event.board_count &&
+    draft.every((playerId, index) => playerId === myLineups[index]?.player_id) &&
+    myLineups.every(row => !!row.consented_at);
   const pendingConsents = [...new Set((event.lineups ?? [])
     .filter(row => row.player_id === userId && !row.consented_at)
     .map(row => row.entry_id))];
@@ -246,7 +251,7 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
           onClick={()=>void mutate(signal=>api.lineup(id,draft,signal))}>{tr('m3Draft')}</button>
         <button type="button" className="min-h-11" disabled={busy}
           onClick={()=>void mutate(signal=>api.lineupAction(id,'previous',signal))}>{tr('m3Previous')}</button>
-        <button type="button" className="min-h-11" disabled={busy || draft.length===0}
+        <button type="button" className="min-h-11" disabled={busy || !canSubmit}
           onClick={()=>void mutate(signal=>api.lineupAction(id,'submit',signal))}>{tr('m3Submit')}</button>
         {myEntry.submitted_at && <button type="button" className="min-h-11" disabled={busy}
           onClick={()=>void mutate(signal=>api.lineupAction(id,'withdraw',signal))}>{tr('m3Withdraw')}</button>}
