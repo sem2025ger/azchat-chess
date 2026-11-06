@@ -129,7 +129,8 @@ export type M3Event = {
   starts_at: string; registration_deadline: string; min_teams: number; max_teams: number;
   teams: { id: string; name: string }[]; remaining_spots: number;
   entries?: M3TeamEntry[]; roles?: { role: TournamentRole; team_id: string | null }[];
-  lineups?: M3Lineup[]; profiles?: { id: string; username: string }[];
+  lineups?: M3Lineup[]; published_lineups?: { entry_id: string; board_no: number; username: string | null }[];
+  profiles?: { id: string; username: string }[];
   matches?: { id: string; round_no: number; home_team_id: string; away_team_id: string }[];
   states?: { match_id: string; board_no: number; status: string }[];
   reports?: { match_id: string; board_no: number; side: 'white' | 'black'; result: BoardResult; kind: string }[];
