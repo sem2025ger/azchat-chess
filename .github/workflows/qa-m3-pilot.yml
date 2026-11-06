@@ -102,6 +102,6 @@ jobs:
             --header 'Accept: application/vnd.github+json' \
             "$GITHUB_API_URL/repos/sem2025ger/azchat-chess/issues/194/labels/run-qa-m3-pilot")
           case "$status" in
-            204|404) ;;
+            200|204|404) ;;
             *) echo "::error::Could not remove the pilot label (HTTP $status)."; exit 1 ;;
           esac
