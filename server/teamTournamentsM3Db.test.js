@@ -118,6 +118,39 @@ test('M3 isolated PostgreSQL migration, 5-for-4 capacity and deadline transition
     await assert.rejects(command(captains[0],'withdraw',id),error=>error.code==='55000');
     assert.equal((await as('authenticated',stranger,'SELECT count(*)::int n FROM public.team_tournament_m3_lineups')).length,1);
   });
+  await t.test('minimum of two teams cancels one, publishes two, and gives three teams byes', async () => {
+    for (const number of [1,2,3]) {
+      const [created] = await as('service_role',null,
+        'SELECT public.team_tournament_m3_create($1,$2,$3,$4,$5,$6,$7) AS data',
+        [owner,'Minimum '+number,rules,start,deadline,2,4]);
+      const eventId = created.data.id;
+      const teamIds = [];
+      for(let i=0;i<number;i++) {
+        // Fixture injection uses the already-reviewed M1 team create transaction.
+        // The five-captain test above independently covers self-service capacity.
+        const [team] = await as('service_role',null,
+          'SELECT public.team_tournament_command($1,$2,$3,$4) AS data',
+          [owner,'approve_team',eventId,{name:'Fixture '+i}]);
+        teamIds.push(team.data.team_id);
+      }
+      await as('service_role',null,
+        "UPDATE public.team_tournament_m3_config SET registration_deadline=clock_timestamp()-interval '1 second' WHERE tournament_id=$1",[eventId]);
+      const rounds = number>=2 ? bergerSchedule(teamIds,rules) : [];
+      const response = await Promise.all(Array.from({length:3},()=>as('service_role',null,
+        'SELECT public.team_tournament_m3_tick($1,$2::jsonb) AS data',
+        [eventId,JSON.stringify(rounds)])));
+      const status = number===1?'cancelled':'published';
+      assert.ok(response.every(x=>x[0].data.status===status));
+      const stored = (await db.pool.query(
+        'SELECT count(*)::int n,count(bye_team_id)::int byes FROM public.team_tournament_rounds WHERE tournament_id=$1',
+        [eventId])).rows[0];
+      assert.equal(stored.n,number===1?0:number===2?1:3);
+      assert.equal(stored.byes,number===3?3:0);
+      await assert.rejects(command(captains[0],'redeem_invite',eventId,{token_hash:'a'.repeat(64)}),
+        error=>error.code==='55000');
+    }
+  });
+
   await t.test('players confirm, conflict disputes, staff adjudicates, captains proxy and audit sources stay distinct', async () => {
     const pairs = await db.pool.query(
       'SELECT id,home_team_id,away_team_id FROM public.team_tournament_matches WHERE tournament_id=$1 ORDER BY round_no,id LIMIT 1',[id]);
