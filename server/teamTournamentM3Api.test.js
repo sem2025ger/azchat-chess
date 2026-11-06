@@ -18,7 +18,7 @@ test('M3 event creation validates Berlin wall times, authorization and atomicall
   };
   const app = express();
   installTeamTournaments(app, {
-    enabled: true, now: () => Date.parse('2026-11-06T10:00:00Z'),
+    enabled: true, m3Enabled: true, now: () => Date.parse('2026-11-06T10:00:00Z'),
     verifyToken: async token => token === 'valid' ? { id: actor } : null,
     commandClient,
   });
