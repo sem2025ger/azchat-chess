@@ -36,6 +36,25 @@ test('M3 typed API transmits authenticated no-store actions; denies unsafe value
   assert.throws(() => api.boardAction(event, match, 17, 'report', '1-0', null, signal), {code:'invalid_input'});
 });
 
+test('single-use captain invitation survives login without open redirect', async () => {
+  const vite = await createServer({ optimizeDeps: { noDiscovery: true, include: [] },
+    server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  try {
+    const { tournamentSignInPath } = await vite.ssrLoadModule('/src/components/teamTournaments/TeamTournamentsTab.tsx');
+    const invite = 'a'.repeat(64);
+    const url = tournamentSignInPath(event, '?tab=turniere&tournament=' + event + '&invite=' + invite);
+    const parsed = new URL(url, 'https://chessaz.de');
+    assert.equal(parsed.pathname, '/profile');
+    assert.equal(parsed.searchParams.get('returnTo'),
+      '/spieltag?tab=turniere&tournament=' + event + '&invite=' + invite);
+    assert.equal(new URL(tournamentSignInPath(event, '?invite=https://evil.example'),
+      'https://chessaz.de').searchParams.get('returnTo'),
+      '/spieltag?tab=turniere&tournament=' + event);
+    assert.equal(new URL(tournamentSignInPath(null, '?invite=' + invite),
+      'https://chessaz.de').searchParams.get('returnTo'), '/spieltag?tab=turniere');
+  } finally { await vite.close(); }
+});
+
 test('M3 organizer form uses six existing locale translations and defaults', async () => {
   const vite = await createServer({ optimizeDeps: { noDiscovery: true, include: [] },
     server: { middlewareMode: true, hmr: false }, appType: 'custom' });
