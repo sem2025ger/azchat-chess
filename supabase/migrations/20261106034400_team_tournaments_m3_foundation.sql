@@ -414,3 +414,98 @@ $$;
 REVOKE ALL ON FUNCTION public.team_tournament_m3_due_events()
   FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.team_tournament_m3_due_events() TO service_role;
+
+-- Official M1 results remain authoritative. M3 provenance is explicit.
+ALTER TABLE public.team_tournament_board_results ADD COLUMN source text
+  CHECK (source IN ('player_report','captain','organizer_decision','arbiter'));
+GRANT UPDATE (source) ON public.team_tournament_board_results TO service_role;
+
+CREATE TABLE public.team_tournament_m3_board_states (
+  match_id uuid NOT NULL,
+  board_no smallint NOT NULL,
+  status text NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending','reported','confirmed','disputed')),
+  PRIMARY KEY (match_id, board_no),
+  FOREIGN KEY (match_id, board_no)
+    REFERENCES public.team_tournament_board_results(match_id, board_no)
+);
+CREATE TABLE public.team_tournament_m3_board_reports (
+  match_id uuid NOT NULL,
+  board_no smallint NOT NULL,
+  side text NOT NULL CHECK (side IN ('white','black')),
+  result text NOT NULL CHECK (result IN ('1-0','0-1','1/2-1/2','+/-','-/+','-/-')),
+  kind text NOT NULL CHECK (kind IN ('game','forfeit')),
+  actor_id uuid NOT NULL REFERENCES public.profiles(id),
+  actor_role text NOT NULL CHECK (actor_role IN ('player','captain')),
+  reported_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  PRIMARY KEY (match_id, board_no, side),
+  FOREIGN KEY (match_id, board_no)
+    REFERENCES public.team_tournament_board_results(match_id, board_no)
+);
+CREATE TABLE public.team_tournament_m3_action_audit (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  tournament_id uuid NOT NULL REFERENCES public.team_tournaments(id),
+  match_id uuid NOT NULL,
+  board_no smallint NOT NULL,
+  actor_id uuid NOT NULL REFERENCES public.profiles(id),
+  actor_role text NOT NULL CHECK (actor_role IN ('player','captain','organizer','arbiter')),
+  action text NOT NULL CHECK (action IN ('report','confirm','reject','forfeit','decide','correct')),
+  changed_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+  old_value jsonb NOT NULL,
+  new_value jsonb NOT NULL,
+  reason text,
+  FOREIGN KEY (match_id, board_no)
+    REFERENCES public.team_tournament_board_results(match_id, board_no),
+  CHECK (reason IS NULL OR length(btrim(reason)) BETWEEN 1 AND 500)
+);
+CREATE INDEX team_tournament_m3_audit_event
+  ON public.team_tournament_m3_action_audit(tournament_id, match_id, board_no, changed_at);
+
+ALTER TABLE public.team_tournament_m3_board_states ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.team_tournament_m3_board_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.team_tournament_m3_action_audit ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.team_tournament_m3_board_states,
+  public.team_tournament_m3_board_reports, public.team_tournament_m3_action_audit
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT SELECT, INSERT, UPDATE ON public.team_tournament_m3_board_states,
+  public.team_tournament_m3_board_reports TO service_role;
+GRANT SELECT, INSERT ON public.team_tournament_m3_action_audit TO service_role;
+GRANT SELECT ON public.team_tournament_m3_board_states,
+  public.team_tournament_m3_board_reports TO authenticated;
+GRANT SELECT ON public.team_tournament_m3_action_audit TO authenticated;
+
+-- There are only two possible player IDs and two captain roles for a board.
+-- This helper returns a boolean for the currently authenticated user; it does
+-- not return private rows or accept a substitute actor ID.
+CREATE FUNCTION private.team_tournament_m3_board_reader(p_match uuid, p_board smallint)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.team_tournament_matches m
+    WHERE m.id = p_match
+      AND (
+        EXISTS (SELECT 1 FROM public.team_tournament_roles r
+          WHERE r.tournament_id = m.tournament_id AND r.user_id = (SELECT auth.uid())
+            AND (r.role IN ('organizer','arbiter')
+              OR (r.role = 'captain' AND r.team_id IN (m.home_team_id,m.away_team_id))))
+        OR EXISTS (SELECT 1 FROM public.team_tournament_m3_lineups l
+          WHERE l.entry_id IN (m.home_team_id,m.away_team_id)
+            AND l.board_no = p_board AND l.player_id = (SELECT auth.uid()))
+      )
+  );
+$$;
+REVOKE ALL ON FUNCTION private.team_tournament_m3_board_reader(uuid, smallint)
+  FROM PUBLIC, anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION private.team_tournament_m3_board_reader(uuid, smallint) TO authenticated;
+
+CREATE POLICY m3_board_state_participant ON public.team_tournament_m3_board_states
+  FOR SELECT TO authenticated
+  USING ((SELECT private.team_tournament_m3_board_reader(match_id, board_no)));
+CREATE POLICY m3_board_report_participant ON public.team_tournament_m3_board_reports
+  FOR SELECT TO authenticated
+  USING ((SELECT private.team_tournament_m3_board_reader(match_id, board_no)));
+CREATE POLICY m3_board_audit_staff ON public.team_tournament_m3_action_audit
+  FOR SELECT TO authenticated USING (EXISTS (
+    SELECT 1 FROM public.team_tournament_roles r
+      WHERE r.tournament_id = team_tournament_m3_action_audit.tournament_id
+        AND r.user_id = (SELECT auth.uid()) AND r.role IN ('organizer','arbiter')
+  ));
