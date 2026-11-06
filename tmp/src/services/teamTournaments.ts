@@ -106,4 +106,79 @@ export function createTournamentApi(base: string, token?: string, fetchImpl: typ
   };
 }
 
+
+export type MyTournamentBoard = {
+  tournament_id: string;
+  tournament_name: string;
+  match_id: string;
+  round_no: number;
+  board_no: number;
+  opponent: string;
+  side: 'white' | 'black';
+  result: BoardResult | 'pending';
+  confirmed: boolean;
+  status: 'pending' | 'reported' | 'confirmed' | 'disputed';
+  opponent_report: BoardResult | null;
+  opponent_kind: 'game' | 'forfeit' | null;
+};
+export type M3EventInput = {
+  name: string;
+  start_time: string;
+  registration_deadline: string;
+  boards_per_team: number;
+  min_teams: number;
+  max_teams: number;
+};
+export function createTournamentM3Api(base: string, token: string, fetchImpl: typeof fetch = fetch) {
+  if (!token) throw new TournamentError('authentication_required');
+  let root: URL;
+  try { root = new URL(base); } catch { throw new TournamentError('configuration'); }
+  if (root.username || root.password || (root.protocol !== 'https:' &&
+      !(root.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(root.hostname)))) {
+    throw new TournamentError('configuration');
+  }
+  async function request<T>(path: string, signal: AbortSignal, body?: object) {
+    const timeout = abortWithTimeout(signal, 15000);
+    try {
+      const response = await fetchImpl(new URL('/api/team-tournaments' + path, root), {
+        method: body ? 'POST' : 'GET', signal: timeout.signal, cache: 'no-store',
+        headers: { Authorization: 'Bearer ' + token, ...(body ? { 'Content-Type': 'application/json' } : {}) },
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result == null) {
+        throw new TournamentError(typeof result?.code === 'string' ? result.code : 'temporarily_unavailable');
+      }
+      return result as T;
+    } finally { timeout.cancel(); }
+  }
+  const at = (id: string) => '/' + tournamentId(id);
+  const boardPath = (event: string, match: string, board: number) => {
+    if (!Number.isInteger(board) || board < 1 || board > 16) throw new TournamentError('invalid_input');
+    return at(event) + '/matches/' + tournamentId(match) + '/boards/' + board + '/m3';
+  };
+  return {
+    myBoard: (signal: AbortSignal) => request<{ board: MyTournamentBoard | null }>('/my-board', signal),
+    create: (input: M3EventInput, signal: AbortSignal) =>
+      request<{ id: string; status: string }>('/self-service', signal, input),
+    publicEvent: (event: string, signal: AbortSignal) =>
+      request(at(event) + '/self-service/public', signal),
+    event: (event: string, signal: AbortSignal) => request(at(event) + '/self-service', signal),
+    invite: (event: string, club_name: string, signal: AbortSignal) =>
+      request<{ token: string; invite_id: string }>(at(event) + '/invites', signal, { club_name }),
+    revoke: (event: string, invite: string, signal: AbortSignal) =>
+      request(at(event) + '/invites/' + tournamentId(invite) + '/revoke', signal, {}),
+    redeem: (event: string, tokenValue: string, signal: AbortSignal) =>
+      request(at(event) + '/redeem', signal, { token: tokenValue }),
+    lineup: (event: string, players: string[], signal: AbortSignal) =>
+      request(at(event) + '/lineup', signal, { players: players.map(tournamentId) }),
+    lineupAction: (event: string, action: 'previous' | 'consent' | 'submit' | 'withdraw', signal: AbortSignal) =>
+      request(at(event) + '/lineup/' + action, signal, {}),
+    report: (board: MyTournamentBoard, action: 'report' | 'confirm' | 'reject' | 'forfeit' | 'decide' | 'correct',
+      result: BoardResult | null, reason: string | null, signal: AbortSignal) =>
+      request(boardPath(board.tournament_id, board.match_id, board.board_no) + '/' + action, signal,
+        { result, reason }),
+  };
+}
+
 export type TournamentApi = ReturnType<typeof createTournamentApi>;
