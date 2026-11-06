@@ -94,6 +94,20 @@ test('M3 isolated PostgreSQL migration, 5-for-4 capacity and deadline transition
     error => error.code === '42501');
   });
 
+  await t.test('revoked invitation cannot be redeemed and outsiders see no predeadline roster', async () => {
+    const hash = createHash('sha256').update('revoked-fixture').digest('hex');
+    const invite = await command(owner,'create_invite',id,{club_name:'Revoked',token_hash:hash});
+    assert.equal((await command(owner,'revoke_invite',id,{invite_id:invite.invite_id})).revoked,true);
+    await assert.rejects(command(stranger,'redeem_invite',id,{token_hash:hash}),
+      error=>error.code==='P0001');
+    const publicBefore = await as('anon',null,
+      'SELECT count(*)::int n FROM public.team_tournament_m3_lineups');
+    assert.equal(publicBefore[0].n,0);
+    const own = await as('authenticated',players[0],
+      'SELECT count(*)::int n FROM public.team_tournament_m3_lineups');
+    assert.equal(own[0].n,4);
+  });
+
   await t.test('exactly four of five captains claim the last four places', async () => {
     const requests = await Promise.allSettled(captains.map(actor => command(actor, 'submit', id)));
     assert.equal(requests.filter(x => x.status === 'fulfilled').length, 4);
@@ -116,7 +130,12 @@ test('M3 isolated PostgreSQL migration, 5-for-4 capacity and deadline transition
     assert.equal((await db.pool.query('SELECT count(*)::int n FROM public.team_tournament_rounds WHERE tournament_id=$1',[id])).rows[0].n,3);
     assert.equal((await db.pool.query('SELECT count(*)::int n FROM public.team_tournament_board_results WHERE tournament_id=$1',[id])).rows[0].n,24);
     await assert.rejects(command(captains[0],'withdraw',id),error=>error.code==='55000');
-    assert.equal((await as('authenticated',stranger,'SELECT count(*)::int n FROM public.team_tournament_m3_lineups')).length,1);
+    const allPublished = await as('authenticated',stranger,
+      'SELECT count(*)::int n FROM public.team_tournament_m3_lineups');
+    assert.equal(allPublished[0].n,16);
+    const publicPublished = await as('anon',null,
+      'SELECT count(*)::int n FROM public.team_tournament_m3_lineups');
+    assert.equal(publicPublished[0].n,16);
   });
   await t.test('minimum of two teams cancels one, publishes two, and gives three teams byes', async () => {
     for (const number of [1,2,3]) {
