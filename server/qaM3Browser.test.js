@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { waitForPublishedBoard } = require('./scripts/qaM3Browser');
+const { switchLanguage, waitForPublishedBoard } = require('./scripts/qaM3Browser');
 
 test('browser publication waits for the localized status, round pairing and board', async () => {
   const visible = [];
@@ -38,4 +38,36 @@ test('browser publication waits for the localized status, round pairing and boar
   };
   await waitForPublishedBoard(page, panel);
   assert.deepEqual(visible, ['published', 'round', 'board']);
+});
+
+test('language switching uses the desktop sidebar and mobile Settings controls', async () => {
+  for (const [width, lang, name, menu] of [
+    [1280, 'en', 'English', null], [1280, 'de', 'Deutsch', null],
+    [390, 'en', 'English', 'Sprache ändern DE'], [390, 'de', 'Deutsch', 'Change Language EN'],
+  ]) {
+    const calls = [];
+    const button = scope => (role, options) => {
+      assert.equal(role, 'button');
+      return { async click() {
+        const label = options.name;
+        if (scope === 'sidebar') assert.deepEqual(options, { name, exact: true });
+        else assert.ok(label.test(calls.length === 1 ? menu : `flag ${name}`));
+        calls.push(scope);
+      } };
+    };
+    const page = {
+      viewportSize: () => ({ width }),
+      getByRole: button('sidebar'),
+      locator(selector) {
+        if (selector === '.settings-mobile-view') return { getByRole: button('settings') };
+        assert.equal(selector, `html[lang="${lang}"]`);
+        return { async waitFor(options) {
+          assert.deepEqual(options, { state: 'attached' });
+          calls.push('lang');
+        } };
+      },
+    };
+    await switchLanguage(page, async route => calls.push(route), lang);
+    assert.deepEqual(calls, menu ? ['/settings', 'settings', 'settings', 'lang'] : ['sidebar', 'lang']);
+  }
 });

@@ -69,6 +69,19 @@ async function waitForPublishedBoard(page, panel) {
   await panel.getByRole('heading', { name:/^Runde 1: / }).waitFor({ state:'visible' });
   await panel.getByText(/^Brett 1: /).waitFor({ state:'visible' });
 }
+async function switchLanguage(page, goto, lang) {
+  const name = lang === 'en' ? 'English' : 'Deutsch';
+  if (page.viewportSize().width >= 1024) {
+    await page.getByRole('button', { name, exact: true }).click();
+  } else {
+    await goto('/settings');
+    const settings = page.locator('.settings-mobile-view');
+    const menu = lang === 'en' ? /Sprache ändern/ : /Change Language/;
+    await settings.getByRole('button', { name: menu }).click();
+    await settings.getByRole('button', { name: new RegExp(name) }).click();
+  }
+  await page.locator(`html[lang="${lang}"]`).waitFor({ state: 'attached' });
+}
 async function runViewport(browser, target, db, users, tag, viewportName, signal) {
   const mobile = viewportName === 'mobile';
   const prefix = mobile ? 'M' : 'D';
@@ -291,13 +304,13 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
       await confirmed(dispute,'1/2-1/2');
     });
     await step(8,async()=>{
-      await goto('/settings');await page.getByRole('button',{name:/Sprache ändern/}).click();await page.getByRole('button',{name:/English/}).click();
+      await switchLanguage(page, goto, 'en');
       check(await page.locator('html').getAttribute('lang')==='en','English locale not active');
       await goto('/spieltag?tab=turniere&tournament='+event.id);
       await button('All tournaments').waitFor();
       await page.getByRole('region',{name:'Create club tournament',exact:true}).getByRole('heading',{name:event.name,exact:true}).waitFor();
       await shot(8,'english');
-      await goto('/settings');await page.getByRole('button',{name:/Change Language/}).click();await page.getByRole('button',{name:/Deutsch/}).click();
+      await switchLanguage(page, goto, 'de');
       check(await page.locator('html').getAttribute('lang')==='de','German locale not active');
       await goto('/spieltag?tab=turniere&tournament='+event.id);await button('Alle Turniere').waitFor();
       await panel().getByRole('heading',{name:event.name,exact:true}).waitFor();
@@ -392,4 +405,4 @@ async function main() {
   return exit;
 }
 if(require.main===module) main().then(code=>{process.exitCode=code;}).catch(()=>{console.error('Browser acceptance could not finish safely');process.exitCode=1;});
-module.exports={main,waitForPublishedBoard};
+module.exports={main,waitForPublishedBoard,switchLanguage};
