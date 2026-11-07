@@ -45,8 +45,8 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  // Remove only its exact markup before comparing all disabled NRW/M3 Home code.
  const approvedMobileKing = [
   '              <span className="relative inline-block h-0 w-0 align-baseline" aria-hidden="true">',
-  '                <span className="absolute bottom-[-4px] left-[6px] h-[34px] w-[17px]">',
-  '                  <img src="/brand/sidebar-king.svg" alt="" width="17" height="34" className="absolute inset-0 h-full w-full object-fill" />',
+  '                <span className="absolute bottom-[0px] left-[11px] h-[44px] w-[22px]">',
+  '                  <img src="/brand/sidebar-king.svg" alt="" width="22" height="44" className="absolute inset-0 h-full w-full object-fill" />',
   '                  <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />',
   '                </span>',
   '              </span>',
