@@ -1,5 +1,14 @@
 export type Language = 'en' | 'de' | 'az' | 'tr' | 'ua' | 'ru';
 
+export const languageOptions = [
+  { id: 'en', name: 'English', flag: '🇬🇧' },
+  { id: 'de', name: 'Deutsch', flag: '🇩🇪' },
+  { id: 'az', name: 'Azərbaycan', flag: '🇦🇿' },
+  { id: 'tr', name: 'Türkçe', flag: '🇹🇷' },
+  { id: 'ua', name: 'Українська', flag: '🇺🇦' },
+  { id: 'ru', name: 'Русский', flag: '🇷🇺' },
+] as const satisfies ReadonlyArray<{ id: Language; name: string; flag: string }>;
+
 type TranslationDictionary = Record<string, Record<Language, string>>;
 
 export const translations: TranslationDictionary = {
