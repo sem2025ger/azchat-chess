@@ -28,6 +28,13 @@ function boardStatus(status: string | undefined, tr: TournamentCopy): string {
   }
 }
 
+export function M3BoardStatus({ result, status, tr }: {
+  result: BoardResult | 'pending'; status?: string; tr: TournamentCopy;
+}) {
+  const outcome = outcomes.find(outcome => outcome.result === result);
+  return <p>{outcome && <>{outcome.text} · </>}{boardStatus(status, tr)}</p>;
+}
+
 export function M3Create({ tr, token, onCreated }: {
   tr: TournamentCopy; token: string; onCreated: (event: string) => void;
 }) {
@@ -287,7 +294,7 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
             : 'py-3 border-t border-current/10'}>
             <p>{tr('board')} {board.board_no}: {people.get(homePlayer?.player_id ?? '')??'–'} – {people.get(awayPlayer?.player_id ?? '')??'–'}</p>
             <p>{tr('white')}: {board.home_white ? people.get(homePlayer?.player_id??'') : people.get(awayPlayer?.player_id??'')}</p>
-            <p>{board.result} · {boardStatus(state?.status, tr)}</p>
+            <M3BoardStatus result={board.result} status={state?.status} tr={tr} />
             {reported.map(report => <p key={report.side}>
               {report.side === 'white' ? tr('white') : tr('black')}: {report.result} ({report.kind === 'forfeit' ? tr('m3Forfeit') : tr('m3Played')})
             </p>)}

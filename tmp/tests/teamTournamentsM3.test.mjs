@@ -100,11 +100,11 @@ test('tournament sign-in links round-trip through the ProfileScreen allowlist', 
   } finally { await vite.close(); }
 });
 
-test('M3 organizer form uses six existing locale translations and defaults', async () => {
+test('M3 organizer form and board results use six existing locale translations without raw codes', async () => {
   const vite = await createServer({ optimizeDeps: { noDiscovery: true, include: [] },
     server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   try {
-    const { M3Create } = await vite.ssrLoadModule('/src/components/teamTournaments/TeamTournamentsM3Panel.tsx');
+    const { M3Create, M3BoardStatus } = await vite.ssrLoadModule('/src/components/teamTournaments/TeamTournamentsM3Panel.tsx');
     const { tournamentCopy, tournamentErrorMessage } = await vite.ssrLoadModule('/src/components/teamTournaments/copy.ts');
     for (const language of ['de','en','az','tr','ua','ru']) {
       const tr = tournamentCopy(language);
@@ -130,6 +130,21 @@ test('M3 organizer form uses six existing locale translations and defaults', asy
       assert.match(html, /name="min_teams"[^>]*value="2"/);
       assert.match(html, /name="max_teams"[^>]*value="4"/);
       assert.match(html, /type="datetime-local"/);
+      for (const [status, label] of [
+        [undefined, 'm3Pending'], ['pending', 'm3Pending'],
+        ['reported', 'm3Reported'], ['confirmed', 'm3Confirmed'], ['disputed', 'm3DisputedStatus'],
+      ]) {
+        for (const [result, text] of [
+          ['pending', ''], ['1-0', '1–0'], ['1/2-1/2', '½–½'], ['0-1', '0–1'],
+          ['+/-', '+/−'], ['-/+', '−/+'], ['-/-', '−/−'],
+        ]) {
+          const board = renderToStaticMarkup(createElement(M3BoardStatus, { result, status, tr }));
+          const visible = board.replace(/<[^>]*>/g, '');
+          assert.equal(visible, (text ? text + ' · ' : '') + tr(label), language + ': ' + result + '/' + status);
+          assert.doesNotMatch(visible, /\b(pending|reported|confirmed|disputed)\b/);
+          assert.doesNotMatch(visible, /1\/2-1\/2/);
+        }
+      }
     }
   } finally { await vite.close(); }
 });
