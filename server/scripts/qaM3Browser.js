@@ -6,7 +6,7 @@ const { mkdirSync, writeFileSync, appendFileSync } = require('node:fs');
 const path = require('node:path');
 const { randomBytes, createHash } = require('node:crypto');
 const { setTimeout: sleep } = require('node:timers/promises');
-const { browserTarget, healthGuard, networkDecision } = require('./qaM3BrowserGuard');
+const { browserTarget, healthGuard, networkDecision, guardBrowserRequest } = require('./qaM3BrowserGuard');
 const { connect, fixtureUsers, cleanupEvents, verifyUserCleanup, inviteStorage } = require('./qaM3PilotDb');
 const { berlinLocal, berlinLocalToIso } = require('../teamTournamentTime');
 const labels = ['Organizer creates event and copies two UI links', 'Captain 1 exact login return and redemption',
@@ -92,11 +92,7 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
       if (document.documentElement) { install(); observer.disconnect(); }
     }).observe(document, { childList:true });
   });
-  await context.route('**/*', async route => {
-    const decision = networkDecision(route.request().url(), route.request().headers(), target, tokens);
-    if (decision === 'forbidden' || decision === 'leak') violation = true;
-    if (decision === 'allow') await route.continue(); else await route.abort('blockedbyclient');
-  });
+  await context.route('**/*', route => guardBrowserRequest(route, target, tokens, () => { violation = true; }));
   await context.routeWebSocket('**/*', socket => {
     if (networkDecision(socket.url(), {}, target, tokens) === 'allow') socket.connectToServer();
     else { violation = true; socket.close(); }

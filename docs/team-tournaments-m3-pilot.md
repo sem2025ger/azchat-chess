@@ -91,6 +91,7 @@ Invite, email and password inputs are hidden before rendering for video and
 masked in screenshots. Raw exception text, browser console messages, URLs, HAR,
 traces and auth state are not exported. Non-QA requests are blocked; attempted
 production requests or token-bearing third-party URLs/referrers fail acceptance.
+HTTP redirects fail acceptance before Chromium can follow them.
 The storage proof checks all rows in the fixture tournament graph (including
 reports/audit), plus fixture Auth/users/sessions/profiles. It does not scan or
 claim to audit unrelated QA data or unavailable Render logs.

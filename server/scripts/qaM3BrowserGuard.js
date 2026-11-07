@@ -30,4 +30,34 @@ function networkDecision(url, headers, target, tokens) {
   if (/chessaz\.de|azchat-chess|chessaz-api|chessaz-deutsch-qa-api|kmwfvvliundhuovoakoa/.test(parsed.hostname)) return 'forbidden';
   return 'block';
 }
-module.exports = { PREVIEW, BRANCH, browserTarget, healthGuard, networkDecision };
+
+async function guardBrowserRequest(route, target, tokens, markViolation) {
+  const request = route.request();
+  const decision = networkDecision(request.url(), request.headers(), target, tokens);
+  if (decision !== 'allow') {
+    if (decision !== 'block') markViolation();
+    await route.abort('blockedbyclient');
+    return;
+  }
+
+  // Chromium follows redirects without calling the Playwright route handler
+  // again. Read exactly one response and never relay a redirect to Chromium.
+  const response = await route.fetch({ maxRedirects: 0, timeout: 30000 }).catch(() => null);
+  if (!response) {
+    await route.abort('failed');
+    return;
+  }
+  try {
+    const status = response.status();
+    if (status >= 300 && status < 400 && status !== 304) {
+      markViolation();
+      await route.abort('blockedbyclient');
+      return;
+    }
+    await route.fulfill({ response });
+  } finally {
+    await response.dispose();
+  }
+}
+
+module.exports = { PREVIEW, BRANCH, browserTarget, healthGuard, networkDecision, guardBrowserRequest };

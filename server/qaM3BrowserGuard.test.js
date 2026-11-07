@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { PREVIEW, BRANCH, browserTarget, healthGuard, networkDecision } = require('./scripts/qaM3BrowserGuard');
+const { PREVIEW, BRANCH, browserTarget, healthGuard, networkDecision, guardBrowserRequest } = require('./scripts/qaM3BrowserGuard');
 const env = { QA_SUPABASE_URL: 'https://iukmpcytsuofqhxsumbu.supabase.co', M3_QA_API_URL: 'https://chessaz-m3-qa-api.onrender.com', M3_QA_PREVIEW_URL: PREVIEW, GITHUB_REPOSITORY: 'sem2025ger/azchat-chess', M3_QA_BRANCH: BRANCH, M3_QA_PR: '194', GITHUB_RUN_ID: '123' };
 const target = browserTarget(env);
 const sha = 'a'.repeat(40);
@@ -37,6 +37,20 @@ test('browser network guard blocks production, unapproved origins, token URLs an
   assert.equal(networkDecision('https://third.test', { referer: PREVIEW + '/?invite=' + token }, target, [token]), 'leak');
   assert.equal(networkDecision('https://third.test', {}, target, []), 'block');
   assert.equal(networkDecision(PREVIEW + '.evil.test/', {}, target, []), 'block');
+});
+test('browser relays successful QA responses and blocks redirects before Chromium can follow', async () => {
+  for (const status of [200, 302, 307, 308]) {
+    const observed = [];
+    const response = { status: () => status, dispose: async () => observed.push('dispose') };
+    const route = {
+      request: () => ({ url: () => PREVIEW + '/spieltag', headers: () => ({}) }),
+      async fetch(options) { assert.equal(options.maxRedirects, 0); return response; },
+      async fulfill(options) { assert.equal(options.response, response); observed.push('fulfill'); },
+      async abort() { observed.push('abort'); },
+    };
+    await guardBrowserRequest(route, target, [], () => observed.push('violation'));
+    assert.deepEqual(observed, status === 200 ? ['fulfill', 'dispose'] : ['violation', 'abort', 'dispose']);
+  }
 });
 test('browser entrypoint stops before SQL and fixtures when health SHA differs', async () => {
   const { execFile } = require('node:child_process');
