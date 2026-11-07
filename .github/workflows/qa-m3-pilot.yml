@@ -77,8 +77,99 @@ jobs:
           M3_QA_API_URL: ${{ secrets.M3_QA_API_URL }}
         run: node server/scripts/qaM3Pilot.js --cleanup
 
-  remove-label:
+  browser:
     needs: pilot
+    if: >-
+      needs.pilot.result == 'success' &&
+      github.repository == 'sem2025ger/azchat-chess' &&
+      github.event.label.name == 'run-qa-m3-pilot' &&
+      github.event.pull_request.number == 194 &&
+      github.event.pull_request.head.repo.full_name == 'sem2025ger/azchat-chess' &&
+      github.event.pull_request.head.ref == 'feat/team-tournaments-m3-self-service-20261106'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Check reviewed PR head
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [[ "$(git rev-parse HEAD)" != "$PR_HEAD_SHA" ]] ||
+             ! git merge-base --is-ancestor 392f9109e36ce50d48c33ad5d59f3c7512e74b19 HEAD; then
+            echo '::error::The checkout does not match the reviewed M3 PR history.'
+            exit 1
+          fi
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.19.0
+
+      - name: Install exact browser and server dependencies
+        id: install
+        working-directory: server
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install pinned Chromium
+        if: github.run_attempt == 1
+        working-directory: server
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Hosted desktop and mobile acceptance
+        id: browser
+        if: github.run_attempt == 1
+        timeout-minutes: 32
+        env:
+          QA_SUPABASE_URL: ${{ secrets.QA_SUPABASE_URL }}
+          QA_SUPABASE_ANON_KEY: ${{ secrets.QA_SUPABASE_ANON_KEY }}
+          QA_SUPABASE_SERVICE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_KEY }}
+          QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
+          M3_QA_API_URL: ${{ secrets.M3_QA_API_URL }}
+          M3_QA_EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          M3_QA_PREVIEW_URL: https://chessaz-preview-workspace-git-135194-semov20207-3068s-projects.vercel.app
+          M3_QA_BRANCH: ${{ github.event.pull_request.head.ref }}
+          M3_QA_PR: ${{ github.event.pull_request.number }}
+        run: node server/scripts/qaM3Browser.js
+
+      - name: Retry browser cleanup after failure or interruption
+        if: >-
+          always() && steps.install.outcome == 'success' &&
+          (github.run_attempt > 1 || steps.browser.outputs.fixture_cleanup_needed == 'true')
+        timeout-minutes: 4
+        env:
+          QA_SUPABASE_URL: ${{ secrets.QA_SUPABASE_URL }}
+          QA_SUPABASE_ANON_KEY: ${{ secrets.QA_SUPABASE_ANON_KEY }}
+          QA_SUPABASE_SERVICE_KEY: ${{ secrets.QA_SUPABASE_SERVICE_KEY }}
+          QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
+          M3_QA_API_URL: ${{ secrets.M3_QA_API_URL }}
+          M3_QA_EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+          M3_QA_PREVIEW_URL: https://chessaz-preview-workspace-git-135194-semov20207-3068s-projects.vercel.app
+          M3_QA_BRANCH: ${{ github.event.pull_request.head.ref }}
+          M3_QA_PR: ${{ github.event.pull_request.number }}
+        run: node server/scripts/qaM3Browser.js --cleanup
+
+      - name: Upload redacted browser acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: m3-browser-acceptance-${{ github.event.pull_request.head.sha }}-${{ github.run_attempt }}
+          path: |
+            m3-browser-artifacts/summary.md
+            m3-browser-artifacts/cleanup-retry.md
+            m3-browser-artifacts/desktop/*.png
+            m3-browser-artifacts/desktop/acceptance.webm
+            m3-browser-artifacts/mobile/*.png
+            m3-browser-artifacts/mobile/acceptance.webm
+          if-no-files-found: error
+          retention-days: 7
+
+  remove-label:
+    needs: [pilot, browser]
     if: >-
       always() && needs.pilot.result != 'skipped' && github.run_attempt == 1 &&
       github.repository == 'sem2025ger/azchat-chess' &&
