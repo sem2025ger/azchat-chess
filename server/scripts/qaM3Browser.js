@@ -6,7 +6,7 @@ const { mkdirSync, writeFileSync, appendFileSync } = require('node:fs');
 const path = require('node:path');
 const { randomBytes, createHash } = require('node:crypto');
 const { setTimeout: sleep } = require('node:timers/promises');
-const { browserTarget, healthGuard, networkDecision, guardBrowserRequest } = require('./qaM3BrowserGuard');
+const { browserTarget, healthGuard, frontendGuard, networkDecision, guardBrowserRequest } = require('./qaM3BrowserGuard');
 const { connect, fixtureUsers, cleanupEvents, verifyUserCleanup, inviteStorage } = require('./qaM3PilotDb');
 const { berlinLocal, berlinLocalToIso } = require('../teamTournamentTime');
 const labels = ['Organizer creates event and copies two UI links', 'Captain 1 exact login return and redemption',
@@ -244,6 +244,9 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
     await fits('standings');
   }
   try {
+    await goto('/');
+    await frontendGuard(page, process.env.M3_QA_EXPECTED_SHA);
+    check(!violation, 'Forbidden browser network target during frontend version proof');
     let event;
     await step(1,async()=>{event=await create('Main');});
     await step(2,()=>redeem(event,'C1',0));
@@ -329,7 +332,23 @@ async function main() {
     const {QA_SUPABASE_SERVICE_KEY:serviceKey,QA_SUPABASE_ANON_KEY:anonKey,QA_DATABASE_URL:databaseUrl}=env;
     check(serviceKey && anonKey && serviceKey!==anonKey && databaseUrl,'Missing QA credentials');
     for(const value of [serviceKey,anonKey,databaseUrl]) mask(value);
-    if(!cleanupOnly) await healthGuard(target,env.M3_QA_EXPECTED_SHA);
+    if(!cleanupOnly) {
+      await healthGuard(target,env.M3_QA_EXPECTED_SHA);
+      const {chromium}=require('playwright');browser=await chromium.launch({headless:true});
+      const context=await browser.newContext({serviceWorkers:'block'});
+      let violation=false;
+      await context.route('**/*',route=>guardBrowserRequest(route,target,tokens,()=>{violation=true;}));
+      await context.routeWebSocket('**/*',socket=>{
+        if(networkDecision(socket.url(),{},target,tokens)==='allow') socket.connectToServer();
+        else {violation=true;socket.close();}
+      });
+      try {
+        const page=await context.newPage();
+        await page.goto(target.preview,{waitUntil:'domcontentloaded',timeout:45000});
+        await frontendGuard(page,env.M3_QA_EXPECTED_SHA);
+        check(!violation,'Forbidden browser network target during frontend version proof');
+      } finally {await context.close();}
+    }
     db=connect(databaseUrl);await db.connect();connected=true;
     await cleanup(db,target,serviceKey,tag,email);cleanupStatus='PASS';
     if(!cleanupOnly) {
@@ -348,7 +367,6 @@ async function main() {
       }
       check((await fixtureUsers(db,tag,roles.map(email))).length===roles.length,'SQL does not see QA Auth fixtures');
       await db.query('INSERT INTO public.team_tournament_organizers(user_id) VALUES ($1),($2)',[users.DO.id,users.MO.id]);
-      const {chromium}=require('playwright');browser=await chromium.launch({headless:true});
       for(const viewport of ['desktop','mobile']) await runViewport(browser,target,db,users,tag,viewport,controller.signal);
       check(Object.values(status).flat().every(s=>s==='PASS'),'Incomplete browser acceptance');
     }

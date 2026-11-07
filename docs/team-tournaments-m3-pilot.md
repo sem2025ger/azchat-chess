@@ -48,7 +48,8 @@
 ## Hosted Chromium acceptance (PR #194)
 
 The owner applies `run-qa-m3-pilot` **after** CI is green and the dedicated
-`https://chessaz-m3-qa-api.onrender.com/health` reports the exact full PR HEAD.
+`https://chessaz-m3-qa-api.onrender.com/health` reports the exact full PR HEAD
+and the branch Preview's `meta[name="chessaz-commit"]` contains that same SHA.
 Do not apply the label automatically. After pushing, poll this public endpoint
 for at most 20 minutes; a mismatch blocks execution, not implementation.
 The workflow runs the existing API pilot first, then `server/scripts/qaM3Browser.js`.
@@ -59,8 +60,14 @@ The browser job is hard-bound to PR 194, its feature branch, QA Supabase
 `iukmpcytsuofqhxsumbu`, and the exact frontend origin:
 `https://chessaz-preview-workspace-git-135194-semov20207-3068s-projects.vercel.app`.
 No other Preview, production service, M2 API, migration or RLS change is allowed.
-The SHA precondition runs before database connection, fixture writes or browser
-launch. SQL connections reuse the existing QA-only host/user and pinned TLS CA
+The Render SHA precondition runs before browser launch. A guarded Chromium page
+then verifies exactly one `head meta[name="chessaz-commit"]` against the full
+expected SHA before database connection or fixture writes. The meta is emitted
+at build time from `VERCEL_GIT_COMMIT_SHA`, without other build metadata. Each
+viewport repeats the frontend check before step 1. Missing, duplicate or stale
+metadata fails closed. Both hosted versions must match HEAD after the final push,
+with a maximum 20-minute wait per service before reporting a blocking mismatch.
+SQL connections reuse the existing QA-only host/user and pinned TLS CA
 guard. Redirects on fixture HTTP operations are rejected.
 
 Each viewport (1280×900 and 390×844) gets one Chromium context/page and one video.

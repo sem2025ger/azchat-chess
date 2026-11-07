@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { PREVIEW, BRANCH, browserTarget, healthGuard, networkDecision, guardBrowserRequest } = require('./scripts/qaM3BrowserGuard');
+const { PREVIEW, BRANCH, browserTarget, healthGuard, frontendGuard, networkDecision, guardBrowserRequest } = require('./scripts/qaM3BrowserGuard');
 const env = { QA_SUPABASE_URL: 'https://iukmpcytsuofqhxsumbu.supabase.co', M3_QA_API_URL: 'https://chessaz-m3-qa-api.onrender.com', M3_QA_PREVIEW_URL: PREVIEW, GITHUB_REPOSITORY: 'sem2025ger/azchat-chess', M3_QA_BRANCH: BRANCH, M3_QA_PR: '194', GITHUB_RUN_ID: '123' };
 const target = browserTarget(env);
 const sha = 'a'.repeat(40);
@@ -38,6 +38,23 @@ test('browser network guard blocks production, unapproved origins, token URLs an
   assert.equal(networkDecision('https://third.test', {}, target, []), 'block');
   assert.equal(networkDecision(PREVIEW + '.evil.test/', {}, target, []), 'block');
 });
+test('frontend guard requires one build meta with the exact full reviewed SHA', async () => {
+  const page = (count, commit) => ({
+    locator(selector) {
+      assert.equal(selector, 'head meta[name="chessaz-commit"]');
+      return {
+        count: async () => count,
+        async getAttribute(name) { assert.equal(name, 'content'); return commit; },
+      };
+    },
+  });
+  await frontendGuard(page(1, sha), sha);
+  for (const commit of [null, '', sha.slice(0, 7), 'b'.repeat(40), sha + ' ', sha.toUpperCase()]) {
+    await assert.rejects(frontendGuard(page(1, commit), sha), /Frontend QA commit/);
+  }
+  for (const count of [0, 2]) await assert.rejects(frontendGuard(page(count, sha), sha), /Frontend QA commit/);
+  await assert.rejects(frontendGuard({}, 'main'), /Invalid expected SHA/);
+});
 test('browser relays successful QA responses and blocks redirects before Chromium can follow', async () => {
   for (const status of [200, 302, 307, 308]) {
     const observed = [];
@@ -73,4 +90,38 @@ test('browser entrypoint stops before SQL and fixtures when health SHA differs',
         QA_DATABASE_URL:'postgresql://postgres:fixture@db.iukmpcytsuofqhxsumbu.supabase.co/postgres'},
     }), error=>{assert.equal(error.code,1);assert.doesNotMatch(error.stdout,/UNEXPECTED_SQL|PASS/);return true;});
   } finally {rmSync(cwd,{recursive:true,force:true});}
+});
+test('browser entrypoint rejects stale frontend metadata before SQL or fixtures', async () => {
+  const { execFile } = require('node:child_process');
+  const { promisify } = require('node:util');
+  const { mkdtempSync, rmSync } = require('node:fs');
+  const { tmpdir } = require('node:os');
+  const { join } = require('node:path');
+  const cwd = mkdtempSync(join(tmpdir(), 'm3-frontend-guard-'));
+  const script = join(__dirname, 'scripts/qaM3Browser.js');
+  const bootstrap = `
+    import {createRequire} from 'node:module';
+    const require=createRequire(process.argv[1]);
+    require('pg').Client.prototype.connect=()=>{process.stdout.write('UNEXPECTED_SQL');throw Error('SQL reached');};
+    globalThis.fetch=async()=>Response.json({ok:true,service:'aztr-chess-server',commit:'${sha}'});
+    require('playwright').chromium.launch=async()=>({
+      newContext:async()=>({
+        route:async()=>{},routeWebSocket:async()=>{},close:async()=>{},
+        newPage:async()=>({goto:async()=>{},locator:()=>({count:async()=>1,getAttribute:async()=>'${'b'.repeat(40)}'})})
+      }),
+      close:async()=>{process.stdout.write('BROWSER_CLOSED');}
+    });
+  `;
+  try {
+    await assert.rejects(promisify(execFile)(process.execPath, ['--import', 'data:text/javascript,' + encodeURIComponent(bootstrap), script], {
+      cwd, env: { ...process.env, ...env, GITHUB_ACTIONS:'false', GITHUB_OUTPUT:'', GITHUB_STEP_SUMMARY:'',
+        M3_QA_EXPECTED_SHA:sha, QA_SUPABASE_ANON_KEY:'fixture-anon', QA_SUPABASE_SERVICE_KEY:'fixture-service',
+        QA_DATABASE_URL:'postgresql://postgres:fixture@db.iukmpcytsuofqhxsumbu.supabase.co/postgres' },
+    }), error => {
+      assert.equal(error.code, 1);
+      assert.match(error.stdout, /BROWSER_CLOSED/);
+      assert.doesNotMatch(error.stdout, /UNEXPECTED_SQL|PASS/);
+      return true;
+    });
+  } finally { rmSync(cwd, { recursive:true, force:true }); }
 });

@@ -19,6 +19,13 @@ async function healthGuard(target, sha, fetcher = fetch) {
     throw Error('Render QA commit does not match the reviewed PR head.');
   }
 }
+async function frontendGuard(page, sha) {
+  if (!/^[a-f0-9]{40}$/.test(sha || '')) throw Error('Invalid expected SHA');
+  const meta = page.locator('head meta[name="chessaz-commit"]');
+  if (await meta.count() !== 1 || await meta.getAttribute('content') !== sha) {
+    throw Error('Frontend QA commit does not match the reviewed PR head.');
+  }
+}
 function networkDecision(url, headers, target, tokens) {
   let parsed;
   try { parsed = new URL(url); } catch { return 'forbidden'; }
@@ -60,4 +67,4 @@ async function guardBrowserRequest(route, target, tokens, markViolation) {
   }
 }
 
-module.exports = { PREVIEW, BRANCH, browserTarget, healthGuard, networkDecision, guardBrowserRequest };
+module.exports = { PREVIEW, BRANCH, browserTarget, healthGuard, frontendGuard, networkDecision, guardBrowserRequest };
