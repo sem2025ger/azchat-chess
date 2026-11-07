@@ -6,6 +6,7 @@ import { playChessSound, preloadChessSounds, setChessSoundMuted } from '../utils
 import { premiumInterfaceThemes } from '../lib/interfaceThemes';
 import { BOARD_THEMES, BOARD_THEME_DETAILS, PIECE_STYLES } from '../lib/chessThemes';
 import { useLanguage } from '../context/LanguageContext';
+import { languageOptions } from '../translations';
 import { useNavigate } from 'react-router-dom';
 import ChessBoard from '../components/ChessBoard';
 import SettingsCommandCenter from '../components/settings/SettingsCommandCenter';
@@ -141,14 +142,6 @@ export default function SettingsScreen() {
     ua: { presets: 'Готові стилі', soundGame: 'Звук та гра', inPlay: 'Налаштувати у грі', confirm: 'Підтверджувати хід', hint: 'Захист від випадкових торкань' },
   };
   const mobileLabels = mobileCopy[language] || mobileCopy.en;
-  const languages = [
-    { id: 'en', name: 'English', flag: '🇬🇧' },
-    { id: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    { id: 'az', name: 'Azərbaycan', flag: '🇦🇿' },
-    { id: 'tr', name: 'Türkçe', flag: '🇹🇷' },
-    { id: 'ua', name: 'Українська', flag: '🇺🇦' },
-    { id: 'ru', name: 'Русский', flag: '🇷🇺' },
-  ];
 
   const mobilePiecePreviewSrc = (styleId: string, code: string) => {
     if (styleId === 'cburnett-classic') return `/chess-assets/pieces/cburnett/${code}.svg`;
@@ -253,10 +246,10 @@ export default function SettingsScreen() {
           <div className="space-y-6 animate-fade-in">
             <SubViewHeader title={t('settings.changeLanguage')} onBack={() => setActiveSubView('main')} />
             <div className="flex flex-col gap-2 px-2">
-              {languages.map((lang) => (
+              {languageOptions.map((lang) => (
                 <button
                   key={lang.id}
-                  onClick={() => setLanguage(lang.id as any)}
+                  onClick={() => setLanguage(lang.id)}
                   className={cx(
                     "flex items-center gap-4 p-5 rounded-2xl border transition-all",
                     language === lang.id ? "bg-white/10 border-white/20 text-white" : "bg-white/[0.03] border-white/5 text-neutral-400"

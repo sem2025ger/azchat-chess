@@ -113,7 +113,11 @@ export function TournamentRounds({ event, tr, names, captainId, activeRound, bus
         const home = names[match.home_team_id], away = names[match.away_team_id];
         const score = event.official.matches.find(m => m.match_id === match.id);
         return <article className="team-tournament-match" key={match.id}>
-          <h3>{home} {score ? points(score.home_board_points) + ' : ' + points(score.away_board_points) : '–'} {away}</h3>
+          <h3>
+            {home}
+            {score && <>{' — '}<span className="whitespace-nowrap">{points(score.home_board_points)} : {points(score.away_board_points)}</span></>}
+            {' — '}{away}
+          </h3>
           {score && <Scenario score={score} home={home} away={away} tr={tr} />}
           <ol className="team-tournament-boards">{match.boards.map(board => <li key={board.board_no}>
             <strong>{tr('board')} {board.board_no}</strong>

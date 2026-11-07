@@ -109,6 +109,12 @@ test('organizer, arbiter, captain and spectator views keep their controls and ma
       assert.ok(copy('tab'));
       assert.ok(copy('whiteWins'));
       assert.ok(tournamentErrorMessage('result_conflict', copy).includes(copy('conflict')));
+      const digitTeams = teams.map(team => team.id === '0' ? { ...team, name: 'SV Bochum 02' } : team);
+      const matchHtml = renderToStaticMarkup(createElement(TournamentDetail, {
+        event: { ...event, teams: digitTeams }, tr: copy, preview: null, busy: false, captainId: null, actions,
+      }));
+      assert.match(matchHtml, /<h3>SV Bochum 02 — <span class="whitespace-nowrap">3½ : 2½<\/span> — Delta<\/h3>/, language);
+      assert.match(matchHtml, /<h3>Bravo — Charlie<\/h3>/, language);
     }
     assert.match(tournamentErrorMessage('result_conflict', tr), /Lade das Turnier neu/);
   } finally {

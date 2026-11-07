@@ -1,25 +1,40 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { isTournamentReturnPath } from '../../lib/nrwAuthReturn';
 import {
   createTournamentApi, TournamentError, type Tournament, type TournamentApi, type TournamentList, type TournamentPreview,
 } from '../../services/teamTournaments';
 import { tournamentCopy, tournamentErrorMessage, type TournamentCopy } from './copy';
 import { CreateTournament, TournamentDetail } from './TeamTournamentViews';
+import { M3Create, M3EventPanel } from './TeamTournamentsM3Panel';
 import '../../styles/sections.css';
 
 type ScopeProps = { selected: string | null; onSelect: (id: string | null) => void };
+// Preserve a one-use captain token after login without accepting an external
+// return URL or forwarding unrelated search parameters.
+export function tournamentSignInPath(selected: string | null, search: string): string {
+  const tab = '/spieltag?tab=turniere';
+  const event = selected ? tab + '&tournament=' + encodeURIComponent(selected) : tab;
+  const invite = new URLSearchParams(search).get('invite');
+  const invitedEvent = invite ? event + '&invite=' + encodeURIComponent(invite) : null;
+  const returnTo = invitedEvent && isTournamentReturnPath(invitedEvent)
+    ? invitedEvent
+    : isTournamentReturnPath(event) ? event : tab;
+  return '/profile?returnTo=' + encodeURIComponent(returnTo);
+}
 export default function TeamTournamentsTab(props: ScopeProps) {
   const { session, isLoading } = useAuth();
   const { language } = useLanguage();
   const tr = tournamentCopy(language);
   if (isLoading) return <p role="status">{tr('loading')}</p>;
   return <TournamentScope key={props.selected + ':' + (session?.user.id ?? 'spectator')}
-    {...props} token={session?.access_token} tr={tr} />;
+    {...props} token={session?.access_token} actorId={session?.user.id} tr={tr} />;
 }
 
-function TournamentScope({ selected, onSelect, token, tr }: ScopeProps & { token?: string; tr: TournamentCopy }) {
+function TournamentScope({ selected, onSelect, token, actorId, tr }: ScopeProps & { token?: string; actorId?: string; tr: TournamentCopy }) {
+  const location = useLocation();
   const [list, setList] = useState<TournamentList | null>(null);
   const [event, setEvent] = useState<Tournament | null>(null);
   const [preview, setPreview] = useState<TournamentPreview | null>(null);
@@ -54,7 +69,14 @@ function TournamentScope({ selected, onSelect, token, tr }: ScopeProps & { token
           if (!(error instanceof TournamentError) || error.code !== 'not_found') throw error;
         }
       }
-      return { rows, detail: detail ?? await api.detail(selected, signal) };
+      if (detail) return { rows, detail };
+      try { detail = await api.detail(selected, signal); }
+      catch (error) {
+        if (import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED !== 'true' ||
+            !(error instanceof TournamentError) || error.code !== 'not_found') throw error;
+        // Registration has a separate M3 public view; no M1 pairing exists yet.
+      }
+      return { rows, detail };
     }
     void load().then(({ rows, detail }) => {
       if (!signal.aborted) { setList(rows); setEvent(detail); }
@@ -97,7 +119,7 @@ function TournamentScope({ selected, onSelect, token, tr }: ScopeProps & { token
   const current = list?.tournaments.find(x => x.id === selected);
   const conflict = error instanceof TournamentError && ['result_conflict', 'invalid_state'].includes(error.code);
   const locked = busy || conflict || loading;
-  const signIn = '/profile?returnTo=%2Fspieltag';
+  const signIn = tournamentSignInPath(selected, location.search);
   return <section className="section-page team-tournament-page">
     <header>
       <h1>{event?.name ?? tr('tab')}</h1>
@@ -125,7 +147,13 @@ function TournamentScope({ selected, onSelect, token, tr }: ScopeProps & { token
         const result = await api.create(name, rules, signal);
         if (!signal.aborted) onSelect(result.id);
       }, false)} />}
+      {import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' && token && list.can_create &&
+        <M3Create tr={tr} token={token} onCreated={id => onSelect(id)} />}
     </>}
+    {selected && import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' &&
+      <M3EventPanel tr={tr} id={selected} token={token}
+        userId={actorId}
+        onUpdated={reload} />}
     {event && <TournamentDetail event={event} preview={preview} tr={tr} busy={locked}
       captainId={current?.captain_team_id} activeRound={current?.current_round} actions={{
         team: (name, captainId) => void run((api, signal) => api.team(event.id, name, captainId, signal)),

@@ -17,6 +17,7 @@ const labels = {
   again: ['Bitte melde dich erneut an.', 'Please sign in again.', 'Yenidən daxil olun.', 'Tekrar giriş yapın.', 'Увійдіть знову.', 'Войдите снова.'],
   draft: ['Entwurf', 'Draft', 'Qaralama', 'Taslak', 'Чернетка', 'Черновик'],
   registration: ['Anmeldung offen', 'Registration open', 'Qeydiyyat açıqdır', 'Kayıt açık', 'Реєстрація відкрита', 'Регистрация открыта'],
+  cancelled: ['Abgesagt', 'Cancelled', 'Ləğv edilib', 'İptal edildi', 'Скасовано', 'Отменён'],
   locked: ['Teilnehmerliste fixiert', 'Teams locked', 'Komanda siyahısı bağlanıb', 'Takım listesi kilitli', 'Список команд зафіксовано', 'Список команд зафиксирован'],
   published: ['Veröffentlicht', 'Published', 'Dərc edilib', 'Yayımlandı', 'Опубліковано', 'Опубликовано'],
   finished: ['Abgeschlossen', 'Finished', 'Tamamlanıb', 'Tamamlandı', 'Завершено', 'Завершён'],
@@ -74,12 +75,70 @@ const labels = {
   secured: ['Remis bereits gesichert', 'At least a draw secured', 'Ən azı heç-heçə təmin edilib', 'En az beraberlik garantilendi', 'Щонайменше нічию забезпечено', 'Как минимум ничья обеспечена'],
   winner: ['Sieg gesichert', 'Win secured', 'Qələbə təmin edilib', 'Galibiyet garantilendi', 'Перемогу забезпечено', 'Победа обеспечена'],
   saved: ['Gespeichert.', 'Saved.', 'Yadda saxlanıldı.', 'Kaydedildi.', 'Збережено.', 'Сохранено.'],
+  m3Create: ['Vereinsturnier anlegen', 'Create club tournament', 'Klub turniri yarat', 'Kulüp turnuvası oluştur', 'Створити клубний турнір', 'Создать клубный турнир'],
+  m3Start: ['Turnierbeginn (Berlin)', 'Start (Berlin)', 'Başlama (Berlin)', 'Başlangıç (Berlin)', 'Початок (Берлін)', 'Начало (Берлин)'],
+  m3Deadline: ['Anmeldeschluss (Berlin)', 'Registration deadline (Berlin)', 'Qeydiyyatın sonu (Berlin)', 'Kayıt bitişi (Berlin)', 'Кінець реєстрації (Берлін)', 'Окончание регистрации (Берлин)'],
+  m3MinTeams: ['Mindestteams', 'Minimum teams', 'Minimum komanda', 'Asgari takım', 'Мінімум команд', 'Минимум команд'],
+  m3MaxTeams: ['Maximalteams', 'Maximum teams', 'Maksimum komanda', 'Azami takım', 'Максимум команд', 'Максимум команд'],
+  m3Spots: ['Freie Plätze', 'Remaining spots', 'Boş yerlər', 'Kalan yerler', 'Вільні місця', 'Свободные места'],
+  m3ClubName: ['Vereinsname', 'Club name', 'Klubun adı', 'Kulüp adı', 'Назва клубу', 'Название клуба'],
+  m3Invite: ['Einladungslink erzeugen', 'Create invitation link', 'Dəvət linki yarat', 'Davet bağlantısı oluştur', 'Створити запрошення', 'Создать ссылку-приглашение'],
+  m3InviteNote: ['Nur einmal verwendbar. Link jetzt sicher weitergeben.', 'Single use. Share securely now.', 'Birdəfəlikdir. Linki indi təhlükəsiz göndərin.', 'Tek kullanımlık. Bağlantıyı güvenle paylaşın.', 'Одноразове. Безпечно передайте зараз.', 'Одноразовая ссылка. Передайте её безопасно.'],
+  m3Redeem: ['Einladung annehmen', 'Accept invitation', 'Dəvəti qəbul et', 'Daveti kabul et', 'Прийняти запрошення', 'Принять приглашение'],
+  m3Lineup: ['Mannschaftsaufstellung', 'Team lineup', 'Komanda heyəti', 'Takım kadrosu', 'Склад команди', 'Состав команды'],
+  m3Search: ['Spielername suchen', 'Search username', 'İstifadəçi adı axtar', 'Kullanıcı adı ara', 'Пошук гравця', 'Найти игрока'],
+  m3Add: ['Aufstellen', 'Add player', 'Əlavə et', 'Oyuncu ekle', 'Додати гравця', 'Добавить игрока'],
+  m3Draft: ['Entwurf speichern', 'Save draft', 'Qaralamanı saxla', 'Taslağı kaydet', 'Зберегти чернетку', 'Сохранить черновик'],
+  m3Previous: ['Letzte Aufstellung übernehmen', 'Use previous lineup', 'Əvvəlki heyəti götür', 'Önceki kadroyu kullan', 'Взяти попередній склад', 'Взять прошлый состав'],
+  m3Consent: ['Teilnahme und Veröffentlichung zustimmen', 'Confirm participation and publication', 'İştiraka və dərcə razılıq ver', 'Katılımı ve yayımlamayı onayla', 'Підтвердити участь і публікацію', 'Подтвердить участие и публикацию'],
+  m3Submit: ['Aufstellung verbindlich anmelden', 'Submit complete lineup', 'Heyəti təsdiq edib göndər', 'Kadroyu kesin kaydet', 'Подати остаточний склад', 'Подать окончательный состав'],
+  m3Withdraw: ['Anmeldung zurückziehen', 'Withdraw registration', 'Qeydiyyatı geri götür', 'Kaydı geri çek', 'Відкликати заявку', 'Отозвать заявку'],
+  m3Submitted: ['Angemeldet', 'Submitted', 'Qeydiyyatdan keçib', 'Kaydedildi', 'Подано', 'Заявка подана'],
+  m3Waiting: ['Warten auf Bestätigungen', 'Awaiting player consent', 'Oyunçuların razılığı gözlənir', 'Oyuncu onayı bekleniyor', 'Очікуємо згоди гравців', 'Ожидание согласий игроков'],
+  m3Cancelled: ['Turnier abgesagt', 'Event cancelled', 'Turnir ləğv olundu', 'Turnuva iptal edildi', 'Турнір скасовано', 'Турнир отменён'],
+  m3Disputes: ['Bretter und Entscheidungen', 'Boards and decisions', 'Lövhələr və qərarlar', 'Tahtalar ve kararlar', 'Дошки та рішення', 'Доски и решения'],
+  m3Decide: ['Ergebnis entscheiden', 'Decide result', 'Nəticə barədə qərar ver', 'Sonucu karara bağla', 'Вирішити результат', 'Принять решение по результату'],
+  m3Correction: ['Ergebnis korrigieren', 'Correct result', 'Nəticəni düzəlt', 'Sonucu düzelt', 'Виправити результат', 'Исправить результат'],
+  m3PlayerNotFound: ['Kein Spieler gefunden', 'No user found', 'Oyunçu tapılmadı', 'Oyuncu bulunamadı', 'Гравця не знайдено', 'Игрок не найден'],
+  m3Pending: ['Ausstehend', 'Pending', 'Gözləyir', 'Bekliyor', 'Очікується', 'Ожидается'],
+  m3Reported: ['Gemeldet', 'Reported', 'Bildirilib', 'Bildirildi', 'Повідомлено', 'Сообщено'],
+  m3Confirmed: ['Bestätigt', 'Confirmed', 'Təsdiqlənib', 'Onaylandı', 'Підтверджено', 'Подтверждено'],
+  m3DisputedStatus: ['Strittig', 'Disputed', 'Mübahisəlidir', 'İtirazlı', 'Спірний', 'Спорный'],
+  m3Forfeit: ['Kampflos', 'Forfeit', 'Texniki nəticə', 'Hükmen', 'Технічний результат', 'Технический результат'],
+  m3Played: ['Gespielt', 'Played', 'Oynanılıb', 'Oynandı', 'Зіграно', 'Сыграно'],
+  m3Full: ['Alle Plätze sind belegt.', 'The event is full.', 'Bütün yerlər doludur.', 'Tüm yerler dolu.', 'Усі місця зайняті.', 'Все места заняты.'],
+  m3InvalidInvite: ['Einladung ungültig, abgelaufen oder bereits verwendet.', 'Invitation invalid, expired or already used.', 'Dəvət etibarsızdır, vaxtı bitib və ya istifadə edilib.', 'Davet geçersiz, süresi dolmuş veya kullanılmış.', 'Запрошення недійсне, прострочене або використане.', 'Приглашение недействительно, просрочено или уже использовано.'],
+  m3LineupIncomplete: ['Aufstellung oder Einwilligungen fehlen.', 'Lineup or player consent is incomplete.', 'Heyət və ya oyunçu razılığı tamamlanmayıb.', 'Kadro veya oyuncu onayı eksik.', 'Склад або згода гравців неповні.', 'Состав или согласия игроков неполные.'],
+  m3DuplicatePlayer: ['Ein Spieler ist bereits in einer anderen Mannschaft angemeldet.', 'A player is already registered for another team.', 'Oyunçu artıq başqa komandada qeydiyyatdan keçib.', 'Bir oyuncu başka takımda kayıtlı.', 'Гравець уже зареєстрований за іншу команду.', 'Игрок уже заявлен за другую команду.'],
+  m3NoPrevious: ['Keine frühere Aufstellung vorhanden.', 'No previous lineup available.', 'Əvvəlki heyət tapılmadı.', 'Önceki kadro bulunamadı.', 'Попереднього складу немає.', 'Предыдущий состав не найден.'],
+  m3MoveUp: ['Spieler nach oben verschieben', 'Move player up', 'Oyunçunu yuxarı keçir', 'Oyuncuyu yukarı taşı', 'Перемістити гравця вище', 'Переместить игрока вверх'],
+  m3MoveDown: ['Spieler nach unten verschieben', 'Move player down', 'Oyunçunu aşağı keçir', 'Oyuncuyu aşağı taşı', 'Перемістити гравця нижче', 'Переместить игрока вниз'],
+  m3RemovePlayer: ['Spieler entfernen', 'Remove player', 'Oyunçunu sil', 'Oyuncuyu çıkar', 'Вилучити гравця', 'Удалить игрока'],
+  myTournament: ['Mein Turnier', 'My tournament', 'Mənim turnirim', 'Turnuvam', 'Мій турнір', 'Мой турнир'],
+  opponent: ['Gegen', 'vs', 'Rəqib', 'Rakip', 'Проти', 'Против'],
+  myColor: ['Du spielst', 'You play', 'Sən oynayırsan', 'Oynadığın renk', 'Ви граєте', 'Вы играете'],
+  reporting: ['Mein Ergebnis melden', 'Report my result', 'Nəticəmi bildir', 'Sonucumu bildir', 'Повідомити результат', 'Сообщить результат'],
+  homeWin: ['Sieg', 'Win', 'Qələbə', 'Galibiyet', 'Перемога', 'Победа'],
+  homeDraw: ['Remis', 'Draw', 'Heç-heçə', 'Beraberlik', 'Нічия', 'Ничья'],
+  homeLoss: ['Niederlage', 'Loss', 'Məğlubiyyət', 'Mağlubiyet', 'Поразка', 'Поражение'],
+  opponentReported: ['Gegner meldet', 'Opponent reported', 'Rəqib bildirdi', 'Rakib bildirdi', 'Суперник повідомив', 'Соперник сообщил'],
+  disputed: ['Ergebnis strittig', 'Result disputed', 'Nəticə mübahisəlidir', 'Sonuç itirazlı', 'Результат спірний', 'Результат оспаривается'],
+  confirmedResult: ['Ergebnis bestätigt', 'Result confirmed', 'Nəticə təsdiqlənib', 'Sonuç onaylandı', 'Результат підтверджено', 'Результат подтверждён'],
+  reportSaved: ['Meldung gespeichert', 'Report saved', 'Nəticə saxlandı', 'Bildirim kaydedildi', 'Повідомлення збережено', 'Сообщение сохранено'],
+  reportError: ['Meldung nicht gespeichert. Bitte neu laden.', 'Report not saved. Please reload.', 'Nəticə saxlanmadı. Yenilə.', 'Sonuç kaydedilmedi. Yenile.', 'Не збережено. Оновіть.', 'Не сохранено. Обновите.'],
+
 } as const;
 
 export type TournamentCopy = (key: keyof typeof labels) => string;
 export const tournamentCopy = (language: Language): TournamentCopy => key => labels[key][columns[language]];
 
 export function tournamentErrorMessage(code: string, tr: TournamentCopy) {
+  if (code === 'event_full') return tr('m3Full');
+  if (code === 'invalid_invite') return tr('m3InvalidInvite');
+  if (code === 'lineup_incomplete') return tr('m3LineupIncomplete');
+  if (code === 'player_already_registered') return tr('m3DuplicatePlayer');
+  if (code === 'no_previous_lineup') return tr('m3NoPrevious');
+  if (code === 'invalid_time') return tr('invalid');
   if (code === 'result_conflict' || code === 'invalid_state') return tr('conflict');
   if (code === 'invalid_input' || code === 'already_exists') return tr('invalid');
   if (code === 'not_found' || code === 'not_allowed') return tr('access');

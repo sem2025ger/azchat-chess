@@ -5,6 +5,7 @@ import ChessBoard from '../components/ChessBoard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import MyTournamentCard from '../components/teamTournaments/MyTournamentCard';
 
 export default function HomeScreen() {
   const { t } = useLanguage();
@@ -418,6 +419,11 @@ export default function HomeScreen() {
               NRW – Schach
             </Link>
           )}
+
+          {/* M3 HOME CARD START */}
+          {import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true' &&
+            import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' && <MyTournamentCard />}
+          {/* M3 HOME CARD END */}
 
           {/* Text-only play action, shared with the mobile Arena. */}
           <Link

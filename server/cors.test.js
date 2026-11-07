@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const { io: connectSocket } = require('socket.io-client');
 
 process.env.NODE_ENV = 'test';
+delete process.env.RENDER_GIT_COMMIT;
 process.env.SUPABASE_URL = 'https://cors-test.invalid';
 process.env.SUPABASE_ANON_KEY = 'fake-anon-key';
 process.env.SUPABASE_SERVICE_KEY = '';
@@ -52,7 +53,7 @@ test('CORS: approved exact origins and verified team previews receive allow-orig
     const response = await fetch(`${baseUrl}/health`, { headers: { Origin: origin } });
     assert.equal(response.status, 200, origin);
     assert.equal(response.headers.get('access-control-allow-origin'), origin);
-    assert.deepEqual(await response.json(), { ok: true, service: 'aztr-chess-server' });
+    assert.deepEqual(await response.json(), { ok: true, service: 'aztr-chess-server', commit: null });
   }
 });
 
@@ -61,7 +62,7 @@ test('CORS: disallowed and lookalike origins produce no 500 and no allow-origin 
     const response = await fetch(`${baseUrl}/health`, { headers: { Origin: origin } });
     assert.equal(response.status, 200, origin);
     assert.equal(response.headers.get('access-control-allow-origin'), null, origin);
-    assert.deepEqual(await response.json(), { ok: true, service: 'aztr-chess-server' });
+    assert.deepEqual(await response.json(), { ok: true, service: 'aztr-chess-server', commit: null });
   }
 });
 
@@ -69,6 +70,18 @@ test('CORS: requests without Origin continue to work', async () => {
   const response = await fetch(`${baseUrl}/health`);
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('access-control-allow-origin'), null);
+});
+
+test('Health: reports the Render deployment commit with the existing readiness fields', async () => {
+  const commit = '0373330bdb0224695ff8f7b66554e12c5a57132a';
+  process.env.RENDER_GIT_COMMIT = commit;
+  try {
+    const response = await fetch(`${baseUrl}/health`);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, service: 'aztr-chess-server', commit });
+  } finally {
+    delete process.env.RENDER_GIT_COMMIT;
+  }
 });
 
 test('CORS: preflight reflects an approved origin and omits CORS headers for an untrusted origin', async () => {

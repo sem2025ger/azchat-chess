@@ -6,6 +6,7 @@ import {existsSync} from 'node:fs';
 import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
+import {checkTournamentAuth} from './teamTournamentsAuth.browser.mjs';
 // SpielerScreen cannot be mounted without its own auth fixture: validate its existing copy map here.
 const playerCopySource=await readFile(new URL('../src/screens/SpielerScreen.tsx',import.meta.url),'utf8');
 const playerCopyLine=playerCopySource.split('\n').find(line=>line.startsWith('const playerUiCopy: '));
@@ -178,12 +179,22 @@ try{
  // Same components at both viewport sizes: no horizontal overflow.
  for(const width of [390,1280]){await cdp('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:width===390});await pause();assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'));}
  await click('Nach der Runde');await fill('Ergebnis','');await wait(`window.fixtureCalls.some(c=>c.body&&JSON.parse(c.body).result===null)`);
- await evaluate(`window.changeSession('member-test-only')`);await wait(`document.body.innerText.includes('Nur für bestätigte Mannschaftsmitglieder')`);await click('Nach der Runde');await checkLocales('.spieltag-boards span',['Noch offen']);
+ // Team permissions can render before the match and its tabs finish loading.
+ const memberRoundReady = `document.querySelector('.spieltag-role')?.textContent.includes('Nur für bestätigte Mannschaftsmitglieder')
+  && document.getElementById('spieltag-tab-round')`;
+ await evaluate(`window.changeSession('member-test-only')`);
+ await wait(memberRoundReady);
+ await click('Nach der Runde');await checkLocales('.spieltag-boards span',['Noch offen']);
  await evaluate(`window.changeSession('captain-test-only')`);await wait(`document.querySelector('[role="tablist"]')`);await click('Nach der Runde');await fill('Ergebnis','not_played');await wait(`window.fixtureCalls.some(c=>c.body&&JSON.parse(c.body).result==='not_played')`);
- await evaluate(`window.changeSession('member-test-only')`);await wait(`document.body.innerText.includes('Nur für bestätigte Mannschaftsmitglieder')`);await click('Nach der Runde');await wait(`document.body.innerText.includes('Gut gespielt!')`);await checkLocales('.spieltag-role',['Nur für bestätigte Mannschaftsmitglieder.']);await checkLocales('.spieltag-boards span',['Nicht gespielt']);assert.equal(await evaluate('document.querySelectorAll(".spieltag-form").length'),0);assert.equal(await evaluate(`document.body.innerText.includes('Brett hinzufügen')`),false);
+ await evaluate(`window.changeSession('member-test-only')`);
+ await wait(memberRoundReady);
+ await click('Nach der Runde');await wait(`document.body.innerText.includes('Gut gespielt!')`);await checkLocales('.spieltag-role',['Nur für bestätigte Mannschaftsmitglieder.']);await checkLocales('.spieltag-boards span',['Nicht gespielt']);assert.equal(await evaluate('document.querySelectorAll(".spieltag-form").length'),0);assert.equal(await evaluate(`document.body.innerText.includes('Brett hinzufügen')`),false);
  await evaluate(`window.changeSession('captain-test-only')`);await wait(`document.querySelector('[role="tablist"]')`);await click('Gegner');await evaluate('window.delayCard=true');await click('Spielerkarte · 13404431');await wait('typeof window.releaseCard==="function"');await evaluate(`window.changeSession('outsider-test-only');window.releaseCard()`);await wait(`document.body.innerText.includes('noch keiner Mannschaft zugeordnet')`);assert.equal(await evaluate(`document.body.innerText.includes('Guest player')||document.body.innerText.includes('Fixture FIDE Player')`),false);
  await evaluate('window.changeSession(null)');await wait(`document.body.innerText.includes('Bitte zuerst anmelden')`);assert.equal(exceptions.length,0,exceptions.join('\n'));
  console.log('PASS Spieltag/Vorbereitung browser: captain schedule/lineup/opponents/card/results/notes, primary FIDE/name fallback, German moves/transpositions, next moves, FEN/setup/palette/illegal position, matched-ply analysis, secondary nickname/name/ECO/empty, member read-only, 390/1280 widths, identity changes and stale-card cleanup');
+ await checkTournamentAuth({cdp,evaluate,wait,click});
+ assert.equal(exceptions.length,0,exceptions.join('\n'));
+ console.log('PASS tournament invite browser: password sign-in, signup confirmation, email-link sign-in, invitation redemption and foreign return rejection');
 }finally{
  try{ws?.close();}catch{}chrome?.kill('SIGKILL');await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});clearTimeout(deadline);
 }

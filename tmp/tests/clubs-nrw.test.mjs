@@ -8,22 +8,40 @@ import {nrwAuthReturnTarget} from '../src/lib/nrwAuthReturn.ts';
 
 test('all NRW flags off preserves the main routing and navigation entry points',()=>{
  const baseline='3a44fde7f6218827e382d07381f337f76d065e6a';
+ const layoutPath='src/components/Layout.tsx';
+ // The shared language chooser is part of Layout at every flag setting.
+ const layoutBaseline='cbe769783a6c7883e3bab9a76adcbc90bd562624';
  const spieltagGate="import.meta.env.VITE_SPIELTAG_ENABLED === 'true'";
  const tournamentGate="("+spieltagGate+" || import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true')";
- for(const path of ['src/App.tsx','src/components/Layout.tsx','src/routeLoaders.ts','scripts/buildQaPreview.mjs']){
+ for(const path of ['src/App.tsx',layoutPath,'src/routeLoaders.ts','scripts/buildQaPreview.mjs']){
   let current=readFileSync(path,'utf8');
-  if(path==='src/App.tsx'||path==='src/components/Layout.tsx'){
+  if(path==='src/App.tsx'||path===layoutPath){
    // With tournaments off, only the original Spieltag gate controls this entry.
    assert.ok(current.includes(tournamentGate),path);
    current=current.replace(tournamentGate,spieltagGate);
   }
-  assert.equal(current,execFileSync('git',['show',baseline+':tmp/'+path],{encoding:'utf8'}),path);
+  const expected=execFileSync('git',['show',(path===layoutPath?layoutBaseline:baseline)+':tmp/'+path],{encoding:'utf8'});
+  assert.equal(current,path===layoutPath?expected.replace(tournamentGate,spieltagGate):expected,path);
  }
  const home='src/screens/HomeScreen.tsx';
  const homeBaseline=execFileSync('git',['show',baseline+':tmp/'+home],{encoding:'utf8'});
  const flagGatedLink=/ {10}\{import\.meta\.env\.VITE_CLUBS_NRW_ENABLED === 'true' && \(\n {12}<Link to="\/region\/nrw"[^>]+md:hidden">\n {14}NRW – Schach\n {12}<\/Link>\n {10}\)\}\n\n/;
  assert.match(readFileSync(home,'utf8'),flagGatedLink);
- assert.equal(readFileSync(home,'utf8').replace(flagGatedLink,''),homeBaseline);
+ // A disabled M3 must leave the approved Home byte-for-byte unchanged.
+ const m3Import="import MyTournamentCard from '../components/teamTournaments/MyTournamentCard';"+String.fromCharCode(10);
+ const m3Start='          {/* M3 HOME CARD START */}';
+ const m3End='          {/* M3 HOME CARD END */}'+String.fromCharCode(10,10);
+ const currentHome=readFileSync(home,'utf8');
+ const start=currentHome.indexOf(m3Start);
+ const finish=currentHome.indexOf(m3End,start);
+ assert.ok(start>=0 && finish>start,'M3 block must be bounded');
+ assert.match(currentHome,/VITE_TEAM_TOURNAMENTS_ENABLED === 'true'/);
+ assert.match(currentHome,/VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true'/);
+ const disabledHome=currentHome.replace(m3Import,'');
+ const disabledStart=disabledHome.indexOf(m3Start);
+ const disabledFinish=disabledHome.indexOf(m3End,disabledStart);
+ const withoutM3=disabledHome.slice(0,disabledStart)+disabledHome.slice(disabledFinish+m3End.length);
+ assert.equal(withoutM3.replace(flagGatedLink,''),homeBaseline);
  for(const path of ['/region/nrw','/region/nrw/turniere','/region/nrw/ligen','/region/nrw/vereine','/region/nrw/news','/region/nrw/live','/clubs-nrw/bochumer-sv-02','/spieltag','/vorbereitung']){
   assert.equal(nrwAuthReturnTarget(path,{clubs:false,spieltag:false,preparation:false}),null);
   assert.equal(nrwAuthReturnTarget(path,{clubs:true,spieltag:true,preparation:true}),path);
