@@ -64,6 +64,11 @@ async function storageProof(db, eventIds, userIds, eventTokens) {
   check(eventTokens.every(token => !serialized.includes(token)), 'Raw invite token persisted in fixture graph');
   for (const token of eventTokens) check(rows.some(r => r.data?.token_hash === createHash('sha256').update(token).digest('hex')), 'Missing invitation digest');
 }
+async function waitForPublishedBoard(page, panel) {
+  await page.locator('.team-tournament-page > header').getByText('Veröffentlicht · Runde 1', { exact:true }).waitFor({ state:'visible' });
+  await panel.getByRole('heading', { name:/^Runde 1: / }).waitFor({ state:'visible' });
+  await panel.getByText(/^Brett 1: /).waitFor({ state:'visible' });
+}
 async function runViewport(browser, target, db, users, tag, viewportName, signal) {
   const mobile = viewportName === 'mobile';
   const prefix = mobile ? 'M' : 'D';
@@ -202,7 +207,7 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
       await sleep(Math.min(15000,event.deadline+1200-Date.now()),undefined,{signal});
     }
     await goto('/spieltag?tab=turniere&tournament='+event.id);
-    await panel().getByRole('heading', {name:'Mannschaftsaufstellung',exact:true}).waitFor();
+    await waitForPublishedBoard(page, panel());
     const query = `SELECT t.published_at,t.status,
       (SELECT count(*)::int FROM public.team_tournament_rounds WHERE tournament_id=t.id) AS rounds,
       (SELECT count(*)::int FROM public.team_tournament_matches WHERE tournament_id=t.id) AS matches,
@@ -211,7 +216,7 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
     const before = (await db.query(query,[event.id])).rows[0];
     check(before?.status==='published' && before.published_at && before.rounds===1 && before.matches===1 && before.boards===1,'Pairing counts incorrect');
     await page.reload({waitUntil:'domcontentloaded'});
-    await panel().getByRole('heading',{name:'Mannschaftsaufstellung',exact:true}).waitFor();
+    await waitForPublishedBoard(page, panel());
     check(JSON.stringify((await db.query(query,[event.id])).rows[0])===JSON.stringify(before),'Duplicate publication');
   }
   async function home(role, opponent, event) {
@@ -369,4 +374,4 @@ async function main() {
   return exit;
 }
 if(require.main===module) main().then(code=>{process.exitCode=code;}).catch(()=>{console.error('Browser acceptance could not finish safely');process.exitCode=1;});
-module.exports={main};
+module.exports={main,waitForPublishedBoard};
