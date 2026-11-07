@@ -411,6 +411,12 @@ export default function HomeScreen() {
             </h1>
             <h1 className="chess-arena-reference-title md:hidden text-[2.2rem] text-center leading-[0.95] tracking-[-0.03em]">
               Chess Arena
+              <span className="relative inline-block h-0 w-0 align-baseline" aria-hidden="true">
+                <span className="absolute bottom-[-4px] left-[6px] h-[34px] w-[17px]">
+                  <img src="/brand/sidebar-king.svg" alt="" width="17" height="34" className="absolute inset-0 h-full w-full object-fill" />
+                  <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
+                </span>
+              </span>
             </h1>
           </div>
 
