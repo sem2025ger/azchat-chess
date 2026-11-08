@@ -61,6 +61,7 @@ function ChessBoard({
   readOnly = false,
   confirmMovesMobile = false,
   homeBlackInk = false,
+  homeChessComPalette = false,
 }: {
   className?: string;
   showCoordinates?: boolean;
@@ -74,6 +75,7 @@ function ChessBoard({
   readOnly?: boolean;
   confirmMovesMobile?: boolean;
   homeBlackInk?: boolean;
+  homeChessComPalette?: boolean;
 }) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
   const [localGame, setLocalGame] = useState(() => new Chess());
@@ -455,7 +457,7 @@ function ChessBoard({
                   )}
                   style={{ left: `${fileIdx * 12.5}%`, top: `${rankIdx * 12.5}%` }}
                 >
-                  <PieceImage piece={p} theme={overridePieceTheme || pieceTheme} homeBlackInk={homeBlackInk} />
+                  <PieceImage piece={p} theme={overridePieceTheme || pieceTheme} homeBlackInk={homeBlackInk} homeChessComPalette={homeChessComPalette} />
                 </div>
               );
             })}
@@ -512,15 +514,17 @@ function PieceImage({
   piece,
   theme,
   homeBlackInk = false,
+  homeChessComPalette = false,
 }: {
   piece: { type: string; color: string };
   theme: string;
   homeBlackInk?: boolean;
+  homeChessComPalette?: boolean;
 }) {
   const pieceSetName = theme || 'classic'; // Fallback only to classic if undefined
   const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
   // Alternate SVGs are scoped to the desktop Home board, not a new global theme.
-  const homeBlackSource = homeBlackInk && piece.color === 'b' &&
+  const homeBlackSource = homeBlackInk && !homeChessComPalette && piece.color === 'b' &&
     pieceSetName === 'cburnett-classic' && ['K', 'Q', 'R', 'B', 'N'].includes(piece.type.toUpperCase())
       ? `/pieces/home-cburnett-ink/${pieceCode}.svg`
       : null;
@@ -547,6 +551,7 @@ function PieceImage({
       src={src}
       alt={pieceCode}
       data-home-black-ink={homeBlackSource ? '' : undefined}
+      data-home-chesscom-piece={homeChessComPalette && pieceSetName === 'cburnett-classic' ? piece.color : undefined}
       data-desktop-pawn={desktopPawnSrc ? piece.color : undefined}
       data-piece-theme={desktopPawnSrc ? pieceSetName : undefined}
       className="w-full h-full object-contain transform-gpu"
