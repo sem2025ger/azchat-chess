@@ -137,8 +137,10 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
   const panel = () => page.getByRole('region', { name:'Vereinsturnier anlegen', exact:true });
   const goto = route => page.goto(target.preview + route, { waitUntil:'domcontentloaded' });
   async function shot(number, suffix = 'step') {
+    const sensitiveText = [...Object.values(users).map(user => user.email), ...tokens]
+      .map(value => page.getByText(value, { exact:false }));
     await page.screenshot({ path:path.join(folder, String(number).padStart(2,'0') + '-' + suffix + '.png'),
-      mask:[page.locator('input[readonly]'),page.locator('input[type=email]'),page.locator('input[type=password]')] });
+      mask:[page.locator('input[readonly]'),page.locator('input[type=email]'),page.locator('input[type=password]'),...sensitiveText] });
   }
   async function fits(label) {
     const fits = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1 && document.body.scrollWidth <= window.innerWidth + 1);
