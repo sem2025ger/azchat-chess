@@ -81,7 +81,7 @@ to create tournaments, accelerate deadlines or submit tournament commands.
 Sign-in always uses the real email/password form; switching actors clears only
 the synthetic browser session. No stored JWT is injected.
 
-Fixtures are tagged `QA-M3-BROWSER-<run-id>`, use `@example.com`, and have separate
+Fixtures use the Resend simulator for signup, unique `@example.com` logins afterwards, and tag `QA-M3-BROWSER-<run-id>`. They have separate
 roles from the API pilot. Cleanup uses the existing ownership-checked event graph
 and Auth Admin deletion, followed by zero-row proof for tournament rows, accounts,
 sessions, profiles and organizer grants. `finally` cleanup is supplemented by an

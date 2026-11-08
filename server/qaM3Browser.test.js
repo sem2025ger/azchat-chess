@@ -1,7 +1,26 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { switchLanguage, waitForPublishedBoard } = require('./scripts/qaM3Browser');
+const { fixture, switchLanguage, waitForPublishedBoard } = require('./scripts/qaM3Browser');
+
+test('captain fixtures have unique logins and reproducible signup ownership per role and run', () => {
+  const env = { GITHUB_RUN_ID: '42439357791', QA_SUPABASE_SERVICE_KEY: 'test-service-key' };
+  const current = fixture(env);
+  const retry = fixture(env);
+  const otherRun = fixture({ ...env, GITHUB_RUN_ID: '42439357792' });
+  const otherKey = fixture({ ...env, QA_SUPABASE_SERVICE_KEY: 'different-test-key' });
+  const roles = ['DC1', 'DC2', 'MC1', 'MC2'];
+  assert.equal(new Set(roles.map(current.email)).size, roles.length);
+  assert.equal(new Set(roles.map(current.username)).size, roles.length);
+  for (const role of roles) {
+    assert.match(current.username(role), /^[a-z0-9]{3,30}$/);
+    assert.match(current.email(role), /@example\.com$/);
+    assert.equal(current.username(role), retry.username(role));
+    assert.equal(current.email(role), retry.email(role));
+    assert.notEqual(current.username(role), otherRun.username(role));
+    assert.notEqual(current.username(role), otherKey.username(role));
+  }
+});
 
 test('browser publication waits for the localized status, round pairing and board', async () => {
   const visible = [];

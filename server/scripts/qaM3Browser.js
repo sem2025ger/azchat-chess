@@ -185,13 +185,14 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
       await page.locator('input[type=password]').waitFor({ state:'hidden' });
     }
   }
-  async function registerCaptain(role, link) {
+  async function registerCaptain(role) {
     const account = users[prefix+role];
     const occupied = await db.query('SELECT 1 FROM auth.users WHERE email = $1', [signupEmail]);
     check(occupied.rowCount === 0, 'QA signup address is already in use');
     await signOut();
-    await page.goto(link, { waitUntil:'domcontentloaded' });
-    await page.locator('.team-tournament-page').getByRole('link', { name:'Anmelden',exact:true }).click();
+    // The confirmation email must not carry a live invitation token.
+    await goto('/profile');
+    check(page.url() === target.preview + '/profile', 'QA signup must start without an invitation URL');
     await button('Registrieren').click();
     const form = page.locator('form').filter({ has:page.locator('input[type=password]') });
     await form.locator('input[type=text]').fill(account.username);
@@ -260,7 +261,7 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
     await panel().getByRole('heading', { name:/Mannschaftsaufstellung/ }).waitFor();
   }
   async function registerAndRedeem(event, role, index) {
-    await registerCaptain(role, event.links[index]);
+    await registerCaptain(role);
     await redeem(event, role, index, signupEmail);
     // Free the provider's single delivery simulator after the exact first login.
     const account = users[prefix+role];
@@ -442,6 +443,7 @@ async function main() {
       for(const role of roles) {
         const password=randomBytes(32).toString('base64url')+'!a1';mask(password);
         users[role]={email:email(role),password,username:username(role)};
+        mask(users[role].email);
         if(signupRoles.includes(role)) continue;
         const user=await request(target.supabase,'/auth/v1/admin/users',{apikey:serviceKey,Authorization:'Bearer '+serviceKey},
           {email:email(role),password,email_confirm:true,user_metadata:{username:username(role)},app_metadata:{chessaz_m3_pilot:tag}});
@@ -476,4 +478,4 @@ async function main() {
   return exit;
 }
 if(require.main===module) main().then(code=>{process.exitCode=code;}).catch(()=>{console.error('Browser acceptance could not finish safely');process.exitCode=1;});
-module.exports={main,waitForPublishedBoard,switchLanguage};
+module.exports={main,waitForPublishedBoard,switchLanguage,fixture};
