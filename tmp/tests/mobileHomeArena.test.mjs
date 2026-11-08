@@ -16,3 +16,13 @@ test('mobile Chess Arena retains its approved title and board dimensions', () =>
   assert.match(home, /<MobileHomeBoard \/>/);
   assert.match(home, /<HomeMoveControls review=\{review\} goTo=\{goTo\} className="grid" compactMobile \/>/);
 });
+
+test('unified desktop Arena is default-off, preserves the mobile layout and keeps the play action intact', () => {
+  assert.match(home, /import\.meta\.env\.VITE_HOME_UNIFIED_CARD === 'true'/);
+  assert.match(home, /homeUnifiedCard \? " xl:hidden" : ""/);
+  assert.match(home, /homeUnifiedCard \? " home-unified-card" : ""/);
+  assert.match(home, /homeUnifiedCard && \(\s*<span className="desktop-home-slogan-text hidden">\{t\('home\.slogan'\)\}<\/span>/);
+  assert.match(home, /@media \(min-width: 1280px\) \{[\s\S]*?\.desktop-home-arena\.home-unified-card \{\s*background: linear-gradient\(165deg, #1a1d36 0%, #11132a 55%, #0a0b1c 100%\);\s*\}/);
+  assert.match(home, /className="hidden md:flex mobile-home-play desktop-home-play/);
+  assert.match(home, /\{t\('home\.playChessNow'\)\}/);
+});
