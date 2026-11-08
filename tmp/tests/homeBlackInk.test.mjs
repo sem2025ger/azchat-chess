@@ -36,7 +36,21 @@ test('Chess.com reference palette is opt-in, desktop Home only, and keeps the ap
   assert.match(home, /xl:max-w-\[min\(630px,calc\(100dvh-120px\)\)\]/);
   assert.match(home, /@media \(min-width: 1280px\) \{\s*\.home-screen-root \.home-board img\[data-home-chesscom-piece="w"\]/);
   assert.match(home, /data-home-chesscom-piece="b"/);
+  assert.match(home, /img\[data-home-chesscom-piece="b"\]:not\(\[alt="bP"\]\) \{\s*filter: none !important/);
+  assert.match(source, /piece.color === 'b' && \['K', 'Q', 'R', 'B', 'N'\]/);
+  assert.match(source, /homeSolidBlackSource && <source media="\\\(min-width: 1280px\\\)"/);
   assert.match(source, /homeBlackInk && !homeChessComPalette && piece.color === 'b'/);
   assert.match(source, /data-home-chesscom-piece=\{homeChessComPalette && pieceSetName === 'cburnett-classic' \? piece.color : undefined\}/);
   assert.match(source, /homeChessComPalette=\{homeChessComPalette\}/);
+});
+
+test('solid black Home major pieces use native dark SVG with no edge effects; pawns unchanged', () => {
+  for (const kind of ['K', 'Q', 'R', 'B', 'N']) {
+    const piece = readFileSync(new URL(`../public/pieces/home-solid-black/b${kind}.svg`, import.meta.url), 'utf8');
+    assert.match(piece, /fill="#232323"/);
+    assert.doesNotMatch(piece, /<filter|filter=|drop-shadow|#000(?:000)?\b|stroke="#ececec"/i);
+  }
+  assert.doesNotMatch(source, /homeSolidBlackSource[^\n]*piece.type === 'p'/);
+  assert.doesNotMatch(home, /img\[data-home-chesscom-piece="b"\]:not\(\[alt="bP"\]\) \{\s*filter: (?!none)/);
+  assert.match(home, /img\[data-home-chesscom-piece="b"\]\[alt="bP"\] \{\s*filter: grayscale\(1\) contrast\(.42\) brightness\(.61\)/);
 });

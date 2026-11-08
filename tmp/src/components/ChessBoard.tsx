@@ -528,6 +528,11 @@ function PieceImage({
     pieceSetName === 'cburnett-classic' && ['K', 'Q', 'R', 'B', 'N'].includes(piece.type.toUpperCase())
       ? `/pieces/home-cburnett-ink/${pieceCode}.svg`
       : null;
+  // QA-only native SVGs for black major pieces; black/white pawns are not affected.
+  const homeSolidBlackSource = homeChessComPalette && pieceSetName === 'cburnett-classic' &&
+    piece.color === 'b' && ['K', 'Q', 'R', 'B', 'N'].includes(piece.type.toUpperCase())
+      ? `/pieces/home-solid-black/${pieceCode}.svg`
+      : null;
   const src = pieceSetName === 'cburnett-classic'
     ? `/chess-assets/pieces/cburnett/${pieceCode}.svg`
     : pieceSetName === 'neo' || pieceSetName === 'tournament'
@@ -562,8 +567,9 @@ function PieceImage({
   );
   return (
     <div className="w-full h-full flex items-center justify-center p-[3%] md:p-[8%] lg:p-[5%] pointer-events-none select-none">
-      {desktopPawnSrc || mobileSrc || homeBlackSource ? (
+      {desktopPawnSrc || mobileSrc || homeBlackSource || homeSolidBlackSource ? (
         <picture className="block w-full h-full">
+          {homeSolidBlackSource && <source media="(min-width: 1280px)" srcSet={homeSolidBlackSource} type="image/svg+xml" />}
           {homeBlackSource && <source media="(min-width: 1280px)" srcSet={homeBlackSource} type="image/svg+xml" />}
           {desktopPawnSrc && <source media="(min-width: 1280px)" srcSet={desktopPawnSrc} type="image/svg+xml" />}
           {mobileSrc && <source media="(max-width: 767px)" srcSet={mobileSrc} type="image/svg+xml" />}
