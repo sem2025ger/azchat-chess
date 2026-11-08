@@ -79,8 +79,8 @@ export function M3Create({ tr, token, onCreated }: {
   </section>;
 }
 
-export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
-  tr: TournamentCopy; id: string; token?: string; userId?: string;
+export function M3EventPanel({ tr, id, token, userId, ownUsername, onUpdated }: {
+  tr: TournamentCopy; id: string; token?: string; userId?: string; ownUsername?: string;
   onUpdated?: () => void;
 }) {
   const [event, setEvent] = useState<M3Event | null>(null);
@@ -89,6 +89,7 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
   const [error, setError] = useState('');
   const [version, setVersion] = useState(0);
   const [search, setSearch] = useState('');
+  const [searchHint, setSearchHint] = useState<'m3SearchInvalid' | 'm3SearchEmpty' | null>(null);
   const [choices, setChoices] = useState<{ id: string; username: string }[]>([]);
   const [draft, setDraft] = useState<string[]>([]);
   const [club, setClub] = useState('');
@@ -155,12 +156,19 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
     finally { setBusy(false); }
   }
   async function searchPlayers() {
-    if (!api || busy || !/^[A-Za-z0-9_-]{2,30}$/.test(search)) return;
-    setBusy(true);
+    if (!api || busy) return;
+    setChoices([]);
     setError('');
+    if (!/^[A-Za-z0-9_-]{2,30}$/.test(search)) {
+      setSearchHint('m3SearchInvalid');
+      return;
+    }
+    setSearchHint(null);
+    setBusy(true);
     try {
       const result = await api.userSearch(search, new AbortController().signal);
       setChoices(result.users);
+      if (!result.users.length) setSearchHint('m3SearchEmpty');
     } catch (failure) {
       setError(m3Error(failure, tr));
     } finally { setBusy(false); }
@@ -184,6 +192,7 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
     .filter(row => row.player_id === userId && !row.consented_at)
     .map(row => row.entry_id))];
   const people = new Map((event.profiles ?? []).map(row => [row.id, row.username]));
+  if (userId && ownUsername) people.set(userId, ownUsername);
   const invitationToken = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('invite') : null;
 
@@ -257,12 +266,21 @@ export function M3EventPanel({ tr, id, token, userId, onUpdated }: {
         <button type="button" className="min-h-11" aria-label={tr('m3RemovePlayer')+' '+(index+1)} disabled={busy}
           onClick={()=>setDraft(curr=>curr.filter((_,i)=>i!==index))}>×</button>
       </li>)}</ol>
+      {userId && ownUsername && <div className="flex flex-wrap items-center gap-2">
+        <p>{tr('m3YourUsername')}: {ownUsername}</p>
+        <button type="button" className="min-h-11" disabled={busy || draft.includes(userId) || draft.length >= boardCount}
+          onClick={() => setDraft(current => current.includes(userId) || current.length >= boardCount ? current : [...current, userId])}>
+          {tr('m3AddMyself')}
+        </button>
+      </div>}
       <div className="flex flex-wrap gap-2">
-        <input value={search} aria-label={tr('m3Search')} className="min-h-11"
-          onChange={e=>setSearch(e.target.value)} placeholder={tr('m3Search')} />
-        <button type="button" disabled={busy || search.length < 2} className="min-h-11"
+        <input value={search} aria-label={tr('m3Search')} className="min-h-11" disabled={busy}
+          aria-invalid={searchHint === 'm3SearchInvalid'}
+          onChange={e=>{setSearch(e.target.value);setChoices([]);setSearchHint(null);}} placeholder={tr('m3Search')} />
+        <button type="button" disabled={busy} className="min-h-11"
           onClick={()=>void searchPlayers()}>{tr('m3Search')}</button>
       </div>
+      {searchHint && <p role="status">{tr(searchHint)}</p>}
       {choices.map(player=><button type="button" key={player.id}
         disabled={busy || draft.includes(player.id) || draft.length>=boardCount}
         onClick={()=>{setDraft(curr=>[...curr,player.id]);setChoices([]);setSearch('');}}

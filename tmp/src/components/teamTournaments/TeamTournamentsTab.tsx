@@ -25,15 +25,16 @@ export function tournamentSignInPath(selected: string | null, search: string): s
   return '/profile?returnTo=' + encodeURIComponent(returnTo);
 }
 export default function TeamTournamentsTab(props: ScopeProps) {
-  const { session, isLoading } = useAuth();
+  const { session, profile, isLoading } = useAuth();
   const { language } = useLanguage();
   const tr = tournamentCopy(language);
   if (isLoading) return <p role="status">{tr('loading')}</p>;
   return <TournamentScope key={props.selected + ':' + (session?.user.id ?? 'spectator')}
-    {...props} token={session?.access_token} actorId={session?.user.id} tr={tr} />;
+    {...props} token={session?.access_token} actorId={session?.user.id}
+    actorUsername={profile?.id === session?.user.id ? profile?.username : undefined} tr={tr} />;
 }
 
-function TournamentScope({ selected, onSelect, token, actorId, tr }: ScopeProps & { token?: string; actorId?: string; tr: TournamentCopy }) {
+function TournamentScope({ selected, onSelect, token, actorId, actorUsername, tr }: ScopeProps & { token?: string; actorId?: string; actorUsername?: string; tr: TournamentCopy }) {
   const location = useLocation();
   const [list, setList] = useState<TournamentList | null>(null);
   const [event, setEvent] = useState<Tournament | null>(null);
@@ -152,7 +153,7 @@ function TournamentScope({ selected, onSelect, token, actorId, tr }: ScopeProps 
     </>}
     {selected && import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' &&
       <M3EventPanel tr={tr} id={selected} token={token}
-        userId={actorId}
+        userId={actorId} ownUsername={actorUsername}
         onUpdated={reload} />}
     {event && <TournamentDetail event={event} preview={preview} tr={tr} busy={locked}
       captainId={current?.captain_team_id} activeRound={current?.current_round} actions={{

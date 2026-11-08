@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react';
 import { createServer } from 'vite';
 
 const eventId = '11111111-1111-4111-8111-111111111111';
+const captainId = '22222222-2222-4222-8222-222222222222';
 const invite = 'a'.repeat(64);
 const target = '/spieltag?tab=turniere&tournament=' + eventId + '&invite=' + invite;
 const profilePath = value => '/profile?' + new URLSearchParams({ returnTo: value });
@@ -35,12 +36,22 @@ window.fetch = async (input, options) => {
   const root = '/api/team-tournaments';
   if (url.pathname === root) return Response.json({ tournaments: [], can_create: false });
   if ([root + '/' + event.id + '/self-service', root + '/' + event.id + '/self-service/public'].includes(url.pathname)) {
-    return Response.json(event);
+    const entries = sessionStorage.getItem('fixture-redeemed') ? [{ id: 'entry', captain_id: '${captainId}', club_name: 'Fixture Club' }] : [];
+    return Response.json({ ...event, entries });
   }
   if (url.pathname === root + '/' + event.id + '/redeem') {
     window.fixtureInviteRead = options.method === 'POST' &&
       options.headers.Authorization === 'Bearer synthetic-session' &&
       JSON.parse(options.body).token === '${invite}';
+    sessionStorage.setItem('fixture-redeemed', 'yes');
+    return Response.json({});
+  }
+  if (url.pathname === root + '/user-search') {
+    window.fixtureSearch = url.searchParams.get('q');
+    return Response.json({ users: [] });
+  }
+  if (url.pathname === root + '/' + event.id + '/lineup') {
+    window.fixtureLineup = JSON.parse(options.body).players;
     return Response.json({});
   }
   return Response.json({ code: 'not_found' }, { status: 404 });
@@ -60,7 +71,7 @@ createRoot(document.getElementById('root')).render(
 
 const supabase = `
 const session = { access_token: 'synthetic-session', user: {
-  id: '22222222-2222-4222-8222-222222222222', user_metadata: { username: 'FixtureCaptain' },
+  id: '${captainId}', user_metadata: { username: 'FixtureCaptain' },
 } };
 let onAuthChange;
 export const supabase = {
@@ -88,10 +99,14 @@ export const supabase = {
     },
   },
   async rpc() { return { data: true, error: null }; },
-  from() {
+  from(table) {
     const query = {
       select() { return query; }, eq() { return query; }, or() { return query; },
-      order() { return query; }, async single() { return { data: null, error: null }; },
+      order() { return query; }, async single() {
+        const data = table === 'profiles' && sessionStorage.getItem('fixture-profile')
+          ? { id: '${captainId}', username: 'FixtureCaptain' } : null;
+        return { data, error: null };
+      },
       async limit() { return { data: [], error: null }; },
     };
     return query;
@@ -138,11 +153,12 @@ export async function checkTournamentAuth({ cdp, evaluate, wait, click }) {
     await server.listen();
     const origin = new URL(server.resolvedUrls.local[0]).origin;
     const open = path => cdp('Page.navigate', { url: origin + path });
-    const fill = (type, value) => evaluate(`(() => {
-      const input = document.querySelector('form input[type="${type}"]');
+    const fillInput = (selector, value) => evaluate(`(() => {
+      const input = document.querySelector(${JSON.stringify(selector)});
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${JSON.stringify(value)});
       input.dispatchEvent(new Event('input', { bubbles: true }));
     })()`);
+    const fill = (type, value) => fillInput('form input[type="' + type + '"]', value);
     const submit = () => evaluate("document.querySelector('form').requestSubmit()");
     const loginForm = "document.querySelector('form input[type=email]')";
     const email = 'captain@fixture.invalid';
@@ -162,6 +178,26 @@ export async function checkTournamentAuth({ cdp, evaluate, wait, click }) {
       'password sign-in returned to the exact invite URL');
     await click('Accept invitation');
     await wait('window.fixtureInviteRead === true');
+
+    await evaluate("sessionStorage.setItem('fixture-profile', 'yes')");
+    await open(profilePath(target) + '#fixture-confirmed');
+    const search = 'input[aria-label="Search username"]';
+    await wait("document.body.innerText.includes('Your username: FixtureCaptain')");
+    await fillInput(search, 'é');
+    await click('Search username');
+    await wait("document.body.innerText.includes('Latin letters, digits, _ and -')");
+    assert.ok(await evaluate('window.fixtureSearch === undefined'), 'invalid input never calls player search');
+    await fillInput(search, 'MissingName');
+    await click('Search username');
+    await wait("document.body.innerText.includes('Player not found')");
+    assert.equal(await evaluate('window.fixtureSearch'), 'MissingName');
+    await click('Add myself');
+    await wait("document.querySelector('.team-tournament-page ol li')?.textContent.includes('FixtureCaptain')");
+    await wait("[...document.querySelectorAll('button')].some(button => button.textContent.trim() === 'Add myself' && button.disabled)");
+    await click('Save draft');
+    await wait('Array.isArray(window.fixtureLineup)');
+    assert.deepEqual(await evaluate('window.fixtureLineup'), [captainId]);
+    await evaluate("sessionStorage.removeItem('fixture-profile'); sessionStorage.removeItem('fixture-redeemed')");
 
     for (const action of ['Register', 'Sign in with email link']) {
       await open(profilePath(target));

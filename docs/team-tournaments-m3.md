@@ -44,6 +44,8 @@ M1 and M2 command, round-robin, audit and UI are the compatibility baseline.
 - The invitation link is a bearer token; verify sign-in redirects and expiration in the owner pilot. Team identity for previous lineup reuse is currently based on club name, not an independently verified club registry ID. Confirm that this identity convention is acceptable before expanding to third-party club events.
 - See the [owner setup checklist](team-tournaments-m3-qa-setup.md) for the label flow and organizer grant/revoke SQL, and the [pilot scenarios](team-tournaments-m3-pilot.md) for acceptance. Hosted acceptance is pending these checks.
 
+Captain search explains invalid input and empty results, displays the stored username, and lets captains add themselves directly.
+
 ## Database and deployment safety
 
 M1 migration is recorded in QA as `20261105225735_team_tournaments_m1` (repository filename `20261105221809_team_tournaments_m1.sql`).
