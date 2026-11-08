@@ -27,9 +27,18 @@ test('all NRW flags off preserves the main routing and navigation entry points',
   ["${homeUnifiedCard ? \" home-unified-card\" : \"\"}`}","\""],
   ["          {homeUnifiedCard && (\n            <span className=\"desktop-home-slogan-text hidden\">{t('home.slogan')}</span>\n          )}\n\n",""],
  ];
+ const approvedHomePieceChanges = [
+  ["  const homeChessComPieces = import.meta.env.VITE_HOME_CHESSCOM_PIECES === 'true';\n", ""],
+  ["        /* Desktop Home only: restrained Chess.com-like white and graphite pieces. */\n        @media (min-width: 1280px) {\n          .home-screen-root .home-board img[data-home-chesscom-piece=\"w\"] {\n            filter: contrast(.8) brightness(1.08) !important;\n          }\n          /* Major black figures are pre-colored SVGs, not CSS-filtered images. */\n          .home-screen-root .home-board img[data-home-chesscom-piece=\"b\"]:not([alt=\"bP\"]) {\n            filter: none !important;\n          }\n          .home-screen-root .home-board img[data-home-chesscom-piece=\"b\"][alt=\"bP\"] {\n            filter: grayscale(1) contrast(.42) brightness(.61) !important;\n          }\n        }\n", ""],
+  ["homeBlackInk homeChessComPalette={homeChessComPieces} className", "homeBlackInk className"],
+ ];
  for(const [withFlag,withoutFlag] of unifiedCardChanges){
   assert.equal(homeSource.split(withFlag).length,2,'approved Home feature fragment must occur exactly once');
   homeSource=homeSource.replace(withFlag,withoutFlag);
+ }
+ for(const [change,original] of approvedHomePieceChanges) {
+  assert.equal(homeSource.split(change).length, 2, 'approved opt-in piece fragment must occur exactly once');
+  homeSource=homeSource.replace(change,original);
  }
  assert.equal(homeSource.replace(flagGatedLink,''),homeBaseline);
  for(const path of ['/region/nrw','/region/nrw/turniere','/region/nrw/ligen','/region/nrw/vereine','/region/nrw/news','/region/nrw/live','/clubs-nrw/bochumer-sv-02','/spieltag','/vorbereitung']){
