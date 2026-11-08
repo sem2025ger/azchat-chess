@@ -8,7 +8,7 @@ const ink = name => readFileSync(new URL(`../public/pieces/home-cburnett-ink/${n
 
 test('Home dark-ink variant is desktop-only and limited to black CBURNETT pieces', () => {
   assert.match(home, /overrideBoardTheme="Classic Wood" homeBlackInk/);
-  assert.match(source, /homeBlackInk && !homeChessComPalette && piece.color === 'b'/);
+  assert.match(source, /homeBlackInk && piece.color === 'b'/);
   assert.match(source, /pieceSetName === 'cburnett-classic'/);
   assert.match(source, /homeBlackSource && <source media="\(min-width: 1280px\)"/);
   assert.match(home, /\.home-screen-root \.home-board img\[data-home-black-ink\]/);
@@ -28,50 +28,16 @@ test('bishop keeps its light plus; all other black Home figures have no white de
   assert.match(ink('bN'), /#363431/);
 });
 
-test('Chess.com reference palette is opt-in, desktop Home only, and keeps the approved frame', () => {
+test('Chess.com white and black pawn palette keeps original black major figures', () => {
   assert.match(home, /VITE_HOME_CHESSCOM_PIECES === 'true'/);
-  assert.match(home, /homeBlackInk homeChessComPalette=\{homeChessComPieces\}/);
+  assert.match(home, /homeBlackInk homeChessComPalette=\\{homeChessComPieces\\}/);
   assert.match(home, /xl:p-3 overflow-hidden/);
   assert.match(home, /xl:ring-0/);
-  assert.match(home, /xl:max-w-\[min\(630px,calc\(100dvh-120px\)\)\]/);
-  assert.match(home, /@media \(min-width: 1280px\) \{\s*\.home-screen-root \.home-board img\[data-home-chesscom-piece="w"\]/);
-  assert.match(home, /data-home-chesscom-piece="b"/);
-  assert.match(home, /img\[data-home-chesscom-piece="b"\]:not\(\[alt="bP"\]\) \{\s*filter: none !important/);
-  assert.match(source, /piece.color === 'b' && \['K', 'Q', 'R', 'B', 'N'\]/);
-  assert.ok(source.includes('homeSolidBlackSource && <source media="(min-width: 1280px)"'));
-  assert.match(source, /homeBlackInk && !homeChessComPalette && piece.color === 'b'/);
-  assert.match(source, /data-home-chesscom-piece=\{homeChessComPalette && pieceSetName === 'cburnett-classic' \? piece.color : undefined\}/);
-  assert.match(source, /homeChessComPalette=\{homeChessComPalette\}/);
-});
-
-test('graphite Home major pieces have native tonal shading and restored internal highlights; pawns unchanged', () => {
-  for (const kind of ['K', 'Q', 'R', 'B', 'N']) {
-    const piece = readFileSync(new URL(`../public/pieces/home-solid-black/b${kind}.svg`, import.meta.url), 'utf8');
-    assert.match(piece, /<linearGradient id="chessaz-graphite"/, kind);
-    assert.match(piece, /stop-color="#565656"/, kind);
-    assert.match(piece, /stop-color="#252525"/, kind);
-    assert.match(piece, /stroke="#8c8c8c"/, kind);
-    assert.match(piece, /stroke="#292929"/, kind);
-    assert.doesNotMatch(piece, /<filter|filter=|drop-shadow|#000(?:000)?\b|stroke="#ececec"/i, kind);
-  }
-  assert.doesNotMatch(source, /homeSolidBlackSource[^\n]*piece.type === 'p'/);
-  assert.doesNotMatch(home, /img\[data-home-chesscom-piece="b"\]:not\(\[alt="bP"\]\) \{\s*filter: (?!none)/);
-  assert.match(home, /img\[data-home-chesscom-piece="b"\]\[alt="bP"\] \{\s*filter: grayscale\(1\) contrast\(.42\) brightness\(.61\)/);
-});
-
-test('owner-approved dark interiors affect only king, rook and bishop, not knight, queen or pawns', () => {
-  const read = kind => readFileSync(new URL(`../public/pieces/home-solid-black/b${kind}.svg`, import.meta.url), 'utf8');
-  for (const kind of ['K', 'R', 'B']) {
-    const svg = read(kind);
-    assert.match(svg, /fill="#292929" stroke="none"/, kind);
-    assert.match(svg, /<linearGradient id="chessaz-graphite"/, kind);
-    assert.match(svg, /stroke="#8c8c8c"/, kind);
-  }
-  assert.equal((read('K').match(/fill="#292929" stroke="none"/g) || []).length, 2);
-  assert.equal((read('R').match(/fill="#292929" stroke="none"/g) || []).length, 1);
-  assert.equal((read('B').match(/fill="#292929" stroke="none"/g) || []).length, 1);
-  for (const kind of ['N', 'Q']) {
-    assert.doesNotMatch(read(kind), /fill="#292929" stroke="none"/, kind);
-  }
-  assert.match(source, /\['K', 'Q', 'R', 'B', 'N'\]/);
+  assert.match(home, /img\\[data-home-chesscom-piece="w"\\]/);
+  assert.match(home, /img\\[data-home-chesscom-piece="b"\\]\\[alt="bP"\\] \\{\\s*filter: grayscale\\(1\\) contrast\\(.42\\) brightness\\(.61\\)/);
+  assert.doesNotMatch(home, /img\\[data-home-chesscom-piece="b"\\]:not\\(\\[alt="bP"\\]\\)/);
+  assert.match(source, /homeBlackInk && piece.color === 'b'/);
+  assert.match(source, /homeBlackSource && <source media="\\(min-width: 1280px\\)"/);
+  assert.doesNotMatch(source, /homeSolidBlackSource|home-solid-black/);
+  for (const kind of ['bK', 'bQ', 'bR', 'bB', 'bN']) assert.match(ink(kind), /<svg/);
 });

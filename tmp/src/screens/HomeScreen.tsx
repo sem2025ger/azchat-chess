@@ -380,10 +380,6 @@ export default function HomeScreen() {
           .home-screen-root .home-board img[data-home-chesscom-piece="w"] {
             filter: contrast(.8) brightness(1.08) !important;
           }
-          /* Major black figures are pre-colored SVGs, not CSS-filtered images. */
-          .home-screen-root .home-board img[data-home-chesscom-piece="b"]:not([alt="bP"]) {
-            filter: none !important;
-          }
           .home-screen-root .home-board img[data-home-chesscom-piece="b"][alt="bP"] {
             filter: grayscale(1) contrast(.42) brightness(.61) !important;
           }
