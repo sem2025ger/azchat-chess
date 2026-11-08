@@ -552,6 +552,7 @@ function PieceImage({
       alt={pieceCode}
       data-home-black-ink={homeBlackSource ? '' : undefined}
       data-home-chesscom-piece={homeChessComPalette && pieceSetName === 'cburnett-classic' ? piece.color : undefined}
+      data-home-graphite-set={homeChessComPalette && piece.color === 'b' && piece.type !== 'p' && ['classic', 'neo', 'tournament'].includes(pieceSetName) ? pieceSetName : undefined}
       data-desktop-pawn={desktopPawnSrc ? piece.color : undefined}
       data-piece-theme={desktopPawnSrc ? pieceSetName : undefined}
       className="w-full h-full object-contain transform-gpu"
