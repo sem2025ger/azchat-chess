@@ -67,4 +67,16 @@ async function guardBrowserRequest(route, target, tokens, markViolation) {
   }
 }
 
-module.exports = { PREVIEW, BRANCH, browserTarget, healthGuard, frontendGuard, networkDecision, guardBrowserRequest };
+async function closeGuardedContext(context) {
+  try {
+    await Promise.all(context.pages().map(page => page.close()));
+    if (context.pages().length) throw Error('Guarded browser pages are still open');
+    // Keep interception enabled until pages close. Then finish pending handlers
+    // while the context's request client is still available for response disposal.
+    await context.unrouteAll({ behavior: 'wait' });
+  } finally {
+    await context.close();
+  }
+}
+
+module.exports = { PREVIEW, BRANCH, browserTarget, healthGuard, frontendGuard, networkDecision, guardBrowserRequest, closeGuardedContext };

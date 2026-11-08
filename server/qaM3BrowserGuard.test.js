@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { PREVIEW, BRANCH, browserTarget, healthGuard, frontendGuard, networkDecision, guardBrowserRequest } = require('./scripts/qaM3BrowserGuard');
+const { PREVIEW, BRANCH, browserTarget, healthGuard, frontendGuard, networkDecision, guardBrowserRequest, closeGuardedContext } = require('./scripts/qaM3BrowserGuard');
 const env = { QA_SUPABASE_URL: 'https://iukmpcytsuofqhxsumbu.supabase.co', M3_QA_API_URL: 'https://chessaz-m3-qa-api.onrender.com', M3_QA_PREVIEW_URL: PREVIEW, GITHUB_REPOSITORY: 'sem2025ger/azchat-chess', M3_QA_BRANCH: BRANCH, M3_QA_PR: '194', GITHUB_RUN_ID: '123' };
 const target = browserTarget(env);
 const sha = 'a'.repeat(40);
@@ -69,6 +69,43 @@ test('browser relays successful QA responses and blocks redirects before Chromiu
     assert.deepEqual(observed, status === 200 ? ['fulfill', 'dispose'] : ['violation', 'abort', 'dispose']);
   }
 });
+test('browser shutdown keeps routes active until pages close and drains response disposal before context close', async () => {
+  const disposeStarted = Promise.withResolvers();
+  const finishDisposal = Promise.withResolvers();
+  let pageClosed = false;
+  let contextClosed = false;
+  const response = {
+    status: () => 200,
+    async dispose() {
+      disposeStarted.resolve();
+      await finishDisposal.promise;
+      assert.equal(contextClosed, false);
+    },
+  };
+  const pendingRoute = guardBrowserRequest({
+    request: () => ({ url: () => PREVIEW, headers: () => ({}) }),
+    async fetch() { return response; },
+    async fulfill() {},
+  }, target, [], () => assert.fail('Allowed response marked as a violation'));
+  await disposeStarted.promise;
+  const routesDraining = Promise.withResolvers();
+  const context = {
+    pages: () => pageClosed ? [] : [{ async close() { pageClosed = true; } }],
+    async unrouteAll(options) {
+      assert.deepEqual(options, { behavior: 'wait' });
+      assert.equal(pageClosed, true);
+      routesDraining.resolve();
+      await pendingRoute;
+    },
+    async close() { contextClosed = true; },
+  };
+  const shutdown = closeGuardedContext(context);
+  await routesDraining.promise;
+  assert.equal(contextClosed, false);
+  finishDisposal.resolve();
+  await shutdown;
+  assert.equal(contextClosed, true);
+});
 test('browser entrypoint stops before SQL and fixtures when health SHA differs', async () => {
   const { execFile } = require('node:child_process');
   const { promisify } = require('node:util');
@@ -106,7 +143,7 @@ test('browser entrypoint rejects stale frontend metadata before SQL or fixtures'
     globalThis.fetch=async()=>Response.json({ok:true,service:'aztr-chess-server',commit:'${sha}'});
     require('playwright').chromium.launch=async()=>({
       newContext:async()=>({
-        route:async()=>{},routeWebSocket:async()=>{},close:async()=>{},
+        route:async()=>{},routeWebSocket:async()=>{},pages:()=>[],unrouteAll:async()=>{},close:async()=>{},
         newPage:async()=>({goto:async()=>{},locator:()=>({count:async()=>1,getAttribute:async()=>'${'b'.repeat(40)}'})})
       }),
       close:async()=>{process.stdout.write('BROWSER_CLOSED');}

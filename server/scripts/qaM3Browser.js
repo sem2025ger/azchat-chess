@@ -6,7 +6,7 @@ const { mkdirSync, writeFileSync, appendFileSync } = require('node:fs');
 const path = require('node:path');
 const { randomBytes, createHash, createHmac } = require('node:crypto');
 const { setTimeout: sleep } = require('node:timers/promises');
-const { browserTarget, healthGuard, frontendGuard, networkDecision, guardBrowserRequest } = require('./qaM3BrowserGuard');
+const { browserTarget, healthGuard, frontendGuard, networkDecision, guardBrowserRequest, closeGuardedContext } = require('./qaM3BrowserGuard');
 const { connect, fixtureUsers, cleanupEvents, verifyUserCleanup, inviteStorage } = require('./qaM3PilotDb');
 const { berlinLocal, berlinLocalToIso } = require('../teamTournamentTime');
 const labels = ['Organizer creates event and copies two UI links', 'Captain 1 exact login return and redemption',
@@ -374,8 +374,9 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
     await step(9,async()=>{check(overflow.length>=4 && overflow.every(item=>item.fits),'Missing invitation/Home overflow checks');await fits('final tournament');check(page.viewportSize().width===viewport.width,'Wrong viewport');});
     await step(10,async()=>{await storageProof(db,eventIds,Object.values(users).filter(u=>u.id).map(u=>u.id),tokens.slice(firstToken));check(!violation,'Invite token leak or forbidden network');});
   } finally {
-    await context.close();
+    await closeGuardedContext(context);
   }
+  check(!violation, 'Forbidden browser network target or invite leak during shutdown');
 }
 function summary() {
   const lines=['# Hosted M3 browser acceptance', '', `HEAD: ${process.env.M3_QA_EXPECTED_SHA || 'not supplied'}`, '', '| Step | Coverage | Desktop | Mobile |','| --- | --- | --- | --- |'];
@@ -412,8 +413,8 @@ async function main() {
         const page=await context.newPage();
         await page.goto(target.preview,{waitUntil:'domcontentloaded',timeout:45000});
         await frontendGuard(page,env.M3_QA_EXPECTED_SHA);
-        check(!violation,'Forbidden browser network target during frontend version proof');
-      } finally {await context.close();}
+      } finally {await closeGuardedContext(context);}
+      check(!violation,'Forbidden browser network target during frontend version proof');
     }
     db=connect(databaseUrl);await db.connect();connected=true;
     await cleanup(db,target,serviceKey,tag,email,username);cleanupStatus='PASS';
