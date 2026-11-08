@@ -30,14 +30,14 @@ test('bishop keeps its light plus; all other black Home figures have no white de
 
 test('Chess.com white and black pawn palette keeps original black major figures', () => {
   assert.match(home, /VITE_HOME_CHESSCOM_PIECES === 'true'/);
-  assert.match(home, /homeBlackInk homeChessComPalette=\\{homeChessComPieces\\}/);
+  assert.match(home, /homeBlackInk homeChessComPalette=\{homeChessComPieces\}/);
   assert.match(home, /xl:p-3 overflow-hidden/);
   assert.match(home, /xl:ring-0/);
-  assert.match(home, /img\\[data-home-chesscom-piece="w"\\]/);
-  assert.match(home, /img\\[data-home-chesscom-piece="b"\\]\\[alt="bP"\\] \\{\\s*filter: grayscale\\(1\\) contrast\\(.42\\) brightness\\(.61\\)/);
-  assert.doesNotMatch(home, /img\\[data-home-chesscom-piece="b"\\]:not\\(\\[alt="bP"\\]\\)/);
+  assert.match(home, /img\[data-home-chesscom-piece="w"\]/);
+  assert.match(home, /img\[data-home-chesscom-piece="b"\]\[alt="bP"\] \{\s*filter: grayscale\(1\) contrast\(.42\) brightness\(.61\)/);
+  assert.doesNotMatch(home, /img\[data-home-chesscom-piece="b"\]:not\(\[alt="bP"\]\)/);
   assert.match(source, /homeBlackInk && piece.color === 'b'/);
-  assert.match(source, /homeBlackSource && <source media="\\(min-width: 1280px\\)"/);
+  assert.match(source, /homeBlackSource && <source media="\(min-width: 1280px\)"/);
   assert.doesNotMatch(source, /homeSolidBlackSource|home-solid-black/);
   for (const kind of ['bK', 'bQ', 'bR', 'bB', 'bN']) assert.match(ink(kind), /<svg/);
 });
