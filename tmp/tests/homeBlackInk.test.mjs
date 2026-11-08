@@ -8,7 +8,7 @@ const ink = name => readFileSync(new URL(`../public/pieces/home-cburnett-ink/${n
 
 test('Home dark-ink variant is desktop-only and limited to black CBURNETT pieces', () => {
   assert.match(home, /overrideBoardTheme="Classic Wood" homeBlackInk/);
-  assert.match(source, /homeBlackInk && piece.color === 'b'/);
+  assert.match(source, /homeBlackInk && !homeChessComPalette && piece.color === 'b'/);
   assert.match(source, /pieceSetName === 'cburnett-classic'/);
   assert.match(source, /homeBlackSource && <source media="\(min-width: 1280px\)"/);
   assert.match(home, /\.home-screen-root \.home-board img\[data-home-black-ink\]/);
@@ -33,7 +33,7 @@ test('Chess.com reference palette is opt-in, desktop Home only, and keeps the ap
   assert.match(home, /homeBlackInk homeChessComPalette=\{homeChessComPieces\}/);
   assert.match(home, /xl:p-3 overflow-hidden/);
   assert.match(home, /xl:ring-0/);
-  assert.match(home, /max-width:min\(634px,calc\(100dvh - 100px\)\)/);
+  assert.match(home, /xl:max-w-\[min\(630px,calc\(100dvh-120px\)\)\]/);
   assert.match(home, /@media \(min-width: 1280px\) \{\s*\.home-screen-root \.home-board img\[data-home-chesscom-piece="w"\]/);
   assert.match(home, /data-home-chesscom-piece="b"/);
   assert.match(source, /homeBlackInk && !homeChessComPalette && piece.color === 'b'/);
