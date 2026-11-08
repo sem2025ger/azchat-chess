@@ -58,3 +58,20 @@ test('graphite Home major pieces have native tonal shading and restored internal
   assert.doesNotMatch(home, /img\[data-home-chesscom-piece="b"\]:not\(\[alt="bP"\]\) \{\s*filter: (?!none)/);
   assert.match(home, /img\[data-home-chesscom-piece="b"\]\[alt="bP"\] \{\s*filter: grayscale\(1\) contrast\(.42\) brightness\(.61\)/);
 });
+
+test('owner-approved dark interiors affect only king, rook and bishop, not knight, queen or pawns', () => {
+  const read = kind => readFileSync(new URL(`../public/pieces/home-solid-black/b${kind}.svg`, import.meta.url), 'utf8');
+  for (const kind of ['K', 'R', 'B']) {
+    const svg = read(kind);
+    assert.match(svg, /fill="#292929" stroke="none"/, kind);
+    assert.match(svg, /<linearGradient id="chessaz-graphite"/, kind);
+    assert.match(svg, /stroke="#8c8c8c"/, kind);
+  }
+  assert.equal((read('K').match(/fill="#292929" stroke="none"/g) || []).length, 2);
+  assert.equal((read('R').match(/fill="#292929" stroke="none"/g) || []).length, 1);
+  assert.equal((read('B').match(/fill="#292929" stroke="none"/g) || []).length, 1);
+  for (const kind of ['N', 'Q']) {
+    assert.doesNotMatch(read(kind), /fill="#292929" stroke="none"/, kind);
+  }
+  assert.match(source, /\['K', 'Q', 'R', 'B', 'N'\]/);
+});
