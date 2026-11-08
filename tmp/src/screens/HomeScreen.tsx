@@ -383,6 +383,15 @@ export default function HomeScreen() {
           .home-screen-root .home-board img[data-home-chesscom-piece="b"][alt="bP"] {
             filter: grayscale(1) contrast(.42) brightness(.61) !important;
           }
+          /* Match non-pawn black figures to the existing satin graphite pawns.
+             Preserve the original piece paths and highlights; never affect CBURNETT. */
+          .home-screen-root .home-board img[data-home-graphite-set="classic"] {
+            filter: grayscale(1) contrast(.75) brightness(.90) drop-shadow(0 2px 3px rgba(0,0,0,.34)) !important;
+          }
+          .home-screen-root .home-board img[data-home-graphite-set="neo"],
+          .home-screen-root .home-board img[data-home-graphite-set="tournament"] {
+            filter: grayscale(1) contrast(.92) brightness(.90) drop-shadow(0 2px 3px rgba(0,0,0,.34)) !important;
+          }
         }
       `}</style>
 
