@@ -41,3 +41,14 @@ test('Chess.com white and black pawn palette keeps original black major figures'
   assert.doesNotMatch(source, /homeSolidBlackSource|home-solid-black/);
   for (const kind of ['bK', 'bQ', 'bR', 'bB', 'bN']) assert.match(ink(kind), /<svg/);
 });
+
+test('opt-in desktop graphite figures target exactly three styles, never CBURNETT or pawns', () => {
+  assert.match(source, /data-home-graphite-set=\{homeChessComPalette && piece.color === 'b' && piece.type !== 'p' && \['classic', 'neo', 'tournament'\]\.includes\(pieceSetName\)/);
+  for (const theme of ['classic', 'neo', 'tournament']) {
+    assert.match(home, new RegExp('img\\[data-home-graphite-set="' + theme + '"\\]'));
+  }
+  assert.doesNotMatch(home, /data-home-graphite-set="cburnett-classic"/);
+  assert.match(home, /@media \(min-width: 1280px\) \{\s*\.home-screen-root \.home-board img\[data-home-chesscom-piece="w"\]/);
+  assert.match(home, /filter: grayscale\(1\) contrast\(\.75\) brightness\(\.90\)/);
+  assert.match(home, /filter: grayscale\(1\) contrast\(\.92\) brightness\(\.90\)/);
+});
