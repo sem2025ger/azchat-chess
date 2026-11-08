@@ -16,6 +16,7 @@ const labels = ['Organizer creates event and copies two UI links', 'Captain 1 ex
   'Viewport and overflow (including invitation and Home)', 'No invite tokens in third-party URLs or stored fixture rows'];
 const roles = ['DO','DC1','DC2','DD1','DD2','MO','MC1','MC2','MD1','MD2'];
 const signupRoles = roles.filter(role => /^[DM]C[12]$/.test(role));
+const signupEmail = 'delivered@resend.dev';
 const root = path.resolve('m3-browser-artifacts');
 const status = { desktop: labels.map(() => 'NOT RUN'), mobile: labels.map(() => 'NOT RUN') };
 const tokens = [];
@@ -33,23 +34,24 @@ async function request(origin, route, headers, body, method = 'POST') {
 }
 function fixture(env) {
   const tag = 'QA-M3-BROWSER-' + env.GITHUB_RUN_ID;
-  const email = role => {
-    if (!signupRoles.includes(role)) return tag.toLowerCase() + '-' + role.toLowerCase() + '@example.com';
-    // The UI signup cannot set app_metadata. A private per-run address lets
-    // retry cleanup recognize our account even if signup is interrupted before tagging.
-    const proof = createHmac('sha256', env.QA_SUPABASE_SERVICE_KEY).update(`${tag}:${role}`).digest('hex').slice(0, 24);
-    return `m3ui-${env.GITHUB_RUN_ID}-${role.toLowerCase()}-${proof}@example.com`;
-  };
-  return { tag, email, username: role => 'm3b' + BigInt(env.GITHUB_RUN_ID).toString(36) + role.toLowerCase() };
+  const proof = role => createHmac('sha256', env.QA_SUPABASE_SERVICE_KEY).update(`${tag}:${role}`).digest('hex');
+  const email = role => signupRoles.includes(role)
+    ? `m3ui-${env.GITHUB_RUN_ID}-${role.toLowerCase()}-${proof(role).slice(0, 24)}@example.com`
+    : tag.toLowerCase() + '-' + role.toLowerCase() + '@example.com';
+  // The signup address is shared. A private per-run username proves ownership
+  // if signup is interrupted before Auth Admin tags the account.
+  const username = role => signupRoles.includes(role)
+    ? 'm3b' + proof(role).slice(24, 40)
+    : 'm3b' + BigInt(env.GITHUB_RUN_ID).toString(36) + role.toLowerCase();
+  return { tag, email, username };
 }
 async function cleanup(db, target, serviceKey, tag, email, username) {
-  const tagged = await fixtureUsers(db, tag, roles.map(email));
+  const tagged = await fixtureUsers(db, tag, [...roles.map(email), signupEmail]);
   const { rows: pending } = await db.query(`
-    SELECT u.id, u.email FROM auth.users u
-    JOIN unnest($1::text[], $2::text[]) AS fixture(email, username) ON u.email = fixture.email
-    WHERE u.raw_user_meta_data->>'username' = fixture.username
-      AND u.raw_app_meta_data->>'chessaz_m3_pilot' IS NULL`,
-  [signupRoles.map(email), signupRoles.map(username)]);
+    SELECT id, email FROM auth.users
+    WHERE email = $1 AND raw_user_meta_data->>'username' = ANY($2::text[])
+      AND raw_app_meta_data->>'chessaz_m3_pilot' IS NULL`,
+  [signupEmail, signupRoles.map(username)]);
   const users = [...tagged, ...pending];
   await cleanupEvents(db, tag, users.filter(u => [email('DO'), email('MO')].includes(u.email)).map(u => u.id));
   let failed = false;
@@ -137,7 +139,7 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
   const panel = () => page.getByRole('region', { name:'Vereinsturnier anlegen', exact:true });
   const goto = route => page.goto(target.preview + route, { waitUntil:'domcontentloaded' });
   async function shot(number, suffix = 'step') {
-    const sensitiveText = [...Object.values(users).map(user => user.email), ...tokens]
+    const sensitiveText = [signupEmail, ...Object.values(users).map(user => user.email), ...tokens]
       .map(value => page.getByText(value, { exact:false }));
     await page.screenshot({ path:path.join(folder, String(number).padStart(2,'0') + '-' + suffix + '.png'),
       mask:[page.locator('input[readonly]'),page.locator('input[type=email]'),page.locator('input[type=password]'),...sensitiveText] });
@@ -165,13 +167,13 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
     await context.clearCookies();
     await page.evaluate(() => { for (const key of Object.keys(localStorage)) if (key.startsWith('sb-')) localStorage.removeItem(key); sessionStorage.clear(); });
   }
-  async function signIn(role, link) {
+  async function signIn(role, link, loginEmail = users[role].email) {
     await signOut();
     if (link) {
       await page.goto(link, { waitUntil:'domcontentloaded' });
       await page.locator('.team-tournament-page').getByRole('link', { name:'Anmelden',exact:true }).click();
     } else await goto('/profile');
-    await page.locator('input[type=email]').fill(users[role].email);
+    await page.locator('input[type=email]').fill(loginEmail);
     await page.locator('input[type=password]').fill(users[role].password);
     await page.locator('form').filter({ has:page.locator('input[type=password]') }).locator('button[type=submit]').click();
     if (link) {
@@ -185,13 +187,15 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
   }
   async function registerCaptain(role, link) {
     const account = users[prefix+role];
+    const occupied = await db.query('SELECT 1 FROM auth.users WHERE email = $1', [signupEmail]);
+    check(occupied.rowCount === 0, 'QA signup address is already in use');
     await signOut();
     await page.goto(link, { waitUntil:'domcontentloaded' });
     await page.locator('.team-tournament-page').getByRole('link', { name:'Anmelden',exact:true }).click();
     await button('Registrieren').click();
     const form = page.locator('form').filter({ has:page.locator('input[type=password]') });
     await form.locator('input[type=text]').fill(account.username);
-    await form.locator('input[type=email]').fill(account.email);
+    await form.locator('input[type=email]').fill(signupEmail);
     await form.locator('input[type=password]').fill(account.password);
     const [response] = await Promise.all([
       page.waitForResponse(r => {
@@ -203,12 +207,12 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
     check(response.ok(), `QA UI signup failed (HTTP ${response.status()}).`);
     const signup = await response.json();
     const created = signup.user ?? signup;
-    check(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(created.id || '') && created.email === account.email && !signup.access_token,
+    check(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(created.id || '') && created.email === signupEmail && !signup.access_token,
       'QA signup did not return the expected signed-out fixture.');
     const createdFixture = await db.query(`SELECT 1 FROM auth.users
       WHERE id = $1 AND email = $2 AND raw_user_meta_data->>'username' = $3
         AND raw_app_meta_data->>'chessaz_m3_pilot' IS NULL AND last_sign_in_at IS NULL`,
-    [created.id, account.email, account.username]);
+    [created.id, signupEmail, account.username]);
     check(createdFixture.rowCount === 1, 'QA signup could not be matched to a new fixture.');
     const confirmed = await request(target.supabase, '/auth/v1/admin/users/' + created.id,
       { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey },
@@ -250,10 +254,21 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
     }
     return {id:created.id, name, links, deadline};
   }
-  async function redeem(event, role, index) {
-    await signIn(prefix+role, event.links[index]);
+  async function redeem(event, role, index, loginEmail) {
+    await signIn(prefix+role, event.links[index], loginEmail);
     await command(() => button('Einladung annehmen',panel()).click(), '/redeem');
     await panel().getByRole('heading', { name:/Mannschaftsaufstellung/ }).waitFor();
+  }
+  async function registerAndRedeem(event, role, index) {
+    await registerCaptain(role, event.links[index]);
+    await redeem(event, role, index, signupEmail);
+    // Free the provider's single delivery simulator after the exact first login.
+    const account = users[prefix+role];
+    const moved = await request(target.supabase, '/auth/v1/admin/users/' + account.id,
+      { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey },
+      { email: account.email, email_confirm: true }, 'PUT');
+    check(moved.id === account.id && moved.email === account.email && !!moved.email_confirmed_at &&
+      moved.app_metadata?.chessaz_m3_pilot === tag, 'QA fixture did not retain its identity after email change');
   }
   async function lineup(event, role, addMyself = false) {
     await signIn(prefix+role); await goto('/spieltag?tab=turniere&tournament='+event.id);
@@ -318,8 +333,8 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
     check(!violation, 'Forbidden browser network target during frontend version proof');
     let event;
     await step(1,async()=>{event=await create('Main');});
-    await step(2,async()=>{await registerCaptain('C1',event.links[0]);await redeem(event,'C1',0);});
-    await step(3,async()=>{await registerCaptain('C2',event.links[1]);await redeem(event,'C2',1);});
+    await step(2,()=>registerAndRedeem(event,'C1',0));
+    await step(3,()=>registerAndRedeem(event,'C2',1));
     await step(4,async()=>{await lineup(event,'C1');await lineup(event,'C2',true);});
     await step(5,()=>publish(event));
     await step(6,async()=>{
