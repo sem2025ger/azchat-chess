@@ -10,6 +10,7 @@ export default function HomeScreen() {
   const { t } = useLanguage();
   useAuth();
   const homeUnifiedCard = import.meta.env.VITE_HOME_UNIFIED_CARD === 'true';
+  const homeChessComPieces = import.meta.env.VITE_HOME_CHESSCOM_PIECES === 'true';
 
   // Independent desktop Home move history; mobile board state stays untouched.
   const [desktopReview, setDesktopReview] = useState<HomeBoardReview>({ moves: [], index: 0 });
@@ -374,6 +375,19 @@ export default function HomeScreen() {
             filter: none;
           }
         }
+        /* Desktop Home only: restrained Chess.com-like white and graphite pieces. */
+        @media (min-width: 1280px) {
+          .home-screen-root .home-board img[data-home-chesscom-piece="w"] {
+            filter: contrast(.70) brightness(1.15) !important;
+          }
+          .home-screen-root .home-board img[data-home-chesscom-piece="b"] {
+            filter: invert(1) brightness(.294) contrast(.663)
+              drop-shadow(0 0 .75px rgba(38, 36, 33, .9)) !important;
+          }
+          .home-screen-root .home-board img[data-home-chesscom-piece="b"][alt="bP"] {
+            filter: grayscale(1) contrast(.42) !important;
+          }
+        }
       `}</style>
 
       {/* 2-Column Layout */}
@@ -383,7 +397,7 @@ export default function HomeScreen() {
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container home-board-column xl:-mt-10">
           <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] xl:p-3 overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 xl:ring-0 group transform-gpu transition-transform duration-1000 board-perspective home-board home-board-frame max-md:hidden">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
-            <ChessBoard game={desktopGame} onMove={handleDesktopMove} overrideBoardTheme="Classic Wood" homeBlackInk className="!border-none !p-1 md:!p-3 xl:!p-0" />
+            <ChessBoard game={desktopGame} onMove={handleDesktopMove} overrideBoardTheme="Classic Wood" homeBlackInk homeChessComPalette={homeChessComPieces} className="!border-none !p-1 md:!p-3 xl:!p-0" />
           </div>
           <MobileHomeBoard />
           {/* Desktop move controls sit below the board without affecting its vertical position. */}
