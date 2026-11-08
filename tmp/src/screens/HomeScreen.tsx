@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 export default function HomeScreen() {
   const { t } = useLanguage();
   useAuth();
+  const homeUnifiedCard = import.meta.env.VITE_HOME_UNIFIED_CARD === 'true';
 
   // Independent desktop Home move history; mobile board state stays untouched.
   const [desktopReview, setDesktopReview] = useState<HomeBoardReview>({ moves: [], index: 0 });
@@ -190,6 +191,9 @@ export default function HomeScreen() {
               inset 0 1px 0 rgba(222, 186, 117, 0.14),
               inset 0 -18px 38px rgba(0, 0, 0, 0.42);
             transition: border-color 280ms ease, box-shadow 280ms ease;
+          }
+          .home-screen-root .desktop-home-arena.home-unified-card {
+            background: linear-gradient(165deg, #1a1d36 0%, #11132a 55%, #0a0b1c 100%);
           }
           .home-screen-root .desktop-home-arena::before {
             border-color: rgba(209, 168, 96, 0.34);
@@ -392,7 +396,7 @@ export default function HomeScreen() {
         <div className="flex-1 w-full flex flex-col justify-center items-center xl:items-stretch max-w-2xl xl:max-w-[420px] z-20 gap-2 md:gap-4 mb-4 xl:mb-0 -mt-6 md:-mt-0 xl:-mt-10 xl:ml-8 max-md:order-first max-md:flex-none max-md:mt-0 max-md:mb-0 max-md:px-1 home-dashboard-column">
           
           {/* Premium Flags / Desktop Slogan Block */}
-          <div className="desktop-home-slogan flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[linear-gradient(135deg,rgba(6,182,212,0.10),rgba(7,15,17,0.98)_42%,rgba(7,15,17,0.98))] border-[2px] border-cyan-500/[0.34] transition-colors shadow-[0_0_12px_rgba(6,182,212,0.08)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100 max-md:hidden">
+          <div className={`desktop-home-slogan flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[linear-gradient(135deg,rgba(6,182,212,0.10),rgba(7,15,17,0.98)_42%,rgba(7,15,17,0.98))] border-[2px] border-cyan-500/[0.34] transition-colors shadow-[0_0_12px_rgba(6,182,212,0.08)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100 max-md:hidden${homeUnifiedCard ? " xl:hidden" : ""}`}>
              <GermanyFlag />
              <AzerbaijanFlag />
              <TurkeyFlag />
@@ -400,8 +404,12 @@ export default function HomeScreen() {
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 max-md:gap-0 md:gap-4 bg-[#121212]/98 p-3 max-md:py-5 max-md:px-4 md:p-6 rounded-[2rem] max-md:rounded-[1.75rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
+          <div className={`mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 max-md:gap-0 md:gap-4 bg-[#121212]/98 p-3 max-md:py-5 max-md:px-4 md:p-6 rounded-[2rem] max-md:rounded-[1.75rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]${homeUnifiedCard ? " home-unified-card" : ""}`}>
 
+
+          {homeUnifiedCard && (
+            <span className="desktop-home-slogan-text hidden">{t('home.slogan')}</span>
+          )}
 
           {/* 1. Hero Brand Header */}
           <div className="flex flex-col">
