@@ -31,7 +31,7 @@ test('desktop Home board remains in its visual plane beside balanced Arena panel
 });
 
 test('desktop Home board sits closer to the frame without altering mobile or the 8x8 grid',()=>{
- assert.match(home,/overrideBoardTheme="Classic Wood" homeBlackInk className="!border-none !p-1 md:!p-3 xl:!p-0"/);
+ assert.match(home,/overrideBoardTheme="Classic Wood" homeBlackInk homeChessComPalette=\{homeChessComPieces\} className="!border-none !p-1 md:!p-3 xl:!p-0"/);
  assert.match(board,/grid grid-cols-8 grid-rows-8 w-full h-full/);
  assert.match(home,/home-board-frame max-md:hidden/);
 });
@@ -47,6 +47,6 @@ test('desktop Home board has a flat square grid in a responsive fitted frame, wi
 test('desktop Home board fits its rounded frame without external ring overflow',()=>{
  assert.match(home,/relative w-full aspect-square rounded-\[1rem\] md:rounded-\[2rem\] xl:p-3 overflow-hidden/);
  assert.match(home,/ring-2 ring-white\/10 xl:ring-0/);
- assert.match(home,/homeBlackInk className="!border-none !p-1 md:!p-3 xl:!p-0"/);
+ assert.match(home,/homeBlackInk homeChessComPalette=\{homeChessComPieces\} className="!border-none !p-1 md:!p-3 xl:!p-0"/);
  assert.match(board,/className="aspect-square w-full rounded-sm overflow-hidden/);
 });
