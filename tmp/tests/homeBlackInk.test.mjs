@@ -38,7 +38,7 @@ test('Chess.com reference palette is opt-in, desktop Home only, and keeps the ap
   assert.match(home, /data-home-chesscom-piece="b"/);
   assert.match(home, /img\[data-home-chesscom-piece="b"\]:not\(\[alt="bP"\]\) \{\s*filter: none !important/);
   assert.match(source, /piece.color === 'b' && \['K', 'Q', 'R', 'B', 'N'\]/);
-  assert.match(source, /homeSolidBlackSource && <source media="\\\(min-width: 1280px\\\)"/);
+  assert.ok(source.includes('homeSolidBlackSource && <source media="(min-width: 1280px)"'));
   assert.match(source, /homeBlackInk && !homeChessComPalette && piece.color === 'b'/);
   assert.match(source, /data-home-chesscom-piece=\{homeChessComPalette && pieceSetName === 'cburnett-classic' \? piece.color : undefined\}/);
   assert.match(source, /homeChessComPalette=\{homeChessComPalette\}/);
