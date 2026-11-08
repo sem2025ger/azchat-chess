@@ -378,13 +378,13 @@ export default function HomeScreen() {
         /* Desktop Home only: restrained Chess.com-like white and graphite pieces. */
         @media (min-width: 1280px) {
           .home-screen-root .home-board img[data-home-chesscom-piece="w"] {
-            filter: brightness(.976) !important;
+            filter: contrast(.8) brightness(1.08) !important;
           }
           .home-screen-root .home-board img[data-home-chesscom-piece="b"] {
-            filter: invert(1) brightness(.37) drop-shadow(0 0 .6px rgba(38, 36, 33, .85)) !important;
+            filter: invert(1) brightness(.294) contrast(.663) drop-shadow(0 0 .6px rgba(38, 36, 33, .85)) !important;
           }
           .home-screen-root .home-board img[data-home-chesscom-piece="b"][alt="bP"] {
-            filter: grayscale(1) contrast(.42) !important;
+            filter: grayscale(1) contrast(.42) brightness(.61) !important;
           }
         }
       `}</style>
