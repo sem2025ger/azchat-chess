@@ -70,7 +70,7 @@ with a maximum 20-minute wait per service before reporting a blocking mismatch.
 SQL connections reuse the existing QA-only host/user and pinned TLS CA
 guard. Redirects on fixture HTTP operations are rejected.
 
-Each viewport (1280×900 and 390×844) gets one Chromium context/page and one video.
+Each viewport (1280×900 and 390×844) gets a Chromium context and screenshots, including captain UI registration, test-only admin confirmation and first sign-in before redemption.
 Both run all ten acceptance steps: organizer UI creation; two signed-out invite
 login returns with exact URL equality; redemption; captain-as-player lineups and
 consent; natural deadline publication with duplicate-count proof; Home score
@@ -91,11 +91,10 @@ the browser run's 35-minute window block fixture creation to avoid advancing the
 
 The `m3-browser-acceptance-<sha>-<attempt>` workflow artifact is retained **7 days**:
 `summary.md`, numbered `NN-step.png` screenshots in each viewport directory,
-additional Home/dispute/English screenshots, and one `acceptance.webm` per viewport.
+and additional Home/dispute/English screenshots.
 A failed step also attempts a screenshot; later steps remain explicitly NOT RUN.
 Playwright captures web content, so the address bar is cropped out by design.
-Invite, email and password inputs are hidden before rendering for video and
-masked in screenshots. Raw exception text, browser console messages, URLs, HAR,
+Invite, email and password inputs are masked in screenshots. Raw exception text, browser console messages, URLs, HAR,
 traces and auth state are not exported. Non-QA requests are blocked; attempted
 production requests or token-bearing third-party URLs/referrers fail acceptance.
 HTTP redirects fail acceptance before Chromium can follow them.

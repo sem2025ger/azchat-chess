@@ -4,7 +4,7 @@
 // assertions only; every tournament command is submitted by Chromium through UI.
 const { mkdirSync, writeFileSync, appendFileSync } = require('node:fs');
 const path = require('node:path');
-const { randomBytes, createHash } = require('node:crypto');
+const { randomBytes, createHash, createHmac } = require('node:crypto');
 const { setTimeout: sleep } = require('node:timers/promises');
 const { browserTarget, healthGuard, frontendGuard, networkDecision, guardBrowserRequest } = require('./qaM3BrowserGuard');
 const { connect, fixtureUsers, cleanupEvents, verifyUserCleanup, inviteStorage } = require('./qaM3PilotDb');
@@ -15,6 +15,7 @@ const labels = ['Organizer creates event and copies two UI links', 'Captain 1 ex
   'Second event dispute, organizer reason and audit', 'English and German system labels',
   'Viewport and overflow (including invitation and Home)', 'No invite tokens in third-party URLs or stored fixture rows'];
 const roles = ['DO','DC1','DC2','DD1','DD2','MO','MC1','MC2','MD1','MD2'];
+const signupRoles = roles.filter(role => /^[DM]C[12]$/.test(role));
 const root = path.resolve('m3-browser-artifacts');
 const status = { desktop: labels.map(() => 'NOT RUN'), mobile: labels.map(() => 'NOT RUN') };
 const tokens = [];
@@ -32,10 +33,24 @@ async function request(origin, route, headers, body, method = 'POST') {
 }
 function fixture(env) {
   const tag = 'QA-M3-BROWSER-' + env.GITHUB_RUN_ID;
-  return { tag, email: role => tag.toLowerCase() + '-' + role.toLowerCase() + '@example.com' };
+  const email = role => {
+    if (!signupRoles.includes(role)) return tag.toLowerCase() + '-' + role.toLowerCase() + '@example.com';
+    // The UI signup cannot set app_metadata. A private per-run address lets
+    // retry cleanup recognize our account even if signup is interrupted before tagging.
+    const proof = createHmac('sha256', env.QA_SUPABASE_SERVICE_KEY).update(`${tag}:${role}`).digest('hex').slice(0, 24);
+    return `m3ui-${env.GITHUB_RUN_ID}-${role.toLowerCase()}-${proof}@example.com`;
+  };
+  return { tag, email, username: role => 'm3b' + BigInt(env.GITHUB_RUN_ID).toString(36) + role.toLowerCase() };
 }
-async function cleanup(db, target, serviceKey, tag, email) {
-  const users = await fixtureUsers(db, tag, roles.map(email));
+async function cleanup(db, target, serviceKey, tag, email, username) {
+  const tagged = await fixtureUsers(db, tag, roles.map(email));
+  const { rows: pending } = await db.query(`
+    SELECT u.id, u.email FROM auth.users u
+    JOIN unnest($1::text[], $2::text[]) AS fixture(email, username) ON u.email = fixture.email
+    WHERE u.raw_user_meta_data->>'username' = fixture.username
+      AND u.raw_app_meta_data->>'chessaz_m3_pilot' IS NULL`,
+  [signupRoles.map(email), signupRoles.map(username)]);
+  const users = [...tagged, ...pending];
   await cleanupEvents(db, tag, users.filter(u => [email('DO'), email('MO')].includes(u.email)).map(u => u.id));
   let failed = false;
   for (const user of users) {
@@ -82,21 +97,21 @@ async function switchLanguage(page, goto, lang) {
   }
   await page.locator(`html[lang="${lang}"]`).waitFor({ state: 'attached' });
 }
-async function runViewport(browser, target, db, users, tag, viewportName, signal) {
+async function runViewport(browser, target, db, users, tag, viewportName, signal, serviceKey) {
   const mobile = viewportName === 'mobile';
   const prefix = mobile ? 'M' : 'D';
   const viewport = mobile ? { width:390,height:844 } : { width:1280,height:900 };
   const folder = path.join(root, viewportName);
   mkdirSync(folder, { recursive:true });
   const context = await browser.newContext({ viewport, locale:'de-DE', timezoneId:'Europe/Berlin',
-    serviceWorkers:'block', recordVideo:{ dir:path.join(folder,'recording'), size:viewport } });
+    serviceWorkers:'block' });
   let violation = false;
   let page;
   const eventIds = [];
   const firstToken = tokens.length;
   const overflow = [];
-  // Both screenshots and videos exclude browser chrome. Hide secret-bearing
-  // inputs before the first frame (also after React inserts an invite field).
+  // Screenshots exclude browser chrome. Hide secret-bearing fields even when
+  // React inserts an invitation input after the page has loaded.
   await context.addInitScript(() => {
     if (!localStorage.getItem('app-language')) localStorage.setItem('app-language','de');
     const install = () => {
@@ -166,6 +181,40 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
       await page.locator('input[type=password]').waitFor({ state:'hidden' });
     }
   }
+  async function registerCaptain(role, link) {
+    const account = users[prefix+role];
+    await signOut();
+    await page.goto(link, { waitUntil:'domcontentloaded' });
+    await page.locator('.team-tournament-page').getByRole('link', { name:'Anmelden',exact:true }).click();
+    await button('Registrieren').click();
+    const form = page.locator('form').filter({ has:page.locator('input[type=password]') });
+    await form.locator('input[type=text]').fill(account.username);
+    await form.locator('input[type=email]').fill(account.email);
+    await form.locator('input[type=password]').fill(account.password);
+    const [response] = await Promise.all([
+      page.waitForResponse(r => {
+        const url = new URL(r.url());
+        return url.origin === target.supabase && url.pathname === '/auth/v1/signup' && r.request().method() === 'POST';
+      }),
+      form.locator('button[type=submit]').click(),
+    ]);
+    check(response.ok(), `QA UI signup failed (HTTP ${response.status()}).`);
+    const signup = await response.json();
+    const created = signup.user ?? signup;
+    check(/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(created.id || '') && created.email === account.email && !signup.access_token,
+      'QA signup did not return the expected signed-out fixture.');
+    const createdFixture = await db.query(`SELECT 1 FROM auth.users
+      WHERE id = $1 AND email = $2 AND raw_user_meta_data->>'username' = $3
+        AND raw_app_meta_data->>'chessaz_m3_pilot' IS NULL AND last_sign_in_at IS NULL`,
+    [created.id, account.email, account.username]);
+    check(createdFixture.rowCount === 1, 'QA signup could not be matched to a new fixture.');
+    const confirmed = await request(target.supabase, '/auth/v1/admin/users/' + created.id,
+      { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey },
+      { email_confirm: true, app_metadata: { chessaz_m3_pilot: tag } }, 'PUT');
+    check(confirmed.id === created.id && !!confirmed.email_confirmed_at && !confirmed.last_sign_in_at,
+      'QA fixture confirmation did not preserve first sign-in.');
+    account.id = created.id;
+  }
   async function command(click, ending) {
     const responsePromise = page.waitForResponse(r => r.url().startsWith(target.api + '/api/team-tournaments/') && r.url().endsWith(ending) && r.request().method() === 'POST');
     const [response] = await Promise.all([responsePromise, click()]);
@@ -204,11 +253,16 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
     await command(() => button('Einladung annehmen',panel()).click(), '/redeem');
     await panel().getByRole('heading', { name:/Mannschaftsaufstellung/ }).waitFor();
   }
-  async function lineup(event, role) {
+  async function lineup(event, role, addMyself = false) {
     await signIn(prefix+role); await goto('/spieltag?tab=turniere&tournament='+event.id);
     await panel().getByRole('textbox', {name:'Spielername suchen',exact:true}).fill(users[prefix+role].username);
     await button('Spielername suchen',panel()).click();
-    await button('Aufstellen: '+users[prefix+role].username,panel()).click();
+    const result = button('Aufstellen: '+users[prefix+role].username,panel());
+    if (addMyself) {
+      await result.waitFor({ state:'visible' });
+      await panel().getByText('Dein Spielername: '+users[prefix+role].username, { exact:true }).waitFor();
+      await button('Mich aufstellen',panel()).click();
+    } else await result.click();
     await command(() => button('Entwurf speichern',panel()).click(), '/lineup');
     await command(() => panel().getByRole('button', {name:/^Teilnahme und Veröffentlichung zustimmen/}).click(), '/lineup/consent');
     await command(() => button('Aufstellung verbindlich anmelden',panel()).click(), '/lineup/submit');
@@ -262,9 +316,9 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
     check(!violation, 'Forbidden browser network target during frontend version proof');
     let event;
     await step(1,async()=>{event=await create('Main');});
-    await step(2,()=>redeem(event,'C1',0));
-    await step(3,()=>redeem(event,'C2',1));
-    await step(4,async()=>{await lineup(event,'C1');await lineup(event,'C2');});
+    await step(2,async()=>{await registerCaptain('C1',event.links[0]);await redeem(event,'C1',0);});
+    await step(3,async()=>{await registerCaptain('C2',event.links[1]);await redeem(event,'C2',1);});
+    await step(4,async()=>{await lineup(event,'C1');await lineup(event,'C2',true);});
     await step(5,()=>publish(event));
     await step(6,async()=>{
       let card=await home('C1','C2',event);
@@ -316,12 +370,9 @@ async function runViewport(browser, target, db, users, tag, viewportName, signal
       await panel().getByRole('heading',{name:event.name,exact:true}).waitFor();
     });
     await step(9,async()=>{check(overflow.length>=4 && overflow.every(item=>item.fits),'Missing invitation/Home overflow checks');await fits('final tournament');check(page.viewportSize().width===viewport.width,'Wrong viewport');});
-    await step(10,async()=>{await storageProof(db,eventIds,Object.values(users).map(u=>u.id),tokens.slice(firstToken));check(!violation,'Invite token leak or forbidden network');});
+    await step(10,async()=>{await storageProof(db,eventIds,Object.values(users).filter(u=>u.id).map(u=>u.id),tokens.slice(firstToken));check(!violation,'Invite token leak or forbidden network');});
   } finally {
-    const video=page.video();
     await context.close();
-    await video.saveAs(path.join(folder,'acceptance.webm'));
-    await video.delete();
   }
 }
 function summary() {
@@ -329,7 +380,7 @@ function summary() {
   labels.forEach((label,i)=>lines.push(`| ${i+1} | ${label} | ${status.desktop[i]} | ${status.mobile[i]} |`));
   lines.push('',`Cleanup: **${cleanupStatus}**. PASS means zero fixture event graph rows, Auth users, sessions, profiles and organizer grants.`, '',
     'Each viewport runs the complete scenario. Step 9 includes the invitation and Home overflow checks performed in steps 2/3/6.',
-    'Screenshots and videos contain page content only, without an address bar. Secret input fields are hidden for video and masked in screenshots. No trace, HAR, console messages, request URLs or auth state are exported.',
+    'Screenshots contain page content only, without an address bar. Secret input fields are masked. No trace, HAR, console messages, request URLs or auth state are exported.',
     'Storage proof covers the complete run-owned tournament graph, audit, fixture profiles, Auth users and sessions. It is not a scan of unrelated QA data.');
   const text=lines.join('\n')+'\n';mkdirSync(root,{recursive:true});writeFileSync(path.join(root,'summary.md'),text);
   if(process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY,text);
@@ -337,7 +388,7 @@ function summary() {
 async function main() {
   const env=process.env; const cleanupOnly=process.argv[2]==='--cleanup';
   let db, target, browser, connected=false, cleanupNeeded=false, exit=0;
-  const {tag,email}=fixture(env);
+  const {tag,email,username}=fixture(env);
   const controller=new AbortController();
   for(const signal of ['SIGINT','SIGTERM']) process.once(signal,()=>controller.abort());
   try {
@@ -363,7 +414,7 @@ async function main() {
       } finally {await context.close();}
     }
     db=connect(databaseUrl);await db.connect();connected=true;
-    await cleanup(db,target,serviceKey,tag,email);cleanupStatus='PASS';
+    await cleanup(db,target,serviceKey,tag,email,username);cleanupStatus='PASS';
     if(!cleanupOnly) {
       const due=await db.query("SELECT 1 FROM public.team_tournament_m3_config c JOIN public.team_tournaments t ON t.id=c.tournament_id WHERE t.status='registration' AND c.registration_deadline < clock_timestamp()+interval '35 minutes' LIMIT 1");
       check(due.rowCount===0,'Another registration could advance during browser acceptance');
@@ -372,15 +423,17 @@ async function main() {
       const users={};
       for(const role of roles) {
         const password=randomBytes(32).toString('base64url')+'!a1';mask(password);
-        const username='m3b'+BigInt(env.GITHUB_RUN_ID).toString(36)+role.toLowerCase();
+        users[role]={email:email(role),password,username:username(role)};
+        if(signupRoles.includes(role)) continue;
         const user=await request(target.supabase,'/auth/v1/admin/users',{apikey:serviceKey,Authorization:'Bearer '+serviceKey},
-          {email:email(role),password,email_confirm:true,user_metadata:{username},app_metadata:{chessaz_m3_pilot:tag}});
+          {email:email(role),password,email_confirm:true,user_metadata:{username:username(role)},app_metadata:{chessaz_m3_pilot:tag}});
         check(user.id && user.email===email(role),'Wrong fixture user');
-        users[role]={id:user.id,email:email(role),password,username};
+        users[role].id=user.id;
       }
-      check((await fixtureUsers(db,tag,roles.map(email))).length===roles.length,'SQL does not see QA Auth fixtures');
+      check((await fixtureUsers(db,tag,roles.map(email))).length===roles.length-signupRoles.length,'SQL does not see prepared QA Auth fixtures');
       await db.query('INSERT INTO public.team_tournament_organizers(user_id) VALUES ($1),($2)',[users.DO.id,users.MO.id]);
-      for(const viewport of ['desktop','mobile']) await runViewport(browser,target,db,users,tag,viewport,controller.signal);
+      for(const viewport of ['desktop','mobile']) await runViewport(browser,target,db,users,tag,viewport,controller.signal,serviceKey);
+      check((await fixtureUsers(db,tag,roles.map(email))).length===roles.length,'SQL does not see QA Auth fixtures');
       check(Object.values(status).flat().every(s=>s==='PASS'),'Incomplete browser acceptance');
     }
   } catch(error) {
@@ -390,7 +443,7 @@ async function main() {
   } finally {
     if(browser) await browser.close().catch(()=>{exit=1;});
     if(connected && cleanupNeeded) {
-      try {await cleanup(db,target,env.QA_SUPABASE_SERVICE_KEY,tag,email);cleanupStatus='PASS';}
+      try {await cleanup(db,target,env.QA_SUPABASE_SERVICE_KEY,tag,email,username);cleanupStatus='PASS';}
       catch {cleanupStatus='FAIL';exit=1;}
     }
     if(db) await db.end().catch(()=>{exit=1;});

@@ -162,9 +162,7 @@ jobs:
             m3-browser-artifacts/summary.md
             m3-browser-artifacts/cleanup-retry.md
             m3-browser-artifacts/desktop/*.png
-            m3-browser-artifacts/desktop/acceptance.webm
             m3-browser-artifacts/mobile/*.png
-            m3-browser-artifacts/mobile/acceptance.webm
           if-no-files-found: error
           retention-days: 7
 
