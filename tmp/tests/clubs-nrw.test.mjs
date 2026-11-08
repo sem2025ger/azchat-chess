@@ -31,6 +31,9 @@ test('all NRW flags off preserves the main routing and navigation entry points',
   ["  const homeChessComPieces = import.meta.env.VITE_HOME_CHESSCOM_PIECES === 'true';\n", ""],
   ["        /* Desktop Home only: restrained Chess.com-like white and graphite pieces. */\n        @media (min-width: 1280px) {\n          .home-screen-root .home-board img[data-home-chesscom-piece=\"w\"] {\n            filter: contrast(.8) brightness(1.08) !important;\n          }\n          /* Major black figures are pre-colored SVGs, not CSS-filtered images. */\n          .home-screen-root .home-board img[data-home-chesscom-piece=\"b\"]:not([alt=\"bP\"]) {\n            filter: none !important;\n          }\n          .home-screen-root .home-board img[data-home-chesscom-piece=\"b\"][alt=\"bP\"] {\n            filter: grayscale(1) contrast(.42) brightness(.61) !important;\n          }\n        }\n", ""],
   ["homeBlackInk homeChessComPalette={homeChessComPieces} className", "homeBlackInk className"],
+  // PR #197 approved square board and frame containment; preserve exact prior layout below.
+  ["          <div className=\"relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] xl:p-3 overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 xl:ring-0 group transform-gpu transition-transform duration-1000 board-perspective home-board home-board-frame max-md:hidden\">\n", "          <div className=\"relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board home-board-frame max-md:hidden\">\n"],
+  ["xl:!p-0\" />", "xl:!p-2\" />"],
  ];
  for(const [withFlag,withoutFlag] of unifiedCardChanges){
   assert.equal(homeSource.split(withFlag).length,2,'approved Home feature fragment must occur exactly once');
