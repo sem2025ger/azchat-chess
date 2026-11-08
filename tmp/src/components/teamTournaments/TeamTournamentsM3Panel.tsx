@@ -1,9 +1,10 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   createTournamentM3Api, createTournamentApi,
   type M3Event, type M3EventInput, type Tournament, type BoardResult,
 } from '../../services/teamTournaments';
 import { tournamentErrorMessage, type TournamentCopy } from './copy';
+import { useLanguage } from '../../context/LanguageContext';
 
 const outcomes: { result: BoardResult; text: string }[] = [
   { result: '1-0', text: '1–0' },
@@ -77,6 +78,27 @@ export function M3Create({ tr, token, onCreated }: {
       <button type="submit" className="min-h-11" disabled={busy}>{tr('m3Create')}</button>
     </form>
   </section>;
+}
+
+function M3InviteLink({ url, tr }: { url: string; tr: TournamentCopy }) {
+  const { t } = useLanguage();
+  const field = useRef<HTMLInputElement>(null);
+  const [copyState, setCopyState] = useState<'copied' | 'selected' | null>(null);
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyState('copied');
+    } catch {
+      field.current?.focus();
+      field.current?.select();
+      setCopyState('selected');
+    }
+  }
+  return <>
+    <input ref={field} readOnly className="w-full" aria-label={tr('m3Invite')} value={url} />
+    <button className="min-h-11" type="button" onClick={() => void copyLink()}>{tr('m3CopyLink')}</button>
+    {copyState && <p role="status">{t(copyState === 'copied' ? 'invite.copied' : 'invite.copyFailed')}</p>}
+  </>;
 }
 
 export function M3EventPanel({ tr, id, token, userId, ownUsername, onUpdated }: {
@@ -236,8 +258,8 @@ export function M3EventPanel({ tr, id, token, userId, ownUsername, onUpdated }: 
       <button className="min-h-11" disabled={busy} type="submit">{tr('m3Invite')}</button>
       {invite && <>
         <p>{tr('m3InviteNote')}</p>
-        <input readOnly className="w-full" aria-label={tr('m3Invite')}
-          value={new URL('/spieltag?tab=turniere&tournament='+id+'&invite='+invite.token,window.location.origin).href} />
+        <M3InviteLink key={invite.id} tr={tr}
+          url={new URL('/spieltag?tab=turniere&tournament='+id+'&invite='+invite.token,window.location.origin).href} />
         <button className="min-h-11" type="button" disabled={busy}
           onClick={()=>void mutate(async signal=>{
             await api.revoke(id,invite.id,signal);

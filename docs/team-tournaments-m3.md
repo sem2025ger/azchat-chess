@@ -45,6 +45,7 @@ M1 and M2 command, round-robin, audit and UI are the compatibility baseline.
 - See the [owner setup checklist](team-tournaments-m3-qa-setup.md) for the label flow and organizer grant/revoke SQL, and the [pilot scenarios](team-tournaments-m3-pilot.md) for acceptance. Hosted acceptance is pending these checks.
 
 Captain search explains invalid input and empty results, displays the stored username, and lets captains add themselves directly.
+Organizers can copy an invitation with one tap, with a select-all fallback if clipboard access is unavailable.
 
 ## Database and deployment safety
 

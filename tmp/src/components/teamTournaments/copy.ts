@@ -83,6 +83,7 @@ const labels = {
   m3Spots: ['Freie Plätze', 'Remaining spots', 'Boş yerlər', 'Kalan yerler', 'Вільні місця', 'Свободные места'],
   m3ClubName: ['Vereinsname', 'Club name', 'Klubun adı', 'Kulüp adı', 'Назва клубу', 'Название клуба'],
   m3Invite: ['Einladungslink erzeugen', 'Create invitation link', 'Dəvət linki yarat', 'Davet bağlantısı oluştur', 'Створити запрошення', 'Создать ссылку-приглашение'],
+  m3CopyLink: ['Link kopieren', 'Copy link', 'Linki kopyala', 'Bağlantıyı kopyala', 'Копіювати посилання', 'Копировать ссылку'],
   m3InviteNote: ['Nur einmal verwendbar. Link jetzt sicher weitergeben.', 'Single use. Share securely now.', 'Birdəfəlikdir. Linki indi təhlükəsiz göndərin.', 'Tek kullanımlık. Bağlantıyı güvenle paylaşın.', 'Одноразове. Безпечно передайте зараз.', 'Одноразовая ссылка. Передайте её безопасно.'],
   m3Redeem: ['Einladung annehmen', 'Accept invitation', 'Dəvəti qəbul et', 'Daveti kabul et', 'Прийняти запрошення', 'Принять приглашение'],
   m3Lineup: ['Mannschaftsaufstellung', 'Team lineup', 'Komanda heyəti', 'Takım kadrosu', 'Склад команди', 'Состав команды'],

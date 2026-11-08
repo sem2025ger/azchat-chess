@@ -37,7 +37,8 @@ window.fetch = async (input, options) => {
   if (url.pathname === root) return Response.json({ tournaments: [], can_create: false });
   if ([root + '/' + event.id + '/self-service', root + '/' + event.id + '/self-service/public'].includes(url.pathname)) {
     const entries = sessionStorage.getItem('fixture-redeemed') ? [{ id: 'entry', captain_id: '${captainId}', club_name: 'Fixture Club' }] : [];
-    return Response.json({ ...event, entries });
+    const roles = sessionStorage.getItem('fixture-organizer') ? [{ role: 'organizer' }] : [];
+    return Response.json({ ...event, entries, roles });
   }
   if (url.pathname === root + '/' + event.id + '/redeem') {
     window.fixtureInviteRead = options.method === 'POST' &&
@@ -53,6 +54,9 @@ window.fetch = async (input, options) => {
   if (url.pathname === root + '/' + event.id + '/lineup') {
     window.fixtureLineup = JSON.parse(options.body).players;
     return Response.json({});
+  }
+  if (url.pathname === root + '/' + event.id + '/invites') {
+    return Response.json({ invite_id: '${captainId}', token: '${'c'.repeat(64)}' });
   }
   return Response.json({ code: 'not_found' }, { status: 404 });
 };
@@ -198,6 +202,23 @@ export async function checkTournamentAuth({ cdp, evaluate, wait, click }) {
     await wait('Array.isArray(window.fixtureLineup)');
     assert.deepEqual(await evaluate('window.fixtureLineup'), [captainId]);
     await evaluate("sessionStorage.removeItem('fixture-profile'); sessionStorage.removeItem('fixture-redeemed')");
+
+    await evaluate("sessionStorage.setItem('fixture-organizer', 'yes')");
+    await open(profilePath(target) + '#fixture-confirmed');
+    const club = '.team-tournament-page form input[required]';
+    await wait(`document.querySelector(${JSON.stringify(club)})`);
+    await fillInput(club, 'Fixture Opponent');
+    await click('Create invitation link');
+    const inviteField = '.team-tournament-page input[readonly]';
+    await wait(`document.querySelector(${JSON.stringify(inviteField)})`);
+    await evaluate("Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { async writeText(value) { window.fixtureCopiedLink = value; } } })");
+    await click('Copy link');
+    await wait("[...document.querySelectorAll('[role=status]')].some(status => status.textContent === 'Copied')");
+    assert.equal(await evaluate('window.fixtureCopiedLink'), origin + target.replace(invite, 'c'.repeat(64)));
+    await evaluate("Object.defineProperty(navigator, 'clipboard', { value: undefined })");
+    await click('Copy link');
+    await wait(`(() => { const field = document.querySelector(${JSON.stringify(inviteField)}); return document.activeElement === field && field.selectionStart === 0 && field.selectionEnd === field.value.length; })()`);
+    await evaluate("sessionStorage.removeItem('fixture-organizer')");
 
     for (const action of ['Register', 'Sign in with email link']) {
       await open(profilePath(target));
