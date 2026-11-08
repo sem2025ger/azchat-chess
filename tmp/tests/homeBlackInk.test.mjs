@@ -27,3 +27,16 @@ test('bishop keeps its light plus; all other black Home figures have no white de
   assert.match(ink('bN'), /#55514d/);
   assert.match(ink('bN'), /#363431/);
 });
+
+test('Chess.com reference palette is opt-in, desktop Home only, and keeps the approved frame', () => {
+  assert.match(home, /VITE_HOME_CHESSCOM_PIECES === 'true'/);
+  assert.match(home, /homeBlackInk homeChessComPalette=\{homeChessComPieces\}/);
+  assert.match(home, /xl:p-3 overflow-hidden/);
+  assert.match(home, /xl:ring-0/);
+  assert.match(home, /max-width:min\(634px,calc\(100dvh - 100px\)\)/);
+  assert.match(home, /@media \(min-width: 1280px\) \{\s*\.home-screen-root \.home-board img\[data-home-chesscom-piece="w"\]/);
+  assert.match(home, /data-home-chesscom-piece="b"/);
+  assert.match(source, /homeBlackInk && !homeChessComPalette && piece.color === 'b'/);
+  assert.match(source, /data-home-chesscom-piece=\{homeChessComPalette && pieceSetName === 'cburnett-classic' \? piece.color : undefined\}/);
+  assert.match(source, /homeChessComPalette=\{homeChessComPalette\}/);
+});
