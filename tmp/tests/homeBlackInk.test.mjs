@@ -52,9 +52,9 @@ test('graphite Home major pieces have native tonal shading and restored internal
     assert.match(piece, /stop-color="#252525"/, kind);
     assert.match(piece, /stroke="#8c8c8c"/, kind);
     assert.match(piece, /stroke="#292929"/, kind);
-    assert.doesNotMatch(piece, /<filter|filter=|drop-shadow|#000(?:000)?\\b|stroke="#ececec"/i, kind);
+    assert.doesNotMatch(piece, /<filter|filter=|drop-shadow|#000(?:000)?\b|stroke="#ececec"/i, kind);
   }
-  assert.doesNotMatch(source, /homeSolidBlackSource[^\\n]*piece.type === 'p'/);
-  assert.doesNotMatch(home, /img\\[data-home-chesscom-piece="b"\\]:not\\(\\[alt="bP"\\]\\) \\{\\s*filter: (?!none)/);
-  assert.match(home, /img\\[data-home-chesscom-piece="b"\\]\\[alt="bP"\\] \\{\\s*filter: grayscale\\(1\\) contrast\\(.42\\) brightness\\(.61\\)/);
+  assert.doesNotMatch(source, /homeSolidBlackSource[^\n]*piece.type === 'p'/);
+  assert.doesNotMatch(home, /img\[data-home-chesscom-piece="b"\]:not\(\[alt="bP"\]\) \{\s*filter: (?!none)/);
+  assert.match(home, /img\[data-home-chesscom-piece="b"\]\[alt="bP"\] \{\s*filter: grayscale\(1\) contrast\(.42\) brightness\(.61\)/);
 });
