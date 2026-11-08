@@ -44,13 +44,17 @@ test('Chess.com reference palette is opt-in, desktop Home only, and keeps the ap
   assert.match(source, /homeChessComPalette=\{homeChessComPalette\}/);
 });
 
-test('solid black Home major pieces use native dark SVG with no edge effects; pawns unchanged', () => {
+test('graphite Home major pieces have native tonal shading and restored internal highlights; pawns unchanged', () => {
   for (const kind of ['K', 'Q', 'R', 'B', 'N']) {
     const piece = readFileSync(new URL(`../public/pieces/home-solid-black/b${kind}.svg`, import.meta.url), 'utf8');
-    assert.match(piece, /fill="#232323"/);
-    assert.doesNotMatch(piece, /<filter|filter=|drop-shadow|#000(?:000)?\b|stroke="#ececec"/i);
+    assert.match(piece, /<linearGradient id="chessaz-graphite"/, kind);
+    assert.match(piece, /stop-color="#565656"/, kind);
+    assert.match(piece, /stop-color="#252525"/, kind);
+    assert.match(piece, /stroke="#8c8c8c"/, kind);
+    assert.match(piece, /stroke="#292929"/, kind);
+    assert.doesNotMatch(piece, /<filter|filter=|drop-shadow|#000(?:000)?\\b|stroke="#ececec"/i, kind);
   }
-  assert.doesNotMatch(source, /homeSolidBlackSource[^\n]*piece.type === 'p'/);
-  assert.doesNotMatch(home, /img\[data-home-chesscom-piece="b"\]:not\(\[alt="bP"\]\) \{\s*filter: (?!none)/);
-  assert.match(home, /img\[data-home-chesscom-piece="b"\]\[alt="bP"\] \{\s*filter: grayscale\(1\) contrast\(.42\) brightness\(.61\)/);
+  assert.doesNotMatch(source, /homeSolidBlackSource[^\\n]*piece.type === 'p'/);
+  assert.doesNotMatch(home, /img\\[data-home-chesscom-piece="b"\\]:not\\(\\[alt="bP"\\]\\) \\{\\s*filter: (?!none)/);
+  assert.match(home, /img\\[data-home-chesscom-piece="b"\\]\\[alt="bP"\\] \\{\\s*filter: grayscale\\(1\\) contrast\\(.42\\) brightness\\(.61\\)/);
 });
