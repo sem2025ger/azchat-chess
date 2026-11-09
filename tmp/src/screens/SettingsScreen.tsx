@@ -4,7 +4,7 @@ import { trySettingsPreviewMove } from '../utils/settingsPreviewMove';
 import { useThemeContext, type BackgroundTheme, type SoundTheme } from '../context/ThemeContext';
 import { playChessSound, preloadChessSounds, setChessSoundMuted } from '../utils/chessSounds';
 import { premiumInterfaceThemes } from '../lib/interfaceThemes';
-import { BOARD_THEMES, BOARD_THEME_DETAILS, PIECE_STYLES } from '../lib/chessThemes';
+import { BOARD_THEMES, BOARD_THEME_DETAILS, PIECE_STYLES, pieceAssetSrc } from '../lib/chessThemes';
 import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import ChessBoard from '../components/ChessBoard';
@@ -150,12 +150,6 @@ export default function SettingsScreen() {
     { id: 'ru', name: 'Русский', flag: '🇷🇺' },
   ];
 
-  const mobilePiecePreviewSrc = (styleId: string, code: string) => {
-    if (styleId === 'cburnett-classic') return `/chess-assets/pieces/cburnett/${code}.svg`;
-    if (styleId === 'neo' || styleId === 'tournament') return `/pieces/mobile/${styleId}/${code}.svg`;
-    return `/pieces/${styleId}/${code}.svg`;
-  };
-
   const renderMobileView = () => {
     switch (activeSubView) {
       case 'board':
@@ -192,9 +186,9 @@ export default function SettingsScreen() {
                   title={style.id === 'neo' ? 'Merida Flat' : style.id === 'tournament' ? 'Merida Classic' : style.name}
                   preview={
                     <div className="flex justify-center gap-1">
-                      <img src={mobilePiecePreviewSrc(style.id, 'wK')} alt={style.name} className="w-8 h-8 object-contain" />
-                      <img src={mobilePiecePreviewSrc(style.id, 'wQ')} alt={style.name} className="w-8 h-8 object-contain" />
-                      <img src={mobilePiecePreviewSrc(style.id, 'wN')} alt={style.name} className="w-8 h-8 object-contain" />
+                      <img src={pieceAssetSrc(style.id, 'wK')} alt={style.name} className="w-8 h-8 object-contain" />
+                      <img src={pieceAssetSrc(style.id, 'wQ')} alt={style.name} className="w-8 h-8 object-contain" />
+                      <img src={pieceAssetSrc(style.id, 'wN')} alt={style.name} className="w-8 h-8 object-contain" />
                     </div>
                   }
                 />
@@ -316,7 +310,7 @@ export default function SettingsScreen() {
                     title={t('settings.pieceStyles')} 
                     value={pieceTheme.toUpperCase()} 
                     onClick={() => setActiveSubView('pieces')} 
-                    preview={<img src={mobilePiecePreviewSrc(pieceTheme, 'wK')} alt="Piece" className="w-6 h-6 object-contain" />}
+                    preview={<img src={pieceAssetSrc(pieceTheme, 'wK')} alt="Piece" className="w-6 h-6 object-contain" />}
                   />
                   <HubLink 
                     icon={<LayoutIcon size={18} />} 
@@ -409,8 +403,8 @@ export default function SettingsScreen() {
                     {pieceStyles.map((style) => (
                       <button key={style.id} onClick={() => setPieceTheme(style.id as any)} className={cx("flex flex-col items-center gap-1.5 p-1.5 rounded-xl border transition-all active:scale-95", pieceTheme === style.id ? "bg-chess-active/10 border-chess-active/40" : "bg-black/20 border-white/5 hover:border-white/20")}>
                         <div className="flex gap-0.5 justify-center">
-                          <img src={mobilePiecePreviewSrc(style.id, 'wK')} alt={style.name} className="w-5 h-5 object-contain" />
-                          <img src={mobilePiecePreviewSrc(style.id, 'wN')} alt={style.name} className="w-5 h-5 object-contain" />
+                          <img src={pieceAssetSrc(style.id, 'wK')} alt={style.name} className="w-5 h-5 object-contain" />
+                          <img src={pieceAssetSrc(style.id, 'wN')} alt={style.name} className="w-5 h-5 object-contain" />
                         </div>
                         <span className="text-[0.6rem] font-black uppercase text-neutral-500 text-center leading-tight">{style.name}</span>
                       </button>

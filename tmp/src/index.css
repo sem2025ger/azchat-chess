@@ -5,7 +5,33 @@
 /* Home desktop: retain the original visual plane and keep the chessboard
    modestly enlarged within its column. Do not scale or translate the scene toward
    the viewer; balance the right-hand Arena and slogan in the same grid. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen {
+    --home-field-inset: calc(.75rem + 1px);
+    --home-board-width: min(600px, calc(100% - 6rem));
+  }
+  .desktop-analysis-screen::before {
+    /* Resolve the Home grid's responsive board width in the same route viewport. */
+    content: '';
+    position: absolute;
+    inset: 0 auto auto 0;
+    visibility: hidden;
+    pointer-events: none;
+    box-sizing: content-box;
+    width: var(--home-board-width);
+    padding-left: var(--home-field-inset);
+  }
+}
+@media (width: 1024px) {
+  .desktop-analysis-screen { --home-board-width: calc(100% - 6rem); }
+}
 @media(min-width:1280px){
+ .desktop-analysis-screen {
+   --home-grid-gap:clamp(24px,2.2vw,32px);
+   --home-board-limit:min(634px,calc(100dvh - 100px));
+   --home-grid-tracks:calc(min(100%,85rem) - 56px - var(--home-grid-gap));
+   --home-board-width:min(var(--home-board-limit),calc(.6 * var(--home-grid-tracks)),calc(var(--home-grid-tracks) - 320px));
+ }
  [data-home-route] [data-route-scroll]{overflow:hidden}
  .home-screen-root{height:100%;min-height:0;padding:24px 0}
  .home-screen-root [data-mobile-home-stack]{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);align-items:center;justify-items:center;gap:clamp(24px,2.2vw,32px);height:100%;min-height:0;padding:0 28px;overflow:visible}
@@ -1218,7 +1244,7 @@
     column-gap: var(--review-column-gap, 51px) !important;
     row-gap: 12px;
     max-width: none !important;
-    padding: calc(10px * var(--review-scale, 1)) calc(55px * var(--review-scale, 1)) calc(38px * var(--review-scale, 1)) calc(40px * var(--review-scale, 1)) !important;
+    padding: var(--review-top-inset, 0px) calc(55px * var(--review-scale, 1)) 0 calc(40px * var(--review-scale, 1)) !important;
     margin: 0 !important;
     height: 100% !important;
     min-height: 0 !important;
@@ -1255,15 +1281,20 @@
     border-bottom-width: 0;
     flex: 0 0 var(--review-board-size, auto) !important;
   }
-  .desktop-analysis-screen .desktop-analysis-player-top,
   .desktop-analysis-screen .desktop-analysis-review-player-bottom {
     display: flex;
     height: calc(36px * var(--review-scale, 1));
     min-height: calc(36px * var(--review-scale, 1));
     padding-left: calc(54px * var(--review-scale, 1));
   }
-  .desktop-analysis-screen:has(.desktop-analysis-player-top) > .desktop-analysis-panel {
-    margin-top: calc(36px * var(--review-scale, 1)) !important;
+  .desktop-analysis-screen .desktop-analysis-player-top {
+    display: flex;
+    position: absolute;
+    inset-inline: 0;
+    top: calc(-1 * min(var(--review-top-inset, 0px), var(--review-top-label, 24px)));
+    height: var(--review-top-label, 24px);
+    padding-left: calc(54px * var(--review-scale, 1));
+    z-index: 20;
   }
   .desktop-analysis-screen > .desktop-analysis-panel {
     grid-row: 1;
@@ -1274,11 +1305,23 @@
     min-height: 0 !important;
     max-height: none !important;
   }
-  .desktop-analysis-screen .desktop-analysis-main-board {
+  .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) {
+    --analysis-board-gutter: var(--review-board-gutter, 16px);
     width: 100%;
     height: 100%;
-    padding: calc(16px * var(--review-scale, 1)) !important;
-    border-width: calc(6px * var(--review-scale, 1)) !important;
+    padding: var(--analysis-board-gutter) !important;
+    border-width: 0 !important;
+  }
+  .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) .aspect-square.border {
+    border-color: #a28e67;
+  }
+  .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) > [data-coordinate-axis="rank"] {
+    inset-block: calc(var(--analysis-board-gutter) + 1px);
+    width: var(--analysis-board-gutter);
+  }
+  .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) > [data-coordinate-axis="file"] {
+    inset-inline: calc(var(--analysis-board-gutter) + 1px);
+    height: var(--analysis-board-gutter);
   }
   .desktop-analysis-screen .desktop-analysis-evaluation { translate: none; padding: 0; width: calc(24px * var(--review-scale, 1)); flex-shrink: 0; }
   .desktop-analysis-screen .desktop-analysis-stockfish { height: auto; max-height: 58%; overflow-y: auto; flex: 0 1 auto; }

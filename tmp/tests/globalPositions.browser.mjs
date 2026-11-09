@@ -5,7 +5,7 @@ import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 const fixture=String.raw`
-import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{BrowserRouter as MemoryRouter,Routes,Route,useNavigate}from'react-router-dom';import{ThemeProvider}from'/src/context/ThemeContext.tsx';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Screen from'/src/screens/SpielerScreen.tsx';import Preparation from'/src/screens/VorbereitungScreen.tsx';import{loadAnalysisSession}from'/src/utils/analysisSession.ts';
+import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{BrowserRouter as MemoryRouter,Routes,Route,useNavigate}from'react-router-dom';import{ThemeProvider}from'/src/context/ThemeContext.tsx';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Screen from'/src/screens/SpielerScreen.tsx';import Settings from'/src/screens/SettingsScreen.tsx';import Preparation from'/src/screens/VorbereitungScreen.tsx';import{loadAnalysisSession}from'/src/utils/analysisSession.ts';
 localStorage.setItem('app-language','de');window.positionCalls=[];window.responseMode='ready';const native=window.fetch;
 const pgn='[Event "Synthetic"]\n[White "White player"]\n[Black "Black player"]\n[Result "0-1"]\n\n1. e4 c5 2. Nf3 d6 3. d4 cxd4 4. Nxd4 Nf6 5. Nc3 a6 6. Be3 e5 0-1';
 window.fetch=async(url,options={})=>{
@@ -20,8 +20,8 @@ window.fetch=async(url,options={})=>{
  if(u.searchParams.get('sort')==='strongest'){const games=data.fallback?data.fallbackGames:data.games;games.reverse();if(games.length){games[0].whiteRating=2600;games[0].blackRating=2500;}}
  return Response.json(data);
 };
-function Locales(){const navigate=useNavigate();window.goPlayers=()=>navigate('/spieler');window.goBack=()=>navigate(-1);window.goOldPreparation=()=>navigate('/vorbereitung');const{setLanguage}=useLanguage();return <nav>{['en','de','az','tr','ua','ru'].map(lang=><button key={lang} data-test-locale={lang} onClick={()=>setLanguage(lang)}>{lang}</button>)}</nav>;}window.positionAnalysis=()=>loadAnalysisSession()?.viewMoveIndex;
-createRoot(document.getElementById('root')).render(<ThemeProvider><LanguageProvider><MemoryRouter basename="/position-fixture"><Locales/><Routes><Route path='/' element={<Screen/>}/><Route path='/spieler' element={<Screen/>}/><Route path='/vorbereitung' element={<Preparation/>}/><Route path='/game' element={<p id='analysis-landed'>Analysis</p>}/></Routes></MemoryRouter></LanguageProvider></ThemeProvider>);
+function Locales(){const navigate=useNavigate();window.goPlayers=()=>navigate('/spieler');window.goSettings=()=>navigate('/settings');window.goBack=()=>navigate(-1);window.goOldPreparation=()=>navigate('/vorbereitung');const{setLanguage}=useLanguage();return <nav>{['en','de','az','tr','ua','ru'].map(lang=><button key={lang} data-test-locale={lang} onClick={()=>setLanguage(lang)}>{lang}</button>)}</nav>;}window.positionAnalysis=()=>loadAnalysisSession()?.viewMoveIndex;
+createRoot(document.getElementById('root')).render(<ThemeProvider><LanguageProvider><MemoryRouter basename="/position-fixture"><Locales/><Routes><Route path='/' element={<Screen/>}/><Route path='/spieler' element={<Screen/>}/><Route path='/settings' element={<Settings/>}/><Route path='/vorbereitung' element={<Preparation/>}/><Route path='/game' element={<p id='analysis-landed'>Analysis</p>}/></Routes></MemoryRouter></LanguageProvider></ThemeProvider>);
 `;
 const cacheDirs=[];
 async function makeServer(enabled){const cacheDir=await mkdtemp(join(tmpdir(),'chessaz-position-vite-'));cacheDirs.push(cacheDir);const plugin={name:'position-browser-fixture',enforce:'pre',resolveId(id){if(id==='/__positions.tsx')return id;if(id==='../context/AuthContext')return '\0position-auth';},load(id){if(id==='/__positions.tsx')return fixture;if(id==='\0position-auth')return `export function useAuth(){return{session:{access_token:'synthetic-test-token',user:{id:'synthetic-owner'}}};}`;},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!req.url?.startsWith('/position-fixture'))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/position-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#202020"><div id="root"></div><script type="module" src="/__positions.tsx"></script></body></html>'));});}};return createServer({configFile:false,cacheDir,plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false},define:{'import.meta.env.VITE_SERVER_URL':JSON.stringify('https://positions-fixture.invalid'),'import.meta.env.VITE_POSITION_SEARCH_ENABLED':JSON.stringify(String(enabled)),'import.meta.env.VITE_SPIELER_V1_ENABLED':JSON.stringify('true'),'import.meta.env.VITE_VORBEREITUNG_ENABLED':JSON.stringify(String(enabled)),'import.meta.env.VITE_CLUBS_NRW_ENABLED':JSON.stringify('false')}});}
@@ -48,6 +48,15 @@ try{
  await wait(`document.querySelector('.spieler-search')`);assert.equal(await evaluate(`Boolean(document.querySelector('.global-position-search'))`),false,'flag off preserves Spieler');
  await server.close();server=await makeServer(true);await server.listen();base=server.resolvedUrls.local[0];await cdp('Page.navigate',{url:base+'position-fixture'});
  await wait(`document.querySelector('.global-position-search')`);assert.equal(await evaluate(`!!document.querySelector('#spieler-section-panel-position .spieler-search')`),false,'directory removed from position tab');
+ // Change the real setting and confirm that Preparation uses it after navigation.
+ for(const [label,style] of [['Merida Classic','tournament'],['Merida Flat','neo']]){
+  await evaluate('window.goSettings()');
+  await wait("document.querySelector('#settings-section-pieces')");
+  await evaluate(`[...document.querySelectorAll('#settings-section-pieces button')].find(button=>button.textContent.trim()===${JSON.stringify(label)}).click()`);
+  await wait(`localStorage.getItem('chess_pieceTheme')===${JSON.stringify(style)}`);
+  await evaluate('window.goPlayers()');
+  await wait(`document.querySelector('.preparation-shared-board [data-piece-square="e1"] img')?.getAttribute('src')===${JSON.stringify('/pieces/mobile/'+style+'/wK.svg')}`);
+ }
  const {default:ts}=await import('typescript');
  const copy={};for(const [path,name]of [['../src/i18n/sectionCopy.ts','sectionCopy'],['../src/i18n/regionalCopy.ts','regionalCopy']]){const text=await readFile(new URL(path,import.meta.url),'utf8'),ast=ts.createSourceFile(path,text,99,true);const visit=n=>{if(ts.isVariableDeclaration(n)&&n.name.getText(ast)===name)Object.assign(copy,Function('return ('+n.initializer.getText(ast)+')')());ts.forEachChild(n,visit);};visit(ast);}
  const visibleText=()=>evaluate(`document.querySelector('.global-position-search').innerText+' '+[...document.querySelectorAll('.global-position-search [aria-label]')].map(e=>e.getAttribute('aria-label')).join(' ')`);

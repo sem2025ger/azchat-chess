@@ -20,7 +20,7 @@ test('settings presents exactly Merida Flat and Merida Classic, including preset
   assert.match(context, /VALID_PIECE_THEMES = new Set<string>\(PIECE_STYLES\.filter\(/);
   assert.match(settings, /const pieceStyles = PIECE_STYLES\.filter\(\(style\) => style\.id === 'neo' \|\| style\.id === 'tournament'\)/);
   assert.match(center, /\.\.\.PIECE_STYLES\.filter\(x => x\.id === 'neo' \|\| x\.id === 'tournament'\)\.map/);
-  assert.match(settings, /mobilePiecePreviewSrc\(pieceTheme, 'wK'\)/);
+  assert.match(settings, /pieceAssetSrc\(pieceTheme, 'wK'\)/);
   for (const source of [
     settings.split('const presets = [')[1]?.split('];')[0] ?? '',
     logic.split('export const STYLE_PRESETS = {')[1]?.split('} as const;')[0] ?? '',

@@ -104,6 +104,12 @@ try {
   await waitFor("!!document.querySelector('.site-nav-link[href=\"/game\"]') && !!document.querySelector('main')");
   // Give Home its first paint and a realistic chance to start route prefetch.
   await sleep(450);
+  const fieldBounds = selector => evaluate(`(() => {
+    const first = document.querySelector(${JSON.stringify(selector + ' [data-square="a8"]')}).getBoundingClientRect();
+    const last = document.querySelector(${JSON.stringify(selector + ' [data-square="h1"]')}).getBoundingClientRect();
+    return { top: first.top, width: last.right - first.left, height: last.bottom - first.top };
+  })()`);
+  const homeField = await fieldBounds('.home-board-frame');
   const navigate = async (selector, readySelector) => {
     const started = await evaluate(`(() => {
       const link = document.querySelector(${JSON.stringify(selector)});
@@ -137,6 +143,22 @@ try {
   await sleep(250);
   const warm = await navigate('.site-nav-link[href="/game"]', '.desktop-analysis-main-board [data-square]');
   assert.equal(warm.url, '/game');
+  await waitFor("!!document.querySelector('.desktop-analysis-screen').style.getPropertyValue('--review-board-size')");
+  const reviewField = await fieldBounds('.desktop-analysis-main-board');
+  for (const dimension of ['top', 'width', 'height']) {
+    assert.ok(Math.abs(reviewField[dimension] - homeField[dimension]) < 1,
+      dimension + ' must match Home: ' + JSON.stringify({ homeField, reviewField }));
+  }
+  assert.ok(await evaluate(`(() => {
+    const board = document.querySelector('.desktop-analysis-main-board');
+    const frame = board.querySelector('.aspect-square');
+    const label = document.querySelector('.desktop-analysis-player-top').getBoundingClientRect();
+    const bounds = frame.getBoundingClientRect();
+    return getComputedStyle(frame).borderLeftWidth === '1px' &&
+      board.querySelector('[data-coordinate-axis="rank"]').getBoundingClientRect().right <= bounds.left &&
+      board.querySelector('[data-coordinate-axis="file"]').getBoundingClientRect().top >= bounds.bottom &&
+      label.bottom <= bounds.top;
+  })()`), 'The thin border, coordinate rails and top label must sit outside the playing field');
   // These are diagnostics, not an artificial guarantee of zero-millisecond navigation.
   // Regression gate: the board must render on both navigation attempts.
   assert.ok(cold.ms < 5_000 && warm.ms < 5_000, 'Analysis route failed to paint within 5 seconds');

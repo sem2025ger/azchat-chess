@@ -19,7 +19,7 @@ import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
 
 import { createPositionMapSnapshot, selectPositionMapVariation, type PositionMapSnapshot } from '../utils/positionMapNavigation';
 import { positionMapLabel } from '../components/analysis/positionMapLabels';
-import { reviewLayout } from '../utils/reviewLayout';
+import { REVIEW_BOARD_GUTTER, reviewLayout } from '../utils/reviewLayout';
 import { annotatedPgn, type PositionEvaluation } from '../utils/positionMap';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
@@ -221,9 +221,19 @@ export default function GameScreen({ mode }: GameScreenProps) {
     if (!workspace) return;
     const measure = () => {
       if (!window.matchMedia('(min-width: 1024px)').matches) return;
-      const next = reviewLayout(workspace.clientWidth, workspace.clientHeight);
+      const reference = getComputedStyle(workspace, '::before');
+      const homeFrame = parseFloat(reference.width);
+      const homeInset = parseFloat(reference.paddingLeft);
+      const height = workspace.clientHeight;
+      const wide = window.matchMedia('(min-width: 1280px)').matches;
+      // Home centers the frame together with its 51px controls and 12px gap.
+      const homeTop = homeInset + (wide
+        ? (height - homeFrame - 63) / 2
+        : parseFloat(getComputedStyle(document.documentElement).fontSize) / 2);
+      const next = reviewLayout(workspace.clientWidth, height, homeFrame - 2 * homeInset, homeTop);
       if (next.boardSize > 0) setReviewGeometry(previous =>
-        previous?.scale === next.scale && previous.boardSize === next.boardSize ? previous : next
+        previous?.scale === next.scale && previous.boardSize === next.boardSize &&
+          previous.panelWidth === next.panelWidth && previous.topInset === next.topInset ? previous : next
       );
     };
     const observer = new ResizeObserver(measure);
@@ -960,7 +970,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
     if (selection) setMobileTool(null);
   }, []);
   return (
-    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
+    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? {
+      "--review-scale": reviewGeometry.scale,
+      "--review-board-size": `${reviewGeometry.boardSize}px`,
+      "--review-board-column": `${reviewGeometry.boardColumn}px`,
+      "--review-panel-width": `${reviewGeometry.panelWidth}px`,
+      "--review-column-gap": `${reviewGeometry.columnGap}px`,
+      "--review-board-gutter": `${REVIEW_BOARD_GUTTER}px`,
+      "--review-top-label": `${reviewGeometry.topLabel}px`,
+      "--review-top-inset": `${reviewGeometry.topInset}px`,
+    } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
 
       {mode === 'review' && <>
         <MobileAnalysisHeader activeTab={activeTab} onTab={setActiveTab}
