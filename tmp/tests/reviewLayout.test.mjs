@@ -13,15 +13,26 @@ test('desktop reference keeps a 692px field, 736px square frame and 630px panel'
   assert.equal(40 + layout.boardColumn + layout.columnGap, 881);
 });
 
-test('smaller workspaces scale the approved composition without horizontal or vertical overflow', () => {
+test('smaller workspaces enlarge the board within the available height and keep the panel anchored', () => {
   for (const [width, height] of [[1248,704],[1028,912],[912,744],[800,1000],[1560,600]]) {
     const layout = reviewLayout(width,height);
     const s = layout.scale;
+    const originalBoardSize = 736 * s;
     assert.ok(40*s + layout.boardColumn + layout.columnGap + layout.panelWidth + 45*s <= width);
-    assert.ok(10*s + 36*s + layout.boardSize + 36*s <= height);
+    assert.ok(32 + (10 + 36 + 36)*s + layout.boardSize <= height);
+    assert.ok(layout.boardSize > originalBoardSize && layout.boardSize <= 736);
+    assert.ok(layout.columnGap >= 19*s - 1e-9);
     assert.ok(Math.abs(layout.boardColumn - layout.boardSize - 54*s) < 1e-9);
-    assert.ok(Math.abs(layout.panelWidth / layout.boardSize - 630/736) < 1e-12);
+    assert.ok(Math.abs(layout.boardColumn + layout.columnGap - (736 + 54 + 51)*s) < 1e-9);
+    assert.equal(layout.panelWidth, 630*s);
   }
+});
+
+test('a short desktop window can reclaim more gutter as height becomes available at the same scale', () => {
+  const short = reviewLayout(800, 454);
+  const taller = reviewLayout(800, 500);
+  assert.equal(short.scale, taller.scale);
+  assert.ok(short.boardSize < taller.boardSize);
 });
 
 test('larger workspaces preserve the approved size instead of growing the board again', () => {

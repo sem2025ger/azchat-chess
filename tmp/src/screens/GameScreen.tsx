@@ -222,7 +222,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
     const measure = () => {
       if (!window.matchMedia('(min-width: 1024px)').matches) return;
       const next = reviewLayout(workspace.clientWidth, workspace.clientHeight);
-      if (next.boardSize > 0) setReviewGeometry(previous => previous?.scale === next.scale ? previous : next);
+      if (next.boardSize > 0) setReviewGeometry(previous =>
+        previous?.scale === next.scale && previous.boardSize === next.boardSize ? previous : next
+      );
     };
     const observer = new ResizeObserver(measure);
     observer.observe(workspace);
