@@ -29,6 +29,18 @@ test('compact review places its upper label in the panel and keeps the Home fiel
   }
 });
 
+test('player names reserve space only for loaded games', () => {
+  const plain = reviewLayout(1366, 768, 584.47, 60.27);
+  const named = reviewLayout(1366, 768, 584.47, 60.27, false, true);
+  assert.equal(plain.topInset + inset, 60.27);
+  assert.ok(named.topInset >= plain.topInset);
+  assert.ok(named.topInset - named.topLabel >= REVIEW_TOP_CLEARANCE);
+  const compactPlain = reviewLayout(1194, 800, 572.5, 22.25, true);
+  const compactNamed = reviewLayout(1194, 800, 572.5, 22.25, true, true);
+  assert.equal(compactPlain.topInset + inset, 22.25);
+  assert.ok(compactNamed.topInset > compactPlain.topInset);
+});
+
 test('wide review preserves upper player label clearance', () => {
   const layout = reviewLayout(1660, 1080, 606.5, 205.25);
   assert.ok(layout.topInset - layout.topLabel >= REVIEW_TOP_CLEARANCE);
