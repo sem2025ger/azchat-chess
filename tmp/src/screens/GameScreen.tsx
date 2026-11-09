@@ -230,7 +230,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
       const homeTop = homeInset + (wide
         ? (height - homeFrame - 63) / 2
         : parseFloat(getComputedStyle(document.documentElement).fontSize) / 2);
-      const next = reviewLayout(workspace.clientWidth, height, homeFrame - 2 * homeInset, homeTop);
+      const compact = window.matchMedia('(max-width: 1279px)').matches;
+      const next = reviewLayout(workspace.clientWidth, height, homeFrame - 2 * homeInset, homeTop, compact);
       if (next.boardSize > 0) setReviewGeometry(previous =>
         previous?.scale === next.scale && previous.boardSize === next.boardSize &&
           previous.panelWidth === next.panelWidth && previous.topInset === next.topInset ? previous : next
@@ -1409,7 +1410,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Professional Sidebar Sidebar Tabs */}
       <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' ? "desktop-analysis-panel" : "animate-fade-in-right transition-all")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
-        {mode === 'review' && <h2 className="desktop-analysis-panel-title hidden lg:flex" aria-label={words.analysis}>{words.analysis}</h2>}
+        {mode === 'review' && <h2 className="desktop-analysis-panel-title hidden lg:flex">
+          <span>{words.analysis}</span>
+          <span className="desktop-analysis-compact-opponent" title={displayPlayerName(playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white)}>
+            <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-500", playerColor === 'w' ? "bg-neutral-950" : "bg-[#f5f2e8]")} />
+            <span className="truncate">{displayPlayerName(playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white)}</span>
+          </span>
+        </h2>}
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">
