@@ -82,6 +82,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
   const [loadedGameTitle, setLoadedGameTitle] = useState('');
   const [loadedGameDetails, setLoadedGameDetails] = useState<{ white: string; black: string; timeControl?: string } | null>(null);
+  const hasReviewPlayers = Boolean(loadedGameDetails && (loadedGameDetails.white.trim() || loadedGameDetails.black.trim()));
   const [editingPosition, setEditingPosition] = useState(false);
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1024px)');
@@ -231,7 +232,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
         ? (height - homeFrame - 63) / 2
         : parseFloat(getComputedStyle(document.documentElement).fontSize) / 2);
       const compact = window.matchMedia('(max-width: 1279px)').matches;
-      const next = reviewLayout(workspace.clientWidth, height, homeFrame - 2 * homeInset, homeTop, compact);
+      const next = reviewLayout(workspace.clientWidth, height, homeFrame - 2 * homeInset, homeTop, compact, hasReviewPlayers);
       if (next.boardSize > 0) setReviewGeometry(previous =>
         previous?.scale === next.scale && previous.boardSize === next.boardSize &&
           previous.panelWidth === next.panelWidth && previous.topInset === next.topInset ? previous : next
@@ -242,7 +243,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     window.addEventListener('resize', measure);
     measure();
     return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
-  }, [mode]);
+  }, [mode, hasReviewPlayers]);
 
   const playerFlag = profile?.countryCode
     ? countryCodeToFlag(profile.countryCode)
@@ -1199,8 +1200,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </header>
           )}
 
-          {/* Colour labels follow the board orientation; loaded games supply player names. */}
-          {mode === 'review' && (
+          {/* Player names are shown only for loaded games, never as generic colour labels. */}
+          {mode === 'review' && hasReviewPlayers && (
             <div className="desktop-analysis-player-top hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
               <div className="flex min-w-0 items-center gap-2">
                 <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-500", playerColor === 'w' ? "bg-neutral-950" : "bg-[#f5f2e8]")} />
@@ -1340,7 +1341,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
           </div>
 
-          {mode === 'review' && (
+          {mode === 'review' && hasReviewPlayers && (
             <div className="desktop-analysis-review-player-bottom hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
               <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-400", playerColor === 'w' ? "bg-[#f5f2e8]" : "bg-neutral-950")} />
               <span className="min-w-0 truncate font-semibold text-neutral-200" title={displayPlayerName(playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black)}>
@@ -1412,10 +1413,6 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
         {mode === 'review' && <h2 className="desktop-analysis-panel-title hidden lg:flex">
           <span>{words.analysis}</span>
-          <span className="desktop-analysis-compact-opponent" title={displayPlayerName(playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white)}>
-            <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-500", playerColor === 'w' ? "bg-neutral-950" : "bg-[#f5f2e8]")} />
-            <span className="truncate">{displayPlayerName(playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white)}</span>
-          </span>
         </h2>}
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
