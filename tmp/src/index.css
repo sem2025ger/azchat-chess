@@ -2120,6 +2120,9 @@ aside nav{padding-top:12px!important}
 @media (min-width:1024px) and (max-width:1279px) {
   .desktop-analysis-screen {padding-right:calc(20px * var(--review-scale, 1))!important;}
   .desktop-analysis-screen .desktop-analysis-player-top {display:none!important;}
+  .desktop-analysis-screen[data-review-players="true"] .desktop-analysis-player-top {
+    display:flex!important;
+  }
   #root .desktop-analysis-screen h2.desktop-analysis-panel-title {
     justify-content:space-between;
     gap:12px;
