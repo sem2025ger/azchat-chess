@@ -328,13 +328,15 @@ try {
     const br=badge.getBoundingClientRect();
     return {lineHeights:lines.map(el=>el.getBoundingClientRect().height),
       fontSize:parseFloat(getComputedStyle(text).fontSize),topInset:br.top-row.top,
-      bottomInset:row.bottom-br.bottom,title:document.querySelector('.desktop-analysis-panel-title')?.textContent?.trim(),
+      bottomInset:row.bottom-br.bottom,title:document.querySelector('.desktop-analysis-panel-title')?.firstElementChild?.textContent?.trim(),
+      wideOpponentHidden:getComputedStyle(document.querySelector('.desktop-analysis-compact-opponent')).display==='none',
       width:document.querySelector('.desktop-analysis-panel')?.getBoundingClientRect().width};
   })()`);
   assert.deepEqual(ownerGeometry.lineHeights.map(Math.round),[46,46,46],JSON.stringify(ownerGeometry));
   assert.ok(ownerGeometry.fontSize>=14 && ownerGeometry.fontSize<=14.5,JSON.stringify(ownerGeometry));
   assert.ok(ownerGeometry.topInset>=4 && ownerGeometry.bottomInset>=4,JSON.stringify(ownerGeometry));
   assert.equal(ownerGeometry.title,'Анализ');
+  assert.equal(ownerGeometry.wideOpponentHidden,true,'Compact caption must remain hidden on wide desktop');
   console.log('PASS owner final desktop 1920x880 geometry '+JSON.stringify(ownerGeometry));
 
   // Lobby layout is independent of game/analysis layout and needs no account.
