@@ -1218,7 +1218,7 @@
     column-gap: var(--review-column-gap, 51px) !important;
     row-gap: 12px;
     max-width: none !important;
-    padding: calc(10px * var(--review-scale, 1)) calc(55px * var(--review-scale, 1)) calc(38px * var(--review-scale, 1)) calc(66px * var(--review-scale, 1)) !important;
+    padding: calc(10px * var(--review-scale, 1)) calc(55px * var(--review-scale, 1)) calc(38px * var(--review-scale, 1)) calc(40px * var(--review-scale, 1)) !important;
     margin: 0 !important;
     height: 100% !important;
     min-height: 0 !important;
@@ -1661,10 +1661,12 @@
     overflow:hidden!important;
     background:linear-gradient(158deg,#171b1b 0%,#141718 54%,#0e1112 100%)!important;
     border:2px solid rgba(198,166,108,.50)!important;
-    box-shadow:inset 0 1px 0 rgba(248,223,171,.11),
-      inset 0 0 0 1px rgba(176,139,75,.10),
-      0 16px 38px rgba(0,0,0,.44)!important;
     isolation:isolate;
+  }
+  .desktop-analysis-screen .desktop-analysis-board-frame,
+  .desktop-analysis-screen > .desktop-analysis-panel {
+    box-shadow: inset 0 0 0 1px rgba(212, 175, 55, .22),
+      0 12px 30px -12px rgba(0, 0, 0, .64) !important;
   }
   .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {
     position:relative;

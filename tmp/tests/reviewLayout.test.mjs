@@ -46,7 +46,7 @@ test('desktop panel shares the board height and the top player-row offset', () =
   // The approved geometry must win over lg:gap-3 and xl:px-6 / lg:pb-1.
   const workspace = geometry.match(/\.desktop-analysis-screen\s*\{([^}]+)\}/)[1];
   assert.match(workspace, /column-gap:\s*var\(--review-column-gap,\s*51px\)\s*!important/);
-  assert.match(workspace, /padding:[^;]+!important/);
+  assert.match(workspace, /padding:[^;]+calc\(40px\s*\*\s*var\(--review-scale,\s*1\)\)\s*!important/);
   assert.match(workspace, /max-width:\s*none\s*!important/);
   assert.match(geometry, /:has\(\.desktop-analysis-player-top\)\s*>\s*\.desktop-analysis-panel\s*\{\s*margin-top:\s*calc\(36px\s*\*\s*var\(--review-scale,\s*1\)\)\s*!important;/);
   const panel = geometry.match(/\.desktop-analysis-screen > \.desktop-analysis-panel\s*\{([^}]+)\}/)[1];
