@@ -108,7 +108,7 @@ export default function SettingsScreen() {
   };
 
   const boardThemes = BOARD_THEME_DETAILS;
-  const pieceStyles = PIECE_STYLES;
+  const pieceStyles = PIECE_STYLES.filter((style) => style.id === 'neo' || style.id === 'tournament');
 
   const bgThemes: { id: BackgroundTheme; name: string; class: string }[] = [
     { id: 'Void Black', name: 'Void Black', class: 'bg-[#161512]' },

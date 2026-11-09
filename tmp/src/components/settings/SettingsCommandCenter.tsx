@@ -114,7 +114,7 @@ export default function SettingsCommandCenter({ language }: { language: string }
 
   const entries = useMemo<Entry[]>(() => [
     ...BOARD_THEME_DETAILS.map(x => ({ kind: 'board' as const, label: x.name, value: x.id })),
-    ...PIECE_STYLES.map(x => ({ kind: 'pieces' as const, label: x.name, value: x.id })),
+    ...PIECE_STYLES.filter(x => x.id === 'neo' || x.id === 'tournament').map(x => ({ kind: 'pieces' as const, label: x.name, value: x.id })),
     ...SOUNDS.map(x => ({ kind: 'sound' as const, label: x, value: x })),
     ...BACKGROUNDS.map(x => ({ kind: 'background' as const, label: x, value: x })),
   ], []);

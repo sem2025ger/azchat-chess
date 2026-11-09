@@ -11,14 +11,15 @@ test('settings presents exactly Merida Flat and Merida Classic, including preset
   const center = read('../src/components/settings/SettingsCommandCenter.tsx');
   const logic = read('../src/components/settings/settingsLogic.ts');
   const options = themes.split('export const PIECE_STYLES')[1]?.split('export const BOARD_THEME_DETAILS')[0] ?? '';
-  const ids = [...options.matchAll(/id: '([^']+)'/g)].map(match => match[1]);
-  assert.deepEqual(ids, ['neo', 'tournament']);
+  const libraryIds = [...options.matchAll(/id: '([^']+)'/g)].map(match => match[1]);
+  assert.deepEqual(libraryIds, ['classic', 'cburnett-classic', 'neo', 'tournament'], 'retain existing assets for non-settings boards');
+  const ids = ['neo', 'tournament'];
   assert.match(options, /Merida Flat/);
   assert.match(options, /Merida Classic/);
   assert.match(context, /DEFAULT_PIECE_THEME: PieceTheme = 'neo'/);
-  assert.match(context, /VALID_PIECE_THEMES = new Set<string>\(PIECE_STYLES\.map/);
-  assert.match(settings, /const pieceStyles = PIECE_STYLES/);
-  assert.match(center, /\.\.\.PIECE_STYLES\.map/);
+  assert.match(context, /VALID_PIECE_THEMES = new Set<string>\(PIECE_STYLES\.filter\(/);
+  assert.match(settings, /const pieceStyles = PIECE_STYLES\.filter\(\(style\) => style\.id === 'neo' \|\| style\.id === 'tournament'\)/);
+  assert.match(center, /\.\.\.PIECE_STYLES\.filter\(x => x\.id === 'neo' \|\| x\.id === 'tournament'\)\.map/);
   assert.match(settings, /mobilePiecePreviewSrc\(pieceTheme, 'wK'\)/);
   for (const source of [
     settings.split('const presets = [')[1]?.split('];')[0] ?? '',
