@@ -27,10 +27,19 @@ test('unified desktop Arena is default-off, preserves the mobile layout and keep
   assert.match(home, /\{t\('home\.playChessNow'\)\}/);
 });
 
-test('Chess Arena uses the approved moderate ink-blue surface at every breakpoint and in either card mode', () => {
+test('Chess Arena keeps its default surface and overrides it only for the unified desktop card', () => {
   assert.match(css, /\.mobile-home-arena\s*\{[^}]*background:\s*linear-gradient\(165deg, #222743 0%, #1a1f38 55%, #14182e 100%\);/);
-  for (const rule of home.matchAll(/\.home-screen-root \.(?:mobile|desktop)-home-arena(?:\.home-unified-card)?\s*\{([^}]+)\}/g)) {
+  for (const rule of home.matchAll(/\.home-screen-root \.(?:mobile|desktop)-home-arena\s*\{([^}]+)\}/g)) {
     assert.doesNotMatch(rule[1], /background(?:-color|-image)?\s*:/);
   }
+  const overrides = [...home.matchAll(/\.home-screen-root \.desktop-home-arena\.home-unified-card\s*\{[^}]+\}/g)];
+  assert.equal(overrides.length, 1);
+  assert.equal(overrides[0][0], `.home-screen-root .desktop-home-arena.home-unified-card {
+            background:
+              radial-gradient(120% 70% at 30% 0%, rgba(205,215,230,0.07) 0%, rgba(205,215,230,0) 55%),
+              linear-gradient(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%);
+          }`);
+  const desktopStyles = home.lastIndexOf('@media (min-width: 1280px)', overrides[0].index);
+  assert.ok(desktopStyles > home.lastIndexOf('@media (max-width:', overrides[0].index));
   assert.doesNotMatch(home.match(/className=\{`mobile-home-arena[^\n]+/)[0], /\bbg-/);
 });

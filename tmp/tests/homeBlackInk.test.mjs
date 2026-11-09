@@ -49,6 +49,6 @@ test('opt-in desktop graphite figures target exactly three styles, never CBURNET
   }
   assert.doesNotMatch(home, /data-home-graphite-set="cburnett-classic"/);
   assert.match(home, /@media \(min-width: 1280px\) \{\s*\.home-screen-root \.home-board img\[data-home-chesscom-piece="w"\]/);
-  assert.match(home, /filter: grayscale\(1\) contrast\(\.75\) brightness\(\.90\)/);
-  assert.match(home, /filter: grayscale\(1\) contrast\(\.92\) brightness\(\.90\)/);
+  assert.match(home, /filter: grayscale\(1\) contrast\(\.83\) brightness\(\.90\) drop-shadow\(0 -1px 1px rgba\(250,250,245,\.12\)\)/);
+  assert.match(home, /filter: grayscale\(1\) contrast\(1\.02\) brightness\(\.90\) drop-shadow\(0 -1px 1px rgba\(250,250,245,\.12\)\)/);
 });

@@ -181,6 +181,11 @@ export default function HomeScreen() {
               inset 0 -18px 38px rgba(0, 0, 0, 0.42);
             transition: border-color 280ms ease, box-shadow 280ms ease;
           }
+          .home-screen-root .desktop-home-arena.home-unified-card {
+            background:
+              radial-gradient(120% 70% at 30% 0%, rgba(205,215,230,0.07) 0%, rgba(205,215,230,0) 55%),
+              linear-gradient(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%);
+          }
           .home-screen-root .desktop-home-arena::before {
             border-color: rgba(209, 168, 96, 0.34);
             box-shadow: inset 0 0 14px rgba(193, 144, 65, 0.035), 0 0 10px rgba(160, 108, 46, 0.07);
