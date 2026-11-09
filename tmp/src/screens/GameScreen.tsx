@@ -1262,7 +1262,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] max-md:!aspect-[50/51] border-b-0 md:w-full md:border-b-[8px] lg:!w-full lg:!max-w-[min(630px,calc(100dvh-120px))] lg:!flex-[0_1_auto]",
               mode !== 'review' && "transition-[width] duration-300"
             )}>
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
+              <div className={cx("absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10", mode === 'review' && "lg:hidden")} />
               
               {gameOverMessage ? (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">

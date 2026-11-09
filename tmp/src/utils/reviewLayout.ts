@@ -1,4 +1,5 @@
 export const REVIEW_BOARD_GUTTER = 16;
+export const REVIEW_TOP_CLEARANCE = 16;
 
 /** Match Home's playing field while keeping the side panel and both player labels visible. */
 export function reviewLayout(width: number, height: number, homeField: number, homeTop: number) {
@@ -9,7 +10,7 @@ export function reviewLayout(width: number, height: number, homeField: number, h
   const columnGap = 19 * scale;
   const preferredPanelWidth = Math.max(335, 630 * scale);
   const topLabel = Math.max(18, 24 * scale);
-  const minimumTopInset = Math.max(0, topLabel - REVIEW_BOARD_GUTTER);
+  const minimumTopInset = topLabel + REVIEW_TOP_CLEARANCE;
   const bottomSpace = 36 * scale + 12;
   const boardSize = Math.max(0, Math.min(
     homeField + 2 * boardInset,

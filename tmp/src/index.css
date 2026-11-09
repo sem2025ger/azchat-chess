@@ -1279,6 +1279,8 @@
     aspect-ratio: 1;
     margin: 0 !important;
     border-bottom-width: 0;
+    overflow: visible;
+    box-shadow: none;
     flex: 0 0 var(--review-board-size, auto) !important;
   }
   .desktop-analysis-screen .desktop-analysis-review-player-bottom {
@@ -1291,7 +1293,7 @@
     display: flex;
     position: absolute;
     inset-inline: 0;
-    top: calc(-1 * min(var(--review-top-inset, 0px), var(--review-top-label, 24px)));
+    top: calc(-1 * var(--review-top-label, 24px));
     height: var(--review-top-label, 24px);
     padding-left: calc(54px * var(--review-scale, 1));
     z-index: 20;
@@ -1311,17 +1313,22 @@
     height: 100%;
     padding: var(--analysis-board-gutter) !important;
     border-width: 0 !important;
+    overflow: visible;
+    background: transparent;
+    box-shadow: none;
   }
   .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) .aspect-square.border {
-    border-color: #a28e67;
+    border-color: #746951;
+    box-shadow: none;
   }
   .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) > [data-coordinate-axis="rank"] {
     inset-block: calc(var(--analysis-board-gutter) + 1px);
-    width: var(--analysis-board-gutter);
+    width: calc(var(--analysis-board-gutter) - 4px);
   }
   .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) > [data-coordinate-axis="file"] {
     inset-inline: calc(var(--analysis-board-gutter) + 1px);
-    height: var(--analysis-board-gutter);
+    bottom: -2px;
+    height: calc(var(--analysis-board-gutter) - 3px);
   }
   .desktop-analysis-screen .desktop-analysis-evaluation { translate: none; padding: 0; width: calc(24px * var(--review-scale, 1)); flex-shrink: 0; }
   .desktop-analysis-screen .desktop-analysis-stockfish { height: auto; max-height: 58%; overflow-y: auto; flex: 0 1 auto; }
@@ -1706,7 +1713,6 @@
     border:2px solid rgba(198,166,108,.50)!important;
     isolation:isolate;
   }
-  .desktop-analysis-screen .desktop-analysis-board-frame,
   .desktop-analysis-screen > .desktop-analysis-panel {
     box-shadow: inset 0 0 0 1px rgba(212, 175, 55, .22),
       0 12px 30px -12px rgba(0, 0, 0, .64) !important;
