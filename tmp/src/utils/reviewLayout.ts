@@ -2,7 +2,7 @@ export const REVIEW_BOARD_GUTTER = 16;
 export const REVIEW_TOP_CLEARANCE = 16;
 
 /** Match Home's field and height. Only loaded game names need extra top clearance. */
-export function reviewLayout(width: number, height: number, homeField: number, homeTop: number, compact = false, hasPlayerNames = false) {
+export function reviewLayout(width: number, height: number, homeField: number, homeTop: number, compact = false, hasPlayerNames = false, homeFieldLeft?: number) {
   const scale = Math.max(0, Math.min(1, width / 1560, height / 880));
   const boardInset = REVIEW_BOARD_GUTTER + 1; // The playing field has a one-pixel border.
   const sideInsets = (40 + (compact ? 20 : 55)) * scale;
@@ -21,5 +21,13 @@ export function reviewLayout(width: number, height: number, homeField: number, h
   const topInset = preferredTopInset;
   const boardColumn = boardSize + evaluationSpace;
   const panelWidth = Math.min(preferredPanelWidth, width - sideInsets - boardColumn - columnGap);
-  return { scale, boardSize, boardColumn, panelWidth, columnGap, topLabel, topInset };
+  // Keep the entire board/panel group as close as space allows to Home's field x.
+  // On narrow desktop windows the panel requires a minimum width, so clamp safely.
+  const rightInset = (compact ? 20 : 55) * scale;
+  const maxLeftInset = Math.max(0, width - boardColumn - columnGap - panelWidth - rightInset);
+  const boardFieldOffset = 54 * scale + REVIEW_BOARD_GUTTER;
+  const leftInset = homeFieldLeft === undefined
+    ? 40 * scale
+    : Math.max(0, Math.min(maxLeftInset, homeFieldLeft - boardFieldOffset));
+  return { scale, boardSize, boardColumn, panelWidth, columnGap, topLabel, topInset, leftInset };
 }
