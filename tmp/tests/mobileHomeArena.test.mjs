@@ -27,8 +27,8 @@ test('unified desktop Arena is default-off, preserves the mobile layout and keep
   assert.match(home, /\{t\('home\.playChessNow'\)\}/);
 });
 
-test('Chess Arena uses the approved graphite-blue surface at every breakpoint and in either card mode', () => {
-  assert.match(css, /\.mobile-home-arena\s*\{[^}]*background:\s*#303B47\s*;/);
+test('Chess Arena uses the approved moderate ink-blue surface at every breakpoint and in either card mode', () => {
+  assert.match(css, /\.mobile-home-arena\s*\{[^}]*background:\s*linear-gradient\(165deg, #222743 0%, #1a1f38 55%, #14182e 100%\);/);
   for (const rule of home.matchAll(/\.home-screen-root \.(?:mobile|desktop)-home-arena(?:\.home-unified-card)?\s*\{([^}]+)\}/g)) {
     assert.doesNotMatch(rule[1], /background(?:-color|-image)?\s*:/);
   }
