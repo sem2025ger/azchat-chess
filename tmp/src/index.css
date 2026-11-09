@@ -44,14 +44,6 @@
  .home-screen-root .home-dashboard-column{margin:0;width:100%;max-width:420px;min-width:0}
 }
 
-/* Home board must not animate into place during route changes. */
-@media (min-width:1024px) {
-  .home-screen-root,
-  .home-screen-root .home-board-frame {
-    transition: none !important;
-  }
-}
-
 /* Native route scroll only; no blur/compositing effects on reading layers. */
 [data-reading-route] [data-route-scroll]{scroll-behavior:auto;overscroll-behavior-y:auto;backdrop-filter:none}
 
@@ -1281,7 +1273,7 @@
     flex: none;
     align-items: stretch;
     padding: 0;
-    gap: calc(var(--review-evaluation-gap, 30px) * var(--review-scale, 1));
+    gap: calc(30px * var(--review-scale, 1));
   }
   .desktop-analysis-screen .desktop-analysis-board-frame {
     width: var(--review-board-size, 100%) !important;
@@ -2128,8 +2120,8 @@ aside nav{padding-top:12px!important}
    Keep both desktop routes 12px smaller and preserve all bottom move navigation. */
 @media (min-width:1024px) {
   .desktop-analysis-screen > .desktop-analysis-panel {
-    margin-top:calc(var(--review-board-gutter, 16px) + 1px)!important;
-    height:calc(var(--review-board-size, 580px) - 2 * (var(--review-board-gutter, 16px) + 1px))!important;
+    margin-top:var(--review-board-gutter, 16px)!important;
+    height:calc(var(--review-board-size, 580px) - 2 * var(--review-board-gutter, 16px))!important;
   }
   .desktop-analysis-screen .desktop-analysis-compact-opponent {display:none;}
 }
