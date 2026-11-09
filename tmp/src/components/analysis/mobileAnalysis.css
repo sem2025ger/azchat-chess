@@ -50,7 +50,7 @@
   .desktop-analysis-screen .desktop-analysis-board-frame {
     width: min(100%, max(208px, calc(100dvh - 232px - var(--mobile-app-nav-height)))) !important;
     aspect-ratio: 1 / 1 !important; flex: none !important; border: 0;
-    border-radius: 3px; box-shadow: 0 12px 28px -20px #000;
+    border-radius: 3px;
   }
   .desktop-analysis-screen .desktop-analysis-board-frame .desktop-analysis-main-board .aspect-square { aspect-ratio: 1 / 1 !important; }
   .desktop-analysis-screen [data-mobile-move-navigation] { margin: 6px 8px 0; padding: 3px; gap: 6px; border-radius: 14px; background: #0e1312; }

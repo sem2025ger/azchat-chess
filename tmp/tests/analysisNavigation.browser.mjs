@@ -110,6 +110,12 @@ try {
     return { top: first.top, width: last.right - first.left, height: last.bottom - first.top };
   })()`);
   const homeField = await fieldBounds('.home-board-frame');
+  assert.deepEqual(await evaluate(`(() => {
+    const arena = document.querySelector('.desktop-home-arena');
+    const style = getComputedStyle(arena);
+    return [style.outlineWidth, style.outlineColor, style.boxShadow,
+      getComputedStyle(arena, '::before').display, getComputedStyle(arena, '::after').display];
+  })()`), ['1px', 'rgba(174, 126, 100, 0.65)', 'none', 'none', 'none']);
   const navigate = async (selector, readySelector) => {
     const started = await evaluate(`(() => {
       const link = document.querySelector(${JSON.stringify(selector)});
@@ -145,6 +151,9 @@ try {
   assert.equal(warm.url, '/game');
   await waitFor("!!document.querySelector('.desktop-analysis-screen').style.getPropertyValue('--review-board-size')");
   const reviewField = await fieldBounds('.desktop-analysis-main-board');
+  for (const selector of ['.desktop-analysis-board-frame', '.desktop-analysis-panel']) {
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector(${JSON.stringify(selector)})).boxShadow`), 'none');
+  }
   for (const dimension of ['top', 'width', 'height']) {
     assert.ok(Math.abs(reviewField[dimension] - homeField[dimension]) < 1,
       dimension + ' must match Home: ' + JSON.stringify({ homeField, reviewField }));

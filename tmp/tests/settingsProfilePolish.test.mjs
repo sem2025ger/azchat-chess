@@ -102,15 +102,44 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
       assert.ok(Math.abs(geom.previewHeight-geom.leftHeight)<=2,'Preview and options heights differ '+JSON.stringify(geom));
       assert.ok(Math.abs(geom.boardHeight-geom.boardWidth)<=2&&geom.boardWithinStage&&geom.boardWidth>=geom.previewHeight*.60,'preview chessboard clipped or not square '+JSON.stringify(geom));
       assert.ok(geom.documentOverflow<=1,'Settings page scroll '+JSON.stringify(geom));
+      const controls = await evaluate(`(() => {
+        const panel = document.querySelector('.settings-preview-column > div');
+        const bounds = panel.getBoundingClientRect();
+        const inside = control => {
+          const rect = control.getBoundingClientRect();
+          return Math.min(rect.left - bounds.left, bounds.right - rect.right,
+            rect.top - bounds.top, bounds.bottom - rect.bottom) >= 6;
+        };
+        const refresh = panel.querySelector('.settings-preview-refresh');
+        const restore = panel.querySelector('.settings-restore-defaults');
+        return {
+          refreshInside: inside(refresh),
+          restoreInside: inside(restore),
+          refreshColor: getComputedStyle(refresh).color,
+          frameColor: getComputedStyle(panel).outlineColor,
+        };
+      })()`);
+      assert.deepEqual(controls, {
+        refreshInside: true, restoreInside: true, refreshColor: 'rgb(197, 163, 142)',
+        frameColor: 'rgba(174, 126, 100, 0.65)',
+      }, 'Preview controls and bronze accents at ' + width + 'x' + height);
      }
     }
     if(width===1366||width===1920&&height===880||width===390){
-     // The owner explicitly changed the piece-style picker in this QA branch.
-     // Mask ONLY its mobile entry before pixel comparison; all other mobile pixels must still match baseline.
-     if(width===390) await evaluate("(()=>{const buttons=document.querySelectorAll('.settings-mobile-view .settings-mobile-card button');const piece=buttons[1];if(!piece||!piece.textContent.includes('Шахматные фигуры'))throw Error('Missing Settings piece picker');piece.style.visibility='hidden';return true})()");
+     // Normalize the approved 1px frame change and piece-picker entry only.
+     if(width===390) await evaluate(`(() => {
+       const piece = document.querySelectorAll('.settings-mobile-view .settings-mobile-card button')[1];
+       if (!piece?.textContent.includes('Шахматные фигуры')) throw Error('Missing Settings piece picker');
+       piece.style.visibility = 'hidden';
+       for (const frame of document.querySelectorAll('.settings-mobile-view :is(.settings-animated-border, .settings-section-frame)')) {
+         frame.style.background = 'transparent';
+         frame.style.outline = 'none';
+       }
+       return true;
+     })()`);
      const image=(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
      if(capture)await writeFile(join(capture,phase+'-settings-'+width+'x'+height+'.png'),Buffer.from(image,'base64'));
-     if(width===390){if(phase==='before')baselineMobile=image;else assert.equal(image,baselineMobile,'mobile Settings differs outside the approved piece picker');}
+     if(width===390){if(phase==='before')baselineMobile=image;else assert.equal(image,baselineMobile,'mobile Settings differs outside the approved piece picker and frames');}
     }
     if(width>=1024||width===390){
      await evaluate("window.qaNavigate('/profile')");
