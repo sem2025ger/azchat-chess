@@ -232,7 +232,15 @@ export default function GameScreen({ mode }: GameScreenProps) {
         ? (height - homeFrame - 63) / 2
         : parseFloat(getComputedStyle(document.documentElement).fontSize) / 2);
       const compact = window.matchMedia('(max-width: 1279px)').matches;
-      const next = reviewLayout(workspace.clientWidth, height, homeFrame - 2 * homeInset, homeTop, compact, hasReviewPlayers);
+      // Reproduce Home's centered desktop grid position, not only its board width.
+      const gridWidth = Math.min(workspace.clientWidth, 85 * parseFloat(getComputedStyle(document.documentElement).fontSize));
+      const gridGap = Math.min(32, Math.max(24, window.innerWidth * .022));
+      const firstTrack = .6 * (gridWidth - 56 - gridGap);
+      const homeColumn = Math.min(622, window.innerHeight - 112, firstTrack - 12);
+      const homeFieldLeft = wide
+        ? (workspace.clientWidth - gridWidth) / 2 + 28 + (firstTrack - homeColumn) / 2 + 12
+        : undefined;
+      const next = reviewLayout(workspace.clientWidth, height, homeFrame - 2 * homeInset, homeTop, compact, hasReviewPlayers, homeFieldLeft);
       if (next.boardSize > 0) setReviewGeometry(previous =>
         previous?.scale === next.scale && previous.boardSize === next.boardSize &&
           previous.panelWidth === next.panelWidth && previous.topInset === next.topInset ? previous : next
@@ -981,6 +989,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       "--review-board-gutter": `${REVIEW_BOARD_GUTTER}px`,
       "--review-top-label": `${reviewGeometry.topLabel}px`,
       "--review-top-inset": `${reviewGeometry.topInset}px`,
+      "--review-left-inset": `${reviewGeometry.leftInset}px`,
     } as CSSProperties : undefined} data-review-players={mode === 'review' && hasReviewPlayers ? 'true' : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
 
       {mode === 'review' && <>
