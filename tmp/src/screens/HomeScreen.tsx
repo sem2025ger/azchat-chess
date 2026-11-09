@@ -381,7 +381,7 @@ export default function HomeScreen() {
             filter: contrast(.8) brightness(1.08) !important;
           }
           .home-screen-root .home-board img[data-home-chesscom-piece="b"][alt="bP"] {
-            filter: grayscale(1) contrast(.42) brightness(.61) !important;
+            filter: grayscale(1) contrast(.42) brightness(.61) brightness(1.10) !important;
           }
           /* Match non-pawn black figures to the existing satin graphite pawns.
              Preserve the original piece paths and highlights; never affect CBURNETT. */
