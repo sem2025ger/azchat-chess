@@ -6,9 +6,7 @@ export function reviewLayout(width: number, height: number, homeField: number, h
   const scale = Math.max(0, Math.min(1, width / 1560, height / 880));
   const boardInset = REVIEW_BOARD_GUTTER + 1; // The playing field has a one-pixel border.
   const sideInsets = (40 + (compact ? 20 : 55)) * scale;
-  // A tighter desktop evaluation gutter lets the Analysis field share Home's x-coordinate.
-  const evaluationGap = compact ? 30 : 15;
-  const evaluationSpace = (24 + evaluationGap) * scale;
+  const evaluationSpace = 54 * scale;
   const columnGap = 19 * scale;
   const preferredPanelWidth = Math.max(335, 630 * scale);
   const topLabel = Math.max(18, 24 * scale);
@@ -27,9 +25,9 @@ export function reviewLayout(width: number, height: number, homeField: number, h
   // On narrow desktop windows the panel requires a minimum width, so clamp safely.
   const rightInset = (compact ? 20 : 55) * scale;
   const maxLeftInset = Math.max(0, width - boardColumn - columnGap - panelWidth - rightInset);
-  const boardFieldOffset = evaluationSpace + REVIEW_BOARD_GUTTER;
+  const boardFieldOffset = 54 * scale + REVIEW_BOARD_GUTTER;
   const leftInset = homeFieldLeft === undefined
     ? 40 * scale
     : Math.max(0, Math.min(maxLeftInset, homeFieldLeft - boardFieldOffset));
-  return { scale, boardSize, boardColumn, panelWidth, columnGap, topLabel, topInset, leftInset, evaluationGap };
+  return { scale, boardSize, boardColumn, panelWidth, columnGap, topLabel, topInset, leftInset };
 }
