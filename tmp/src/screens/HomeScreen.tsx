@@ -94,10 +94,6 @@ export default function HomeScreen() {
             border: 1px solid rgba(221, 184, 110, .5);
             border-bottom: 1px solid rgba(221, 184, 110, .3);
             border-radius: 24px;
-            background:
-              radial-gradient(ellipse at 5% 0%, rgba(230, 180, 101, .14), transparent 42%),
-              radial-gradient(ellipse at 96% 100%, rgba(117, 122, 169, .10), transparent 44%),
-              linear-gradient(130deg, #20201e 0%, #13161a 47%, #0c1116 100%);
             box-shadow: 0 15px 28px -18px rgba(0,0,0,.85),
               0 0 0 1px rgba(176, 142, 85, .11),
               inset 0 1px 0 rgba(255, 234, 182, .17),
@@ -178,23 +174,12 @@ export default function HomeScreen() {
             padding: 30px 28px;
             gap: 24px;
             border: 1px solid rgba(200, 157, 89, 0.58);
-            /* Fine, translucent mineral grain over the approved obsidian palette.
-               Keep the underlying colors and shape unchanged; desktop only. */
-            background:
-              url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.73' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.72 0 0 0 0 0.61 0 0 0 0 0.47 0.18 0 0 0 -0.055'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23grain)'/%3E%3C/svg%3E") center / 180px 180px repeat,
-              radial-gradient(ellipse at 22% 6%, rgba(119, 78, 31, 0.14), transparent 63%),
-              radial-gradient(ellipse at 86% 90%, rgba(92, 56, 24, 0.09), transparent 60%),
-              repeating-linear-gradient(132deg, rgba(220, 180, 113, 0.009) 0px, transparent 2px, transparent 7px),
-              linear-gradient(138deg, #080807 0%, #14110E 38%, #110F0D 68%, #070706 100%);
             box-shadow:
               0 24px 48px -22px rgba(0, 0, 0, 0.88),
               0 0 14px rgba(168, 113, 49, 0.11),
               inset 0 1px 0 rgba(222, 186, 117, 0.14),
               inset 0 -18px 38px rgba(0, 0, 0, 0.42);
             transition: border-color 280ms ease, box-shadow 280ms ease;
-          }
-          .home-screen-root .desktop-home-arena.home-unified-card {
-            background: linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);
           }
           .home-screen-root .desktop-home-arena::before {
             border-color: rgba(209, 168, 96, 0.34);
@@ -423,7 +408,7 @@ export default function HomeScreen() {
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className={`mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 max-md:gap-0 md:gap-4 bg-[#121212]/98 p-3 max-md:py-5 max-md:px-4 md:p-6 rounded-[2rem] max-md:rounded-[1.75rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]${homeUnifiedCard ? " home-unified-card" : ""}`}>
+          <div className={`mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 max-md:gap-0 md:gap-4 p-3 max-md:py-5 max-md:px-4 md:p-6 rounded-[2rem] max-md:rounded-[1.75rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]${homeUnifiedCard ? " home-unified-card" : ""}`}>
 
 
           {homeUnifiedCard && (

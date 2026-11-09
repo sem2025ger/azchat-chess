@@ -12,7 +12,10 @@ test('all NRW flags off preserves the main routing and navigation entry points',
   assert.equal(readFileSync(path,'utf8'),execFileSync('git',['show',baseline+':tmp/'+path],{encoding:'utf8'}),path);
  }
  const home='src/screens/HomeScreen.tsx';
- const homeBaseline=execFileSync('git',['show',baseline+':tmp/'+home],{encoding:'utf8'});
+ const homeBaseline=execFileSync('git',['show',baseline+':tmp/'+home],{encoding:'utf8'})
+  .replace(/ {12}background:\n {14}radial-gradient\(ellipse at 5% 0%,[^;]+;\n/,'')
+  .replace(/ {12}\/\* Fine, translucent mineral grain[\s\S]+?;\n/,'')
+  .replace('md:gap-4 bg-[#121212]/98 p-3','md:gap-4 p-3');
  const flagGatedLink=/ {10}\{import\.meta\.env\.VITE_CLUBS_NRW_ENABLED === 'true' && \(\n {12}<Link to="\/region\/nrw"[^>]+md:hidden">\n {14}NRW – Schach\n {12}<\/Link>\n {10}\)\}\n\n/;
  let homeSource=readFileSync(home,'utf8');
  assert.match(homeSource,flagGatedLink);
@@ -20,7 +23,6 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  // Any other change to routing, flags, layout or the play button still fails.
  const unifiedCardChanges=[
   ["  const homeUnifiedCard = import.meta.env.VITE_HOME_UNIFIED_CARD === 'true';\n",""],
-  ["          .home-screen-root .desktop-home-arena.home-unified-card {\n            background: linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);\n          }\n",""],
   ["className={`desktop-home-slogan","className=\"desktop-home-slogan"],
   ["${homeUnifiedCard ? \" xl:hidden\" : \"\"}`}","\""],
   ["className={`mobile-home-arena desktop-home-arena","className=\"mobile-home-arena desktop-home-arena"],

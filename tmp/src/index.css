@@ -587,7 +587,7 @@
   .mobile-home-arena {
     isolation: isolate;
     border-color: rgba(223, 176, 98, 0.28);
-    background: linear-gradient(145deg, #201b18, #15151d 60%, #111b1b);
+    background: #303B47;
   }
 
   .mobile-home-arena::before,
