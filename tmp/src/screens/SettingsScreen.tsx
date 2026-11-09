@@ -127,9 +127,9 @@ export default function SettingsScreen() {
   const premiumBackground = specialThemesEnabled ? premiumInterfaceThemes.find(theme => theme.id === background) : undefined;
 
   const presets = [
-    { name: 'Classical Pro', board: 'Classic Green', pieces: 'classic' },
-    { name: 'Modern Dark', board: 'Premium Gold', pieces: 'cburnett-classic' },
-    { name: 'Nature Wood', board: 'Classic Wood', pieces: 'classic' },
+    { name: 'Classical Pro', board: 'Classic Green', pieces: 'tournament' },
+    { name: 'Modern Dark', board: 'Premium Gold', pieces: 'neo' },
+    { name: 'Nature Wood', board: 'Classic Wood', pieces: 'tournament' },
   ];
 
   const mobileCopy: Record<string, { presets: string; soundGame: string; inPlay: string; confirm: string; hint: string }> = {
@@ -316,7 +316,7 @@ export default function SettingsScreen() {
                     title={t('settings.pieceStyles')} 
                     value={pieceTheme.toUpperCase()} 
                     onClick={() => setActiveSubView('pieces')} 
-                    preview={<img src={pieceTheme === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/wK.svg` : `/pieces/${pieceTheme}/wK.svg`} alt="Piece" className="w-6 h-6 object-contain" />}
+                    preview={<img src={mobilePiecePreviewSrc(pieceTheme, 'wK')} alt="Piece" className="w-6 h-6 object-contain" />}
                   />
                   <HubLink 
                     icon={<LayoutIcon size={18} />} 

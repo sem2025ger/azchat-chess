@@ -15,8 +15,6 @@ export const BOARD_THEMES: Record<BoardTheme, { light: string; dark: string }> =
 };
 
 export const PIECE_STYLES: { id: PieceTheme; name: string; preview: string }[] = [
-  { id: 'classic', name: 'Classic Staunton', preview: 'wK' },
-  { id: 'cburnett-classic', name: 'CBURNETT Classic', preview: 'wK' },
   { id: 'neo', name: 'Merida Flat', preview: 'wK' },
   { id: 'tournament', name: 'Merida Classic', preview: 'wK' },
 ];
