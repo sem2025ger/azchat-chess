@@ -1248,7 +1248,7 @@
     column-gap: var(--review-column-gap, 51px) !important;
     row-gap: 12px;
     max-width: none !important;
-    padding: var(--review-top-inset, 0px) calc(55px * var(--review-scale, 1)) 0 calc(40px * var(--review-scale, 1)) !important;
+    padding: var(--review-top-inset, 0px) calc(55px * var(--review-scale, 1)) 0 var(--review-left-inset, calc(40px * var(--review-scale, 1))) !important;
     margin: 0 !important;
     height: 100% !important;
     min-height: 0 !important;
@@ -2112,8 +2112,8 @@ aside nav{padding-top:12px!important}
    Keep both desktop routes 12px smaller and preserve all bottom move navigation. */
 @media (min-width:1024px) {
   .desktop-analysis-screen > .desktop-analysis-panel {
-    margin-top:calc(var(--review-board-gutter, 16px) + 1px)!important;
-    height:calc(var(--review-board-size, 580px) - 2 * (var(--review-board-gutter, 16px) + 1px))!important;
+    margin-top:var(--review-board-gutter, 16px)!important;
+    height:calc(var(--review-board-size, 580px) - 2 * var(--review-board-gutter, 16px))!important;
   }
   .desktop-analysis-screen .desktop-analysis-compact-opponent {display:none;}
 }
