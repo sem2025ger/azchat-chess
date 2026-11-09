@@ -19,15 +19,19 @@ test('desktop review matches Home field size and top when space permits', () => 
   }
 });
 
-test('compact review keeps the top label clear of the page edge and fits the side panel', () => {
-  for (const [width, height, homeField] of [[939, 768, 809.5], [1194, 800, 572.5], [1106, 470, 590]]) {
-    const layout = reviewLayout(width, height, homeField, 22.25);
+test('compact review places its upper label in the panel and keeps the Home field top', () => {
+  for (const [width, height, homeField, homeTop] of [[939, 768, 809.5, 22.25], [1194, 800, 572.5, 22.25], [1106, 470, 590, 22.25]]) {
+    const layout = reviewLayout(width, height, homeField, homeTop, true);
     assert.ok(layout.boardSize > 0 && layout.boardSize - 2 * inset <= homeField);
-    assert.ok(layout.topInset - layout.topLabel >= REVIEW_TOP_CLEARANCE);
+    assert.ok(Math.abs(layout.topInset + inset - homeTop) < 1e-9);
     assert.ok(layout.panelWidth >= 335 - 1e-9);
-    assert.ok(layout.topLabel >= 18);
     assert.ok(layout.topInset + layout.boardSize + 36 * layout.scale + 12 <= height + 1e-9);
   }
+});
+
+test('wide review preserves upper player label clearance', () => {
+  const layout = reviewLayout(1660, 1080, 606.5, 205.25);
+  assert.ok(layout.topInset - layout.topLabel >= REVIEW_TOP_CLEARANCE);
 });
 
 test('desktop panel shares the board height while the top label is outside the layout flow', () => {
@@ -44,6 +48,8 @@ test('desktop panel shares the board height while the top label is outside the l
   assert.match(panel, /height:\s*var\(--review-board-size,\s*580px\)\s*!important/);
   assert.match(panel, /min-height:\s*0\s*!important/);
   assert.match(panel, /max-height:\s*none\s*!important/);
+  assert.match(css, /\.desktop-analysis-screen > \.desktop-analysis-panel\s*\{\s*margin-top:calc\(var\(--review-board-gutter, 16px\) \+ 1px\)!important;\s*height:calc\(var\(--review-board-size, 580px\) - 2 \* \(var\(--review-board-gutter, 16px\) \+ 1px\)\)!important;/);
+  assert.match(css, /\.desktop-analysis-screen \.desktop-analysis-compact-opponent\s*\{\s*display:flex;/);
 });
 
 test('desktop Analysis places coordinates in the gutters outside the visible field border', () => {
