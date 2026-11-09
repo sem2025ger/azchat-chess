@@ -1710,12 +1710,9 @@
   .desktop-analysis-screen > .desktop-analysis-panel {
     overflow:hidden!important;
     background:linear-gradient(158deg,#171b1b 0%,#141718 54%,#0e1112 100%)!important;
-    border:2px solid rgba(198,166,108,.50)!important;
+    border:1px solid rgba(158,146,126,.34)!important;
+    box-shadow:0 10px 24px -16px rgba(0,0,0,.38)!important;
     isolation:isolate;
-  }
-  .desktop-analysis-screen > .desktop-analysis-panel {
-    box-shadow: inset 0 0 0 1px rgba(212, 175, 55, .22),
-      0 12px 30px -12px rgba(0, 0, 0, .64) !important;
   }
   .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {
     position:relative;
@@ -2061,10 +2058,11 @@ aside nav{padding-top:12px!important}
   .desktop-analysis-screen .analysis-engine-score[data-score-side] {box-sizing:border-box;height:30px!important;min-height:30px!important;max-height:30px!important;align-self:center;margin-block:auto;flex:0 0 58px;width:58px!important;min-width:58px!important;max-width:58px!important;}
   .desktop-analysis-screen .analysis-engine-line {gap:7px!important;}
   .desktop-analysis-screen .analysis-engine-moves {gap:2px 3px!important;font-size:.79rem!important;letter-spacing:-.15px;mask-image:none!important;overflow:hidden!important;}
-  .desktop-analysis-screen .desktop-analysis-bottom-actions {width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;position:relative;z-index:40;box-sizing:border-box;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions {width:100%;display:flex;align-items:center;gap:8px;padding:10px 16px 12px;position:relative;z-index:40;box-sizing:border-box;}
   .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button,
   .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-save-wrapper {flex:1 1 0;min-width:0;margin:0;}
-  .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button {width:0;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button {width:0;padding-inline:8px;gap:6px;white-space:nowrap;overflow:hidden;}
+  .desktop-analysis-screen .desktop-analysis-new-button > span {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .desktop-analysis-screen .desktop-analysis-bottom-actions .desktop-analysis-save-menu-root,
   .desktop-analysis-screen .desktop-analysis-bottom-actions .desktop-analysis-save-button {width:100%;box-sizing:border-box;}
   .desktop-analysis-screen .desktop-analysis-save-feedback {position:absolute;bottom:calc(100% + 2px);left:0;pointer-events:none;padding:2px 5px;background:#181917;border-radius:4px;}
