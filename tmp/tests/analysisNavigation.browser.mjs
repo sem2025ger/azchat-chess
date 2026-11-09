@@ -159,6 +159,37 @@ try {
       board.querySelector('[data-coordinate-axis="file"]').getBoundingClientRect().top >= bounds.bottom &&
       label.bottom <= bounds.top;
   })()`), 'The thin border, coordinate rails and top label must sit outside the playing field');
+  // Check the compact layout separately: both routes must agree on the playing field,
+  // and the thin panel border must align with the playing field rather than its coordinate gutters.
+  for (const [width, height] of [[1194, 800], [1106, 768], [1366, 768]]) {
+    await cdp('Emulation.setDeviceMetricsOverride', { mobile:false, width, height, deviceScaleFactor:1 });
+    await navigate('.site-nav-link[href="/home"]', '.home-screen-root');
+    await sleep(160);
+    const home = await fieldBounds('.home-board-frame');
+    await navigate('.site-nav-link[href="/game"]', '.desktop-analysis-main-board [data-square]');
+    await waitFor("!!document.querySelector('.desktop-analysis-screen').style.getPropertyValue('--review-board-size')");
+    await sleep(160);
+    const analysis = await fieldBounds('.desktop-analysis-main-board');
+    const chrome = await evaluate(`(() => {
+      const field = document.querySelector('.desktop-analysis-main-board .aspect-square.border').getBoundingClientRect();
+      const panel = document.querySelector('.desktop-analysis-panel').getBoundingClientRect();
+      const caption = document.querySelector('.desktop-analysis-compact-opponent');
+      const controls = [...document.querySelectorAll('.desktop-analysis-transport > button')];
+      return {
+        panelTop:panel.top, panelBottom:panel.bottom, fieldTop:field.top, fieldBottom:field.bottom,
+        compactCaptionVisible:caption && getComputedStyle(caption).display!=='none',
+        controlCount:controls.filter(button=>button.getBoundingClientRect().height>=36).length,
+      };
+    })()`);
+    for (const dimension of ['top', 'width', 'height']) {
+      assert.ok(Math.abs(analysis[dimension]-home[dimension])<1.2,
+        width + 'px ' + dimension + ' field must match Home: ' + JSON.stringify({home,analysis}));
+    }
+    assert.ok(Math.abs(chrome.panelTop-chrome.fieldTop)<1.5 && Math.abs(chrome.panelBottom-chrome.fieldBottom)<1.5,
+      width + 'px analysis border must align with field: ' + JSON.stringify(chrome));
+    assert.equal(chrome.compactCaptionVisible, width<1280);
+    assert.equal(chrome.controlCount, 4, 'All four move navigation controls remain visible');
+  }
   // These are diagnostics, not an artificial guarantee of zero-millisecond navigation.
   // Regression gate: the board must render on both navigation attempts.
   assert.ok(cold.ms < 5_000 && warm.ms < 5_000, 'Analysis route failed to paint within 5 seconds');
