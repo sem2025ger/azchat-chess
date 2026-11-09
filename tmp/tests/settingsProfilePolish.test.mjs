@@ -105,9 +105,12 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
      }
     }
     if(width===1366||width===1920&&height===880||width===390){
+     // The owner explicitly changed the piece-style picker in this QA branch.
+     // Mask ONLY its mobile entry before pixel comparison; all other mobile pixels must still match baseline.
+     if(width===390) await evaluate("(()=>{const buttons=document.querySelectorAll('.settings-mobile-view .settings-mobile-card button');const piece=buttons[1];if(!piece||!piece.textContent.includes('Шахматные фигуры'))throw Error('Missing Settings piece picker');piece.style.visibility='hidden';return true})()");
      const image=(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
      if(capture)await writeFile(join(capture,phase+'-settings-'+width+'x'+height+'.png'),Buffer.from(image,'base64'));
-     if(width===390){if(phase==='before')baselineMobile=image;else assert.equal(image,baselineMobile,'mobile Settings differs from baseline');}
+     if(width===390){if(phase==='before')baselineMobile=image;else assert.equal(image,baselineMobile,'mobile Settings differs outside the approved piece picker');}
     }
     if(width>=1024||width===390){
      await evaluate("window.qaNavigate('/profile')");
