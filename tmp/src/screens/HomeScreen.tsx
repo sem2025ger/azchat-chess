@@ -54,14 +54,15 @@ export default function HomeScreen() {
               justify-content: center;
               gap: 9px;
               font-family: 'Cormorant Garamond', Georgia, serif;
-              font-size: clamp(24px, 2.2vw, 31px);
+              font-size: clamp(28px, 2.53vw, 36px);
               font-weight: 700;
               font-style: italic;
               line-height: 1.15;
-              letter-spacing: 0;
+              letter-spacing: 0.02em;
               overflow: visible;
               text-overflow: clip;
               text-shadow: none;
+              margin-bottom: 6px;
             }
             .home-screen-root .home-unified-card .home-unified-slogan-part {
               display: inline-flex;
@@ -70,20 +71,21 @@ export default function HomeScreen() {
               flex: none;
             }
             .home-screen-root .home-unified-card .home-unified-slogan-word {
-              background: linear-gradient(180deg, #f6dfb4 0%, #e0b985 50%, #c2915e 100%);
+              background: linear-gradient(180deg, #f4f6f8 0%, #cfd5db 50%, #9aa3ac 100%);
               background-clip: text;
               -webkit-background-clip: text;
               -webkit-text-fill-color: transparent;
               color: transparent;
               text-shadow: none;
+              filter: drop-shadow(0 0 5px rgba(220,228,235,0.18));
             }
             .home-screen-root .home-unified-card .home-unified-slogan-diamond {
               display: inline-block;
-              width: 6px;
-              height: 6px;
-              flex: 0 0 6px;
+              width: 7px;
+              height: 7px;
+              flex: 0 0 7px;
               transform: rotate(45deg);
-              background: linear-gradient(135deg, #e6c597, #9c6f45);
+              background: linear-gradient(135deg, #eef1f4, #8d969f);
             }
           }
         `}</style>
