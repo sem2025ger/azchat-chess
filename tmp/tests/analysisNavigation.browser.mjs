@@ -152,13 +152,13 @@ try {
   assert.ok(await evaluate(`(() => {
     const board = document.querySelector('.desktop-analysis-main-board');
     const frame = board.querySelector('.aspect-square');
-    const label = document.querySelector('.desktop-analysis-player-top').getBoundingClientRect();
     const bounds = frame.getBoundingClientRect();
     return getComputedStyle(frame).borderLeftWidth === '1px' &&
       board.querySelector('[data-coordinate-axis="rank"]').getBoundingClientRect().right <= bounds.left &&
       board.querySelector('[data-coordinate-axis="file"]').getBoundingClientRect().top >= bounds.bottom &&
-      label.bottom <= bounds.top;
-  })()`), 'The thin border, coordinate rails and top label must sit outside the playing field');
+      !document.querySelector('.desktop-analysis-player-top') &&
+      !document.querySelector('.desktop-analysis-review-player-bottom');
+  })()`), 'The thin border and coordinate rails must remain without generic player labels');
   // Check the compact layout separately: both routes must agree on the playing field,
   // and the thin panel border must align with the playing field rather than its coordinate gutters.
   for (const [width, height] of [[1194, 800], [1106, 768], [1366, 768]]) {
@@ -178,6 +178,7 @@ try {
       return {
         panelTop:panel.top, panelBottom:panel.bottom, fieldTop:field.top, fieldBottom:field.bottom,
         compactCaptionVisible:caption && getComputedStyle(caption).display!=='none',
+        genericPlayersVisible:!!document.querySelector('.desktop-analysis-player-top, .desktop-analysis-review-player-bottom'),
         controlCount:controls.filter(button=>button.getBoundingClientRect().height>=36).length,
       };
     })()`);
@@ -187,7 +188,7 @@ try {
     }
     assert.ok(Math.abs(chrome.panelTop-chrome.fieldTop)<1.5 && Math.abs(chrome.panelBottom-chrome.fieldBottom)<1.5,
       width + 'px analysis border must align with field: ' + JSON.stringify(chrome));
-    assert.equal(chrome.compactCaptionVisible, width<1280);
+    assert.ok(!chrome.compactCaptionVisible && !chrome.genericPlayersVisible, 'Empty Analysis shows no generic Black/White labels');
     assert.equal(chrome.controlCount, 4, 'All four move navigation controls remain visible');
   }
   // These are diagnostics, not an artificial guarantee of zero-millisecond navigation.
