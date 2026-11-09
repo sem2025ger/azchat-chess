@@ -22,7 +22,7 @@ test('unified desktop Arena is default-off, preserves the mobile layout and keep
   assert.match(home, /homeUnifiedCard \? " xl:hidden" : ""/);
   assert.match(home, /homeUnifiedCard \? " home-unified-card" : ""/);
   assert.match(home, /homeUnifiedCard && \(\s*<span className="desktop-home-slogan-text hidden">\{t\('home\.slogan'\)\}<\/span>/);
-  assert.match(home, /@media \(min-width: 1280px\) \{[\s\S]*?\.desktop-home-arena\.home-unified-card \{\s*background: linear-gradient\(145deg, #111419 0%, #16181f 54%, #1B1B22 100%\);\s*\}/);
+  assert.match(home, /@media \(min-width: 1280px\) \{[\s\S]*?\.desktop-home-arena\.home-unified-card \{\s*background:\s*radial-gradient\(120% 70% at 30% 0%, rgba\(205,215,230,0\.07\) 0%, rgba\(205,215,230,0\) 55%\),\s*linear-gradient\(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%\);\s*\}/);
   assert.match(home, /className="hidden md:flex mobile-home-play desktop-home-play/);
   assert.match(home, /\{t\('home\.playChessNow'\)\}/);
 });

@@ -20,7 +20,7 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  // Any other change to routing, flags, layout or the play button still fails.
  const unifiedCardChanges=[
   ["  const homeUnifiedCard = import.meta.env.VITE_HOME_UNIFIED_CARD === 'true';\n",""],
-  ["          .home-screen-root .desktop-home-arena.home-unified-card {\n            background: linear-gradient(145deg, #111419 0%, #16181f 54%, #1B1B22 100%);\n          }\n",""],
+  ["          .home-screen-root .desktop-home-arena.home-unified-card {\n            background:\n              radial-gradient(120% 70% at 30% 0%, rgba(205,215,230,0.07) 0%, rgba(205,215,230,0) 55%),\n              linear-gradient(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%);\n          }\n",""],
   ["className={`desktop-home-slogan","className=\"desktop-home-slogan"],
   ["${homeUnifiedCard ? \" xl:hidden\" : \"\"}`}","\""],
   ["className={`mobile-home-arena desktop-home-arena","className=\"mobile-home-arena desktop-home-arena"],
