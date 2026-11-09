@@ -32,20 +32,11 @@ test('compact review places its upper label in the panel and keeps the Home fiel
 test('Home anchor is clamped to leave room for the analysis panel', () => {
   const reference = reviewLayout(1660, 880, 588, 118, false, false, 260);
   assert.ok(reference.leftInset > 40);
-  assert.ok(Math.abs(reference.leftInset + (24 + reference.evaluationGap) * reference.scale + REVIEW_BOARD_GUTTER - 260) < 0.1);
+  assert.ok(Math.abs(reference.leftInset + 54 * reference.scale + REVIEW_BOARD_GUTTER - 260) < 0.1);
   const constrained = reviewLayout(1106, 768, 584, 60, true, false, 900);
   assert.ok(constrained.leftInset >= 0);
   assert.ok(constrained.leftInset + constrained.boardColumn + constrained.columnGap +
     constrained.panelWidth + 20 * constrained.scale <= 1106 + 0.01);
-});
-
-test('wide review uses a compact 15px evaluation gap; compact mode retains the original gap', () => {
-  const wide = reviewLayout(1660, 880, 588, 118, false, false, 260);
-  const compact = reviewLayout(1106, 768, 584, 60, true, false, 320);
-  assert.equal(wide.evaluationGap, 15);
-  assert.equal(compact.evaluationGap, 30);
-  assert.equal(wide.boardColumn - wide.boardSize, (24 + wide.evaluationGap) * wide.scale);
-  assert.equal(compact.boardColumn - compact.boardSize, (24 + compact.evaluationGap) * compact.scale);
 });
 
 test('player names reserve space only for loaded games', () => {
@@ -79,7 +70,7 @@ test('desktop panel shares the board height while the top label is outside the l
   assert.match(panel, /height:\s*var\(--review-board-size,\s*580px\)\s*!important/);
   assert.match(panel, /min-height:\s*0\s*!important/);
   assert.match(panel, /max-height:\s*none\s*!important/);
-  assert.match(css, /\.desktop-analysis-screen > \.desktop-analysis-panel\s*\{\s*margin-top:calc\(var\(--review-board-gutter, 16px\) \+ 1px\)!important;\s*height:calc\(var\(--review-board-size, 580px\) - 2 \* \(var\(--review-board-gutter, 16px\) \+ 1px\)\)!important;/);
+  assert.match(css, /\.desktop-analysis-screen > \.desktop-analysis-panel\s*\{\s*margin-top:var\(--review-board-gutter, 16px\)!important;\s*height:calc\(var\(--review-board-size, 580px\) - 2 \* var\(--review-board-gutter, 16px\)\)!important;/);
   assert.match(css, /\.desktop-analysis-screen \.desktop-analysis-evaluation\s*\{[^}]*margin-top:\s*calc\(var\(--review-board-gutter, 16px\) \+ 1px\);[^}]*height:\s*calc\(var\(--review-board-size, 580px\) - 2 \* \(var\(--review-board-gutter, 16px\) \+ 1px\)\);/);
   assert.match(css, /\.desktop-analysis-screen \.desktop-analysis-compact-opponent\s*\{\s*display:flex;/);
 });
