@@ -296,7 +296,7 @@ export default function SettingsScreen() {
         return (
             <div className="space-y-4 animate-fade-in px-2 pt-4">
               <div className="space-y-3">
-                <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl">
+                <div className="p-[1px] rounded-[2.5rem] settings-section-frame shadow-2xl">
                   <div className="settings-mobile-card rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
                   <HubLink 
                     icon={<Palette size={18} />} 
@@ -326,7 +326,7 @@ export default function SettingsScreen() {
 
               <div className="space-y-3">
                 <h2 className="settings-mobile-section-heading px-2">{mobileLabels.soundGame}</h2>
-                <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl">
+                <div className="p-[1px] rounded-[2.5rem] settings-section-frame shadow-2xl">
                   <div className="settings-mobile-card rounded-[calc(2.5rem-1px)] p-1.5 space-y-1 h-full">
                   <HubLink icon={<Volume2 size={18} />} title={t('settings.soundThemes')} value={soundTheme.toUpperCase()} onClick={() => setActiveSubView('sound')} />
                   <HubLink icon={<Clock size={18} />} title={t('play.timeControl')} value={mobileLabels.inPlay} onClick={() => navigate('/play')} />
@@ -367,7 +367,7 @@ export default function SettingsScreen() {
         <div className="settings-desktop-grid hidden lg:grid grid-cols-12 gap-3 xl:gap-5 items-stretch flex-1 min-h-0">
           <div className="settings-options-column col-span-7 flex flex-col justify-between gap-2 xl:gap-3 pr-0 xl:pr-2 min-h-0 h-full">
             {/* Row 1: Board Appearance */}
-            <div id="settings-section-board" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+            <div id="settings-section-board" className="p-[1px] rounded-[2rem] settings-section-frame shadow-xl">
               <section className="settings-preview-matched-surface bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <Palette size={16} className="text-chess-gold" /> {t('settings.boardAppearance')}
@@ -394,7 +394,7 @@ export default function SettingsScreen() {
             {/* Row 2: Piece Styles and Sound Themes */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 xl:gap-4">
               {/* Piece Styles */}
-              <div id="settings-section-pieces" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+              <div id="settings-section-pieces" className="p-[1px] rounded-[2rem] settings-section-frame shadow-xl">
                 <section className="settings-preview-matched-surface bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                   <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                     <Monitor size={16} className="text-chess-active" /> {t('settings.pieceStyles')}
@@ -414,7 +414,7 @@ export default function SettingsScreen() {
               </div>
 
               {/* Sound Themes */}
-              <div id="settings-section-sound" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+              <div id="settings-section-sound" className="p-[1px] rounded-[2rem] settings-section-frame shadow-xl">
                 <section className="settings-preview-matched-surface bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full flex flex-col">
                   <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                     <Volume2 size={16} className="text-neutral-400" /> {t('settings.soundThemes')}
@@ -429,7 +429,7 @@ export default function SettingsScreen() {
             </div>
 
             {/* Row 3: Background Theme */}
-            <div id="settings-section-background" className="p-[1px] rounded-[2rem] settings-animated-border shadow-xl">
+            <div id="settings-section-background" className="p-[1px] rounded-[2rem] settings-section-frame shadow-xl">
               <section className="settings-preview-matched-surface bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2rem-1px)] p-4 relative h-full">
                 <h2 className="text-sm xl:text-base font-black text-white mb-3 flex items-center gap-3 italic uppercase tracking-tighter">
                   <LayoutIcon size={16} className="text-purple-400" /> {t('settings.interfaceTheme')}
@@ -446,21 +446,21 @@ export default function SettingsScreen() {
           </div>
 
           <div className="settings-preview-column col-span-5 relative h-full min-h-0">
-            <div className="p-[1px] rounded-[2.5rem] settings-animated-border shadow-2xl h-full">
+            <div className="p-[1px] rounded-[2.5rem] settings-section-frame shadow-2xl h-full">
               <div className="settings-preview-matched-surface bg-neutral-900/90 backdrop-blur-3xl rounded-[calc(2.5rem-1px)] p-4 xl:p-5 flex flex-col items-center gap-3 xl:gap-4 h-full">
-                <div className="relative flex items-center justify-center min-h-[44px] w-full shrink-0">
-                  <span className={cx("absolute left-0 max-w-[80px] text-[0.6rem] font-black text-emerald-400 uppercase tracking-wider leading-tight transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
+                <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 min-h-[44px] w-full shrink-0 px-3">
+                  <span className={cx("max-w-[80px] text-[0.6rem] font-black text-emerald-400 uppercase tracking-wider leading-tight transition-opacity duration-300", showSaved ? "opacity-100" : "opacity-0")}>
                     {t('settings.saved')} ✓
                   </span>
-                  <span className="settings-preview-title w-full px-[5.5rem] text-center text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.15em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
+                  <span className="settings-preview-title min-w-0 break-words text-center text-[0.75rem] xl:text-[0.85rem] font-black uppercase tracking-[0.15em] italic text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-300 to-cyan-300">{t('settings.livePreview')}</span>
                   <button
                     type="button"
                     aria-controls="settings-preview-board"
                     title={t('settings.resetPreviewPosition')}
                     onClick={() => setPreviewGame(new Chess())}
-                    className="absolute right-0 inline-flex items-center gap-1 px-2 py-1.5 rounded-xl border border-chess-gold/30 bg-chess-gold/5 text-chess-gold text-[0.65rem] font-bold transition-colors hover:bg-chess-gold/10 hover:border-chess-gold/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chess-gold/50"
+                    className="settings-preview-refresh inline-flex items-center gap-1 px-2 py-1.5 rounded-xl border text-[0.65rem] font-bold"
                   >
-                    <RotateCcw size={14} aria-hidden="true" />
+                    <RotateCcw size={14} aria-hidden="true" className="shrink-0" />
                     {t('settings.refreshPreview')}
                   </button>
                 </div>
@@ -476,7 +476,7 @@ export default function SettingsScreen() {
                 </div>
                 <button 
                   onClick={handleRestoreDefaults}
-                  className="settings-restore-defaults w-full shrink-0 py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.75rem] xl:text-[0.8rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
+                  className="settings-restore-defaults w-[calc(100%-2rem)] shrink-0 px-2 py-2 xl:py-2.5 rounded-2xl bg-white/5 text-neutral-500 font-black text-[0.75rem] xl:text-[0.8rem] uppercase tracking-[0.3em] italic hover:text-white hover:bg-white/10 transition-all active:scale-95 border border-transparent hover:border-white/10"
                 >
                   {t('settings.restoreDefaults')}
                 </button>

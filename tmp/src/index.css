@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --chessaz-bronze-frame: 174 126 100;
+}
+
 /* Home desktop: retain the original visual plane and keep the chessboard
    modestly enlarged within its column. Do not scale or translate the scene toward
    the viewer; balance the right-hand Arena and slogan in the same grid. */
@@ -461,54 +465,27 @@
   100% { background-position: -200% center; }
 }
 
-/* Settings Animated Glow Border */
-.settings-animated-border {
-  background: linear-gradient(135deg, rgba(0, 206, 209, 0.5), rgba(168, 85, 247, 0.5), rgba(59, 130, 246, 0.5), rgba(223, 176, 98, 0.5), rgba(0, 206, 209, 0.5));
-  background-size: 300% 300%;
-  animation: none;
+/* Reuse the existing 1px inset on each Settings section. */
+.settings-section-frame {
+  outline: 1px solid rgb(var(--chessaz-bronze-frame) / .65);
+  outline-offset: -1px;
 }
 
-@keyframes settingsBorderGlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .settings-animated-border {
-    animation: none;
-    background: linear-gradient(135deg, rgba(0, 206, 209, 0.5), rgba(168, 85, 247, 0.5));
-  }
-}
-
-/* Home Board Premium Animated Frame */
+/* Keep the Home board rim without changing the dimensions of the field. */
 @media (min-width: 1280px) {
   .home-board-frame {
-    box-shadow:
-      inset 0 0 0 1px rgba(212, 175, 55, 0.62),
-      0 0 12px rgba(212, 175, 55, 0.12);
+    outline: 1px solid rgba(212, 175, 55, 0.62);
+    outline-offset: -1px;
   }
 
   .home-board-frame::after {
     content: '';
     position: absolute;
     inset: 1px;
+    border: 1px solid rgba(18, 14, 8, 0.96);
     border-radius: inherit;
     pointer-events: none;
     z-index: 20;
-    box-shadow: inset 0 0 0 1px rgba(18, 14, 8, 0.96);
-    animation: none;
-  }
-}
-
-@keyframes homeBoardFrameTone {
-  0%,
-  100% {
-    box-shadow: inset 0 0 0 1px rgba(18, 14, 8, 0.96);
-  }
-
-  50% {
-    box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.96);
   }
 }
 
@@ -613,30 +590,22 @@
   }
 }
 
-/* Home Arena accents shared by mobile and desktop: opacity-only crossfades. */
-  .mobile-home-arena {
-    isolation: isolate;
-    border-color: rgba(223, 176, 98, 0.28);
-    background: linear-gradient(165deg, #222743 0%, #1a1f38 55%, #14182e 100%);
-  }
-
-  .mobile-home-arena::before,
-  .mobile-home-arena::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    z-index: -1;
-    pointer-events: none;
-    border-radius: inherit;
-    border: 1px solid rgba(239, 204, 139, 0.7);
-    box-shadow: inset 0 0 20px rgba(223, 176, 98, 0.08), 0 0 12px rgba(223, 176, 98, 0.12);
-    opacity: 0.5;
-  }
-
-  .mobile-home-arena::after {
-    border-color: rgba(179, 153, 237, 0.65);
-    box-shadow: inset 0 0 20px rgba(167, 139, 250, 0.07), 0 0 12px rgba(167, 139, 250, 0.12);
-  }
+/* Chess Arena keeps a thin frame at every breakpoint. The inset outline
+   preserves the card's existing border box and its approved background. */
+.home-screen-root .mobile-home-arena {
+  border-color: transparent !important;
+  outline: 1px solid rgb(var(--chessaz-bronze-frame) / .65);
+  outline-offset: -1px;
+  box-shadow: none !important;
+  isolation: isolate;
+}
+.home-screen-root .mobile-home-arena::before,
+.home-screen-root .mobile-home-arena::after {
+  display: none;
+}
+.mobile-home-arena {
+  background: linear-gradient(165deg, #222743 0%, #1a1f38 55%, #14182e 100%);
+}
 
   .mobile-home-arena h1 {
     background-image: linear-gradient(110deg, #f5d58e, #f3dfbc 45%, #cbb5f6);
@@ -2147,4 +2116,22 @@ aside nav{padding-top:12px!important}
     color:#d4d1ca;
     -webkit-text-fill-color:#d4d1ca;
   }
+}
+
+/* Flat Home and Analysis surfaces. Retain the board rings and keyboard focus indicators. */
+.home-screen-root .home-board,
+.desktop-analysis-screen .desktop-analysis-board-frame,
+.desktop-analysis-screen .desktop-analysis-evaluation > div {
+  --tw-shadow: 0 0 #0000 !important;
+}
+
+.home-screen-root .desktop-home-slogan,
+.home-screen-root .home-board > .touch-manipulation,
+.home-screen-root .home-board .aspect-square.border,
+.desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board),
+.desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) .aspect-square.border,
+.desktop-analysis-screen :is(.desktop-analysis-panel, .analysis-redesign-header, .desktop-analysis-transport,
+  .analysis-redesign-menu-list, .desktop-analysis-save-menu, .mobile-analysis-tool-dialog, .mobile-analysis-actions-dialog),
+.desktop-analysis-screen .desktop-analysis-stockfish .panel-glow-cycle {
+  box-shadow: none !important;
 }

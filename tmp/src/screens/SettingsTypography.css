@@ -119,6 +119,18 @@
   font-size: 1.25rem;
   line-height: 22px;
 }
+.settings-fixed-workspace .settings-preview-refresh {
+  border-color: rgb(var(--chessaz-bronze-frame) / .58);
+  background-color: rgb(var(--chessaz-bronze-frame) / .08);
+  color: #c5a38e;
+}
+.settings-fixed-workspace .settings-preview-refresh:focus-visible {
+  outline-color: #c5a38e;
+}
+.settings-fixed-workspace .settings-preview-refresh:hover {
+  border-color: rgb(var(--chessaz-bronze-frame) / .85);
+  background-color: rgb(var(--chessaz-bronze-frame) / .15);
+}
 .settings-fixed-workspace .settings-preview-stat span:first-child {
   font-weight: 500;
   letter-spacing: 0.045em;
