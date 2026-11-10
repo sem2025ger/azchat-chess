@@ -170,3 +170,46 @@ test('Use this draft fills existing M3 form; Create triggers existing submit', a
     });
   } finally { globalThis.HTMLInputElement = OriginalInput; }
 });
+
+
+test('compact hub deadline follows Berlin time and rejects DST ambiguity', async () => {
+  const vite = await createServer({
+    optimizeDeps: { noDiscovery: true, include: [] },
+    server: { middlewareMode: true, hmr: false }, appType: 'custom',
+  });
+  try {
+    const { defaultRegistrationDeadline } =
+      await vite.ssrLoadModule('/src/components/teamTournaments/TeamTournamentsM3Panel.tsx');
+    assert.equal(defaultRegistrationDeadline('2026-12-20T15:00', Date.parse('2026-12-19T10:00:00Z')),
+      '2026-12-20T14:00');
+    // 02:30 in spring is nonexistent; 02:30 in autumn occurs twice.
+    assert.equal(defaultRegistrationDeadline('2027-03-28T02:30', Date.parse('2027-03-27T10:00:00Z')), '');
+    assert.equal(defaultRegistrationDeadline('2027-10-31T02:30', Date.parse('2027-10-30T10:00:00Z')), '');
+    assert.equal(defaultRegistrationDeadline('2026-12-20T15:00', Date.parse('2026-12-20T14:58:00Z')), '');
+  } finally { await vite.close(); }
+});
+
+test('creation hub is behind both flags and has a single existing M3 create path', () => {
+  const tab = readFileSync(new URL('../src/components/teamTournaments/TeamTournamentsTab.tsx', import.meta.url), 'utf8');
+  const create = readFileSync(new URL('../src/components/teamTournaments/TeamTournamentsM3Panel.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/components/teamTournaments/teamTournaments.css', import.meta.url), 'utf8');
+  assert.match(tab, /VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' &&\s*import.meta.env.VITE_AI_ORGANIZER_ENABLED === 'true'/);
+  assert.match(tab, /\(!createHubEnabled \|\| !organizing\)/);
+  assert.match(tab, /createHubEnabled \? <details className="team-legacy-mode"/);
+  assert.match(create, /if \(!aiEnabled\) return/);
+  assert.match(create, /formRef\.current\.requestSubmit\(\)/);
+  assert.equal((create.match(/createTournamentM3Api\(import.meta.env.VITE_SERVER_URL, token\)\.create\(/g) || []).length, 1);
+  assert.match(css, /grid-template-columns: minmax\(0, \.85fr\) minmax\(0, 1\.15fr\)/);
+  assert.match(css, /data-mobile-mode="ai"/);
+});
+
+test('compact creation hub strings exist in all six locales', () => {
+  for (const lang of languages) {
+    const tr = tournamentCopy(lang);
+    for (const key of [
+      'createHubTitle', 'createHubChoose', 'createHubManual', 'createHubManualHint',
+      'createHubMore', 'createHubAutoInfo', 'createHubDeadlineAuto',
+      'createHubDeadlineError', 'createHubOverview', 'createHubLegacy',
+    ]) assert.ok(tr(key).trim(), lang + ': ' + key);
+  }
+});
