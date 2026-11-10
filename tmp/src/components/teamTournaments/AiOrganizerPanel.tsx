@@ -101,7 +101,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
       setDraft(response.draft);
       setHasDraft(true);
       const answer = (response.assistant_text + (response.question ? '\n' + response.question : '')).trim();
-      setHistory(old => [...old, { role: 'assistant', text: answer }].slice(-12));
+      setHistory(old => [...old, { role: 'assistant' as const, text: answer }].slice(-12));
     } catch (failure) {
       if (!controller.signal.aborted && generation.current === currentGeneration) {
         setError(errors(failure, tr));
