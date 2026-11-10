@@ -6,6 +6,7 @@ import {
 import { tournamentErrorMessage, type TournamentCopy } from './copy';
 import { useLanguage } from '../../context/LanguageContext';
 import { AiOrganizerPanel } from './AiOrganizerPanel';
+import { berlinDateTime, berlinDateTimeToIso } from '../../services/spieltag';
 
 const outcomes: { result: BoardResult; text: string }[] = [
   { result: '1-0', text: '1–0' },
@@ -37,13 +38,36 @@ export function M3BoardStatus({ result, status, tr }: {
   return <p>{outcome && <>{outcome.text} · </>}{boardStatus(status, tr)}</p>;
 }
 
+// Derive a real 60-minute-before deadline in Europe/Berlin, not in the viewer's timezone.
+// For an event less than an hour away choose the next available minute instead.
+// Invalid / duplicated wall-clock minutes around DST changes are never prefilled.
+export function defaultRegistrationDeadline(startTime: string, now = Date.now()): string {
+  let begins: number;
+  try { begins = Date.parse(berlinDateTimeToIso(startTime)); }
+  catch { return ''; }
+  if (!Number.isFinite(begins) || begins - now < 3 * 60000) return '';
+  const earliest = Math.ceil((now + 60000) / 60000) * 60000;
+  const candidate = Math.max(begins - 3600000, earliest);
+  for (let minute = 0; minute < 90 && candidate + minute * 60000 < begins; minute++) {
+    const instant = candidate + minute * 60000;
+    const berlin = berlinDateTime(new Date(instant).toISOString());
+    try {
+      if (Date.parse(berlinDateTimeToIso(berlin)) === instant) return berlin;
+    } catch { /* Skip nonexistent or duplicated local minute. */ }
+  }
+  return '';
+}
+
 export function M3Create({ tr, token, onCreated }: {
   tr: TournamentCopy; token: string; onCreated: (event: string) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [mobileMode, setMobileMode] = useState<'manual' | 'ai'>('manual');
+  const [manualDeadline, setManualDeadline] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
   const aiEnabled = import.meta.env.VITE_AI_ORGANIZER_ENABLED === 'true';
+
   function applyAiDraft(draft: AiOrganizerDraft) {
     const form = formRef.current;
     if (!form) return;
@@ -51,12 +75,25 @@ export function M3Create({ tr, token, onCreated }: {
       const field = form.elements.namedItem(key);
       if (field instanceof HTMLInputElement) field.value = value === null ? '' : String(value);
     }
+    setManualDeadline(draft.registration_deadline ?? '');
+    setError('');
   }
+
   function createAiDraft(draft: AiOrganizerDraft) {
     if (busy || !formRef.current) return;
     applyAiDraft(draft);
+    // The same HTML form and M3 server endpoint create both manually and from AI.
     formRef.current.requestSubmit();
   }
+
+  function startChanged(start: string) {
+    const deadline = defaultRegistrationDeadline(start);
+    const deadlineInput = formRef.current?.elements.namedItem('registration_deadline');
+    if (deadlineInput instanceof HTMLInputElement) deadlineInput.value = deadline;
+    setManualDeadline(deadline);
+    setError('');
+  }
+
   async function submit(form: FormEvent<HTMLFormElement>) {
     form.preventDefault();
     if (busy) return;
@@ -69,6 +106,11 @@ export function M3Create({ tr, token, onCreated }: {
       min_teams: Number(data.get('min_teams') ?? 2),
       max_teams: Number(data.get('max_teams') ?? 4),
     };
+    if (aiEnabled && !input.registration_deadline) {
+      formRef.current?.querySelector('details')?.setAttribute('open', '');
+      setError(tr('createHubDeadlineError'));
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -79,9 +121,9 @@ export function M3Create({ tr, token, onCreated }: {
       setError(m3Error(failure, tr));
     } finally { setBusy(false); }
   }
-  return <section className="section-card">
-    {aiEnabled && <AiOrganizerPanel tr={tr} token={token} onApply={applyAiDraft}
-      onCreate={createAiDraft} creating={busy} />}
+
+  // Unchanged legacy form when the Organizer feature is disabled.
+  if (!aiEnabled) return <section className="section-card">
     <h2>{tr('m3Create')}</h2>
     <form ref={formRef} onSubmit={event => void submit(event)} className="grid gap-3">
       <label>{tr('name')}<input name="name" required maxLength={120} className="w-full min-h-11" /></label>
@@ -95,6 +137,62 @@ export function M3Create({ tr, token, onCreated }: {
       {error && <p role="alert">{error}</p>}
       <button type="submit" className="min-h-11" disabled={busy}>{tr('m3Create')}</button>
     </form>
+  </section>;
+
+  return <section className="team-create-hub" aria-label={tr('createHubTitle')}>
+    <div className="team-create-mobile-switch" role="group" aria-label={tr('createHubChoose')}>
+      <button type="button" aria-pressed={mobileMode === 'manual'}
+        onClick={() => setMobileMode('manual')}>{tr('createHubManual')}</button>
+      <button type="button" aria-pressed={mobileMode === 'ai'}
+        onClick={() => setMobileMode('ai')}>{tr('aiOrganizerTitle')}</button>
+    </div>
+    <div className="team-create-hub-grid" data-mobile-mode={mobileMode}>
+      <section className="team-create-manual" aria-label={tr('createHubManual')}>
+        <header>
+          <h2>{tr('createHubManual')}</h2>
+          <p>{tr('createHubManualHint')}</p>
+        </header>
+        <form ref={formRef} className="team-create-manual-form" onSubmit={event => void submit(event)}>
+          <label>{tr('name')}
+            <input name="name" required maxLength={120} autoComplete="off" />
+          </label>
+          <label>{tr('m3Start')}
+            <input name="start_time" type="datetime-local" required onChange={event => startChanged(event.target.value)} />
+          </label>
+          <label>{tr('m3MaxTeams')}
+            <input name="max_teams" type="number" min="2" max="16" defaultValue="4" required />
+          </label>
+          <details className="team-create-extra">
+            <summary>{tr('createHubMore')}</summary>
+            <div className="team-create-extra-fields">
+              <label>{tr('boards')}
+                <input name="boards_per_team" type="number" min="1" max="16" defaultValue="4" required />
+              </label>
+              <label>{tr('m3MinTeams')}
+                <input name="min_teams" type="number" min="2" max="16" defaultValue="2" required />
+              </label>
+              <label>{tr('m3Deadline')}
+                <input name="registration_deadline" type="datetime-local"
+                  onChange={event => { setManualDeadline(event.target.value); setError(''); }} />
+              </label>
+            </div>
+          </details>
+          <p className="team-create-auto-note">
+            {manualDeadline
+              ? tr('createHubDeadlineAuto') + ' ' + manualDeadline.replace('T', ' · ')
+              : tr('createHubAutoInfo')}
+          </p>
+          {error && <p role="alert" className="team-create-form-error">{error}</p>}
+          <button type="submit" className="team-create-primary" disabled={busy}>
+            {tr('aiOrganizerCreate')}
+          </button>
+        </form>
+      </section>
+      <div className="team-create-ai">
+        <AiOrganizerPanel tr={tr} token={token} onApply={applyAiDraft}
+          onCreate={createAiDraft} creating={busy} />
+      </div>
+    </div>
   </section>;
 }
 
