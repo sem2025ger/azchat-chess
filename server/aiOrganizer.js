@@ -9,12 +9,36 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const LANGUAGES = ['de', 'en', 'az', 'tr', 'ua', 'ru'];
 const FIELDS = ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams'];
 const QUESTIONS = {
-  de: { start_time: 'Wann beginnt das Turnier (Datum und Uhrzeit)?', registration_deadline: 'Wann endet die Anmeldung?' },
-  en: { start_time: 'When does the tournament start (date and time)?', registration_deadline: 'When does registration close?' },
-  az: { start_time: 'Turnir nə vaxt başlayır (tarix və saat)?', registration_deadline: 'Qeydiyyat nə vaxt bitir?' },
-  tr: { start_time: 'Turnuva ne zaman başlıyor (tarih ve saat)?', registration_deadline: 'Kayıtlar ne zaman kapanıyor?' },
-  ua: { start_time: 'Коли починається турнір (дата й час)?', registration_deadline: 'Коли закінчується реєстрація?' },
-  ru: { start_time: 'Когда начинается турнир (дата и время)?', registration_deadline: 'Когда заканчивается регистрация?' },
+  de: {
+    name: 'Wie soll das Turnier heißen?', start_time: 'Wann beginnt das Turnier (Datum und Uhrzeit)?',
+    registration_deadline: 'Wann endet die Anmeldung?', boards_per_team: 'Wie viele Bretter pro Team?',
+    min_teams: 'Wie viele Teams mindestens?', max_teams: 'Wie viele Teams höchstens?',
+  },
+  en: {
+    name: 'What is the tournament name?', start_time: 'When does the tournament start (date and time)?',
+    registration_deadline: 'When does registration close?', boards_per_team: 'How many boards per team?',
+    min_teams: 'What is the minimum number of teams?', max_teams: 'What is the maximum number of teams?',
+  },
+  az: {
+    name: 'Turnirin adı nə olacaq?', start_time: 'Turnir nə vaxt başlayır (tarix və saat)?',
+    registration_deadline: 'Qeydiyyat nə vaxt bitir?', boards_per_team: 'Hər komandada neçə lövhə olacaq?',
+    min_teams: 'Minimum neçə komanda?', max_teams: 'Maksimum neçə komanda?',
+  },
+  tr: {
+    name: 'Turnuvanın adı ne olacak?', start_time: 'Turnuva ne zaman başlıyor (tarih ve saat)?',
+    registration_deadline: 'Kayıtlar ne zaman kapanıyor?', boards_per_team: 'Takım başına kaç tahta?',
+    min_teams: 'En az kaç takım?', max_teams: 'En fazla kaç takım?',
+  },
+  ua: {
+    name: 'Як назватиметься турнір?', start_time: 'Коли починається турнір (дата й час)?',
+    registration_deadline: 'Коли закінчується реєстрація?', boards_per_team: 'Скільки дощок у команді?',
+    min_teams: 'Яка мінімальна кількість команд?', max_teams: 'Яка максимальна кількість команд?',
+  },
+  ru: {
+    name: 'Как назвать турнир?', start_time: 'Когда начинается турнир (дата и время)?',
+    registration_deadline: 'Когда заканчивается регистрация?', boards_per_team: 'Сколько досок на команду?',
+    min_teams: 'Какое минимальное число команд?', max_teams: 'Какое максимальное число команд?',
+  },
 };
 const emptyDraft = () => Object.fromEntries(FIELDS.map(field => [field, null]));
 const failure = (status, code) => Object.assign(new Error(code), { status, code });
@@ -64,8 +88,8 @@ function normaliseDraft(source, now, language) {
   const missing = FIELDS.filter(field => draft[field] === null);
   let question = null;
   if (missing.length) {
-    const key = missing.includes('start_time') ? 'start_time' :
-      missing.includes('registration_deadline') ? 'registration_deadline' : 'start_time';
+    const key = ['start_time', 'registration_deadline', 'name', 'boards_per_team',
+      'min_teams', 'max_teams'].find(field => missing.includes(field));
     question = QUESTIONS[language][key];
   }
   return { draft, missing, question, ready: missing.length === 0 };
