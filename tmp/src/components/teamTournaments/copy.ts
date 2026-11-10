@@ -156,6 +156,7 @@ const labels = {
   aiOrganizerMicUnavailable: ['Mikrofon nicht verfügbar. Bitte Text eingeben.', 'Microphone unavailable. Please type instead.', 'Mikrofon əlçatan deyil. Mətn yazın.', 'Mikrofon kullanılamıyor. Metin yazın.', 'Мікрофон недоступний. Введіть текст.', 'Микрофон недоступен. Введите текст.'],
   aiOrganizerMicDenied: ['Mikrofonzugriff verweigert.', 'Microphone permission denied.', 'Mikrofona icazə verilmədi.', 'Mikrofon izni reddedildi.', 'Немає дозволу на мікрофон.', 'Нет разрешения на микрофон.'],
   aiOrganizerTooLong: ['Aufnahme zu lang oder zu groß.', 'Recording too long or too large.', 'Səs yazısı çox uzun və ya böyükdür.', 'Kayıt çok uzun veya büyük.', 'Запис надто довгий або великий.', 'Запись слишком длинная или большая.'],
+  aiOrganizerFillMissing: ['Bitte die markierten Felder ausfüllen.', 'Please complete the highlighted fields.', 'İşarələnmiş sahələri doldurun.', 'İşaretli alanları doldurun.', 'Заповніть позначені поля.', 'Заполните отмеченные поля.'],
   aiOrganizerMissingStart: ['Bitte Beginn mit Datum und Uhrzeit angeben.', 'Please add the start date and time.', 'Başlama tarixini və saatını yazın.', 'Başlangıç tarihi ve saatini girin.', 'Укажіть дату й час початку.', 'Укажите дату и время начала.'],
   aiOrganizerCancel: ['Abbrechen', 'Cancel', 'Ləğv et', 'İptal et', 'Скасувати', 'Отмена'],
 } as const;
