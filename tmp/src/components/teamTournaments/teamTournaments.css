@@ -208,3 +208,51 @@
 @media (prefers-reduced-motion: reduce) {
   .ai-organizer-wave i { transition: none; }
 }
+
+
+/* Organizer hub: isolated behind VITE_AI_ORGANIZER_ENABLED + M3. */
+.team-create-hub { min-width: 0; margin-block: 1rem 1.5rem; }
+.team-create-hub-grid {
+  display: grid;
+  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
+  align-items: start;
+  gap: 1rem;
+}
+.team-create-hub-grid > * { min-width: 0; }
+.team-create-manual {
+  min-width: 0;
+  padding: 1.15rem;
+  border: 1px solid rgba(164, 141, 111, .36);
+  border-radius: 14px;
+  background: linear-gradient(160deg, #171b27, #10141d 78%);
+  color: #ede8df;
+}
+.team-create-manual h2 { font-size: 1.1rem; margin: 0; }
+.team-create-manual header p { color: #b9b6b4; font-size: .87rem; line-height: 1.5; }
+.team-create-manual-form, .team-create-extra-fields { display: grid; gap: .85rem; }
+.team-create-manual-form label, .team-create-extra-fields label { display: grid; min-width: 0; gap: .35rem; font-size: .86rem; }
+.team-create-manual-form input { box-sizing: border-box; width: 100%; min-width: 0; }
+.team-create-extra { min-width: 0; border-top: 1px solid #ffffff23; padding-top: .35rem; }
+.team-create-extra summary { color: #e6c9a2; }
+.team-create-extra-fields { padding-top: .65rem; }
+.team-create-auto-note { color: #b8b4ab; font-size: .8rem; line-height: 1.45; }
+.team-create-form-error { color: #ffbfa8; font-size: .85rem; }
+.team-tournament-page .team-create-primary { width: 100%; background: #5d5143; color: #fff5e7; border-color: #b39b7d; font-weight: 600; }
+.team-create-ai .ai-organizer { margin: 0; }
+.team-create-mobile-switch { display: none; }
+.team-creation-entry { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin: .8rem 0 1rem; }
+.team-legacy-mode { border-top: 1px solid #ffffff24; margin-top: 1rem; }
+.team-legacy-mode summary { color: #cbb698; }
+.team-legacy-mode .section-card { margin-top: .7rem; }
+@media (max-width: 840px) {
+  .team-create-hub-grid { grid-template-columns: minmax(0, 1fr); }
+  .team-create-mobile-switch {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .4rem; margin-bottom: .8rem; padding: .25rem;
+    border: 1px solid #ffffff24; border-radius: 10px; background: #151822;
+  }
+  .team-tournament-page .team-create-mobile-switch button { width: 100%; }
+  .team-create-mobile-switch button[aria-pressed="true"] { background: #6b5c49; color: #fff5e7; }
+  .team-create-hub-grid[data-mobile-mode="manual"] > .team-create-ai,
+  .team-create-hub-grid[data-mobile-mode="ai"] > .team-create-manual { display: none; }
+}
