@@ -16,6 +16,131 @@ const inviteTarget = eventTarget + '&invite=' + invite;
 const legacyReturns = { clubs: true, spieltag: true, preparation: true };
 const returnsEnabled = { ...legacyReturns, tournaments: tournamentsEnabled('true') };
 
+// Render the component with controlled hook updates and network responses.
+async function withM3Component(name, api, check) {
+  const path = '/src/components/teamTournaments/' + name + '.tsx';
+  const fixture = '/__m3_hooks.ts';
+  const vite = await createServer({
+    optimizeDeps: { noDiscovery: true, include: [] },
+    server: { middlewareMode: true, hmr: false }, appType: 'custom',
+    plugins: [{
+      name: 'm3-component-fixture',
+      enforce: 'pre',
+      resolveId(id, importer) {
+        if (id === fixture) return fixture;
+        if (importer?.endsWith(path) && ['../../context/AuthContext',
+          '../../context/LanguageContext', '../../services/teamTournaments'].includes(id)) return fixture;
+      },
+      transform(code, id) {
+        if (id.endsWith(path)) return code.replace("from 'react'", "from '" + fixture + "'");
+      },
+      load(id) {
+        if (id !== fixture) return;
+        return `
+          const state = [];
+          const dependencies = [];
+          const cleanups = [];
+          const effects = [];
+          let cursor = 0;
+          let api;
+          export const setApi = value => { api = value; };
+          export const createTournamentM3Api = () => api;
+          export const createTournamentApi = () => api;
+          export const useAuth = () => ({ session: { access_token: 'fixture-token', user: { id: '${event}' } } });
+          export const useLanguage = () => ({ language: 'en' });
+          export const useRef = initial => useState({ current: initial })[0];
+          export function useState(initial) {
+            const i = cursor++;
+            if (!(i in state)) state[i] = initial;
+            return [state[i], next => { state[i] = typeof next === 'function' ? next(state[i]) : next; }];
+          }
+          export function useEffect(effect, deps) {
+            const i = cursor++;
+            if (!dependencies[i] || deps.some((dep, index) => !Object.is(dep, dependencies[i][index]))) {
+              dependencies[i] = deps;
+              effects.push(() => { cleanups[i]?.(); cleanups[i] = effect(); });
+            }
+          }
+          export function render(component) {
+            cursor = 0;
+            return component();
+          }
+          export function runEffects() {
+            for (const effect of effects.splice(0)) effect();
+          }
+        `;
+      },
+    }],
+  });
+  try {
+    const hooks = await vite.ssrLoadModule(fixture);
+    hooks.setApi(api);
+    await check(await vite.ssrLoadModule(path), hooks);
+  } finally { await vite.close(); }
+}
+
+function findElement(element, predicate) {
+  if (Array.isArray(element)) {
+    for (const child of element) {
+      const found = findElement(child, predicate);
+      if (found) return found;
+    }
+    return;
+  }
+  if (!element?.props) return;
+  return predicate(element) ? element : findElement(element.props.children, predicate);
+}
+
+test('My tournament keeps the board rendered while a report refresh is pending', async () => {
+  const board = {
+    tournament_id: event, match_id: match, tournament_name: 'Fixture Cup', round_no: 1,
+    board_no: 1, side: 'white', opponent: 'Fixture opponent', result: 'pending',
+    status: 'pending', confirmed: false,
+  };
+  const refresh = Promise.withResolvers();
+  let fetches = 0;
+  const reports = [];
+  const api = {
+    myBoard: async () => {
+      if (++fetches === 1) return { board };
+      if (fetches === 2) return refresh.promise;
+      return { board: null };
+    },
+    report: async (_, action, result) => { reports.push({ action, result }); },
+  };
+  await withM3Component('MyTournamentCard', api, async ({ default: Card }, hooks) => {
+    const render = () => hooks.render(() => {
+      const card = Card();
+      return typeof card?.type === 'function' ? card.type(card.props) : card;
+    });
+    assert.equal(render(), null);
+    hooks.runEffects();
+    await new Promise(setImmediate);
+
+    const original = render();
+    findElement(original, element => element.props['aria-label'] === 'Win').props.onClick();
+    await new Promise(setImmediate);
+    render();
+    hooks.runEffects();
+    assert.equal(fetches, 2);
+    assert.deepEqual(reports, [{ action: 'report', result: '1-0' }]);
+    const duringRefresh = render();
+    assert.equal(duringRefresh?.type, original.type);
+    assert.match(renderToStaticMarkup(duringRefresh), /Fixture opponent/);
+
+    refresh.resolve({ board: { ...board, result: '1-0', status: 'confirmed', confirmed: true } });
+    await new Promise(setImmediate);
+    const updated = render();
+    assert.match(renderToStaticMarkup(updated), /Result confirmed/);
+
+    findElement(updated, element => element.type === 'button').props.onClick();
+    render();
+    hooks.runEffects();
+    await new Promise(setImmediate);
+    assert.equal(render(), null);
+  });
+});
+
 test('M3 typed API transmits authenticated no-store actions; denies unsafe values', async () => {
   const calls = [];
   const api = createTournamentM3Api('https://qa.example', 'fixture-token', async (url, options) => {
