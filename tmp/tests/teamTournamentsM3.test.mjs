@@ -184,6 +184,15 @@ test('M3 captain sees the highest-priority reason the lineup cannot be submitted
   });
 });
 
+test('M3 availability refers to teams in every locale', async () => {
+  const { tournamentCopy } = await import('../src/components/teamTournaments/copy.ts');
+  for (const [language, teamLabel] of Object.entries({
+    de: 'Mannschaften', en: 'team', az: 'Komandalar', tr: 'Takımlar', ua: 'команд', ru: 'команд',
+  })) {
+    assert.ok(tournamentCopy(language)('m3Spots').includes(teamLabel), language);
+  }
+});
+
 test('M3 typed API transmits authenticated no-store actions; denies unsafe values', async () => {
   const calls = [];
   const api = createTournamentM3Api('https://qa.example', 'fixture-token', async (url, options) => {

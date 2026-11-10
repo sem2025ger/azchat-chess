@@ -80,7 +80,7 @@ const labels = {
   m3Deadline: ['Anmeldeschluss (Berlin)', 'Registration deadline (Berlin)', 'Qeydiyyatın sonu (Berlin)', 'Kayıt bitişi (Berlin)', 'Кінець реєстрації (Берлін)', 'Окончание регистрации (Берлин)'],
   m3MinTeams: ['Mindestteams', 'Minimum teams', 'Minimum komanda', 'Asgari takım', 'Мінімум команд', 'Минимум команд'],
   m3MaxTeams: ['Maximalteams', 'Maximum teams', 'Maksimum komanda', 'Azami takım', 'Максимум команд', 'Максимум команд'],
-  m3Spots: ['Freie Plätze', 'Remaining spots', 'Boş yerlər', 'Kalan yerler', 'Вільні місця', 'Свободные места'],
+  m3Spots: ['Freie Plätze für Mannschaften', 'Available team slots', 'Komandalar üçün boş yerlər', 'Takımlar için boş yerler', 'Вільні місця для команд', 'Свободные места для команд'],
   m3ClubName: ['Vereinsname', 'Club name', 'Klubun adı', 'Kulüp adı', 'Назва клубу', 'Название клуба'],
   m3Invite: ['Einladungslink erzeugen', 'Create invitation link', 'Dəvət linki yarat', 'Davet bağlantısı oluştur', 'Створити запрошення', 'Создать ссылку-приглашение'],
   m3CopyLink: ['Link kopieren', 'Copy link', 'Linki kopyala', 'Bağlantıyı kopyala', 'Копіювати посилання', 'Копировать ссылку'],
