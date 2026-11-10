@@ -1,23 +1,30 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '../../server/node_modules/playwright/index.mjs';
-import { createServer } from 'vite';
+import { build, preview } from 'vite';
 
-test('desktop online game keeps the opponent and clock clear of the top edge', { timeout: 30_000 }, async () => {
-  const server = await createServer({
-    root: fileURLToPath(new URL('..', import.meta.url)),
-    server: { host: '127.0.0.1', port: 0, hmr: false },
-  });
+test('desktop online game keeps the opponent and clock clear of the top edge', { timeout: 60_000 }, async () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const outDir = await mkdtemp(join(tmpdir(), 'chessaz-live-layout-'));
+  let server;
   try {
-    await server.listen();
+    // Use a stable bundle so lazy route loads cannot trigger dev dependency reloads.
+    await build({ root, logLevel: 'error', build: { outDir } });
+    server = await preview({ root, build: { outDir }, preview: { host: '127.0.0.1', port: 0 } });
     const executablePath = process.env.CHROME_BIN
       || ['/usr/bin/google-chrome', '/usr/bin/chromium'].find(existsSync);
-    const browser = await chromium.launch({ executablePath, args: ['--no-sandbox', '--disable-gpu'] });
+    const browser = await chromium.launch({ executablePath, args: ['--no-sandbox', '--disable-gpu'], timeout: 12_000 });
     try {
       const page = await browser.newPage({ reducedMotion: 'reduce' });
-      const gameUrl = server.resolvedUrls.local[0] + 'play?roomId=layout-test&color=b';
+      const base = server.resolvedUrls.local[0];
+      await page.route('**/*', route => route.request().url().startsWith(base) ? route.continue() : route.abort());
+      page.setDefaultTimeout(8_000);
+      const gameUrl = base + 'play?roomId=layout-test&color=b';
       const opponent = page.locator('[data-live-game-player="opponent"]');
       const player = page.locator('[data-live-game-player="self"]');
       const topSquare = page.locator('[data-square="h1"]:not([data-piece-square])');
@@ -25,9 +32,8 @@ test('desktop online game keeps the opponent and clock clear of the top edge', {
 
       for (const [width, height] of [[1536, 864], [1366, 768], [1024, 600]]) {
         await page.setViewportSize({ width, height });
-        await page.goto(gameUrl);
-        await page.evaluate(() => document.fonts.ready);
-        await page.getByText('UNRATED', { exact: true }).waitFor();
+        await page.goto(gameUrl, { waitUntil: 'domcontentloaded', timeout: 10_000 });
+        await opponent.waitFor();
         const [header, clock, top, bottom, footer] = await Promise.all([
           opponent.boundingBox(),
           opponent.getByText('10:00', { exact: true }).boundingBox(),
@@ -46,6 +52,7 @@ test('desktop online game keeps the opponent and clock clear of the top edge', {
       await browser.close();
     }
   } finally {
-    await server.close();
+    await server?.close();
+    await rm(outDir, { recursive: true, force: true });
   }
 });
