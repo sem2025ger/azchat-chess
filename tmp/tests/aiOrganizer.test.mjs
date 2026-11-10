@@ -113,7 +113,8 @@ test('chat is gated by flag and existing can_create authorization; form is reuse
   const panel = readFileSync(new URL('../src/components/teamTournaments/TeamTournamentsM3Panel.tsx', import.meta.url), 'utf8');
   const tab = readFileSync(new URL('../src/components/teamTournaments/TeamTournamentsTab.tsx', import.meta.url), 'utf8');
   assert.match(panel, /VITE_AI_ORGANIZER_ENABLED\s*===\s*'true'/);
-  assert.match(panel, /aiEnabled\s*&&\s*<AiOrganizerPanel/);
+  assert.match(panel, /if \(!aiEnabled\) return/);
+  assert.match(panel, /<AiOrganizerPanel/);
   assert.match(tab, /token\s*&&\s*list\.can_create\s*&&\s*[\r\n\s]*<M3Create/);
   assert.match(panel, /formRef\.current\.requestSubmit\(\)/);
   assert.equal(panel.match(/createTournamentM3Api\([^\n]*\)\.create\(/g)?.length, 1);
