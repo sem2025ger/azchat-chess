@@ -116,7 +116,7 @@ test('chat is gated by flag and existing can_create authorization; form is reuse
   assert.match(panel, /aiEnabled\s*&&\s*<AiOrganizerPanel/);
   assert.match(tab, /token\s*&&\s*list\.can_create\s*&&\s*[\r\n\s]*<M3Create/);
   assert.match(panel, /formRef\.current\.requestSubmit\(\)/);
-  assert.equal(panel.match(/createTournamentM3Api\(/g)?.length, 1);
+  assert.equal(panel.match(/createTournamentM3Api\([^\n]*\)\.create\(/g)?.length, 1);
 });
 test('missing draft fields highlighted; cannot create before completion', async () => {
   await withAiComponent('AiOrganizerPanel', async ({ AiOrganizerPanel }, hooks) => {
