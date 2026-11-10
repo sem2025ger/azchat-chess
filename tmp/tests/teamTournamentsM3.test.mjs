@@ -141,6 +141,49 @@ test('My tournament keeps the board rendered while a report refresh is pending',
   });
 });
 
+test('M3 captain sees the highest-priority reason the lineup cannot be submitted', async () => {
+  const players = [event, match, 'third', 'fourth'];
+  const api = {
+    event: async () => ({
+      id: event, name: 'Fixture Cup', status: 'registration', board_count: 4,
+      starts_at: new Date(Date.now() + 7200000).toISOString(),
+      registration_deadline: new Date(Date.now() + 3600000).toISOString(),
+      remaining_spots: 2, max_teams: 2, teams: [],
+      entries: [{ id: 'entry', captain_id: event, club_name: 'Fixture Club' }],
+      lineups: players.map((player_id, index) => ({
+        entry_id: 'entry', board_no: index + 1, player_id, consented_at: null,
+      })),
+    }),
+  };
+  await withM3Component('TeamTournamentsM3Panel', api, async ({ M3EventPanel }, hooks) => {
+    const { tournamentCopy } = await import('../src/components/teamTournaments/copy.ts');
+    const tr = tournamentCopy('en');
+    const render = () => hooks.render(() => M3EventPanel({
+      tr, id: event, token: 'fixture-token', userId: event,
+    }));
+    render();
+    hooks.runEffects();
+    await new Promise(setImmediate);
+
+    const verifyHint = text => {
+      const panel = render();
+      const submit = findElement(panel, element =>
+        element.type === 'button' && element.props.children === tr('m3Submit'));
+      const hint = findElement(panel, element => element.props.role === 'status');
+      assert.equal(submit.props.disabled, true);
+      assert.equal(hint?.props.children, text);
+      return panel;
+    };
+    const click = (panel, label) => findElement(panel, element =>
+      element.props['aria-label'] === label).props.onClick();
+    click(verifyHint('Awaiting player consent'), tr('m3MoveDown') + ' 1');
+    click(verifyHint('Save the draft first.'), tr('m3RemovePlayer') + ' 4');
+    click(render(), tr('m3RemovePlayer') + ' 3');
+    click(render(), tr('m3RemovePlayer') + ' 2');
+    verifyHint('Players in the lineup 1 / 4');
+  });
+});
+
 test('M3 typed API transmits authenticated no-store actions; denies unsafe values', async () => {
   const calls = [];
   const api = createTournamentM3Api('https://qa.example', 'fixture-token', async (url, options) => {
@@ -244,7 +287,7 @@ test('M3 organizer form and board results use six existing locale translations w
         assert.equal(tournamentErrorMessage(code, tr), tr(label), language + ': ' + code);
       }
       for (const key of ['m3Pending','m3Reported','m3Confirmed','m3DisputedStatus',
-        'm3Forfeit','m3Played','m3MoveUp','m3MoveDown','m3RemovePlayer']) {
+        'm3Forfeit','m3Played','m3MoveUp','m3MoveDown','m3RemovePlayer','m3LineupCount','m3DraftNotSaved']) {
         assert.ok(tr(key), language + ': ' + key);
       }
       const html = renderToStaticMarkup(createElement(M3Create, {

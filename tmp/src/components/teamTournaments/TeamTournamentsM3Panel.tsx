@@ -207,9 +207,12 @@ export function M3EventPanel({ tr, id, token, userId, ownUsername, onUpdated }: 
   const myLineups = (event.lineups ?? [])
     .filter(row => row.entry_id === myEntry?.id)
     .sort((a, b) => a.board_no - b.board_no);
-  const canSubmit = draft.length === event.board_count &&
-    draft.every((playerId, index) => playerId === myLineups[index]?.player_id) &&
-    myLineups.every(row => !!row.consented_at);
+  const hasFullLineup = draft.length === boardCount;
+  const matchesSavedLineup = draft.every((playerId, index) => playerId === myLineups[index]?.player_id);
+  const canSubmit = hasFullLineup && matchesSavedLineup && myLineups.every(row => !!row.consented_at);
+  const submitHint = !hasFullLineup
+    ? tr('m3LineupCount') + ' ' + draft.length + ' / ' + boardCount
+    : tr(matchesSavedLineup ? 'm3Waiting' : 'm3DraftNotSaved');
   const pendingConsents = [...new Set((event.lineups ?? [])
     .filter(row => row.player_id === userId && !row.consented_at)
     .map(row => row.entry_id))];
@@ -317,7 +320,7 @@ export function M3EventPanel({ tr, id, token, userId, ownUsername, onUpdated }: 
         {myEntry.submitted_at && <button type="button" className="min-h-11" disabled={busy}
           onClick={()=>void mutate(signal=>api.lineupAction(id,'withdraw',signal))}>{tr('m3Withdraw')}</button>}
       </div>
-      {myLineups.some(row=>!row.consented_at) && <p>{tr('m3Waiting')}</p>}
+      {!canSubmit && <p role="status">{submitHint}</p>}
     </section>}
     {published && (staff || !!myEntry) && api && <section className="mt-4 grid gap-3">
       <h3>{tr('m3Disputes')}</h3>

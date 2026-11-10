@@ -94,6 +94,8 @@ const labels = {
   m3AddMyself: ['Mich aufstellen', 'Add myself', 'Özümü əlavə et', 'Kendimi ekle', 'Додати себе', 'Добавить себя'],
   m3Add: ['Aufstellen', 'Add player', 'Əlavə et', 'Oyuncu ekle', 'Додати гравця', 'Добавить игрока'],
   m3Draft: ['Entwurf speichern', 'Save draft', 'Qaralamanı saxla', 'Taslağı kaydet', 'Зберегти чернетку', 'Сохранить черновик'],
+  m3DraftNotSaved: ['Speichere zuerst den Entwurf.', 'Save the draft first.', 'Əvvəlcə qaralamanı saxla.', 'Önce taslağı kaydet.', 'Спочатку збережіть чернетку.', 'Сначала сохраните черновик.'],
+  m3LineupCount: ['Spieler in der Aufstellung', 'Players in the lineup', 'Heyətdəki oyunçular', 'Kadrodaki oyuncular', 'Гравців у складі', 'Игроков в составе'],
   m3Previous: ['Letzte Aufstellung übernehmen', 'Use previous lineup', 'Əvvəlki heyəti götür', 'Önceki kadroyu kullan', 'Взяти попередній склад', 'Взять прошлый состав'],
   m3Consent: ['Teilnahme und Veröffentlichung zustimmen', 'Confirm participation and publication', 'İştiraka və dərcə razılıq ver', 'Katılımı ve yayımlamayı onayla', 'Підтвердити участь і публікацію', 'Подтвердить участие и публикацию'],
   m3Submit: ['Aufstellung verbindlich anmelden', 'Submit complete lineup', 'Heyəti təsdiq edib göndər', 'Kadroyu kesin kaydet', 'Подати остаточний склад', 'Подать окончательный состав'],
