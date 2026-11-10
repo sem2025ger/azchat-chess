@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   createTournamentM3Api, createTournamentApi,
-  type M3Event, type M3EventInput, type Tournament, type BoardResult,
+  type M3Event, type M3EventInput, type Tournament, type BoardResult, type AiOrganizerDraft,
 } from '../../services/teamTournaments';
 import { tournamentErrorMessage, type TournamentCopy } from './copy';
 import { useLanguage } from '../../context/LanguageContext';
+import { AiOrganizerPanel } from './AiOrganizerPanel';
 
 const outcomes: { result: BoardResult; text: string }[] = [
   { result: '1-0', text: '1–0' },
@@ -41,6 +42,21 @@ export function M3Create({ tr, token, onCreated }: {
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const formRef = useRef<HTMLFormElement>(null);
+  const aiEnabled = import.meta.env.VITE_AI_ORGANIZER_ENABLED === 'true';
+  function applyAiDraft(draft: AiOrganizerDraft) {
+    const form = formRef.current;
+    if (!form) return;
+    for (const [key, value] of Object.entries(draft)) {
+      const field = form.elements.namedItem(key);
+      if (field instanceof HTMLInputElement) field.value = value === null ? '' : String(value);
+    }
+  }
+  function createAiDraft(draft: AiOrganizerDraft) {
+    if (busy || !formRef.current) return;
+    applyAiDraft(draft);
+    formRef.current.requestSubmit();
+  }
   async function submit(form: FormEvent<HTMLFormElement>) {
     form.preventDefault();
     if (busy) return;
@@ -64,8 +80,10 @@ export function M3Create({ tr, token, onCreated }: {
     } finally { setBusy(false); }
   }
   return <section className="section-card">
+    {aiEnabled && <AiOrganizerPanel tr={tr} token={token} onApply={applyAiDraft}
+      onCreate={createAiDraft} creating={busy} />}
     <h2>{tr('m3Create')}</h2>
-    <form onSubmit={event => void submit(event)} className="grid gap-3">
+    <form ref={formRef} onSubmit={event => void submit(event)} className="grid gap-3">
       <label>{tr('name')}<input name="name" required maxLength={120} className="w-full min-h-11" /></label>
       <label>{tr('m3Start')}<input name="start_time" type="datetime-local" required className="w-full min-h-11" /></label>
       <label>{tr('m3Deadline')}<input name="registration_deadline" type="datetime-local" required className="w-full min-h-11" /></label>
