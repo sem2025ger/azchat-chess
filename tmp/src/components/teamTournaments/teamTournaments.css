@@ -74,3 +74,137 @@
   .team-tournament-tabs { padding-inline: 16px; }
   .team-tournament-table :is(td,th) { padding-inline: .23rem; }
 }
+
+
+/* AI Organizer M1. Scoped to the feature-flagged panel; the legacy form remains unchanged. */
+.ai-organizer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  margin: .65rem 0 1.5rem;
+  border: 1px solid rgba(164, 141, 111, .36);
+  border-radius: 14px;
+  background: linear-gradient(160deg, #171b27, #10141d 78%);
+  color: #ede8df;
+}
+.ai-organizer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid #ffffff19;
+}
+.ai-organizer-header h3 { margin: 0; font-weight: 700; font-size: 1.07rem; }
+.ai-organizer-header small { color: #b5a18a; letter-spacing: .09em; font-size: .7rem; }
+.ai-organizer-header p { margin: 0; color: #b9b6b4; font-size: .78rem; max-width: 13rem; line-height: 1.5; }
+.ai-organizer-history {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  padding: 1.2rem 1rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 13rem;
+  max-height: min(63vh, 36rem);
+  scrollbar-width: thin;
+}
+.ai-organizer-intro { font-size: .93rem; color: #b7b4b2; }
+.ai-organizer-bubble {
+  width: fit-content;
+  max-width: min(92%, 37rem);
+  padding: .8rem 1rem;
+  border: 1px solid #ffffff1b;
+  border-radius: 14px;
+  font-size: .92rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ai-organizer-user {
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+  background: #293749;
+  border-color: #6a81964d;
+}
+.ai-organizer-assistant {
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  background: #25272e;
+}
+.ai-organizer-draft {
+  align-self: flex-start;
+  max-width: 100%;
+  width: min(100%, 42rem);
+  padding: 1.1rem;
+  border: 1px solid #98836f78;
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  background: #22242a;
+}
+.ai-organizer-draft h4 { font-size: 1rem; margin: 0; }
+.ai-organizer-draft > p { font-size: .82rem; color: #c5c0b8; }
+.ai-organizer-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .8rem;
+  margin-top: 1rem;
+}
+.ai-organizer-fields label {
+  display: grid;
+  gap: .35rem;
+  min-width: 0;
+  font-size: .79rem;
+  color: #e4e1d9;
+}
+.ai-organizer-fields input { box-sizing: border-box; width: 100%; min-width: 0; }
+.ai-organizer-field-missing > span,
+.ai-organizer-field-missing small { color: #efb89e; }
+.ai-organizer-field-missing input { border-color: #c07f65 !important; }
+.ai-organizer-draft-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .65rem; margin-top: 1rem; }
+.ai-organizer .ai-organizer-primary { background: #3e474f; border-color: #a99380; color: #f5eee5; }
+.ai-organizer-status { color: #c4b9a9; font-size: .85rem; }
+.ai-organizer-error { color: #ffbfa8; margin: .35rem 1rem; font-size: .85rem; }
+.ai-organizer-composer {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .8rem;
+  border-top: 1px solid #ffffff24;
+  background: #171a22;
+}
+.team-tournament-page .ai-organizer-composer input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #ffffff38;
+  background: #11151e;
+  color: #f4eee3;
+}
+.ai-organizer-composer button { flex: 0 0 auto; display: grid; place-items: center; min-width: 44px; height: 44px; padding: .4rem; }
+.ai-organizer-recording {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  min-height: 3rem;
+  padding: .4rem 1rem;
+  color: #e6c4a4;
+  font-size: .85rem;
+}
+.ai-organizer-wave { display: flex; align-items: center; gap: 3px; height: 36px; }
+.ai-organizer-wave i { width: 3px; border-radius: 10px; background: #b9a28a; transition: height 80ms linear; }
+@media (max-width: 600px) {
+  .ai-organizer-header { flex-direction: column; gap: .35rem; padding: .85rem; }
+  .ai-organizer-header p { max-width: 100%; }
+  .ai-organizer-history { padding: .85rem; max-height: 55vh; }
+  .ai-organizer-bubble { max-width: 96%; }
+  .ai-organizer-draft { padding: .8rem; }
+  .ai-organizer-fields { grid-template-columns: minmax(0, 1fr); }
+  .ai-organizer-draft-actions { flex-direction: column; }
+  .ai-organizer-draft-actions button { width: 100%; }
+  .ai-organizer-composer { gap: .3rem; padding: .55rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-organizer-wave i { transition: none; }
+}
