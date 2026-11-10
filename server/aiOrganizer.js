@@ -42,9 +42,9 @@ function validateRequest(value) {
 function normaliseDraft(source, now, language) {
   const draft = emptyDraft();
   draft.name = typeof source.name === 'string' ? source.name.trim().slice(0, 120).replace(/[\x00-\x1f\x7f]/g, '') || null : null;
-  draft.boards_per_team = boundedInt(source.boards_per_team, 1, 16);
-  draft.min_teams = boundedInt(source.min_teams, 2, 16);
-  draft.max_teams = boundedInt(source.max_teams, draft.min_teams || 2, 16);
+  draft.boards_per_team = source.boards_per_team == null ? 4 : boundedInt(source.boards_per_team, 1, 16);
+  draft.min_teams = source.min_teams == null ? 2 : boundedInt(source.min_teams, 2, 16);
+  draft.max_teams = source.max_teams == null ? 4 : boundedInt(source.max_teams, draft.min_teams || 2, 16);
   let startIso = null;
   if (typeof source.start_time === 'string') try {
     startIso = berlinLocalToIso(source.start_time);
