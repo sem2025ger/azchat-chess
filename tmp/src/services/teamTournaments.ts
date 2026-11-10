@@ -205,4 +205,56 @@ export function createTournamentM3Api(base: string, token: string, fetchImpl: ty
   };
 }
 
+
+export type AiOrganizerLanguage = 'de' | 'en' | 'az' | 'tr' | 'ua' | 'ru';
+export type AiOrganizerDraft = {
+  name: string | null;
+  start_time: string | null;
+  registration_deadline: string | null;
+  boards_per_team: number | null;
+  min_teams: number | null;
+  max_teams: number | null;
+};
+export type AiOrganizerMessage = { role: 'user' | 'assistant'; text: string };
+export type AiOrganizerPlan = {
+  draft: AiOrganizerDraft;
+  missing: (keyof AiOrganizerDraft)[];
+  question: string | null;
+  assistant_text: string;
+  ready: boolean;
+};
+export function createAiOrganizerApi(base: string, token: string, fetchImpl: typeof fetch = fetch) {
+  if (!token) throw new TournamentError('authentication_required');
+  let root: URL;
+  try { root = new URL(base); } catch { throw new TournamentError('configuration'); }
+  if (root.username || root.password || (root.protocol !== 'https:' &&
+      !(root.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(root.hostname)))) {
+    throw new TournamentError('configuration');
+  }
+  async function send<T>(path: string, body: string | Blob, type: string, signal: AbortSignal): Promise<T> {
+    const timeout = abortWithTimeout(signal, 30000);
+    try {
+      const response = await fetchImpl(new URL('/api/ai-organizer' + path, root), {
+        method: 'POST', signal: timeout.signal, cache: 'no-store',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': type },
+        body,
+      });
+      const json: unknown = await response.json().catch(() => null);
+      if (!response.ok || !json || typeof json !== 'object')
+        throw new TournamentError(
+          json && typeof json === 'object' && 'code' in json && typeof json.code === 'string'
+            ? json.code : 'temporarily_unavailable');
+      return json as T;
+    } finally { timeout.cancel(); }
+  }
+  return {
+    plan: (language: AiOrganizerLanguage, messages: AiOrganizerMessage[],
+      draft: Partial<AiOrganizerDraft> | undefined, signal: AbortSignal) =>
+      send<AiOrganizerPlan>('/plan', JSON.stringify({ language, messages, ...(draft ? { draft } : {}) }),
+        'application/json', signal),
+    transcribe: (language: AiOrganizerLanguage, audio: Blob, signal: AbortSignal) =>
+      send<{ text: string }>('/transcribe?language=' + language, audio, audio.type, signal),
+  };
+}
+
 export type TournamentApi = ReturnType<typeof createTournamentApi>;
