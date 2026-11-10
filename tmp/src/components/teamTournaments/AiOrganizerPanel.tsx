@@ -196,7 +196,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
           })}
         </div>
         {ready ? <p className="ai-organizer-status">{tr('aiOrganizerReady')}</p> :
-          <p className="ai-organizer-status">{tr('aiOrganizerMissingStart')}</p>}
+          <p className="ai-organizer-status">{tr('aiOrganizerFillMissing')}</p>}
         <div className="ai-organizer-draft-actions">
           <button type="button" disabled={!ready || !!busy || creating} onClick={() => onApply(draft)}>
             {tr('aiOrganizerApply')}
