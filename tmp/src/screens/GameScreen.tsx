@@ -249,7 +249,18 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [moveRejectMessage, setMoveRejectMessage] = useState<string | null>(null);
   const [disconnectNotice, setDisconnectNotice] = useState<string | null>(null);
   const [gameOverMessage, setGameOverMessage] = useState<string | null>(null);
-  const dismissResult = useCallback(() => setActiveTab('analysis'), [setActiveTab]);
+  const confirmedEndedRoomRef = useRef<string | null>(null);
+  const postGameAnalysisRoomRef = useRef<string | null>(null);
+  const [postGameAnalysisRoom, setPostGameAnalysisRoom] = useState<string | null>(null);
+  const isPostGameAnalysis = isMultiplayer && postGameAnalysisRoom === roomId;
+  const dismissResult = useCallback(() => {
+    // A connection error is not confirmation that the online game has ended.
+    if (isMultiplayer && roomId && confirmedEndedRoomRef.current === roomId) {
+      postGameAnalysisRoomRef.current = roomId;
+      setPostGameAnalysisRoom(roomId);
+    }
+    setActiveTab('analysis');
+  }, [isMultiplayer, roomId, setActiveTab]);
   const [drawOfferBy, setDrawOfferBy] = useState<'w' | 'b' | null>(null);
   const [gameActionMessage, setGameActionMessage] = useState<string | null>(null);
   const isLiveMultiplayer = isMultiplayer && !gameOverMessage;
@@ -300,8 +311,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   useEffect(() => {
     if (!socket || !roomId) return;
-    const isCurrentRoomEvent = (data: any) => !data?.roomId || data.roomId === roomId;
+    // Once the result is dismissed, this workspace is a local analysis only.
+    const isLocalAnalysis = () => postGameAnalysisRoomRef.current === roomId;
+    const isCurrentRoomEvent = (data: any) => !isLocalAnalysis() && (!data?.roomId || data.roomId === roomId);
     const onStart = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
       setTimeLeft({ white: data.whiteTime, black: data.blackTime });
     };
     const onUpdate = (data: any) => {
@@ -339,6 +353,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     };
     const onGameOver = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
+      confirmedEndedRoomRef.current = roomId;
       timeoutManagerRef.current.clear('gameActionMessage');
       timeoutManagerRef.current.clear('disconnectNotice');
       setDrawOfferBy(null);
@@ -349,6 +364,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     };
 
     const onMoveRejected = (data: { reason?: string }) => {
+      if (isLocalAnalysis()) return;
       locallyPlayedFenRef.current = null;
       const confirmedFen = lastConfirmedFenRef.current;
       const rollbackGame = new Chess(confirmedFen);
@@ -436,7 +452,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
         setServerColor({ roomId, color: snapshot.color });
       }
       setGameOverMessage(snapshot.ended ? mapGameOverReasonRef.current(data.outcome, playerColorRef.current) : null);
-      if (snapshot.ended) setActiveTab('analysis');
+      if (snapshot.ended) {
+        confirmedEndedRoomRef.current = roomId;
+        setActiveTab('analysis');
+      }
       if (data?.whiteTime !== undefined) {
         setTimeLeft({ white: data.whiteTime, black: data.blackTime });
       }
@@ -446,6 +465,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     };
 
     const onSessionExpired = () => {
+      if (isLocalAnalysis()) return;
       setSyncedRoom(null);
       timeoutManagerRef.current.clear('disconnectNotice');
       setDisconnectNotice(null);
@@ -496,6 +516,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
   }, [socket, roomId]);
 
   useEffect(() => {
+    confirmedEndedRoomRef.current = null;
+    postGameAnalysisRoomRef.current = null;
+    setPostGameAnalysisRoom(null);
     setDrawOfferBy(null);
     setGameActionMessage(null);
   }, [roomId]);
@@ -642,17 +665,17 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const handleGameMove = useCallback(
     (source: string, target: string, promotion: string = 'q') => {
-      if (isMultiplayer && !canSendGameAction) return false;
+      if (isMultiplayer && !isPostGameAnalysis && !canSendGameAction) return false;
       // Replay of a live game is read-only. Analysis may branch at any past ply.
-      if (mode !== 'review' && viewMoveIndex !== -1) {
+      if (mode !== 'review' && !isPostGameAnalysis && viewMoveIndex !== -1) {
         setViewMoveIndex(-1);
         return false;
       }
-      if (isMultiplayer && playerColor !== game.turn()) {
+      if (isMultiplayer && !isPostGameAnalysis && playerColor !== game.turn()) {
         return false;
       }
       try {
-        if (mode === 'review') {
+        if (mode === 'review' || isPostGameAnalysis) {
           const branch = playAnalysisMoveAtView(
             moveHistory, positionHistory, viewMoveIndex, source, target, promotion,
           );
@@ -664,7 +687,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
           setPositionHistory(analysis.positionHistory);
           setMoveHistory(analysis.moveHistory);
           setViewMoveIndex(-1);
-          setGameOverMessage(analysis.game.isGameOver()
+          // Keep the authoritative online outcome, including after analysis mate/draw.
+          if (!isPostGameAnalysis) setGameOverMessage(analysis.game.isGameOver()
             ? analysis.game.isCheckmate() ? 'Game over: checkmate.'
               : analysis.game.isStalemate() ? 'Game over: stalemate.'
               : 'Game over: draw.'
@@ -704,7 +728,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, moveHistory, positionHistory, game, socket, roomId, sound, mode, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
+    [viewMoveIndex, moveHistory, positionHistory, game, socket, roomId, sound, mode, isMultiplayer, isPostGameAnalysis, playerColor, canSendGameAction, setViewMoveIndex]
   );
 
 
@@ -767,7 +791,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     }
   }, [game, viewMoveIndex, positionHistory]);
 
-  const currentEngineResult = mode === 'review' && engineResult?.analyzedFen !== displayedGame.fen() ? null : engineResult;
+  const currentEngineResult = (mode === 'review' || isPostGameAnalysis) && engineResult?.analyzedFen !== displayedGame.fen() ? null : engineResult;
   const openPositionMap = () => {
     setEditingPosition(false);
     setPlanHighlight(null);
@@ -1272,11 +1296,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 externalCoordinatesOnDesktop={mode === 'review'}
                 highlightedSquares={mode === 'review' && workspaceTab === 'map' && planHighlight?.fen === displayedGame.fen() ? planHighlight.squares : undefined}
                 overrideBoardTheme={boardTheme}
-                confirmMovesMobile={mode === 'live' && confirmMobileMoves}
+                confirmMovesMobile={mode === 'live' && !isPostGameAnalysis && confirmMobileMoves}
                 game={displayedGame}
                 onMove={handleGameMove}
                 orientation={mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
-                readOnly={(mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn())}
+                readOnly={!isPostGameAnalysis && ((mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn()))}
               />}
             </div>
           </div>

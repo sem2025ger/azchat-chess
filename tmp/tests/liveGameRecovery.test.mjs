@@ -5,6 +5,7 @@ import { Chess } from 'chess.js';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
+import { analysisFromMoves, playAnalysisMoveAtView } from '../src/utils/analysisWorkspace.ts';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../src/utils/liveGameRecovery.ts';
 
 function screenHandler(name, globals) {
@@ -40,6 +41,7 @@ test('unknown recovery expires within 30 seconds including an in-flight retry an
   let requests = 0, expired = 0;
   let message, redirect;
   const expireScreen = screenHandler('onSessionExpired', {
+    isLocalAnalysis: () => false,
     setSyncedRoom: () => {}, setDisconnectNotice: () => {}, setGameOverMessage: value => { message = value; },
     navigateRef: { current: path => { redirect = path; } },
     timeoutManagerRef: { current: { clear() {}, set: (_, fn, ms) => setTimeout(fn, ms) } },
@@ -129,4 +131,52 @@ test('temporary recovery failure retries and disposing cancels the pending retry
   t.mock.timers.tick(2000); assert.equal(requests, 2);
   socket.emit('move_rejected', { reason: 'storage_unavailable' });
   dispose(); t.mock.timers.tick(2000); assert.equal(requests, 2);
+});
+
+// Exercise the production socket guards: a local variation must survive stale
+// snapshots, move rejections and recovery expiry without reactivating the game.
+test('postgame analysis ignores room events and expiry; live games retain room filtering', () => {
+  for (const local of [true, false]) {
+    const isCurrentRoomEvent = screenHandler('isCurrentRoomEvent', {roomId:'r', isLocalAnalysis: () => local});
+    assert.equal(isCurrentRoomEvent({roomId:'r'}), !local);
+    assert.equal(isCurrentRoomEvent({}), !local);
+    assert.equal(isCurrentRoomEvent({roomId:'other'}), false);
+  }
+  for (const name of ['onMoveRejected','onSessionExpired']) {
+    // No state setters are supplied: falling through the guard fails this test.
+    const handler = screenHandler(name, {isLocalAnalysis: () => true});
+    assert.doesNotThrow(() => handler({reason:'game_over'}));
+  }
+});
+
+test('dismissal unlocks local analysis only after a confirmed terminal event for this room', () => {
+  for (const confirmed of [null, 'other', 'r']) {
+    const selected = [], phases = [], ref = {current:null};
+    const dismiss = screenHandler('dismissResult', {useCallback: callback => callback, isMultiplayer:true, roomId:'r',
+      confirmedEndedRoomRef:{current:confirmed}, postGameAnalysisRoomRef:ref,
+      setPostGameAnalysisRoom:value => phases.push(value), setActiveTab:value => selected.push(value)});
+    dismiss();
+    assert.deepEqual(phases, confirmed === 'r' ? ['r'] : []);
+    assert.equal(ref.current, confirmed === 'r' ? 'r' : null);
+    assert.deepEqual(selected,['analysis']);
+  }
+});
+
+test('production move handler preserves online validation and uses only local branches after dismissal', () => {
+  for (const [local, connected, color, expected] of [[false,true,'w',true], [false,true,'b',false], [false,false,'w',false], [true,false,'b',true]]) {
+    const initial = analysisFromMoves([]), emitted = [], states = {};
+    const noop = () => {};
+    const handle = screenHandler('handleGameMove', {useCallback: callback => callback, Chess, playAnalysisMoveAtView,
+      ...initial, isMultiplayer:true, isPostGameAnalysis:local, canSendGameAction:connected, playerColor:color,
+      mode:'live', roomId:'r', sound:'Muted / Off', socket:{emit:(...args) => emitted.push(args)},
+      locallyPlayedFenRef:{current:null}, playChessSound:noop, setMapSnapshot:noop, setViewMoveIndex:noop,
+      setGame:value => {states.game = value;}, setMoveHistory:value => {states.moves = value;}, setPositionHistory:noop,
+      setGameOverMessage:() => {throw Error('The online outcome must remain unchanged');},
+    });
+    assert.equal(handle('e2','e4'),expected);
+    assert.equal(emitted.length,expected && !local ? 1 : 0);
+    if (expected) assert.equal(states.game.get('e4').type,'p');
+    if (local) assert.deepEqual(Array.from(states.moves),['e4']);
+    if (emitted.length) assert.equal(emitted[0][0],'make_move');
+  }
 });
