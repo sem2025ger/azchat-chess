@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Chess } from 'chess.js';
+import { loadMultiverseBranches, saveMultiverseBranches } from '../src/utils/multiverseStorage.ts';
 import { createMultiverseBranch, appendMultiverseMove, replayMultiverseBranch, multiverseUciMove } from '../src/utils/multiverse.ts';
 
 test('independent alternative branches retain original root and do not mutate each other', () => {
@@ -28,4 +29,14 @@ test('black to move, promotion and engine move validation', () => {
   assert.throws(() => multiverseUciMove(fen, 'bad'));
   assert.throws(() => createMultiverseBranch('invalid', 'bad', 'bad'));
   assert.throws(() => replayMultiverseBranch({ ...next, positions: [fen, fen] }));
+});
+
+test('saved variations survive reload and corrupted entries are ignored', () => {
+  const memory = new Map();
+  const storage = { getItem: key => memory.get(key) ?? null, setItem: (key, value) => memory.set(key, value) };
+  const branch = appendMultiverseMove(createMultiverseBranch(new Chess().fen(), 'Test', 'id'), 'e2e4');
+  saveMultiverseBranches([branch], storage);
+  assert.deepEqual(loadMultiverseBranches(storage), [branch]);
+  memory.set('chessaz.multiverse.branches.v1', JSON.stringify([{...branch, positions:[branch.rootFen,branch.rootFen]}]));
+  assert.deepEqual(loadMultiverseBranches(storage), []);
 });
