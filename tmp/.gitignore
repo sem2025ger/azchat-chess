@@ -29,3 +29,6 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# MULTIVERSE flag-ON test bundle
+dist-multiverse
