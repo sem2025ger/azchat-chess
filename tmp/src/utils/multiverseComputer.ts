@@ -12,6 +12,7 @@ export class MultiverseComputerSession {
   private closed = false;
   private onChange: (branch: MultiverseBranch) => void;
   private onFailure: () => void;
+  private failed = false;
 
   constructor(fen: string, human: 'w' | 'b', depth: number, onChange: (branch: MultiverseBranch) => void, onFailure: () => void) {
     if (!Number.isInteger(depth) || depth < 1 || depth > 20) throw new Error('Invalid computer level');
@@ -28,15 +29,15 @@ export class MultiverseComputerSession {
       try {
         this.branch = appendMultiverseMove(this.branch, result.bestMove);
         this.onChange(this.branch);
-      } catch { this.onFailure(); }
+      } catch { this.failed = true; this.onFailure(); }
     });
-    this.engine.onError(() => { if (!this.closed) { this.pending = false; this.onFailure(); } });
+    this.engine.onError(() => { if (!this.closed) { this.pending = false; this.failed = true; this.onFailure(); } });
     this.nextComputerMove();
   }
 
   private currentFen(): string { return this.branch.positions[this.branch.positions.length - 1]; }
   private nextComputerMove(): void {
-    if (this.closed) return;
+    if (this.closed || this.failed) return;
     const game = new Chess(this.currentFen());
     if (game.isGameOver() || game.turn() === this.human) return;
     this.pending = true;
@@ -44,7 +45,7 @@ export class MultiverseComputerSession {
   }
 
   move(uci: string): boolean {
-    if (this.closed || this.pending) return false;
+    if (this.closed || this.pending || this.failed) return false;
     const game = new Chess(this.currentFen());
     if (game.isGameOver() || game.turn() !== this.human) return false;
     try {
