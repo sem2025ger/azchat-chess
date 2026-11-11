@@ -17,6 +17,9 @@ const RESPONSE_ERRORS = {
   '23503': [400, 'invalid_input'], '23514': [400, 'invalid_input'], '22023': [400, 'invalid_input'], '22P02': [400, 'invalid_input'],
 };
 
+// Open-creation limit (QA pilot): unfinished events a non-allowlisted creator may organize.
+const OPEN_ACTIVE_LIMIT = 2;
+
 function fail(status, code) {
   throw Object.assign(new Error(code), { status, code });
 }
@@ -68,6 +71,7 @@ async function readQuery(query) {
   const { data, error } = await query.abortSignal(AbortSignal.timeout(8000));
   if (error?.code === 'P0001' && [
     'event_full', 'invalid_invite', 'lineup_incomplete', 'player_already_registered', 'no_previous_lineup',
+    'create_limit',
   ].includes(error.message)) fail(error.message === 'no_previous_lineup' ? 404 : 409, error.message);
   if (error) fail(...(RESPONSE_ERRORS[error.code] ?? [503, 'temporarily_unavailable']));
   return data;
@@ -78,17 +82,20 @@ function rpc(client, name, args) {
   return readQuery(client.rpc(name, args));
 }
 
-async function listTournaments(client, actor, commandClient) {
+async function isOrganizer(commandClient, actor) {
+  if (!actor || !commandClient) return false;
+  const rows = await readQuery(commandClient.from('team_tournament_organizers')
+    .select('user_id').eq('user_id', actor).limit(1));
+  return rows.length > 0;
+}
+
+async function listTournaments(client, actor, commandClient, openCreate = false) {
   if (!client) fail(503, 'storage_unavailable');
   const fields = actor ? 'id,name,status,assignments:team_tournament_roles(role,team_id)' : 'id,name,status';
   let query = client.from('team_tournaments').select(fields)
     .order('published_at', { ascending: false, nullsFirst: true }).order('id').limit(50);
   if (actor) query = query.eq('assignments.user_id', actor);
-  const [events, organizer] = await Promise.all([
-    readQuery(query),
-    actor && commandClient ? readQuery(commandClient.from('team_tournament_organizers')
-      .select('user_id').eq('user_id', actor).limit(1)) : [],
-  ]);
+  const [events, organizer] = await Promise.all([readQuery(query), isOrganizer(commandClient, actor)]);
   const published = events.filter(e => e.status === 'published' || e.status === 'finished');
   // PostgREST keeps all visible rounds. The inner board embed selects only
   // matches with pending confirmation, with one marker per round.
@@ -107,7 +114,9 @@ async function listTournaments(client, actor, commandClient) {
     byEvent.set(round.tournament_id, state);
   }
   return {
-    can_create: organizer.length > 0,
+    // Open creation (QA flag) lets any signed-in profile create, with a per-creator limit.
+    can_create: organizer || Boolean(openCreate && actor && commandClient),
+    ...(openCreate && actor && !organizer ? { create_limit: OPEN_ACTIVE_LIMIT } : {}),
     tournaments: events.map(({ id, name, status, assignments }) => {
       const round = byEvent.get(id);
       return { id, name, status, current_round: (status === 'finished' ? round?.last : round?.firstOpen ?? round?.last) ?? null,
@@ -117,7 +126,8 @@ async function listTournaments(client, actor, commandClient) {
 }
 
 function installTeamTournaments(app, {
-  enabled = false, m3Enabled = false, verifyToken = async () => null, clientForToken, publicClient, commandClient, now = Date.now,
+  enabled = false, m3Enabled = false, openCreate = false, verifyToken = async () => null,
+  clientForToken, publicClient, commandClient, now = Date.now,
 } = {}) {
   const router = express();
   const requireM3 = () => { if (!m3Enabled) fail(404, 'feature_disabled'); };
@@ -268,7 +278,7 @@ function installTeamTournaments(app, {
     if (req.headers.authorization !== undefined) await authenticate(req);
     await tickDueEvents();
     const client = req.tournamentActor ? req.tournamentClient : publicClient;
-    res.json(await listTournaments(client, req.tournamentActor, commandClient));
+    res.json(await listTournaments(client, req.tournamentActor, commandClient, openCreate && m3Enabled));
   }));
   router.use(wrap(async (req, res, next) => {
     await authenticate(req);
@@ -303,7 +313,7 @@ function installTeamTournaments(app, {
     try {
       times = validateEventTimes(req.body.start_time, req.body.registration_deadline, now());
     } catch { fail(400, 'invalid_time'); }
-    res.status(201).json(await rpc(commandClient, 'team_tournament_m3_create', {
+    const input = {
       p_actor: req.tournamentActor,
       p_name: name,
       p_rules: { ...RULES, board_count: boardCount },
@@ -311,7 +321,13 @@ function installTeamTournaments(app, {
       p_registration_deadline: times.registration_deadline,
       p_min_teams: minimum,
       p_max_teams: maximum,
-    }));
+    };
+    // Allowlisted organizers always use the original, unlimited function.
+    // Everyone else may create only with the open flag, within the SQL-enforced limit.
+    const open = openCreate && !await isOrganizer(commandClient, req.tournamentActor);
+    res.status(201).json(open
+      ? await rpc(commandClient, 'team_tournament_m3_create_open', { ...input, p_active_limit: OPEN_ACTIVE_LIMIT })
+      : await rpc(commandClient, 'team_tournament_m3_create', input));
   }));
   router.get('/:tournament/workspace', wrap(async (req, res) => res.json(withStandings(
     await snapshot(req.tournamentClient, req.tournamentId, true)))));
@@ -507,6 +523,7 @@ function installTeamTournamentsFromEnv(app, verifyToken, env = process.env, fact
   const configured = enabled && env.SUPABASE_URL && publicKey;
   return installTeamTournaments(app, {
     enabled, m3Enabled: env.TEAM_TOURNAMENTS_M3_ENABLED === 'true', verifyToken,
+    openCreate: env.TEAM_TOURNAMENTS_OPEN_CREATE === 'true',
     publicClient: configured ? makeClient(env, publicKey, factory) : null,
     clientForToken: configured ? token => makeClient(env, publicKey, factory, token) : null,
     commandClient: configured && serviceKey ? makeClient(env, serviceKey, factory) : null,

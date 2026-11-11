@@ -167,3 +167,24 @@ test('model output is sanitized and preserved edited values take priority', asyn
   assert.equal(result.draft.name, 'My corrected name');
   assert.equal(result.draft.max_teams, 6);
 });
+
+test('open creation: non-allowlisted member gets 5 plans per 24 h, organizer stays unlimited', async t => {
+  let clock = now;
+  const member = await serve(t, { commandClient: commandClient({ allowed: false }), openCreate: true, now: () => clock });
+  for (let index = 0; index < 5; index++) assert.equal((await member.post()).status, 200);
+  assert.deepEqual(await member.post(), { status: 429, body: { code: 'daily_limit' } });
+  clock += 24 * 60 * 60000;
+  assert.equal((await member.post()).status, 200);
+  const organizer = await serve(t, { openCreate: true });
+  for (let index = 0; index < 8; index++) assert.equal((await organizer.post()).status, 200);
+});
+test('open flag off keeps the allowlist; status probe reports only booleans', async t => {
+  const closed = await serve(t, { commandClient: commandClient({ allowed: false }), openCreate: false });
+  assert.deepEqual(await closed.post(), { status: 403, body: { code: 'not_allowed' } });
+  const response = await fetch(closed.url + '/status');
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { planning: true, voice: false, storage: true, open_create: false });
+  const missing = await serve(t, { apiKey: null, openaiApiKey: 'mock-openai' });
+  assert.deepEqual(await (await fetch(missing.url + '/status')).json(),
+    { planning: false, voice: true, storage: true, open_create: false });
+});

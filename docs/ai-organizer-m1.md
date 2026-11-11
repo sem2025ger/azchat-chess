@@ -28,6 +28,8 @@ Vercel **branch-scoped M3 QA Preview** (not production):
 - Existing `VITE_TEAM_TOURNAMENTS_ENABLED=true` and `VITE_TEAM_TOURNAMENTS_M3_ENABLED=true`.
 - `VITE_AI_ORGANIZER_ENABLED=true` opts in to displaying the chat.
 
+Open creation pilot (QA only, **OFF when absent**): `TEAM_TOURNAMENTS_OPEN_CREATE=true` on the Render QA service lets any signed-in member (not only `team_tournament_organizers`) create M3 events through `public.team_tournament_m3_create_open` (migration `20261111030000_team_tournaments_open_create.sql`): at most **2 unfinished events** per creator, enforced in SQL under an advisory lock. Such members get **5 AI planning and 5 transcription requests per rolling 24 h** (in-process counters; reset on service restart). Allowlisted organizers keep the original unlimited path. `GET /api/ai-organizer/status` returns only booleans (`planning`, `voice`, `storage`, `open_create`); HTTP 404 there means the AI route is not mounted on the running branch.
+
 All Organizer flags are **OFF when absent**. The public site and existing endpoints must remain unaffected. No migrations or new dependencies.
 
 ## Six-step manual owner QA (QA only)

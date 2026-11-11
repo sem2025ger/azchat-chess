@@ -201,14 +201,36 @@ async function generatePlan(value, memory, {
     (normalized.question || (value.language === 'ru' ? 'Проверьте черновик турнира.' : 'Please review the draft.')) };
 }
 
+// Open creation (QA pilot): non-allowlisted members get this many AI requests per
+// rolling 24 hours, per route. In-process counters reset on a service restart.
+const OPEN_DAILY_LIMIT = 5;
+const DAY = 24 * 60 * 60000;
+
 function installAiOrganizer(app, {
-  enabled = false, m3Enabled = false, verifyToken = async () => null, commandClient,
+  enabled = false, m3Enabled = false, openCreate = false, verifyToken = async () => null, commandClient,
   apiKey = null, openaiApiKey = null, model, fetchImpl = fetch, now = Date.now,
 } = {}) {
   if (!enabled || !m3Enabled) return null;
   const router = express.Router();
-  const budgets = new Map(); const active = new Set();
+  const budgets = new Map(); const active = new Set(); const daily = new Map();
+  // Returns true when a limited member has used up today's requests for this route.
+  function dailyExceeded(actor, route) {
+    const time = now();
+    if (daily.size >= 5000) for (const [key, entry] of daily) if (time - entry.start >= DAY) daily.delete(key);
+    const key = route + ':' + actor;
+    let entry = daily.get(key);
+    if (!entry || time - entry.start >= DAY) {
+      if (daily.size >= 5000) return true;
+      entry = { start: time, count: 0 }; daily.set(key, entry);
+    }
+    return ++entry.count > OPEN_DAILY_LIMIT;
+  }
   router.use((req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+  // Public readiness probe for QA setup: only booleans, never key material.
+  // A 404 here means the route is not mounted (old branch or flags off).
+  router.get('/status', (req, res) => res.json({
+    planning: Boolean(apiKey), voice: Boolean(openaiApiKey), storage: Boolean(commandClient), open_create: openCreate,
+  }));
   router.use(async (req, res, next) => {
     const auth = req.headers.authorization || '';
     let user = null;
@@ -221,7 +243,8 @@ function installAiOrganizer(app, {
     try {
       const allowed = await readQuery(commandClient.from('team_tournament_organizers')
         .select('user_id').eq('user_id', user.id).limit(1));
-      if (!allowed.length) return res.status(403).json({ code: 'not_allowed' });
+      if (!allowed.length && !openCreate) return res.status(403).json({ code: 'not_allowed' });
+      req.aiLimited = !allowed.length;
     } catch {
       return res.status(503).json({ code: 'storage_unavailable' });
     }
@@ -242,6 +265,7 @@ function installAiOrganizer(app, {
       }
       if (++budget.count > 30 || active.has(actor) || active.size >= 16)
         throw failure(429, 'rate_limited');
+      if (req.aiLimited && dailyExceeded(actor, 'plan')) throw failure(429, 'daily_limit');
       active.add(actor);
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 20000);
@@ -257,9 +281,9 @@ function installAiOrganizer(app, {
       }
     } catch (error) {
       if (!res.headersSent) {
-        const code = ['invalid_input', 'provider_not_configured', 'rate_limited', 'storage_unavailable']
+        const code = ['invalid_input', 'provider_not_configured', 'rate_limited', 'daily_limit', 'storage_unavailable']
           .includes(error.code) ? error.code : 'provider_unavailable';
-        const status = error.code === 'invalid_input' ? 400 : error.code === 'rate_limited' ? 429 :
+        const status = error.code === 'invalid_input' ? 400 : ['rate_limited', 'daily_limit'].includes(error.code) ? 429 :
           error.code === 'provider_not_configured' || error.code === 'storage_unavailable' ? 503 : 502;
         res.status(status).json({ code });
       }
@@ -270,6 +294,7 @@ function installAiOrganizer(app, {
     if (!LANGUAGES.includes(language) || Object.keys(req.query).some(key => key !== 'language'))
       return res.status(400).json({ code: 'invalid_input' });
     if (!openaiApiKey) return res.status(503).json({ code: 'provider_not_configured' });
+    if (req.aiLimited && dailyExceeded(req.aiActor, 'transcribe')) return res.status(429).json({ code: 'daily_limit' });
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);
     const cancel = () => controller.abort();
@@ -301,6 +326,7 @@ function installAiOrganizerFromEnv(app, verifyToken, env = process.env, factory 
     enabled: env.AI_ORGANIZER_ENABLED === 'true',
     m3Enabled: env.TEAM_TOURNAMENTS_ENABLED === 'true' &&
       env.TEAM_TOURNAMENTS_M3_ENABLED === 'true',
+    openCreate: env.TEAM_TOURNAMENTS_OPEN_CREATE === 'true',
     verifyToken,
     commandClient: env.SUPABASE_URL && key ? factory(env.SUPABASE_URL, key, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
