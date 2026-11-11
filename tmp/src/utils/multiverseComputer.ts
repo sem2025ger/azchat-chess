@@ -5,7 +5,6 @@ import { appendMultiverseMove, createMultiverseBranch, type MultiverseBranch } f
 /** Own worker: never shares analysis-engine callbacks or UCI searches. */
 export class MultiverseComputerSession {
   private engine: StockfishEngine;
-  private generation = 0;
   private branch: MultiverseBranch;
   private human: 'w' | 'b';
   private depth: number;
@@ -60,7 +59,6 @@ export class MultiverseComputerSession {
   stop(): void {
     if (this.closed) return;
     this.closed = true;
-    this.generation++;
     this.pending = false;
     this.engine.destroy();
   }
