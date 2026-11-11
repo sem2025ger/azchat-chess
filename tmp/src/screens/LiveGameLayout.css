@@ -1,0 +1,50 @@
+/* Online games keep the same square grid before and after the result.
+   Evaluation and coordinates use the gutter, never a new flex column. */
+[data-live-game-layout] .live-game-board-row {
+  gap: 0;
+  padding: 0 0 18px 18px;
+}
+[data-live-game-layout] .live-game-board-frame {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+[data-live-game-layout] .live-game-chessboard {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+[data-live-game-layout] .live-game-chessboard > .aspect-square {
+  border-radius: 0;
+}
+[data-live-game-layout] .live-game-evaluation[aria-hidden="true"] { visibility: hidden; }
+@media (min-width: 768px) {
+  [data-live-game-layout] .live-game-board-row { padding-left: 40px; }
+  [data-live-game-layout] .live-game-evaluation {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 18px;
+    width: 24px;
+    padding: 0;
+    transform: none;
+    transition: opacity 150ms ease;
+  }
+  [data-live-game-layout] .live-game-evaluation > div { width: 100%;
+  }
+}
+@media (min-width: 1024px) {
+  [data-live-game-layout] > .panel-glow-cycle { left: 0; }
+}
+@media (max-width: 767px) {
+  [data-live-game-layout] .live-game-board-column { order: 1; }
+  [data-live-game-layout] [data-postgame-mobile-analysis] { order: 3; flex-shrink: 0; }
+  [data-live-game-layout] > .panel-glow-cycle { order: 2; flex: none; }
+  [data-live-game-layout] { overflow-y: auto; }
+  [data-live-game-layout] .live-game-board-column { flex-shrink: 0; }
+}
