@@ -788,6 +788,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const beginComputer = (fen: string) => {
     if (!multiverseEnabled) return;
     endComputer();
+    engineRef.current?.stop();
     try {
       const session = new MultiverseComputerSession(fen, computerSide, computerDepth, setComputerBranch, () => setComputerError(true));
       computerSession.current = session;
