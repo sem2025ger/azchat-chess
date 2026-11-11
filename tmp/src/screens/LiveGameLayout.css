@@ -125,6 +125,6 @@
     max-width: 84vh;
   }
   [data-live-game-layout] > .panel-glow-cycle {
-    left: -48px;
+    left: -8px;
   }
 }
