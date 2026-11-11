@@ -32,6 +32,7 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       window.__uci = [];
       window.Worker = class {
         onmessage;
+        constructor() { window.__engineReply = data => this.onmessage?.({data}); }
         postMessage(message) {
           window.__uci.push(message);
           if (message === 'uci' || message === 'isready') setTimeout(() => this.onmessage?.({data:message === 'uci' ? 'uciok' : 'readyok'}),0);
@@ -65,6 +66,42 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       const opponent = page.locator('[data-live-game-player="opponent"]');
       const self = page.locator('[data-live-game-player="self"]');
       const geometry = async () => Promise.all([grid.boundingBox(),opponent.boundingBox(),self.boundingBox()]);
+      const slots = page.locator('[data-live-game-layout] [data-engine-slot]');
+      const pvBounds = async () => Promise.all([page.locator('.analysis-engine-content').boundingBox(), ...[1,2,3].map(slot => page.locator(`[data-engine-slot="${slot}"]`).boundingBox())]);
+      const assertSamePvBounds = (before, after) => {
+        for (let i=0;i<before.length;i++) for (const dimension of ['x','y','width','height']) assert.ok(Math.abs(before[i][dimension]-after[i][dimension]) < 1,`PV ${i}/${dimension} moved (${before[i][dimension]} -> ${after[i][dimension]})`);
+      };
+      let stablePvBounds;
+
+      const clock = row => row.locator('.font-mono');
+      const clockSeconds = async row => (await clock(row).innerText()).split(':').reduce((minutes, seconds) => minutes * 60 + Number(seconds), 0);
+      const whiteRow = color === 'w' ? self : opponent;
+      const blackRow = color === 'b' ? self : opponent;
+      if (index < 2) {
+        assert.equal(await clockSeconds(whiteRow),178,'White clock belongs to the white player');
+        assert.equal(await clockSeconds(blackRow),177,'Black clock belongs to the black player');
+        const expectRunning = async (running, stopped) => {
+          const beforeRunning = await clockSeconds(running), beforeStopped = await clockSeconds(stopped);
+          await page.waitForTimeout(1200);
+          assert.ok(await clockSeconds(running) < beforeRunning,'Side to move counts down');
+          assert.equal(await clockSeconds(stopped),beforeStopped,'Other side stays stopped');
+        };
+        await expectRunning(whiteRow, blackRow);
+        game.move('a3');
+        snapshot.fen = game.fen(); snapshot.history = game.history(); snapshot.whiteTime = 175;
+        send('update_board',snapshot);
+        await page.locator('[data-piece-square="a3"]').waitFor();
+        await expectRunning(blackRow, whiteRow);
+        game.move('a6');
+        snapshot.fen = game.fen(); snapshot.history = game.history(); snapshot.blackTime = 174;
+        send('update_board',snapshot);
+        await page.locator('[data-piece-square="a6"]').waitFor();
+        await expectRunning(whiteRow, blackRow);
+        // Resync supplies final authoritative times before the game is ended.
+        send('update_board',snapshot);
+        await page.waitForTimeout(50);
+        console.log(`PASS ${color}: clock ownership and white -> black -> white countdown`);
+      }
       const before = await geometry();
       assert.equal(await page.getByRole('dialog').count(),0);
       assert.equal(await page.locator('.live-game-evaluation').isVisible(),false);
@@ -86,6 +123,30 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       await dialog.getByRole('button',{name:newGame,exact:true}).waitFor();
       await page.waitForFunction(() => window.__uci.some(command => command.startsWith('position fen ')));
       assert.ok((await page.evaluate(() => window.__uci)).includes('position fen '+game.fen()),'Analysis uses exact final FEN');
+      if (width >= 768) {
+        assert.equal(await slots.count(),3,'Three pending PV slots before first result');
+        stablePvBounds = await pvBounds();
+        for (const [depth,length] of [[8,2],[18,24],[24,3]]) {
+          const updates = Array.from({length:3},(_,index) => {
+            const position = new Chess(game.fen()), pv = [];
+            for (let ply=0;ply<length;ply++) {
+              const legal = position.moves({verbose:true}).sort((a,b)=>b.san.length-a.san.length);
+              if (!legal.length) break;
+              const move = legal[index % legal.length];
+              pv.push(move.from+move.to+(move.promotion||'')); position.move(move);
+            }
+            return `info depth ${depth} multipv ${index+1} score cp ${index === 0 ? 25 : index === 1 ? -30 : 0} pv ${pv.join(' ')}`;
+          });
+          await page.evaluate(updates => updates.forEach(line => window.__engineReply(line)),updates);
+          await page.waitForFunction(depth => document.querySelector('.analysis-stockfish-depth')?.textContent?.includes(String(depth)),depth);
+          assertSamePvBounds(stablePvBounds,await pvBounds());
+          const badge = slots.first().locator('.analysis-engine-score');
+          const badgeRect = await badge.boundingBox();
+          assert.ok(badgeRect.width <= 54 && badgeRect.height <= 26,'Compact score badge');
+          assert.notEqual(await badge.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','Subdued positive evaluation');
+          if (captureDir && depth === 18) await page.screenshot({path:`${captureDir}/analysis-lines-${width}.png`});
+        }
+      }
       const after = await geometry();
       for (let i=0;i<before.length;i++) for (const dimension of ['x','y','width','height']) assert.ok(Math.abs(before[i][dimension]-after[i][dimension]) < 1,`${width}x${height}: stable ${i}/${dimension} (${before[i][dimension]} -> ${after[i][dimension]})`);
       if (captureDir) await page.screenshot({path:`${captureDir}/live-result-${width}.png`});
@@ -116,6 +177,7 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       await page.waitForFunction(() => document.querySelector('[data-piece-square="g5"]'),null,{timeout:3000});
       const variation = new Chess(game.fen()); variation.move('Ng5');
       await expectFen(variation.fen());
+      if (stablePvBounds) assertSamePvBounds(stablePvBounds,await pvBounds());
       await play('g8','f6');
       await page.waitForFunction(() => document.querySelector('[data-piece-square="f6"]'));
       variation.move('Nf6'); await expectFen(variation.fen());
@@ -131,8 +193,8 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       assert.equal(await page.locator('[data-piece-square="g5"]').count(),1);
       assert.equal(await page.locator('[data-piece-square="f6"]').count(),1);
       assert.ok(page.url().includes('roomId=layout-fixture'));
-      assert.ok(await opponent.getByText('2:57',{exact:true}).isVisible());
-      assert.ok(await self.getByText('2:58',{exact:true}).isVisible());
+      assert.equal(await clockSeconds(opponent),color === 'w' ? snapshot.blackTime : snapshot.whiteTime);
+      assert.equal(await clockSeconds(self),color === 'w' ? snapshot.whiteTime : snapshot.blackTime);
       await previousMove();
       await page.waitForFunction(() => document.querySelector('[data-piece-square="g8"]'));
       await previousMove();
@@ -146,7 +208,7 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       await expectFen(branched.fen());
       assert.equal(await page.locator('[data-piece-square="d4"] img').getAttribute('alt'),'bP');
       assert.equal(commands.filter(([name]) => name === 'make_move').length,sentBefore);
-      assert.deepEqual(snapshot.history,['e4','c5','Nf3','d6'],'Recorded game remains unchanged');
+      assert.deepEqual(snapshot.history,game.history(),'Recorded game remains unchanged');
       if (captureDir && index === 0) await page.screenshot({path:`${captureDir}/live-review.png`});
       console.log(`PASS ${language} ${width}x${height} ${color}: stable board, local moves for both sides, branching, FEN, replay and socket isolation`);
       assert.deepEqual(errors,[]);

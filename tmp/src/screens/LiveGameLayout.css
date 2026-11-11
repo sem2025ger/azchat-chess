@@ -48,3 +48,55 @@
   [data-live-game-layout] { overflow-y: auto; }
   [data-live-game-layout] .live-game-board-column { flex-shrink: 0; }
 }
+
+/* Three fixed PV slots survive the pending -> partial -> complete search cycle.
+   Long lines scroll horizontally instead of wrapping and shifting other rows. */
+[data-live-game-layout] .analysis-engine-content { gap: 12px; }
+[data-live-game-layout] .analysis-engine-status { height: 40px; min-height: 40px; max-height: 40px; }
+[data-live-game-layout] .analysis-engine-variations { gap: 8px; }
+[data-live-game-layout] .analysis-engine-line {
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  align-items: center;
+  gap: 8px;
+}
+[data-live-game-layout] .analysis-engine-score {
+  flex: 0 0 54px;
+  width: 54px;
+  min-width: 54px;
+  max-width: 54px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  font-size: .75rem;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+}
+[data-live-game-layout] .analysis-engine-score[data-score-side="white"] {
+  background: #ccd0c6;
+  color: #20251f;
+  border-color: #9ba491;
+}
+[data-live-game-layout] .analysis-engine-score[data-score-side="black"] {
+  background: #222720;
+  color: #d0d4c8;
+  border-color: #525b4b;
+}
+[data-live-game-layout] .analysis-engine-pv { min-width: 0; padding-top: 0; }
+[data-live-game-layout] .analysis-engine-moves {
+  height: 26px;
+  line-height: 22px;
+  flex-wrap: nowrap;
+  align-items: center;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  font-size: .84rem;
+}
+[data-live-game-layout] .analysis-engine-moves > span { flex-shrink: 0; }
+[data-live-game-layout] .analysis-engine-moves:focus-visible { outline: 1px solid #a8ae9e; outline-offset: 1px; }
