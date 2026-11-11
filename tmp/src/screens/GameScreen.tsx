@@ -18,6 +18,7 @@ import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
 import { MultiverseComputerSession } from '../utils/multiverseComputer';
 import { type MultiverseBranch, replayMultiverseBranch } from '../utils/multiverse';
 import { multiverseCopy } from '../utils/multiverseCopy';
+import { loadMultiverseBranches, saveMultiverseBranches } from '../utils/multiverseStorage';
 
 
 import { createPositionMapSnapshot, selectPositionMapVariation, type PositionMapSnapshot } from '../utils/positionMapNavigation';
@@ -74,7 +75,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [computerDepth, setComputerDepth] = useState(8);
   const [computerRoot, setComputerRoot] = useState<string | null>(null);
   const computerSession = useRef<MultiverseComputerSession | null>(null);
-  const [savedBranches, setSavedBranches] = useState<MultiverseBranch[]>([]);
+  const [savedBranches, setSavedBranches] = useState<MultiverseBranch[]>(() => mode === 'review' && typeof localStorage !== 'undefined' ? loadMultiverseBranches(localStorage) : []);
+  useEffect(() => { if (multiverseEnabled && typeof localStorage !== 'undefined') saveMultiverseBranches(savedBranches, localStorage); }, [multiverseEnabled, savedBranches]);
   const endComputer = () => { computerSession.current?.stop(); computerSession.current = null; setComputerBranch(null); setComputerRoot(null); setComputerError(false); };
   useEffect(() => () => { computerSession.current?.stop(); computerSession.current = null; }, []);
   const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position'>('analysis');
