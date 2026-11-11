@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Chess } from 'chess.js';
 import { loadMultiverseBranches, saveMultiverseBranches } from '../src/utils/multiverseStorage.ts';
-import { createMultiverseBranch, appendMultiverseMove, replayMultiverseBranch, multiverseUciMove, multiverseBranchPgn } from '../src/utils/multiverse.ts';
+import { createMultiverseBranch, appendMultiverseMove, replayMultiverseBranch, multiverseUciMove, multiverseBranchPgn, compareMultiverseBranches } from '../src/utils/multiverse.ts';
 
 test('independent alternative branches retain original root and do not mutate each other', () => {
   const source = new Chess();
@@ -49,4 +49,16 @@ test('portable PGN retains setup FEN and can be imported', () => {
   const imported = new Chess();
   imported.loadPgn(pgn);
   assert.equal(imported.fen(), replayMultiverseBranch(branch).fen());
+});
+
+test('compare only variations rooted at identical FEN without changing saved branches', () => {
+  const start = new Chess().fen();
+  const first = appendMultiverseMove(createMultiverseBranch(start, 'King pawn', 'one'), 'e2e4');
+  const second = appendMultiverseMove(createMultiverseBranch(start, 'Queen pawn', 'two'), 'd2d4');
+  const other = createMultiverseBranch(first.positions.at(-1), 'After e4', 'three');
+  const groups = compareMultiverseBranches([first, second, other]);
+  assert.equal(groups.length, 2);
+  assert.deepEqual(groups[0].branches.map(x => x.plies), [1, 1]);
+  assert.notEqual(groups[0].branches[0].finalFen, groups[0].branches[1].finalFen);
+  assert.equal(first.moves[0], 'e4');
 });
