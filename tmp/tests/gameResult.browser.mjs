@@ -26,6 +26,7 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
     let send;
     await page.addInitScript(({language, color, profiles, supabaseHost}) => {
       localStorage.setItem('app-language',language);
+      localStorage.setItem('chess_confirmMobileMoves','true');
       localStorage.setItem('chess_background', ['Soft Graphite', 'Champagne Light', 'Deep Space'][color === 'w' ? 0 : 1]);
       localStorage.setItem(`sb-${supabaseHost}-auth-token`,JSON.stringify({access_token:'layout-fixture',refresh_token:'layout-fixture',expires_at:Math.floor(Date.now()/1000)+3600,user:{id:profiles[color === 'w' ? 0 : 1].id,user_metadata:{username:color === 'w' ? 'QA White':'QA Black'}}}));
       window.__uci = [];
