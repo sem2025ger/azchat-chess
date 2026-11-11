@@ -1,5 +1,5 @@
 import { Chess } from 'chess.js';
-import { validateAnalysisFen } from './analysisWorkspace';
+import { validateAnalysisFen } from './analysisWorkspace.ts';
 
 export interface MultiverseBranch {
   id: string;
