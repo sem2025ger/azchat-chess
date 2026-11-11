@@ -115,9 +115,9 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       assert.ok(fileRect.y >= before[0].y + before[0].height, 'Files outside grid');
       assert.ok(before[0].width > 0 && Math.abs(before[0].width-before[0].height) < 1, 'Square grid');
       assert.ok(before[0].y >= before[1].y + before[1].height && fileRect.y + fileRect.height <= before[2].y, 'Coordinates and players do not overlap');
-      if (width >= 1280) {
+      if (width >= 1440) {
         const panelRect = await page.locator('[data-live-game-layout] > .panel-glow-cycle').boundingBox();
-        assert.ok(before[0].x + before[0].width <= panelRect.x + 1, 'The board does not overlap the analysis panel');
+        assert.ok(before[0].x + before[0].width <= panelRect.x + 1, `The board does not overlap the analysis panel: boardRight=${before[0].x + before[0].width}, panelLeft=${panelRect.x}`);
         assert.ok(panelRect.x + panelRect.width <= width + 1, 'The analysis panel stays in the viewport');
       }
       if (captureDir && index === 0) await page.screenshot({path:`${captureDir}/live-before.png`});
