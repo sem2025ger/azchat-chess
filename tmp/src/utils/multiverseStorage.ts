@@ -1,4 +1,4 @@
-import { replayMultiverseBranch, type MultiverseBranch } from './multiverse';
+import { replayMultiverseBranch, type MultiverseBranch } from './multiverse.ts';
 
 const KEY = 'chessaz.multiverse.branches.v1';
 export function loadMultiverseBranches(storage: Pick<Storage, 'getItem'>): MultiverseBranch[] {
