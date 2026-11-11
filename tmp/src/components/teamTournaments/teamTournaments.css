@@ -99,13 +99,14 @@
 .ai-organizer-header h3 { margin: 0; font-weight: 700; font-size: 1.07rem; }
 .ai-organizer-header small { color: #b5a18a; letter-spacing: .09em; font-size: .7rem; }
 .ai-organizer-header p { margin: 0; color: #b9b6b4; font-size: .78rem; max-width: 13rem; line-height: 1.5; }
+/* Chat log scrolls on its own only once it overflows. No overscroll containment: with it,
+   Chrome swallowed wheel/touch scrolling over the (even empty) log and the page stopped scrolling. */
 .ai-organizer-history {
   display: flex;
   flex-direction: column;
   gap: .8rem;
   padding: 1.2rem 1rem;
   overflow-y: auto;
-  overscroll-behavior: contain;
   min-height: 13rem;
   max-height: min(63vh, 36rem);
   scrollbar-width: thin;
@@ -211,24 +212,58 @@
 
 
 /* Organizer hub: isolated behind VITE_AI_ORGANIZER_ENABLED + M3. */
-.team-create-hub { min-width: 0; margin-block: 1rem 1.5rem; }
+.team-tournament-page > .team-tournament-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: .6rem 1.25rem;
+}
+.team-tournament-heading { min-width: 0; flex: 1 1 22rem; }
+.team-tournament-header .team-tournament-heading p { margin: 0; max-width: 46rem; font-size: .9rem; color: #b6b2aa; }
+.team-tournament-header .team-tournament-actions { margin-block: 0 .25rem; }
+.team-tournament-page .team-create-toggle { background: #d7bd8b; color: #211b13; font-weight: 600; }
+.team-tournament-page .team-create-toggle:not(:disabled):hover { background: #e8d1a6; }
+.team-create-hub { min-width: 0; margin-block: .25rem 1.5rem; }
 .team-create-hub-grid {
   display: grid;
-  grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr);
-  align-items: start;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
   gap: 1rem;
 }
 .team-create-hub-grid > * { min-width: 0; }
-.team-create-manual {
+/* Both cards share one frame: same padding, border, radius, background and heading size. */
+.team-create-manual, .team-create-ai .ai-organizer {
   min-width: 0;
-  padding: 1.15rem;
   border: 1px solid rgba(164, 141, 111, .36);
   border-radius: 14px;
   background: linear-gradient(160deg, #171b27, #10141d 78%);
   color: #ede8df;
 }
-.team-create-manual h2 { font-size: 1.1rem; margin: 0; }
-.team-create-manual header p { color: #b9b6b4; font-size: .87rem; line-height: 1.5; }
+.team-create-manual { display: flex; flex-direction: column; gap: .9rem; padding: 1.15rem; }
+.team-create-manual > header { display: grid; gap: .3rem; padding-bottom: .9rem; border-bottom: 1px solid #ffffff19; }
+.team-create-manual h2, .team-create-ai .ai-organizer-header h3 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+.team-create-manual header p { margin: 0; color: #b9b6b4; font-size: .87rem; line-height: 1.5; }
+.team-create-ai { display: flex; }
+.team-create-ai .ai-organizer { flex: 1 1 auto; margin: 0; }
+.team-create-ai .ai-organizer-header { align-items: flex-start; padding: 1.15rem 1.15rem .9rem; }
+.team-create-ai .ai-organizer-header p { max-width: 100%; font-size: .87rem; }
+.team-create-ai .ai-organizer-history { flex: 1 1 auto; min-height: 11rem; max-height: min(60vh, 34rem); }
+.ai-organizer-brand { display: grid; gap: .3rem; }
+.ai-organizer-brand small { font-size: .82rem; letter-spacing: .06em; color: #c9b69a; }
+.ai-organizer-badge {
+  display: inline-block;
+  vertical-align: .18em;
+  margin-inline-start: .55rem;
+  padding: .1rem .45rem;
+  border: 1px solid #d7bd8b99;
+  border-radius: 6px;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: #e5c992;
+  cursor: help;
+}
 .team-create-manual-form, .team-create-extra-fields { display: grid; gap: .85rem; }
 .team-create-manual-form label, .team-create-extra-fields label { display: grid; min-width: 0; gap: .35rem; font-size: .86rem; }
 .team-create-manual-form input { box-sizing: border-box; width: 100%; min-width: 0; }
@@ -238,14 +273,15 @@
 .team-create-auto-note { color: #b8b4ab; font-size: .8rem; line-height: 1.45; }
 .team-create-form-error { color: #ffbfa8; font-size: .85rem; }
 .team-tournament-page .team-create-primary { width: 100%; background: #5d5143; color: #fff5e7; border-color: #b39b7d; font-weight: 600; }
-.team-create-ai .ai-organizer { margin: 0; }
 .team-create-mobile-switch { display: none; }
-.team-creation-entry { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin: .8rem 0 1rem; }
-.team-legacy-mode { border-top: 1px solid #ffffff24; margin-top: 1rem; }
-.team-legacy-mode summary { color: #cbb698; }
-.team-legacy-mode .section-card { margin-top: .7rem; }
+/* Legacy M1 form: quiet link-style disclosure at the bottom of the manual card. */
+.team-create-manual .team-legacy-mode { margin-top: auto; padding-top: .35rem; border-top: 1px solid #ffffff19; }
+.team-create-manual .team-legacy-mode summary { width: fit-content; padding: .45rem 0 0; font-size: .8rem; color: #b5a18a; text-decoration: underline; text-underline-offset: .2em; }
+.team-create-manual .team-legacy-mode summary:hover { color: #e5c992; }
+.team-create-manual .team-legacy-mode .section-card { margin-top: .7rem; }
 @media (max-width: 840px) {
   .team-create-hub-grid { grid-template-columns: minmax(0, 1fr); }
+  .team-create-ai .ai-organizer-history { max-height: 55vh; }
   .team-create-mobile-switch {
     display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: .4rem; margin-bottom: .8rem; padding: .25rem;

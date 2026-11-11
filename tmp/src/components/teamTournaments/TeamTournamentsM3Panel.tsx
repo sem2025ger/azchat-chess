@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
   createTournamentM3Api, createTournamentApi,
   type M3Event, type M3EventInput, type Tournament, type BoardResult, type AiOrganizerDraft,
@@ -58,8 +58,10 @@ export function defaultRegistrationDeadline(startTime: string, now = Date.now())
   return '';
 }
 
-export function M3Create({ tr, token, onCreated }: {
+export function M3Create({ tr, token, onCreated, legacy }: {
   tr: TournamentCopy; token: string; onCreated: (event: string) => void;
+  // Optional legacy M1 creation form, rendered as a quiet disclosure at the bottom of the manual card.
+  legacy?: ReactNode;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -187,6 +189,7 @@ export function M3Create({ tr, token, onCreated }: {
             {tr('aiOrganizerCreate')}
           </button>
         </form>
+        {legacy}
       </section>
       <div className="team-create-ai">
         <AiOrganizerPanel tr={tr} token={token} onApply={applyAiDraft}

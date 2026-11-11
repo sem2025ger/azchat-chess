@@ -165,8 +165,16 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
   };
   return <section className="ai-organizer" aria-label={tr('aiOrganizerTitle')}>
     <header className="ai-organizer-header">
-      <div><h3>{tr('aiOrganizerTitle')}</h3><small>chessaz.de</small></div>
-      <p>{tr('aiOrganizerDisclosure')}</p>
+      <div className="ai-organizer-brand">
+        <h3>{tr('aiOrganizerTitle')}
+          {/* The AI disclosure stays: visible badge plus its full sentence for assistive tech. */}
+          <span className="ai-organizer-badge" title={tr('aiOrganizerDisclosure')}>
+            AI<span className="sr-only"> · {tr('aiOrganizerDisclosure')}</span>
+          </span>
+        </h3>
+        <small>chessaz.de</small>
+      </div>
+      <p>{tr('aiOrganizerHint')}</p>
     </header>
     <div ref={historyRef} className="ai-organizer-history" role="log" aria-label={tr('aiOrganizerTitle')} aria-live="polite" aria-relevant="additions text">
       {!history.length && <p className="ai-organizer-intro">{tr('aiOrganizerEmpty')}</p>}

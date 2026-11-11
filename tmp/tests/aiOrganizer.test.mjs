@@ -200,8 +200,34 @@ test('creation hub is behind both flags and has a single existing M3 create path
   assert.match(create, /if \(!aiEnabled\) return/);
   assert.match(create, /formRef\.current\.requestSubmit\(\)/);
   assert.equal((create.match(/createTournamentM3Api\(import.meta.env.VITE_SERVER_URL, token\)\.create\(/g) || []).length, 1);
-  assert.match(css, /grid-template-columns: minmax\(0, \.85fr\) minmax\(0, 1\.15fr\)/);
+  assert.match(css, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);\s*align-items: stretch/);
   assert.match(css, /data-mobile-mode="ai"/);
+});
+
+test('hub polish: one heading row, legacy form inside manual card, AI badge keeps disclosure, page scroll unblocked', () => {
+  const tab = readFileSync(new URL('../src/components/teamTournaments/TeamTournamentsTab.tsx', import.meta.url), 'utf8');
+  const create = readFileSync(new URL('../src/components/teamTournaments/TeamTournamentsM3Panel.tsx', import.meta.url), 'utf8');
+  const ai = readFileSync(new URL('../src/components/teamTournaments/AiOrganizerPanel.tsx', import.meta.url), 'utf8');
+  const screen = readFileSync(new URL('../src/screens/SpieltagScreen.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/components/teamTournaments/teamTournaments.css', import.meta.url), 'utf8');
+  // Intro line and organize toggle live in the header row; the list card drops its duplicate heading in hub mode.
+  assert.match(tab, /hubOverview && <p>\{tr\('createHubIntro'\)\}<\/p>/);
+  assert.match(tab, /className="team-tournament-actions">[\s\S]*?team-create-toggle[\s\S]*?tr\('refresh'\)/);
+  assert.match(tab, /\{!createHubEnabled && <h2>\{tr\('tab'\)\}<\/h2>\}/);
+  assert.doesNotMatch(tab, /team-creation-entry/);
+  // Legacy M1 form is passed into the manual card and rendered after its form.
+  assert.match(tab, /legacy=\{createHubEnabled \? <details className="team-legacy-mode"/);
+  assert.match(create, /<\/form>\s*\{legacy\}\s*<\/section>/);
+  // AI card: badge with the full disclosure for assistive tech; no visible disclosure paragraph.
+  assert.match(ai, /className="ai-organizer-badge" title=\{tr\('aiOrganizerDisclosure'\)\}/);
+  assert.match(ai, /sr-only"> · \{tr\('aiOrganizerDisclosure'\)\}/);
+  assert.doesNotMatch(ai, /<p>\{tr\('aiOrganizerDisclosure'\)\}<\/p>/);
+  assert.match(ai, /<p>\{tr\('aiOrganizerHint'\)\}<\/p>/);
+  // Single-tab navigation is not rendered; the page heading is the only "Turniere".
+  assert.match(screen, /\{workspace && <nav className="team-tournament-tabs"/);
+  // Nested chat scroller must not contain overscroll, otherwise the route scroller stops over the card.
+  assert.doesNotMatch(css, /overscroll-behavior: contain/);
+  assert.match(css, /\.team-create-manual, \.team-create-ai \.ai-organizer \{/);
 });
 
 test('compact creation hub strings exist in all six locales', () => {
@@ -210,7 +236,7 @@ test('compact creation hub strings exist in all six locales', () => {
     for (const key of [
       'createHubTitle', 'createHubChoose', 'createHubManual', 'createHubManualHint',
       'createHubMore', 'createHubAutoInfo', 'createHubDeadlineAuto',
-      'createHubDeadlineError', 'createHubOverview', 'createHubLegacy',
+      'createHubDeadlineError', 'createHubOverview', 'createHubLegacy', 'createHubIntro',
     ]) assert.ok(tr(key).trim(), lang + ': ' + key);
   }
 });
