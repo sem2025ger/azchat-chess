@@ -115,6 +115,11 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       assert.ok(fileRect.y >= before[0].y + before[0].height, 'Files outside grid');
       assert.ok(before[0].width > 0 && Math.abs(before[0].width-before[0].height) < 1, 'Square grid');
       assert.ok(before[0].y >= before[1].y + before[1].height && fileRect.y + fileRect.height <= before[2].y, 'Coordinates and players do not overlap');
+      if (width >= 1280) {
+        const panelRect = await page.locator('[data-live-game-layout] > .panel-glow-cycle').boundingBox();
+        assert.ok(before[0].x + before[0].width <= panelRect.x + 1, 'The board does not overlap the analysis panel');
+        assert.ok(panelRect.x + panelRect.width <= width + 1, 'The analysis panel stays in the viewport');
+      }
       if (captureDir && index === 0) await page.screenshot({path:`${captureDir}/live-before.png`});
       snapshot.status = 'ended'; snapshot.outcome = {reason:'resignation',endedBy:color};
       send(index % 2 ? 'update_board' : 'game_over', index % 2 ? snapshot : {roomId:snapshot.roomId,...snapshot.outcome});
@@ -144,6 +149,20 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
           const badgeRect = await badge.boundingBox();
           assert.ok(badgeRect.width <= 54 && badgeRect.height <= 26,'Compact score badge');
           assert.notEqual(await badge.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','Subdued positive evaluation');
+          if (depth === 18) {
+            const pv = slots.first().locator('.analysis-engine-moves');
+            const metrics = await pv.evaluate(element => ({
+              clientWidth: element.clientWidth,
+              scrollWidth: element.scrollWidth,
+              scrollbarColor: getComputedStyle(element).scrollbarColor,
+            }));
+            assert.ok(metrics.scrollWidth > metrics.clientWidth, 'Long PV remains horizontally scrollable');
+            assert.equal(metrics.scrollbarColor, 'rgb(80, 86, 79) rgb(20, 24, 21)', 'PV scrollbar uses muted dark colours');
+            await pv.focus();
+            await pv.press('ArrowRight');
+            await page.waitForTimeout(120);
+            assert.ok(await pv.evaluate(element => element.scrollLeft) > 0, 'Keyboard can scroll the long PV');
+          }
           if (captureDir && depth === 18) await page.screenshot({path:`${captureDir}/analysis-lines-${width}.png`});
         }
       }
