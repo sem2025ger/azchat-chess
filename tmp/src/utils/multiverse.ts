@@ -46,3 +46,17 @@ export function multiverseUciMove(fen: string, uci: string): string {
   if (!move) throw new Error('Illegal engine move');
   return game.fen();
 }
+
+/** Export an independent line as a portable PGN with its original setup FEN. */
+export function multiverseBranchPgn(branch: MultiverseBranch): string {
+  const game = replayMultiverseBranch(branch);
+  const start = new Chess(branch.rootFen);
+  const initial = start.fen() !== new Chess().fen();
+  game.setHeader('Event', 'ChessAZ MULTIVERSE');
+  game.setHeader('Result', '*');
+  if (initial) {
+    game.setHeader('SetUp', '1');
+    game.setHeader('FEN', branch.rootFen);
+  }
+  return game.pgn();
+}
