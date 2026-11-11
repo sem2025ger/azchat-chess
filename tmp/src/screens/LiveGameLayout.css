@@ -96,7 +96,35 @@
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
+  scrollbar-color: #50564f #141815;
   font-size: .84rem;
 }
 [data-live-game-layout] .analysis-engine-moves > span { flex-shrink: 0; }
 [data-live-game-layout] .analysis-engine-moves:focus-visible { outline: 1px solid #a8ae9e; outline-offset: 1px; }
+
+/* Keep the native scrollbar thickness and horizontal drag target, but mute its colours. */
+[data-live-game-layout] .analysis-engine-moves::-webkit-scrollbar-track {
+  background: #141815;
+}
+[data-live-game-layout] .analysis-engine-moves::-webkit-scrollbar-thumb {
+  background: #50564f;
+  border-radius: 999px;
+}
+[data-live-game-layout] .analysis-engine-moves::-webkit-scrollbar-thumb:hover {
+  background: #656d63;
+}
+
+/* Only roomy desktop online games: give the board a little more vertical room
+   and visually bring the analysis panel closer without affecting review/mobile. */
+@media (min-width: 1280px) and (min-height: 700px) {
+  [data-live-game-layout] {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  [data-live-game-layout] .live-game-board-column > div {
+    max-width: 84vh;
+  }
+  [data-live-game-layout] > .panel-glow-cycle {
+    left: -48px;
+  }
+}
