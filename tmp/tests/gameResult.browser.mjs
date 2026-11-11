@@ -4,7 +4,7 @@ import { mkdir } from 'node:fs/promises';
 
 // All auth, socket and engine responses below are synthetic and browser-local.
 // No requests or game actions reach a real account, database or server.
-export async function verifyGameResult(browser, base, { supabaseHost = 'fixture', socketPattern = /127\.0\.0\.1:6129\/socket\.io\//, captureDir = process.env.LIVE_GAME_CAPTURE } = {}) {
+export async function verifyGameResult(browser, base, { supabaseHost = 'fixture', socketPattern = /127\.0\.0\.1:6129\/socket\.io\//, captureDir = process.env.LIVE_GAME_CAPTURE, desktopBrowser = browser } = {}) {
   if (captureDir) await mkdir(captureDir, {recursive:true});
   const profiles = [{id:'11111111-1111-4111-8111-111111111111',username:'QA White'}, {id:'22222222-2222-4222-8222-222222222222',username:'QA Black'}];
   const locales = {
@@ -13,10 +13,11 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
     tr: ['Yeni oyun', 'Sonucu kapat'], ua: ['Нова партія', 'Закрити результат'],
   };
   const sizes = [[1536,864], [1366,768], [1024,600], [768,1024], [390,844], [360,640]];
-  for (const [index, [language, [newGame, close]]] of Object.entries(locales).entries()) {
-    const [width,height] = sizes[index];
-    const color = index % 2 ? 'b' : 'w';
-    const page = await browser.newPage({ viewport: {width,height}, reducedMotion: 'reduce' });
+  const cases = Object.entries(locales).map(([language,copy],index)=>[language,copy,sizes[index]]);
+  cases.push(['ru',locales.ru,[1536,737]]);
+  for (const [index, [language, [newGame, close], [width,height]]] of cases.entries()) {
+    const color = index === 6 || index % 2 ? 'b' : 'w';
+    const page = await (width >= 768 ? desktopBrowser : browser).newPage({ viewport: {width,height}, isMobile: width < 768, hasTouch: width < 768, reducedMotion: 'reduce' });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     const game = new Chess();
@@ -103,6 +104,13 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
         console.log(`PASS ${color}: clock ownership and white -> black -> white countdown`);
       }
       const before = await geometry();
+      if (width >= 1024) {
+        const panel = await page.locator('[data-live-game-layout] > .panel-glow-cycle').boundingBox();
+        const gap = panel.x-before[0].x-before[0].width;
+        console.log('ONLINE_GEOMETRY '+JSON.stringify({width,height,grid:before[0],header:before[1],footer:before[2],panel,gap}));
+        assert.ok(gap >= 10 && gap <= 14,'Analysis panel stays close without overlapping the grid');
+        assert.ok(before[1].y >= 16 && before[2].y+before[2].height <= height,'Board and both players fit the desktop viewport');
+      }
       assert.equal(await page.getByRole('dialog').count(),0);
       assert.equal(await page.locator('.live-game-evaluation').isVisible(),false);
       assert.ok(!(await page.evaluate(() => window.__uci)).some(cmd => cmd.startsWith('go ')), 'No engine searches during a live game');
@@ -135,7 +143,7 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
               const move = legal[index % legal.length];
               pv.push(move.from+move.to+(move.promotion||'')); position.move(move);
             }
-            return `info depth ${depth} multipv ${index+1} score cp ${index === 0 ? 25 : index === 1 ? -30 : 0} pv ${pv.join(' ')}`;
+            return `info depth ${depth} multipv ${index+1} score cp ${index === 0 ? 1234 : index === 1 ? -1234 : 0} pv ${pv.join(' ')}`;
           });
           await page.evaluate(updates => updates.forEach(line => window.__engineReply(line)),updates);
           await page.waitForFunction(depth => document.querySelector('.analysis-stockfish-depth')?.textContent?.includes(String(depth)),depth);
@@ -143,7 +151,24 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
           const badge = slots.first().locator('.analysis-engine-score');
           const badgeRect = await badge.boundingBox();
           assert.ok(badgeRect.width <= 54 && badgeRect.height <= 26,'Compact score badge');
-          assert.notEqual(await badge.evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(255, 255, 255)','Subdued positive evaluation');
+          const style = await badge.evaluate(el => ({font:parseFloat(getComputedStyle(el).fontSize),background:getComputedStyle(el).backgroundColor,width:el.clientWidth,scrollWidth:el.scrollWidth}));
+          const moves = slots.first().locator('.analysis-engine-moves');
+          const scrollbar = await moves.evaluate(el => ({color:getComputedStyle(el).scrollbarColor,size:getComputedStyle(el).scrollbarWidth,gutter:el.offsetHeight-el.clientHeight,overflow:el.scrollWidth-el.clientWidth}));
+          if (index === 0) console.log('ANALYSIS_READABILITY '+JSON.stringify({style,scrollbar}));
+          assert.ok(style.font >= 14,'Readable larger score digits');
+          assert.equal(style.background,'rgb(204, 208, 198)','Accepted evaluation colour is unchanged');
+          assert.ok(style.scrollWidth <= style.width,'Six-character evaluation fits its compact badge');
+          assert.equal(scrollbar.size,'thin','Native scrollbar thickness is unchanged');
+          assert.equal(scrollbar.color,'rgb(102, 108, 97) rgb(32, 35, 31)','Dark thumb and track');
+          if (depth === 18 && scrollbar.overflow > 10 && scrollbar.gutter > 0) {
+            const rect = await moves.boundingBox();
+            await page.mouse.move(rect.x+40,rect.y+rect.height-scrollbar.gutter/2);
+            await page.mouse.down();
+            await page.mouse.move(rect.x+100,rect.y+rect.height-scrollbar.gutter/2,{steps:8});
+            await page.mouse.up();
+            assert.ok(await moves.evaluate(el=>el.scrollLeft)>0,'Scrollbar remains mouse-draggable');
+            await moves.evaluate(el=>{el.scrollLeft=0;});
+          }
           if (captureDir && depth === 18) await page.screenshot({path:`${captureDir}/analysis-lines-${width}.png`});
         }
       }

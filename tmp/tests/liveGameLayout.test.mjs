@@ -54,7 +54,10 @@ test('online board and player rows stay stable through the result and in-place a
         assert.ok(footer.y + footer.height <= height, `Both player rows fit at ${viewport}`);
       }
       await page.close();
-      await verifyGameResult(browser, base);
+      // Exercise native desktop scrollbars; phone fixtures keep their overlay surface.
+      const desktopBrowser = await chromium.launch({ executablePath, args:['--no-sandbox','--disable-gpu'], ignoreDefaultArgs:['--hide-scrollbars'], timeout:12_000 });
+      try { await verifyGameResult(browser, base, {desktopBrowser}); }
+      finally { await desktopBrowser.close(); }
     } finally {
       await browser.close();
     }

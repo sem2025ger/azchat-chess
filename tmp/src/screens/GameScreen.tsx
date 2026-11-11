@@ -1194,7 +1194,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Mobile Analysis Drawer Header */}
       <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 group w-full py-0 lg:flex-1", isMultiplayer && "live-game-board-column", !isMultiplayer && "lg:min-w-0 lg:-translate-y-4", mode === 'review' ? "desktop-analysis-board-column" : "animate-scale-up")}>
 
-        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]", mode === 'review' && "desktop-analysis-board-stack")}>
+        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]", isMultiplayer && "live-game-board-stack", mode === 'review' && "desktop-analysis-board-stack")}>
 
           {mode === 'review' && (
             <header className="desktop-analysis-hero hidden lg:flex shrink-0 min-w-0 items-center justify-between gap-3 px-2" aria-label={words.analysis}>

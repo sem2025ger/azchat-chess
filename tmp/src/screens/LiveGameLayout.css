@@ -39,7 +39,15 @@
   }
 }
 @media (min-width: 1024px) {
+  [data-live-game-layout] { justify-content: center; column-gap: 12px; }
+  [data-live-game-layout] .live-game-board-column { flex: 0 1 72vh; min-width: 0; }
+  [data-live-game-layout] .live-game-board-stack { max-width: 72vh; }
   [data-live-game-layout] > .panel-glow-cycle { left: 0; }
+}
+@media (min-width: 1280px) {
+  [data-live-game-layout] { padding-inline: 20px; }
+  [data-live-game-layout] .live-game-board-column { flex-basis: min(84vh, calc(100dvh - 120px)); }
+  [data-live-game-layout] .live-game-board-stack { max-width: min(84vh, calc(100dvh - 120px)); }
 }
 @media (max-width: 767px) {
   [data-live-game-layout] .live-game-board-column { order: 1; }
@@ -69,9 +77,10 @@
   height: 26px;
   min-height: 26px;
   max-height: 26px;
-  padding: 2px 4px;
+  padding: 2px 0;
   border-radius: 6px;
-  font-size: .75rem;
+  font-size: .875rem;
+  letter-spacing: -.025em;
   line-height: 20px;
   font-variant-numeric: tabular-nums;
   box-shadow: none;
@@ -96,7 +105,16 @@
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
+  scrollbar-color: #666c61 #20231f;
+  color-scheme: dark;
   font-size: .84rem;
 }
 [data-live-game-layout] .analysis-engine-moves > span { flex-shrink: 0; }
 [data-live-game-layout] .analysis-engine-moves:focus-visible { outline: 1px solid #a8ae9e; outline-offset: 1px; }
+
+/* Preserve the native hit area; only recolour classic Windows/WebKit scrollbars. */
+[data-live-game-layout] .analysis-engine-moves::-webkit-scrollbar { background-color: #20231f; }
+[data-live-game-layout] .analysis-engine-moves::-webkit-scrollbar-track { background-color: #20231f; }
+[data-live-game-layout] .analysis-engine-moves::-webkit-scrollbar-thumb { background-color: #666c61; border-radius: 6px; }
+[data-live-game-layout] .analysis-engine-moves::-webkit-scrollbar-thumb:hover { background-color: #818777; }
+[data-live-game-layout] .analysis-engine-moves::-webkit-scrollbar-button { background-color: #20231f; }
