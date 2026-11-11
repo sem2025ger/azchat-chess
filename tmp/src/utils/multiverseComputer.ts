@@ -16,13 +16,14 @@ export class MultiverseComputerSession {
   constructor(fen: string, human: 'w' | 'b', depth: number, onChange: (branch: MultiverseBranch) => void, onFailure: () => void) {
     if (!Number.isInteger(depth) || depth < 1 || depth > 20) throw new Error('Invalid computer level');
     this.branch = createMultiverseBranch(fen, 'Computer practice', 'computer');
+    if (new Chess(this.branch.rootFen).isGameOver()) throw new Error('Position is already finished');
     this.human = human;
     this.depth = depth;
     this.onChange = onChange;
     this.onFailure = onFailure;
     this.engine = new StockfishEngine();
     this.engine.onResult(result => {
-      if (this.closed || !this.pending || result.analyzedFen !== this.currentFen() || result.depth < this.depth) return;
+      if (this.closed || !this.pending || result.analyzedFen !== this.currentFen() || !result.final) return;
       this.pending = false;
       try {
         this.branch = appendMultiverseMove(this.branch, result.bestMove);
