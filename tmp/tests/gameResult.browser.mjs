@@ -154,6 +154,7 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       else await dialog.getByRole('button',{name:close,exact:true}).click();
       assert.equal(await dialog.count(),0);
       assert.equal(await page.locator('[data-game-result-overlay]').count(),0);
+      assert.equal(await page.locator('[data-testid="multiverse-play"]').count(),0,'MULTIVERSE stays hidden when its flag is off');
       assert.ok(page.url().includes('roomId=layout-fixture'));
       assert.equal(await page.locator('[data-piece-square="f3"]').count(),1, 'Final position preserved');
       const sentBefore = commands.filter(([name]) => name === 'make_move').length;

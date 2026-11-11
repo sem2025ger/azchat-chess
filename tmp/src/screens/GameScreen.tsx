@@ -17,6 +17,12 @@ import { mobileAnalysisCopy } from '../components/analysis/mobileAnalysisCopy';
 import { type StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { acquireAnalysisEngine, releaseAnalysisEngine } from '../utils/analysisEngineSession';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
+import { MultiverseComputerSession } from '../utils/multiverseComputer';
+import { type MultiverseBranch, replayMultiverseBranch } from '../utils/multiverse';
+import { multiverseCopy } from '../utils/multiverseCopy';
+import { loadMultiverseBranches, saveMultiverseBranches } from '../utils/multiverseStorage';
+import { MULTIVERSE_SHARE_PARAM, decodeMultiverseShare } from '../utils/multiverseShare';
+import MultiversePanel from '../components/analysis/MultiversePanel';
 
 
 import { createPositionMapSnapshot, selectPositionMapVariation, type PositionMapSnapshot } from '../utils/positionMapNavigation';
@@ -27,7 +33,7 @@ import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSound
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
 import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
-import { analysisMovePairs, playAnalysisMoveAtView, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
+import { analysisMovePairs, playAnalysisMoveAtView, positionDraft, placeDraftPiece, analysisFromFen, analysisFromMoves, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
 import { analysisCopy } from '../components/analysis/copy';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
 import { displayPlayerName } from '../utils/displayPlayerName';
@@ -65,7 +71,33 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const words = analysisCopy[language];
-  const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position'>('analysis');
+  const mw = multiverseCopy[language];
+  const multiverseFlag = import.meta.env.VITE_CHESSAZ_MULTIVERSE === 'true';
+  // Share links and the Training tab belong to the Analysis route only.
+  const multiverseReview = mode === 'review' && multiverseFlag;
+  const [computerBranch, setComputerBranch] = useState<MultiverseBranch | null>(null);
+  const [computerError, setComputerError] = useState(false);
+  const [computerSide, setComputerSide] = useState<'w' | 'b'>('w');
+  const [computerDepth, setComputerDepth] = useState(8);
+  const [computerRoot, setComputerRoot] = useState<string | null>(null);
+  const computerSession = useRef<MultiverseComputerSession | null>(null);
+  const [multiverseNotice, setMultiverseNotice] = useState<string | null>(null);
+  // A shared link (?mv=) is decoded once; invalid payloads never replace the saved analysis.
+  const [sharedBranch] = useState<MultiverseBranch | null | 'invalid'>(() => {
+    if (!multiverseReview) return null;
+    const encoded = new URLSearchParams(window.location.search).get(MULTIVERSE_SHARE_PARAM);
+    if (!encoded) return null;
+    try { return decodeMultiverseShare(encoded, `shared-${Date.now()}`); } catch { return 'invalid'; }
+  });
+  const [savedBranches, setSavedBranches] = useState<MultiverseBranch[]>(() => {
+    const stored = multiverseFlag && typeof localStorage !== 'undefined' ? loadMultiverseBranches(localStorage) : [];
+    if (sharedBranch && sharedBranch !== 'invalid' && !stored.some(b => b.rootFen === sharedBranch.rootFen && b.moves.join(' ') === sharedBranch.moves.join(' '))) return [...stored.slice(-19), sharedBranch];
+    return stored;
+  });
+  useEffect(() => { if (multiverseFlag && typeof localStorage !== 'undefined') saveMultiverseBranches(savedBranches, localStorage); }, [multiverseFlag, savedBranches]);
+  const endComputer = () => { computerSession.current?.stop(); computerSession.current = null; setComputerBranch(null); setComputerRoot(null); setComputerError(false); };
+  useEffect(() => () => { computerSession.current?.stop(); computerSession.current = null; }, []);
+  const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position' | 'multiverse'>('analysis');
   const [mapSnapshot, setMapSnapshot] = useState<PositionMapSnapshot | null>(null);
   // The mobile analysis tools open only on demand; preserve the full-size board.
   const [mobileTool, setMobileTool] = useState<'map' | 'games' | 'position' | null>(null);
@@ -93,7 +125,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     media.addEventListener('change', closeOnDesktop);
     return () => media.removeEventListener('change', closeOnDesktop);
   }, []);
-  const tabBeforeEditor = useRef<'analysis' | 'map' | 'games'>('analysis');
+  const tabBeforeEditor = useRef<'analysis' | 'map' | 'games' | 'multiverse'>('analysis');
   const [editorSelectedPiece, setEditorSelectedPiece] = useState('P');
   const [positionDraftValue, setPositionDraftValue] = useState<PositionDraft>(() => positionDraft(new Chess().fen()));
   const [positionDraftUndo, setPositionDraftUndo] = useState<PositionDraft[]>([]);
@@ -120,7 +152,15 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const { user, profile } = useAuth();
   const [initialAnalysis] = useState(() => {
     if (mode !== 'review') return emptyAnalysisSession();
-    const sharedFen = new URLSearchParams(window.location.search).get('fen');
+    const params = new URLSearchParams(window.location.search);
+    const sharedVariation = import.meta.env.VITE_CHESSAZ_MULTIVERSE === 'true' ? params.get(MULTIVERSE_SHARE_PARAM) : null;
+    if (sharedVariation) {
+      try {
+        const branch = decodeMultiverseShare(sharedVariation, 'shared');
+        return { ...analysisFromMoves(branch.moves, branch.rootFen), viewMoveIndex: -1 };
+      } catch { /* Invalid shared variation never replaces saved analysis. */ }
+    }
+    const sharedFen = params.get('fen');
     if (sharedFen) {
       try { return analysisFromFen(sharedFen); } catch { /* Invalid shared input never replaces saved analysis. */ }
     }
@@ -139,6 +179,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
       : false
   );
   const effectivePvLines = mode === 'review' && !isDesktop ? 2 : 3;
+  // The MULTIVERSE panel lives in the sidebar tab from lg upwards and below the board on smaller screens; never both.
+  const [isWideDesktop, setIsWideDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches);
+  useEffect(() => {
+    if (!multiverseFlag) return;
+    const media = window.matchMedia('(min-width: 1024px)');
+    const handleChange = (event: MediaQueryListEvent) => setIsWideDesktop(event.matches);
+    setIsWideDesktop(media.matches);
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, [multiverseFlag]);
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
@@ -253,6 +303,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const postGameAnalysisRoomRef = useRef<string | null>(null);
   const [postGameAnalysisRoom, setPostGameAnalysisRoom] = useState<string | null>(null);
   const isPostGameAnalysis = isMultiplayer && postGameAnalysisRoom === roomId;
+  // Training is available in Analysis and, after the result is dismissed, on the finished online game.
+  const multiverseEnabled = multiverseFlag && (mode === 'review' || isPostGameAnalysis);
   const dismissResult = useCallback(() => {
     // A connection error is not confirmation that the online game has ended.
     if (isMultiplayer && roomId && confirmedEndedRoomRef.current === roomId) {
@@ -264,7 +316,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [drawOfferBy, setDrawOfferBy] = useState<'w' | 'b' | null>(null);
   const [gameActionMessage, setGameActionMessage] = useState<string | null>(null);
   const isLiveMultiplayer = isMultiplayer && !gameOverMessage;
-  const analysisActive = !isLiveMultiplayer && (isDesktop || activeTab === 'analysis');
+  const analysisActive = !isLiveMultiplayer && !computerBranch && (isDesktop || activeTab === 'analysis');
   const canSendGameAction =
     isMultiplayer && isConnected && syncedRoom === roomId && Boolean(socket) && Boolean(roomId) && !gameOverMessage;
 
@@ -534,6 +586,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const loadWorkspaceAnalysis = (analysis: AnalysisLoad, title = '', details?: { white: string; black: string; timeControl?: string }) => {
     if (mode !== 'review') return;
+    endComputer();
     engineRef.current?.stop();
     setEvaluations({});
     setPlanHighlight(null);
@@ -557,6 +610,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   };
 
   const startNewAnalysis = () => {
+    endComputer();
     engineRef.current?.stop();
     setEvaluations({});
     setPlanHighlight(null);
@@ -665,6 +719,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const handleGameMove = useCallback(
     (source: string, target: string, promotion: string = 'q') => {
+      if (computerBranch) {
+        // Training move against the local Stockfish session; never reaches the socket.
+        const uci = `${source}${target}${promotion === 'q' ? '' : promotion}`;
+        return computerSession.current?.move(uci) ?? false;
+      }
       if (isMultiplayer && !isPostGameAnalysis && !canSendGameAction) return false;
       // Replay of a live game is read-only. Analysis may branch at any past ply.
       if (mode !== 'review' && !isPostGameAnalysis && viewMoveIndex !== -1) {
@@ -728,7 +787,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, moveHistory, positionHistory, game, socket, roomId, sound, mode, isMultiplayer, isPostGameAnalysis, playerColor, canSendGameAction, setViewMoveIndex]
+    [computerBranch, viewMoveIndex, moveHistory, positionHistory, game, socket, roomId, sound, mode, isMultiplayer, isPostGameAnalysis, playerColor, canSendGameAction, setViewMoveIndex]
   );
 
 
@@ -791,6 +850,74 @@ export default function GameScreen({ mode }: GameScreenProps) {
     }
   }, [game, viewMoveIndex, positionHistory]);
 
+  const computerGame = useMemo(() => computerBranch ? replayMultiverseBranch(computerBranch) : null, [computerBranch]);
+  const beginComputer = (fen: string) => {
+    if (!multiverseEnabled) return;
+    endComputer();
+    engineRef.current?.stop();
+    try {
+      const session = new MultiverseComputerSession(fen, computerSide, computerDepth, setComputerBranch, () => setComputerError(true));
+      computerSession.current = session;
+      setComputerRoot(fen);
+      setComputerBranch(session.getBranch());
+      setEditingPosition(false);
+      setWorkspaceTab('multiverse');
+    } catch { setComputerError(true); }
+  };
+  const saveComputerBranch = () => {
+    if (!computerBranch || computerBranch.moves.length === 0) return;
+    const entry = { ...computerBranch, id: `${Date.now()}`, label: `${mw.branch} ${savedBranches.length + 1}` };
+    setSavedBranches(old => [...old.slice(-19), entry]);
+    setMultiverseNotice(mw.saved);
+  };
+  const openSavedBranch = (branch: MultiverseBranch) => {
+    endComputer();
+    if (mode !== 'review') {
+      // The finished online game stays untouched: open the variation on the Analysis route instead.
+      try { saveAnalysisSession(branch.moves, -1, undefined, branch.rootFen); navigate('/game'); } catch { setComputerError(true); }
+      return;
+    }
+    try { loadWorkspaceAnalysis({ ...analysisFromMoves(branch.moves, branch.rootFen), viewMoveIndex: -1 }, branch.label); } catch { setComputerError(true); }
+  };
+  // Leaving the postgame workspace (new game, room change) ends any running training session.
+  useEffect(() => {
+    if (multiverseEnabled || !computerSession.current) return;
+    endComputer();
+  }, [multiverseEnabled]);
+  useEffect(() => {
+    if (!multiverseNotice) return;
+    const timer = setTimeout(() => setMultiverseNotice(null), 2500);
+    return () => clearTimeout(timer);
+  }, [multiverseNotice]);
+  useEffect(() => {
+    if (sharedBranch === null) return;
+    setMultiverseNotice(sharedBranch === 'invalid' ? mw.sharedInvalid : mw.shared);
+    setWorkspaceTab('multiverse');
+    const nextParams = new URLSearchParams(window.location.search);
+    nextParams.delete(MULTIVERSE_SHARE_PARAM);
+    navigate({ search: nextParams.toString() }, { replace: true });
+    // Runs once for the initial URL; copy language changes must not re-trigger it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedBranch]);
+  const multiversePanel = multiverseEnabled ? <MultiversePanel
+    mw={mw}
+    playable={!computerBranch && !displayedGame.isGameOver()}
+    computerBranch={computerBranch}
+    computerGame={computerGame}
+    computerError={computerError}
+    computerSide={computerSide}
+    computerDepth={computerDepth}
+    onSideChange={setComputerSide}
+    onDepthChange={setComputerDepth}
+    onPlayFromHere={() => beginComputer(displayedGame.fen())}
+    onRetry={() => computerRoot && beginComputer(computerRoot)}
+    onReturn={endComputer}
+    onSave={saveComputerBranch}
+    savedBranches={savedBranches}
+    onOpen={openSavedBranch}
+    onDelete={id => setSavedBranches(old => old.filter(x => x.id !== id))}
+    notice={multiverseNotice}
+  /> : null;
   const currentEngineResult = (mode === 'review' || isPostGameAnalysis) && engineResult?.analyzedFen !== displayedGame.fen() ? null : engineResult;
   const openPositionMap = () => {
     setEditingPosition(false);
@@ -1297,10 +1424,12 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 highlightedSquares={mode === 'review' && workspaceTab === 'map' && planHighlight?.fen === displayedGame.fen() ? planHighlight.squares : undefined}
                 overrideBoardTheme={boardTheme}
                 confirmMovesMobile={mode === 'live' && !isPostGameAnalysis && confirmMobileMoves}
-                game={displayedGame}
+                game={computerGame || displayedGame}
                 onMove={handleGameMove}
-                orientation={mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
-                readOnly={!isPostGameAnalysis && ((mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn()))}
+                orientation={computerBranch ? computerSide : mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
+                readOnly={computerBranch
+                  ? (computerGame?.turn() !== computerSide || computerError)
+                  : !isPostGameAnalysis && ((mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn()))}
               />}
             </div>
           </div>
@@ -1406,6 +1535,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </button>}
         </nav>
       )}
+      {multiversePanel && !isWideDesktop && <div data-postgame-multiverse-mobile={mode !== 'review' ? "" : undefined} className={cx("lg:hidden mx-2 mb-2 shrink-0", mode !== 'review' && "order-4")}>{multiversePanel}</div>}
 
       {/* Professional Sidebar Sidebar Tabs */}
       <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' ? "desktop-analysis-panel" : "animate-fade-in-right transition-all")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
@@ -1440,18 +1570,19 @@ export default function GameScreen({ mode }: GameScreenProps) {
         {mode === 'review' && (
           <>
             <nav aria-label={words.analysis} className="desktop-analysis-workspace-tabs hidden lg:flex shrink-0 items-center gap-1 border-b border-white/[0.06] bg-black/15 p-2">
-              {(['analysis', 'map', 'games'] as const).map(tab => (
+              {([...(['analysis', 'map', 'games'] as const), ...(multiverseReview ? (['multiverse'] as const) : [])]).map(tab => (
                 <button key={tab} type="button" aria-pressed={workspaceTab === tab} onClick={() => {
                   setEditingPosition(false);
                   setPlanHighlight(null);
                   if (tab === 'map') openPositionMap();
                   else setWorkspaceTab(tab);
                 }} className={cx("min-h-9 min-w-0 flex-1 rounded-xl px-2 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200", workspaceTab === tab ? "border border-amber-200/20 bg-gradient-to-br from-amber-200/10 via-[#1c1c18] to-teal-900/15 text-amber-100" : "border border-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-200")}>
-                  {tab === 'map' ? positionMapLabel[language] : words[tab]}
+                  {tab === 'map' ? positionMapLabel[language] : tab === 'multiverse' ? mw.tab : words[tab]}
                 </button>
               ))}
             </nav>
             <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
+            {workspaceTab === 'multiverse' && multiversePanel && isWideDesktop && <div className="hidden lg:block min-h-0 flex-1 overflow-y-auto custom-scrollbar p-2">{multiversePanel}</div>}
             {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
             {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col">
               {mapSnapshot?.frozen && <button type="button" className="mx-4 mt-3 rounded-lg border border-amber-200/20 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-white/5" onClick={() => {
@@ -1492,6 +1623,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               />
             )}
           </div>
+          {mode !== 'review' && multiversePanel && isWideDesktop && <div data-postgame-multiverse="" className="shrink-0 max-h-[50%] overflow-y-auto custom-scrollbar p-2 border-b border-white/[0.06]">{multiversePanel}</div>}
 
           <div className={cx("flex-1 min-h-0 flex flex-col overflow-hidden bg-black/[0.1]", !isMultiplayer && "xl:bg-black/[0.025]")}>
             <div className="desktop-analysis-move-scroll flex-1 min-h-0 overflow-y-auto custom-scrollbar">

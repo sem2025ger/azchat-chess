@@ -17,6 +17,7 @@ export interface EngineResult {
   continuation?: string[]; // array of moves in the main line
   lines?: EngineLine[];
   analyzedFen?: string;
+  final?: boolean; // true only for the UCI bestmove response
 }
 
 export type MoveQuality = 'best' | 'excellent' | 'good' | 'inaccurate' | 'mistake' | 'blunder' | 'book';
@@ -145,6 +146,7 @@ export class StockfishEngine {
         continuation: finalPv.length > 1 ? finalPv.slice(1) : undefined,
         lines: this.getStableLines(),
         analyzedFen: this._analyzedFen,
+        final: true,
       });
     }
   }

@@ -162,12 +162,27 @@ test('dismissal unlocks local analysis only after a confirmed terminal event for
   }
 });
 
+test('MULTIVERSE training moves go only to the local Stockfish session, never to the socket or the finished game', () => {
+  const initial = analysisFromMoves([]), emitted = [], trained = [];
+  const fail = () => { throw Error('The finished game must stay unchanged'); };
+  const handle = screenHandler('handleGameMove', {useCallback: callback => callback, Chess, playAnalysisMoveAtView,
+    ...initial, computerBranch:{moves:[]}, computerSession:{current:{move:uci => { trained.push(uci); return true; }}},
+    isMultiplayer:true, isPostGameAnalysis:true, canSendGameAction:false, playerColor:'b', mode:'live', roomId:'r', sound:'Muted / Off',
+    socket:{emit:(...args) => emitted.push(args)}, locallyPlayedFenRef:{current:null}, playChessSound:fail, setMapSnapshot:fail,
+    setViewMoveIndex:fail, setGame:fail, setMoveHistory:fail, setPositionHistory:fail, setGameOverMessage:fail,
+  });
+  assert.equal(handle('e2','e4'), true);
+  assert.equal(handle('e7','e8','r'), true);
+  assert.deepEqual(trained, ['e2e4', 'e7e8r']);
+  assert.equal(emitted.length, 0);
+});
+
 test('production move handler preserves online validation and uses only local branches after dismissal', () => {
   for (const [local, connected, color, expected] of [[false,true,'w',true], [false,true,'b',false], [false,false,'w',false], [true,false,'b',true]]) {
     const initial = analysisFromMoves([]), emitted = [], states = {};
     const noop = () => {};
     const handle = screenHandler('handleGameMove', {useCallback: callback => callback, Chess, playAnalysisMoveAtView,
-      ...initial, isMultiplayer:true, isPostGameAnalysis:local, canSendGameAction:connected, playerColor:color,
+      ...initial, computerBranch:null, computerSession:{current:null}, isMultiplayer:true, isPostGameAnalysis:local, canSendGameAction:connected, playerColor:color,
       mode:'live', roomId:'r', sound:'Muted / Off', socket:{emit:(...args) => emitted.push(args)},
       locallyPlayedFenRef:{current:null}, playChessSound:noop, setMapSnapshot:noop, setViewMoveIndex:noop,
       setGame:value => {states.game = value;}, setMoveHistory:value => {states.moves = value;}, setPositionHistory:noop,
