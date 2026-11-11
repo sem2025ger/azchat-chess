@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Chess } from 'chess.js';
 import { loadMultiverseBranches, saveMultiverseBranches } from '../src/utils/multiverseStorage.ts';
-import { createMultiverseBranch, appendMultiverseMove, replayMultiverseBranch, multiverseUciMove } from '../src/utils/multiverse.ts';
+import { createMultiverseBranch, appendMultiverseMove, replayMultiverseBranch, multiverseUciMove, multiverseBranchPgn } from '../src/utils/multiverse.ts';
 
 test('independent alternative branches retain original root and do not mutate each other', () => {
   const source = new Chess();
@@ -39,4 +39,14 @@ test('saved variations survive reload and corrupted entries are ignored', () => 
   assert.deepEqual(loadMultiverseBranches(storage), [branch]);
   memory.set('chessaz.multiverse.branches.v1', JSON.stringify([{...branch, positions:[branch.rootFen,branch.rootFen]}]));
   assert.deepEqual(loadMultiverseBranches(storage), []);
+});
+
+test('portable PGN retains setup FEN and can be imported', () => {
+  const fen = '4k3/8/8/8/8/8/4P3/4K3 b - - 0 17';
+  const branch = appendMultiverseMove(createMultiverseBranch(fen, 'Black starts', 'pgn'), 'e8f7');
+  const pgn = multiverseBranchPgn(branch);
+  assert.match(pgn, /\[FEN "/);
+  const imported = new Chess();
+  imported.loadPgn(pgn);
+  assert.equal(imported.fen(), replayMultiverseBranch(branch).fen());
 });
