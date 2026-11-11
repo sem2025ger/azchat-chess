@@ -105,6 +105,13 @@ export const translations: TranslationDictionary = {
   'game.draw.declined': { en: 'Draw offer declined.', de: 'Remisangebot abgelehnt.', ua: 'Пропозицію нічиєї відхилено.', ru: 'Предложение ничьей отклонено.', az: 'Heç-heçə təklifi rədd edildi.', tr: 'Beraberlik teklifi reddedildi.' },
   'game.result.resignation.self': { en: 'You resigned.', de: 'Du hast aufgegeben.', ua: 'Ви здалися.', ru: 'Вы сдались.', az: 'Siz təslim oldunuz.', tr: 'Teslim oldunuz.' },
   'game.result.resignation.opponent': { en: 'Opponent resigned.', de: 'Gegner hat aufgegeben.', ua: 'Суперник здався.', ru: 'Соперник сдался.', az: 'Rəqib təslim oldu.', tr: 'Rakip teslim oldu.' },
+  'game.navigation.first': { en: 'First position', de: 'Anfangsstellung', ua: 'Початкова позиція', ru: 'Начальная позиция', az: 'Başlanğıc mövqe', tr: 'Başlangıç konumu' },
+  'game.navigation.previous': { en: 'Previous move', de: 'Vorheriger Zug', ua: 'Попередній хід', ru: 'Предыдущий ход', az: 'Əvvəlki gediş', tr: 'Önceki hamle' },
+  'game.navigation.next': { en: 'Next move', de: 'Nächster Zug', ua: 'Наступний хід', ru: 'Следующий ход', az: 'Növbəti gediş', tr: 'Sonraki hamle' },
+  'game.navigation.last': { en: 'Final position', de: 'Schlussstellung', ua: 'Кінцева позиція', ru: 'Финальная позиция', az: 'Son mövqe', tr: 'Son konum' },
+  'game.result.newGame': { en: 'New game', de: 'Neue Partie', ua: 'Нова партія', ru: 'Новая партия', az: 'Yeni partiya', tr: 'Yeni oyun' },
+  'game.result.close': { en: 'Close result', de: 'Ergebnis schließen', ua: 'Закрити результат', ru: 'Закрыть результат', az: 'Nəticəni bağla', tr: 'Sonucu kapat' },
+  'game.result.reviewHint': { en: 'Close this window to review the game here.', de: 'Schließe dieses Fenster, um die Partie hier zu analysieren.', ua: 'Закрийте це вікно, щоб розібрати партію тут.', ru: 'Закройте это окно, чтобы разобрать партию здесь.', az: 'Partiyanı burada təhlil etmək üçün bu pəncərəni bağlayın.', tr: 'Oyunu burada incelemek için bu pencereyi kapatın.' },
   'game.result.drawAgreement': { en: 'Draw by agreement.', de: 'Remis durch Vereinbarung.', ua: 'Нічия за згодою.', ru: 'Ничья по соглашению.', az: 'Razılıqla heç-heçə.', tr: 'Anlaşma ile beraberlik.' },
   'game.action.rejected': { en: 'Action not allowed.', de: 'Aktion nicht erlaubt.', ua: 'Дію не дозволено.', ru: 'Действие не разрешено.', az: 'Əməliyyata icazə verilmir.', tr: 'İşleme izin verilmiyor.' },
 

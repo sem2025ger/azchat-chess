@@ -25,16 +25,17 @@ interface AnalysisPanelProps {
   error?: boolean;
   noMoves?: boolean;
   reviewLayout?: boolean;
+  stableLines?: boolean;
   requestedDepth?: number;
   onIncreaseDepth?: () => void;
 }
 
-export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves, reviewLayout = false, requestedDepth, onIncreaseDepth }: AnalysisPanelProps) {
+export default function AnalysisPanel({ score, bestMove, depth, mate, candidates, lines, loading, error, noMoves, reviewLayout = false, stableLines = false, requestedDepth, onIncreaseDepth }: AnalysisPanelProps) {
   const { t, language } = useLanguage();
   const words = analysisCopy[language];
   // Reserve stable PV slots during each new search; never collapse the rows while
   // the worker is finding the next position. The slot index is its stable key.
-  const displayedLines = reviewLayout
+  const displayedLines = reviewLayout || stableLines
     ? Array.from({ length: 3 }, (_, index) => lines?.[index] ?? null)
     : lines;
 
@@ -127,7 +128,7 @@ export default function AnalysisPanel({ score, bestMove, depth, mate, candidates
                 </div>
                 
                 <div className="analysis-engine-pv flex-1 flex flex-col pt-0.5">
-                   <div className="analysis-engine-moves text-[0.9rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
+                   <div tabIndex={stableLines ? 0 : undefined} aria-label={stableLines ? `${t('game.tabs.analysis')} ${idx + 1}` : undefined} className="analysis-engine-moves text-[0.9rem] font-medium text-neutral-300 leading-relaxed flex flex-wrap gap-x-1.5 gap-y-1">
                       {(line?.moves.length ?? 0) > 0 ? (line?.moves ?? []).map((move, i) => (
                         <span key={i} className={i <= 1 ? "font-bold text-white" : "text-neutral-400"}>{move}</span>
                       )) : (

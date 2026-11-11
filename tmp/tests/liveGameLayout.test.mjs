@@ -7,14 +7,19 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '../../server/node_modules/playwright/index.mjs';
 import { build, preview } from 'vite';
+import { verifyGameResult } from './gameResult.browser.mjs';
 
-test('desktop online game keeps the opponent and clock clear of the top edge', { timeout: 60_000 }, async () => {
+test('online board and player rows stay stable through the result and in-place analysis', { timeout: 120_000 }, async () => {
   const root = fileURLToPath(new URL('..', import.meta.url));
   const outDir = await mkdtemp(join(tmpdir(), 'chessaz-live-layout-'));
   let server;
   try {
     // Use a stable bundle so lazy route loads cannot trigger dev dependency reloads.
-    await build({ root, logLevel: 'error', build: { outDir } });
+    await build({ root, logLevel: 'error', define: {
+      'import.meta.env.VITE_SERVER_URL': JSON.stringify('http://127.0.0.1:6129'),
+      'import.meta.env.VITE_SUPABASE_URL': JSON.stringify('https://fixture.supabase.co'),
+      'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify('layout-fixture'),
+    }, build: { outDir } });
     server = await preview({ root, build: { outDir }, preview: { host: '127.0.0.1', port: 0 } });
     const executablePath = process.env.CHROME_BIN
       || ['/usr/bin/google-chrome', '/usr/bin/chromium'].find(existsSync);
@@ -48,6 +53,8 @@ test('desktop online game keeps the opponent and clock clear of the top edge', {
         assert.ok(header.y + header.height <= top.y && bottom.y + bottom.height <= footer.y, `Rows do not overlap the board at ${viewport}`);
         assert.ok(footer.y + footer.height <= height, `Both player rows fit at ${viewport}`);
       }
+      await page.close();
+      await verifyGameResult(browser, base);
     } finally {
       await browser.close();
     }

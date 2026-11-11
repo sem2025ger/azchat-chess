@@ -39,14 +39,14 @@ test('navigation highlights only active tab; Home inactive has no gold ring', ()
   for (const accent of ['analysis', 'chat', 'profile', 'settings']) assert.match(layout, new RegExp(accent + ':'));
 });
 
-test('move confirmation is opt-in, persists, validates moves and never affects review', () => {
+test('move confirmation is opt-in, persists, validates moves and never affects review or postgame analysis', () => {
   assert.match(theme, /chess_confirmMobileMoves/);
   assert.match(theme, /confirmMobileMoves, setConfirmMobileMoves/);
   assert.match(screen, /role="switch" aria-checked=\{confirmMobileMoves\}/);
   assert.match(board, /confirmMovesMobile = false/);
   assert.match(board, /candidate\.move\(moveObj\)/);
   assert.match(board, /data-mobile-move-confirmation/);
-  assert.match(live, /confirmMovesMobile=\{mode === 'live' && confirmMobileMoves\}/);
+  assert.match(live, /confirmMovesMobile=\{mode === 'live' && !isPostGameAnalysis && confirmMobileMoves\}/);
   assert.match(board, /Cancel pending move/);
   assert.match(board, /Confirm pending move/);
 });
