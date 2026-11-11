@@ -95,25 +95,59 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       assert.ok(page.url().includes('roomId=layout-fixture'));
       assert.equal(await page.locator('[data-piece-square="f3"]').count(),1, 'Final position preserved');
       const sentBefore = commands.filter(([name]) => name === 'make_move').length;
-      const source = await page.locator('[data-square="f3"]:not([data-piece-square])').boundingBox();
-      await page.mouse.click(source.x + source.width / 2, source.y + source.height / 2);
-      await page.locator('[data-square="g5"]:not([data-piece-square])').click();
-      assert.equal(commands.filter(([name]) => name === 'make_move').length,sentBefore, 'Dismiss never re-enables live moves');
-      // Duplicated terminal delivery / reconnect must not reopen the dismissed result.
+      const play = async (from, to) => {
+        for (const square of [from, to]) {
+          const cell = page.locator(`[data-square="${square}"]:not([data-piece-square])`);
+          await cell.scrollIntoViewIfNeeded();
+          const box = await cell.boundingBox();
+          await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        }
+      };
+      const previousMove = async () => {
+        if (width >= 768) await page.getByRole('button',{name:'Предыдущий ход',exact:true}).click();
+        else await page.locator('[data-live-game-navigation] button').nth(1).click();
+      };
+      const expectFen = async fen => page.waitForFunction(fen => window.__uci.at(-1) !== undefined && window.__uci.includes('position fen '+fen),fen);
+      // Invalid moves remain rejected, but legal moves for either colour now work locally.
+      await play('f3','f5');
+      assert.equal(await page.locator('[data-piece-square="f5"]').count(),0);
+      await play('f3','g5');
+      await page.waitForFunction(() => document.querySelector('[data-piece-square="g5"]'),null,{timeout:3000});
+      const variation = new Chess(game.fen()); variation.move('Ng5');
+      await expectFen(variation.fen());
+      await play('g8','f6');
+      await page.waitForFunction(() => document.querySelector('[data-piece-square="f6"]'));
+      variation.move('Nf6'); await expectFen(variation.fen());
+      assert.equal(commands.filter(([name]) => name === 'make_move').length,sentBefore, 'Analysis sends no live moves');
+      // Stale socket delivery, recovery and rejections must not overwrite the local variation.
       send('game_over',{roomId:snapshot.roomId,...snapshot.outcome});
+      send('update_board',snapshot);
       send('reconnect_success',snapshot);
-      if (width >= 768) {
-        await page.getByRole('button',{name:'Предыдущий ход',exact:true}).click();
-        await page.waitForFunction(() => document.querySelector('[data-piece-square="d7"]'));
-      } else {
-        await page.locator('[data-live-game-navigation] button').nth(1).click();
-        await page.waitForFunction(() => document.querySelector('[data-piece-square="d7"]'));
-      }
+      send('move_rejected',{reason:'game_over'});
+      send('reconnect_failed',{roomId:snapshot.roomId,reason:'room_not_found'});
+      await page.waitForTimeout(100);
       assert.equal(await dialog.count(),0);
-      const previous = new Chess(); for (const san of ['e4','c5','Nf3']) previous.move(san);
-      await page.waitForFunction(fen => window.__uci.includes('position fen '+fen),previous.fen());
+      assert.equal(await page.locator('[data-piece-square="g5"]').count(),1);
+      assert.equal(await page.locator('[data-piece-square="f6"]').count(),1);
+      assert.ok(page.url().includes('roomId=layout-fixture'));
+      assert.ok(await opponent.getByText('2:57',{exact:true}).isVisible());
+      assert.ok(await self.getByText('2:58',{exact:true}).isVisible());
+      await previousMove();
+      await page.waitForFunction(() => document.querySelector('[data-piece-square="g8"]'));
+      await previousMove();
+      await page.waitForFunction(() => document.querySelector('[data-piece-square="f3"]'));
+      // Branch from the original final ply, replacing the previous analysis continuation.
+      await play('d2','d4');
+      await page.waitForFunction(() => document.querySelector('[data-piece-square="d4"]'));
+      await play('c5','d4');
+      await page.waitForFunction(() => !document.querySelector('[data-piece-square="c5"]'));
+      const branched = new Chess(game.fen()); branched.move('d4'); branched.move('cxd4');
+      await expectFen(branched.fen());
+      assert.equal(await page.locator('[data-piece-square="d4"] img').getAttribute('alt'),'bP');
+      assert.equal(commands.filter(([name]) => name === 'make_move').length,sentBefore);
+      assert.deepEqual(snapshot.history,['e4','c5','Nf3','d6'],'Recorded game remains unchanged');
       if (captureDir && index === 0) await page.screenshot({path:`${captureDir}/live-review.png`});
-      console.log(`PASS ${language} ${width}x${height} ${color}: grid ${before[0].width.toFixed(1)}px, stable result, close, FEN and replay`);
+      console.log(`PASS ${language} ${width}x${height} ${color}: stable board, local moves for both sides, branching, FEN, replay and socket isolation`);
       assert.deepEqual(errors,[]);
       // A fresh result still opens and the new-game button returns to the lobby.
       await page.reload({waitUntil:'domcontentloaded'});
