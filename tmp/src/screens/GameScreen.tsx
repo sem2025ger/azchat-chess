@@ -16,7 +16,7 @@ import { type StockfishEngine, type EngineResult } from '../utils/StockfishEngin
 import { acquireAnalysisEngine, releaseAnalysisEngine } from '../utils/analysisEngineSession';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
 import { MultiverseComputerSession } from '../utils/multiverseComputer';
-import { type MultiverseBranch, replayMultiverseBranch } from '../utils/multiverse';
+import { type MultiverseBranch, replayMultiverseBranch, multiverseBranchPgn } from '../utils/multiverse';
 import { multiverseCopy } from '../utils/multiverseCopy';
 import { loadMultiverseBranches, saveMultiverseBranches } from '../utils/multiverseStorage';
 
@@ -1241,7 +1241,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>}
             {computerBranch && <div className="flex flex-wrap items-center gap-2 text-xs"><span>{computerBranch.moves.join(' ') || '—'}</span><button type="button" className="rounded-lg border border-white/20 px-3 py-2" onClick={() => computerRoot && beginComputer(computerRoot)}>{mw.retry}</button><button type="button" className="rounded-lg border border-white/20 px-3 py-2" onClick={saveComputerBranch}>{mw.save}</button>{computerSession.current?.isComputerThinking() && <span role="status">{mw.thinking}</span>}{computerGame?.isGameOver() && <span>{mw.ended}</span>}</div>}
             {computerError && <p role="alert" className="text-xs text-red-300">{mw.error}</p>}
-            <details className="text-xs"><summary className="cursor-pointer py-1">{mw.variations} ({savedBranches.length})</summary><div className="space-y-1 pt-2">{savedBranches.length === 0 && mw.empty}{savedBranches.map(b => <div key={b.id} className="flex items-center justify-between gap-2"><span>{b.label} · {b.moves.length}</span><div className="flex gap-2"><button type="button" onClick={() => { endComputer(); try { loadWorkspaceAnalysis({game: replayMultiverseBranch(b), moveHistory:b.moves, positionHistory:b.positions, viewMoveIndex:-1}); } catch { setComputerError(true); } }}>{mw.load}</button><button type="button" onClick={() => setSavedBranches(old => old.filter(x => x.id !== b.id))}>{mw.delete}</button></div></div>)}</div></details>
+            <details className="text-xs"><summary className="cursor-pointer py-1">{mw.variations} ({savedBranches.length})</summary><div className="space-y-1 pt-2">{savedBranches.length === 0 && mw.empty}{savedBranches.map(b => <div key={b.id} className="flex items-center justify-between gap-2"><span>{b.label} · {b.moves.length}</span><div className="flex gap-2"><button type="button" onClick={() => { endComputer(); try { loadWorkspaceAnalysis({game: replayMultiverseBranch(b), moveHistory:b.moves, positionHistory:b.positions, viewMoveIndex:-1}); } catch { setComputerError(true); } }}>{mw.load}</button><button type="button" onClick={() => { if (navigator.clipboard?.writeText) void navigator.clipboard.writeText(multiverseBranchPgn(b)).catch(() => setComputerError(true)); else setComputerError(true); }}>{mw.share}</button><button type="button" onClick={() => setSavedBranches(old => old.filter(x => x.id !== b.id))}>{mw.delete}</button></div></div>)}</div></details>
           </section>}
           <div className={cx(
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
