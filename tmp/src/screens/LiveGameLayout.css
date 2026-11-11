@@ -116,7 +116,7 @@
 
 /* Only roomy desktop online games: give the board a little more vertical room
    and visually bring the analysis panel closer without affecting review/mobile. */
-@media (min-width: 1280px) and (min-height: 700px) {
+@media (min-width: 1440px) and (min-height: 700px) {
   [data-live-game-layout] {
     padding-top: 10px;
     padding-bottom: 10px;
