@@ -60,3 +60,15 @@ export function multiverseBranchPgn(branch: MultiverseBranch): string {
   }
   return game.pgn();
 }
+
+/** Compare saved continuations from the same root without conflating positions. */
+export function compareMultiverseBranches(branches: MultiverseBranch[]): { rootFen: string; branches: { id: string; label: string; plies: number; finalFen: string }[] }[] {
+  const grouped = new Map<string, { id: string; label: string; plies: number; finalFen: string }[]>();
+  for (const branch of branches.slice(-20)) {
+    const finalFen = replayMultiverseBranch(branch).fen();
+    const rows = grouped.get(branch.rootFen) ?? [];
+    rows.push({ id: branch.id, label: branch.label, plies: branch.moves.length, finalFen });
+    grouped.set(branch.rootFen, rows);
+  }
+  return Array.from(grouped, ([rootFen, entries]) => ({ rootFen, branches: entries }));
+}
