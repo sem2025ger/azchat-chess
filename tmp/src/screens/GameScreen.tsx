@@ -15,6 +15,9 @@ import { mobileAnalysisCopy } from '../components/analysis/mobileAnalysisCopy';
 import { type StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { acquireAnalysisEngine, releaseAnalysisEngine } from '../utils/analysisEngineSession';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
+import { MultiverseComputerSession } from '../utils/multiverseComputer';
+import { type MultiverseBranch, replayMultiverseBranch } from '../utils/multiverse';
+import { multiverseCopy } from '../utils/multiverseCopy';
 
 
 import { createPositionMapSnapshot, selectPositionMapVariation, type PositionMapSnapshot } from '../utils/positionMapNavigation';
@@ -63,6 +66,17 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const words = analysisCopy[language];
+  const mw = multiverseCopy[language];
+  const multiverseEnabled = mode === 'review' && import.meta.env.VITE_CHESSAZ_MULTIVERSE === 'true';
+  const [computerBranch, setComputerBranch] = useState<MultiverseBranch | null>(null);
+  const [computerError, setComputerError] = useState(false);
+  const [computerSide, setComputerSide] = useState<'w' | 'b'>('w');
+  const [computerDepth, setComputerDepth] = useState(8);
+  const [computerRoot, setComputerRoot] = useState<string | null>(null);
+  const computerSession = useRef<MultiverseComputerSession | null>(null);
+  const [savedBranches, setSavedBranches] = useState<MultiverseBranch[]>([]);
+  const endComputer = () => { computerSession.current?.stop(); computerSession.current = null; setComputerBranch(null); setComputerRoot(null); setComputerError(false); };
+  useEffect(() => () => { computerSession.current?.stop(); computerSession.current = null; }, []);
   const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position'>('analysis');
   const [mapSnapshot, setMapSnapshot] = useState<PositionMapSnapshot | null>(null);
   // The mobile analysis tools open only on demand; preserve the full-size board.
@@ -250,7 +264,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [drawOfferBy, setDrawOfferBy] = useState<'w' | 'b' | null>(null);
   const [gameActionMessage, setGameActionMessage] = useState<string | null>(null);
   const isLiveMultiplayer = isMultiplayer && !gameOverMessage;
-  const analysisActive = !isLiveMultiplayer && (isDesktop || activeTab === 'analysis');
+  const analysisActive = !isLiveMultiplayer && !computerBranch && (isDesktop || activeTab === 'analysis');
   const canSendGameAction =
     isMultiplayer && isConnected && syncedRoom === roomId && Boolean(socket) && Boolean(roomId) && !gameOverMessage;
 
@@ -506,6 +520,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const loadWorkspaceAnalysis = (analysis: AnalysisLoad, title = '', details?: { white: string; black: string; timeControl?: string }) => {
     if (mode !== 'review') return;
+    endComputer();
     engineRef.current?.stop();
     setEvaluations({});
     setPlanHighlight(null);
@@ -529,6 +544,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   };
 
   const startNewAnalysis = () => {
+    endComputer();
     engineRef.current?.stop();
     setEvaluations({});
     setPlanHighlight(null);
@@ -637,6 +653,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const handleGameMove = useCallback(
     (source: string, target: string, promotion: string = 'q') => {
+      if (computerBranch && mode === 'review') {
+        const uci = `${source}${target}${promotion === 'q' ? '' : promotion}`;
+        return computerSession.current?.move(uci) ?? false;
+      }
       if (isMultiplayer && !canSendGameAction) return false;
       // Replay of a live game is read-only. Analysis may branch at any past ply.
       if (mode !== 'review' && viewMoveIndex !== -1) {
@@ -699,7 +719,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, moveHistory, positionHistory, game, socket, roomId, sound, mode, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
+    [computerBranch, viewMoveIndex, moveHistory, positionHistory, game, socket, roomId, sound, mode, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
   );
 
 
@@ -762,6 +782,22 @@ export default function GameScreen({ mode }: GameScreenProps) {
     }
   }, [game, viewMoveIndex, positionHistory]);
 
+  const computerGame = useMemo(() => computerBranch ? replayMultiverseBranch(computerBranch) : null, [computerBranch]);
+  const beginComputer = (fen: string) => {
+    if (!multiverseEnabled) return;
+    endComputer();
+    try {
+      const session = new MultiverseComputerSession(fen, computerSide, computerDepth, setComputerBranch, () => setComputerError(true));
+      computerSession.current = session;
+      setComputerRoot(fen);
+      setComputerBranch(session.getBranch());
+    } catch { setComputerError(true); }
+  };
+  const saveComputerBranch = () => {
+    if (!computerBranch) return;
+    const entry = { ...computerBranch, id: `${Date.now()}`, label: `${mw.branch} ${savedBranches.length + 1}` };
+    setSavedBranches(old => [...old.slice(-19), entry]);
+  };
   const currentEngineResult = mode === 'review' && engineResult?.analyzedFen !== displayedGame.fen() ? null : engineResult;
   const openPositionMap = () => {
     setEditingPosition(false);
@@ -1195,6 +1231,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
           )}
 
+          {multiverseEnabled && <section aria-label={mw.title} className="w-full rounded-xl border border-amber-200/20 bg-[#17191e] p-3 text-neutral-100 space-y-2">
+            <div className="flex items-center justify-between gap-2"><strong className="text-sm">{mw.title}</strong><button type="button" className="rounded-lg border border-amber-200/30 px-3 py-2 text-xs" onClick={() => computerBranch ? endComputer() : beginComputer(displayedGame.fen())}>{computerBranch ? mw.stop : mw.start}</button></div>
+            {!computerBranch && <div className="flex flex-wrap items-center gap-2 text-xs">
+              <label>{mw.side} <select className="ml-1 rounded bg-neutral-800 p-2" value={computerSide} onChange={e => setComputerSide(e.target.value as 'w' | 'b')}><option value="w">{mw.white}</option><option value="b">{mw.black}</option></select></label>
+              <label>{mw.level} <select className="ml-1 rounded bg-neutral-800 p-2" value={computerDepth} onChange={e => setComputerDepth(Number(e.target.value))}>{[4,8,12,16,20].map(depth => <option key={depth} value={depth}>{depth}</option>)}</select></label>
+            </div>}
+            {computerBranch && <div className="flex flex-wrap items-center gap-2 text-xs"><span>{computerBranch.moves.join(' ') || '—'}</span><button type="button" className="rounded-lg border border-white/20 px-3 py-2" onClick={() => computerRoot && beginComputer(computerRoot)}>{mw.retry}</button><button type="button" className="rounded-lg border border-white/20 px-3 py-2" onClick={saveComputerBranch}>{mw.save}</button>{computerSession.current?.isComputerThinking() && <span role="status">{mw.thinking}</span>}{computerGame?.isGameOver() && <span>{mw.ended}</span>}</div>}
+            {computerError && <p role="alert" className="text-xs text-red-300">{mw.error}</p>}
+            <details className="text-xs"><summary className="cursor-pointer py-1">{mw.variations} ({savedBranches.length})</summary><div className="space-y-1 pt-2">{savedBranches.length === 0 && mw.empty}{savedBranches.map(b => <div key={b.id} className="flex items-center justify-between gap-2"><span>{b.label} · {b.moves.length}</span><div className="flex gap-2"><button type="button" onClick={() => { endComputer(); try { loadWorkspaceAnalysis({game: replayMultiverseBranch(b), moveHistory:b.moves, positionHistory:b.positions, viewMoveIndex:-1}); } catch { setComputerError(true); } }}>{mw.load}</button><button type="button" onClick={() => setSavedBranches(old => old.filter(x => x.id !== b.id))}>{mw.delete}</button></div></div>)}</div></details>
+          </section>}
           <div className={cx(
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
             !isMultiplayer && "hidden md:flex",
@@ -1275,10 +1321,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 highlightedSquares={mode === 'review' && workspaceTab === 'map' && planHighlight?.fen === displayedGame.fen() ? planHighlight.squares : undefined}
                 overrideBoardTheme={boardTheme}
                 confirmMovesMobile={mode === 'live' && confirmMobileMoves}
-                game={displayedGame}
+                game={computerGame || displayedGame}
                 onMove={handleGameMove}
-                orientation={mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
-                readOnly={(mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn())}
+                orientation={computerBranch ? computerSide : mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
+                readOnly={(!!computerBranch && (computerGame?.turn() !== computerSide || computerSession.current?.isComputerThinking())) || (mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn())}
               />}
             </div>
           </div>
