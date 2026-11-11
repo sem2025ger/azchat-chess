@@ -1241,7 +1241,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               </div>
             </div>
             <div className="bg-[#1a1a1a] px-3 py-1 rounded-lg border-b-[2px] border-neutral-800 font-mono text-lg font-black text-neutral-400 shadow-xl flex items-center justify-center min-w-[75px] ring-1 ring-white/5">
-              {isMultiplayer ? formatTime(timeLeft.black) : '--:--'}
+              {isMultiplayer ? formatTime(playerColor === 'w' ? timeLeft.black : timeLeft.white) : '--:--'}
             </div>
           </div>
 
@@ -1336,7 +1336,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
               </div>
             </div>
             <div className="bg-neutral-950 px-3 py-1 rounded-lg border-b-[2px] border-chess-active font-mono text-lg font-black text-white shadow-[0_15px_50px_-5px_rgba(0,206,209,0.5)] ring-1 ring-chess-active/40 flex items-center justify-center min-w-[75px] transition-all hover:translate-y-[-1px] active:translate-y-[1px]">
-              {isMultiplayer ? formatTime(timeLeft.white) : '--:--'}
+              {isMultiplayer ? formatTime(playerColor === 'w' ? timeLeft.white : timeLeft.black) : '--:--'}
             </div>
           </div>
 
@@ -1485,6 +1485,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 candidates={currentEngineResult && analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
                 lines={currentEngineResult?.analyzedFen === displayedGame.fen() ? analysisData?.lines : undefined}
                 reviewLayout={mode === 'review'}
+                stableLines={isMultiplayer}
                 requestedDepth={mode === 'review' ? analysisDepth : undefined}
                 onIncreaseDepth={mode === 'review' ? () => setAnalysisDepth(depth => Math.min(36, depth + 6)) : undefined}
                 error={engineFailed}

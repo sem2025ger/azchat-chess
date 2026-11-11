@@ -61,3 +61,21 @@ test('depth action and tooltip are localized in all six existing analysis langua
     if(original)Object.defineProperty(globalThis,'localStorage',original);else delete globalThis.localStorage;
   }
 });
+
+test('postgame analysis reserves three keyboard-readable PV slots while loading and changing line lengths', async () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable:true, value:{getItem:()=>'ru'} });
+  const server = await createServer({ optimizeDeps:{noDiscovery:true,include:[]}, server:{middlewareMode:true,hmr:false}, appType:'custom' });
+  try {
+    const {default:AnalysisPanel} = await server.ssrLoadModule('/src/components/AnalysisPanel.tsx');
+    const {LanguageProvider} = await server.ssrLoadModule('/src/context/LanguageContext.tsx');
+    for (const lines of [undefined, [], [{evaluation:0.2,depth:8,moves:['1.','e4']}], Array.from({length:4},(_,index)=>({evaluation:index ? -0.3 : 0.2,depth:24,moves:Array(40).fill('Nf3')}))]) {
+      const html = renderToStaticMarkup(createElement(LanguageProvider,null,createElement(AnalysisPanel,{score:0,depth:0,loading:true,stableLines:true,lines})));
+      assert.equal((html.match(/data-engine-slot=/g)||[]).length,3);
+      assert.equal((html.match(/tabindex="0"/g)||[]).length,3);
+    }
+  } finally {
+    await server.close();
+    if (original) Object.defineProperty(globalThis,'localStorage',original); else delete globalThis.localStorage;
+  }
+});
