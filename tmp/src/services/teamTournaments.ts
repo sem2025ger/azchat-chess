@@ -22,7 +22,8 @@ export const tournamentDefaults: TournamentRules = {
 export type TournamentEntry = {
   id: string; name: string; status: TournamentStatus; current_round: number | null; captain_team_id?: string | null;
 };
-export type TournamentList = { can_create: boolean; tournaments: TournamentEntry[] };
+// create_limit is present only for signed-in members using open creation (QA flag).
+export type TournamentList = { can_create: boolean; create_limit?: number; tournaments: TournamentEntry[] };
 export type TournamentBoard = {
   board_no: number; home_white: boolean; result: BoardResult | 'pending'; confirmed: boolean; revision: number;
 };

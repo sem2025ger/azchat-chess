@@ -5,7 +5,9 @@ import {
 } from '../../services/teamTournaments';
 import { tournamentErrorMessage, type TournamentCopy } from './copy';
 import { useLanguage } from '../../context/LanguageContext';
+import { Link } from 'react-router-dom';
 import { AiOrganizerPanel } from './AiOrganizerPanel';
+import { CreateHubBlock } from './CreateHubBlock';
 import { berlinDateTime, berlinDateTimeToIso } from '../../services/spieltag';
 
 const outcomes: { result: BoardResult; text: string }[] = [
@@ -58,10 +60,12 @@ export function defaultRegistrationDeadline(startTime: string, now = Date.now())
   return '';
 }
 
-export function M3Create({ tr, token, onCreated, legacy }: {
+export function M3Create({ tr, token, onCreated, legacy, limited = false }: {
   tr: TournamentCopy; token: string; onCreated: (event: string) => void;
   // Optional legacy M1 creation form, rendered as a quiet disclosure at the bottom of the manual card.
   legacy?: ReactNode;
+  // Open-creation member (not on the organizer allowlist): show the server limits.
+  limited?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -149,7 +153,7 @@ export function M3Create({ tr, token, onCreated, legacy }: {
         onClick={() => setMobileMode('ai')}>{tr('aiOrganizerTitle')}</button>
     </div>
     <div className="team-create-hub-grid" data-mobile-mode={mobileMode}>
-      <section className="team-create-manual" aria-label={tr('createHubManual')}>
+      <CreateHubBlock tr={tr} kind="manual" label={tr('createHubManual')}>
         <header>
           <h2>{tr('createHubManual')}</h2>
           <p>{tr('createHubManualHint')}</p>
@@ -190,12 +194,49 @@ export function M3Create({ tr, token, onCreated, legacy }: {
           </button>
         </form>
         {legacy}
-      </section>
-      <div className="team-create-ai">
+      </CreateHubBlock>
+      <CreateHubBlock tr={tr} kind="ai" label={tr('aiOrganizerTitle')}>
         <AiOrganizerPanel tr={tr} token={token} onApply={applyAiDraft}
           onCreate={createAiDraft} creating={busy} />
-      </div>
+      </CreateHubBlock>
     </div>
+    {limited && <p className="team-create-limit-note">{tr('createHubLimitNote')}</p>}
+  </section>;
+}
+
+// Signed-out visitors see the same two blocks as a preview with one sign-in action.
+export function CreateHubTeaser({ tr, signIn }: { tr: TournamentCopy; signIn: string }) {
+  return <section className="team-create-hub team-create-teaser" aria-label={tr('createHubTitle')}>
+    <div className="team-create-hub-grid">
+      <section className="team-create-block team-create-manual" aria-label={tr('createHubManual')}>
+        <div className="team-create-block-body">
+          <header>
+            <h2>{tr('createHubManual')}</h2>
+            <p>{tr('createHubManualHint')}</p>
+          </header>
+          <ul className="team-create-teaser-fields" aria-hidden="true">
+            <li>{tr('name')}</li><li>{tr('m3Start')}</li><li>{tr('m3MaxTeams')}</li>
+          </ul>
+        </div>
+      </section>
+      <section className="team-create-block team-create-ai" aria-label={tr('aiOrganizerTitle')}>
+        <div className="team-create-block-body ai-organizer">
+          <header className="ai-organizer-header">
+            <div className="ai-organizer-brand">
+              <h3>{tr('aiOrganizerTitle')}
+                <span className="ai-organizer-badge" title={tr('aiOrganizerDisclosure')}>
+                  AI<span className="sr-only"> · {tr('aiOrganizerDisclosure')}</span>
+                </span>
+              </h3>
+              <small>chessaz.de</small>
+            </div>
+            <p>{tr('aiOrganizerHint')}</p>
+            <p className="ai-organizer-steps">{tr('aiOrganizerSteps')}</p>
+          </header>
+        </div>
+      </section>
+    </div>
+    <Link className="team-create-signin" to={signIn}>{tr('createHubSignIn')}</Link>
   </section>;
 }
 

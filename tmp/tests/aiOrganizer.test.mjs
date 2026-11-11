@@ -195,8 +195,8 @@ test('creation hub is behind both flags and has a single existing M3 create path
   const create = readFileSync(new URL('../src/components/teamTournaments/TeamTournamentsM3Panel.tsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../src/components/teamTournaments/teamTournaments.css', import.meta.url), 'utf8');
   assert.match(tab, /VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' &&\s*import.meta.env.VITE_AI_ORGANIZER_ENABLED === 'true'/);
-  assert.match(tab, /\(!createHubEnabled \|\| !organizing\)/);
-  assert.match(tab, /createHubEnabled \? <details className="team-legacy-mode"/);
+  assert.match(tab, /const hubOverview = createHubEnabled && !selected;/);
+  assert.match(tab, /if \(hubOverview\) return/);
   assert.match(create, /if \(!aiEnabled\) return/);
   assert.match(create, /formRef\.current\.requestSubmit\(\)/);
   assert.equal((create.match(/createTournamentM3Api\(import.meta.env.VITE_SERVER_URL, token\)\.create\(/g) || []).length, 1);
@@ -204,30 +204,44 @@ test('creation hub is behind both flags and has a single existing M3 create path
   assert.match(css, /data-mobile-mode="ai"/);
 });
 
-test('hub polish: one heading row, legacy form inside manual card, AI badge keeps disclosure, page scroll unblocked', () => {
+test('hub v2: banner, icon refresh, blocks visible on entry, sign-in preview, limits, list below', () => {
   const tab = readFileSync(new URL('../src/components/teamTournaments/TeamTournamentsTab.tsx', import.meta.url), 'utf8');
   const create = readFileSync(new URL('../src/components/teamTournaments/TeamTournamentsM3Panel.tsx', import.meta.url), 'utf8');
+  const block = readFileSync(new URL('../src/components/teamTournaments/CreateHubBlock.tsx', import.meta.url), 'utf8');
   const ai = readFileSync(new URL('../src/components/teamTournaments/AiOrganizerPanel.tsx', import.meta.url), 'utf8');
   const screen = readFileSync(new URL('../src/screens/SpieltagScreen.tsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../src/components/teamTournaments/teamTournaments.css', import.meta.url), 'utf8');
-  // Intro line and organize toggle live in the header row; the list card drops its duplicate heading in hub mode.
-  assert.match(tab, /hubOverview && <p>\{tr\('createHubIntro'\)\}<\/p>/);
-  assert.match(tab, /className="team-tournament-actions">[\s\S]*?team-create-toggle[\s\S]*?tr\('refresh'\)/);
-  assert.match(tab, /\{!createHubEnabled && <h2>\{tr\('tab'\)\}<\/h2>\}/);
-  assert.doesNotMatch(tab, /team-creation-entry/);
-  // Legacy M1 form is passed into the manual card and rendered after its form.
-  assert.match(tab, /legacy=\{createHubEnabled \? <details className="team-legacy-mode"/);
-  assert.match(create, /<\/form>\s*\{legacy\}\s*<\/section>/);
-  // AI card: badge with the full disclosure for assistive tech; no visible disclosure paragraph.
+  const hub = tab.slice(tab.indexOf('if (hubOverview) return'), tab.indexOf('return <section className="section-page team-tournament-page">\n    <header>'));
+  // Banner with eyebrow, one h1 and lead; refresh is an icon button with an accessible name.
+  assert.match(hub, /team-tournament-eyebrow">\{tr\('createHubEyebrow'\)\}/);
+  assert.match(hub, /<h1>\{tr\('tab'\)\}<\/h1>/);
+  assert.match(hub, /team-tournament-lead">\{tr\('createHubLead'\)\}/);
+  assert.match(hub, /team-tournament-refresh"[\s\S]*?aria-label=\{tr\('refresh'\)\}[\s\S]*?<RotateCw/);
+  // No "organize" toggle: signed-in creators get the blocks at once, visitors the sign-in preview, list after both.
+  assert.doesNotMatch(tab, /setOrganizing|createHubOverview/);
+  assert.ok(hub.indexOf('<M3Create') < hub.indexOf("listCard(tr('createHubListTitle'))"));
+  assert.match(hub, /: <CreateHubTeaser tr=\{tr\} signIn=\{signIn\} \/>/);
+  assert.match(create, /<Link className="team-create-signin" to=\{signIn\}>\{tr\('createHubSignIn'\)\}<\/Link>/);
+  // Legacy M1 form (SQL allowlist only) is offered to organizers, never to limited members.
+  assert.match(hub, /limited=\{list\.create_limit !== undefined\}/);
+  assert.match(hub, /legacy=\{list\.create_limit === undefined \? <details className="team-legacy-mode"/);
+  assert.match(create, /\{limited && <p className="team-create-limit-note">/);
+  // Half-collapsed blocks with an Expand toggle; focus inside expands, the toggle itself does not pre-expand.
+  assert.equal((create.match(/<CreateHubBlock tr=\{tr\} kind="(manual|ai)"/g) || []).length, 2);
+  assert.match(create, /<\/form>\s*\{legacy\}\s*<\/CreateHubBlock>/);
+  assert.match(block, /aria-expanded=\{expanded\} aria-controls=\{bodyId\}/);
+  assert.match(block, /closest\('\.team-create-expand'\)/);
+  assert.match(css, /\.team-create-block\[data-expanded="false"\] \.team-create-block-body \{ max-height: 23rem; overflow: hidden; \}/);
+  assert.match(css, /\.team-create-ai\[data-expanded="false"\] \.ai-organizer-history \{ max-height: 8\.5rem; \}/);
+  // AI card keeps the disclosure; unknown failures are AI-service errors, not "tournament data".
   assert.match(ai, /className="ai-organizer-badge" title=\{tr\('aiOrganizerDisclosure'\)\}/);
   assert.match(ai, /sr-only"> · \{tr\('aiOrganizerDisclosure'\)\}/);
-  assert.doesNotMatch(ai, /<p>\{tr\('aiOrganizerDisclosure'\)\}<\/p>/);
-  assert.match(ai, /<p>\{tr\('aiOrganizerHint'\)\}<\/p>/);
-  // Single-tab navigation is not rendered; the page heading is the only "Turniere".
+  assert.match(ai, /if \(code === 'daily_limit'\) return tr\('aiOrganizerDailyLimit'\);/);
+  assert.match(ai, /return tr\('aiOrganizerUnavailable'\);\n\}/);
+  assert.match(ai, /setTyped\(tr\('aiOrganizerExample'\)\)/);
+  // Single-tab nav hidden; nested chat log must not trap page scrolling.
   assert.match(screen, /\{workspace && <nav className="team-tournament-tabs"/);
-  // Nested chat scroller must not contain overscroll, otherwise the route scroller stops over the card.
   assert.doesNotMatch(css, /overscroll-behavior: contain/);
-  assert.match(css, /\.team-create-manual, \.team-create-ai \.ai-organizer \{/);
 });
 
 test('compact creation hub strings exist in all six locales', () => {
@@ -237,6 +251,17 @@ test('compact creation hub strings exist in all six locales', () => {
       'createHubTitle', 'createHubChoose', 'createHubManual', 'createHubManualHint',
       'createHubMore', 'createHubAutoInfo', 'createHubDeadlineAuto',
       'createHubDeadlineError', 'createHubOverview', 'createHubLegacy', 'createHubIntro',
+      'createHubEyebrow', 'createHubLead', 'createHubExpand', 'createHubCollapse', 'createHubSignIn',
+      'createHubListTitle', 'createHubLimitNote', 'createLimitError',
     ]) assert.ok(tr(key).trim(), lang + ': ' + key);
+  }
+});
+
+test('create_limit maps to a specific message in all six locales', async () => {
+  const { tournamentErrorMessage } = await import('../src/components/teamTournaments/copy.ts');
+  for (const lang of languages) {
+    const tr = tournamentCopy(lang);
+    assert.equal(tournamentErrorMessage('create_limit', tr), tr('createLimitError'));
+    assert.notEqual(tr('createLimitError'), tr('unavailable'));
   }
 });

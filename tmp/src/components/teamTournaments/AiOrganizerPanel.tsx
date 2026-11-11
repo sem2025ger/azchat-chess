@@ -25,7 +25,12 @@ function errors(failure: unknown, tr: TournamentCopy) {
   if (code === 'provider_unavailable') return tr('aiOrganizerUnavailable');
   if (code === 'provider_not_configured') return tr('aiOrganizerNotConfigured');
   if (code === 'rate_limited') return tr('aiOrganizerRateLimited');
-  return tournamentErrorMessage(code, tr);
+  if (code === 'daily_limit') return tr('aiOrganizerDailyLimit');
+  // Account/input problems keep their specific text. Anything else — a missing route
+  // (404 page), storage or network failure — is an AI service problem, not "tournament data".
+  if (['authentication_required', 'not_allowed', 'feature_disabled', 'invalid_input'].includes(code))
+    return tournamentErrorMessage(code, tr);
+  return tr('aiOrganizerUnavailable');
 }
 export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
   tr: TournamentCopy;
@@ -175,9 +180,17 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
         <small>chessaz.de</small>
       </div>
       <p>{tr('aiOrganizerHint')}</p>
+      <p className="ai-organizer-steps">{tr('aiOrganizerSteps')}</p>
     </header>
     <div ref={historyRef} className="ai-organizer-history" role="log" aria-label={tr('aiOrganizerTitle')} aria-live="polite" aria-relevant="additions text">
-      {!history.length && <p className="ai-organizer-intro">{tr('aiOrganizerEmpty')}</p>}
+      {!history.length && <>
+        <p className="ai-organizer-intro">{tr('aiOrganizerEmpty')}</p>
+        <button type="button" className="ai-organizer-example" disabled={!!busy || creating}
+          onClick={() => { setTyped(tr('aiOrganizerExample')); setError(''); }}>
+          <span>{tr('aiOrganizerTryExample')}</span>
+          <q>{tr('aiOrganizerExample')}</q>
+        </button>
+      </>}
       {history.map((turn, index) => <div key={index}
         className={'ai-organizer-bubble ' + (turn.role === 'user' ? 'ai-organizer-user' : 'ai-organizer-assistant')}>
         {turn.role === 'assistant' && index === history.length - 1 ? turn.text.slice(0, visible) : turn.text}
