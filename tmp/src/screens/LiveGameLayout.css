@@ -122,3 +122,30 @@
   background-color: #4b544b;
   border-radius: 6px;
 }
+
+/* Postgame typography only; the regular Analysis workspace remains unchanged. */
+[data-postgame-analysis] .analysis-engine-score {
+  font-size: .8125rem;
+  font-weight: 700;
+  letter-spacing: -.035em;
+  font-variant-numeric: tabular-nums;
+}
+[data-postgame-analysis] .analysis-engine-moves > span.text-white {
+  color: #c7cbc2;
+  font-weight: 600;
+}
+[data-postgame-analysis] .analysis-stockfish-name,
+[data-postgame-analysis] .postgame-stockfish-name {
+  color: #c0a47c;
+  font-weight: 600;
+  text-shadow: none;
+}
+[data-postgame-analysis] .analysis-stockfish-depth {
+  display: none;
+}
+[data-postgame-analysis] .postgame-engine-score {
+  font-size: .875rem;
+  font-weight: 700;
+  letter-spacing: -.025em;
+  font-variant-numeric: tabular-nums;
+}
