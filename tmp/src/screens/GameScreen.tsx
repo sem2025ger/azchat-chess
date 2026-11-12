@@ -1212,7 +1212,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                     )}>
                       {score}
                     </div>
-                    <div tabIndex={0} aria-label={`Moves for engine line ${index + 1}`} className="min-w-0 whitespace-nowrap overflow-x-auto overscroll-x-contain touch-pan-x py-2 text-[0.8125rem] leading-5 font-semibold text-neutral-100 tracking-tight">
+                    <div tabIndex={0} aria-label={`Moves for engine line ${index + 1}`} className="postgame-engine-moves min-w-0 whitespace-nowrap overflow-x-auto overscroll-x-contain touch-pan-x py-2 text-[0.8125rem] leading-5 font-semibold text-neutral-100 tracking-tight">
                       {moves}
                     </div>
                   </div>
