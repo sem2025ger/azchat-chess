@@ -1606,7 +1606,7 @@
 @media (min-width: 1024px) {
   .desktop-analysis-screen .analysis-engine-score {
     font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important;
-    font-size: 0.9375rem !important;
+    font-size: 0.875rem !important;
     font-style: normal;
     font-weight: 500 !important;
     letter-spacing: -.015em;
