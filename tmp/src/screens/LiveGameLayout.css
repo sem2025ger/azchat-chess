@@ -126,17 +126,17 @@
 /* Postgame typography only; the regular Analysis workspace remains unchanged. */
 [data-postgame-analysis] .analysis-engine-score {
   box-sizing: border-box;
-  flex: 0 0 58px;
-  width: 58px;
-  min-width: 58px;
-  max-width: 58px;
-  height: 30px;
-  min-height: 30px;
-  max-height: 30px;
+  flex: 0 0 56px;
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
   padding: 4px 5px;
   border-radius: 9px;
   font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  font-size: .9375rem;
+  font-size: .8125rem;
   font-style: normal;
   font-weight: 500;
   line-height: 1.25;
@@ -169,32 +169,71 @@
 [data-postgame-analysis] .analysis-stockfish-name,
 [data-postgame-analysis] .postgame-stockfish-name {
   color: #c0a47c;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  font-size: .82rem;
   font-weight: 600;
+  font-style: normal;
+  line-height: 1.3;
+  letter-spacing: 0;
   text-shadow: none;
 }
 [data-postgame-analysis] .analysis-stockfish-depth {
   display: none;
 }
 [data-postgame-analysis] [data-postgame-mobile-analysis] [aria-label^="Engine line"] {
-  grid-template-columns: 68px minmax(0,1fr);
+  grid-template-columns: 66px minmax(0,1fr);
 }
 [data-postgame-analysis] .postgame-engine-score {
   box-sizing: border-box;
-  flex: 0 0 68px;
-  width: 68px;
-  min-width: 68px;
-  max-width: 68px;
-  height: 36px;
-  min-height: 36px;
-  max-height: 36px;
+  flex: 0 0 66px;
+  width: 66px;
+  min-width: 66px;
+  max-width: 66px;
+  height: 34px;
+  min-height: 34px;
+  max-height: 34px;
   padding: 4px 6px;
   border: 1px solid rgba(206,173,117,.63);
   border-radius: 9px;
   background: linear-gradient(155deg,#333741 0%,#232831 54%,#141a20 100%);
   color: #f4e8cd;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(242,205,137,.08), 0 3px 9px #0005;
-  font: 800 1.0625rem/1.2 ui-monospace, monospace;
+  font: 800 .9375rem/1.2 ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
   white-space: nowrap;
+}
+
+/* Match the review notation by viewport, without resizing engine rows. */
+@media (min-width: 1024px) {
+  [data-postgame-analysis] .analysis-engine-moves {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-size: .79rem;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: -.15px;
+    text-shadow: none;
+  }
+}
+@media (min-width: 1600px) and (min-height: 800px) {
+  [data-postgame-analysis] .analysis-engine-moves {
+    font-size: .84rem;
+    line-height: 1.35;
+    letter-spacing: 0;
+  }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  [data-postgame-analysis] .analysis-engine-moves {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-size: .9rem;
+    font-weight: 500;
+  }
+}
+@media (max-width: 767px) {
+  [data-postgame-analysis] .postgame-engine-moves {
+    font: oblique 6deg 900 1.3125rem/1.25 Arial, "Helvetica Neue", sans-serif;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
 }
