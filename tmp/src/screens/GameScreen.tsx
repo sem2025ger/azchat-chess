@@ -1172,7 +1172,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 Moves
               </button>
             </div>
-            <div className="min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-cyan-100 bg-cyan-500/15 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] whitespace-nowrap">
+            <div className="postgame-stockfish-name min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-cyan-100 bg-cyan-500/15 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] whitespace-nowrap">
               <span>Stockfish 19</span>
             </div>
           </div>
@@ -1203,7 +1203,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 return (
                   <div key={index} aria-label={`Engine line ${index + 1}`} className="min-h-10 grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2 border-b border-white/[0.06] last:border-b-0">
                     <div className={cx(
-                      "h-8 rounded-lg flex items-center justify-center font-mono text-[0.82rem] font-black border",
+                      "postgame-engine-score h-8 rounded-lg flex items-center justify-center font-mono text-[0.82rem] font-black border",
                       score.startsWith('+')
                         ? "bg-white text-black border-white"
                         : score.startsWith('-')
