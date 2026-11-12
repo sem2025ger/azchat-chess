@@ -180,11 +180,11 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
           const s = getComputedStyle(el);
           return { size: parseFloat(s.fontSize), weight: Number(s.fontWeight), variant: s.fontVariantNumeric };
         });
-        assert.equal(scoreStyle.size, 15, 'Postgame score is slightly larger than the 14px desktop review');
+        assert.equal(scoreStyle.size, 13, 'Postgame score matches 13px desktop review');
         assert.equal(scoreStyle.weight, 500, 'Postgame score matches the Inter review weight');
         const scoreBadgeRect = await scoreBadge.boundingBox();
-        assert.equal(Math.round(scoreBadgeRect.width), 58, 'Postgame score matches review badge width');
-        assert.equal(Math.round(scoreBadgeRect.height), 30, 'Postgame score matches review badge height');
+        assert.equal(Math.round(scoreBadgeRect.width), 56, 'Postgame score matches review badge width');
+        assert.equal(Math.round(scoreBadgeRect.height), 28, 'Postgame score matches review badge height');
         assert.equal(await scoreBadge.evaluate(el => getComputedStyle(el).borderRadius), '9px', 'Postgame score matches review rounded corners');
         assert.ok((await scoreBadge.evaluate(el => getComputedStyle(el).fontFamily)).startsWith('Inter'), 'Postgame score uses review Inter font');
         assert.ok(scoreStyle.variant.includes('tabular-nums'), 'Postgame score digits align');
@@ -202,10 +202,10 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
         assert.equal(await mobileName.count(), 1, 'Mobile postgame engine label is present');
         assert.equal(await mobileName.evaluate(el => getComputedStyle(el).color), 'rgb(192, 164, 124)');
         const mobileScore = page.locator('[data-postgame-analysis] .postgame-engine-score').first();
-        assert.equal(parseFloat(await mobileScore.evaluate(el => getComputedStyle(el).fontSize)), 17, 'Mobile postgame score is 1px larger than 16px mobile review');
+        assert.equal(parseFloat(await mobileScore.evaluate(el => getComputedStyle(el).fontSize)), 15, 'Mobile postgame score matches 15px mobile review');
         const mobileBadgeRect = await mobileScore.boundingBox();
-        assert.equal(Math.round(mobileBadgeRect.width), 68, 'Mobile postgame score matches review badge width');
-        assert.equal(Math.round(mobileBadgeRect.height), 36, 'Mobile postgame score matches review badge height');
+        assert.equal(Math.round(mobileBadgeRect.width), 66, 'Mobile postgame score matches review badge width');
+        assert.equal(Math.round(mobileBadgeRect.height), 34, 'Mobile postgame score matches review badge height');
       }
       const pvScroll = width >= 768
         ? page.locator('[data-postgame-analysis] .analysis-engine-moves').first()
