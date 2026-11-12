@@ -9,7 +9,23 @@ import {nrwAuthReturnTarget} from '../src/lib/nrwAuthReturn.ts';
 test('all NRW flags off preserves the main routing and navigation entry points',()=>{
  const baseline='3a44fde7f6218827e382d07381f337f76d065e6a';
  for(const path of ['src/App.tsx','src/components/Layout.tsx','src/routeLoaders.ts','scripts/buildQaPreview.mjs']){
-  assert.equal(readFileSync(path,'utf8'),execFileSync('git',['show',baseline+':tmp/'+path],{encoding:'utf8'}),path);
+  const baselineContent = execFileSync('git',['show',baseline+':tmp/'+path],{encoding:'utf8'});
+  let actual = readFileSync(path,'utf8');
+  if(path === 'src/components/Layout.tsx') {
+    // Allow only the separately reviewed 240px desktop sidebar geometry change.
+    // All route entries and feature-flagged links must remain byte-for-byte identical.
+    for(const [next, previous] of [
+      ['w-20 xl:w-[240px]', 'w-20 xl:w-[260px]'],
+      ['xl:justify-start px-2 xl:px-4 border-b', 'xl:justify-start px-2 xl:px-6 border-b'],
+      ['<nav className="px-3 xl:px-4 pt-10', '<nav className="px-3 xl:px-5 pt-10'],
+      ['<div className="p-2 xl:p-4 space-y-3 border-t', '<div className="p-2 xl:p-5 space-y-3 border-t'],
+      ['site-nav-copy ml-3 hidden xl:flex', 'site-nav-copy ml-4 hidden xl:flex'],
+    ]) {
+      assert.ok(actual.includes(next), 'Expected the approved desktop sidebar change: ' + next);
+      actual = actual.replace(next,previous);
+    }
+  }
+  assert.equal(actual,baselineContent,path);
  }
  const home='src/screens/HomeScreen.tsx';
  const homeBaseline=execFileSync('git',['show',baseline+':tmp/'+home],{encoding:'utf8'});
