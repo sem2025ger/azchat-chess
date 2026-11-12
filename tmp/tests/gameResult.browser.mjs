@@ -169,7 +169,12 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       assert.ok((await pvScroll.evaluate(el => getComputedStyle(el).scrollbarColor)).startsWith('rgb(75, 84, 75)'), 'Postgame scrollbar is dark');
       if (width >= 1024) {
         const postgamePanel = page.locator('[data-postgame-analysis] > .panel-glow-cycle');
-        assert.equal(await postgamePanel.evaluate(el => getComputedStyle(el).left), '-12px', 'Postgame panel moves toward the board');
+        // The sidebar keeps its existing transition; assert its settled position.
+        await page.waitForFunction(() => {
+          const panel = document.querySelector('[data-postgame-analysis] > .panel-glow-cycle');
+          return panel && Math.abs(parseFloat(getComputedStyle(panel).left) + 12) < 0.5;
+        }, null, { timeout: 3000 });
+        assert.ok(Math.abs((await postgamePanel.evaluate(el => parseFloat(getComputedStyle(el).left))) + 12) < 0.5, 'Postgame panel moves toward the board');
         const stackMax = await page.locator('.live-game-board-stack').evaluate(el => parseFloat(getComputedStyle(el).maxWidth));
         assert.ok(Math.abs(stackMax - height * (width >= 1280 ? 0.84 : 0.72)) < 2, 'Online board gets the small desktop size increase');
       }
