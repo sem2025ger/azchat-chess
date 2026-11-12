@@ -43,7 +43,7 @@
   /* The online board size stays fixed from live play through result dismissal. */
   [data-live-game-layout] .live-game-board-stack { max-width: 72vh; }
   /* Only the dismissed-result analysis sidebar moves closer to the board. */
-  [data-postgame-analysis] > .panel-glow-cycle { left: -12px; }
+  [data-live-game-layout][data-postgame-analysis] > .panel-glow-cycle { left: -12px; }
 }
 @media (min-width: 1280px) {
   [data-live-game-layout] .live-game-board-stack { max-width: 84vh; }
