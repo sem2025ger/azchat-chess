@@ -1114,7 +1114,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     if (selection) setMobileTool(null);
   }, []);
   return (
-    <div data-live-game-layout={isMultiplayer ? "" : undefined} ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", isMultiplayer ? "lg:py-4" : "lg:-mt-4 xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
+    <div data-live-game-layout={isMultiplayer ? "" : undefined} data-postgame-analysis={isPostGameAnalysis ? "" : undefined} ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", isMultiplayer ? "lg:py-4" : "lg:-mt-4 xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
 
       {mode === 'review' && <>
         <MobileAnalysisHeader activeTab={activeTab} onTab={setActiveTab}
@@ -1321,7 +1321,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Mobile Analysis Drawer Header */}
       <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 group w-full py-0 lg:flex-1", isMultiplayer && "live-game-board-column", !isMultiplayer && "lg:min-w-0 lg:-translate-y-4", mode === 'review' ? "desktop-analysis-board-column" : "animate-scale-up")}>
 
-        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]", mode === 'review' && "desktop-analysis-board-stack")}>
+        <div className={cx("live-game-board-stack w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]", mode === 'review' && "desktop-analysis-board-stack")}>
 
           {mode === 'review' && (
             <header className="desktop-analysis-hero hidden lg:flex shrink-0 min-w-0 items-center justify-between gap-3 px-2" aria-label={words.analysis}>
