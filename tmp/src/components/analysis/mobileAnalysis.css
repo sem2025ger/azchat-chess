@@ -81,7 +81,7 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,.12),
       inset 0 0 0 1px rgba(242,205,137,.08), 0 3px 9px #0005;
     color: #f4e8cd;
-    font: 800 1.0625rem/1.2 ui-monospace, monospace;
+    font: 800 1rem/1.2 ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
     white-space: nowrap;
