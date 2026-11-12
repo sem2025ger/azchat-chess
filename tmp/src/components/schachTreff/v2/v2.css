@@ -1,0 +1,87 @@
+/* Schach-Treff v2 (stage 1). Only rendered when VITE_SCHACH_TREFF_V2=true. */
+.schach-treff.st-v2{--st2-cream:#E6E1D6;--st2-muted:#9AA3A0;--st2-bronze:#D4A373;--st2-line:#ffffff14}
+
+/* Layout: rooms | chat | members/thread (desktop only, per the approved desktop scope). */
+@media(min-width:1024px){
+  .schach-treff.st-v2 .st-columns{grid-template-columns:240px minmax(0,1fr) 270px;gap:16px}
+  .schach-treff.st-v2 .st-columns.st2-no-rooms{grid-template-columns:minmax(0,1fr) 270px}
+  .schach-treff.st-v2>header{gap:16px}
+  .schach-treff.st-v2 .st-chat-header h2{font-family:'Bodoni Moda',Georgia,serif;font-size:24px;font-weight:600;color:#EDE6D8;letter-spacing:.01em}
+}
+
+/* Messages: soft cream text, per-player name colour, tinted avatar. */
+.schach-treff.st-v2 .st-message-content>p{color:var(--st2-cream)}
+.schach-treff.st-v2 .st-message{position:relative}
+.schach-treff.st-v2 .st-message-heading .st-name{color:var(--st-name,#F2EEE3)}
+.schach-treff.st-v2 .st-avatar{border-radius:10px;background:color-mix(in srgb,var(--st-name,#E3D3B4) 16%,transparent);color:var(--st-name,#E3D3B4)}
+.schach-treff.st-v2 .st-message-group-own{background:rgba(212,163,115,.06)}
+
+/* Hover tools: !! ! !? and reply. Always visible on touch screens. */
+.st2-tools{position:absolute;top:-14px;right:8px;z-index:2;display:flex;gap:2px;padding:3px;border:1px solid #2C3337;border-radius:10px;background:#1B2023;opacity:0;transition:opacity .15s ease}
+.schach-treff .st-message:hover .st2-tools,.schach-treff .st-message:focus-within .st2-tools{opacity:1}
+@media(any-pointer:coarse){.st2-tools{position:static;opacity:1;margin-top:4px;width:max-content;padding:0;border:0;background:transparent}}
+.schach-treff .st2-general-title{margin:0}
+@media(max-width:1023px){.schach-treff.st-v2 .st-chat-header:has(>.st2-general-title:only-child){display:none}}
+.schach-treff .st2-tools button{display:grid;place-items:center;min-width:32px;min-height:30px;height:30px;padding:0 6px;border:0;border-radius:7px;background:transparent;color:var(--st2-cream,#E6E1D6);font-weight:700;font-size:13px}
+.schach-treff .st2-tools button[aria-pressed=true]{background:rgba(212,163,115,.18);color:#E9C9A2}
+.schach-treff .st2-tools .st2-tool-thread{color:#8FC3E6}
+
+.st2-reaction-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
+.schach-treff .st2-reaction{display:inline-flex;align-items:center;gap:6px;min-height:28px;height:28px;padding:0 10px;border:1px solid #2C3337;border-radius:999px;background:#191E21;color:#D2D5D1;font-size:13px}
+.schach-treff .st2-reaction[aria-pressed=true]{border-color:var(--st2-bronze,#D4A373);background:rgba(212,163,115,.16);color:#E9C9A2}
+.schach-treff .st2-replies{min-height:28px;height:28px;padding:0 8px;border:0;background:transparent;color:#8FC3E6;font-size:13px;font-weight:500}
+
+/* Find opponent: composer button and time-control popover. */
+.st2-seek{position:relative;flex:none}
+.schach-treff .st2-seek-trigger{display:inline-flex;align-items:center;gap:8px;height:100%;min-height:44px;padding:0 14px;border:1px solid #D4A373;border-radius:10px;background:transparent;color:#E9C9A2;font-weight:600;white-space:nowrap}
+.schach-treff .st2-seek-trigger[aria-expanded=true]{background:rgba(212,163,115,.16)}
+.st2-seek-popover{position:absolute;left:0;bottom:calc(100% + 10px);z-index:20;width:min(320px,calc(100vw - 40px));box-sizing:border-box;padding:14px;border:1px solid #3A3226;border-radius:14px;background:#1A1F22;box-shadow:0 12px 30px #0009}
+.st2-seek-popover>p{margin:0 0 10px;font-size:12.5px;line-height:1.45;color:#9AA3A0}
+.st2-seek-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.schach-treff .st2-seek-grid button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;padding:6px;border:1px solid #2C3337;border-radius:10px;background:#15191B;color:#EDE6D8}
+.schach-treff .st2-seek-grid button[aria-pressed=true]{border-color:#D4A373;background:rgba(212,163,115,.14)}
+.st2-seek-grid strong{font-size:16px}
+.schach-treff .st2-seek-grid small{font-size:11px;color:#9AA3A0}
+@media(max-width:1023px){
+  .schach-treff .st2-seek-trigger{width:44px;padding:0;justify-content:center}
+  .st2-seek-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+}
+
+/* Right column: members and threads. */
+.schach-treff .st2-side{display:flex;flex-direction:column;gap:10px;min-width:0;height:calc(100dvh - 190px);min-height:440px;box-sizing:border-box;overflow:auto;background:#141617}
+.schach-treff .st2-side-title{margin:0;font-family:'Bodoni Moda',Georgia,serif;font-size:22px;font-weight:600;color:#EDE6D8}
+.st2-members{display:grid;gap:2px;margin:0;padding:0;list-style:none}
+.st2-members li{display:flex;align-items:center;gap:8px;min-width:0}
+.st2-dot{flex:none;width:9px;height:9px;border-radius:50%;background:#4A5357}
+.st2-dot[data-active]{background:#5FD38A}
+.schach-treff .st2-member-name{flex:1;min-width:0;min-height:40px;padding:0;border:0;background:transparent;text-align:left;color:var(--st-name,#F2EEE3);font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.schach-treff .st2-members li>button:last-child:not(.st2-member-name){flex:none;min-height:34px;padding:4px 10px;border:1px solid #D4A373;border-radius:9px;background:rgba(212,163,115,.1);color:#E9C9A2;font-size:12.5px}
+.st2-thread-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.schach-treff .st2-icon-button,.st2-feedback-dialog .st2-icon-button{display:grid;place-items:center;flex:none;width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:10px;background:transparent;color:#B9C2BE}
+.st2-thread-root{margin:0;padding:12px;border:1px solid #262D31;border-radius:12px;background:#161B1D}
+.st2-thread-root strong{color:var(--st-name,#E6E1D6);font-size:13.5px}
+.schach-treff .st2-thread-root p{margin:4px 0 0;color:#CFC8BA;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.schach-treff .st2-thread-count{margin:0;font-size:12px;color:#8C9491}
+.st2-thread-list{display:grid;align-content:start;gap:14px;margin:0;padding:0;list-style:none;flex:1 1 auto}
+.st2-thread-list li{display:grid;grid-template-columns:auto 1fr;column-gap:8px;align-items:baseline}
+.st2-thread-author{color:var(--st-name,#E6E1D6);font-weight:600;font-size:13.5px}
+.schach-treff .st2-thread-list p{grid-column:1/-1;margin:2px 0 0;color:var(--st2-cream,#E6E1D6);font-size:14px;line-height:1.5;white-space:pre-wrap}
+.schach-treff .st2-thread-form{display:flex;gap:6px;padding-top:8px;border-top:1px solid #ffffff12}
+.schach-treff .st2-thread-form input{flex:1 1 0;width:0;min-width:0}
+.schach-treff .st2-thread-form .st-send{display:grid;place-items:center;flex:none;width:44px;padding:0;color:#17130e;background:#B8916A;border-radius:8px}
+@media(max-width:1023px){
+  .schach-treff .st2-side:not(.st2-thread){display:none}
+  .schach-treff .st2-thread{position:fixed;inset:0;z-index:60;height:auto;border-radius:0;padding:16px}
+}
+
+/* Feedback: header button + dialog. */
+.schach-treff .st2-feedback{display:inline-flex;align-items:center;gap:8px;margin-left:auto;border:1px solid #3A3226;border-radius:10px;background:rgba(212,163,115,.08);color:#E9C9A2;font-size:13px;font-weight:500}
+.schach-treff.st-v2 .st-region-entry{margin-left:0}
+.st2-feedback-dialog{width:min(480px,calc(100vw - 32px));box-sizing:border-box;padding:22px;border:1px solid #3A3226;border-radius:18px;background:#171C1F;color:#E6E1D6}
+.st2-feedback-dialog::backdrop{background:#050708b3}
+.st2-feedback-dialog h2{margin:0;font-family:'Bodoni Moda',Georgia,serif;font-size:20px;font-weight:500;line-height:1.35;color:#EDE6D8}
+.st2-feedback-dialog form{display:grid;gap:12px;margin-top:16px;padding:0}
+.st2-feedback-dialog textarea{width:100%;box-sizing:border-box;min-height:120px;padding:12px;border:1px solid #2A3135;border-radius:12px;background:#111416;color:#E6E1D6;font:inherit;font-size:14.5px;line-height:1.5;resize:vertical}
+.st2-feedback-dialog textarea::placeholder{color:#8C9491}
+.schach-treff .st2-feedback-dialog .st-send{min-height:46px;border:0;border-radius:12px;background:#D4A373;color:#14110D;font-weight:600}
+.schach-treff .st2-feedback-dialog p[role=status]{color:#CFE6DC}

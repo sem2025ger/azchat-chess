@@ -72,8 +72,8 @@ test('missing pin migration disables admin/moderator controls while chat still l
         };
         return query;
       } };
-      await new AsyncFunction('supabase', 'user', 'warned', 'console', 'moderationEnabled', 'refreshVersion', ...setters, refreshBody)(
-        supabase, { id: 'user' }, new Set(), { warn() {} }, false, { current: 0 },
+      await new AsyncFunction('supabase', 'user', 'warned', 'console', 'moderationEnabled', 'refreshVersion', 'v2Enabled', 'isMissingSchema', 'loadV2Extras', ...setters, refreshBody)(
+        supabase, { id: 'user' }, new Set(), { warn() {} }, false, { current: 0 }, false, () => false, async () => null,
         ...setters.map(name => value => { state[name] = value; }),
       );
       assert.equal(state.setPinAvailable, code === null);

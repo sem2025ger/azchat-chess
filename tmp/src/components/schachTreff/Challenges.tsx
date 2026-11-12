@@ -6,7 +6,7 @@ import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
 type Person = { id: string; username: string };
 type Challenge = { id: string; message_id: string; created_by: string; target_user_id: string | null; time_control: string; status: string; expires_at: string; room_id: string | null };
-type Controls = { now: number; available: boolean; me: string; rows: Challenge[]; people: Person[]; busy: boolean; open: (target?: string) => void; act: (action: 'accept' | 'cancel', id: string) => void };
+type Controls = { now: number; available: boolean; me: string; rows: Challenge[]; people: Person[]; busy: boolean; open: (target?: string) => void; act: (action: 'accept' | 'cancel', id: string) => void; seek: (time: string) => Promise<boolean>; openOffers: number };
 const Context = createContext<Controls | null>(null);
 export function ChallengeProvider({ clubId, me, people, enabled, children }: { clubId: string | null; me: string; people: Person[]; enabled: boolean; children: ReactNode }) {
   const t=useSchachTreffCopy();
@@ -45,19 +45,22 @@ export function ChallengeProvider({ clubId, me, people, enabled, children }: { c
     return () => { window.clearInterval(timer); socket?.off('club_challenges_changed',changed); socket?.off('match_found',found); };
   },[load,socket,clubId,enabled,isConnected,navigate]);
   useEffect(() => { if (shown) dialog.current?.showModal(); else dialog.current?.close(); },[shown]);
-  async function request(action: 'create' | 'accept' | 'cancel', payload: object) {
-    if (!socket || !isConnected || busy) return;
+  async function request(action: 'create' | 'accept' | 'cancel', payload: object): Promise<boolean> {
+    if (!socket || !isConnected || busy) return false;
     setBusy(true); setError('');
     try {
       const response=await new Promise<{ ok: boolean; reason?: string }>((resolve,reject) => {
         socket.timeout(10000).emit('club_challenge_'+action,payload,(timeout: Error | null,result: { ok: boolean; reason?: string }) => timeout ? reject(timeout) : resolve(result));
       });
-      if (!response?.ok) { setError(t.challengeErrors[response?.reason as keyof typeof t.challengeErrors] ?? t.error); return; }
+      if (!response?.ok) { setError(t.challengeErrors[response?.reason as keyof typeof t.challengeErrors] ?? t.error); return false; }
       if (action==='create') setShown(false);
       await load();
-    } catch { setError(t.error); } finally { setBusy(false); }
+      return true;
+    } catch { setError(t.error); return false; } finally { setBusy(false); }
   }
-  const controls: Controls={ now,available:available && isConnected,me,rows,people,busy,open(id) { setTarget(id ?? ''); setPersonal(Boolean(id)); setError(''); setShown(true); },act(action,id) { void request(action,{challengeId:id}); } };
+  const controls: Controls={ now,available:available && isConnected,me,rows,people,busy,open(id) { setTarget(id ?? ''); setPersonal(Boolean(id)); setError(''); setShown(true); },act(action,id) { void request(action,{challengeId:id}); },
+    seek: time => request('create',{clubId,timeControl:time,targetUserId:null}),
+    openOffers: rows.filter(row => row.created_by===me && row.status==='open' && Date.parse(row.expires_at)>now).length };
   return <Context.Provider value={controls}>{children}{error && <p role="alert">{error}</p>}
     <dialog aria-label={t.challenge} ref={dialog} onCancel={() => setShown(false)} onClose={() => setShown(false)}>
       <h2>{t.challenge}</h2><form onSubmit={event => { event.preventDefault(); void request('create',{clubId,timeControl:time,targetUserId:personal ? target : null}); }}>
@@ -85,6 +88,7 @@ export function ChallengeButton({ targetUserId,beforeOpen,icon,composer }: { tar
       : t.challengeAction}
   </button>;
 }
+export function useChallengeControls() { return useContext(Context); }
 export function useChallengeMessageIds(): ReadonlySet<string> {
   const context = useContext(Context);
   return new Set(context?.rows.map(row => row.message_id) ?? []);
