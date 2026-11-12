@@ -157,6 +157,22 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       assert.equal(await page.locator('[data-testid="multiverse-play"]').count(),0,'MULTIVERSE stays hidden when its flag is off');
       assert.ok(page.url().includes('roomId=layout-fixture'));
       assert.equal(await page.locator('[data-piece-square="f3"]').count(),1, 'Final position preserved');
+      // Dismissing the result changes only the analysis UI, not board or player geometry.
+      assert.equal(await page.locator('[data-postgame-analysis]').count(), 1);
+      const afterDismiss = await geometry();
+      for (let i=0;i<before.length;i++) for (const dimension of ['x','y','width','height']) {
+        assert.ok(Math.abs(before[i][dimension] - afterDismiss[i][dimension]) < 1, `${width}x${height}: result dismissal shifted board/player geometry ${i}/${dimension}`);
+      }
+      const pvScroll = width >= 768
+        ? page.locator('[data-postgame-analysis] .analysis-engine-moves').first()
+        : page.locator('[data-postgame-analysis] [data-postgame-mobile-analysis] .overflow-x-auto').first();
+      assert.ok((await pvScroll.evaluate(el => getComputedStyle(el).scrollbarColor)).startsWith('rgb(75, 84, 75)'), 'Postgame scrollbar is dark');
+      if (width >= 1024) {
+        const postgamePanel = page.locator('[data-postgame-analysis] > .panel-glow-cycle');
+        assert.equal(await postgamePanel.evaluate(el => getComputedStyle(el).left), '-12px', 'Postgame panel moves toward the board');
+        const stackMax = await page.locator('.live-game-board-stack').evaluate(el => parseFloat(getComputedStyle(el).maxWidth));
+        assert.ok(Math.abs(stackMax - height * (width >= 1280 ? 0.84 : 0.72)) < 2, 'Online board gets the small desktop size increase');
+      }
       const sentBefore = commands.filter(([name]) => name === 'make_move').length;
       const play = async (from, to) => {
         for (const square of [from, to]) {
