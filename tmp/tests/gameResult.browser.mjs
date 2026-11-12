@@ -178,6 +178,18 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
         const stackMax = await page.locator('.live-game-board-stack').evaluate(el => parseFloat(getComputedStyle(el).maxWidth));
         assert.ok(Math.abs(stackMax - height * (width >= 1280 ? 0.84 : 0.72)) < 2, 'Online board gets the small desktop size increase');
       }
+      // The sidebar intentionally moves 12px on dismissal; its three PV slots must
+      // remain stable after this single change, including subsequent analysis moves.
+      if (stablePvBounds) {
+        const dismissedPvBounds = await pvBounds();
+        for (let i = 0; i < stablePvBounds.length; i++) {
+          assert.ok(Math.abs(dismissedPvBounds[i].x - stablePvBounds[i].x + (width >= 1024 ? 12 : 0)) < 1, `PV ${i} shifts only with the sidebar after dismissal`);
+          for (const dimension of ['y', 'width', 'height']) {
+            assert.ok(Math.abs(dismissedPvBounds[i][dimension] - stablePvBounds[i][dimension]) < 1, `PV ${i}/${dimension} remains unchanged on dismissal`);
+          }
+        }
+        stablePvBounds = dismissedPvBounds;
+      }
       const sentBefore = commands.filter(([name]) => name === 'make_move').length;
       const play = async (from, to) => {
         for (const square of [from, to]) {
