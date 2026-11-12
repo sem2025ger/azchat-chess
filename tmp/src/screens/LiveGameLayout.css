@@ -40,6 +40,13 @@
 }
 @media (min-width: 1024px) {
   [data-live-game-layout] > .panel-glow-cycle { left: 0; }
+  /* The online board size stays fixed from live play through result dismissal. */
+  [data-live-game-layout] .live-game-board-stack { max-width: 72vh; }
+  /* Only the dismissed-result analysis sidebar moves closer to the board. */
+  [data-postgame-analysis] > .panel-glow-cycle { left: -12px; }
+}
+@media (min-width: 1280px) {
+  [data-live-game-layout] .live-game-board-stack { max-width: 84vh; }
 }
 @media (max-width: 767px) {
   [data-live-game-layout] .live-game-board-column { order: 1; }
@@ -100,3 +107,18 @@
 }
 [data-live-game-layout] .analysis-engine-moves > span { flex-shrink: 0; }
 [data-live-game-layout] .analysis-engine-moves:focus-visible { outline: 1px solid #a8ae9e; outline-offset: 1px; }
+
+/* Postgame PV scrollbar: dark colours, unchanged width and pointer target. */
+[data-postgame-analysis] .analysis-engine-moves,
+[data-postgame-analysis] [data-postgame-mobile-analysis] .overflow-x-auto {
+  scrollbar-color: #4b544b #111611;
+}
+[data-postgame-analysis] .analysis-engine-moves::-webkit-scrollbar-track,
+[data-postgame-analysis] [data-postgame-mobile-analysis] .overflow-x-auto::-webkit-scrollbar-track {
+  background-color: #111611;
+}
+[data-postgame-analysis] .analysis-engine-moves::-webkit-scrollbar-thumb,
+[data-postgame-analysis] [data-postgame-mobile-analysis] .overflow-x-auto::-webkit-scrollbar-thumb {
+  background-color: #4b544b;
+  border-radius: 6px;
+}
