@@ -3,8 +3,8 @@
 
 /* Layout: rooms | chat | members/thread (desktop only, per the approved desktop scope). */
 @media(min-width:1024px){
-  .schach-treff.st-v2 .st-columns{grid-template-columns:240px minmax(0,1fr) 270px;gap:16px}
-  .schach-treff.st-v2 .st-columns.st2-no-rooms{grid-template-columns:minmax(0,1fr) 270px}
+  .schach-treff.st-v2 .st-columns{grid-template-columns:240px minmax(0,1fr) 300px;gap:16px}
+  .schach-treff.st-v2 .st-columns.st2-no-rooms{grid-template-columns:minmax(0,1fr) 300px}
   .schach-treff.st-v2>header{gap:16px}
   .schach-treff.st-v2 .st-chat-header h2{font-family:'Bodoni Moda',Georgia,serif;font-size:24px;font-weight:600;color:#EDE6D8;letter-spacing:.01em}
 }
@@ -55,7 +55,7 @@
 .st2-dot{flex:none;width:9px;height:9px;border-radius:50%;background:#4A5357}
 .st2-dot[data-active]{background:#5FD38A}
 .schach-treff .st2-member-name{flex:1;min-width:0;min-height:40px;padding:0;border:0;background:transparent;text-align:left;color:var(--st-name,#F2EEE3);font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.schach-treff .st2-members li>button:last-child:not(.st2-member-name){flex:none;min-height:34px;padding:4px 10px;border:1px solid #D4A373;border-radius:9px;background:rgba(212,163,115,.1);color:#E9C9A2;font-size:12.5px}
+.schach-treff .st2-members .st2-member-challenge{white-space:nowrap;flex:none;min-height:34px;padding:4px 10px;border:1px solid #D4A373;border-radius:9px;background:rgba(212,163,115,.1);color:#E9C9A2;font-size:12.5px}
 .st2-thread-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .schach-treff .st2-icon-button,.st2-feedback-dialog .st2-icon-button{display:grid;place-items:center;flex:none;width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:10px;background:transparent;color:#B9C2BE}
 .st2-thread-root{margin:0;padding:12px;border:1px solid #262D31;border-radius:12px;background:#161B1D}
@@ -85,3 +85,76 @@
 .st2-feedback-dialog textarea::placeholder{color:#8C9491}
 .schach-treff .st2-feedback-dialog .st-send{min-height:46px;border:0;border-radius:12px;background:#D4A373;color:#14110D;font-weight:600}
 .schach-treff .st2-feedback-dialog p[role=status]{color:#CFE6DC}
+
+/* ---- Stage 2: boards, positions, finished games, direct messages ---- */
+.st2-board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));border-radius:6px;overflow:hidden;flex:none;box-shadow:0 0 0 1px #00000066}
+.st2-board>span{display:grid;place-items:center;background:#A27A55}
+.st2-board>span[data-light]{background:#D8C3A0}
+.st2-board img{width:88%;height:88%;pointer-events:none;user-select:none}
+.st2-board-empty{display:grid;place-items:center;background:#15191B;border:1px dashed #3A3226;color:#9AA3A0;font-size:13px;text-align:center;padding:12px;box-sizing:border-box}
+.st2-position{display:inline-flex;flex-direction:column;gap:8px;margin-top:10px;padding:12px;border:1px solid #2A3135;border-radius:14px;background:#151A1C;max-width:100%;box-sizing:border-box}
+.schach-treff .st2-position small{color:#9AA3A0;font-size:12.5px}
+.st2-card-actions{display:flex;flex-wrap:wrap;gap:8px}
+.schach-treff .st2-secondary,.st2-modal .st2-secondary{min-height:40px;padding:0 14px;border:1px solid #2F4A41;border-radius:10px;background:#142420;color:#CFE6DC;font-size:13px}
+.schach-treff .st2-bronze-outline,.st2-modal .st2-bronze-outline{min-height:40px;padding:0 14px;border:1px solid #3A3226;border-radius:10px;background:#1B1712;color:#E9C9A2;font-size:13px}
+.schach-treff .st2-position-trigger{display:grid;place-items:center;flex:none;width:44px;min-height:44px;padding:0;border:1px solid #ffffff1a;border-radius:10px;background:#222224;color:#E3D3B4}
+.schach-treff .st2-icon-small{display:grid;place-items:center;flex:none;width:34px;height:34px;min-height:34px;padding:0;border:1px solid #2C3337;border-radius:9px;background:transparent;color:#B9C2BE}
+.st2-note{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:#9AA3A0}
+.schach-treff .st2-dm-note{margin:6px 0 0;padding:0 4px}
+.st2-dm-title{color:var(--st-name)}
+.schach-treff .st2-block{flex:none;min-height:36px;padding:4px 12px;border:1px solid #4A2E2A;border-radius:9px;background:transparent;color:#E8A79B;font-size:13px}
+
+/* Finished game card in the feed. */
+.st2-result-group{padding:4px 8px}
+.st2-game-card{display:flex;flex-wrap:wrap;align-items:center;gap:14px;max-width:480px;margin-left:42px;padding:12px 14px;border:1px solid #24332E;border-radius:14px;background:#131B18}
+.st2-game-main{display:flex;flex-direction:column;gap:3px;flex:1;min-width:180px}
+.schach-treff .st2-game-main small{font-size:11.5px;letter-spacing:.06em;color:#9AA3A0}
+.schach-treff .st2-game-main small:first-child{text-transform:uppercase;letter-spacing:.12em;color:#D4A373}
+.schach-treff .st2-game-main p{margin:0;font-size:15px;font-weight:600}
+.st2-game-main p span[style]{color:var(--st-name)}
+.st2-game-score{font-family:'Bodoni Moda',Georgia,serif;font-size:28px;color:#EDE6D8}
+@media(max-width:1023px){.st2-game-card{margin-left:0}}
+
+/* Shared modal (position, game viewer, chat settings). */
+.st2-modal,.schach-treff dialog.st2-modal{width:min(680px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 32px);box-sizing:border-box;overflow:auto;padding:20px;border:1px solid #3A3226;border-radius:18px;background:#171C1F;color:#E6E1D6}
+.st2-modal::backdrop{background:#050708b3}
+.st2-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.st2-modal h2{margin:0;font-family:'Bodoni Moda',Georgia,serif;font-size:21px;font-weight:500;line-height:1.35;color:#EDE6D8}
+.st2-modal h2 small{font-family:Inter,system-ui,sans-serif;font-size:13px;color:#9AA3A0}
+.st2-modal h2 span[style]{color:var(--st-name)}
+.st2-modal .st2-icon-button{display:grid;place-items:center;flex:none;width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:#B9C2BE}
+.st2-modal label,.schach-treff .st2-modal label{display:grid;align-items:stretch;gap:6px;min-height:0;font-size:13px;color:#B9C2BE}
+.st2-modal input:not([type=radio]):not([type=checkbox]){min-height:44px;padding:0 12px;border:1px solid #2A3135;border-radius:10px;background:#111416;color:#E6E1D6;font:inherit;font-size:14px}
+.st2-modal input[aria-invalid=true]{border-color:#7A3E36}
+.st2-modal .st2-primary{min-height:46px;border:0;border-radius:12px;background:#D4A373;color:#14110D;font-weight:600;font-size:14.5px}
+.st2-modal .st2-primary:disabled{opacity:.5}
+.st2-position-form,.schach-treff .st2-modal .st2-position-form{display:flex;flex-direction:row;flex-wrap:wrap;gap:18px;padding:0}
+.st2-position-fields{display:flex;flex-direction:column;gap:12px;flex:1 1 260px;min-width:0}
+.st2-viewer,.schach-treff dialog.st2-viewer{width:min(760px,calc(100vw - 32px))}
+.schach-treff .st2-modal p{margin:0}
+.st2-viewer-body{display:flex;flex-wrap:wrap;gap:18px}
+.st2-viewer-board{display:flex;flex-direction:column;gap:10px;align-items:center}
+.st2-viewer-nav{display:flex;gap:6px}
+.st2-viewer-nav button{display:grid;place-items:center;width:52px;height:44px;border:1px solid #2C3337;border-radius:10px;background:#15191B;color:#E6E1D6}
+.st2-viewer-nav button:disabled{opacity:.4}
+.st2-viewer-side{display:flex;flex-direction:column;gap:12px;flex:1 1 220px;min-width:0}
+.st2-viewer-moves{display:grid;grid-template-columns:1fr;gap:2px;max-height:300px;overflow:auto;margin:0;padding:0;list-style:none;font-variant-numeric:tabular-nums}
+.st2-viewer-moves li{display:grid;grid-template-columns:36px 1fr 1fr;align-items:center;gap:4px;font-size:14px}
+.st2-viewer-moves li>span{color:#8C9491}
+.st2-viewer-moves button{min-height:30px;padding:0 6px;border:0;border-radius:6px;background:transparent;color:#E6E1D6;text-align:left;font:inherit}
+.st2-viewer-moves button[aria-current]{background:rgba(212,163,115,.2);color:#F0D7B4}
+.st2-viewer-result{display:flex;align-items:center;gap:6px;margin:0;color:#D4A373;font-size:14px}
+@media(max-width:600px){.st2-viewer .st2-board{width:min(320px,calc(100vw - 72px))!important;height:min(320px,calc(100vw - 72px))!important}}
+
+/* Direct messages list and settings. */
+.st2-direct{margin-top:8px}
+.st2-direct>a{display:flex;align-items:center;gap:10px;min-height:44px;margin:2px 0;padding:0 10px;border-radius:10px;color:#D8D3C8;text-decoration:none;overflow-wrap:anywhere}
+.st2-direct>a[aria-current=page]{border:1px solid #D9AE5B}
+.st2-dot[data-name]{background:var(--st-name)}
+.st2-direct-name{flex:1;min-width:0;color:var(--st-name);font-weight:600}
+.schach-treff .st2-settings-link,.st-mobile-rooms .st2-settings-link{display:flex;align-items:center;gap:8px;width:100%;min-height:40px;margin-top:8px;padding:0 10px;border:1px dashed #2C3337;border-radius:10px;background:transparent;color:#9AA3A0;font-size:12.5px;text-align:left}
+.st2-settings-form,.schach-treff .st2-modal .st2-settings-form{display:flex;flex-direction:column;gap:14px;padding:0}
+.st2-settings-form fieldset{display:grid;gap:4px;margin:0;padding:0;border:0}
+.st2-settings-form legend{margin-bottom:6px;font-size:14px;font-weight:600;color:#EDE6D8}
+.st2-settings-form label,.st2-modal .st2-check,.schach-treff .st2-modal .st2-settings-form label{display:flex;align-items:center;gap:10px;min-height:40px;font-size:14px;color:#E6E1D6}
+.st2-settings-form input[type=radio],.st2-settings-form input[type=checkbox]{width:18px;height:18px;accent-color:#D4A373}

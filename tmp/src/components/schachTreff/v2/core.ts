@@ -49,11 +49,14 @@ export function isMissingSchema(code: string | undefined): boolean {
   return Boolean(code && ['42P01', '42703', 'PGRST204', 'PGRST205'].includes(code));
 }
 
-/** Time controls accepted by the existing challenge path (club_challenge_action). */
+/** Time controls accepted by club_challenge_action (migration 20261112070000) and the game server. */
 export const SEEK_CONTROLS = [
+  { value: '1+0', kind: 'bullet' },
+  { value: '3+0', kind: 'blitz' },
   { value: '3+2', kind: 'blitz' },
   { value: '5+0', kind: 'blitz' },
   { value: '10+0', kind: 'rapid' },
+  { value: '15+10', kind: 'rapid' },
 ] as const;
 export type SeekControl = typeof SEEK_CONTROLS[number]['value'];
 const SEEK_KEY = 'chessaz.schachTreff.lastSeek';
@@ -79,4 +82,33 @@ export function recentlyActive(messages: readonly { author_id: string; created_a
     if (Number.isFinite(at) && now - at <= windowMs && at <= now + 60_000) active.add(message.author_id);
   }
   return active;
+}
+
+const FEN_SHAPE = /^[1-8pnbrqkPNBRQK]{1,8}(\/[1-8pnbrqkPNBRQK]{1,8}){7} [wb] (-|[KQkq]{1,4}) (-|[a-h][36]) \d{1,4} \d{1,4}$/;
+/** Same shape as the database CHECK on chess_club_messages.fen; full legality is checked with chess.js. */
+export function fenShapeOk(fen: string): boolean { return fen.length <= 100 && FEN_SHAPE.test(fen); }
+
+export type ChatGameResult = {
+  challenge_id: string; message_id: string; match_id: string; white_id: string | null; black_id: string | null;
+  white_name: string | null; black_name: string | null; result: '1-0' | '0-1' | '1/2-1/2' | string;
+  termination_reason: string | null; time_control: string; completed_at: string; pgn: string | null; initial_fen: string | null;
+};
+
+/** Number of full moves in a PGN move list (ignores headers, comments and results). */
+export function countFullMoves(pgn: string | null | undefined): number {
+  if (!pgn) return 0;
+  const body = pgn.replace(/\[[^\]]*\]/g, ' ').replace(/\{[^}]*\}/g, ' ');
+  const numbers = body.match(/(^|\s)(\d+)\.(?!\.)/g) ?? [];
+  return numbers.length;
+}
+
+/** Pseudo-message id for a finished game shown in the feed timeline. */
+export const resultMessageId = (result: Pick<ChatGameResult, 'challenge_id'>) => 'result:' + result.challenge_id;
+
+/** Inserts finished chat games into the feed by completion time (they are not stored as messages). */
+export function mergeTimeline<T extends { id: string; created_at: string }>(messages: readonly T[], results: readonly ChatGameResult[], make: (result: ChatGameResult) => T): T[] {
+  if (!results.length) return [...messages];
+  const oldest = messages.length ? Date.parse(messages[0].created_at) : -Infinity;
+  const items = [...messages, ...results.filter(result => Date.parse(result.completed_at) >= oldest).map(make)];
+  return items.sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
 }

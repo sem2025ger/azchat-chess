@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
-import { Lightbulb, MessageSquare, SendHorizontal, Timer, X } from 'lucide-react';
+import { Lightbulb, Mail, MessageSquare, SendHorizontal, Timer, X } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { useAuth } from '../../../context/AuthContext';
-import { ChallengeButton, useChallengeControls } from '../Challenges';
+import { useChallengeControls } from '../Challenges';
 import { useSchachTreffCopy } from '../copy';
 import { useV2Copy } from './copy';
+import { useV2Copy2 } from './copy2';
 import {
   REACTIONS, SEEK_CONTROLS, nameColor, readLastSeek, recentlyActive, writeLastSeek,
   type Reaction, type ReactionSummary, type SeekControl,
@@ -22,6 +23,7 @@ export function nameStyle(userId: string): CSSProperties {
 export function SeekButton() {
   const controls = useChallengeControls();
   const copy = useV2Copy();
+  const copy2 = useV2Copy2();
   const [open, setOpen] = useState(false);
   const [last, setLast] = useState<SeekControl>(() => readLastSeek(safeStorage()));
   const box = useRef<HTMLDivElement>(null);
@@ -49,7 +51,7 @@ export function SeekButton() {
       <div className="st2-seek-grid">{SEEK_CONTROLS.map(control =>
         <button type="button" key={control.value} aria-pressed={control.value === last} disabled={controls.busy || limit}
           onClick={() => void pick(control.value)}>
-          <strong>{control.value}</strong><small>{control.kind === 'blitz' ? copy.blitz : copy.rapid}</small>
+          <strong>{control.value}</strong><small>{control.kind === 'bullet' ? copy2.bullet : control.kind === 'blitz' ? copy.blitz : copy.rapid}</small>
         </button>)}
       </div>
     </div>}
@@ -84,10 +86,13 @@ export function MessageTools({ summary, onToggle, onThread }: {
   </div>;
 }
 
-export function MembersPanel({ members, messages, me, onPlayer }: {
+export function MembersPanel({ members, messages, me, onPlayer, onMessage }: {
   members: Person[]; messages: { author_id: string; created_at: string }[]; me?: string; onPlayer: (person: Person) => void;
+  onMessage?: (person: Person) => void;
 }) {
   const copy = useV2Copy();
+  const copy2 = useV2Copy2();
+  const challenges = useChallengeControls();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(timer); }, []);
   const active = recentlyActive(messages, now);
@@ -99,7 +104,10 @@ export function MembersPanel({ members, messages, me, onPlayer }: {
       <button type="button" className="st2-member-name" onClick={() => onPlayer(person)}>
         {person.username}{active.has(person.id) && <span className="sr-only"> · {copy.activeNow}</span>}
       </button>
-      {person.id !== me && <ChallengeButton targetUserId={person.id} />}
+      {person.id !== me && onMessage && <button type="button" className="st2-icon-small" aria-label={`${copy2.writePrivately}: ${person.username}`}
+        title={copy2.writePrivately} onClick={() => onMessage(person)}><Mail size={15} aria-hidden="true" /></button>}
+      {person.id !== me && challenges?.available && <button type="button" className="st2-member-challenge"
+        aria-label={`${copy.challenge}: ${person.username}`} onClick={() => challenges.open(person.id)}>{copy.challenge}</button>}
     </li>)}</ul>
   </aside>;
 }
