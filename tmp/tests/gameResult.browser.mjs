@@ -163,6 +163,42 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
       for (let i=0;i<before.length;i++) for (const dimension of ['x','y','width','height']) {
         assert.ok(Math.abs(before[i][dimension] - afterDismiss[i][dimension]) < 1, `${width}x${height}: result dismissal shifted board/player geometry ${i}/${dimension}`);
       }
+      // Only dismissed online games use the refined engine typography.
+      if (width >= 768) {
+        const name = page.locator('[data-postgame-analysis] .analysis-stockfish-name');
+        assert.equal(await name.count(), 1, 'Postgame Stockfish label is present');
+        const typography = await name.evaluate(el => {
+          const style = getComputedStyle(el);
+          return { weight: Number(style.fontWeight), color: style.color, size: style.fontSize };
+        });
+        assert.equal(typography.weight, 600, 'Postgame Stockfish name is lighter');
+        assert.equal(typography.color, 'rgb(192, 164, 124)', 'Postgame name uses subdued metallic bronze');
+        const depthBadge = page.locator('[data-postgame-analysis] .analysis-stockfish-depth');
+        assert.equal(await depthBadge.evaluate(el => getComputedStyle(el).display), 'none', 'Postgame depth caption is hidden');
+        const scoreBadge = slots.first().locator('.analysis-engine-score');
+        const scoreStyle = await scoreBadge.evaluate(el => {
+          const s = getComputedStyle(el);
+          return { size: parseFloat(s.fontSize), weight: Number(s.fontWeight), variant: s.fontVariantNumeric };
+        });
+        assert.ok(scoreStyle.size >= 13 && scoreStyle.size < 15, 'Postgame scores are slightly larger');
+        assert.equal(scoreStyle.weight, 700, 'Postgame scores have restrained weight');
+        assert.ok(scoreStyle.variant.includes('tabular-nums'), 'Postgame score digits align');
+        const firstMoves = page.locator('[data-postgame-analysis] .analysis-engine-moves > span.text-white');
+        if (await firstMoves.count()) {
+          const firstMoveStyle = await firstMoves.first().evaluate(el => {
+            const s = getComputedStyle(el);
+            return { color: s.color, weight: Number(s.fontWeight) };
+          });
+          assert.equal(firstMoveStyle.color, 'rgb(199, 203, 194)', 'First two engine moves have softer highlight');
+          assert.equal(firstMoveStyle.weight, 600);
+        }
+      } else {
+        const mobileName = page.locator('[data-postgame-analysis] .postgame-stockfish-name');
+        assert.equal(await mobileName.count(), 1, 'Mobile postgame engine label is present');
+        assert.equal(await mobileName.evaluate(el => getComputedStyle(el).color), 'rgb(192, 164, 124)');
+        const mobileScore = page.locator('[data-postgame-analysis] .postgame-engine-score').first();
+        assert.ok(parseFloat(await mobileScore.evaluate(el => getComputedStyle(el).fontSize)) >= 14, 'Mobile postgame scores are slightly larger');
+      }
       const pvScroll = width >= 768
         ? page.locator('[data-postgame-analysis] .analysis-engine-moves').first()
         : page.locator('[data-postgame-analysis] [data-postgame-mobile-analysis] .overflow-x-auto').first();
