@@ -2024,7 +2024,7 @@ aside nav{padding-top:12px!important}
   .desktop-analysis-screen > .desktop-analysis-panel {box-sizing:border-box;width:var(--review-panel-width)!important;min-width:0!important;max-width:var(--review-panel-width)!important;margin-left:0!important;}
 }
 @media (min-width:1280px) {
-  #root aside {width:260px;min-width:260px;max-width:260px;}
+  #root aside {width:240px;min-width:240px;max-width:240px;}
   #root aside .site-nav-link .site-nav-label {white-space:nowrap;}
 }
 
