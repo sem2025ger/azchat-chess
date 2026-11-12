@@ -1,6 +1,7 @@
 'use strict';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const TIMES = new Set(['3+2', '5+0', '10+0']);
+// Mirrors club_challenge_action (migration 20261112070000) and the game server's ALLOWED_TIME_CONTROLS.
+const TIMES = new Set(['1+0', '3+0', '3+2', '5+0', '10+0', '15+10']);
 const REASONS = new Set(['not_allowed','not_member','expired','already_taken','challenge_limit','invalid_time_control','creator_offline','player_unavailable','rate_limit_exceeded','storage_unavailable']);
 const reservations = new Set();
 const fail = reason => Object.assign(new Error(reason), { reason });
