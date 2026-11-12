@@ -52,5 +52,5 @@ test('desktop Stockfish PV notation and slightly smaller score typography', () =
   const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
   assert.match(css, /analysis-engine-moves \{gap:2px 3px!important;font-size:\.79rem!important/);
   assert.match(css, /analysis-engine-moves \{\s*font-size:0\.84rem!important/);
-  assert.match(css, /analysis-engine-score \{\s*font-family: Inter,[\s\S]*?font-size: 0\.875rem !important/);
+  assert.match(css, /analysis-engine-score \{\s*font-family: Inter,[\s\S]*?font-size: 0\.8125rem !important/);
 });
