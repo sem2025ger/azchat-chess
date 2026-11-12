@@ -2055,8 +2055,8 @@ aside nav{padding-top:12px!important}
   .desktop-analysis-screen .analysis-engine-moves span.text-neutral-400 { color:#c5c7c3; }
 }
 
-/* Desktop 240px sidebar: keep the long Schach-Treff club-action label readable at 1280px. */
-@media (min-width: 1280px) and (max-width: 1399px) {
+/* Keep the long Schach-Treff club-action label readable inside its panel on desktop. */
+@media (min-width: 1024px) {
   #root .schach-treff .st-room-list .st-create-room {
     box-sizing: border-box;
     width: calc(100% + 20px);
