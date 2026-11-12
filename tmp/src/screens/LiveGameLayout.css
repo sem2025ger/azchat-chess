@@ -125,10 +125,42 @@
 
 /* Postgame typography only; the regular Analysis workspace remains unchanged. */
 [data-postgame-analysis] .analysis-engine-score {
-  font-size: .8125rem;
-  font-weight: 700;
-  letter-spacing: -.035em;
+  box-sizing: border-box;
+  flex: 0 0 58px;
+  width: 58px;
+  min-width: 58px;
+  max-width: 58px;
+  height: 30px;
+  min-height: 30px;
+  max-height: 30px;
+  padding: 4px 5px;
+  border-radius: 9px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  font-size: .9375rem;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -.015em;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  white-space: nowrap;
+  text-shadow: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 3px 10px rgba(0,0,0,.20);
+}
+[data-postgame-analysis] .analysis-engine-score[data-score-side="white"] {
+  background: linear-gradient(145deg,#F4F0E8,#DCD7CD);
+  color: #181916;
+  border-color: #D5C9B4;
+}
+[data-postgame-analysis] .analysis-engine-score[data-score-side="black"] {
+  background: linear-gradient(145deg,#242522,#131513);
+  color: #F3F0E8;
+  border-color: #77746C;
+}
+[data-postgame-analysis] .analysis-engine-score[data-score-side="pending"] {
+  background: #2A2A26;
+  color: #C1BCAF;
+  border-color: #55534E;
 }
 [data-postgame-analysis] .analysis-engine-moves > span.text-white {
   color: #c7cbc2;
@@ -143,9 +175,26 @@
 [data-postgame-analysis] .analysis-stockfish-depth {
   display: none;
 }
+[data-postgame-analysis] [data-postgame-mobile-analysis] [aria-label^="Engine line"] {
+  grid-template-columns: 68px minmax(0,1fr);
+}
 [data-postgame-analysis] .postgame-engine-score {
-  font-size: .875rem;
-  font-weight: 700;
-  letter-spacing: -.025em;
+  box-sizing: border-box;
+  flex: 0 0 68px;
+  width: 68px;
+  min-width: 68px;
+  max-width: 68px;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  padding: 4px 6px;
+  border: 1px solid rgba(206,173,117,.63);
+  border-radius: 9px;
+  background: linear-gradient(155deg,#333741 0%,#232831 54%,#141a20 100%);
+  color: #f4e8cd;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(242,205,137,.08), 0 3px 9px #0005;
+  font: 800 1.0625rem/1.2 ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  white-space: nowrap;
 }
