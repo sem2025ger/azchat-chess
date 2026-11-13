@@ -110,7 +110,7 @@ test('v2 reaction controls render accessible chess annotations; seek stays hidde
 test('flag off keeps the existing Schach-Treff markup paths', () => {
   const source = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   assert.match(source, /className=\{v2Enabled \? 'schach-treff st-v2' : 'schach-treff'\}/);
-  assert.match(source, /\{v2Enabled \? \(dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} \/> : <SeekButton \/>\) : <ChallengeButton composer \/>\}/);
+  assert.match(source, /\{v2Enabled \? \(dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} \/> : null\) : <ChallengeButton composer \/>\}/);
   assert.match(source, /\{v2Enabled && <FeedbackButton \/>\}/);
   assert.match(source, /\(isClub \|\| hasChatActions \|\| v2Enabled\)/);
   assert.match(source, /\{v2Enabled && !isClub && <h2 className="st2-general-title">\{t\.general\}<\/h2>\}/);
@@ -257,4 +257,25 @@ test('thread scrolls to the newest reply once after a position reply', () => {
   const screen = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   assert.match(screen, /setThreadRevision\(value => value \+ 1\); setThreadScroll\(true\);/);
   assert.match(screen, /scrollToEnd=\{threadScroll\} onScrolled=\{threadScrolled\}/);
+});
+
+test('approved v2 composer and header: localized subtitle, real presence and position tooltip', async () => {
+  const source = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/components/schachTreff/v2/v2.css', import.meta.url), 'utf8');
+  assert.match(source, /<div className="st2-general-heading">/);
+  assert.match(source, /<span className="st2-general-subtitle">\{copy1.subtitle\}<\/span>/);
+  assert.match(source, /<div className="st2-chat-meta">/);
+  assert.match(source, /Object\.keys\(channel\.presenceState\(\)\)\.length/, 'presence is measured, not hardcoded');
+  assert.match(source, /<PositionTrigger label=\{copy2.sendPosition\}/);
+  assert.match(css, /\.st-chat-header \.st2-seek-popover\{top:calc\(100% \+ 10px\);bottom:auto/);
+  const { v2Copy } = await (async () => {
+    let value;
+    await withVite(async server => { value = await server.ssrLoadModule('/src/components/schachTreff/v2/copy.ts'); });
+    return value;
+  })();
+  for (const locale of ['de', 'en', 'ru', 'ua', 'az', 'tr']) {
+    assert.ok(v2Copy[locale].subtitle && v2Copy[locale].onlineNow);
+  }
+  assert.equal(v2Copy.ru.subtitle, 'для немецкоязычных шахматистов');
+  assert.equal(v2Copy.ru.onlineNow, 'в сети');
 });
