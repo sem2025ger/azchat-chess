@@ -180,3 +180,32 @@
 .st2-thread .st2-board{width:100%!important;height:auto!important;aspect-ratio:1}
 .st2-thread .st2-card-actions{display:grid;grid-template-columns:1fr;gap:6px}
 .schach-treff .st2-thread .st2-card-actions button{min-height:36px;padding:6px 10px;font-size:13px}
+
+/* Approved Schach-Treff header/composer layout, scoped to the v2 feature flag. */
+.schach-treff.st-v2 .st-chat-header:has(.st2-general-heading){display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:78px;padding:4px 0 12px}
+.schach-treff.st-v2 .st2-general-heading{display:flex;flex:1 1 auto;min-width:0;flex-direction:column;align-items:flex-start;gap:4px}
+.schach-treff.st-v2 .st2-general-heading .st2-general-title{flex:none;max-width:100%;font-size:26px;line-height:1.15;margin:0;overflow:hidden;text-overflow:ellipsis}
+.schach-treff.st-v2 .st2-general-subtitle{display:inline-flex;align-items:center;gap:8px;max-width:100%;font-family:'Bodoni Moda',Georgia,serif;font-size:15px;font-style:italic;letter-spacing:.02em;color:#C9A987;line-height:1.35}
+.schach-treff.st-v2 .st2-general-subtitle::before{content:'';flex:none;width:18px;height:1px;background:#C9A987}
+.schach-treff.st-v2 .st2-chat-meta{display:flex;flex:none;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
+.schach-treff.st-v2 .st2-online{display:inline-flex;align-items:center;gap:7px;flex:none;min-height:34px;padding:0 12px;border:1px solid #2E3A33;border-radius:999px;background:#131B17;color:#CFE9D7;font-size:12px;white-space:nowrap}
+.schach-treff.st-v2 .st2-online strong{color:#F2EEE3;font-weight:700}
+.schach-treff.st-v2 .st2-online-dot{width:8px;height:8px;flex:none;border-radius:50%;background:#7FD49A;box-shadow:0 0 0 3px #7FD49A2e}
+.schach-treff.st-v2 .st-chat-header .st2-seek{flex:none}
+.schach-treff.st-v2 .st-chat-header .st2-seek-popover{top:calc(100% + 10px);bottom:auto;left:auto;right:0}
+.schach-treff.st-v2 .st-chat-header .st2-seek-trigger{height:44px;border-radius:12px;background:#D4A37319}
+.schach-treff.st-v2 .st-chat .st2-position-trigger{position:relative;width:46px;height:46px;min-height:46px;border-radius:12px;touch-action:manipulation}
+.schach-treff.st-v2 .st2-position-trigger::after{content:attr(data-hint);position:absolute;bottom:calc(100% + 10px);left:0;z-index:20;width:max-content;max-width:min(190px,80vw);padding:9px 11px;border:1px solid #3A3226;border-radius:9px;background:#20201D;color:#EDE6D8;font-size:12px;font-weight:500;line-height:1.3;box-shadow:0 3px 12px #0008;pointer-events:none;opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity .14s ease,transform .14s ease}
+.schach-treff.st-v2 .st2-position-trigger:hover::after,.schach-treff.st-v2 .st2-position-trigger:focus-visible::after,.schach-treff.st-v2 .st2-position-trigger.st2-hint-visible::after{opacity:1;visibility:visible;transform:translateY(0)}
+@media(any-pointer:coarse){.schach-treff.st-v2 .st2-position-trigger:hover:not(.st2-hint-visible):not(:focus-visible)::after{opacity:0;visibility:hidden}}
+@media(max-width:1023px){
+  .schach-treff.st-v2 .st-chat-header:has(.st2-general-heading){display:flex;flex-wrap:wrap;align-content:center;justify-content:space-between;gap:8px;min-height:0;padding:8px 0}
+  .schach-treff.st-v2 .st2-general-heading .st2-general-title{font-size:22px}
+  .schach-treff.st-v2 .st2-chat-meta{margin-left:auto}
+}
+@media(max-width:600px){
+  .schach-treff.st-v2 .st-chat-header:has(.st2-general-heading){align-items:flex-start}
+  .schach-treff.st-v2 .st2-general-heading{flex-basis:100%}
+  .schach-treff.st-v2 .st2-general-subtitle{font-size:13px}
+  .schach-treff.st-v2 .st2-chat-meta{width:100%;justify-content:space-between}
+}
