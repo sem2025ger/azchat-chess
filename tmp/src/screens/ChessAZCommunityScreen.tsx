@@ -7,6 +7,7 @@ import { Globe, Users, MessageCircle, Trophy, Loader2, BarChart3, Info } from 'l
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import ClubRooms from '../components/schachTreff/ClubRooms';
 import { v2Enabled } from '../components/schachTreff/v2/core';
+import { useV2Copy } from '../components/schachTreff/v2/copy';
 import { DirectList } from '../components/schachTreff/v2/Stage2';
 import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
 import './SchachTreffMobileRooms.css';
@@ -89,6 +90,7 @@ const ru: Words = {
 export default function ChessAZCommunityScreen() {
   const desktop = useDesktop();
   const t = useSchachTreffCopy();
+  const copy = useV2Copy();
   const [showCommunity, setShowCommunity] = useState(false);
   if (desktop) return <CommunityRouter />;
   const params = new URLSearchParams(window.location.search);
@@ -96,7 +98,7 @@ export default function ChessAZCommunityScreen() {
   return <div className="st-mobile-page">
     <header className="st-mobile-header"><h1>{t.title}</h1></header>
     <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
-      <ClubRooms currentClubId={club} />
+      <ClubRooms currentClubId={club} heading={v2Enabled ? copy.myClubs : undefined} />
       {v2Enabled && <DirectList currentClubId={club} />}
     </aside>
     {!club && <button type="button" className="st-mobile-community" aria-pressed={showCommunity} onClick={() => setShowCommunity(!showCommunity)}>{showCommunity ? t.backGeneral : t.more}</button>}
