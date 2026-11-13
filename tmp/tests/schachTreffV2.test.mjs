@@ -383,8 +383,12 @@ test('owner 13 Nov: feed headline is the motto, bronze "General chat" link, bloc
   const link = readFileSync(new URL('../src/components/schachTreff/GeneralRoomLink.tsx', import.meta.url), 'utf8');
   assert.match(link, /<span className="st-general-label">\{label\}<\/span>/);
   assert.match(css, /\.st-rooms \.st-general-link\{min-height:54px;[^}]*font-size:17px;font-weight:600;/);
-  assert.match(css, /\.st-general-link \.st-general-label\{[^}]*color:#F0D7B4;background:linear-gradient\(105deg,#F0D7B4 0%,#F0D7B4 38%,#FFF4DE 50%,#F0D7B4 62%,#F0D7B4 100%\)[^}]*animation:st2-sheen /, 'Seek-button colour, crisp letters, light sheen');
-  assert.match(css, /@media\(prefers-reduced-motion:reduce\)\{\.schach-treff\.st-v2 \.st-rooms \.st-general-link \.st-general-label\{animation:none\}\}/);
+  assert.match(css, /\.st-general-link \.st-general-label\{flex:1 1 auto;min-width:0;color:#F9E9C8;text-shadow:0 1px 2px rgba\(0,0,0,\.7\)\}/, 'solid cream letters, never background-clipped');
+  const arena = readFileSync(new URL('../src/components/ArenaPlayPanel.css', import.meta.url), 'utf8');
+  const startGradient = arena.match(/\.arena-start-game \{[^}]*background:(linear-gradient\([^;]+\));/)[1];
+  assert.ok(css.includes(`.st-general-link[aria-current=page]{border-color:#9CB8B1;background:${startGradient} 0% 50%/240% 100%;`), 'owner 13 Nov 19:51: the same premium sheen as "Start game"');
+  assert.match(css, /@media\(prefers-reduced-motion:no-preference\)\{\.schach-treff\.st-v2 \.st-rooms \.st-general-link\{animation:arenaStartPremiumShift 7s ease-in-out infinite alternate\}\}/);
+  assert.match(css, /@media\(prefers-reduced-motion:reduce\)\{\.schach-treff\.st-v2 \.st-rooms \.st-general-link\{animation:none;background-size:100% 100%\}\}/);
   assert.doesNotMatch(css, /#B07A45/, 'no dark stop that made the letters look dull');
   // 3. Block state: re-read on tab focus and after a refused send; every composer action is disabled.
   const stage2 = readFileSync(new URL('../src/components/schachTreff/v2/Stage2.tsx', import.meta.url), 'utf8');
@@ -426,4 +430,20 @@ test('challenge cards look like the finished-game cards (v2 only, same markup fo
     const html = renderToStaticMarkup(createElement(ChallengeCard, { now: Date.now(), row, me: 'x', people: [{ id: 'a', username: 'nar' }], busy: false, act() {}, finished: true }));
     assert.match(html, /^<div class="st-challenge-card"><small>[^<]+<\/small><p class="st-challenge-title">[^<]+<span class="st-mono">5\+0<\/span><\/p><p class="st-challenge-players">nar<\/p><p class="st-challenge-status">[^<]+<\/p><\/div>$/);
   });
+});
+
+test('message ⋯ menu: one line per item inside the feed, no control hidden under another, closes on outside click', () => {
+  const css = readFileSync(new URL('../src/components/schachTreff/v2/v2.css', import.meta.url), 'utf8');
+  const feed = readFileSync(new URL('../src/screens/SchachTreffDesktop.css', import.meta.url), 'utf8');
+  assert.match(feed, /\.schach-treff \.st-messages\{[^}]*overflow-wrap:anywhere\}/, 'the inherited rule that broke "Пожаловаться" into single letters');
+  assert.match(css, /\.st-message-actions\[open\] \.st-message-action-buttons\{display:flex;flex-direction:column;[^}]*width:max-content;max-width:min\(260px,70vw\);[^}]*overflow-wrap:normal\}/);
+  assert.match(css, /\.st-message-action-buttons button\{[^}]*white-space:nowrap;overflow-wrap:normal;/);
+  // Mouse: [reactions] [challenge] [⋯] side by side (the challenge icon used to sit under ⋯ and looked like a shadow).
+  assert.match(css, /\.st-chat \.st-message:has\(\.st-message-actions\) \.st-challenge-icon\{right:50px\}/);
+  assert.match(css, /\.st-message:has\(\.st-message-actions\):has\(\.st-challenge-icon\) \.st2-tools\{right:92px\}/);
+  assert.match(css, /\.st-message-actions\[open\] \.st-message-action-buttons\{position:absolute;top:0;right:calc\(100% \+ 6px\);z-index:4\}/, 'opens to the left, stays inside the feed');
+  assert.match(css, /\.st-message:has\(\.st-message-actions\[open\]\) :is\(\.st2-tools,\.st-challenge-icon\)\{opacity:0;pointer-events:none\}/);
+  assert.match(css, /@media\(any-pointer:fine\)\{\n  \.schach-treff\.st-v2 \.st-messages\{padding-top:20px\}/, 'the first message keeps its hover bar below the header');
+  const moderation = readFileSync(new URL('../src/components/schachTreff/Moderation.tsx', import.meta.url), 'utf8');
+  assert.match(moderation, /onBlur=\{event => \{\n[^\n]*\n    if \(!event\.currentTarget\.contains\(event\.relatedTarget as Node \| null\)\) event\.currentTarget\.open = false;/);
 });
