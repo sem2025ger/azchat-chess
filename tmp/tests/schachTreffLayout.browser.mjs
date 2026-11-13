@@ -103,6 +103,27 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await cdp('Emulation.setDeviceMetricsOverride',{width,height:width===375?844:900,deviceScaleFactor:1,mobile:width===375});
      await cdp('Page.navigate',{url:fixtureUrl});
      await wait("document.querySelector('.st-messages .st-name') && document.querySelector('.st-challenge-icon')");
+     if (width>=1024) {
+       const paint=await evaluate(`(()=>{
+         const title=document.querySelector('.schach-treff>header h1'),link=document.querySelector('.st-general-link');
+         const animation=title.getAnimations().find(a=>a.animationName==='st2TitleMetalShift');
+         if(!animation) return null;
+         animation.pause();animation.currentTime=0;
+         const first=title.getBoundingClientRect().toJSON(),start=getComputedStyle(title).backgroundPosition;
+         animation.currentTime=9000;
+         const second=title.getBoundingClientRect().toJSON(),end=getComputedStyle(title).backgroundPosition;
+         animation.play();
+         return {first,second,start,end,font:getComputedStyle(title).fontFamily,size:getComputedStyle(title).fontSize,
+           duration:getComputedStyle(title).animationDuration,linkAnimation:getComputedStyle(link).animationName};
+       })()`);
+       assert.ok(paint && paint.start!==paint.end,'title paint moves');
+       assert.deepEqual(paint.first,paint.second,'title geometry remains fixed during animation');
+       assert.ok(paint.font.includes('Bodoni Moda') && paint.size==='40px','approved title typography');
+       assert.equal(paint.duration,'18s');assert.equal(paint.linkAnimation,'none');
+       await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+       assert.equal(await evaluate("getComputedStyle(document.querySelector('.schach-treff>header h1')).animationName"),'none');
+       await cdp('Emulation.setEmulatedMedia',{features:[]});
+     }
      await evaluate("document.querySelector('.st-messages .st-name').click()");
      await wait("document.querySelector('dialog.st2-player-dialog[open] .st-player-history li')");
      assert.equal(await evaluate("document.querySelector('dialog[open]').getAttribute('aria-labelledby')"),'st-player-name');
@@ -130,6 +151,15 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
      await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
      await wait("!document.querySelector('dialog[open]')");
+     if(width>=1024) {
+       await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'room-fixture?polish=1'});
+       await wait("document.querySelector('.st-general-link[aria-current=page]') && document.querySelector('.st-composer')");
+       assert.equal(await evaluate("getComputedStyle(document.querySelector('.st-general-link')).animationName"),'none');
+       if(process.env.SECTIONS_CAPTURE) {
+         const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+         await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-title-static-general-'+width+'.png'),Buffer.from(shot.data,'base64'));
+       }
+     }
    }
    return;
  }

@@ -384,22 +384,29 @@ test('owner 13 Nov: feed headline is the motto, bronze "General chat" link, bloc
   assert.match(link, /<span className="st-general-label">\{label\}<\/span>/);
   assert.match(css, /\.st-rooms \.st-general-link\{min-height:54px;[^}]*font-size:17px;font-weight:600;/);
   assert.match(css, /\.st-general-link \.st-general-label\{flex:1 1 auto;min-width:0;color:#F9E9C8;text-shadow:0 1px 2px rgba\(0,0,0,\.7\)\}/, 'solid cream letters, never background-clipped');
-  // Owner 13 Nov: darker graphite, preserving the animation and readable lettering.
-  const stops = [...css.matchAll(/background:linear-gradient\(110deg,([^;)]+)\) 0% 50%\/240% 100%/g)].at(-1)[1];
-  const oldStops = ['303438', '7a592a', 'af8140', '424b4d', '245e69', '323b3f', '846331'];
-  const colors = [...stops.matchAll(/#([0-9a-f]{6})/g)].map(match => match[1]);
+  // Owner 13 Nov: static General chat; subtle metallic motion belongs to the title only.
+  const buttonRules = [...css.matchAll(/\.schach-treff\.st-v2 \.st-rooms \.st-general-link(?:\[aria-current=page\])?\{([^}]+)\}/g)].map(match => match[1]);
+  const gradients = buttonRules.filter(rule => rule.includes('linear-gradient'));
+  assert.equal(gradients.length, 2, 'distinct static inactive and selected backgrounds');
+  assert.ok(buttonRules.some(rule => rule.includes('animation:none')));
+  assert.doesNotMatch(css, /arenaStartPremiumShift|st-general-link\{animation:(?!none)/);
   const luminance = hex => {
     const rgb = hex.match(/../g).map(value => parseInt(value, 16) / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
     return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
   };
-  assert.equal(colors.length, oldStops.length);
-  colors.forEach((color, index) => {
-    assert.ok(luminance(color) < luminance(oldStops[index]), 'every stop is darker than the baseline');
-    assert.ok((luminance('F9E9C8') + .05) / (luminance(color) + .05) >= 4.5, 'label contrast throughout the sheen');
-  });
-  assert.match(css, /@media\(prefers-reduced-motion:no-preference\)\{\.schach-treff\.st-v2 \.st-rooms \.st-general-link\{animation:arenaStartPremiumShift 7s ease-in-out infinite alternate\}\}/);
-  assert.match(css, /@media\(prefers-reduced-motion:reduce\)\{\.schach-treff\.st-v2 \.st-rooms \.st-general-link\{animation:none;background-size:100% 100%\}\}/);
-  assert.doesNotMatch(css, /#B07A45/, 'no dark stop that made the letters look dull');
+  for (const rule of gradients) {
+    const gradient = rule.match(/linear-gradient\(([^)]+)\)/)[1];
+    for (const [, color] of gradient.matchAll(/#([0-9a-f]{6})/gi)) {
+      assert.ok((luminance('F9E9C8') + .05) / (luminance(color) + .05) >= 4.5, 'static button text contrast');
+    }
+  }
+  const titleRule = css.match(/\.schach-treff\.st-v2>header h1\{color:#D2B18A;([^}]+)\}/)[1];
+  assert.doesNotMatch(titleRule, /font-|margin|padding|position:|transform|letter-spacing|line-height/, 'title type and geometry stay unchanged');
+  for (const [, color] of titleRule.match(/linear-gradient\(([^)]+)\)/)[1].matchAll(/#([0-9a-f]{6})/gi)) {
+    assert.ok((luminance(color) + .05) / (luminance('0A0B0B') + .05) >= 4.5, 'even the dark title stops remain legible');
+  }
+  assert.match(css, /@media\(min-width:1024px\) and \(prefers-reduced-motion:no-preference\)\{\.schach-treff\.st-v2>header h1\{animation:st2TitleMetalShift 18s ease-in-out infinite alternate\}\}/);
+  assert.match(css, /@media\(min-width:1024px\) and \(prefers-reduced-motion:reduce\)\{\.schach-treff\.st-v2>header h1\{animation:none;background-size:100% 100%\}\}/);
   // 3. Block state: re-read on tab focus and after a refused send; every composer action is disabled.
   const stage2 = readFileSync(new URL('../src/components/schachTreff/v2/Stage2.tsx', import.meta.url), 'utf8');
   assert.match(stage2, /window\.addEventListener\('focus', reload\)/);

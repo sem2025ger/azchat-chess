@@ -304,13 +304,17 @@
 /* Rooms column: "General chat" is the main entry — larger, bronze-metallic, the Seek button's typeface. */
 .schach-treff.st-v2 .st-rooms .st-general-link{min-height:54px;margin-bottom:18px;padding:0 16px;font-family:inherit;font-size:17px;font-weight:600;letter-spacing:.01em}
 .schach-treff.st-v2 .st-rooms .st-general-link .st-general-label{flex:1 1 auto;min-width:0;color:#F9E9C8;text-shadow:0 1px 2px rgba(0,0,0,.7)}
-/* Dark graphite dominates the General chat sheen; bronze and teal remain subdued. */
-.schach-treff.st-v2 .st-rooms .st-general-link,.schach-treff.st-v2 .st-rooms .st-general-link[aria-current=page]{border-color:#9CB8B1;background:linear-gradient(110deg,#171b1f 0%,#352b22 17%,#71532d 33%,#242b2f 52%,#1b424a 70%,#1c2328 88%,#493923 100%) 0% 50%/240% 100%;box-shadow:inset 0 1px 0 rgba(255,244,215,.18),0 8px 19px rgba(0,0,0,.24)}
-.schach-treff.st-v2 .st-rooms .st-general-link:not([aria-current=page]){border-color:#5A606B}
-.schach-treff.st-v2 .st-rooms .st-general-link:hover{border-color:#E7CE93}
-@media(prefers-reduced-motion:no-preference){.schach-treff.st-v2 .st-rooms .st-general-link{animation:arenaStartPremiumShift 7s ease-in-out infinite alternate}}
-@keyframes arenaStartPremiumShift{from{background-position:0% 50%}to{background-position:100% 50%}}
-@media(prefers-reduced-motion:reduce){.schach-treff.st-v2 .st-rooms .st-general-link{animation:none;background-size:100% 100%}}
+/* General chat is static: dark graphite/bronze, with a distinct selected state. */
+.schach-treff.st-v2 .st-rooms .st-general-link{border-color:#514536;background:linear-gradient(110deg,#191d20 0%,#30271f 100%);box-shadow:inset 0 1px 0 rgba(255,244,215,.08);animation:none;transition:border-color .2s ease,box-shadow .2s ease}
+.schach-treff.st-v2 .st-rooms .st-general-link[aria-current=page]{border-color:#B8916A;background:linear-gradient(110deg,#202326 0%,#453322 100%);box-shadow:inset 0 1px 0 rgba(255,244,215,.12),0 0 0 1px rgba(184,145,106,.12)}
+.schach-treff.st-v2 .st-rooms .st-general-link:hover{border-color:#D4A373;box-shadow:inset 0 1px 0 rgba(255,244,215,.12),0 0 12px rgba(184,145,106,.1)}
+/* Only the desktop title's paint changes; its type and geometry remain intact. */
+@media(min-width:1024px){
+  .schach-treff.st-v2>header h1{color:#D2B18A;background:linear-gradient(110deg,#A28A70 0%,#C1A07A 28%,#D7BD92 48%,#AF9372 66%,#BCA17C 84%,#A28A70 100%) 0% 50%/220% 100%;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+}
+@media(min-width:1024px) and (prefers-reduced-motion:no-preference){.schach-treff.st-v2>header h1{animation:st2TitleMetalShift 18s ease-in-out infinite alternate}}
+@keyframes st2TitleMetalShift{from{background-position:0% 50%}to{background-position:100% 50%}}
+@media(min-width:1024px) and (prefers-reduced-motion:reduce){.schach-treff.st-v2>header h1{animation:none;background-size:100% 100%}}
 /* Blocked DM: challenge button visibly inactive. */
 .schach-treff .st-composer-challenge:disabled,.schach-treff.st-v2 .st2-position-trigger:disabled{opacity:.45;cursor:not-allowed}
 .schach-treff.st-v2 .st2-position-trigger:disabled::after{display:none}
