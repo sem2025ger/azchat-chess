@@ -15,7 +15,8 @@ test('Chessy is opt-in and reuses the authenticated existing AI Coach',()=>{
 });
 test('Chessy prompts never assert a prior move was bad without history',()=>{
  const localized=read('i18n/chessyCopy.ts');
- for(const code of ['en','de','ru','az','tr','uk'])assert.match(localized,new RegExp('(?:^|\\n) '+code+':\\{','m'));
+ for(const code of ['de','ru','az','tr','uk'])assert.match(localized,new RegExp('(?:^|\\n) '+code+':\\{','m'));
+ assert.match(localized,/export const chessyCopy=\{\s*en,/);
  assert.match(localized,/without history/);
  assert.match(localized,/без истории партии/);
  assert.match(localized,/только проверенные варианты/);
