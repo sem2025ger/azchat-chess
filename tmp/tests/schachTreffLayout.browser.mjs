@@ -118,7 +118,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
        })()`);
        assert.ok(paint && paint.start!==paint.end,'title paint moves');
        assert.deepEqual(paint.first,paint.second,'title geometry remains fixed during animation');
-       assert.ok(paint.font.includes('Bodoni Moda') && paint.size==='40px','approved title typography');
+       assert.ok(paint.font.includes('Bodoni Moda') && paint.size==='42.5px','approved 2.5rem title at the existing 17px root: '+JSON.stringify(paint));
        assert.equal(paint.duration,'18s');assert.equal(paint.linkAnimation,'none');
        await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
        assert.equal(await evaluate("getComputedStyle(document.querySelector('.schach-treff>header h1')).animationName"),'none');
