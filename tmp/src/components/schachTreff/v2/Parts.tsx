@@ -121,6 +121,7 @@ export function MembersPanel({ members, messages, me, onlineIds, onPlayer, onMes
 }) {
   const copy = useV2Copy();
   const copy2 = useV2Copy2();
+  const t = useSchachTreffCopy();
   const challenges = useChallengeControls();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(timer); }, []);
@@ -138,7 +139,7 @@ export function MembersPanel({ members, messages, me, onlineIds, onPlayer, onMes
       <span className="st2-seeking-kicker">{copy.seeking}</span>
       <div className="st2-seeking-action">
         <span><strong style={nameStyle(offer.created_by)}>{offerPlayer?.username ?? copy.seeking}</strong> · {offer.time_control}</span>
-        <button type="button" disabled={challenges?.busy} onClick={() => challenges?.act('accept', offer.id)}>{copy.challenge}</button>
+        <button type="button" disabled={challenges?.busy} onClick={() => challenges?.act('accept', offer.id)}>{t.accept}</button>
       </div>
     </div>}
     <p className="st2-members-label">{copy.onlineInChat}{onlineIds ? ` · ${sorted.filter(person => online.has(person.id)).length}` : ''}</p>
