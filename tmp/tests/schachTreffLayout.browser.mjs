@@ -103,7 +103,17 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await cdp('Emulation.setDeviceMetricsOverride',{width,height:width===375?844:900,deviceScaleFactor:1,mobile:width===375});
      await cdp('Page.navigate',{url:fixtureUrl});
      await wait("document.querySelector('.st-messages .st-name') && document.querySelector('.st-challenge-icon')");
+     assert.equal(await evaluate("Boolean(document.querySelector('.schach-treff>header>.st2-feedback'))"),false);
+     assert.equal(await evaluate("document.querySelector('.st-menu nav').hidden"),true);
+     await evaluate("document.querySelector('.st-menu>button').click()");
+     await wait("!document.querySelector('.st-menu nav').hidden");
+     await evaluate("document.querySelector('.st-menu .st2-feedback').click()");
+     await wait("document.querySelector('.st2-feedback-dialog[open] textarea')");
+     await evaluate("document.querySelector('.st2-feedback-dialog .st2-icon-button').click()");
+     await wait("!document.querySelector('.st2-feedback-dialog[open]')");
+     await evaluate("document.querySelector('.st-menu>button').click()");
      if (width>=1024) {
+       assert.equal(await evaluate("getComputedStyle(document.querySelector('.st2-side:not(.st2-thread)>.st2-side-title')).color"),'rgb(195, 161, 122)');
        const paint=await evaluate(`(()=>{
          const title=document.querySelector('.schach-treff>header h1'),link=document.querySelector('.st-general-link');
          const animation=title.getAnimations().find(a=>a.animationName==='st2TitleMetalShift');

@@ -260,8 +260,8 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     : messages;
   return <section className={v2Enabled ? 'schach-treff st-v2' : 'schach-treff'} lang={language==="ua"?"uk":language} data-schach-treff-desktop>
     <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member} finished={finishedChallenges}>
-    <header><h1>{t.title}</h1>{import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Link className="st-region-entry" to="/region/nrw" aria-label={regional('NRW-Regionalübersicht öffnen')}>NRW ↗</Link>}{v2Enabled && <FeedbackButton />}<div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
-      {menu && <nav aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}</nav>}
+    <header><h1>{t.title}</h1>{import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Link className="st-region-entry" to="/region/nrw" aria-label={regional('NRW-Regionalübersicht öffnen')}>NRW ↗</Link>}<div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
+      {(v2Enabled || menu) && <nav hidden={!menu} aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}{v2Enabled && <FeedbackButton />}</nav>}
     </div></header>
     {error && (v2Enabled ? <Toast message={error} closeLabel={t.close} onClose={() => setError('')} /> : <p role="alert">{error}</p>)}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :

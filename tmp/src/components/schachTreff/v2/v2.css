@@ -310,7 +310,7 @@
 .schach-treff.st-v2 .st-rooms .st-general-link:hover{border-color:#D4A373;box-shadow:inset 0 1px 0 rgba(255,244,215,.12),0 0 12px rgba(184,145,106,.1)}
 /* Only the desktop title's paint changes; its type and geometry remain intact. */
 @media(min-width:1024px){
-  .schach-treff.st-v2>header h1{color:#D2B18A;background:linear-gradient(110deg,#C9A77D 0%,#C9A77D 33%,#D7BD92 42%,#A18B6A 46%,#7E7C73 49%,#7E7C73 53%,#A18B6A 57%,#D7BD92 62%,#C9A77D 72%,#C9A77D 100%) 0% 50%/200% 100%;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .schach-treff.st-v2>header h1{color:#D2B18A;background:linear-gradient(110deg,#D1AF84 0%,#D1AF84 33%,#E3C99B 42%,#A18B6A 46%,#7D7B72 48.7%,#7D7B72 53.3%,#A18B6A 57%,#E3C99B 62%,#D1AF84 72%,#D1AF84 100%) 0% 50%/200% 100%;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 }
 @media(min-width:1024px) and (prefers-reduced-motion:no-preference){.schach-treff.st-v2>header h1{animation:st2TitleMetalShift 12s linear infinite alternate}}
 @keyframes st2TitleMetalShift{from{background-position:0% 50%}to{background-position:100% 50%}}
@@ -377,3 +377,10 @@
 @media(max-width:480px){.schach-treff.st-v2 dialog.st2-player-dialog{padding:18px}.schach-treff.st-v2 .st-player-actions>button,.schach-treff.st-v2 .st-player-actions>a{flex-basis:100%}}
 
 .schach-treff.st-v2 .st-player-separator{display:none}
+
+/* Feedback lives in the existing header menu; only the members heading gets bronze. */
+.schach-treff.st-v2 .st-menu nav{width:260px;max-width:calc(100vw - 32px);box-sizing:border-box}
+.schach-treff.st-v2 .st-menu nav[hidden]{display:none}
+.schach-treff.st-v2 .st-menu nav .st2-feedback{justify-content:flex-start;gap:8px;margin:6px 0 0;padding:12px;border:0;border-top:1px solid var(--st2-line);border-radius:0;background:transparent;color:#C3A17A;text-align:left;white-space:normal;line-height:1.45}
+.schach-treff.st-v2 .st-menu nav .st2-feedback svg{flex:none}
+.schach-treff.st-v2 .st2-side:not(.st2-thread)>.st2-side-title{color:#C3A17A}

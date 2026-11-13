@@ -112,6 +112,8 @@ test('flag off keeps the existing Schach-Treff markup paths', () => {
   assert.match(source, /className=\{v2Enabled \? 'schach-treff st-v2' : 'schach-treff'\}/);
   assert.match(source, /\{v2Enabled \? \(dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} disabled=\{iBlocked\} \/> : isClub && hideRooms \? <SeekButton \/> : null\) : <ChallengeButton composer \/>\}/);
   assert.match(source, /\{v2Enabled && <FeedbackButton \/>\}/);
+  assert.match(source, /\{\(v2Enabled \|\| menu\) && <nav hidden=\{!menu\}/, 'feedback stays mounted in the collapsed header menu');
+  assert.doesNotMatch(source, /<FeedbackButton \/>\}<div className="st-menu"/, 'no standalone feedback pill in the header');
   assert.match(source, /\(isClub \|\| hasChatActions \|\| v2Enabled\)/);
   assert.match(source, /\{v2Enabled && !isClub && <div className="st2-general-heading">/);
   assert.match(source, /let threaded = v2Enabled;/);
@@ -407,7 +409,10 @@ test('owner 13 Nov: feed headline is the motto, bronze "General chat" link, bloc
   }
   const titleColors = [...titleRule.match(/linear-gradient\(([^)]+)\)/)[1].matchAll(/#([0-9a-f]{6})/gi)].map(match => luminance(match[1]));
   assert.ok((Math.max(...titleColors) + .05) / (Math.min(...titleColors) + .05) >= 2, 'a distinct dark metallic band, rather than uniformly muted gold');
-  assert.match(titleRule, /#7E7C73 49%,#7E7C73 53%/, 'a bounded graphite reflection inside the bronze lettering');
+  assert.match(titleRule, /#7D7B72 48\.7%,#7D7B72 53\.3%/, 'dark band is 15% wider than the previous 4%');
+  const previousContrast = (luminance('D7BD92') + .05) / (luminance('7E7C73') + .05);
+  const currentContrast = (Math.max(...titleColors) + .05) / (Math.min(...titleColors) + .05);
+  assert.ok(currentContrast / previousContrast >= 1.14 && currentContrast / previousContrast <= 1.16, 'about 15% stronger metallic contrast');
   assert.match(css, /@media\(min-width:1024px\) and \(prefers-reduced-motion:no-preference\)\{\.schach-treff\.st-v2>header h1\{animation:st2TitleMetalShift 12s linear infinite alternate\}\}/);
   assert.match(css, /@media\(min-width:1024px\) and \(prefers-reduced-motion:reduce\)\{\.schach-treff\.st-v2>header h1\{animation:none;background-size:100% 100%\}\}/);
   // 3. Block state: re-read on tab focus and after a refused send; every composer action is disabled.
