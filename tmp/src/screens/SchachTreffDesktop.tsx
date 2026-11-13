@@ -70,11 +70,11 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const [viewing, setViewing] = useState<ChatGameResult | null>(null);
   const copy1 = useV2Copy();
   const copy2 = useV2Copy2();
-  const [onlineCount, setOnlineCount] = useState<number | null>(null);
+  const [onlineIds, setOnlineIds] = useState<string[] | null>(null);
   // Supabase Presence counts actual connected participant IDs; never show a hard-coded online total.
   useEffect(() => {
     if (!v2Enabled || !clubId || !user?.id || !member) {
-      setOnlineCount(null);
+      setOnlineIds(null);
       return;
     }
     let live = true;
@@ -82,15 +82,15 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
       config: { presence: { key: user.id } },
     });
     channel.on('presence', { event: 'sync' }, () => {
-      if (live) setOnlineCount(Object.keys(channel.presenceState()).length);
+      if (live) setOnlineIds(Object.keys(channel.presenceState()));
     }).subscribe(status => {
       if (!live) return;
       if (status === 'SUBSCRIBED') {
         void channel.track({ joinedAt: Date.now() }).then(result => {
-          if (live && result !== 'ok') setOnlineCount(null);
-        }).catch(() => { if (live) setOnlineCount(null); });
+          if (live && result !== 'ok') setOnlineIds(null);
+        }).catch(() => { if (live) setOnlineIds(null); });
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        setOnlineCount(null);
+        setOnlineIds(null);
       }
     });
     return () => {
@@ -238,6 +238,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   if (missing) return null;
   const hasChatActions = canPin || (moderationEnabled && (moderator || privateAdmin));
   const members = profiles.filter(p => roster.includes(p.id));
+  const onlineCount = onlineIds?.length ?? null;
   const v2 = v2Enabled && v2Data ? {
     summary: summarizeReactions(v2Data.reactions, user?.id), replies: v2Data.replyCounts, reactions: v2Data.reactionsAvailable,
     toggle: (id: string, reaction: Reaction, mine: boolean) => void toggleReaction(id, reaction, mine), openThread: setThread,
@@ -258,7 +259,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     </div></header>
     {error && <p role="alert">{error}</p>}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
-    <div className={hideRooms && v2Enabled ? 'st-columns st2-no-rooms' : 'st-columns'}>{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} />{v2Enabled && <DirectList currentClubId={clubId} />}</aside>}
+    <div className={hideRooms && v2Enabled ? 'st-columns st2-no-rooms' : 'st-columns'}>{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} heading={v2Enabled ? copy1.myClubs : undefined} />{v2Enabled && <DirectList currentClubId={clubId} />}</aside>}
       <section className="st-surface st-chat">
         {(isClub || hasChatActions || v2Enabled) && <div className="st-chat-header">
           {v2Enabled && !isClub && <div className="st2-general-heading">
@@ -266,9 +267,9 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
             <span className="st2-general-subtitle">{copy1.subtitle}</span>
           </div>}
           {v2Enabled && !isClub && <div className="st2-chat-meta">
-            {onlineCount !== null && <span className="st2-online" aria-label={`${onlineCount} ${copy1.onlineNow}`}>
-              <span className="st2-online-dot" aria-hidden="true" /><strong>{onlineCount}</strong> {copy1.onlineNow}
-            </span>}
+            <span className="st2-online" aria-label={onlineCount === null ? copy1.onlineNow : `${onlineCount} ${copy1.onlineNow}`} aria-live="polite">
+              <span className="st2-online-dot" aria-hidden="true" /><strong>{onlineCount ?? '—'}</strong> {copy1.onlineNow}
+            </span>
             <SeekButton />
           </div>}
           {isClub && <>
@@ -328,7 +329,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         ? <ThreadPanel key={thread.id} clubId={clubId} root={thread} people={profiles} onClose={() => setThread(null)} onChanged={() => void refresh()}
             revision={threadRevision} rootFen={v2.fens.get(thread.id)} scrollToEnd={threadScroll} onScrolled={threadScrolled}
             renderPosition={fen => <PositionMessage fen={fen} size={200} onReply={() => setComposer({ fen, root: thread })} />} />
-        : <MembersPanel members={members} messages={messages} me={user?.id} onPlayer={setPlayer}
+        : <MembersPanel members={members} messages={messages} me={user?.id} onlineIds={onlineIds} onPlayer={setPlayer}
             onMessage={direct.available ? person => void dmOpen.open(person.id) : undefined} />)}
       {v2Enabled && composer && <PositionDialog initialFen={composer.fen} reply={Boolean(composer.root)} onSend={sendPosition} onClose={() => setComposer(null)} />}
       {v2Enabled && viewing && <GameViewer game={viewing} onClose={() => setViewing(null)} />}
