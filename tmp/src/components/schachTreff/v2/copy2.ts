@@ -38,7 +38,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     replyWithPosition: 'Mit Stellung antworten', openInAnalysis: 'In der Analyse öffnen', sideToMove: white => white ? 'Weiß am Zug' : 'Schwarz am Zug',
     gamePlayed: 'Partie gespielt', watchGame: 'Partie ansehen', moves: n => `${n} ${n === 1 ? 'Zug' : 'Züge'}`, viewer: 'Partie',
     first: 'Zum Anfang', previous: 'Zurück', next: 'Weiter', last: 'Zum Ende', whiteWins: 'Weiß gewinnt', blackWins: 'Schwarz gewinnt', draw: 'Remis',
-    noMoves: 'Für diese Partie sind keine Züge gespeichert.',
+    noMoves: 'In dieser Partie wurde kein Zug gespielt.',
   },
   en: {
     bullet: 'Bullet',
@@ -55,7 +55,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     replyWithPosition: 'Reply with a position', openInAnalysis: 'Open in analysis', sideToMove: white => white ? 'White to move' : 'Black to move',
     gamePlayed: 'game played', watchGame: 'Watch game', moves: n => `${n} ${n === 1 ? 'move' : 'moves'}`, viewer: 'Game',
     first: 'First move', previous: 'Back', next: 'Forward', last: 'Last move', whiteWins: 'White wins', blackWins: 'Black wins', draw: 'Draw',
-    noMoves: 'No moves are stored for this game.',
+    noMoves: 'No moves were played in this game.',
   },
   ru: {
     bullet: 'Пуля',
@@ -72,7 +72,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     replyWithPosition: 'Ответить позицией', openInAnalysis: 'Открыть в анализе', sideToMove: white => white ? 'Ход белых' : 'Ход чёрных',
     gamePlayed: 'партия сыграна', watchGame: 'Смотреть партию', moves: slavic('ход', 'хода', 'ходов'), viewer: 'Партия',
     first: 'В начало', previous: 'Назад', next: 'Вперёд', last: 'В конец', whiteWins: 'Победа белых', blackWins: 'Победа чёрных', draw: 'Ничья',
-    noMoves: 'Ходы этой партии не сохранены.',
+    noMoves: 'В этой партии не было сделано ни одного хода.',
   },
   ua: {
     bullet: 'Куля',
@@ -89,7 +89,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     replyWithPosition: 'Відповісти позицією', openInAnalysis: 'Відкрити в аналізі', sideToMove: white => white ? 'Хід білих' : 'Хід чорних',
     gamePlayed: 'партію зіграно', watchGame: 'Дивитися партію', moves: slavic('хід', 'ходи', 'ходів'), viewer: 'Партія',
     first: 'На початок', previous: 'Назад', next: 'Вперед', last: 'В кінець', whiteWins: 'Перемога білих', blackWins: 'Перемога чорних', draw: 'Нічия',
-    noMoves: 'Ходи цієї партії не збережено.',
+    noMoves: 'У цій партії не було зроблено жодного ходу.',
   },
   az: {
     bullet: 'Bullet',
@@ -106,7 +106,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     replyWithPosition: 'Mövqe ilə cavab ver', openInAnalysis: 'Analizdə aç', sideToMove: white => white ? 'Ağların gedişi' : 'Qaraların gedişi',
     gamePlayed: 'partiya oynanıldı', watchGame: 'Partiyaya bax', moves: n => `${n} gediş`, viewer: 'Partiya',
     first: 'Əvvələ', previous: 'Geri', next: 'İrəli', last: 'Sona', whiteWins: 'Ağlar qalib', blackWins: 'Qaralar qalib', draw: 'Heç-heçə',
-    noMoves: 'Bu partiyanın gedişləri saxlanılmayıb.',
+    noMoves: 'Bu partiyada heç bir gediş edilməyib.',
   },
   tr: {
     bullet: 'Bullet',
@@ -123,7 +123,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     replyWithPosition: 'Pozisyonla yanıtla', openInAnalysis: 'Analizde aç', sideToMove: white => white ? 'Hamle beyazda' : 'Hamle siyahta',
     gamePlayed: 'oyun oynandı', watchGame: 'Oyunu izle', moves: n => `${n} hamle`, viewer: 'Oyun',
     first: 'Başa', previous: 'Geri', next: 'İleri', last: 'Sona', whiteWins: 'Beyaz kazandı', blackWins: 'Siyah kazandı', draw: 'Berabere',
-    noMoves: 'Bu oyunun hamleleri kaydedilmedi.',
+    noMoves: 'Bu oyunda hiç hamle yapılmadı.',
   },
 };
 

@@ -9,6 +9,8 @@
   .schach-treff.st-v2 .st-chat-header h2{font-family:'Bodoni Moda',Georgia,serif;font-size:24px;font-weight:600;color:#EDE6D8;letter-spacing:.01em}
   /* index.css sizes the app sidebar with "#root aside" (260px); keep that rule off the chat's own columns. */
   #root .schach-treff.st-v2 aside{width:auto;min-width:0;max-width:none}
+  /* Same for index.css "aside [role=img]" (sidebar logo spacing): it stretched unread badges and chat boards. */
+  #root .schach-treff.st-v2 aside [role=img]{margin-top:0!important;min-height:0!important}
   /* One screen: all three columns share the chat height and scroll on their own, so the page itself does not scroll. */
   .schach-treff.st-v2 .st-columns>.st-rooms{height:calc(100dvh - 190px);min-height:440px;box-sizing:border-box;overflow-y:auto}
   /* At the end of the feed the wheel may continue to the page (no scroll trap on short windows). */

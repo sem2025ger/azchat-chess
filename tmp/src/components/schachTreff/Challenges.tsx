@@ -7,9 +7,11 @@ import { useSchachTreffCopy } from './copy';
 import { ROOM_ID, gamePath, ownStartedGame } from './challengeRouting';
 type Person = { id: string; username: string };
 type Challenge = { id: string; message_id: string; created_by: string; target_user_id: string | null; time_control: string; status: string; expires_at: string; room_id: string | null; accepted_by?: string | null };
-type Controls = { now: number; available: boolean; me: string; rows: Challenge[]; people: Person[]; busy: boolean; open: (target?: string) => void; act: (action: 'accept' | 'cancel', id: string) => void; seek: (time: string) => Promise<boolean>; openOffers: number };
+type Controls = { now: number; available: boolean; me: string; rows: Challenge[]; people: Person[]; busy: boolean; open: (target?: string) => void; act: (action: 'accept' | 'cancel', id: string) => void; seek: (time: string) => Promise<boolean>; openOffers: number; finished: ReadonlySet<string> };
 const Context = createContext<Controls | null>(null);
-export function ChallengeProvider({ clubId, me, people, enabled, children }: { clubId: string | null; me: string; people: Person[]; enabled: boolean; children: ReactNode }) {
+const NONE: ReadonlySet<string> = new Set();
+/** finished: challenge ids whose game already has a result card (no "Open game" link for a game that is over). */
+export function ChallengeProvider({ clubId, me, people, enabled, finished = NONE, children }: { clubId: string | null; me: string; people: Person[]; enabled: boolean; finished?: ReadonlySet<string>; children: ReactNode }) {
   const t=useSchachTreffCopy();
   const { socket, isConnected } = useSocket(), navigate = useNavigate();
   const [now,setNow]=useState(() => Date.now());
@@ -74,7 +76,7 @@ export function ChallengeProvider({ clubId, me, people, enabled, children }: { c
   }
   const controls: Controls={ now,available:available && isConnected,me,rows,people,busy,open(id) { setTarget(id ?? ''); setPersonal(Boolean(id)); setError(''); setShown(true); },act(action,id) { void request(action,{challengeId:id}); },
     seek: time => request('create',{clubId,timeControl:time,targetUserId:null}),
-    openOffers: rows.filter(row => row.created_by===me && row.status==='open' && Date.parse(row.expires_at)>now).length };
+    openOffers: rows.filter(row => row.created_by===me && row.status==='open' && Date.parse(row.expires_at)>now).length, finished };
   return <Context.Provider value={controls}>{children}{error && <p role="alert">{error}</p>}
     <dialog aria-label={t.challenge} ref={dialog} onCancel={() => setShown(false)} onClose={() => setShown(false)}>
       <h2>{t.challenge}</h2><form onSubmit={event => { event.preventDefault(); void request('create',{clubId,timeControl:time,targetUserId:personal ? target : null}); }}>
@@ -110,14 +112,14 @@ export function useChallengeMessageIds(): ReadonlySet<string> {
 export function ChallengeMessage({ messageId,body }: { messageId: string; body: string }) {
   const context=useContext(Context), row=context?.rows.find(item => item.message_id===messageId);
   if (!context || !row) return <p>{body}</p>;
-  return <ChallengeCard now={context.now} row={row} me={context.me} people={context.people} busy={context.busy} act={context.act} />;
+  return <ChallengeCard now={context.now} row={row} me={context.me} people={context.people} busy={context.busy} act={context.act} finished={context.finished.has(row.id)} />;
 }
-export function ChallengeCard({now,row,me,people,busy,act}: {now: number; row: Challenge; me: string; people: Person[]; busy: boolean; act: Controls['act']}) {
+export function ChallengeCard({now,row,me,people,busy,act,finished=false}: {now: number; row: Challenge; me: string; people: Person[]; busy: boolean; act: Controls['act']; finished?: boolean}) {
   const t=useSchachTreffCopy();
   const expired=row.status==='expired' || (row.status==='open' && Date.parse(row.expires_at)<=now);
   const name=(id: string) => people.find(person => person.id===id)?.username ?? t.targetPlayer;
   return <div className="st-challenge-card"><small>{row.target_user_id ? t.personalChallenge : t.openOffer}</small>
     <p>{t.game} <span className="st-mono">{row.time_control}</span></p><p>{name(row.created_by)}{row.target_user_id ? ` → ${name(row.target_user_id)}` : ''}</p>
-    {expired ? <p>{t.expired}</p> : row.status==='cancelled' ? <p>{t.cancelled}</p> : row.status==='accepted' ? <><p>{row.room_id ? t.gameStarted : t.gameStarting}</p>{row.room_id && ROOM_ID.test(row.room_id) && (row.created_by===me || row.accepted_by===me) && <Link className="st-challenge-open" to={gamePath(row.room_id)}>{t.openGame}</Link>}</> : row.created_by===me ? <><p>{t.waitingOpponent}</p><button disabled={busy} onClick={() => act('cancel',row.id)}>{t.cancel}</button></> : (!row.target_user_id || row.target_user_id===me) && <button disabled={busy} onClick={() => act('accept',row.id)}>{t.accept}</button>}
+    {expired ? <p>{t.expired}</p> : row.status==='cancelled' ? <p>{t.cancelled}</p> : row.status==='accepted' ? <><p>{finished ? t.gameFinished : row.room_id ? t.gameStarted : t.gameStarting}</p>{!finished && row.room_id && ROOM_ID.test(row.room_id) && (row.created_by===me || row.accepted_by===me) && <Link className="st-challenge-open" to={gamePath(row.room_id)}>{t.openGame}</Link>}</> : row.created_by===me ? <><p>{t.waitingOpponent}</p><button disabled={busy} onClick={() => act('cancel',row.id)}>{t.cancel}</button></> : (!row.target_user_id || row.target_user_id===me) && <button disabled={busy} onClick={() => act('accept',row.id)}>{t.accept}</button>}
   </div>;
 }

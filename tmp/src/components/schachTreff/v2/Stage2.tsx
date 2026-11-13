@@ -204,7 +204,7 @@ export function GameViewer({ game, onClose }: { game: ChatGameResult; onClose: (
       </h2>
       <button type="button" className="st2-icon-button" aria-label={t.close} onClick={onClose}><X size={18} aria-hidden="true" /></button>
     </div>
-    {!parsed ? <p>{copy.noMoves}</p> : <div className="st2-viewer-body">
+    {!parsed?.moveHistory.length ? <p>{copy.noMoves}</p> : <div className="st2-viewer-body">
       <div className="st2-viewer-board">
         <MiniBoard fen={fen} label={`${copy.viewer}: ${ply}/${last}`} size={320} />
         <div className="st2-viewer-nav" role="group" aria-label={copy.viewer}>

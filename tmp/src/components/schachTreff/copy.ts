@@ -36,7 +36,7 @@ export const copy = {
   openChallenge: 'Offen für alle', personalChallenge: 'Persönliche Herausforderung', openOffer: 'Offene Herausforderung',
   targetPlayer: 'Bestimmter Spieler', choosePlayer: 'Spieler auswählen', timeControl: 'Bedenkzeit',
   sendChallenge: 'Herausforderung senden', game: 'Partie', accept: 'Annehmen', expired: 'Abgelaufen', cancelled: 'Abgebrochen',
-  waitingOpponent: 'Wartet auf Gegner', gameStarting: 'Partie startet …', gameStarted: 'Partie gestartet', openGame: 'Zur Partie',
+  waitingOpponent: 'Wartet auf Gegner', gameStarting: 'Partie startet …', gameStarted: 'Partie gestartet', gameFinished: 'Partie beendet', openGame: 'Zur Partie',
   games: 'Partien', lastGames: 'Letzte Partien', noGames: 'Noch keine abgeschlossenen Partien.',
   challengeErrors: {
     not_allowed: 'Diese Aktion ist nicht erlaubt.', not_member: 'Beide Spieler müssen Mitglieder des Raums sein.',

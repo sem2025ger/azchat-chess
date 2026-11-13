@@ -329,3 +329,20 @@ test('challenge card links both players to the started game; composer position b
   const screen = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   assert.match(screen, /dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} \/> : isClub \? <SeekButton \/> : null/, 'club rooms keep a way to seek an opponent');
 });
+
+test('finished challenge games: no "Open game" link, card says the game is over; unread badges are not stretched', () => {
+  const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
+  assert.match(challenges, /<p>\{finished \? t\.gameFinished : row\.room_id \? t\.gameStarted : t\.gameStarting\}<\/p>\{!finished && row\.room_id/);
+  assert.match(challenges, /finished=\{context\.finished\.has\(row\.id\)\}/);
+  const screen = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
+  assert.match(screen, /const finishedChallenges = new Set\(v2Data\?\.results\.map\(result => result\.challenge_id\) \?\? \[\]\);/);
+  assert.match(screen, /enabled=\{member\} finished=\{finishedChallenges\}>/);
+  const i18n = readFileSync(new URL('../src/components/schachTreff/i18n.ts', import.meta.url), 'utf8');
+  assert.match(i18n, /"Partie beendet": \{\n    "de": "Partie beendet",\n    "en": "Game over",[\s\S]*?"ru": "Партия завершена"/);
+  const index = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+  assert.match(index, /aside \[role=img\]\{margin-top:10px!important;min-height:52px!important\}/, 'the global rule this override neutralises');
+  const css = readFileSync(new URL('../src/components/schachTreff/v2/v2.css', import.meta.url), 'utf8');
+  assert.match(css, /#root \.schach-treff\.st-v2 aside \[role=img\]\{margin-top:0!important;min-height:0!important\}/);
+  const stage2 = readFileSync(new URL('../src/components/schachTreff/v2/Stage2.tsx', import.meta.url), 'utf8');
+  assert.match(stage2, /\{!parsed\?\.moveHistory\.length \? <p>\{copy\.noMoves\}<\/p>/, 'a game resigned before the first move is not reported as "not saved"');
+});
