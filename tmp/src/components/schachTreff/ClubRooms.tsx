@@ -41,7 +41,7 @@ export default function ClubRooms({ currentClubId, heading }: { currentClubId: s
     finally { setBusy(false); }
   }
   if (!user || (!available && !error)) return null;
-  return <div className="st-room-list">{available && <h2 className="st-club-heading"><LockKeyhole size={16} aria-hidden="true" />{heading ?? t.clubs}</h2>{rooms.map(room => <a key={room.id} href={'/chat?club='+room.id} aria-current={currentClubId===room.id ? 'page' : undefined}>{roomDisplayLabel(room,rooms)}{moderationEnabled && <UnreadBadge clubId={room.id} />}</a>)}
+  return <div className="st-room-list">{available && <h2 className="st-club-heading"><LockKeyhole size={16} aria-hidden="true" />{heading ?? t.clubs}</h2>}{rooms.map(room => <a key={room.id} href={'/chat?club='+room.id} aria-current={currentClubId===room.id ? 'page' : undefined}>{roomDisplayLabel(room,rooms)}{moderationEnabled && <UnreadBadge clubId={room.id} />}</a>)}
     {available && rooms.length === 0 && <p className="st-club-empty">{t.clubEmpty}</p>}
     {available && <button type="button" className="st-create-room" onClick={() => setForm(!form)}>{t.createClub}</button>}
     {form && <form onSubmit={event => { event.preventDefault(); void create(); }}><label>{t.clubName}<input value={name} onChange={event => setName(event.target.value)} minLength={3} maxLength={60} required /></label><button disabled={busy}>{t.createRoom}</button><button type="button" onClick={() => setForm(false)}>{t.cancel}</button></form>}
