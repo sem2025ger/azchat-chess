@@ -65,6 +65,8 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   // One position composer: a new position (root null) or a reply that continues the position of a thread root.
   const [composer, setComposer] = useState<{ fen: string; root: ClubMessage | null } | null>(null);
   const [threadRevision, setThreadRevision] = useState(0);
+  const [threadScroll, setThreadScroll] = useState(false);
+  const threadScrolled = useCallback(() => setThreadScroll(false), []);
   const [viewing, setViewing] = useState<ChatGameResult | null>(null);
   const copy1 = useV2Copy();
   const copy2 = useV2Copy2();
@@ -197,7 +199,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     const root = composer.root;
     const sent = await perform(() => supabase.from('chess_club_messages').insert({ club_id: clubId, author_id: user.id, body, fen, ...(root ? { parent_id: root.id } : {}) }));
     // A reply lives in the thread of the original position: show it there.
-    if (sent && root) { setThread(root); setThreadRevision(value => value + 1); }
+    if (sent && root) { setThread(root); setThreadRevision(value => value + 1); setThreadScroll(true); }
     return sent;
   }
   function stamp(value: string) {
@@ -287,7 +289,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
       </section>
       {v2Enabled && (thread && v2?.reactions
         ? <ThreadPanel key={thread.id} clubId={clubId} root={thread} people={profiles} onClose={() => setThread(null)} onChanged={() => void refresh()}
-            revision={threadRevision} rootFen={v2.fens.get(thread.id)}
+            revision={threadRevision} rootFen={v2.fens.get(thread.id)} scrollToEnd={threadScroll} onScrolled={threadScrolled}
             renderPosition={fen => <PositionMessage fen={fen} size={200} onReply={() => setComposer({ fen, root: thread })} />} />
         : <MembersPanel members={members} messages={messages} me={user?.id} onPlayer={setPlayer}
             onMessage={direct.available ? person => void dmOpen.open(person.id) : undefined} />)}

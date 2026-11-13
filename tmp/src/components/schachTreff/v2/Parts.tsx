@@ -113,11 +113,13 @@ export function MembersPanel({ members, messages, me, onPlayer, onMessage }: {
 }
 
 type Reply = { id: string; author_id: string; body: string | null; created_at: string; deleted_at?: string | null; fen?: string | null };
-export function ThreadPanel({ clubId, root, people, onClose, onChanged, revision = 0, rootFen, renderPosition }: {
+export function ThreadPanel({ clubId, root, people, onClose, onChanged, revision = 0, rootFen, renderPosition, scrollToEnd = false, onScrolled }: {
   clubId: string; root: { id: string; author_id: string; body: string | null };
   people: Person[]; onClose: () => void; onChanged: () => void;
   /** Stage 2: bump to reload after a position reply; positions of the root and replies are drawn by renderPosition. */
   revision?: number; rootFen?: string; renderPosition?: (fen: string) => ReactNode;
+  /** After the next load, scroll the panel to the newest reply (set by the parent after sending a position reply). */
+  scrollToEnd?: boolean; onScrolled?: () => void;
 }) {
   const copy = useV2Copy();
   const t = useSchachTreffCopy();
@@ -128,6 +130,8 @@ export function ThreadPanel({ clubId, root, people, onClose, onChanged, revision
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const version = useRef(0);
+  const panel = useRef<HTMLElement>(null);
+  const justLoaded = useRef(false);
   async function load() {
     const current = ++version.current;
     const select = (columns: string) => supabase.from('chess_club_messages').select(columns)
@@ -139,6 +143,7 @@ export function ThreadPanel({ clubId, root, people, onClose, onChanged, revision
     if (current !== version.current) return;
     if (result.error) { setError(t.error); return; }
     const rows = (result.data ?? []) as unknown as Reply[];
+    justLoaded.current = true;
     setReplies(rows); setError('');
     const missing = [...new Set(rows.map(row => row.author_id))].filter(id => !people.some(person => person.id === id));
     if (missing.length) {
@@ -152,6 +157,13 @@ export function ThreadPanel({ clubId, root, people, onClose, onChanged, revision
     return () => { version.current++; window.clearInterval(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubId, root.id, revision]);
+  useEffect(() => {
+    if (!justLoaded.current) return;
+    justLoaded.current = false;
+    if (!scrollToEnd || !panel.current) return;
+    panel.current.scrollTop = panel.current.scrollHeight;
+    onScrolled?.();
+  }, [replies, scrollToEnd, onScrolled]);
   const name = (id: string) => people.find(person => person.id === id)?.username ?? names[id] ?? '…';
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -163,7 +175,7 @@ export function ThreadPanel({ clubId, root, people, onClose, onChanged, revision
     if (result.error) { setError(t.error); return; }
     setBody(''); await load(); onChanged();
   }
-  return <aside className="st-surface st2-side st2-thread" aria-label={copy.thread}>
+  return <aside ref={panel} className="st-surface st2-side st2-thread" aria-label={copy.thread}>
     <div className="st2-thread-head">
       <h2 className="st2-side-title">{copy.thread}</h2>
       <button type="button" className="st2-icon-button" aria-label={copy.closeThread} onClick={onClose}><X size={18} aria-hidden="true" /></button>

@@ -231,10 +231,30 @@ test('one position composer: new position keeps FEN and analysis import; reply s
 test('position replies are stored as thread replies of the original message and shown in its thread', () => {
   const source = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   assert.match(source, /insert\(\{ club_id: clubId, author_id: user\.id, body, fen, \.\.\.\(root \? \{ parent_id: root\.id \} : \{\}\) \}\)/);
-  assert.match(source, /if \(sent && root\) \{ setThread\(root\); setThreadRevision\(value => value \+ 1\); \}/);
+  assert.match(source, /if \(sent && root\) \{ setThread\(root\); setThreadRevision\(value => value \+ 1\); setThreadScroll\(true\); \}/);
   assert.match(source, /onReply=\{fen => v2\.replyPosition\(message, fen\)\}/);
   assert.match(source, /onReply=\{\(\) => setComposer\(\{ fen, root: thread \}\)\}/, 'replies inside a thread keep the thread root as parent');
   assert.equal((source.match(/<PositionDialog /g) ?? []).length, 1, 'a single composer');
   const parts = readFileSync(new URL('../src/components/schachTreff/v2/Parts.tsx', import.meta.url), 'utf8');
   assert.match(parts, /if \(renderPosition && result\.error && isMissingSchema\(result\.error\.code\)\) result = await select\(columns\);/);
+});
+
+test('desktop layout fits one screen: chat columns are not resized by the app sidebar rule and scroll on their own', () => {
+  const css = readFileSync(new URL('../src/components/schachTreff/v2/v2.css', import.meta.url), 'utf8');
+  const sidebar = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+  assert.match(sidebar, /#root aside \{width:2[46]0px;min-width:2[46]0px;max-width:2[46]0px;\}/, 'the global sidebar rule this override neutralises');
+  assert.match(css, /#root \.schach-treff\.st-v2 aside\{width:auto;min-width:0;max-width:none\}/);
+  assert.match(css, /\.schach-treff\.st-v2 \.st-columns>\.st-rooms\{height:calc\(100dvh - 190px\);min-height:440px;box-sizing:border-box;overflow-y:auto\}/);
+  assert.match(css, /\.schach-treff\.st-v2 \.st-messages\{overscroll-behavior-y:auto\}/);
+  assert.match(css, /\.st2-thread \.st2-position\{[^}]*width:240px;max-width:100%;[^}]*border:0/);
+  assert.match(css, /\.st2-thread \.st2-board\{width:100%!important;height:auto!important;aspect-ratio:1\}/);
+});
+
+test('thread scrolls to the newest reply once after a position reply', () => {
+  const parts = readFileSync(new URL('../src/components/schachTreff/v2/Parts.tsx', import.meta.url), 'utf8');
+  assert.match(parts, /if \(!scrollToEnd \|\| !panel\.current\) return;\n\s*panel\.current\.scrollTop = panel\.current\.scrollHeight;\n\s*onScrolled\?\.\(\);/);
+  assert.match(parts, /<aside ref=\{panel\} className="st-surface st2-side st2-thread"/);
+  const screen = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
+  assert.match(screen, /setThreadRevision\(value => value \+ 1\); setThreadScroll\(true\);/);
+  assert.match(screen, /scrollToEnd=\{threadScroll\} onScrolled=\{threadScrolled\}/);
 });

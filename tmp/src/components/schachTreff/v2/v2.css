@@ -7,6 +7,12 @@
   .schach-treff.st-v2 .st-columns.st2-no-rooms{grid-template-columns:minmax(0,1fr) 300px}
   .schach-treff.st-v2>header{gap:16px}
   .schach-treff.st-v2 .st-chat-header h2{font-family:'Bodoni Moda',Georgia,serif;font-size:24px;font-weight:600;color:#EDE6D8;letter-spacing:.01em}
+  /* index.css sizes the app sidebar with "#root aside" (260px); keep that rule off the chat's own columns. */
+  #root .schach-treff.st-v2 aside{width:auto;min-width:0;max-width:none}
+  /* One screen: all three columns share the chat height and scroll on their own, so the page itself does not scroll. */
+  .schach-treff.st-v2 .st-columns>.st-rooms{height:calc(100dvh - 190px);min-height:440px;box-sizing:border-box;overflow-y:auto}
+  /* At the end of the feed the wheel may continue to the page (no scroll trap on short windows). */
+  .schach-treff.st-v2 .st-messages{overscroll-behavior-y:auto}
 }
 
 /* Messages: soft cream text, per-player name colour, tinted avatar. */
@@ -167,3 +173,10 @@
 .st2-settings-form label,.st2-modal .st2-check,.schach-treff .st2-modal .st2-settings-form label{display:flex;align-items:center;gap:10px;min-height:40px;font-size:14px;color:#E6E1D6}
 .st2-settings-form input[type=radio],.st2-settings-form input[type=checkbox]{width:18px;height:18px;accent-color:#D4A373}
 .st2-thread-position{grid-column:1/-1}
+/* Thread: positions sit directly in the message (no nested frame); the board fills the panel (max 240px) and never overflows. */
+.schach-treff .st2-thread{padding:16px}
+@media(prefers-reduced-motion:no-preference){.schach-treff .st2-thread{scroll-behavior:smooth}}
+.st2-thread .st2-position{display:flex;flex-direction:column;align-items:stretch;width:240px;max-width:100%;margin-top:10px;padding:0;border:0;background:transparent}
+.st2-thread .st2-board{width:100%!important;height:auto!important;aspect-ratio:1}
+.st2-thread .st2-card-actions{display:grid;grid-template-columns:1fr;gap:6px}
+.schach-treff .st2-thread .st2-card-actions button{min-height:36px;padding:6px 10px;font-size:13px}
