@@ -113,7 +113,7 @@ test('flag off keeps the existing Schach-Treff markup paths', () => {
   assert.match(source, /\{v2Enabled \? \(dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} \/> : null\) : <ChallengeButton composer \/>\}/);
   assert.match(source, /\{v2Enabled && <FeedbackButton \/>\}/);
   assert.match(source, /\(isClub \|\| hasChatActions \|\| v2Enabled\)/);
-  assert.match(source, /\{v2Enabled && !isClub && <h2 className="st2-general-title">\{t\.general\}<\/h2>\}/);
+  assert.match(source, /\{v2Enabled && !isClub && <div className="st2-general-heading">/);
   assert.match(source, /let threaded = v2Enabled;/);
   assert.match(source, /threaded \? query\.is\('parent_id', null\) : query/);
   const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
