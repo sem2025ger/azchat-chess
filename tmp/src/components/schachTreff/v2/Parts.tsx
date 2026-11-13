@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { Lightbulb, Mail, MessageSquare, SendHorizontal, Timer, X } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { useAuth } from '../../../context/AuthContext';
@@ -7,7 +7,7 @@ import { useSchachTreffCopy } from '../copy';
 import { useV2Copy } from './copy';
 import { useV2Copy2 } from './copy2';
 import {
-  REACTIONS, SEEK_CONTROLS, nameColor, readLastSeek, recentlyActive, writeLastSeek,
+  REACTIONS, SEEK_CONTROLS, isMissingSchema, nameColor, readLastSeek, recentlyActive, writeLastSeek,
   type Reaction, type ReactionSummary, type SeekControl,
 } from './core';
 import './v2.css';
@@ -112,10 +112,12 @@ export function MembersPanel({ members, messages, me, onPlayer, onMessage }: {
   </aside>;
 }
 
-type Reply = { id: string; author_id: string; body: string | null; created_at: string; deleted_at?: string | null };
-export function ThreadPanel({ clubId, root, people, onClose, onChanged }: {
+type Reply = { id: string; author_id: string; body: string | null; created_at: string; deleted_at?: string | null; fen?: string | null };
+export function ThreadPanel({ clubId, root, people, onClose, onChanged, revision = 0, rootFen, renderPosition }: {
   clubId: string; root: { id: string; author_id: string; body: string | null };
   people: Person[]; onClose: () => void; onChanged: () => void;
+  /** Stage 2: bump to reload after a position reply; positions of the root and replies are drawn by renderPosition. */
+  revision?: number; rootFen?: string; renderPosition?: (fen: string) => ReactNode;
 }) {
   const copy = useV2Copy();
   const t = useSchachTreffCopy();
@@ -128,11 +130,15 @@ export function ThreadPanel({ clubId, root, people, onClose, onChanged }: {
   const version = useRef(0);
   async function load() {
     const current = ++version.current;
-    const result = await supabase.from('chess_club_messages').select('id,author_id,body,created_at,deleted_at')
+    const select = (columns: string) => supabase.from('chess_club_messages').select(columns)
       .eq('club_id', clubId).eq('parent_id', root.id).order('created_at', { ascending: true }).limit(200);
+    const columns = 'id,author_id,body,created_at,deleted_at';
+    let result = await select(renderPosition ? columns + ',fen' : columns);
+    // Stage 2 migration not applied yet: replies still load, without positions.
+    if (renderPosition && result.error && isMissingSchema(result.error.code)) result = await select(columns);
     if (current !== version.current) return;
     if (result.error) { setError(t.error); return; }
-    const rows = (result.data ?? []) as Reply[];
+    const rows = (result.data ?? []) as unknown as Reply[];
     setReplies(rows); setError('');
     const missing = [...new Set(rows.map(row => row.author_id))].filter(id => !people.some(person => person.id === id));
     if (missing.length) {
@@ -145,7 +151,7 @@ export function ThreadPanel({ clubId, root, people, onClose, onChanged }: {
     const timer = window.setInterval(() => { if (!document.hidden) void load(); }, 12000);
     return () => { version.current++; window.clearInterval(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clubId, root.id]);
+  }, [clubId, root.id, revision]);
   const name = (id: string) => people.find(person => person.id === id)?.username ?? names[id] ?? '…';
   async function send(event: FormEvent) {
     event.preventDefault();
@@ -164,12 +170,14 @@ export function ThreadPanel({ clubId, root, people, onClose, onChanged }: {
     </div>
     <blockquote className="st2-thread-root" style={nameStyle(root.author_id)}>
       <strong>{name(root.author_id)}</strong><p>{root.body ?? t.deleted}</p>
+      {rootFen && renderPosition?.(rootFen)}
     </blockquote>
     <p className="st2-thread-count">{replies.length ? copy.replies(replies.length) : copy.noReplies}</p>
     <ol className="st2-thread-list">{replies.map(reply => <li key={reply.id} style={nameStyle(reply.author_id)}>
       <span className="st2-thread-author">{name(reply.author_id)}</span>
       <time dateTime={reply.created_at}>{new Date(reply.created_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</time>
       <p>{reply.deleted_at ? t.deleted : reply.body}</p>
+      {!reply.deleted_at && reply.fen && renderPosition && <div className="st2-thread-position">{renderPosition(reply.fen)}</div>}
     </li>)}</ol>
     {error && <p role="alert">{error}</p>}
     <form className="st2-thread-form" onSubmit={send}>

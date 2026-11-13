@@ -1,4 +1,6 @@
 // Schach-Treff v2 (stage 1) pure helpers. Behind VITE_SCHACH_TREFF_V2, default off.
+import { Chess, type Square } from 'chess.js';
+
 export const v2Enabled = import.meta.env.VITE_SCHACH_TREFF_V2 === 'true';
 
 export const REACTIONS = ['!!', '!', '!?'] as const;
@@ -87,6 +89,45 @@ export function recentlyActive(messages: readonly { author_id: string; created_a
 const FEN_SHAPE = /^[1-8pnbrqkPNBRQK]{1,8}(\/[1-8pnbrqkPNBRQK]{1,8}){7} [wb] (-|[KQkq]{1,4}) (-|[a-h][36]) \d{1,4} \d{1,4}$/;
 /** Same shape as the database CHECK on chess_club_messages.fen; full legality is checked with chess.js. */
 export function fenShapeOk(fen: string): boolean { return fen.length <= 100 && FEN_SHAPE.test(fen); }
+
+/** Square name for row/file indexes of a board drawn with White at the bottom (row 0 = rank 8). */
+export const squareName = (row: number, file: number) => 'abcdefgh'[file] + String(8 - row);
+
+/** True when the square holds a piece of the side to move (it may be picked up on the position board). */
+export function canPickUp(fen: string, square: string): boolean {
+  try { const game = new Chess(fen); return game.get(square as Square)?.color === game.turn(); } catch { return false; }
+}
+
+/** One legal move on a chat position board (pawns promote to a queen). Returns null for an illegal move. */
+export function playMove(fen: string, from: string, to: string): { fen: string; san: string } | null {
+  try {
+    const game = new Chess(fen);
+    const piece = game.get(from as Square);
+    if (!piece || piece.color !== game.turn()) return null;
+    const promotion = piece.type === 'p' && (to[1] === '8' || to[1] === '1') ? 'q' : undefined;
+    const move = game.move({ from, to, promotion });
+    return { fen: game.fen(), san: move.san };
+  } catch { return null; }
+}
+
+/** Numbered move line from a start position, e.g. "6... e5 7. Nf3". */
+export function moveLine(startFen: string, sans: readonly string[]): string {
+  const fields = startFen.split(' ');
+  let black = fields[1] === 'b';
+  let number = Number(fields[5]) || 1;
+  const out: string[] = [];
+  sans.forEach((san, index) => {
+    if (!black) out.push(`${number}. ${san}`);
+    else { out.push(index === 0 ? `${number}... ${san}` : san); number++; }
+    black = !black;
+  });
+  return out.join(' ');
+}
+
+/** A reply must add something: at least one move or a comment (no identical, empty position replies). */
+export function positionReplyUnchanged(reply: boolean, movesPlayed: number, comment: string): boolean {
+  return reply && movesPlayed === 0 && !comment.trim();
+}
 
 export type ChatGameResult = {
   challenge_id: string; message_id: string; match_id: string; white_id: string | null; black_id: string | null;

@@ -130,6 +130,14 @@
 .st2-modal .st2-primary:disabled{opacity:.5}
 .st2-position-form,.schach-treff .st2-modal .st2-position-form{display:flex;flex-direction:row;flex-wrap:wrap;gap:18px;padding:0}
 .st2-position-fields{display:flex;flex-direction:column;gap:12px;flex:1 1 260px;min-width:0}
+.st2-position-preview{display:flex;flex-direction:column;gap:8px;width:224px;max-width:100%}
+.st2-board-play>button,.schach-treff .st2-board-play>button{display:grid;place-items:center;min-width:0;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:#A27A55;cursor:pointer}
+.st2-board-play>button[data-light],.schach-treff .st2-board-play>button[data-light]{background:#D8C3A0}
+.st2-board-play>button[aria-pressed=true],.schach-treff .st2-board-play>button[aria-pressed=true]{box-shadow:inset 0 0 0 3px #D4A373}
+.st2-board-play>button:focus-visible{outline:2px solid #F0D7B4;outline-offset:-2px}
+.st2-line{display:flex;align-items:center;gap:2px;min-height:44px}
+.st2-line>span{flex:1 1 auto;min-width:0;font-size:12.5px;line-height:1.4;color:#B9C2BE;overflow-wrap:anywhere}
+.st2-modal .st2-line .st2-icon-button:disabled{opacity:.35}
 .st2-viewer,.schach-treff dialog.st2-viewer{width:min(760px,calc(100vw - 32px))}
 .schach-treff .st2-modal p{margin:0}
 .st2-viewer-body{display:flex;flex-wrap:wrap;gap:18px}
@@ -158,3 +166,4 @@
 .st2-settings-form legend{margin-bottom:6px;font-size:14px;font-weight:600;color:#EDE6D8}
 .st2-settings-form label,.st2-modal .st2-check,.schach-treff .st2-modal .st2-settings-form label{display:flex;align-items:center;gap:10px;min-height:40px;font-size:14px;color:#E6E1D6}
 .st2-settings-form input[type=radio],.st2-settings-form input[type=checkbox]{width:18px;height:18px;accent-color:#D4A373}
+.st2-thread-position{grid-column:1/-1}

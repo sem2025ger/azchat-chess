@@ -62,7 +62,9 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const [notify, setNotify] = useState(false);
   const [v2Data, setV2Data] = useState<V2Extras | null>(null);
   const [thread, setThread] = useState<ClubMessage | null>(null);
-  const [positionFen, setPositionFen] = useState<string | null>(null);
+  // One position composer: a new position (root null) or a reply that continues the position of a thread root.
+  const [composer, setComposer] = useState<{ fen: string; root: ClubMessage | null } | null>(null);
+  const [threadRevision, setThreadRevision] = useState(0);
   const [viewing, setViewing] = useState<ChatGameResult | null>(null);
   const copy1 = useV2Copy();
   const copy2 = useV2Copy2();
@@ -190,9 +192,13 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
       ? supabase.from('chess_club_message_reactions').delete().eq('message_id', messageId).eq('user_id', user.id).eq('reaction', reaction)
       : supabase.from('chess_club_message_reactions').insert({ message_id: messageId, user_id: user.id, reaction }));
   }
-  async function sendPosition(fen: string, caption: string) {
-    if (!user || !clubId || !member) return false;
-    return perform(() => supabase.from('chess_club_messages').insert({ club_id: clubId, author_id: user.id, body: caption || copy2.position, fen }));
+  async function sendPosition(fen: string, body: string) {
+    if (!user || !clubId || !member || !composer) return false;
+    const root = composer.root;
+    const sent = await perform(() => supabase.from('chess_club_messages').insert({ club_id: clubId, author_id: user.id, body, fen, ...(root ? { parent_id: root.id } : {}) }));
+    // A reply lives in the thread of the original position: show it there.
+    if (sent && root) { setThread(root); setThreadRevision(value => value + 1); }
+    return sent;
   }
   function stamp(value: string) {
     const date = new Date(value), now = new Date(), yesterday = new Date(); yesterday.setDate(now.getDate() - 1);
@@ -206,7 +212,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     summary: summarizeReactions(v2Data.reactions, user?.id), replies: v2Data.replyCounts, reactions: v2Data.reactionsAvailable,
     toggle: (id: string, reaction: Reaction, mine: boolean) => void toggleReaction(id, reaction, mine), openThread: setThread,
     fens: v2Data.fens, results: new Map(v2Data.results.map(result => [resultMessageId(result), result])),
-    replyPosition: (fen: string) => setPositionFen(fen), watch: setViewing,
+    replyPosition: (message: ClubMessage, fen: string) => setComposer({ fen, root: message }), watch: setViewing,
     kindLabel: (control: string) => {
       const kind = SEEK_CONTROLS.find(item => item.value === control)?.kind;
       return kind === 'bullet' ? copy2.bullet : kind === 'rapid' ? copy1.rapid : copy1.blitz;
@@ -274,16 +280,18 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         {dmOpen.error && <p role="alert">{dmOpen.error}</p>}
         <form className="st-composer" onSubmit={send}>
           {v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} /> : <SeekButton />) : <ChallengeButton composer />}
-          {v2Enabled && <button type="button" className="st2-position-trigger" aria-label={copy2.position} title={copy2.position} onClick={() => setPositionFen(DEFAULT_POSITION)}><Grid3x3 size={18} aria-hidden="true" /></button>}
+          {v2Enabled && <button type="button" className="st2-position-trigger" aria-label={copy2.position} title={copy2.position} onClick={() => setComposer({ fen: DEFAULT_POSITION, root: null })}><Grid3x3 size={18} aria-hidden="true" /></button>}
           <input aria-label={t.placeholder} placeholder={hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required />
           <button className="st-send" disabled={busy || !body.trim()}>{t.send}</button>
         </form>
       </section>
       {v2Enabled && (thread && v2?.reactions
-        ? <ThreadPanel key={thread.id} clubId={clubId} root={thread} people={profiles} onClose={() => setThread(null)} onChanged={() => void refresh()} />
+        ? <ThreadPanel key={thread.id} clubId={clubId} root={thread} people={profiles} onClose={() => setThread(null)} onChanged={() => void refresh()}
+            revision={threadRevision} rootFen={v2.fens.get(thread.id)}
+            renderPosition={fen => <PositionMessage fen={fen} size={200} onReply={() => setComposer({ fen, root: thread })} />} />
         : <MembersPanel members={members} messages={messages} me={user?.id} onPlayer={setPlayer}
             onMessage={direct.available ? person => void dmOpen.open(person.id) : undefined} />)}
-      {v2Enabled && positionFen !== null && <PositionDialog initialFen={positionFen} onSend={sendPosition} onClose={() => setPositionFen(null)} />}
+      {v2Enabled && composer && <PositionDialog initialFen={composer.fen} reply={Boolean(composer.root)} onSend={sendPosition} onClose={() => setComposer(null)} />}
       {v2Enabled && viewing && <GameViewer game={viewing} onClose={() => setViewing(null)} />}
     </div>}
     <dialog ref={dialog} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
@@ -298,7 +306,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
 type V2Items = {
   summary: Map<string, ReactionSummary[]>; replies: Map<string, number>; reactions: boolean;
   toggle: (id: string, reaction: Reaction, mine: boolean) => void; openThread: (message: ClubMessage) => void;
-  fens: Map<string, string>; results: Map<string, ChatGameResult>; replyPosition: (fen: string) => void;
+  fens: Map<string, string>; results: Map<string, ChatGameResult>; replyPosition: (message: ClubMessage, fen: string) => void;
   watch: (game: ChatGameResult) => void; kindLabel: (control: string) => string;
 };
 function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, openModeration, v2 }: {
@@ -349,7 +357,7 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
             {moderationEnabled && message.deleted_at ? <p className="st-moderation-status">{t.deleted}</p>
               : <ChallengeMessage messageId={message.id} body={message.body ?? ''} />}
             {moderationEnabled && message.hidden_at && <p className="st-moderation-status">{t.hiddenMessage}</p>}
-            {v2 && !message.deleted_at && v2.fens.get(message.id) && <PositionMessage fen={v2.fens.get(message.id)!} onReply={v2.replyPosition} />}
+            {v2 && !message.deleted_at && v2.fens.get(message.id) && <PositionMessage fen={v2.fens.get(message.id)!} onReply={fen => v2.replyPosition(message, fen)} />}
             {v2 && social && <>
               <ReactionBar summary={summary} replies={v2.replies.get(message.id) ?? 0}
                 onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Crown, Settings2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Crown, RotateCcw, Settings2, Undo2, X } from 'lucide-react';
 import { DEFAULT_POSITION } from 'chess.js';
 import { supabase } from '../../../services/supabase';
 import { useAuth } from '../../../context/AuthContext';
@@ -8,27 +8,32 @@ import { analysisFromPgn, validateAnalysisFen } from '../../../utils/analysisWor
 import { loadAnalysisSession, saveAnalysisSession } from '../../../utils/analysisSession';
 import { moderationEnabled, UnreadBadge } from '../unread';
 import { useSchachTreffCopy } from '../copy';
-import { countFullMoves, fenShapeOk, type ChatGameResult } from './core';
+import { canPickUp, countFullMoves, fenShapeOk, moveLine, playMove, positionReplyUnchanged, squareName, type ChatGameResult } from './core';
 import { useV2Copy2 } from './copy2';
 import { nameStyle } from './Parts';
 
 const PIECE: Record<string, string> = { k: 'K', q: 'Q', r: 'R', b: 'B', n: 'N', p: 'P' };
 
-/** Read-only board for chat messages and the game viewer (no interaction, no engine). */
-export function MiniBoard({ fen, label, size = 248 }: { fen: string; label: string; size?: number }) {
+/** Board for chat messages and the game viewer. Read-only unless onSquare is given (position composer). */
+export function MiniBoard({ fen, label, size = 248, onSquare, selected }: {
+  fen: string; label: string; size?: number; onSquare?: (square: string) => void; selected?: string | null;
+}) {
   const rows = fen.split(' ')[0].split('/');
-  const cells: { key: string; light: boolean; piece: string | null }[] = [];
+  const cells: { key: string; square: string; light: boolean; piece: string | null }[] = [];
   rows.forEach((row, r) => {
     let file = 0;
     for (const ch of row) {
-      if (/\d/.test(ch)) for (let i = 0; i < Number(ch); i++, file++) cells.push({ key: `${r}-${file}`, light: (r + file) % 2 === 0, piece: null });
-      else { cells.push({ key: `${r}-${file}`, light: (r + file) % 2 === 0, piece: (ch === ch.toUpperCase() ? 'w' : 'b') + PIECE[ch.toLowerCase()] }); file++; }
+      if (/\d/.test(ch)) for (let i = 0; i < Number(ch); i++, file++) cells.push({ key: `${r}-${file}`, square: squareName(r, file), light: (r + file) % 2 === 0, piece: null });
+      else { cells.push({ key: `${r}-${file}`, square: squareName(r, file), light: (r + file) % 2 === 0, piece: (ch === ch.toUpperCase() ? 'w' : 'b') + PIECE[ch.toLowerCase()] }); file++; }
     }
   });
+  const image = (piece: string | null) => piece && <img src={`/pieces/classic/${piece}.svg`} alt="" draggable={false} />;
+  if (onSquare) return <div className="st2-board st2-board-play" role="group" aria-label={label} style={{ width: size, height: size }}>
+    {cells.map(cell => <button type="button" key={cell.key} aria-label={cell.square} aria-pressed={selected === cell.square}
+      data-light={cell.light || undefined} onClick={() => onSquare(cell.square)}>{image(cell.piece)}</button>)}
+  </div>;
   return <div className="st2-board" role="img" aria-label={label} style={{ width: size, height: size }}>
-    {cells.map(cell => <span key={cell.key} data-light={cell.light || undefined}>
-      {cell.piece && <img src={`/pieces/classic/${cell.piece}.svg`} alt="" draggable={false} />}
-    </span>)}
+    {cells.map(cell => <span key={cell.key} data-light={cell.light || undefined}>{image(cell.piece)}</span>)}
   </div>;
 }
 
@@ -48,12 +53,12 @@ export function useOpenAnalysis() {
   }, [navigate]);
 }
 
-export function PositionMessage({ fen, onReply }: { fen: string; onReply: (fen: string) => void }) {
+export function PositionMessage({ fen, onReply, size }: { fen: string; onReply: (fen: string) => void; size?: number }) {
   const copy = useV2Copy2();
   const open = useOpenAnalysis();
   const caption = copy.sideToMove(sideToMoveIsWhite(fen));
   return <div className="st2-position">
-    <MiniBoard fen={fen} label={`${copy.position}: ${caption}`} />
+    <MiniBoard fen={fen} label={`${copy.position}: ${caption}`} size={size} />
     <small>{caption}</small>
     <div className="st2-card-actions">
       <button type="button" className="st2-secondary" onClick={() => onReply(fen)}>{copy.replyWithPosition}</button>
@@ -62,53 +67,77 @@ export function PositionMessage({ fen, onReply }: { fen: string; onReply: (fen: 
   </div>;
 }
 
-export function PositionDialog({ initialFen, onSend, onClose }: {
-  initialFen: string; onSend: (fen: string, caption: string) => Promise<boolean>; onClose: () => void;
+/**
+ * The one position composer: a new position (reply=false) or a reply to a shared position (reply=true).
+ * A reply starts from the referenced position; the player continues it with legal moves and/or a comment.
+ */
+export function PositionDialog({ initialFen, reply = false, onSend, onClose }: {
+  initialFen: string; reply?: boolean; onSend: (fen: string, body: string) => Promise<boolean>; onClose: () => void;
 }) {
   const copy = useV2Copy2();
   const t = useSchachTreffCopy();
   const dialog = useRef<HTMLDialogElement>(null);
-  const [fen, setFen] = useState(initialFen);
+  const [base, setBase] = useState(initialFen);
+  const [line, setLine] = useState<{ fen: string; san: string }[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   useEffect(() => { dialog.current?.showModal(); }, []);
+  const fen = line.at(-1)?.fen ?? base;
   const valid = useMemo(() => {
     try { const clean = validateAnalysisFen(fen); return fenShapeOk(clean) ? clean : null; } catch { return null; }
   }, [fen]);
+  const moves = moveLine(base, line.map(move => move.san));
+  const unchanged = positionReplyUnchanged(reply, line.length, caption);
+  function load(next: string) { setBase(next); setLine([]); setSelected(null); }
+  function pick(square: string) {
+    if (!valid) return;
+    if (selected && selected !== square) {
+      const moved = playMove(valid, selected, square);
+      if (moved) { setLine([...line, moved]); setSelected(null); return; }
+    }
+    setSelected(selected !== square && canPickUp(valid, square) ? square : null);
+  }
   function fromAnalysis() {
     const session = loadAnalysisSession();
     const index = session.viewMoveIndex === -1 ? session.positionHistory.length - 1 : session.viewMoveIndex;
     const found = session.positionHistory[index];
     if (!session.moveHistory.length && found === DEFAULT_POSITION) { setNote(copy.noAnalysis); return; }
-    setNote(''); setFen(found);
+    setNote(''); load(found);
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!valid || busy) return;
+    if (!valid || busy || unchanged) return;
     setBusy(true);
-    const sent = await onSend(valid, caption.trim().slice(0, 1200));
+    const sent = await onSend(valid, (caption.trim() || moves || copy.position).slice(0, 1200));
     setBusy(false);
     if (sent) onClose();
   }
   return <dialog ref={dialog} className="st2-modal" aria-labelledby="st2-position-title" onClose={onClose} onCancel={onClose}>
     <div className="st2-modal-head">
-      <h2 id="st2-position-title">{copy.positionTitle}</h2>
+      <h2 id="st2-position-title">{reply ? copy.replyTitle : copy.positionTitle}</h2>
       <button type="button" className="st2-icon-button" aria-label={t.close} onClick={onClose}><X size={18} aria-hidden="true" /></button>
     </div>
     <form className="st2-position-form" onSubmit={submit}>
       <div className="st2-position-preview">
-        {valid ? <MiniBoard fen={valid} label={copy.position} size={224} /> : <div className="st2-board st2-board-empty" style={{ width: 224, height: 224 }}><span>{copy.invalidFen}</span></div>}
+        {valid ? <MiniBoard fen={valid} label={`${copy.position}: ${copy.sideToMove(sideToMoveIsWhite(valid))}`} size={224} onSquare={pick} selected={selected} />
+          : <div className="st2-board st2-board-empty" style={{ width: 224, height: 224 }}><span>{copy.invalidFen}</span></div>}
+        <div className="st2-line">
+          <span>{moves || copy.boardHint}</span>
+          <button type="button" className="st2-icon-button" aria-label={copy.undoMove} title={copy.undoMove} disabled={!line.length} onClick={() => { setLine(line.slice(0, -1)); setSelected(null); }}><Undo2 size={16} aria-hidden="true" /></button>
+          <button type="button" className="st2-icon-button" aria-label={copy.resetPosition} title={copy.resetPosition} disabled={!line.length} onClick={() => load(base)}><RotateCcw size={16} aria-hidden="true" /></button>
+        </div>
       </div>
       <div className="st2-position-fields">
-        <div className="st2-card-actions">
-          <button type="button" className="st2-secondary" onClick={fromAnalysis}>{copy.fromAnalysis}</button>
-          <button type="button" className="st2-secondary" onClick={() => { setNote(''); setFen(DEFAULT_POSITION); }}>{copy.startPosition}</button>
-        </div>
-        {note && <p role="status" className="st2-note">{note}</p>}
-        <label>{copy.fenLabel}<input value={fen} maxLength={100} spellCheck={false} onChange={event => setFen(event.target.value)} aria-invalid={!valid} /></label>
+        {!reply && <>
+          <div className="st2-card-actions"><button type="button" className="st2-secondary" onClick={fromAnalysis}>{copy.fromAnalysis}</button></div>
+          {note && <p role="status" className="st2-note">{note}</p>}
+          <label>{copy.fenLabel}<input value={fen} maxLength={100} spellCheck={false} onChange={event => load(event.target.value)} aria-invalid={!valid} /></label>
+        </>}
         <label>{copy.caption}<input value={caption} maxLength={1200} placeholder={copy.captionPlaceholder} onChange={event => setCaption(event.target.value)} /></label>
-        <button className="st-send st2-primary" disabled={!valid || busy}>{copy.sendPosition}</button>
+        {unchanged && <p role="status" className="st2-note">{copy.replyNeedsChange}</p>}
+        <button className="st-send st2-primary" disabled={!valid || busy || unchanged}>{copy.sendPosition}</button>
       </div>
     </form>
   </dialog>;

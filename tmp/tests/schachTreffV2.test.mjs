@@ -180,3 +180,61 @@ test('stage 2 components render a read-only board, a position card and a finishe
     assert.match(noMoves, /disabled=""[^>]*>Partie ansehen|>Partie ansehen<\/button>/);
   });
 });
+
+test('position replies: legal continuation moves, numbered move line and no unchanged empty replies', async () => {
+  await withVite(async server => {
+    const core = await server.ssrLoadModule('/src/components/schachTreff/v2/core.ts');
+    const start = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    assert.equal(core.squareName(0, 0), 'a8');
+    assert.equal(core.squareName(7, 4), 'e1');
+    assert.equal(core.canPickUp(start, 'e2'), true);
+    assert.equal(core.canPickUp(start, 'e7'), false, 'only the side to move');
+    assert.equal(core.canPickUp('not a fen', 'e2'), false);
+    const e4 = core.playMove(start, 'e2', 'e4');
+    assert.equal(e4.san, 'e4');
+    assert.ok(e4.fen.startsWith('rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq'));
+    assert.ok(core.fenShapeOk(e4.fen), 'result fits the database FEN check');
+    assert.equal(core.playMove(start, 'e2', 'e5'), null, 'illegal move');
+    assert.equal(core.playMove(start, 'e7', 'e5'), null, 'wrong side');
+    assert.equal(core.playMove(start, 'e3', 'e4'), null, 'empty square');
+    const promoted = core.playMove('8/P7/8/8/8/8/k7/7K w - - 0 1', 'a7', 'a8');
+    assert.equal(promoted.san, 'a8=Q+');
+    assert.equal(core.moveLine(start, ['e4', 'e5', 'Nf3']), '1. e4 e5 2. Nf3');
+    assert.equal(core.moveLine('rnbqkb1r/1p2pppp/p2p1n2/6B1/3NP3/2N5/PPP2PPP/R2QKB1R b KQkq - 1 6', ['e6', 'f4']), '6... e6 7. f4');
+    assert.equal(core.moveLine(start, []), '');
+    assert.equal(core.positionReplyUnchanged(true, 0, '  '), true, 'identical reply without comment is blocked');
+    assert.equal(core.positionReplyUnchanged(true, 1, ''), false);
+    assert.equal(core.positionReplyUnchanged(true, 0, 'Wie weiter?'), false);
+    assert.equal(core.positionReplyUnchanged(false, 0, ''), false, 'a new position may be the start position');
+  });
+});
+
+test('one position composer: new position keeps FEN and analysis import; reply starts from the referenced position', async () => {
+  await withVite(async server => {
+    const { PositionDialog } = await server.ssrLoadModule('/src/components/schachTreff/v2/Stage2.tsx');
+    const fen = 'rnbqkb1r/1p2pppp/p2p1n2/6B1/3NP3/2N5/PPP2PPP/R2QKB1R b KQkq - 1 6';
+    const fresh = renderToStaticMarkup(createElement(PositionDialog, { initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', onSend: async () => true, onClose() {} }));
+    for (const label of ['Stellung im Chat teilen', 'Stellung (FEN)', 'Aus meiner Analyse', 'Zug zurück', 'Zurücksetzen', 'Zug ausführen']) assert.ok(fresh.includes(label), label);
+    assert.doesNotMatch(fresh, /Grundstellung/, 'no prominent starting-position button');
+    assert.equal((fresh.match(/<button type="button" aria-label="[a-h][1-8]"/g) ?? []).length, 64, 'interactive board');
+    assert.doesNotMatch(fresh, /Mach einen Zug oder schreib einen Kommentar/);
+    const reply = renderToStaticMarkup(createElement(PositionDialog, { initialFen: fen, reply: true, onSend: async () => true, onClose() {} }));
+    assert.ok(reply.includes('Antwort mit Stellung'));
+    assert.ok(reply.includes('Schwarz am Zug'), 'referenced position is preloaded');
+    assert.match(reply, /aria-label="g5"[^>]*><img src="\/pieces\/classic\/wB\.svg"/);
+    assert.doesNotMatch(reply, /Stellung \(FEN\)|Aus meiner Analyse/, 'a reply continues the position instead of replacing it');
+    assert.ok(reply.includes('Mach einen Zug oder schreib einen Kommentar.'));
+    assert.match(reply, /<button[^>]*disabled=""[^>]*>Stellung senden<\/button>/, 'unchanged reply cannot be sent');
+  });
+});
+
+test('position replies are stored as thread replies of the original message and shown in its thread', () => {
+  const source = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
+  assert.match(source, /insert\(\{ club_id: clubId, author_id: user\.id, body, fen, \.\.\.\(root \? \{ parent_id: root\.id \} : \{\}\) \}\)/);
+  assert.match(source, /if \(sent && root\) \{ setThread\(root\); setThreadRevision\(value => value \+ 1\); \}/);
+  assert.match(source, /onReply=\{fen => v2\.replyPosition\(message, fen\)\}/);
+  assert.match(source, /onReply=\{\(\) => setComposer\(\{ fen, root: thread \}\)\}/, 'replies inside a thread keep the thread root as parent');
+  assert.equal((source.match(/<PositionDialog /g) ?? []).length, 1, 'a single composer');
+  const parts = readFileSync(new URL('../src/components/schachTreff/v2/Parts.tsx', import.meta.url), 'utf8');
+  assert.match(parts, /if \(renderPosition && result\.error && isMissingSchema\(result\.error\.code\)\) result = await select\(columns\);/);
+});
