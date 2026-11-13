@@ -291,6 +291,32 @@
 /* Narrow chat columns: online count and Seek move under the title instead of squeezing it (width-only, no jumps). */
 @media(min-width:1024px){
   .schach-treff.st-v2 .st-chat-header:has(.st2-general-heading){flex-wrap:wrap;row-gap:8px}
-  .schach-treff.st-v2 .st2-general-heading{flex:1 1 180px}
+  .schach-treff.st-v2 .st2-general-heading{flex:1 1 250px}
   .schach-treff.st-v2 .st2-chat-meta{margin-left:auto}
+}
+/* Owner 13 Nov: the feed headline is the room's motto; "General chat" lives in the rooms column only. */
+.st2-sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+#root .schach-treff.st-v2 .st2-general-heading .st2-general-motto{display:block;max-width:100%;font-family:'Bodoni Moda',Georgia,serif!important;font-size:27px;font-style:italic!important;font-weight:600;letter-spacing:.01em;line-height:1.2;white-space:normal;text-wrap:balance;overflow:visible;background:linear-gradient(100deg,#F3DDB8 0%,#D4A373 45%,#F0D2A4 70%,#B8875A 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.schach-treff.st-v2 .st2-general-motto::first-letter{text-transform:uppercase}
+@media(min-width:1024px) and (max-width:1599px){#root .schach-treff.st-v2 .st2-general-heading .st2-general-motto{font-size:23px}}
+@media(max-width:1023px){#root .schach-treff.st-v2 .st2-general-heading .st2-general-motto{font-size:20px}}
+/* Rooms column: "General chat" is the main entry — larger, bronze-metallic, the Seek button's typeface. */
+.schach-treff.st-v2 .st-rooms .st-general-link{min-height:54px;margin-bottom:18px;padding:0 16px;font-family:inherit;font-size:17px;font-weight:600;letter-spacing:.01em}
+.schach-treff.st-v2 .st-rooms .st-general-link .st-general-label{flex:1 1 auto;min-width:0;background:linear-gradient(180deg,#F7E4C3 0%,#E2B57E 42%,#B07A45 58%,#E8C493 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+/* Blocked DM: challenge button visibly inactive. */
+.schach-treff .st-composer-challenge:disabled,.schach-treff.st-v2 .st2-position-trigger:disabled{opacity:.45;cursor:not-allowed}
+.schach-treff.st-v2 .st2-position-trigger:disabled::after{display:none}
+/* Message actions (⋯) join the hover toolbar instead of adding an extra line under every message (mouse devices). */
+@media(any-pointer:fine){
+  .schach-treff.st-v2 .st-message:has(.st-message-actions) .st2-tools{right:48px}
+  .schach-treff.st-v2 .st-message-actions{position:absolute;top:-14px;right:8px;z-index:3;margin:0;opacity:0;transition:opacity .15s ease}
+  .schach-treff.st-v2 .st-message:hover .st-message-actions,.schach-treff.st-v2 .st-message:focus-within .st-message-actions,.schach-treff.st-v2 .st-message-actions[open]{opacity:1}
+  .schach-treff.st-v2 .st-message-actions summary{min-width:36px;min-height:36px;border:1px solid #2C3337;border-radius:10px;background:#1B2023;color:#E6E1D6}
+  .schach-treff.st-v2 .st-message-actions[open] .st-message-action-buttons{position:absolute;top:calc(100% + 6px);right:0;flex-wrap:nowrap;padding:6px;border:1px solid #2C3337;border-radius:10px;background:#1B2023;box-shadow:0 10px 28px #0009}
+}
+/* Medium desktops: the DM challenge button becomes a 44px icon (label stays for screen readers and as tooltip) so the input keeps its width. */
+@media(min-width:1024px) and (max-width:1599px){
+  .schach-treff.st-v2 .st-chat .st-composer .st-composer-challenge{display:inline-flex;align-items:center;justify-content:center;flex:none;width:44px;min-width:44px;min-height:44px;padding:0}
+  .schach-treff.st-v2 .st-composer-challenge-icon{display:block;flex:none}
+  .schach-treff.st-v2 .st-composer-challenge-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 }

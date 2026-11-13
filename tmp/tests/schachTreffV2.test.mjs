@@ -110,7 +110,7 @@ test('v2 reaction controls render accessible chess annotations; seek stays hidde
 test('flag off keeps the existing Schach-Treff markup paths', () => {
   const source = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   assert.match(source, /className=\{v2Enabled \? 'schach-treff st-v2' : 'schach-treff'\}/);
-  assert.match(source, /\{v2Enabled \? \(dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} \/> : isClub \? <SeekButton \/> : null\) : <ChallengeButton composer \/>\}/);
+  assert.match(source, /\{v2Enabled \? \(dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} disabled=\{iBlocked\} \/> : isClub && hideRooms \? <SeekButton \/> : null\) : <ChallengeButton composer \/>\}/);
   assert.match(source, /\{v2Enabled && <FeedbackButton \/>\}/);
   assert.match(source, /\(isClub \|\| hasChatActions \|\| v2Enabled\)/);
   assert.match(source, /\{v2Enabled && !isClub && <div className="st2-general-heading">/);
@@ -263,7 +263,7 @@ test('approved v2 composer and header: localized subtitle, real presence and pos
   const source = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../src/components/schachTreff/v2/v2.css', import.meta.url), 'utf8');
   assert.match(source, /<div className="st2-general-heading">/);
-  assert.match(source, /<span className="st2-general-subtitle">\{copy1.subtitle\}<\/span>/);
+  assert.match(source, /<h2 className="st2-general-title st2-general-motto"><span className="st2-sr-only">\{t\.general\}: <\/span>\{copy1\.subtitle\}<\/h2>/);
   assert.match(source, /<div className="st2-chat-meta">/);
   assert.match(source, /Object\.keys\(channel\.presenceState\(\)\)/, 'presence is measured, not hardcoded');
   assert.match(source, /<PositionTrigger label=\{copy2.sendPosition\}/);
@@ -327,7 +327,8 @@ test('challenge card links both players to the started game; composer position b
   assert.doesNotMatch(parts, /Grid3x3/);
   assert.match(parts, /<MiniBoardIcon \/>\n  <\/button>;/);
   const screen = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
-  assert.match(screen, /dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} \/> : isClub \? <SeekButton \/> : null/, 'club rooms keep a way to seek an opponent');
+  assert.match(screen, /\{v2Enabled && !dmChat && !hideRooms && <SeekButton \/>\}/, 'desktop club rooms keep a way to seek an opponent (header)');
+  assert.match(screen, /isClub && hideRooms \? <SeekButton \/> : null/, 'compact mobile room view keeps Seek in the composer');
 });
 
 test('finished challenge games: no "Open game" link, card says the game is over; unread badges are not stretched', () => {
@@ -363,4 +364,46 @@ test('notices float as toasts (no layout jump); a blocked DM partner disables th
   assert.match(screen, /disabled=\{iBlocked\} \/>\n\s*<button className="st-send" disabled=\{busy \|\| iBlocked \|\| !body\.trim\(\)\}>/);
   const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
   assert.match(challenges, /\{error && !shown && \(v2Enabled \? <Toast/);
+});
+
+test('owner 13 Nov: feed headline is the motto, bronze "General chat" link, blocked DM re-checked and fully inactive', async () => {
+  const screen = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/components/schachTreff/v2/v2.css', import.meta.url), 'utf8');
+  const index = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
+  // 1. The visible "General chat" heading is gone from the feed; the motto replaces it (name kept for screen readers).
+  assert.doesNotMatch(screen, /<h2 className="st2-general-title">\{t\.general\}<\/h2>/);
+  assert.doesNotMatch(screen, /st2-general-subtitle/);
+  assert.match(screen, /import '@fontsource\/bodoni-moda\/latin-600-italic\.css';/);
+  assert.match(index, /#root :is\(button,input,select,textarea,label,p,small,dt,dd,summary,a,h2,h3,h4,h5,h6\)\{font-family:Inter[^}]*!important;font-style:normal!important\}/, 'the global rule the motto has to beat');
+  assert.match(css, /#root \.schach-treff\.st-v2 \.st2-general-heading \.st2-general-motto\{[^}]*font-family:'Bodoni Moda',Georgia,serif!important;font-size:27px;font-style:italic!important;/);
+  assert.match(css, /\.st2-general-heading\{flex:1 1 250px\}/, 'the motto never wraps into three narrow lines; online + Seek move below instead');
+  // 2. Rooms column: larger "General chat" in the Seek button font, bronze-metallic text.
+  const link = readFileSync(new URL('../src/components/schachTreff/GeneralRoomLink.tsx', import.meta.url), 'utf8');
+  assert.match(link, /<span className="st-general-label">\{label\}<\/span>/);
+  assert.match(css, /\.st-rooms \.st-general-link\{min-height:54px;[^}]*font-size:17px;font-weight:600;/);
+  assert.match(css, /\.st-general-link \.st-general-label\{[^}]*background:linear-gradient\(180deg,[^}]*background-clip:text;[^}]*-webkit-text-fill-color:transparent\}/);
+  // 3. Block state: re-read on tab focus and after a refused send; every composer action is disabled.
+  const stage2 = readFileSync(new URL('../src/components/schachTreff/v2/Stage2.tsx', import.meta.url), 'utf8');
+  assert.match(stage2, /window\.addEventListener\('focus', reload\)/);
+  assert.match(stage2, /\}, \[user, partnerId, revision\]\);/);
+  assert.match(stage2, /return \{ blocked, busy, toggle, reload \};/);
+  assert.match(screen, /else if \(dmChat\) block\.reload\(\);/);
+  assert.match(screen, /<ChallengeButton composer targetUserId=\{dmChat\.partnerId\} disabled=\{iBlocked\} \/>/);
+  assert.match(screen, /<PositionTrigger label=\{copy2\.sendPosition\} disabled=\{iBlocked\}/);
+  assert.match(screen, /placeholder=\{iBlocked \? copy2\.composerBlocked :/);
+  assert.match(screen, /required=\{!v2Enabled\} disabled=\{iBlocked\}/, 'v2: an empty submit re-checks the block instead of a browser bubble');
+  assert.match(css, /\.st-composer-challenge:disabled,\.schach-treff\.st-v2 \.st2-position-trigger:disabled\{opacity:\.45;cursor:not-allowed\}/);
+  const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
+  assert.match(challenges, /title=\{composer \? t\.challengePlayer : undefined\} disabled=\{disabled\}/);
+  assert.match(css, /@media\(min-width:1024px\) and \(max-width:1599px\)\{\n  \.schach-treff\.st-v2 \.st-chat \.st-composer \.st-composer-challenge\{[^}]*width:44px/, 'DM input keeps its width on medium desktops');
+  await withVite(async server => {
+    const { PositionTrigger } = await server.ssrLoadModule('/src/components/schachTreff/v2/Parts.tsx');
+    assert.match(renderToStaticMarkup(createElement(PositionTrigger, { label: 'Position', disabled: true, onClick() {} })), /<button type="button" class="st2-position-trigger" data-hint="Position" aria-label="Position" title="Position" disabled="">/);
+    assert.doesNotMatch(renderToStaticMarkup(createElement(PositionTrigger, { label: 'Position', onClick() {} })), /disabled/);
+    const { v2Copy2 } = await server.ssrLoadModule('/src/components/schachTreff/v2/copy2.ts');
+    for (const locale of ['de', 'en', 'ru', 'ua', 'az', 'tr']) assert.ok(v2Copy2[locale].composerBlocked, locale);
+    assert.equal(v2Copy2.ru.composerBlocked, 'Чат заблокирован');
+  });
+  // Message actions (⋯) sit in the hover toolbar on mouse devices instead of an extra line.
+  assert.match(css, /@media\(any-pointer:fine\)\{/);
 });

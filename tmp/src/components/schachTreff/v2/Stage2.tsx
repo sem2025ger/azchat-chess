@@ -341,13 +341,20 @@ export function useBlock(partnerId: string | undefined) {
   const { user } = useAuth();
   const [blocked, setBlocked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [revision, setRevision] = useState(0);
+  // A block set or lifted in another tab must not leave this tab showing the old state: re-read on focus and on demand.
+  const reload = useCallback(() => setRevision(value => value + 1), []);
+  useEffect(() => {
+    window.addEventListener('focus', reload);
+    return () => window.removeEventListener('focus', reload);
+  }, [reload]);
   useEffect(() => {
     if (!user || !partnerId) { setBlocked(false); return; }
     let current = true;
     void supabase.from('chess_user_blocks').select('blocked_id').eq('blocker_id', user.id).eq('blocked_id', partnerId).maybeSingle()
       .then(result => { if (current && !result.error) setBlocked(Boolean(result.data)); });
     return () => { current = false; };
-  }, [user, partnerId]);
+  }, [user, partnerId, revision]);
   async function toggle() {
     if (!user || !partnerId || busy) return false;
     setBusy(true);
@@ -355,9 +362,10 @@ export function useBlock(partnerId: string | undefined) {
       ? await supabase.from('chess_user_blocks').delete().eq('blocker_id', user.id).eq('blocked_id', partnerId)
       : await supabase.from('chess_user_blocks').insert({ blocker_id: user.id, blocked_id: partnerId });
     setBusy(false);
-    if (result.error) return false;
+    // 23505: already blocked (state was stale) — the wanted state is reached either way.
+    if (result.error && (result.error as { code?: string }).code !== '23505') { reload(); return false; }
     setBlocked(!blocked);
     return true;
   }
-  return { blocked, busy, toggle };
+  return { blocked, busy, toggle, reload };
 }

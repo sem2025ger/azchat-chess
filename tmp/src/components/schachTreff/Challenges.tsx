@@ -95,12 +95,12 @@ export function ChallengeProvider({ clubId, me, people, enabled, finished = NONE
     </dialog>
   </Context.Provider>;
 }
-export function ChallengeButton({ targetUserId,beforeOpen,icon,composer }: { targetUserId?: string; beforeOpen?: () => void; icon?: boolean; composer?: boolean }) {
+export function ChallengeButton({ targetUserId,beforeOpen,icon,composer,disabled=false }: { targetUserId?: string; beforeOpen?: () => void; icon?: boolean; composer?: boolean; disabled?: boolean }) {
   const t=useSchachTreffCopy();
   const context=useContext(Context);
   if (!context?.available || targetUserId===context.me) return null;
   return <button type="button" className={icon ? 'st-challenge-icon' : composer ? 'st-composer-challenge' : undefined}
-    aria-label={icon || composer ? t.challengePlayer : undefined} onClick={() => { beforeOpen?.(); context.open(targetUserId); }}>
+    aria-label={icon || composer ? t.challengePlayer : undefined} title={composer ? t.challengePlayer : undefined} disabled={disabled} onClick={() => { beforeOpen?.(); context.open(targetUserId); }}>
     {icon ? <Swords size={16} aria-hidden="true" /> : composer
       ? <><Swords className="st-composer-challenge-icon" size={18} aria-hidden="true" /><span className="st-composer-challenge-label">{t.challengePlayer}</span></>
       : t.challengeAction}

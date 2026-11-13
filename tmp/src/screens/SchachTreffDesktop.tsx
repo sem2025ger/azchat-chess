@@ -8,6 +8,8 @@ import { useOptionalLanguage } from '../context/LanguageContext';
 import { supabase } from '../services/supabase';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
+import '@fontsource/bodoni-moda/latin-600-italic.css';
+import '@fontsource/bodoni-moda/latin-ext-600-italic.css';
 import './SchachTreffDesktop.css';
 import { ChallengeProvider, ChallengeButton, ChallengeMessage, useChallengeMessageIds } from '../components/schachTreff/Challenges';
 import PlayerSummary from '../components/schachTreff/PlayerSummary';
@@ -205,6 +207,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     event.preventDefault();
     if (!user || !clubId || !member || busy || !body.trim()) return;
     if (await perform(() => supabase.from('chess_club_messages').insert({ club_id: clubId, author_id: user.id, body: body.trim() }))) setBody('');
+    else if (dmChat) block.reload(); // e.g. blocked from another tab: show the real state in the header and composer
   }
   async function savePin(event: FormEvent) {
     event.preventDefault();
@@ -266,9 +269,9 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     <div className={hideRooms && v2Enabled ? 'st-columns st2-no-rooms' : 'st-columns'}>{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} heading={v2Enabled ? copy1.myClubs : undefined} />{v2Enabled && <DirectList currentClubId={clubId} />}</aside>}
       <section className="st-surface st-chat">
         {(isClub || hasChatActions || v2Enabled) && <div className="st-chat-header">
+          {/* The rooms column already says "General chat": the feed headline is the room's motto (owner, 13 Nov). */}
           {v2Enabled && !isClub && <div className="st2-general-heading">
-            <h2 className="st2-general-title">{t.general}</h2>
-            <span className="st2-general-subtitle">{copy1.subtitle}</span>
+            <h2 className="st2-general-title st2-general-motto"><span className="st2-sr-only">{t.general}: </span>{copy1.subtitle}</h2>
           </div>}
           {v2Enabled && !isClub && <div className="st2-chat-meta">
             <span className="st2-online" aria-label={onlineCount === null ? copy1.onlineNow : `${onlineCount} ${copy1.onlineNow}`} aria-live="polite">
@@ -281,6 +284,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
             <h2>{dmChat ? <span className="st2-dm-title" style={nameStyle(dmChat.partnerId)}>{dmChat.partnerName}</span> : <RoomTitle clubId={clubId} />}</h2>
             {dmChat && <button type="button" className="st2-block" disabled={block.busy} onClick={() => void block.toggle()}>{block.blocked ? copy2.unblock : copy2.block}</button>}
             {canInvite && <RoomInvite key={clubId + '-' + inviteRevision} clubId={clubId} />}
+            {v2Enabled && !dmChat && !hideRooms && <SeekButton />}
           </>}
           {hasChatActions && <div className="st-pin-menu" onKeyDown={event => {
             if (event.key === 'Escape' && pinMenu) {
@@ -325,10 +329,11 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         {dmChat && <p className="st2-note st2-dm-note">{block.blocked ? copy2.blockedNote : copy2.directChat}</p>}
         {dmOpen.error && (v2Enabled ? <Toast message={dmOpen.error} closeLabel={t.close} onClose={dmOpen.clear} /> : <p role="alert">{dmOpen.error}</p>)}
         <form className="st-composer" onSubmit={send}>
-          {/* General chat: Seek sits in the header. Club rooms keep it here; DMs challenge the partner. */}
-          {v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} /> : isClub ? <SeekButton /> : null) : <ChallengeButton composer />}
-          {v2Enabled && <PositionTrigger label={copy2.sendPosition} onClick={() => setComposer({ fen: DEFAULT_POSITION, root: null })} />}
-          <input aria-label={t.placeholder} placeholder={iBlocked ? copy2.refusals.blocked : hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required disabled={iBlocked} />
+          {/* Desktop: Seek sits in the header (general chat and club rooms) so the input stays wide. The compact
+              mobile room view (hideRooms) keeps its approved composer layout. DMs challenge the partner here. */}
+          {v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} disabled={iBlocked} /> : isClub && hideRooms ? <SeekButton /> : null) : <ChallengeButton composer />}
+          {v2Enabled && <PositionTrigger label={copy2.sendPosition} disabled={iBlocked} onClick={() => setComposer({ fen: DEFAULT_POSITION, root: null })} />}
+          <input aria-label={t.placeholder} placeholder={iBlocked ? copy2.composerBlocked : hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required={!v2Enabled} disabled={iBlocked} />
           <button className="st-send" disabled={busy || iBlocked || !body.trim()}>{t.send}</button>
         </form>
       </section>

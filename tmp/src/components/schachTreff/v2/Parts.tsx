@@ -20,7 +20,7 @@ export function nameStyle(userId: string): CSSProperties {
 }
 
 /** Accessible position control with a visible mouse/keyboard hint and a delayed touch hint. */
-export function PositionTrigger({ label, onClick }: { label: string; onClick: () => void }) {
+export function PositionTrigger({ label, onClick, disabled = false }: { label: string; onClick: () => void; disabled?: boolean }) {
   const [longPress, setLongPress] = useState(false);
   const pressTimer = useRef<number | undefined>(undefined);
   const hideTimer = useRef<number | undefined>(undefined);
@@ -34,7 +34,7 @@ export function PositionTrigger({ label, onClick }: { label: string; onClick: ()
     hideTimer.current = window.setTimeout(() => setLongPress(false), 1600);
   };
   return <button type="button" className={longPress ? 'st2-position-trigger st2-hint-visible' : 'st2-position-trigger'}
-    data-hint={label} aria-label={label} title={label} onClick={onClick}
+    data-hint={label} aria-label={label} title={label} disabled={disabled} onClick={onClick}
     onTouchStart={() => {
       window.clearTimeout(pressTimer.current);
       window.clearTimeout(hideTimer.current);
