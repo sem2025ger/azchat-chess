@@ -76,7 +76,8 @@
 .schach-treff .st2-thread-form input{flex:1 1 0;width:0;min-width:0}
 .schach-treff .st2-thread-form .st-send{display:grid;place-items:center;flex:none;width:44px;padding:0;color:#17130e;background:#B8916A;border-radius:8px}
 @media(max-width:1023px){
-  .schach-treff .st2-side:not(.st2-thread){display:none}
+  /* The members panel follows the chat on narrow screens, as in the approved HTML; do not discard it. */
+  .schach-treff.st-v2 .st2-side:not(.st2-thread){display:flex;height:320px;min-height:220px;padding:16px;border:1px solid #ffffff12;border-radius:16px}
   .schach-treff .st2-thread{position:fixed;inset:0;z-index:60;height:auto;border-radius:0;padding:16px}
 }
 
@@ -208,4 +209,26 @@
   .schach-treff.st-v2 .st2-general-heading{flex-basis:100%}
   .schach-treff.st-v2 .st2-general-subtitle{font-size:13px}
   .schach-treff.st-v2 .st2-chat-meta{width:100%;justify-content:space-between}
+}
+
+
+/* Real Schach-Treff layout: keep both sidebars present and let the right panel
+   move below the chat when the available *content* width is too narrow. */
+#root .schach-treff.st-v2 .st-columns > aside{width:auto;min-width:0;max-width:none}
+@media(min-width:1024px){.schach-treff.st-v2{container-type:inline-size}}
+@container(max-width:890px){
+  .schach-treff.st-v2 .st-columns{grid-template-columns:minmax(200px,240px) minmax(0,1fr)}
+  .schach-treff.st-v2 .st-columns.st2-no-rooms{grid-template-columns:minmax(0,1fr)}
+  .schach-treff.st-v2 .st-columns>.st2-side{grid-column:1/-1;height:320px;min-height:220px}
+}
+@container(max-width:660px){
+  .schach-treff.st-v2 .st-columns{grid-template-columns:minmax(0,1fr)}
+  .schach-treff.st-v2 .st-columns>.st-rooms{height:220px;min-height:0}
+}
+/* The actual 'Find opponent' action must remain legible in the top header,
+   rather than collapsing to an unidentified clock icon on tablets and phones. */
+@media(max-width:1023px){
+  .schach-treff.st-v2 .st-chat-header .st2-seek-trigger{width:auto;min-width:44px;padding:0 12px}
+  .schach-treff.st-v2 .st-chat-header .st2-seek-label{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+  .schach-treff.st-v2 .st2-chat-meta{flex-wrap:wrap}
 }
