@@ -110,7 +110,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
          if(!animation) return null;
          animation.pause();animation.currentTime=0;
          const first=title.getBoundingClientRect().toJSON(),start=getComputedStyle(title).backgroundPosition;
-         animation.currentTime=9000;
+         animation.currentTime=6000;
          const second=title.getBoundingClientRect().toJSON(),end=getComputedStyle(title).backgroundPosition;
          animation.play();
          return {first,second,start,end,font:getComputedStyle(title).fontFamily,size:getComputedStyle(title).fontSize,
@@ -119,7 +119,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
        assert.ok(paint && paint.start!==paint.end,'title paint moves');
        assert.deepEqual(paint.first,paint.second,'title geometry remains fixed during animation');
        assert.ok(paint.font.includes('Bodoni Moda') && paint.size==='42.5px','approved 2.5rem title at the existing 17px root: '+JSON.stringify(paint));
-       assert.equal(paint.duration,'18s');assert.equal(paint.linkAnimation,'none');
+       assert.equal(paint.duration,'12s');assert.equal(paint.linkAnimation,'none');
        await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
        assert.equal(await evaluate("getComputedStyle(document.querySelector('.schach-treff>header h1')).animationName"),'none');
        await cdp('Emulation.setEmulatedMedia',{features:[]});
@@ -158,6 +158,12 @@ export async function checkRoomLayout(moderation = false, polish = false){
        if(process.env.SECTIONS_CAPTURE) {
          const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
          await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-title-static-general-'+width+'.png'),Buffer.from(shot.data,'base64'));
+         for(const phase of [0,6000]) {
+           await evaluate(`(()=>{const a=document.querySelector('.schach-treff>header h1').getAnimations()[0];a.pause();a.currentTime=${phase};})()`);
+           const frame=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+           await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-dark-metal-'+width+'-'+phase+'.png'),Buffer.from(frame.data,'base64'));
+         }
+
        }
      }
    }

@@ -405,7 +405,10 @@ test('owner 13 Nov: feed headline is the motto, bronze "General chat" link, bloc
   for (const [, color] of titleRule.match(/linear-gradient\(([^)]+)\)/)[1].matchAll(/#([0-9a-f]{6})/gi)) {
     assert.ok((luminance(color) + .05) / (luminance('0A0B0B') + .05) >= 4.5, 'even the dark title stops remain legible');
   }
-  assert.match(css, /@media\(min-width:1024px\) and \(prefers-reduced-motion:no-preference\)\{\.schach-treff\.st-v2>header h1\{animation:st2TitleMetalShift 18s ease-in-out infinite alternate\}\}/);
+  const titleColors = [...titleRule.match(/linear-gradient\(([^)]+)\)/)[1].matchAll(/#([0-9a-f]{6})/gi)].map(match => luminance(match[1]));
+  assert.ok((Math.max(...titleColors) + .05) / (Math.min(...titleColors) + .05) >= 2, 'a distinct dark metallic band, rather than uniformly muted gold');
+  assert.match(titleRule, /#7E7C73 49%,#7E7C73 53%/, 'a bounded graphite reflection inside the bronze lettering');
+  assert.match(css, /@media\(min-width:1024px\) and \(prefers-reduced-motion:no-preference\)\{\.schach-treff\.st-v2>header h1\{animation:st2TitleMetalShift 12s linear infinite alternate\}\}/);
   assert.match(css, /@media\(min-width:1024px\) and \(prefers-reduced-motion:reduce\)\{\.schach-treff\.st-v2>header h1\{animation:none;background-size:100% 100%\}\}/);
   // 3. Block state: re-read on tab focus and after a refused send; every composer action is disabled.
   const stage2 = readFileSync(new URL('../src/components/schachTreff/v2/Stage2.tsx', import.meta.url), 'utf8');

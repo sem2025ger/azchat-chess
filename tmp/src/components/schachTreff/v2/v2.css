@@ -310,9 +310,9 @@
 .schach-treff.st-v2 .st-rooms .st-general-link:hover{border-color:#D4A373;box-shadow:inset 0 1px 0 rgba(255,244,215,.12),0 0 12px rgba(184,145,106,.1)}
 /* Only the desktop title's paint changes; its type and geometry remain intact. */
 @media(min-width:1024px){
-  .schach-treff.st-v2>header h1{color:#D2B18A;background:linear-gradient(110deg,#A28A70 0%,#C1A07A 28%,#D7BD92 48%,#AF9372 66%,#BCA17C 84%,#A28A70 100%) 0% 50%/220% 100%;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .schach-treff.st-v2>header h1{color:#D2B18A;background:linear-gradient(110deg,#C9A77D 0%,#C9A77D 33%,#D7BD92 42%,#A18B6A 46%,#7E7C73 49%,#7E7C73 53%,#A18B6A 57%,#D7BD92 62%,#C9A77D 72%,#C9A77D 100%) 0% 50%/200% 100%;background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 }
-@media(min-width:1024px) and (prefers-reduced-motion:no-preference){.schach-treff.st-v2>header h1{animation:st2TitleMetalShift 18s ease-in-out infinite alternate}}
+@media(min-width:1024px) and (prefers-reduced-motion:no-preference){.schach-treff.st-v2>header h1{animation:st2TitleMetalShift 12s linear infinite alternate}}
 @keyframes st2TitleMetalShift{from{background-position:0% 50%}to{background-position:100% 50%}}
 @media(min-width:1024px) and (prefers-reduced-motion:reduce){.schach-treff.st-v2>header h1{animation:none;background-size:100% 100%}}
 /* Blocked DM: challenge button visibly inactive. */
