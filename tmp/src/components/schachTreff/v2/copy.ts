@@ -2,6 +2,7 @@ import { useOptionalLanguage } from '../../../context/LanguageContext';
 import type { Language } from '../../../translations';
 
 type Copy = {
+  subtitle: string; onlineNow: string;
   seek: string; seekHint: string; seekLimit: string; blitz: string; rapid: string;
   members: string; activeNow: string; challenge: string;
   reply: string; thread: string; noReplies: string; replyPlaceholder: string; closeThread: string; send: string;
@@ -19,6 +20,7 @@ const slavic = (one: string, few: string, many: string) => (n: number) => {
 
 export const v2Copy: Record<Language, Copy> = {
   de: {
+    subtitle: 'Für deutschsprachige Schachspieler', onlineNow: 'online',
     seek: 'Gegner suchen', seekHint: 'Bedenkzeit wählen – die Karte erscheint sofort im Chat.',
     seekLimit: 'Du hast bereits drei offene Herausforderungen.', blitz: 'Blitz', rapid: 'Schnellschach',
     members: 'Mitglieder', activeNow: 'gerade aktiv', challenge: 'Herausfordern',
@@ -34,6 +36,7 @@ export const v2Copy: Record<Language, Copy> = {
     replies: n => `${n} ${n === 1 ? 'Antwort' : 'Antworten'}`,
   },
   en: {
+    subtitle: 'For German-speaking chess players', onlineNow: 'online',
     seek: 'Find opponent', seekHint: 'Choose a time control – the card appears in the chat right away.',
     seekLimit: 'You already have three open challenges.', blitz: 'Blitz', rapid: 'Rapid',
     members: 'Members', activeNow: 'active now', challenge: 'Challenge',
@@ -49,6 +52,7 @@ export const v2Copy: Record<Language, Copy> = {
     replies: n => `${n} ${n === 1 ? 'reply' : 'replies'}`,
   },
   ru: {
+    subtitle: 'для немецкоязычных шахматистов', onlineNow: 'в сети',
     seek: 'Ищу соперника', seekHint: 'Выберите контроль — карточка сразу появится в чате.',
     seekLimit: 'У вас уже три открытых вызова.', blitz: 'Блиц', rapid: 'Рапид',
     members: 'Участники', activeNow: 'сейчас активен', challenge: 'Вызвать',
@@ -64,6 +68,7 @@ export const v2Copy: Record<Language, Copy> = {
     replies: slavic('ответ', 'ответа', 'ответов'),
   },
   ua: {
+    subtitle: 'для німецькомовних шахістів', onlineNow: 'у мережі',
     seek: 'Шукаю суперника', seekHint: 'Оберіть контроль — картка одразу з’явиться в чаті.',
     seekLimit: 'У вас уже три відкриті виклики.', blitz: 'Бліц', rapid: 'Рапід',
     members: 'Учасники', activeNow: 'зараз активний', challenge: 'Викликати',
@@ -79,6 +84,7 @@ export const v2Copy: Record<Language, Copy> = {
     replies: slavic('відповідь', 'відповіді', 'відповідей'),
   },
   az: {
+    subtitle: 'almandilli şahmatçılar üçün', onlineNow: 'onlayn',
     seek: 'Rəqib axtarıram', seekHint: 'Vaxt nəzarətini seçin — kart dərhal söhbətdə görünəcək.',
     seekLimit: 'Artıq üç açıq çağırışınız var.', blitz: 'Blits', rapid: 'Rapid',
     members: 'Üzvlər', activeNow: 'indi aktivdir', challenge: 'Çağır',
@@ -94,6 +100,7 @@ export const v2Copy: Record<Language, Copy> = {
     replies: n => `${n} cavab`,
   },
   tr: {
+    subtitle: 'Almanca konuşan satranççılar için', onlineNow: 'çevrimiçi',
     seek: 'Rakip arıyorum', seekHint: 'Süreyi seçin — kart hemen sohbette görünür.',
     seekLimit: 'Zaten üç açık meydan okumanız var.', blitz: 'Blitz', rapid: 'Hızlı',
     members: 'Üyeler', activeNow: 'şu an aktif', challenge: 'Meydan oku',
