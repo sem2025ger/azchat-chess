@@ -272,3 +272,8 @@
   .schach-treff.st-v2 .st2-side:not(.st2-thread){max-height:310px}
   .schach-treff.st-v2 .st-chat-header .st2-seek-trigger{width:auto;padding:0 12px}
 }
+/* Challenge card: a started game stays one click away for both players. */
+.st-challenge-open{display:inline-flex;align-items:center;justify-content:center;min-height:36px;margin-top:6px;padding:0 14px;border:1px solid #D4A373;border-radius:9px;background:rgba(212,163,115,.12);color:#F0D7B4;font-size:13px;font-weight:600;text-decoration:none}
+.st-challenge-open:hover{background:rgba(212,163,115,.2);color:#F7E6CC}
+.st-challenge-open:focus-visible{outline:2px solid #F0D7B4;outline-offset:2px}
+.schach-treff .st2-position-trigger .st2-mini-board{display:block;border-radius:3px}

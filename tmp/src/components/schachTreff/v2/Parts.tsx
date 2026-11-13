@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
-import { Grid3x3, Lightbulb, Mail, MessageSquare, SendHorizontal, Timer, X } from 'lucide-react';
+import { Lightbulb, Mail, MessageSquare, SendHorizontal, Timer, X } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import { useChallengeControls } from '../Challenges';
@@ -43,8 +43,18 @@ export function PositionTrigger({ label, onClick }: { label: string; onClick: ()
     }}
     onTouchEnd={stopPress}
     onTouchCancel={() => { window.clearTimeout(pressTimer.current); setLongPress(false); }}>
-    <Grid3x3 size={18} aria-hidden="true" />
+    <MiniBoardIcon />
   </button>;
+}
+
+/** 4×4 board in the ChessAZ board colours: the composer's "send a position" icon. */
+export function MiniBoardIcon() {
+  const dark = [[4, 0], [12, 0], [0, 4], [8, 4], [4, 8], [12, 8], [0, 12], [8, 12]];
+  return <svg className="st2-mini-board" width="22" height="22" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+    <rect width="16" height="16" rx="2" fill="#D8C3A0" />
+    {dark.map(([x, y]) => <rect key={`${x}-${y}`} x={x} y={y} width="4" height="4" fill="#A27A55" />)}
+    <rect x=".5" y=".5" width="15" height="15" rx="1.5" fill="none" stroke="#D4A373" />
+  </svg>;
 }
 
 /** Composer button: one tap opens time controls, a second tap posts an open challenge card. */

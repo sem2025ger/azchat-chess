@@ -219,6 +219,14 @@ const fixedCopy: Record<string, Record<Language,string>> = {
     "ua": "Партія починається…",
     "ru": "Партия начинается…"
   },
+  "Zur Partie": {
+    "de": "Zur Partie",
+    "en": "Open game",
+    "az": "Partiyaya keç",
+    "tr": "Oyuna git",
+    "ua": "Відкрити партію",
+    "ru": "Открыть партию"
+  },
   "Partie gestartet": {
     "de": "Partie gestartet",
     "en": "Game started",

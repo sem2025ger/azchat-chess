@@ -110,7 +110,7 @@ test('v2 reaction controls render accessible chess annotations; seek stays hidde
 test('flag off keeps the existing Schach-Treff markup paths', () => {
   const source = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   assert.match(source, /className=\{v2Enabled \? 'schach-treff st-v2' : 'schach-treff'\}/);
-  assert.match(source, /\{v2Enabled \? \(dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} \/> : null\) : <ChallengeButton composer \/>\}/);
+  assert.match(source, /\{v2Enabled \? \(dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} \/> : isClub \? <SeekButton \/> : null\) : <ChallengeButton composer \/>\}/);
   assert.match(source, /\{v2Enabled && <FeedbackButton \/>\}/);
   assert.match(source, /\(isClub \|\| hasChatActions \|\| v2Enabled\)/);
   assert.match(source, /\{v2Enabled && !isClub && <div className="st2-general-heading">/);
@@ -297,4 +297,35 @@ test('approved HTML reference: all v2 columns, responsive members, and real open
   for (const locale of ['de','en','ru','ua','az','tr']) {
     for (const key of ['onlineInChat','seeking','seekUnavailable','myClubs']) assert.ok(v2Copy[locale][key], key + ' ' + locale);
   }
+});
+
+test('challenge creator opens the started game even when match_found went to another tab of the same user', async () => {
+  await withVite(async server => {
+    const { ownStartedGame, gamePath } = await server.ssrLoadModule('/src/components/schachTreff/challengeRouting.ts');
+    const me = '11111111-1111-4111-8111-111111111111', other = '22222222-2222-4222-8222-222222222222';
+    const room = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const row = { id: 'c1', message_id: 'm1', created_by: me, target_user_id: null, time_control: '3+2', status: 'accepted', expires_at: '2026-11-13T05:00:00Z', room_id: room, accepted_by: other };
+    assert.equal(ownStartedGame([row], me, new Set(['c1']), new Set()), room, 'offer created in this tab → open its game');
+    assert.equal(gamePath(room), `/play?roomId=${room}`, 'colour comes from the server on reconnect');
+    assert.equal(ownStartedGame([row], me, new Set(), new Set()), null, 'offers from other tabs or old offers are not auto-opened');
+    assert.equal(ownStartedGame([row], me, new Set(['c1']), new Set([room])), null, 'opened once (match_found or earlier load)');
+    assert.equal(ownStartedGame([{ ...row, room_id: null }], me, new Set(['c1']), new Set()), null, 'game not started yet');
+    assert.equal(ownStartedGame([{ ...row, room_id: 'not-a-room' }], me, new Set(['c1']), new Set()), null);
+    assert.equal(ownStartedGame([{ ...row, status: 'open' }], me, new Set(['c1']), new Set()), null);
+    assert.equal(ownStartedGame([{ ...row, created_by: other }], me, new Set(['c1']), new Set()), null, 'the acceptor is routed by its own match_found');
+  });
+});
+
+test('challenge card links both players to the started game; composer position button is a small chess board', () => {
+  const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
+  assert.match(challenges, /select\('id,message_id,created_by,target_user_id,time_control,status,expires_at,room_id,accepted_by'\)/);
+  assert.match(challenges, /\(row\.created_by===me \|\| row\.accepted_by===me\) && <Link className="st-challenge-open" to=\{gamePath\(row\.room_id\)\}>\{t\.openGame\}<\/Link>/);
+  assert.match(challenges, /if \(roomId\) \{ opened\.current\.add\(roomId\); navigate\(gamePath\(roomId\)\); \}/);
+  const i18n = readFileSync(new URL('../src/components/schachTreff/i18n.ts', import.meta.url), 'utf8');
+  assert.match(i18n, /"Zur Partie": \{\n    "de": "Zur Partie",\n    "en": "Open game",\n    "az": "[^"]+",\n    "tr": "[^"]+",\n    "ua": "[^"]+",\n    "ru": "Открыть партию"/);
+  const parts = readFileSync(new URL('../src/components/schachTreff/v2/Parts.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(parts, /Grid3x3/);
+  assert.match(parts, /<MiniBoardIcon \/>\n  <\/button>;/);
+  const screen = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
+  assert.match(screen, /dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} \/> : isClub \? <SeekButton \/> : null/, 'club rooms keep a way to seek an opponent');
 });

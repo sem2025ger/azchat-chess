@@ -319,7 +319,8 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         {dmChat && <p className="st2-note st2-dm-note">{block.blocked ? copy2.blockedNote : copy2.directChat}</p>}
         {dmOpen.error && <p role="alert">{dmOpen.error}</p>}
         <form className="st-composer" onSubmit={send}>
-          {v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} /> : null) : <ChallengeButton composer />}
+          {/* General chat: Seek sits in the header. Club rooms keep it here; DMs challenge the partner. */}
+          {v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} /> : isClub ? <SeekButton /> : null) : <ChallengeButton composer />}
           {v2Enabled && <PositionTrigger label={copy2.sendPosition} onClick={() => setComposer({ fen: DEFAULT_POSITION, root: null })} />}
           <input aria-label={t.placeholder} placeholder={hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required />
           <button className="st-send" disabled={busy || !body.trim()}>{t.send}</button>

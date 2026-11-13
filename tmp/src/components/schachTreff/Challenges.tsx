@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Swords } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
 import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
+import { ROOM_ID, gamePath, ownStartedGame } from './challengeRouting';
 type Person = { id: string; username: string };
-type Challenge = { id: string; message_id: string; created_by: string; target_user_id: string | null; time_control: string; status: string; expires_at: string; room_id: string | null };
+type Challenge = { id: string; message_id: string; created_by: string; target_user_id: string | null; time_control: string; status: string; expires_at: string; room_id: string | null; accepted_by?: string | null };
 type Controls = { now: number; available: boolean; me: string; rows: Challenge[]; people: Person[]; busy: boolean; open: (target?: string) => void; act: (action: 'accept' | 'cancel', id: string) => void; seek: (time: string) => Promise<boolean>; openOffers: number };
 const Context = createContext<Controls | null>(null);
 export function ChallengeProvider({ clubId, me, people, enabled, children }: { clubId: string | null; me: string; people: Person[]; enabled: boolean; children: ReactNode }) {
@@ -16,9 +17,11 @@ export function ChallengeProvider({ clubId, me, people, enabled, children }: { c
   const [target,setTarget] = useState(''), [personal,setPersonal] = useState(false), [time,setTime] = useState('3+2');
   const [shown,setShown] = useState(false), [busy,setBusy] = useState(false), [error,setError] = useState('');
   const dialog = useRef<HTMLDialogElement>(null), warned = useRef(false);
+  // Offers created in THIS tab (first seen right after its own create call) and games already opened here.
+  const knownOwn = useRef(new Set<string>()), createdHere = useRef(new Set<string>()), opened = useRef(new Set<string>()), creating = useRef(false);
   const load = useCallback(async () => {
     if (!enabled || !clubId) { setRows([]); setAvailable(false); return; }
-    const result = await supabase.from('chess_club_challenges').select('id,message_id,created_by,target_user_id,time_control,status,expires_at,room_id').eq('club_id',clubId).order('created_at',{ascending:false}).limit(100);
+    const result = await supabase.from('chess_club_challenges').select('id,message_id,created_by,target_user_id,time_control,status,expires_at,room_id,accepted_by').eq('club_id',clubId).order('created_at',{ascending:false}).limit(100);
     if (result.error) {
       if (['42P01','PGRST205','42703','PGRST204'].includes(result.error.code)) {
         setAvailable(false);
@@ -26,8 +29,15 @@ export function ChallengeProvider({ clubId, me, people, enabled, children }: { c
       } else setError(t.error);
       return;
     }
-    setNow(Date.now()); setAvailable(true); setRows(result.data as Challenge[]);
-  },[clubId,enabled]);
+    const loaded = result.data as Challenge[];
+    setNow(Date.now()); setAvailable(true); setRows(loaded);
+    for (const row of loaded) if (row.created_by===me && !knownOwn.current.has(row.id)) {
+      knownOwn.current.add(row.id);
+      if (creating.current && row.status==='open') createdHere.current.add(row.id);
+    }
+    const roomId = ownStartedGame(loaded, me, createdHere.current, opened.current);
+    if (roomId) { opened.current.add(roomId); navigate(gamePath(roomId)); }
+  },[clubId,enabled,me,navigate]);
   useEffect(() => {
     void load();
     const poll=() => {
@@ -38,7 +48,9 @@ export function ChallengeProvider({ clubId, me, people, enabled, children }: { c
     const timer=window.setInterval(poll,12000);
     const changed=(event: { clubId?: string }) => { if (event.clubId===clubId) void load(); };
     const found=(event: { roomId?: string; color?: string }) => {
-      if (typeof event.roomId==='string' && /^[0-9a-f-]{36}$/i.test(event.roomId) && ['w','b'].includes(event.color ?? '')) navigate(`/play?roomId=${event.roomId}&color=${event.color}`);
+      if (typeof event.roomId==='string' && ROOM_ID.test(event.roomId) && ['w','b'].includes(event.color ?? '')) {
+        opened.current.add(event.roomId); navigate(`/play?roomId=${event.roomId}&color=${event.color}`);
+      }
     };
     socket?.on('club_challenges_changed',changed); socket?.on('match_found',found);
     if (enabled && clubId && isConnected) socket?.emit('club_challenge_watch',{clubId});
@@ -48,15 +60,17 @@ export function ChallengeProvider({ clubId, me, people, enabled, children }: { c
   async function request(action: 'create' | 'accept' | 'cancel', payload: object): Promise<boolean> {
     if (!socket || !isConnected || busy) return false;
     setBusy(true); setError('');
+    if (action==='create') creating.current = true;
     try {
       const response=await new Promise<{ ok: boolean; reason?: string }>((resolve,reject) => {
         socket.timeout(10000).emit('club_challenge_'+action,payload,(timeout: Error | null,result: { ok: boolean; reason?: string }) => timeout ? reject(timeout) : resolve(result));
       });
-      if (!response?.ok) { setError(t.challengeErrors[response?.reason as keyof typeof t.challengeErrors] ?? t.error); return false; }
+      if (!response?.ok) { creating.current = false; setError(t.challengeErrors[response?.reason as keyof typeof t.challengeErrors] ?? t.error); return false; }
       if (action==='create') setShown(false);
       await load();
+      creating.current = false;
       return true;
-    } catch { setError(t.error); return false; } finally { setBusy(false); }
+    } catch { creating.current = false; setError(t.error); return false; } finally { setBusy(false); }
   }
   const controls: Controls={ now,available:available && isConnected,me,rows,people,busy,open(id) { setTarget(id ?? ''); setPersonal(Boolean(id)); setError(''); setShown(true); },act(action,id) { void request(action,{challengeId:id}); },
     seek: time => request('create',{clubId,timeControl:time,targetUserId:null}),
@@ -104,6 +118,6 @@ export function ChallengeCard({now,row,me,people,busy,act}: {now: number; row: C
   const name=(id: string) => people.find(person => person.id===id)?.username ?? t.targetPlayer;
   return <div className="st-challenge-card"><small>{row.target_user_id ? t.personalChallenge : t.openOffer}</small>
     <p>{t.game} <span className="st-mono">{row.time_control}</span></p><p>{name(row.created_by)}{row.target_user_id ? ` → ${name(row.target_user_id)}` : ''}</p>
-    {expired ? <p>{t.expired}</p> : row.status==='cancelled' ? <p>{t.cancelled}</p> : row.status==='accepted' ? <p>{row.room_id ? t.gameStarted : t.gameStarting}</p> : row.created_by===me ? <><p>{t.waitingOpponent}</p><button disabled={busy} onClick={() => act('cancel',row.id)}>{t.cancel}</button></> : (!row.target_user_id || row.target_user_id===me) && <button disabled={busy} onClick={() => act('accept',row.id)}>{t.accept}</button>}
+    {expired ? <p>{t.expired}</p> : row.status==='cancelled' ? <p>{t.cancelled}</p> : row.status==='accepted' ? <><p>{row.room_id ? t.gameStarted : t.gameStarting}</p>{row.room_id && ROOM_ID.test(row.room_id) && (row.created_by===me || row.accepted_by===me) && <Link className="st-challenge-open" to={gamePath(row.room_id)}>{t.openGame}</Link>}</> : row.created_by===me ? <><p>{t.waitingOpponent}</p><button disabled={busy} onClick={() => act('cancel',row.id)}>{t.cancel}</button></> : (!row.target_user_id || row.target_user_id===me) && <button disabled={busy} onClick={() => act('accept',row.id)}>{t.accept}</button>}
   </div>;
 }
