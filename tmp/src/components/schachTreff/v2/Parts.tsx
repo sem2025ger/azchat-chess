@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
-import { Lightbulb, Mail, MessageSquare, SendHorizontal, Timer, X } from 'lucide-react';
+import { Grid3x3, Lightbulb, Mail, MessageSquare, SendHorizontal, Timer, X } from 'lucide-react';
 import { supabase } from '../../../services/supabase';
 import { useAuth } from '../../../context/AuthContext';
 import { useChallengeControls } from '../Challenges';
@@ -17,6 +17,34 @@ const safeStorage = () => { try { return window.localStorage; } catch { return n
 
 export function nameStyle(userId: string): CSSProperties {
   return { '--st-name': nameColor(userId) } as CSSProperties;
+}
+
+/** Accessible position control with a visible mouse/keyboard hint and a delayed touch hint. */
+export function PositionTrigger({ label, onClick }: { label: string; onClick: () => void }) {
+  const [longPress, setLongPress] = useState(false);
+  const pressTimer = useRef<number | undefined>(undefined);
+  const hideTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => {
+    window.clearTimeout(pressTimer.current);
+    window.clearTimeout(hideTimer.current);
+  }, []);
+  const stopPress = () => {
+    window.clearTimeout(pressTimer.current);
+    window.clearTimeout(hideTimer.current);
+    hideTimer.current = window.setTimeout(() => setLongPress(false), 1600);
+  };
+  return <button type="button" className={longPress ? 'st2-position-trigger st2-hint-visible' : 'st2-position-trigger'}
+    data-hint={label} aria-label={label} title={label} onClick={onClick}
+    onTouchStart={() => {
+      window.clearTimeout(pressTimer.current);
+      window.clearTimeout(hideTimer.current);
+      setLongPress(false);
+      pressTimer.current = window.setTimeout(() => setLongPress(true), 550);
+    }}
+    onTouchEnd={stopPress}
+    onTouchCancel={() => { window.clearTimeout(pressTimer.current); setLongPress(false); }}>
+    <Grid3x3 size={18} aria-hidden="true" />
+  </button>;
 }
 
 /** Composer button: one tap opens time controls, a second tap posts an open challenge card. */
