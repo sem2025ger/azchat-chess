@@ -2,7 +2,7 @@ import { useOptionalLanguage } from '../../../context/LanguageContext';
 import type { Language } from '../../../translations';
 
 type Copy = {
-  subtitle: string; onlineNow: string;
+  subtitle: string; onlineNow: string; onlineInChat: string; seeking: string; seekUnavailable: string; myClubs: string;
   seek: string; seekHint: string; seekLimit: string; blitz: string; rapid: string;
   members: string; activeNow: string; challenge: string;
   reply: string; thread: string; noReplies: string; replyPlaceholder: string; closeThread: string; send: string;
@@ -21,6 +21,7 @@ const slavic = (one: string, few: string, many: string) => (n: number) => {
 export const v2Copy: Record<Language, Copy> = {
   de: {
     subtitle: 'Für deutschsprachige Schachspieler', onlineNow: 'online',
+    onlineInChat: 'Gerade im Chat', seeking: 'Sucht einen Gegner', seekUnavailable: 'Gegnersuche ist zurzeit nicht verfügbar', myClubs: 'Meine Vereine',
     seek: 'Gegner suchen', seekHint: 'Bedenkzeit wählen – die Karte erscheint sofort im Chat.',
     seekLimit: 'Du hast bereits drei offene Herausforderungen.', blitz: 'Blitz', rapid: 'Schnellschach',
     members: 'Mitglieder', activeNow: 'gerade aktiv', challenge: 'Herausfordern',
@@ -37,6 +38,7 @@ export const v2Copy: Record<Language, Copy> = {
   },
   en: {
     subtitle: 'For German-speaking chess players', onlineNow: 'online',
+    onlineInChat: 'In chat now', seeking: 'Looking for an opponent', seekUnavailable: 'Opponent search is currently unavailable', myClubs: 'My clubs',
     seek: 'Find opponent', seekHint: 'Choose a time control – the card appears in the chat right away.',
     seekLimit: 'You already have three open challenges.', blitz: 'Blitz', rapid: 'Rapid',
     members: 'Members', activeNow: 'active now', challenge: 'Challenge',
@@ -53,6 +55,7 @@ export const v2Copy: Record<Language, Copy> = {
   },
   ru: {
     subtitle: 'для немецкоязычных шахматистов', onlineNow: 'в сети',
+    onlineInChat: 'Сейчас в чате', seeking: 'Ищет соперника', seekUnavailable: 'Поиск соперника сейчас недоступен', myClubs: 'Мои клубы',
     seek: 'Ищу соперника', seekHint: 'Выберите контроль — карточка сразу появится в чате.',
     seekLimit: 'У вас уже три открытых вызова.', blitz: 'Блиц', rapid: 'Рапид',
     members: 'Участники', activeNow: 'сейчас активен', challenge: 'Вызвать',
@@ -69,6 +72,7 @@ export const v2Copy: Record<Language, Copy> = {
   },
   ua: {
     subtitle: 'для німецькомовних шахістів', onlineNow: 'у мережі',
+    onlineInChat: 'Зараз у чаті', seeking: 'Шукає суперника', seekUnavailable: 'Пошук суперника зараз недоступний', myClubs: 'Мої клуби',
     seek: 'Шукаю суперника', seekHint: 'Оберіть контроль — картка одразу з’явиться в чаті.',
     seekLimit: 'У вас уже три відкриті виклики.', blitz: 'Бліц', rapid: 'Рапід',
     members: 'Учасники', activeNow: 'зараз активний', challenge: 'Викликати',
@@ -85,6 +89,7 @@ export const v2Copy: Record<Language, Copy> = {
   },
   az: {
     subtitle: 'almandilli şahmatçılar üçün', onlineNow: 'onlayn',
+    onlineInChat: 'Hazırda çatda', seeking: 'Rəqib axtarır', seekUnavailable: 'Rəqib axtarışı hazırda əlçatan deyil', myClubs: 'Klublarım',
     seek: 'Rəqib axtarıram', seekHint: 'Vaxt nəzarətini seçin — kart dərhal söhbətdə görünəcək.',
     seekLimit: 'Artıq üç açıq çağırışınız var.', blitz: 'Blits', rapid: 'Rapid',
     members: 'Üzvlər', activeNow: 'indi aktivdir', challenge: 'Çağır',
@@ -101,6 +106,7 @@ export const v2Copy: Record<Language, Copy> = {
   },
   tr: {
     subtitle: 'Almanca konuşan satranççılar için', onlineNow: 'çevrimiçi',
+    onlineInChat: 'Şu anda sohbette', seeking: 'Rakip arıyor', seekUnavailable: 'Rakip arama şu anda kullanılamıyor', myClubs: 'Kulüplerim',
     seek: 'Rakip arıyorum', seekHint: 'Süreyi seçin — kart hemen sohbette görünür.',
     seekLimit: 'Zaten üç açık meydan okumanız var.', blitz: 'Blitz', rapid: 'Hızlı',
     members: 'Üyeler', activeNow: 'şu an aktif', challenge: 'Meydan oku',
