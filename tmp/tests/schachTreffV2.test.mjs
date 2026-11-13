@@ -265,7 +265,7 @@ test('approved v2 composer and header: localized subtitle, real presence and pos
   assert.match(source, /<div className="st2-general-heading">/);
   assert.match(source, /<span className="st2-general-subtitle">\{copy1.subtitle\}<\/span>/);
   assert.match(source, /<div className="st2-chat-meta">/);
-  assert.match(source, /Object\.keys\(channel\.presenceState\(\)\)\.length/, 'presence is measured, not hardcoded');
+  assert.match(source, /Object\.keys\(channel\.presenceState\(\)\)/, 'presence is measured, not hardcoded');
   assert.match(source, /<PositionTrigger label=\{copy2.sendPosition\}/);
   assert.match(css, /\.st-chat-header \.st2-seek-popover\{top:calc\(100% \+ 10px\);bottom:auto/);
   const { v2Copy } = await (async () => {
@@ -278,4 +278,23 @@ test('approved v2 composer and header: localized subtitle, real presence and pos
   }
   assert.equal(v2Copy.ru.subtitle, 'для немецкоязычных шахматистов');
   assert.equal(v2Copy.ru.onlineNow, 'в сети');
+});
+
+test('approved HTML reference: all v2 columns, responsive members, and real open challenges', async () => {
+  const source = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/components/schachTreff/v2/v2.css', import.meta.url), 'utf8');
+  const parts = readFileSync(new URL('../src/components/schachTreff/v2/Parts.tsx', import.meta.url), 'utf8');
+  assert.match(source, /<MembersPanel members=\{members\} messages=\{messages\} me=\{user\?\.id\} onlineIds=\{onlineIds\}/);
+  assert.match(css, /\.schach-treff\.st-v2 \.st2-side:not\(\.st2-thread\)\{display:flex/);
+  assert.match(css, /grid-template-columns:240px minmax\(0,1fr\) 300px/);
+  assert.match(parts, /challenges\.rows\.find\(row => row\.status === 'open'/);
+  assert.match(parts, /onClick=\{\(\) => challenges\?\.act\('accept', offer\.id\)\}/);
+  const { v2Copy } = await (async () => {
+    let value;
+    await withVite(async server => { value = await server.ssrLoadModule('/src/components/schachTreff/v2/copy.ts'); });
+    return value;
+  })();
+  for (const locale of ['de','en','ru','ua','az','tr']) {
+    for (const key of ['onlineInChat','seeking','seekUnavailable','myClubs']) assert.ok(v2Copy[locale][key], key + ' ' + locale);
+  }
 });
