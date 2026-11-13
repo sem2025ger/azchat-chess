@@ -296,13 +296,16 @@
 }
 /* Owner 13 Nov: the feed headline is the room's motto; "General chat" lives in the rooms column only. */
 .st2-sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-#root .schach-treff.st-v2 .st2-general-heading .st2-general-motto{display:block;max-width:100%;font-family:'Bodoni Moda',Georgia,serif!important;font-size:27px;font-style:italic!important;font-weight:600;letter-spacing:.01em;line-height:1.2;white-space:normal;text-wrap:balance;overflow:visible;background:linear-gradient(100deg,#F3DDB8 0%,#D4A373 45%,#F0D2A4 70%,#B8875A 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+#root .schach-treff.st-v2 .st2-general-heading .st2-general-motto{display:block;max-width:100%;font-family:'Bodoni Moda',Georgia,serif!important;font-size:28px;font-style:normal!important;font-weight:600;letter-spacing:.01em;line-height:1.2;white-space:normal;text-wrap:balance;hyphens:manual;overflow:visible;color:#EDD3AC;text-rendering:optimizeLegibility}
 .schach-treff.st-v2 .st2-general-motto::first-letter{text-transform:uppercase}
-@media(min-width:1024px) and (max-width:1599px){#root .schach-treff.st-v2 .st2-general-heading .st2-general-motto{font-size:23px}}
-@media(max-width:1023px){#root .schach-treff.st-v2 .st2-general-heading .st2-general-motto{font-size:20px}}
+.schach-treff.st-v2 .st2-nowrap{white-space:nowrap}
+@media(min-width:1024px) and (max-width:1599px){#root .schach-treff.st-v2 .st2-general-heading .st2-general-motto{font-size:24px}}
+@media(max-width:1023px){#root .schach-treff.st-v2 .st2-general-heading .st2-general-motto{font-size:21px}}
 /* Rooms column: "General chat" is the main entry — larger, bronze-metallic, the Seek button's typeface. */
 .schach-treff.st-v2 .st-rooms .st-general-link{min-height:54px;margin-bottom:18px;padding:0 16px;font-family:inherit;font-size:17px;font-weight:600;letter-spacing:.01em}
-.schach-treff.st-v2 .st-rooms .st-general-link .st-general-label{flex:1 1 auto;min-width:0;background:linear-gradient(180deg,#F7E4C3 0%,#E2B57E 42%,#B07A45 58%,#E8C493 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
+.schach-treff.st-v2 .st-rooms .st-general-link .st-general-label{flex:1 1 auto;min-width:0;color:#F0D7B4;background:linear-gradient(105deg,#F0D7B4 0%,#F0D7B4 38%,#FFF4DE 50%,#F0D7B4 62%,#F0D7B4 100%) 100% 0/260% 100% no-repeat;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:st2-sheen 7s ease-in-out 1.2s infinite}
+@keyframes st2-sheen{0%{background-position:100% 0}45%,100%{background-position:0 0}}
+@media(prefers-reduced-motion:reduce){.schach-treff.st-v2 .st-rooms .st-general-link .st-general-label{animation:none}}
 /* Blocked DM: challenge button visibly inactive. */
 .schach-treff .st-composer-challenge:disabled,.schach-treff.st-v2 .st2-position-trigger:disabled{opacity:.45;cursor:not-allowed}
 .schach-treff.st-v2 .st2-position-trigger:disabled::after{display:none}
@@ -320,3 +323,12 @@
   .schach-treff.st-v2 .st-composer-challenge-icon{display:block;flex:none}
   .schach-treff.st-v2 .st-composer-challenge-label{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 }
+/* Challenge cards in the feed match the finished-game cards (label · title · status, action on the right). */
+.schach-treff.st-v2 .st-challenge-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:14px;row-gap:3px;max-width:480px;box-sizing:border-box;margin-top:6px;padding:12px 14px;border:1px solid #3A3226;border-radius:14px;background:#17150F}
+.schach-treff.st-v2 .st-challenge-card>*{grid-column:1;margin:0}
+.schach-treff.st-v2 .st-challenge-card>small{font-size:11.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#D4A373}
+.schach-treff.st-v2 .st-challenge-card .st-challenge-title{font-size:15px;font-weight:600;color:#EDE6D8}
+.schach-treff.st-v2 .st-challenge-card .st-challenge-title .st-mono{font-family:inherit;font-variant-numeric:tabular-nums}
+.schach-treff.st-v2 .st-challenge-card .st-challenge-players{font-size:13.5px;color:#C9BFAE}
+.schach-treff.st-v2 .st-challenge-card .st-challenge-status{font-size:12px;letter-spacing:.04em;color:#9AA3A0}
+.schach-treff.st-v2 .st-challenge-card>button,.schach-treff.st-v2 .st-challenge-card>.st-challenge-open{grid-column:2;grid-row:1/span 4;align-self:center;margin:0}

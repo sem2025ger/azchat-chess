@@ -8,8 +8,7 @@ import { useOptionalLanguage } from '../context/LanguageContext';
 import { supabase } from '../services/supabase';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
-import '@fontsource/bodoni-moda/latin-600-italic.css';
-import '@fontsource/bodoni-moda/latin-ext-600-italic.css';
+import '@fontsource/bodoni-moda/latin-ext-600.css';
 import './SchachTreffDesktop.css';
 import { ChallengeProvider, ChallengeButton, ChallengeMessage, useChallengeMessageIds } from '../components/schachTreff/Challenges';
 import PlayerSummary from '../components/schachTreff/PlayerSummary';
@@ -271,7 +270,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         {(isClub || hasChatActions || v2Enabled) && <div className="st-chat-header">
           {/* The rooms column already says "General chat": the feed headline is the room's motto (owner, 13 Nov). */}
           {v2Enabled && !isClub && <div className="st2-general-heading">
-            <h2 className="st2-general-title st2-general-motto"><span className="st2-sr-only">{t.general}: </span>{copy1.subtitle}</h2>
+            <h2 className="st2-general-title st2-general-motto"><span className="st2-sr-only">{t.general}: </span>{copy1.subtitle.split(' ').flatMap((word, index) => [index ? ' ' : '', word.includes('-') ? <span key={index} className="st2-nowrap">{word}</span> : word])}</h2>
           </div>}
           {v2Enabled && !isClub && <div className="st2-chat-meta">
             <span className="st2-online" aria-label={onlineCount === null ? copy1.onlineNow : `${onlineCount} ${copy1.onlineNow}`} aria-live="polite">

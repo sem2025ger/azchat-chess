@@ -263,7 +263,7 @@ test('approved v2 composer and header: localized subtitle, real presence and pos
   const source = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../src/components/schachTreff/v2/v2.css', import.meta.url), 'utf8');
   assert.match(source, /<div className="st2-general-heading">/);
-  assert.match(source, /<h2 className="st2-general-title st2-general-motto"><span className="st2-sr-only">\{t\.general\}: <\/span>\{copy1\.subtitle\}<\/h2>/);
+  assert.match(source, /<h2 className="st2-general-title st2-general-motto"><span className="st2-sr-only">\{t\.general\}: <\/span>\{copy1\.subtitle\.split\(' '\)\.flatMap\(\(word, index\) => \[index \? ' ' : '', word\.includes\('-'\) \? <span key=\{index\} className="st2-nowrap">\{word\}<\/span> : word\]\)\}<\/h2>/, 'hyphenated words (German-speaking) never break');
   assert.match(source, /<div className="st2-chat-meta">/);
   assert.match(source, /Object\.keys\(channel\.presenceState\(\)\)/, 'presence is measured, not hardcoded');
   assert.match(source, /<PositionTrigger label=\{copy2.sendPosition\}/);
@@ -333,7 +333,7 @@ test('challenge card links both players to the started game; composer position b
 
 test('finished challenge games: no "Open game" link, card says the game is over; unread badges are not stretched', () => {
   const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
-  assert.match(challenges, /<p>\{finished \? t\.gameFinished : row\.room_id \? t\.gameStarted : t\.gameStarting\}<\/p>\{!finished && row\.room_id/);
+  assert.match(challenges, /<p className="st-challenge-status">\{finished \? t\.gameFinished : row\.room_id \? t\.gameStarted : t\.gameStarting\}<\/p>\{!finished && row\.room_id/);
   assert.match(challenges, /finished=\{context\.finished\.has\(row\.id\)\}/);
   const screen = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   assert.match(screen, /const finishedChallenges = new Set\(v2Data\?\.results\.map\(result => result\.challenge_id\) \?\? \[\]\);/);
@@ -373,15 +373,19 @@ test('owner 13 Nov: feed headline is the motto, bronze "General chat" link, bloc
   // 1. The visible "General chat" heading is gone from the feed; the motto replaces it (name kept for screen readers).
   assert.doesNotMatch(screen, /<h2 className="st2-general-title">\{t\.general\}<\/h2>/);
   assert.doesNotMatch(screen, /st2-general-subtitle/);
-  assert.match(screen, /import '@fontsource\/bodoni-moda\/latin-600-italic\.css';/);
+  assert.match(screen, /import '@fontsource\/bodoni-moda\/latin-ext-600\.css';/, 'az\/tr letters in Bodoni too');
+  assert.doesNotMatch(screen, /bodoni-moda\/[a-z-]*italic/, 'owner 13 Nov 19:31: crisp upright letters, no thin italic');
   assert.match(index, /#root :is\(button,input,select,textarea,label,p,small,dt,dd,summary,a,h2,h3,h4,h5,h6\)\{font-family:Inter[^}]*!important;font-style:normal!important\}/, 'the global rule the motto has to beat');
-  assert.match(css, /#root \.schach-treff\.st-v2 \.st2-general-heading \.st2-general-motto\{[^}]*font-family:'Bodoni Moda',Georgia,serif!important;font-size:27px;font-style:italic!important;/);
+  assert.match(css, /#root \.schach-treff\.st-v2 \.st2-general-heading \.st2-general-motto\{[^}]*font-family:'Bodoni Moda',Georgia,serif!important;font-size:28px;font-style:normal!important;font-weight:600;[^}]*hyphens:manual;[^}]*color:#EDD3AC;/, 'solid colour: no gradient that dims the letters');
+  assert.match(css, /\.schach-treff\.st-v2 \.st2-nowrap\{white-space:nowrap\}/);
   assert.match(css, /\.st2-general-heading\{flex:1 1 250px\}/, 'the motto never wraps into three narrow lines; online + Seek move below instead');
   // 2. Rooms column: larger "General chat" in the Seek button font, bronze-metallic text.
   const link = readFileSync(new URL('../src/components/schachTreff/GeneralRoomLink.tsx', import.meta.url), 'utf8');
   assert.match(link, /<span className="st-general-label">\{label\}<\/span>/);
   assert.match(css, /\.st-rooms \.st-general-link\{min-height:54px;[^}]*font-size:17px;font-weight:600;/);
-  assert.match(css, /\.st-general-link \.st-general-label\{[^}]*background:linear-gradient\(180deg,[^}]*background-clip:text;[^}]*-webkit-text-fill-color:transparent\}/);
+  assert.match(css, /\.st-general-link \.st-general-label\{[^}]*color:#F0D7B4;background:linear-gradient\(105deg,#F0D7B4 0%,#F0D7B4 38%,#FFF4DE 50%,#F0D7B4 62%,#F0D7B4 100%\)[^}]*animation:st2-sheen /, 'Seek-button colour, crisp letters, light sheen');
+  assert.match(css, /@media\(prefers-reduced-motion:reduce\)\{\.schach-treff\.st-v2 \.st-rooms \.st-general-link \.st-general-label\{animation:none\}\}/);
+  assert.doesNotMatch(css, /#B07A45/, 'no dark stop that made the letters look dull');
   // 3. Block state: re-read on tab focus and after a refused send; every composer action is disabled.
   const stage2 = readFileSync(new URL('../src/components/schachTreff/v2/Stage2.tsx', import.meta.url), 'utf8');
   assert.match(stage2, /window\.addEventListener\('focus', reload\)/);
@@ -406,4 +410,20 @@ test('owner 13 Nov: feed headline is the motto, bronze "General chat" link, bloc
   });
   // Message actions (⋯) sit in the hover toolbar on mouse devices instead of an extra line.
   assert.match(css, /@media\(any-pointer:fine\)\{/);
+});
+
+test('challenge cards look like the finished-game cards (v2 only, same markup for flag off)', async () => {
+  const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
+  assert.match(challenges, /<p className="st-challenge-title">\{t\.game\} <span className="st-mono">\{row\.time_control\}<\/span><\/p><p className="st-challenge-players">/);
+  assert.equal((challenges.match(/className="st-challenge-status"/g) ?? []).length, 4);
+  const css = readFileSync(new URL('../src/components/schachTreff/v2/v2.css', import.meta.url), 'utf8');
+  assert.match(css, /\.schach-treff\.st-v2 \.st-challenge-card\{display:grid;grid-template-columns:minmax\(0,1fr\) auto;[^}]*max-width:480px;[^}]*border-radius:14px;/);
+  assert.match(css, /\.schach-treff\.st-v2 \.st-challenge-card>small\{[^}]*text-transform:uppercase;color:#D4A373\}/);
+  assert.match(css, /\.st-challenge-card>button,\.schach-treff\.st-v2 \.st-challenge-card>\.st-challenge-open\{grid-column:2;grid-row:1\/span 4;/);
+  await withVite(async server => {
+    const { ChallengeCard } = await server.ssrLoadModule('/src/components/schachTreff/Challenges.tsx');
+    const row = { id: 'c', message_id: 'm', created_by: 'a', target_user_id: null, time_control: '5+0', status: 'accepted', expires_at: new Date(Date.now() + 6e5).toISOString(), room_id: null, accepted_by: 'b' };
+    const html = renderToStaticMarkup(createElement(ChallengeCard, { now: Date.now(), row, me: 'x', people: [{ id: 'a', username: 'nar' }], busy: false, act() {}, finished: true }));
+    assert.match(html, /^<div class="st-challenge-card"><small>[^<]+<\/small><p class="st-challenge-title">[^<]+<span class="st-mono">5\+0<\/span><\/p><p class="st-challenge-players">nar<\/p><p class="st-challenge-status">[^<]+<\/p><\/div>$/);
+  });
 });
