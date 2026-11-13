@@ -32,8 +32,8 @@ test('desktop names are stored usernames without suffix stripping or pseudonyms'
 });
 test('desktop player card renders — unconditionally and never shows stored placeholder ratings', () => {
   const current = read('../src/screens/SchachTreffDesktop.tsx');
-  const cardBranch = current.split('{player ? ')[1]?.split(' : panel === ')[0] ?? '';
-  assert.ok(cardBranch.includes('<dl><dt>{t.blitz}</dt><dd>—</dd><dt>{t.rapid}</dt><dd>—</dd></dl>'));
+  const cardBranch = current.split('{player ? ').at(-1)?.split(' : panel === ')[0] ?? '';
+  assert.match(cardBranch, /<dl className="st-player-ratings"><div><dt>\{t\.blitz\}<\/dt><dd>—<\/dd><\/div><div><dt>\{t\.rapid\}<\/dt><dd>—<\/dd><\/div><\/dl>/);
   assert.doesNotMatch(cardBranch, /rating_blitz|rating_rapid|1200|1500/);
 });
 test('desktop ranking shows the upcoming-rating note without rating data or member ordering', () => {

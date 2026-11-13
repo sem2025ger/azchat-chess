@@ -120,7 +120,10 @@ export function ChallengeCard({now,row,me,people,busy,act,finished=false}: {now:
   const t=useSchachTreffCopy();
   const expired=row.status==='expired' || (row.status==='open' && Date.parse(row.expires_at)<=now);
   const name=(id: string) => people.find(person => person.id===id)?.username ?? t.targetPlayer;
-  return <div className="st-challenge-card"><small>{row.target_user_id ? t.personalChallenge : t.openOffer}</small>
+  const heading = expired ? t.challengeExpired : row.status==='cancelled' ? t.challengeCancelled
+    : row.status==='accepted' ? (finished ? t.gameFinished : row.room_id ? t.gameStarted : t.gameStarting)
+    : row.target_user_id ? t.personalChallenge : t.openOffer;
+  return <div className="st-challenge-card"><small>{heading}</small>
     <p className="st-challenge-title">{t.game} <span className="st-mono">{row.time_control}</span></p><p className="st-challenge-players">{name(row.created_by)}{row.target_user_id ? ` → ${name(row.target_user_id)}` : ''}</p>
     {expired ? <p className="st-challenge-status">{t.expired}</p> : row.status==='cancelled' ? <p className="st-challenge-status">{t.cancelled}</p> : row.status==='accepted' ? <><p className="st-challenge-status">{finished ? t.gameFinished : row.room_id ? t.gameStarted : t.gameStarting}</p>{!finished && row.room_id && ROOM_ID.test(row.room_id) && (row.created_by===me || row.accepted_by===me) && <Link className="st-challenge-open" to={gamePath(row.room_id)}>{t.openGame}</Link>}</> : row.created_by===me ? <><p className="st-challenge-status">{t.waitingOpponent}</p><button disabled={busy} onClick={() => act('cancel',row.id)}>{t.cancel}</button></> : (!row.target_user_id || row.target_user_id===me) && <button disabled={busy} onClick={() => act('accept',row.id)}>{t.accept}</button>}
   </div>;

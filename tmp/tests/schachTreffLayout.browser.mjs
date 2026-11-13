@@ -16,6 +16,7 @@ const counts = { [uid]: 4, [room]: 2 };
 window.fixtureKeepBadges = true;
 const reports = [{message_id:'message-25',body:'Сообщение, на которое пожаловались',kind:'text',hidden:true,reasons:['spam','abuse','other']}];
 export const supabase = {
+  channel(){const channel={on(){return channel},subscribe(){return channel},presenceState(){return {}},track(){return Promise.resolve('ok')}};return channel},removeChannel(){return Promise.resolve()},
   rpc(name, payload) {
     const ok = data => Promise.resolve({data,error:null});
     if(name==='get_club_unread_counts') return ok(Object.entries(counts).map(([id,count])=>({club_id:id,is_general:id===uid,unread_count:count})));
@@ -39,7 +40,8 @@ export const supabase = {
       return ok(null);
     }
     if(name==='revoke_club_invites') {window.fixtureRevoked=payload;return ok(null)}
-    if(name==='club_player_summary') return {abortSignal(){return Promise.resolve({data:{completed_games:0,last_games:[]},error:null})}};
+    if(name==='club_player_summary') return {abortSignal(){return Promise.resolve({data:new URLSearchParams(location.search).has('polish') ? {completed_games:24,last_games:[{opponent:'LongPlayerNameWithoutSpaces0123456789',time_control:'5+0',result:'1-0'},{opponent:'nar',time_control:'3+2',result:'1/2-1/2'}]} : {completed_games:0,last_games:[]},error:null})}};
+    if(name==='club_chat_game_results') return ok([]);
     if(name==='create_club_invite' && payload.p_club_id===room) {
       window.fixtureInvites = (window.fixtureInvites || 0) + 1;
       if(window.fixtureInviteLimit) return {data:null,error:{message:'invite_limit'}};
@@ -62,7 +64,7 @@ export const supabase = {
   from(table) {
     let single=false, columns='';
     const filters=new Map();
-    const q={select(v){columns=v;return q},eq(k,v){filters.set(k,v);return q},in(){return q},gte(){return q},order(){return q},limit(){return q},
+    const q={not(){return q},is(){return q},select(v){columns=v;return q},eq(k,v){filters.set(k,v);return q},in(){return q},gte(){return q},order(){return q},limit(){return q},
       maybeSingle(){single=true;return q},
       insert(row) {
         if(table!=='chess_club_messages') throw Error('Unexpected write');
@@ -92,9 +94,45 @@ export const supabase = {
   }
 };`;
 const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user:new URLSearchParams(location.search).has('guest')?null:user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!/^\/(?:room-fixture(?:\?|$)|schach-treff\/einladung\/|chat(?:\?|$))/.test(req.url))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
-export async function checkRoomLayout(moderation = false){
- const server=await createServer({configFile:false,define:{'import.meta.env.VITE_SCHACH_TREFF_MODERATION_ENABLED':JSON.stringify(moderation?'true':'false')},cacheDir:join(tmpdir(),'room-vite-'+process.pid),optimizeDeps:{noDiscovery:true,include:['react','react-dom/client','react-router-dom','lucide-react']},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}}});let chrome,ws,profile;const pending=new Map();
+export async function checkRoomLayout(moderation = false, polish = false){
+ const server=await createServer({configFile:false,define:{'import.meta.env.VITE_SCHACH_TREFF_V2':JSON.stringify(polish?'true':'false'),'import.meta.env.VITE_SCHACH_TREFF_MODERATION_ENABLED':JSON.stringify(moderation?'true':'false')},cacheDir:join(tmpdir(),'room-vite-'+process.pid),optimizeDeps:{noDiscovery:true,include:['react','react-dom/client','react-router-dom','lucide-react']},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}}});let chrome,ws,profile;const pending=new Map();
  try{await server.listen();const bin=process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(existsSync);assert.ok(bin,'Chromium required for Schach-Treff layout');profile=await mkdtemp(join(tmpdir(),'schach-rooms-'));chrome=spawn(bin,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--remote-allow-origins=*','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});let stderr='';chrome.stderr.on('data',c=>stderr=(stderr+c).slice(-4000));const pause=ms=>new Promise(r=>setTimeout(r,ms));let port;for(let i=0;i<300;i++){if(chrome.exitCode!==null)throw Error(stderr);try{port=Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]);if(port)break}catch{}await pause(50)}assert.ok(port,stderr);const targets=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();ws=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await new Promise((r,j)=>{ws.addEventListener('open',r,{once:true});ws.addEventListener('error',j,{once:true})});let seq=0;ws.addEventListener('message',({data})=>{const m=JSON.parse(data),p=pending.get(m.id);if(p){pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result)}});const cdp=(method,params={})=>new Promise((resolve,reject)=>{const id=++seq,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},20000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}))});const evaluate=async expression=>{let x=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(x.exceptionDetails)throw Error(JSON.stringify(x.exceptionDetails));return x.result.value};const wait=async expression=>{for(let i=0;i<240;i++){if(await evaluate('Boolean('+expression+')'))return;await pause(50)}throw Error('Fixture did not load '+expression)};await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Page.bringToFront');await cdp('Emulation.setFocusEmulationEnabled',{enabled:true});if(process.env.SECTIONS_CAPTURE)await mkdir(process.env.SECTIONS_CAPTURE,{recursive:true});
+ if (polish) {
+   const fixtureUrl=server.resolvedUrls.local[0]+'room-fixture?club=22222222-2222-4222-8222-222222222222&polish=1';
+   for (const width of [375,1366,1920]) {
+     await cdp('Emulation.setDeviceMetricsOverride',{width,height:width===375?844:900,deviceScaleFactor:1,mobile:width===375});
+     await cdp('Page.navigate',{url:fixtureUrl});
+     await wait("document.querySelector('.st-messages .st-name') && document.querySelector('.st-challenge-icon')");
+     await evaluate("document.querySelector('.st-messages .st-name').click()");
+     await wait("document.querySelector('dialog.st2-player-dialog[open] .st-player-history li')");
+     assert.equal(await evaluate("document.querySelector('dialog[open]').getAttribute('aria-labelledby')"),'st-player-name');
+     assert.equal(await evaluate("document.querySelector('.st-player-total strong').textContent"),'24');
+     assert.deepEqual(await evaluate("[...document.querySelectorAll('.st-player-ratings dd')].map(e=>e.textContent)"),['—','—']);
+     for (const lang of ['de','en','az','tr','ua','ru']) {
+       await evaluate(`window.setFixtureLanguage('${lang}')`);
+       await wait(`document.documentElement.lang==='${lang==='ua'?'uk':lang}'`);
+       const layout=await evaluate(`(()=>{
+         const d=document.querySelector('dialog[open]'),r=d.getBoundingClientRect(),name=d.querySelector('h2');
+         return {left:r.left,right:r.right,bottom:r.bottom,top:r.top,scroll:d.scrollWidth,client:d.clientWidth,
+           font:getComputedStyle(name).fontFamily,size:getComputedStyle(name).fontSize,
+           actions:[...d.querySelectorAll('.st-player-actions button')].map(b=>({height:b.getBoundingClientRect().height,scroll:b.scrollWidth,client:b.clientWidth}))};
+       })()`);
+       assert.ok(layout.left>=0 && layout.right<=width && layout.top>=0 && layout.bottom<=(width===375?844:900),JSON.stringify(layout));
+       assert.ok(layout.scroll<=layout.client+1,JSON.stringify(layout));
+       assert.ok(layout.font.includes('Inter') && layout.size==='22px',JSON.stringify(layout));
+       assert.equal(layout.actions.length,2,'challenge and private-message actions remain available');
+       assert.ok(layout.actions.every(a=>a.height>=44 && a.scroll<=a.client+1),JSON.stringify(layout));
+     }
+     if(process.env.SECTIONS_CAPTURE) {
+       const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+       await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-player-polish-'+width+'.png'),Buffer.from(shot.data,'base64'));
+     }
+     await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+     await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+     await wait("!document.querySelector('dialog[open]')");
+   }
+   return;
+ }
  if (moderation) {
    const root = server.resolvedUrls.local[0];
    const room = '22222222-2222-4222-8222-222222222222';

@@ -384,9 +384,19 @@ test('owner 13 Nov: feed headline is the motto, bronze "General chat" link, bloc
   assert.match(link, /<span className="st-general-label">\{label\}<\/span>/);
   assert.match(css, /\.st-rooms \.st-general-link\{min-height:54px;[^}]*font-size:17px;font-weight:600;/);
   assert.match(css, /\.st-general-link \.st-general-label\{flex:1 1 auto;min-width:0;color:#F9E9C8;text-shadow:0 1px 2px rgba\(0,0,0,\.7\)\}/, 'solid cream letters, never background-clipped');
-  const arena = readFileSync(new URL('../src/components/ArenaPlayPanel.css', import.meta.url), 'utf8');
-  const startGradient = arena.match(/\.arena-start-game \{[^}]*background:(linear-gradient\([^;]+\));/)[1];
-  assert.ok(css.includes(`.st-general-link[aria-current=page]{border-color:#9CB8B1;background:${startGradient} 0% 50%/240% 100%;`), 'owner 13 Nov 19:51: the same premium sheen as "Start game"');
+  // Owner 13 Nov: darker graphite, preserving the animation and readable lettering.
+  const stops = [...css.matchAll(/background:linear-gradient\(110deg,([^;)]+)\) 0% 50%\/240% 100%/g)].at(-1)[1];
+  const oldStops = ['303438', '7a592a', 'af8140', '424b4d', '245e69', '323b3f', '846331'];
+  const colors = [...stops.matchAll(/#([0-9a-f]{6})/g)].map(match => match[1]);
+  const luminance = hex => {
+    const rgb = hex.match(/../g).map(value => parseInt(value, 16) / 255).map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
+    return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
+  };
+  assert.equal(colors.length, oldStops.length);
+  colors.forEach((color, index) => {
+    assert.ok(luminance(color) < luminance(oldStops[index]), 'every stop is darker than the baseline');
+    assert.ok((luminance('F9E9C8') + .05) / (luminance(color) + .05) >= 4.5, 'label contrast throughout the sheen');
+  });
   assert.match(css, /@media\(prefers-reduced-motion:no-preference\)\{\.schach-treff\.st-v2 \.st-rooms \.st-general-link\{animation:arenaStartPremiumShift 7s ease-in-out infinite alternate\}\}/);
   assert.match(css, /@media\(prefers-reduced-motion:reduce\)\{\.schach-treff\.st-v2 \.st-rooms \.st-general-link\{animation:none;background-size:100% 100%\}\}/);
   assert.doesNotMatch(css, /#B07A45/, 'no dark stop that made the letters look dull');
@@ -446,4 +456,44 @@ test('message ⋯ menu: one line per item inside the feed, no control hidden und
   assert.match(css, /@media\(any-pointer:fine\)\{\n  \.schach-treff\.st-v2 \.st-messages\{padding-top:20px\}/, 'the first message keeps its hover bar below the header');
   const moderation = readFileSync(new URL('../src/components/schachTreff/Moderation.tsx', import.meta.url), 'utf8');
   assert.match(moderation, /onBlur=\{event => \{\n[^\n]*\n    if \(!event\.currentTarget\.contains\(event\.relatedTarget as Node \| null\)\) event\.currentTarget\.open = false;/);
+});
+
+test('challenge headings follow the lifecycle in six languages, including elapsed open offers', async () => {
+  await withVite(async server => {
+    const { ChallengeCard } = await server.ssrLoadModule('/src/components/schachTreff/Challenges.tsx');
+    const { LanguageProvider } = await server.ssrLoadModule('/src/context/LanguageContext.tsx');
+    const { MemoryRouter } = await server.ssrLoadModule('react-router-dom');
+    const { copy } = await server.ssrLoadModule('/src/components/schachTreff/copy.ts');
+    const { translateSchachTreff: translate } = await server.ssrLoadModule('/src/components/schachTreff/i18n.ts');
+    const storage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    const now = Date.parse('2026-11-13T22:00:00Z');
+    try {
+      for (const lang of ['de', 'en', 'az', 'tr', 'ua', 'ru']) {
+        Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: () => lang } });
+        for (const personal of [false, true]) {
+          const base = { id: 'c', message_id: 'm', created_by: 'a', target_user_id: personal ? 'b' : null, time_control: '5+0', expires_at: new Date(now + 60000).toISOString(), room_id: null, accepted_by: 'b' };
+          for (const [status, changes, key] of [
+            ['open', {}, personal ? 'personalChallenge' : 'openOffer'],
+            ['open', { expires_at: new Date(now).toISOString() }, 'challengeExpired'],
+            ['cancelled', {}, 'challengeCancelled'], ['expired', {}, 'challengeExpired'],
+            ['accepted', {}, 'gameStarting'],
+            ['accepted', { room_id: '22222222-2222-4222-8222-222222222222' }, 'gameStarted'],
+            ['accepted', { finished: true }, 'gameFinished'],
+          ]) {
+            const expected = translate(lang, copy[key]);
+            assert.ok(expected && (lang === 'de' || expected !== copy[key]), `${lang}.${key} translated`);
+            const html = renderToStaticMarkup(createElement(LanguageProvider, null, createElement(MemoryRouter, null,
+              createElement(ChallengeCard, { now, row: { ...base, status, ...changes }, me: 'a', people: [{ id: 'a', username: '<unsafe>' }], busy: false, act() {}, finished: changes.finished }))));
+            assert.equal(html.match(/<small>([^<]+)<\/small>/)[1], expected, `${lang}: ${status}, ${key}`);
+            assert.ok(html.includes('&lt;unsafe&gt;'), 'player names remain escaped');
+            assert.equal(html.includes('<button'), key === 'openOffer' || key === 'personalChallenge', 'cancel only for active offers');
+            assert.equal(html.includes('href="/play?roomId='), key === 'gameStarted', 'no active-game link on completed games');
+          }
+        }
+      }
+    } finally {
+      if (storage) Object.defineProperty(globalThis, 'localStorage', storage);
+      else delete globalThis.localStorage;
+    }
+  });
 });
