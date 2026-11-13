@@ -346,3 +346,21 @@ test('finished challenge games: no "Open game" link, card says the game is over;
   const stage2 = readFileSync(new URL('../src/components/schachTreff/v2/Stage2.tsx', import.meta.url), 'utf8');
   assert.match(stage2, /\{!parsed\?\.moveHistory\.length \? <p>\{copy\.noMoves\}<\/p>/, 'a game resigned before the first move is not reported as "not saved"');
 });
+
+test('notices float as toasts (no layout jump); a blocked DM partner disables the composer', async () => {
+  await withVite(async server => {
+    const { Toast } = await server.ssrLoadModule('/src/components/schachTreff/v2/Toast.tsx');
+    const html = renderToStaticMarkup(createElement(Toast, { message: 'Nachrichten zwischen euch sind blockiert.', closeLabel: 'Schließen', onClose() {} }));
+    assert.match(html, /^<div class="st2-toast" role="alert" data-tone="alert"><span>Nachrichten zwischen euch sind blockiert\.<\/span><button type="button" class="st2-icon-button" aria-label="Schließen">/);
+    assert.equal(renderToStaticMarkup(createElement(Toast, { message: '', closeLabel: 'x', onClose() {} })), '');
+  });
+  const css = readFileSync(new URL('../src/components/schachTreff/v2/v2.css', import.meta.url), 'utf8');
+  assert.match(css, /\.st2-toast\{position:fixed;/, 'out of the layout flow');
+  const screen = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
+  assert.match(screen, /\{error && \(v2Enabled \? <Toast message=\{error\} closeLabel=\{t\.close\} onClose=\{\(\) => setError\(''\)\} \/> : <p role="alert">\{error\}<\/p>\)\}/, 'flag off keeps the old inline alert');
+  assert.match(screen, /dmOpen\.error && \(v2Enabled \? <Toast/);
+  assert.match(screen, /const iBlocked = Boolean\(dmChat && block\.blocked\);/);
+  assert.match(screen, /disabled=\{iBlocked\} \/>\n\s*<button className="st-send" disabled=\{busy \|\| iBlocked \|\| !body\.trim\(\)\}>/);
+  const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
+  assert.match(challenges, /\{error && !shown && \(v2Enabled \? <Toast/);
+});

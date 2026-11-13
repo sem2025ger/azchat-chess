@@ -23,6 +23,7 @@ import { useV2Copy2 } from '../components/schachTreff/v2/copy2';
 import { DirectList, GameResultCard, GameViewer, PositionDialog, PositionMessage, refusalMessage, useBlock, useDirectChats, useOpenDirectChat } from '../components/schachTreff/v2/Stage2';
 import { DEFAULT_POSITION } from 'chess.js';
 import { loadV2Extras, type V2Extras } from '../components/schachTreff/v2/data';
+import { Toast } from '../components/schachTreff/v2/Toast';
 import { FeedbackButton, MembersPanel, MessageTools, ReactionBar, SeekButton, ThreadPanel, PositionTrigger, nameStyle } from '../components/schachTreff/v2/Parts';
 type Panel = 'tournaments' | 'members' | 'ranking' | 'about';
 const warned = new Set<string>();
@@ -239,6 +240,8 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const hasChatActions = canPin || (moderationEnabled && (moderator || privateAdmin));
   const members = profiles.filter(p => roster.includes(p.id));
   const onlineCount = onlineIds?.length ?? null;
+  // A DM partner I blocked cannot receive messages: say so in the composer instead of letting a send fail.
+  const iBlocked = Boolean(dmChat && block.blocked);
   const finishedChallenges = new Set(v2Data?.results.map(result => result.challenge_id) ?? []);
   const v2 = v2Enabled && v2Data ? {
     summary: summarizeReactions(v2Data.reactions, user?.id), replies: v2Data.replyCounts, reactions: v2Data.reactionsAvailable,
@@ -258,7 +261,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     <header><h1>{t.title}</h1>{import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Link className="st-region-entry" to="/region/nrw" aria-label={regional('NRW-Regionalübersicht öffnen')}>NRW ↗</Link>}{v2Enabled && <FeedbackButton />}<div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
       {menu && <nav aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}</nav>}
     </div></header>
-    {error && <p role="alert">{error}</p>}
+    {error && (v2Enabled ? <Toast message={error} closeLabel={t.close} onClose={() => setError('')} /> : <p role="alert">{error}</p>)}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
     <div className={hideRooms && v2Enabled ? 'st-columns st2-no-rooms' : 'st-columns'}>{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} heading={v2Enabled ? copy1.myClubs : undefined} />{v2Enabled && <DirectList currentClubId={clubId} />}</aside>}
       <section className="st-surface st-chat">
@@ -313,18 +316,20 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
           {!messages.length && !error && <p>{t.empty}</p>}
           <MessageItems messages={timeline} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} moderator={moderator} openModeration={setModerationAction} v2={v2} />
         </div>
-        {moderationEnabled && moderationNotice && <p role="status">{moderationNotice}</p>}
+        {moderationEnabled && moderationNotice && (v2Enabled
+          ? <Toast message={moderationNotice} tone="status" closeLabel={t.close} onClose={() => setModerationNotice('')} />
+          : <p role="status">{moderationNotice}</p>)}
         {moderationEnabled && moderationAction && <ModerationDialog clubId={clubId} action={moderationAction}
           close={() => setModerationAction(null)} refresh={refresh} onNotice={setModerationNotice}
           onRevoked={() => setInviteRevision(value => value + 1)} />}
         {dmChat && <p className="st2-note st2-dm-note">{block.blocked ? copy2.blockedNote : copy2.directChat}</p>}
-        {dmOpen.error && <p role="alert">{dmOpen.error}</p>}
+        {dmOpen.error && (v2Enabled ? <Toast message={dmOpen.error} closeLabel={t.close} onClose={dmOpen.clear} /> : <p role="alert">{dmOpen.error}</p>)}
         <form className="st-composer" onSubmit={send}>
           {/* General chat: Seek sits in the header. Club rooms keep it here; DMs challenge the partner. */}
           {v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} /> : isClub ? <SeekButton /> : null) : <ChallengeButton composer />}
           {v2Enabled && <PositionTrigger label={copy2.sendPosition} onClick={() => setComposer({ fen: DEFAULT_POSITION, root: null })} />}
-          <input aria-label={t.placeholder} placeholder={hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required />
-          <button className="st-send" disabled={busy || !body.trim()}>{t.send}</button>
+          <input aria-label={t.placeholder} placeholder={iBlocked ? copy2.refusals.blocked : hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required disabled={iBlocked} />
+          <button className="st-send" disabled={busy || iBlocked || !body.trim()}>{t.send}</button>
         </form>
       </section>
       {v2Enabled && (thread && v2?.reactions

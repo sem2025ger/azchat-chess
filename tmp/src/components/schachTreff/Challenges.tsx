@@ -5,6 +5,8 @@ import { useSocket } from '../../context/SocketContext';
 import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
 import { ROOM_ID, gamePath, ownStartedGame } from './challengeRouting';
+import { v2Enabled } from './v2/core';
+import { Toast } from './v2/Toast';
 type Person = { id: string; username: string };
 type Challenge = { id: string; message_id: string; created_by: string; target_user_id: string | null; time_control: string; status: string; expires_at: string; room_id: string | null; accepted_by?: string | null };
 type Controls = { now: number; available: boolean; me: string; rows: Challenge[]; people: Person[]; busy: boolean; open: (target?: string) => void; act: (action: 'accept' | 'cancel', id: string) => void; seek: (time: string) => Promise<boolean>; openOffers: number; finished: ReadonlySet<string> };
@@ -77,7 +79,7 @@ export function ChallengeProvider({ clubId, me, people, enabled, finished = NONE
   const controls: Controls={ now,available:available && isConnected,me,rows,people,busy,open(id) { setTarget(id ?? ''); setPersonal(Boolean(id)); setError(''); setShown(true); },act(action,id) { void request(action,{challengeId:id}); },
     seek: time => request('create',{clubId,timeControl:time,targetUserId:null}),
     openOffers: rows.filter(row => row.created_by===me && row.status==='open' && Date.parse(row.expires_at)>now).length, finished };
-  return <Context.Provider value={controls}>{children}{error && <p role="alert">{error}</p>}
+  return <Context.Provider value={controls}>{children}{error && !shown && (v2Enabled ? <Toast message={error} closeLabel={t.close} onClose={() => setError('')} /> : <p role="alert">{error}</p>)}
     <dialog aria-label={t.challenge} ref={dialog} onCancel={() => setShown(false)} onClose={() => setShown(false)}>
       <h2>{t.challenge}</h2><form onSubmit={event => { event.preventDefault(); void request('create',{clubId,timeControl:time,targetUserId:personal ? target : null}); }}>
         <fieldset><legend>{t.challengeKind}</legend>
