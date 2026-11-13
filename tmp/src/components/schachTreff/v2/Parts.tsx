@@ -114,8 +114,9 @@ export function MessageTools({ summary, onToggle, onThread }: {
   </div>;
 }
 
-export function MembersPanel({ members, messages, me, onPlayer, onMessage }: {
-  members: Person[]; messages: { author_id: string; created_at: string }[]; me?: string; onPlayer: (person: Person) => void;
+export function MembersPanel({ members, messages, me, onlineIds, onPlayer, onMessage }: {
+  members: Person[]; messages: { author_id: string; created_at: string }[]; me?: string;
+  onlineIds?: string[] | null; onPlayer: (person: Person) => void;
   onMessage?: (person: Person) => void;
 }) {
   const copy = useV2Copy();
@@ -123,19 +124,34 @@ export function MembersPanel({ members, messages, me, onPlayer, onMessage }: {
   const challenges = useChallengeControls();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(timer); }, []);
-  const active = recentlyActive(messages, now);
-  const sorted = [...members].sort((a, b) => Number(active.has(b.id)) - Number(active.has(a.id)) || a.username.localeCompare(b.username));
+  const recent = recentlyActive(messages, now);
+  const online = new Set(onlineIds ?? []);
+  const active = (id: string) => onlineIds ? online.has(id) : recent.has(id);
+  const sorted = [...members].sort((a, b) => Number(active(b.id)) - Number(active(a.id)) || a.username.localeCompare(b.username));
+  const offer = challenges?.available
+    ? challenges.rows.find(row => row.status === 'open' && !row.target_user_id && row.created_by !== me && Date.parse(row.expires_at) > now)
+    : undefined;
+  const offerPlayer = offer && members.find(person => person.id === offer.created_by);
   return <aside className="st-surface st2-side" aria-label={copy.members}>
     <h2 className="st2-side-title">{copy.members}</h2>
+    {offer && <div className="st2-seeking-card">
+      <span className="st2-seeking-kicker">{copy.seeking}</span>
+      <div className="st2-seeking-action">
+        <span><strong style={nameStyle(offer.created_by)}>{offerPlayer?.username ?? copy.seeking}</strong> · {offer.time_control}</span>
+        <button type="button" disabled={challenges?.busy} onClick={() => challenges?.act('accept', offer.id)}>{copy.challenge}</button>
+      </div>
+    </div>}
+    <p className="st2-members-label">{copy.onlineInChat}{onlineIds ? ` · ${sorted.filter(person => online.has(person.id)).length}` : ''}</p>
     <ul className="st2-members">{sorted.map(person => <li key={person.id} style={nameStyle(person.id)}>
-      <span className="st2-dot" data-active={active.has(person.id) || undefined} title={active.has(person.id) ? copy.activeNow : undefined} aria-hidden="true" />
+      <span className="st2-dot" data-active={active(person.id) || undefined} title={active(person.id) ? copy.activeNow : undefined} aria-hidden="true" />
       <button type="button" className="st2-member-name" onClick={() => onPlayer(person)}>
-        {person.username}{active.has(person.id) && <span className="sr-only"> · {copy.activeNow}</span>}
+        {person.username}{active(person.id) && <span className="sr-only"> · {copy.activeNow}</span>}
       </button>
+      {person.id !== me && challenges?.available && <button type="button" className="st2-icon-small"
+        aria-label={`${copy.challenge}: ${person.username}`} title={copy.challenge} onClick={() => challenges.open(person.id)}>
+        <Timer size={15} aria-hidden="true" /></button>}
       {person.id !== me && onMessage && <button type="button" className="st2-icon-small" aria-label={`${copy2.writePrivately}: ${person.username}`}
         title={copy2.writePrivately} onClick={() => onMessage(person)}><Mail size={15} aria-hidden="true" /></button>}
-      {person.id !== me && challenges?.available && <button type="button" className="st2-member-challenge"
-        aria-label={`${copy.challenge}: ${person.username}`} onClick={() => challenges.open(person.id)}>{copy.challenge}</button>}
     </li>)}</ul>
   </aside>;
 }
