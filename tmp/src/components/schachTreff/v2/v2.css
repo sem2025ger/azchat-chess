@@ -209,3 +209,66 @@
   .schach-treff.st-v2 .st2-general-subtitle{font-size:13px}
   .schach-treff.st-v2 .st2-chat-meta{width:100%;justify-content:space-between}
 }
+
+/* HTML reference layout: rooms / feed / members with three independent scroll areas. */
+.schach-treff.st-v2 .st2-side{gap:14px;padding:16px}
+.schach-treff.st-v2 .st2-members-label{flex:none;margin:0;padding:4px 0;font-size:11.5px;line-height:1.4;letter-spacing:.08em;text-transform:uppercase;color:#9AA3A0;font-weight:600}
+.schach-treff.st-v2 .st2-members{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;overflow:auto;gap:2px}
+.schach-treff.st-v2 .st2-members li{gap:8px;min-height:44px;flex:none}
+.schach-treff.st-v2 .st2-member-name{font-size:14px;font-weight:600}
+.schach-treff.st-v2 .st2-seeking-card{flex:none;display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid #3A3226;border-radius:12px;background:#17150F}
+.schach-treff.st-v2 .st2-seeking-kicker{font-size:12px;color:#C9B08F}
+.schach-treff.st-v2 .st2-seeking-action{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.schach-treff.st-v2 .st2-seeking-action>span{min-width:0;color:#B9C2BE;font-size:12.5px;overflow-wrap:anywhere}
+.schach-treff.st-v2 .st2-seeking-action strong{color:var(--st-name,#E0A458)}
+.schach-treff.st-v2 .st2-seeking-action button{flex:none;min-height:34px;padding:5px 12px;border:0;border-radius:9px;background:#D4A373;color:#14110D;font-weight:600}
+.schach-treff.st-v2 .st2-online{min-height:34px;padding-inline:14px;font-size:13px}
+.schach-treff.st-v2 .st2-online-dot{background:#7FD49A}
+.schach-treff.st-v2 .st-chat-header .st2-seek-trigger{padding-inline:16px;border-color:#D4A373;color:#F0D7B4}
+.schach-treff.st-v2 .st-rooms{display:flex;flex-direction:column;gap:0;padding:14px 12px}
+.schach-treff.st-v2 .st-rooms .st-general-link{flex:none;display:flex;align-items:center;min-height:44px;margin:0 0 16px;padding:0 12px;border:1px solid transparent;border-radius:12px;background:none;-webkit-text-fill-color:currentColor;color:#F2EEE3;font-size:15px;font-weight:600;text-decoration:none}
+.schach-treff.st-v2 .st-rooms .st-general-link[aria-current=page]{border-color:#D4A373;background:#D4A37314}
+.schach-treff.st-v2 .st-rooms .st-club-heading{display:flex;align-items:center;gap:8px;margin:12px 0 8px;padding:0;border:0;color:#9AA3A0;font:600 11.5px/1.4 Inter,system-ui,sans-serif;text-transform:uppercase;letter-spacing:.08em}
+.schach-treff.st-v2 .st-rooms .st-room-list>a{display:flex;align-items:center;min-height:40px;margin:0;padding:0 12px;border-radius:10px;color:#D8D3C8;font-size:14px;text-decoration:none}
+.schach-treff.st-v2 .st-rooms .st-room-list>a[aria-current=page]{border-color:#D4A373}
+.schach-treff.st-v2 .st-rooms .st-create-room{margin:8px 0 0;padding:8px 4px;min-height:44px;white-space:normal;font-size:14px;text-align:left}
+.schach-treff.st-v2 .st-rooms .st2-direct{margin-top:8px}
+.schach-treff.st-v2 .st-rooms .st2-direct>a{display:flex;gap:8px;align-items:center;min-height:40px;margin:0;padding:0 12px}
+.schach-treff.st-v2 .st-rooms .st2-settings-link{margin-top:12px}
+@media (min-width:1024px) {
+  .schach-treff.st-v2{max-width:1440px;padding:20px 24px;box-sizing:border-box}
+  .schach-treff.st-v2>header{min-height:64px;margin-bottom:16px}
+  .schach-treff.st-v2 .st-columns{gap:16px}
+  .schach-treff.st-v2 .st-columns>.st-rooms,
+  .schach-treff.st-v2 .st-columns>.st-chat,
+  .schach-treff.st-v2 .st-columns>.st2-side{height:calc(100dvh - 145px);min-height:0;max-height:none;box-sizing:border-box}
+  .schach-treff.st-v2 .st-rooms{overflow:auto}
+  .schach-treff.st-v2 .st-chat{padding:0 18px 16px}
+  .schach-treff.st-v2 .st2-chat-meta{gap:10px}
+  .schach-treff.st-v2 .st-chat-header:has(.st2-general-heading){min-height:80px;padding:12px 0 14px}
+  .schach-treff.st-v2 .st-chat-header .st2-seek-popover{z-index:22}
+}
+@media (max-width:1150px) and (min-width:1024px) {
+  .schach-treff.st-v2 .st-columns{grid-template-columns:210px minmax(0,1fr) 260px;gap:12px}
+  .schach-treff.st-v2 .st-rooms{padding-inline:8px}
+  .schach-treff.st-v2 .st2-side{padding-inline:12px}
+  .schach-treff.st-v2 .st2-online{padding-inline:9px;font-size:12px}
+  .schach-treff.st-v2 .st2-chat-meta{gap:6px}
+  .schach-treff.st-v2 .st-chat-header .st2-seek-trigger{padding-inline:9px;font-size:12px}
+  .schach-treff.st-v2 .st2-general-subtitle{font-size:13px}
+}
+@media (max-width:1023px) {
+  /* A narrower screen must not silently discard the right column. */
+  .schach-treff.st-v2 .st-columns{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .schach-treff.st-v2 .st-chat{width:100%;min-height:430px;height:min(67dvh,700px)}
+  .schach-treff.st-v2 .st2-side:not(.st2-thread){display:flex;width:100%;height:auto;min-height:200px;max-height:330px;overflow:auto}
+  .schach-treff.st-v2 .st2-thread{position:fixed;inset:0;z-index:60}
+  .schach-treff.st-v2 .st-chat-header .st2-seek-trigger{width:auto;padding:0 12px}
+  .schach-treff.st-v2 .st-chat-header .st2-seek-label{position:static;width:auto;height:auto;clip:auto;overflow:visible;white-space:nowrap}
+  .schach-treff.st-v2 .st-chat-header:has(.st2-general-heading){flex-wrap:wrap;justify-content:space-between;gap:6px}
+}
+@media (max-width:600px) {
+  .schach-treff.st-v2 .st-chat{height:min(65dvh,600px)}
+  .schach-treff.st-v2 .st2-side:not(.st2-thread){max-height:310px}
+  .schach-treff.st-v2 .st-chat-header .st2-seek-trigger{width:auto;padding:0 12px}
+}
