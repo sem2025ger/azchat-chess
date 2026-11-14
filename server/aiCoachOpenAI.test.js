@@ -21,6 +21,59 @@ function speechSocket({failed=false,oversized=false,expectedScript}={}){return(u
 };}
 async function serve(options,check){const app=express();installAiCoach(app,{enabled:true,index:readyIndex,verifyToken:async t=>t==='ok'||t==='rotated'?{id:'same-user'}:null,...options});const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));try{await check('http://127.0.0.1:'+server.address().port+'/api/ai-coach');}finally{await new Promise(r=>server.close(r));}}
 const post=(url,body,token='ok',type='application/json')=>fetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':type},body:type==='application/json'?JSON.stringify(body):body});
+
+test('tactical focus keeps legal checks available without promoting unanalysed moves, in six locales and both evidence paths',async()=>{
+ const fen='rnbqkbnr/pppp1ppp/8/4p3/3QP3/5N2/PPP2PPP/RNB1KB1R b KQkq - 0 5';
+ const lines=[{moves:['f6','Be3','Ne7']},{moves:['Bd6','Be3','Ne7']}];
+ for(const line of lines){const board=new Chess(fen);for(const san of line.moves)assert.ok(board.move(san,{strict:true}));}
+ const check=new Chess(fen);check.move('Bb4+');assert.ok(check.moves().includes('Qxb4'));
+ for(const language of ['de','en','az','tr','uk','ru'])for(const server of [false,true]){
+  const evidence={candidateLines:lines,candidateOrigin:server?'server_stockfish_19':'untrusted_client_legality_checked',...(server?{engine:{name:'stockfish-19-lite',budgetMs:900}}:{})};
+  let calls=0;
+  await generateAnswer({...query,fen,language,message:'Explain only the verified tactical threats.'},evidence,{apiKey:key,fetchImpl:async(_url,options)=>{
+   calls++;const body=JSON.parse(options.body),input=JSON.parse(body.input),rules=body.instructions;
+   assert.equal(input.position,fen);assert.equal(input.sideToMove,'b');
+   assert.ok(input.legalMoves.includes('Bb4+'),'legal check stays available for explicit legality questions');
+   assert.deepEqual(input.evidence,evidence,'no invented, filtered or reordered engine evidence');
+   assert.match(rules,new RegExp('Reply in '+language+' using'));
+   assert.match(rules,/legalMoves and legalMoveDetails establish legality, not tactical value/);
+   assert.match(rules,/Do not enumerate unselected legal checks/);
+   assert.match(rules,/unless the user explicitly asks about that move/);
+   assert.match(rules,/none is demonstrated by the supplied lines, not that no tactics exist/);
+   return answerResponse();
+  }});
+  assert.equal(calls,1,'one bounded provider request, no speculative analysis requests');
+ }
+});
+
+test('line presentation preserves main/secondary ordering and limits excerpts to demonstrated outcomes',async()=>{
+ const evidence={candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:900},candidateLines:[{id:'L1',moves:['e4','e5','Nf3'],scoreKind:'cp',scoreWhite:5,depth:7},{id:'L2',moves:['d4','d5'],scoreKind:'cp',scoreWhite:0,depth:7}]};
+ await generateAnswer(query,evidence,{apiKey:key,fetchImpl:async(_url,options)=>{
+  const body=JSON.parse(options.body),input=JSON.parse(body.input);
+  assert.deepEqual(input.evidence,evidence);
+  assert.match(body.instructions,/candidateLines\[0\] is the main line in the supplied ordering/);
+  assert.match(body.instructions,/one secondary line only when it adds a distinct relevant idea or defence/);
+  assert.match(body.instructions,/shortest consecutive prefix/);
+  assert.match(body.instructions,/Never use a fixed move count/);
+  assert.match(body.instructions,/deeper engine verification is needed/);
+  assert.match(body.instructions,/do not apply facts for its final position to an earlier cutoff/);
+  return answerResponse();
+ }});
+});
+
+test('tactical focus preserves checks, legal evasions and terminal position evidence',async()=>{
+ const checked=new Chess('rnbqkbnr/pppp1ppp/8/4p3/3QP3/5N2/PPP2PPP/RNB1KB1R b KQkq - 0 5');checked.move('Bb4+');
+ const mate=new Chess();for(const move of ['f3','e5','g4','Qh4#'])mate.move(move);
+ for(const board of [checked,mate])await generateAnswer({...query,fen:board.fen()}, {candidateLines:[]},{apiKey:key,fetchImpl:async(_url,options)=>{
+  const body=JSON.parse(options.body),input=JSON.parse(body.input);
+  assert.equal(input.positionStatus.inCheck,true);
+  assert.equal(input.positionStatus.checkmate,board.isCheckmate());
+  assert.deepEqual(input.legalMoves,board.moves());
+  assert.match(body.instructions,/In check, discuss legal evasions first; respect terminal positions/);
+  return answerResponse();
+ }});
+});
+
 test('OpenAI exact model, nonstored Responses, schema, bounded history and legal FEN context',async()=>{
  let calls=0;const answer=await generateAnswer(query,{archiveAvailable:false},{apiKey:key,model:'gpt-6-sol',fetchImpl:async(url,options)=>{
   calls++;assert.equal(url,'https://api.openai.com/v1/responses');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,'Bearer '+key);assert.ok(options.signal);

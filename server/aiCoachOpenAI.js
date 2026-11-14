@@ -11,6 +11,12 @@ const POSITION_FACTS_INSTRUCTION='evidence.positionFacts was computed determinis
 
 const BIBLIOGRAPHY_INSTRUCTION='evidence.coachBibliography contains only a server-owned bibliographic catalogue: titles, authors, publication metadata and provenance types. It contains NO book pages, original annotations, verified positions or full book analyses. Use it only to answer questions about listed books, and distinguish original authorship from later editors. NEVER quote or paraphrase alleged book passages, cite a page, claim you read/ingested a book, or attribute a positional idea, variation or game to these books solely from this catalogue. For any chess move, line or evaluation rely on position, legalMoves and the verified evidence instead. The catalogue is not permission to train on copyrighted editions.';
 
+const TACTICAL_FOCUS_INSTRUCTION=[
+ 'For tactical questions, legalMoves and legalMoveDetails establish legality, not tactical value. A legal check, capture or static attack alone does not demonstrate a tactical threat. Explain a concrete threat only when candidateLines show a continuation and a supported consequence; identify the target and the relevant reply. Do not enumerate unselected legal checks or add caveats about moves absent from candidateLines unless the user explicitly asks about that move. If no concrete tactic is demonstrated, say only that none is demonstrated by the supplied lines, not that no tactics exist in the position. Preserve legal evasions and terminal facts from positionStatus.',
+ 'candidateLines[0] is the main line in the supplied ordering, not proof of a uniquely best or forced move. Explain its relevant idea first. Mention one secondary line only when it adds a distinct relevant idea or defence; do not narrate every MultiPV line or repeat the variation list already visible in the UI. If the user explicitly requests comparisons of more supplied lines, compare those lines concisely.',
+ 'Use only the shortest consecutive prefix of a supplied line that demonstrates the point being explained. Never use a fixed move count for every position, splice or reorder lines, extend supplied variations, or claim to have searched deeper. If the supplied line stops before a tactical outcome is established, say that deeper engine verification is needed instead of inventing a finish. When shortening a line, do not apply facts for its final position to an earlier cutoff.'
+].join('\n');
+
 // Check actual streamed bytes, including when Content-Length is absent or false.
 async function readBytes(response,limit){
  if(!response.ok||Number(response.headers.get('content-length')||0)>limit){await response.body?.cancel().catch(()=>{});throw providerError();}
@@ -60,7 +66,7 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
   'Do not claim a move is illegal if it appears in legalMoves. Explain uncertainty and offer the analysis board for engine verification.',
   'No links, HTML or markdown. Return JSON with exactly one string property answer, between 2 and 1200 characters.'
  ].join('\n'):null;
- const instructions=(serverEngine?serverInstructions:legacyInstructions)+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'');
+ const instructions=(serverEngine?serverInstructions:legacyInstructions)+'\n'+TACTICAL_FOCUS_INSTRUCTION+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'');
  const response=await fetchImpl('https://api.openai.com/v1/responses',{
   method:'POST',redirect:'error',signal:requestSignal(signal),headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
   body:JSON.stringify({model,store:false,instructions,reasoning:{effort:'low'},max_output_tokens:1800,
