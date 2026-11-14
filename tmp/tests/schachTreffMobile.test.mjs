@@ -32,8 +32,8 @@ test('desktop names are stored usernames without suffix stripping or pseudonyms'
 });
 test('desktop player card renders — unconditionally and never shows stored placeholder ratings', () => {
   const current = read('../src/screens/SchachTreffDesktop.tsx');
-  const cardBranch = current.split('{player ? ')[1]?.split(' : panel === ')[0] ?? '';
-  assert.ok(cardBranch.includes('<dl><dt>{t.blitz}</dt><dd>—</dd><dt>{t.rapid}</dt><dd>—</dd></dl>'));
+  const cardBranch = current.split('{player ? ').at(-1)?.split(' : panel === ')[0] ?? '';
+  assert.match(cardBranch, /<dl className="st-player-ratings"><div><dt>\{t\.blitz\}<\/dt><dd>—<\/dd><\/div><div><dt>\{t\.rapid\}<\/dt><dd>—<\/dd><\/div><\/dl>/);
   assert.doesNotMatch(cardBranch, /rating_blitz|rating_rapid|1200|1500/);
 });
 test('desktop ranking shows the upcoming-rating note without rating data or member ordering', () => {
@@ -72,8 +72,8 @@ test('missing pin migration disables admin/moderator controls while chat still l
         };
         return query;
       } };
-      await new AsyncFunction('supabase', 'user', 'warned', 'console', 'moderationEnabled', 'refreshVersion', ...setters, refreshBody)(
-        supabase, { id: 'user' }, new Set(), { warn() {} }, false, { current: 0 },
+      await new AsyncFunction('supabase', 'user', 'warned', 'console', 'moderationEnabled', 'refreshVersion', 'v2Enabled', 'isMissingSchema', 'loadV2Extras', ...setters, refreshBody)(
+        supabase, { id: 'user' }, new Set(), { warn() {} }, false, { current: 0 }, false, () => false, async () => null,
         ...setters.map(name => value => { state[name] = value; }),
       );
       assert.equal(state.setPinAvailable, code === null);

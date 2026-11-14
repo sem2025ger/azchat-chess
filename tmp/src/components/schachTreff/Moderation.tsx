@@ -34,7 +34,10 @@ export function MessageActions({ message, own, moderator, challenge, open, t }: 
     }
     open({ kind, messageId: message.id });
   }
-  return <details className="st-message-actions" onKeyDown={event => {
+  return <details className="st-message-actions" onBlur={event => {
+    // Clicking anywhere else closes the menu (focus leaves the details element).
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) event.currentTarget.open = false;
+  }} onKeyDown={event => {
     if (event.key === 'Escape') {
       event.currentTarget.open = false;
       event.currentTarget.querySelector('summary')?.focus();

@@ -21,7 +21,7 @@ export default function PlayerSummary({ userId,children }: { userId: string; chi
   const data=state?.userId===userId ? state.data : undefined;
   const error=state?.userId===userId && state.error;
   return <>{children}{state?.userId===userId && state.missing ? null : error ? <p role="alert">{t.error}</p> : !data ? <p role="status">{t.loading}</p> : <>
-    <p>{t.games}: <span className="st-mono">{data.completed_games}</span></p><h3>{t.lastGames}</h3>
-    {!data.last_games.length && <p>{t.noGames}</p>}<ul>{data.last_games.map((game,index) => <li key={index}>{game.opponent ?? '—'} · <span className="st-mono">{game.time_control} · {game.result}</span></li>)}</ul>
+    <p className="st-player-total"><span>{t.games}: </span><strong className="st-mono">{data.completed_games}</strong></p><section className="st-player-history"><h3>{t.lastGames}</h3>
+    {!data.last_games.length && <p>{t.noGames}</p>}<ul>{data.last_games.map((game,index) => <li key={index}><span className="st-player-opponent">{game.opponent ?? '—'}</span><span className="st-player-separator" aria-hidden="true"> · </span><span className="st-mono">{game.time_control}</span><span className="st-player-separator" aria-hidden="true"> · </span><strong className="st-mono">{game.result}</strong></li>)}</ul></section>
   </>}</>;
 }

@@ -8,6 +8,7 @@ import { useOptionalLanguage } from '../context/LanguageContext';
 import { supabase } from '../services/supabase';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
+import '@fontsource/bodoni-moda/latin-ext-600.css';
 import './SchachTreffDesktop.css';
 import { ChallengeProvider, ChallengeButton, ChallengeMessage, useChallengeMessageIds } from '../components/schachTreff/Challenges';
 import PlayerSummary from '../components/schachTreff/PlayerSummary';
@@ -17,6 +18,14 @@ import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
 type Profile = { id: string; username: string };
 import { inviteCacheKey, MessageActions, ModerationDialog, type ClubMessage, type ModerationAction } from '../components/schachTreff/Moderation';
 import { moderationEnabled, useMarkClubRead } from '../components/schachTreff/unread';
+import { SEEK_CONTROLS, isMissingSchema, mergeTimeline, resultMessageId, summarizeReactions, v2Enabled, type ChatGameResult, type Reaction, type ReactionSummary } from '../components/schachTreff/v2/core';
+import { useV2Copy } from '../components/schachTreff/v2/copy';
+import { useV2Copy2 } from '../components/schachTreff/v2/copy2';
+import { DirectList, GameResultCard, GameViewer, PositionDialog, PositionMessage, refusalMessage, useBlock, useDirectChats, useOpenDirectChat } from '../components/schachTreff/v2/Stage2';
+import { DEFAULT_POSITION } from 'chess.js';
+import { loadV2Extras, type V2Extras } from '../components/schachTreff/v2/data';
+import { Toast } from '../components/schachTreff/v2/Toast';
+import { FeedbackButton, MembersPanel, MessageTools, ReactionBar, SeekButton, ThreadPanel, PositionTrigger, nameStyle } from '../components/schachTreff/v2/Parts';
 type Panel = 'tournaments' | 'members' | 'ranking' | 'about';
 const warned = new Set<string>();
 export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: boolean } = {}) {
@@ -53,11 +62,54 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const [panel, setPanel] = useState<Panel | null>(null);
   const [player, setPlayer] = useState<Profile | null>(null);
   const [notify, setNotify] = useState(false);
+  const [v2Data, setV2Data] = useState<V2Extras | null>(null);
+  const [thread, setThread] = useState<ClubMessage | null>(null);
+  // One position composer: a new position (root null) or a reply that continues the position of a thread root.
+  const [composer, setComposer] = useState<{ fen: string; root: ClubMessage | null } | null>(null);
+  const [threadRevision, setThreadRevision] = useState(0);
+  const [threadScroll, setThreadScroll] = useState(false);
+  const threadScrolled = useCallback(() => setThreadScroll(false), []);
+  const [viewing, setViewing] = useState<ChatGameResult | null>(null);
+  const copy1 = useV2Copy();
+  const copy2 = useV2Copy2();
+  const [onlineIds, setOnlineIds] = useState<string[] | null>(null);
+  // Supabase Presence counts actual connected participant IDs; never show a hard-coded online total.
+  useEffect(() => {
+    if (!v2Enabled || !clubId || !user?.id || !member) {
+      setOnlineIds(null);
+      return;
+    }
+    let live = true;
+    const channel = supabase.channel('schach-treff-v2-presence:' + clubId, {
+      config: { presence: { key: user.id } },
+    });
+    channel.on('presence', { event: 'sync' }, () => {
+      if (live) setOnlineIds(Object.keys(channel.presenceState()));
+    }).subscribe(status => {
+      if (!live) return;
+      if (status === 'SUBSCRIBED') {
+        void channel.track({ joinedAt: Date.now() }).then(result => {
+          if (live && result !== 'ok') setOnlineIds(null);
+        }).catch(() => { if (live) setOnlineIds(null); });
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        setOnlineIds(null);
+      }
+    });
+    return () => {
+      live = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [clubId, member, user?.id]);
+  const direct = useDirectChats(v2Enabled ? user?.id : undefined);
+  const dmChat = v2Enabled ? direct.chats.find(chat => chat.clubId === clubId) : undefined;
+  const block = useBlock(dmChat?.partnerId);
+  const dmOpen = useOpenDirectChat();
   const isClub = new URLSearchParams(window.location.search).has('club');
   const feedRef = useRef<HTMLDivElement>(null);
   const followFeed = useRef(true);
   const newestMessage = messages.at(-1)?.id;
-  useMarkClubRead(clubId, newestMessage, member && !loading && !isLoading, feedRef, user?.id);
+  useMarkClubRead(clubId, v2Data?.newestId ?? newestMessage, member && !loading && !isLoading, feedRef, user?.id);
+  useEffect(() => { setThread(null); }, [clubId]);
   useLayoutEffect(() => {
     const feed = feedRef.current;
     if (feed && followFeed.current) feed.scrollTop = feed.scrollHeight;
@@ -88,7 +140,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
       } else { pinMigrationAvailable = true; pinnedAuthor = pinInfo.data?.pinned_by ?? null; setPin(pinInfo.data?.pinned_body ? { body: pinInfo.data.pinned_body, author: pinnedAuthor } : null); }
     } else setPin(null);
     setPinAvailable(pinMigrationAvailable);
-    if (!user || !clubData) { setModerator(false); setPrivateAdmin(false); setCanInvite(false); setCanPin(false); setMember(false); setMessages([]); setProfiles([]); return; }
+    if (!user || !clubData) { setModerator(false); setPrivateAdmin(false); setCanInvite(false); setCanPin(false); setMember(false); setMessages([]); setProfiles([]); setV2Data(null); return; }
     const membership = await supabase.from('chess_club_members').select('user_id,role').eq('club_id', clubData.id).eq('user_id', user.id).maybeSingle();
     if (membership.error) throw membership.error;
     if (moderationEnabled && version !== refreshVersion.current) return;
@@ -99,19 +151,33 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     setMember(Boolean(membership.data));
     setCanInvite(Boolean(requested) && ['admin','moderator'].includes(membership.data?.role ?? ''));
     setCanPin(pinMigrationAvailable && ['admin','moderator'].includes(membership.data?.role ?? ''));
-    if (!membership.data) { setMessages([]); setProfiles([]); return; }
-    const [feed, members] = await Promise.all([
-      (moderationEnabled
+    if (!membership.data) { setMessages([]); setProfiles([]); setV2Data(null); return; }
+    const feedQuery = (threaded = false) => {
+      const query = (moderationEnabled
         ? supabase.from('chess_club_messages').select('id,author_id,body,created_at,kind,deleted_at,hidden_at')
-        : supabase.from('chess_club_messages').select('id,author_id,body,created_at')).eq('club_id', clubData.id).order('created_at', { ascending: false }).limit(50),
+        : supabase.from('chess_club_messages').select('id,author_id,body,created_at')).eq('club_id', clubData.id);
+      // v2: thread replies are shown in the thread panel, not in the main feed.
+      return (threaded ? query.is('parent_id', null) : query).order('created_at', { ascending: false }).limit(50);
+    };
+    let threaded = v2Enabled;
+    const [firstFeed, members] = await Promise.all([
+      feedQuery(threaded),
       supabase.from('chess_club_members').select('user_id').eq('club_id', clubData.id).order('joined_at').limit(200),
     ]);
+    let feed = firstFeed;
+    if (threaded && feed.error && isMissingSchema(feed.error.code)) {
+      threaded = false;
+      if (!warned.has('v2-migration')) { warned.add('v2-migration'); console.warn('Schach-Treff v2 schema unavailable:', feed.error.code); }
+      feed = await feedQuery(false);
+    }
     if (feed.error) throw feed.error;
     if (members.error) throw members.error;
     const ids = [...new Set([...members.data.map(m => m.user_id), ...feed.data.map(m => m.author_id), ...(pinnedAuthor ? [pinnedAuthor] : [])])];
     const people = ids.length ? await supabase.from('profiles').select('id,username').in('id', ids) : { data: [], error: null };
     if (people.error) throw people.error;
-    if (moderationEnabled && version !== refreshVersion.current) return;
+    const extras = threaded ? await loadV2Extras(clubData.id, feed.data.map(m => m.id), feed.data.length >= 50 ? feed.data.at(-1)?.created_at : undefined) : null;
+    if ((moderationEnabled || v2Enabled) && version !== refreshVersion.current) return;
+    setV2Data(extras);
     setProfiles(people.data ?? []); setRoster(members.data.map(m => m.user_id));
     setMessages([...feed.data].reverse() as ClubMessage[]);
   }, [user]);
@@ -134,12 +200,13 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   async function perform(action: () => PromiseLike<{ error: unknown }>) {
     setBusy(true); setError('');
     try { const result = await action(); if (result.error) throw result.error; await refresh(); return true; }
-    catch { setError(t.error); return false; } finally { setBusy(false); }
+    catch (failure) { setError((v2Enabled && refusalMessage(failure, copy2)) || t.error); return false; } finally { setBusy(false); }
   }
   async function send(event: FormEvent) {
     event.preventDefault();
     if (!user || !clubId || !member || busy || !body.trim()) return;
     if (await perform(() => supabase.from('chess_club_messages').insert({ club_id: clubId, author_id: user.id, body: body.trim() }))) setBody('');
+    else if (dmChat) block.reload(); // e.g. blocked from another tab: show the real state in the header and composer
   }
   async function savePin(event: FormEvent) {
     event.preventDefault();
@@ -152,6 +219,20 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     setModerationNotice('');
     setModerationAction(action);
   }
+  async function toggleReaction(messageId: string, reaction: Reaction, mine: boolean) {
+    if (!user || busy) return;
+    await perform(() => mine
+      ? supabase.from('chess_club_message_reactions').delete().eq('message_id', messageId).eq('user_id', user.id).eq('reaction', reaction)
+      : supabase.from('chess_club_message_reactions').insert({ message_id: messageId, user_id: user.id, reaction }));
+  }
+  async function sendPosition(fen: string, body: string) {
+    if (!user || !clubId || !member || !composer) return false;
+    const root = composer.root;
+    const sent = await perform(() => supabase.from('chess_club_messages').insert({ club_id: clubId, author_id: user.id, body, fen, ...(root ? { parent_id: root.id } : {}) }));
+    // A reply lives in the thread of the original position: show it there.
+    if (sent && root) { setThread(root); setThreadRevision(value => value + 1); setThreadScroll(true); }
+    return sent;
+  }
   function stamp(value: string) {
     const date = new Date(value), now = new Date(), yesterday = new Date(); yesterday.setDate(now.getDate() - 1);
     const time = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -160,20 +241,49 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   if (missing) return null;
   const hasChatActions = canPin || (moderationEnabled && (moderator || privateAdmin));
   const members = profiles.filter(p => roster.includes(p.id));
-  return <section className="schach-treff" lang={language==="ua"?"uk":language} data-schach-treff-desktop>
-    <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member}>
+  const onlineCount = onlineIds?.length ?? null;
+  // A DM partner I blocked cannot receive messages: say so in the composer instead of letting a send fail.
+  const iBlocked = Boolean(dmChat && block.blocked);
+  const finishedChallenges = new Set(v2Data?.results.map(result => result.challenge_id) ?? []);
+  const v2 = v2Enabled && v2Data ? {
+    summary: summarizeReactions(v2Data.reactions, user?.id), replies: v2Data.replyCounts, reactions: v2Data.reactionsAvailable,
+    toggle: (id: string, reaction: Reaction, mine: boolean) => void toggleReaction(id, reaction, mine), openThread: setThread,
+    fens: v2Data.fens, results: new Map(v2Data.results.map(result => [resultMessageId(result), result])),
+    replyPosition: (message: ClubMessage, fen: string) => setComposer({ fen, root: message }), watch: setViewing,
+    kindLabel: (control: string) => {
+      const kind = SEEK_CONTROLS.find(item => item.value === control)?.kind;
+      return kind === 'bullet' ? copy2.bullet : kind === 'rapid' ? copy1.rapid : copy1.blitz;
+    },
+  } : undefined;
+  const timeline = v2 && v2Data?.results.length
+    ? mergeTimeline(messages, v2Data.results, result => ({ id: resultMessageId(result), author_id: '', body: null, created_at: result.completed_at } as ClubMessage))
+    : messages;
+  return <section className={v2Enabled ? 'schach-treff st-v2' : 'schach-treff'} lang={language==="ua"?"uk":language} data-schach-treff-desktop>
+    <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member} finished={finishedChallenges}>
     <header><h1>{t.title}</h1>{import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Link className="st-region-entry" to="/region/nrw" aria-label={regional('NRW-Regionalübersicht öffnen')}>NRW ↗</Link>}<div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
-      {menu && <nav aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}</nav>}
+      {(v2Enabled || menu) && <nav hidden={!menu} aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}{v2Enabled && <FeedbackButton />}</nav>}
     </div></header>
-    {error && <p role="alert">{error}</p>}
+    {error && (v2Enabled ? <Toast message={error} closeLabel={t.close} onClose={() => setError('')} /> : <p role="alert">{error}</p>)}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
-    <div className="st-columns">{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} /></aside>}
+    <div className={hideRooms && v2Enabled ? 'st-columns st2-no-rooms' : 'st-columns'}>{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} heading={v2Enabled ? copy1.myClubs : undefined} />{v2Enabled && <DirectList currentClubId={clubId} />}</aside>}
       <section className="st-surface st-chat">
-        {(isClub || hasChatActions) && <div className="st-chat-header">
+        {(isClub || hasChatActions || v2Enabled) && <div className="st-chat-header">
+          {/* The rooms column already says "General chat": the feed headline is the room's motto (owner, 13 Nov). */}
+          {v2Enabled && !isClub && <div className="st2-general-heading">
+            <h2 className="st2-general-title st2-general-motto"><span className="st2-sr-only">{t.general}: </span>{copy1.subtitle.split(' ').flatMap((word, index) => [index ? ' ' : '', word.includes('-') ? <span key={index} className="st2-nowrap">{word}</span> : word])}</h2>
+          </div>}
+          {v2Enabled && !isClub && <div className="st2-chat-meta">
+            <span className="st2-online" aria-label={onlineCount === null ? copy1.onlineNow : `${onlineCount} ${copy1.onlineNow}`} aria-live="polite">
+              <span className="st2-online-dot" aria-hidden="true" /><strong>{onlineCount ?? '—'}</strong> {copy1.onlineNow}
+            </span>
+            <SeekButton />
+          </div>}
           {isClub && <>
             <a className="st-back-general" href="/chat"><ArrowLeft size={16} aria-hidden="true" /><span>{t.general}</span></a>
-            <h2><RoomTitle clubId={clubId} /></h2>
+            <h2>{dmChat ? <span className="st2-dm-title" style={nameStyle(dmChat.partnerId)}>{dmChat.partnerName}</span> : <RoomTitle clubId={clubId} />}</h2>
+            {dmChat && <button type="button" className="st2-block" disabled={block.busy} onClick={() => void block.toggle()}>{block.blocked ? copy2.unblock : copy2.block}</button>}
             {canInvite && <RoomInvite key={clubId + '-' + inviteRevision} clubId={clubId} />}
+            {v2Enabled && !dmChat && !hideRooms && <SeekButton />}
           </>}
           {hasChatActions && <div className="st-pin-menu" onKeyDown={event => {
             if (event.key === 'Escape' && pinMenu) {
@@ -207,32 +317,53 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
           followFeed.current = feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
         }}>
           {!messages.length && !error && <p>{t.empty}</p>}
-          <MessageItems messages={messages} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} moderator={moderator} openModeration={setModerationAction} />
+          <MessageItems messages={timeline} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} moderator={moderator} openModeration={setModerationAction} v2={v2} />
         </div>
-        {moderationEnabled && moderationNotice && <p role="status">{moderationNotice}</p>}
+        {moderationEnabled && moderationNotice && (v2Enabled
+          ? <Toast message={moderationNotice} tone="status" closeLabel={t.close} onClose={() => setModerationNotice('')} />
+          : <p role="status">{moderationNotice}</p>)}
         {moderationEnabled && moderationAction && <ModerationDialog clubId={clubId} action={moderationAction}
           close={() => setModerationAction(null)} refresh={refresh} onNotice={setModerationNotice}
           onRevoked={() => setInviteRevision(value => value + 1)} />}
+        {dmChat && <p className="st2-note st2-dm-note">{block.blocked ? copy2.blockedNote : copy2.directChat}</p>}
+        {dmOpen.error && (v2Enabled ? <Toast message={dmOpen.error} closeLabel={t.close} onClose={dmOpen.clear} /> : <p role="alert">{dmOpen.error}</p>)}
         <form className="st-composer" onSubmit={send}>
-          <ChallengeButton composer />
-          <input aria-label={t.placeholder} placeholder={hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required />
-          <button className="st-send" disabled={busy || !body.trim()}>{t.send}</button>
+          {/* Desktop: Seek sits in the header (general chat and club rooms) so the input stays wide. The compact
+              mobile room view (hideRooms) keeps its approved composer layout. DMs challenge the partner here. */}
+          {v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} disabled={iBlocked} /> : isClub && hideRooms ? <SeekButton /> : null) : <ChallengeButton composer />}
+          {v2Enabled && <PositionTrigger label={copy2.sendPosition} disabled={iBlocked} onClick={() => setComposer({ fen: DEFAULT_POSITION, root: null })} />}
+          <input aria-label={t.placeholder} placeholder={iBlocked ? copy2.composerBlocked : hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required={!v2Enabled} disabled={iBlocked} />
+          <button className="st-send" disabled={busy || iBlocked || !body.trim()}>{t.send}</button>
         </form>
       </section>
+      {v2Enabled && (thread && v2?.reactions
+        ? <ThreadPanel key={thread.id} clubId={clubId} root={thread} people={profiles} onClose={() => setThread(null)} onChanged={() => void refresh()}
+            revision={threadRevision} rootFen={v2.fens.get(thread.id)} scrollToEnd={threadScroll} onScrolled={threadScrolled}
+            renderPosition={fen => <PositionMessage fen={fen} size={200} onReply={() => setComposer({ fen, root: thread })} />} />
+        : <MembersPanel members={members} messages={messages} me={user?.id} onlineIds={onlineIds} onPlayer={setPlayer}
+            onMessage={direct.available ? person => void dmOpen.open(person.id) : undefined} />)}
+      {v2Enabled && composer && <PositionDialog initialFen={composer.fen} reply={Boolean(composer.root)} onSend={sendPosition} onClose={() => setComposer(null)} />}
+      {v2Enabled && viewing && <GameViewer game={viewing} onClose={() => setViewing(null)} />}
     </div>}
-    <dialog ref={dialog} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
+    <dialog ref={dialog} className={v2Enabled && player ? 'st2-player-dialog' : undefined} aria-labelledby={player ? 'st-player-name' : undefined} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
       <button className="st-close" onClick={() => { setPanel(null); setPlayer(null); }}>{t.close}</button>
       {/* Genuine ratings will be introduced by the future Glicko-2 task; do not display stored placeholder values here. */}
-      {player ? <><PlayerSummary userId={player.id}><h2>{player.username}</h2><p>{t.noLocation}</p><dl><dt>{t.blitz}</dt><dd>—</dd><dt>{t.rapid}</dt><dd>—</dd></dl></PlayerSummary><ChallengeButton targetUserId={player.id} beforeOpen={() => setPlayer(null)} /><VorbereitungLink onClick={()=>{setPlayer(null);setPanel(null);}}/></> : panel === 'tournaments' ? <><h2 className="st-display">{t.tournamentTitle}</h2><p>{t.tournamentText}</p><button aria-pressed={notify} onClick={() => setNotify(!notify)}>{notify ? t.notified : t.notify}</button></> : panel === 'about' ? <><h2>{t.about}</h2><p>{t.aboutText}</p></> : panel === 'ranking' ? <><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></> : panel && <><h2>{t[panel]}</h2>{!members.length && !error && <p>{t.noMembers}</p>}{members.map(p => <div className="st-member" key={p.id}><button className="st-name" onClick={() => setPlayer(p)}>{p.username}</button></div>)}</>}
+      {player ? <><PlayerSummary userId={player.id}><header className="st-player-header"><h2 id="st-player-name">{player.username}</h2><p>{t.noLocation}</p></header><dl className="st-player-ratings"><div><dt>{t.blitz}</dt><dd>—</dd></div><div><dt>{t.rapid}</dt><dd>—</dd></div></dl></PlayerSummary><div className="st-player-actions"><ChallengeButton targetUserId={player.id} beforeOpen={() => setPlayer(null)} />{v2Enabled && direct.available && player.id !== user?.id && <button type="button" onClick={() => { const id = player.id; setPlayer(null); void dmOpen.open(id); }}>{copy2.writePrivately}</button>}<VorbereitungLink onClick={()=>{setPlayer(null);setPanel(null);}}/></div></> : panel === 'tournaments' ? <><h2 className="st-display">{t.tournamentTitle}</h2><p>{t.tournamentText}</p><button aria-pressed={notify} onClick={() => setNotify(!notify)}>{notify ? t.notified : t.notify}</button></> : panel === 'about' ? <><h2>{t.about}</h2><p>{t.aboutText}</p></> : panel === 'ranking' ? <><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></> : panel && <><h2>{t[panel]}</h2>{!members.length && !error && <p>{t.noMembers}</p>}{members.map(p => <div className="st-member" key={p.id}><button className="st-name" onClick={() => setPlayer(p)}>{p.username}</button></div>)}</>}
     </dialog>
     </ChallengeProvider>
   </section>;
 }
 
-function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, openModeration }: {
+type V2Items = {
+  summary: Map<string, ReactionSummary[]>; replies: Map<string, number>; reactions: boolean;
+  toggle: (id: string, reaction: Reaction, mine: boolean) => void; openThread: (message: ClubMessage) => void;
+  fens: Map<string, string>; results: Map<string, ChatGameResult>; replyPosition: (message: ClubMessage, fen: string) => void;
+  watch: (game: ChatGameResult) => void; kindLabel: (control: string) => string;
+};
+function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, openModeration, v2 }: {
   messages: ClubMessage[]; profiles: Profile[]; me?: string;
   onPlayer: (profile: Profile) => void; stamp: (value: string) => string;
-  moderator: boolean; openModeration: (action: ModerationAction) => void;
+  moderator: boolean; openModeration: (action: ModerationAction) => void; v2?: V2Items;
 }) {
   const challengeIds = useChallengeMessageIds();
   const t = useSchachTreffCopy();
@@ -242,6 +373,7 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
     const date = new Date(message.created_at);
     const previousDate = previous && new Date(previous.created_at);
     const newGroup = !previous || previous.author_id !== message.author_id
+      || Boolean(v2?.results.has(message.id) || v2?.results.has(previous.id))
       || challengeIds.has(message.id) || challengeIds.has(previous.id)
       || !previousDate || date.toDateString() !== previousDate.toDateString()
       || date.getTime() - previousDate.getTime() < 0
@@ -251,15 +383,21 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
   }
   return <>{groups.map(group => {
     const own = group[0].author_id === me;
+    const finished = v2?.results.get(group[0].id);
+    if (v2 && finished) return <div key={group[0].id} className="st-message-group st2-result-group">
+      <GameResultCard game={finished} kind={v2.kindLabel(finished.time_control)} onWatch={() => v2.watch(finished)} />
+    </div>;
     return <div key={group[0].id} className={own ? 'st-message-group st-message-group-own' : 'st-message-group'}>
       {group.map((message, index) => {
         const author = profiles.find(profile => profile.id === message.author_id);
         const first = index === 0;
         const date = new Date(message.created_at);
         const exactTime = date.toLocaleString('de-DE', { dateStyle: 'full', timeStyle: 'medium' });
+        const social = v2?.reactions && !challengeIds.has(message.id) && message.kind !== 'challenge' && !message.deleted_at && !message.hidden_at;
+        const summary = v2?.summary.get(message.id) ?? [];
         return <article key={message.id}
           className={['st-message', own && 'st-message-own', !first && 'st-message-grouped'].filter(Boolean).join(' ')}
-          title={exactTime} tabIndex={first ? undefined : 0}>
+          title={exactTime} tabIndex={first ? undefined : 0} style={v2 ? nameStyle(message.author_id) : undefined}>
           {first && <span className="st-avatar" aria-hidden="true">{Array.from(author?.username ?? '?')[0]?.toLocaleUpperCase()}</span>}
           <div className="st-message-content">
             {first && <div className="st-message-heading">
@@ -270,6 +408,12 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
             {moderationEnabled && message.deleted_at ? <p className="st-moderation-status">{t.deleted}</p>
               : <ChallengeMessage messageId={message.id} body={message.body ?? ''} />}
             {moderationEnabled && message.hidden_at && <p className="st-moderation-status">{t.hiddenMessage}</p>}
+            {v2 && !message.deleted_at && v2.fens.get(message.id) && <PositionMessage fen={v2.fens.get(message.id)!} onReply={fen => v2.replyPosition(message, fen)} />}
+            {v2 && social && <>
+              <ReactionBar summary={summary} replies={v2.replies.get(message.id) ?? 0}
+                onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />
+              <MessageTools summary={summary} onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />
+            </>}
             {moderationEnabled && <MessageActions message={message} own={own} moderator={moderator}
               challenge={challengeIds.has(message.id)} open={openModeration} t={t} />}
           </div>
