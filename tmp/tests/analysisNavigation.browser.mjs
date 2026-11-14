@@ -47,7 +47,7 @@ try {
   chrome.on('error', error => { launchError = error; });
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   let port = 0;
-  for (let n = 0; n < 200; n++) {
+  for (let n = 0; n < 300; n++) {
     if (launchError) throw launchError;
     if (chrome.exitCode !== null) throw Error('Chromium exited: ' + stderr);
     try { port = Number((await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0]); } catch {}
