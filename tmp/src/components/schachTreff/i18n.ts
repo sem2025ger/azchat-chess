@@ -1,5 +1,7 @@
 import type { Language } from '../../translations';
 const fixedCopy: Record<string, Record<Language,string>> = {
+  "Herausforderung zurückgezogen": {de: "Herausforderung zurückgezogen", en: "Challenge cancelled", az: "Çağırış ləğv edilib", tr: "Meydan okuma iptal edildi", ua: "Виклик скасовано", ru: "Вызов отменён"},
+  "Herausforderung abgelaufen": {de: "Herausforderung abgelaufen", en: "Challenge expired", az: "Çağırışın vaxtı bitib", tr: "Meydan okumanın süresi doldu", ua: "Термін виклику минув", ru: "Срок вызова истёк"},
   "Nachricht gelöscht": {de: "Nachricht gelöscht", en: "Message deleted", az: "Mesaj silindi", tr: "Mesaj silindi", ua: "Повідомлення видалено", ru: "Сообщение удалено"},
   "Nachrichtenaktionen": {de: "Nachrichtenaktionen", en: "Message actions", az: "Mesaj əməliyyatları", tr: "Mesaj işlemleri", ua: "Дії з повідомленням", ru: "Действия с сообщением"},
   "Chat-Aktionen": {de: "Chat-Aktionen", en: "Chat actions", az: "Söhbət əməliyyatları", tr: "Sohbet işlemleri", ua: "Дії з чатом", ru: "Действия чата"},
@@ -218,6 +220,22 @@ const fixedCopy: Record<string, Record<Language,string>> = {
     "tr": "Oyun başlıyor…",
     "ua": "Партія починається…",
     "ru": "Партия начинается…"
+  },
+  "Partie beendet": {
+    "de": "Partie beendet",
+    "en": "Game over",
+    "az": "Partiya bitdi",
+    "tr": "Oyun bitti",
+    "ua": "Партію завершено",
+    "ru": "Партия завершена"
+  },
+  "Zur Partie": {
+    "de": "Zur Partie",
+    "en": "Open game",
+    "az": "Partiyaya keç",
+    "tr": "Oyuna git",
+    "ua": "Відкрити партію",
+    "ru": "Открыть партию"
   },
   "Partie gestartet": {
     "de": "Partie gestartet",

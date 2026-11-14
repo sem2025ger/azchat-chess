@@ -29,3 +29,7 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Stockfish 19 assets are downloaded by scripts/prepareStockfish19.mjs
+public/stockfish-19-lite-single.js
+public/stockfish-19-lite-single.wasm
