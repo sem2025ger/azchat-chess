@@ -76,10 +76,10 @@ export default function Layout() {
     )} data-analysis-route={isDesktopAnalysisRoute || undefined} data-reading-route={isReadingRoute || undefined} data-home-route={isHomeRoute || undefined}>
 
       {/* Premium Sidebar Navigation - Hidden on Mobile */}
-      <aside className="hidden md:flex w-20 xl:w-[260px] bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
+      <aside className="hidden md:flex w-20 xl:w-[240px] bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
 
-          <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
+          <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-4 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
               <div className="flex w-full items-center justify-center xl:justify-start gap-1.5 xl:gap-0" aria-label="Chessaz.de">
                 <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.72rem] xl:leading-[1.8rem] tracking-tight not-italic leading-none whitespace-nowrap text-center xl:text-left">
@@ -103,7 +103,7 @@ export default function Layout() {
             </div>
           </div>
 
-          <nav className="px-3 xl:px-5 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
+          <nav className="px-3 xl:px-4 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
@@ -114,7 +114,7 @@ export default function Layout() {
           </nav>
         </div>
 
-        <div className="p-2 xl:p-5 space-y-3 border-t border-white/[0.05] bg-black/40 shadow-inner shrink-0">
+        <div className="p-2 xl:p-4 space-y-3 border-t border-white/[0.05] bg-black/40 shadow-inner shrink-0">
 
           {/* Shared six-language selector — persistent across routes */}
           <div className="flex flex-col gap-3">
@@ -208,7 +208,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       }
     >
       <div className="w-8 flex justify-center shrink-0 group-hover:scale-110 transition-transform duration-150 motion-reduce:transition-none">{icon}</div>
-      <span className="site-nav-copy ml-4 hidden xl:flex"><span className={cx("site-nav-label", bronzeLabel && "site-nav-label--bronze")}>{label}</span></span>
+      <span className="site-nav-copy ml-3 hidden xl:flex"><span className={cx("site-nav-label", bronzeLabel && "site-nav-label--bronze")}>{label}</span></span>
 
       {/* Active Indicator Dot */}
       <NavItemActiveDot />

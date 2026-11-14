@@ -20,6 +20,20 @@ test('all NRW flags off preserves the main routing and navigation entry points',
    assert.ok(current.includes(tournamentGate),path);
    current=current.replace(tournamentGate,spieltagGate);
   }
+  if(path===layoutPath){
+   // Allow only the separately reviewed 240px desktop sidebar geometry change (PR #219).
+   // All route entries and feature-flagged links must remain byte-for-byte identical.
+   for(const [next, previous] of [
+    ['w-20 xl:w-[240px]', 'w-20 xl:w-[260px]'],
+    ['xl:justify-start px-2 xl:px-4 border-b', 'xl:justify-start px-2 xl:px-6 border-b'],
+    ['<nav className="px-3 xl:px-4 pt-10', '<nav className="px-3 xl:px-5 pt-10'],
+    ['<div className="p-2 xl:p-4 space-y-3 border-t', '<div className="p-2 xl:p-5 space-y-3 border-t'],
+    ['site-nav-copy ml-3 hidden xl:flex', 'site-nav-copy ml-4 hidden xl:flex'],
+   ]) {
+    assert.ok(current.includes(next), 'Expected the approved desktop sidebar change: ' + next);
+    current=current.replace(next,previous);
+   }
+  }
   const expected=execFileSync('git',['show',(path===layoutPath?layoutBaseline:baseline)+':tmp/'+path],{encoding:'utf8'});
   assert.equal(current,path===layoutPath?expected.replace(tournamentGate,spieltagGate):expected,path);
  }

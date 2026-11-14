@@ -5,6 +5,17 @@ import { readFileSync } from 'node:fs';
 const layout = readFileSync(new URL('../src/components/Layout.tsx', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
 
+test('desktop rail is 240px with matching override and compact internal spacing', () => {
+  assert.match(layout, /hidden md:flex w-20 xl:w-\[240px\]/);
+  assert.match(css, /#root aside \{width:240px;min-width:240px;max-width:240px;\}/);
+  assert.match(layout, /xl:justify-start px-2 xl:px-4 border-b/);
+  assert.match(layout, /<nav className="px-3 xl:px-4 pt-10/);
+  assert.match(layout, /<div className="p-2 xl:p-4 space-y-3 border-t/);
+  assert.match(layout, /site-nav-copy ml-3 hidden xl:flex/);
+  // The language chooser now renders the shared languageOptions list (team-tournament base).
+  assert.match(layout, /languageOptions\.map\(\(\{ id: lang, name \}\) =>/);
+});
+
 test('wordmark spells Chessaz.de with subtly enlarged Ch', () => {
   assert.match(layout, /aria-label="Chessaz\.de"/);
   assert.match(layout, /sidebar-brand-silver"><span className="xl:text-\[1\.08em\]">Ch<\/span>essaz\.<\/span>/);
