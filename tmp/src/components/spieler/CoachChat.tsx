@@ -83,7 +83,7 @@ function CoachCopyButton({text,label,copiedLabel,onStart,onError}:{text:string;l
    timer.current=setTimeout(()=>{timer.current=null;setCopied(false);},2000);
   }catch{if(operation.current===current)onError();}
  }
- return <button type="button" className="coach-chat-copy" onClick={()=>void copy()} aria-label={copied?copiedLabel:label} title={copied?copiedLabel:label}>{copied?<Check size={15} aria-hidden="true"/>:<Copy size={15} aria-hidden="true"/>}<span role="status" aria-live="polite">{copied?copiedLabel:label}</span></button>;
+ return <button type="button" className="coach-chat-copy" onClick={()=>void copy()} aria-label={copied?copiedLabel:label} title={copied?copiedLabel:label}>{copied?<Check size={15} aria-hidden="true"/>:<Copy size={15} aria-hidden="true"/>}<span role={copied?"status":undefined} aria-live="polite">{copied?copiedLabel:label}</span></button>;
 }
 export default function CoachChat(props:Props){
  return <CoachConversation key={JSON.stringify([props.accountId,props.fen,props.side])} {...props}/>;
