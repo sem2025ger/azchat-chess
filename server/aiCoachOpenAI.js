@@ -9,6 +9,8 @@ const AUDIO_TYPES=new Map([['audio/webm','webm'],['audio/mp4','mp4'],['audio/ogg
 const providerError=(code='provider_unavailable')=>Object.assign(Error(code),{code});
 const POSITION_FACTS_INSTRUCTION='evidence.positionFacts was computed deterministically by the ChessAZ server. Mention a pawn-structure, file, outpost, hanging-piece or king-safety feature only if it is listed in positionFacts, and use its exact squares. Never assert such a feature that is not listed. The hanging section is static (no pins or tactics); for tactics rely on candidateLines. Call a pawn blockaded only if it is listed in pawns.blockaded; an own piece in front of a pawn is not a blockade. Each candidate line may include endFacts: verified pawn structure, material and king data for the position at the END of that line. When you describe the structure after a line (doubled, isolated, passed or blockaded pawns, pawn islands, king shelter), use only that line\'s endFacts. Never infer the pawn structure after captures yourself. Call a bishop bad, a square a hole/weak square, a wing a pawn majority, or a structure a minority attack only if the server lists it (strategy.bishops[].bad, strategy.holes, majorities, strategy.minorityAttack). If a hole is listed in strategy.holesPawnCanOccupy, say that the defender can still occupy it with that pawn advance.';
 
+const BIBLIOGRAPHY_INSTRUCTION='evidence.coachBibliography contains only a server-owned bibliographic catalogue: titles, authors, publication metadata and provenance types. It contains NO book pages, original annotations, verified positions or full book analyses. Use it only to answer questions about listed books, and distinguish original authorship from later editors. NEVER quote or paraphrase alleged book passages, cite a page, claim you read/ingested a book, or attribute a positional idea, variation or game to these books solely from this catalogue. For any chess move, line or evaluation rely on position, legalMoves and the verified evidence instead. The catalogue is not permission to train on copyrighted editions.';
+
 // Check actual streamed bytes, including when Content-Length is absent or false.
 async function readBytes(response,limit){
  if(!response.ok||Number(response.headers.get('content-length')||0)>limit){await response.body?.cancel().catch(()=>{});throw providerError();}
@@ -58,7 +60,7 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
   'Do not claim a move is illegal if it appears in legalMoves. Explain uncertainty and offer the analysis board for engine verification.',
   'No links, HTML or markdown. Return JSON with exactly one string property answer, between 2 and 1200 characters.'
  ].join('\n'):null;
- const instructions=(serverEngine?serverInstructions:legacyInstructions)+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'');
+ const instructions=(serverEngine?serverInstructions:legacyInstructions)+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'');
  const response=await fetchImpl('https://api.openai.com/v1/responses',{
   method:'POST',redirect:'error',signal:requestSignal(signal),headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
   body:JSON.stringify({model,store:false,instructions,reasoning:{effort:'low'},max_output_tokens:1800,

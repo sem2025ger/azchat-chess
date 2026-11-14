@@ -7,9 +7,9 @@
 1. A signed-in organizer types or records a message in the M3 tournament area.
 2. The existing JWT verifier authenticates the request. The Supabase service client checks `public.team_tournament_organizers` for the actor on **every route**.
 3. `POST /api/ai-organizer/plan` receives at most 12 bounded conversation turns (1000 characters each), optionally explicitly corrected draft fields, and the UI language `de/en/az/tr/ua/ru`.
-4. The service sends Gemini the organizer's message and prior conversation, the current Berlin-local time, corrected fields, and **at most five** of their previous M3 events: event name, boards, min/max teams and Berlin-local start time. The database IDs needed for the lookup stay on the server. No emails, names of players, user IDs, invitations or roster information are sent.
-5. Gemini returns a JSON proposal. The Node server validates all fields independently, including strict Berlin wall times and DST, range checks, defaults and the registration deadline. Invalid fields are dropped; missing fields prompt one question.
-6. The organizer reviews/edits fields in a chat bubble. The **Use this draft** button fills the existing M3 form. The **Create tournament** button in the chat bubble also fills that form and invokes the **same form submit handler**—the existing `POST /api/team-tournaments/self-service` is the only creation route. No Gemini tool/function calls or database writes are possible in the AI module.
+4. The service sends OpenAI the organizer's message and prior conversation, the current Berlin-local time, corrected fields, and **at most five** of their previous M3 events: event name, boards, min/max teams and Berlin-local start time. The database IDs needed for the lookup stay on the server. No emails, names of players, user IDs, invitations or roster information are sent.
+5. OpenAI returns a JSON proposal. The Node server validates all fields independently, including strict Berlin wall times and DST, range checks, defaults and the registration deadline. Invalid fields are dropped; missing fields prompt one question.
+6. The organizer reviews/edits fields in a chat bubble. The **Use this draft** button fills the existing M3 form. The **Create tournament** button in the chat bubble also fills that form and invokes the **same form submit handler**—the existing `POST /api/team-tournaments/self-service` is the only creation route. No provider tool/function calls or database writes are possible in the AI module.
 
 A shared browser recorder is used for both AI Coach and AI Organizer. The optional `POST /api/ai-organizer/transcribe` delegates to `aiCoachOpenAI.transcribeAudio`, with its 2 MiB audio cap. It shows live microphone levels without retaining audio and releases tracks on stop/cancel/unmount. If OpenAI transcription is not configured, the microphone hides after a first attempted transcription; text remains available.
 
@@ -20,8 +20,8 @@ The assistant's reply is progressively revealed on the client after the validate
 Render **`chessaz-m3-qa-api`** (QA only):
 - `TEAM_TOURNAMENTS_ENABLED=true` and `TEAM_TOURNAMENTS_M3_ENABLED=true` are existing dependencies.
 - `AI_ORGANIZER_ENABLED=true` opts in to mounting the new route.
-- `GEMINI_API_KEY` required for planning; existing `GEMINI_MODEL` optional (defaults to `gemini-2.5-flash`).
-- `OPENAI_API_KEY` optional for voice transcription.
+- `OPENAI_API_KEY` required for planning and voice transcription, using the same server-side key as AI Coach. AI Organizer no longer reads `GEMINI_API_KEY` or `GEMINI_MODEL`; there is no Gemini fallback.
+- `OPENAI_ORGANIZER_MODEL` optional (defaults to `gpt-6-sol`, the existing AI Coach default). The Coach model setting is independent. The planner uses the OpenAI Responses API with strict JSON Schema, `store:false`, no tools, low reasoning effort and a cap of 1,800 output tokens (including reasoning).
 - Existing `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` or `SUPABASE_SERVICE_ROLE_KEY` are required to enforce organizer allowlist and read past tournaments.
 
 Vercel **branch-scoped M3 QA Preview** (not production):
@@ -45,7 +45,45 @@ All Organizer flags are **OFF when absent**. The public site and existing endpoi
 
 - No migrations, production deployments, production key changes or merges are part of M1.
 - Planner and transcribe routes both require valid JWT and a current organizer allowlist entry. Planning: 30 requests per user per 10 minutes, maximum 16 concurrent plan calls, 20 s server timeout. The raw provider error body is never returned.
-- Gemini names and user-entered text are untrusted data. Errors must not log or disclose text, personal IDs or secrets.
+- Model output and user-entered text are untrusted data. Errors must not log or disclose text, personal IDs or secrets.
 - This is an AI-assisted draft, not a scheduling guarantee. Existing server validation and the SQL creation transaction remain authoritative.
-- **Before production enablement**, the site owner must update the **Datenschutzerklärung** (privacy policy) to disclose Gemini processing, assess the legal basis and provider data handling, and separately approve deployment.
+- **Before production enablement**, the site owner must update the **Datenschutzerklärung** (privacy policy) to disclose OpenAI processing, assess the legal basis and provider data handling, and separately approve deployment.
 - Browser/M3/voice regression and live QA must pass before the milestone is marked accepted.
+
+## OpenAI planner migration — 14 November 2026
+
+The route/response shape, six languages, server-side field validation, Berlin/DST
+handling, organizer checks, request budgets, feature gates and explicit creation
+button are unchanged. Responses must be completed, contain exactly one assistant
+JSON text and pass the existing draft normalization. Refusals, truncated output,
+provider errors and malformed/oversized responses fail with the existing safe
+`provider_unavailable` code; no automatic retry or provider fallback is made.
+The response body is capped at 64 KiB, and the request has a 20-second deadline
+with client-disconnect cancellation. `status.planning` reports a configured
+OpenAI key and syntactically valid model name, not provider entitlement or billing.
+
+Release checks (QA only, after separate approval to deploy the reviewed commit):
+1. Keep existing flags; no new flag, database migration or schema change is needed
+   for this provider replacement. Open creation still requires its existing
+   migration to have been verified separately before enabling that flag.
+2. Ensure `OPENAI_API_KEY` is configured privately on `chessaz-m3-qa-api`. Do not
+   copy it to a frontend variable, chat, logs or a PR. A new Gemini key is unnecessary.
+3. Deploy the reviewed backend commit; check `/health` SHA and
+   `/api/ai-organizer/status` booleans (`planning` and `voice`). No key values
+   should appear. The current frontend needs no provider-specific change.
+4. Sign in to QA and request a draft in each supported locale, answer a missing-time
+   question, then edit fields. Confirm a real OpenAI response, past-event privacy,
+   one-hour deadline, manual-create handoff, speech transcription and safe errors.
+   Receiving a draft must not create a tournament. Creating a QA event requires
+   the user's explicit click; no data cleanup is part of this change.
+5. Without `OPENAI_API_KEY`, planning and voice report unavailable; a Gemini key
+   alone must not enable either. With flags absent, the AI routes remain HTTP 404.
+
+Regression coverage: `server/aiOrganizer.test.js` exercises the Responses request
+contract, nullable strict schema, six locales, env/default-OFF wiring, malformed /
+refused / incomplete output, response byte limits and cancellation, in addition to
+the existing authorization, budgets, privacy and normalization tests. Mocked
+provider tests establish integration behavior, not real-provider account access
+or language/date interpretation quality. Official API references:
+- https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses
+- https://developers.openai.com/api/reference/resources/responses/methods/create

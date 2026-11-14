@@ -1,0 +1,18 @@
+const en={
+ name:'Chessy',subtitle:'Your chess companion',idle:'Ready to explore this position.',ready:'Ask a follow-up or study a verified line.',thinking:'Working on your question…',listening:'Listening to your question…',speaking:'Reading the explanation aloud…',promptsLabel:'Start with a question about this position',
+ prompts:['Which mistakes should the side to move avoid here? Do not judge the previous move without history.','What tactical threats exist in this position? Use verified lines only.','Explain the best practical plan for the side to move and why.']
+};
+type Copy={name:string;subtitle:string;idle:string;ready:string;thinking:string;listening:string;speaking:string;promptsLabel:string;prompts:string[]};
+export const chessyCopy={
+ en,
+ de:{name:'Chessy',subtitle:'Dein Schachbegleiter',idle:'Bereit, diese Stellung zu besprechen.',ready:'Frag nach oder prüfe eine bestätigte Variante.',thinking:'Ich prüfe deine Frage…',listening:'Ich höre deine Frage…',speaking:'Ich lese die Erklärung vor…',promptsLabel:'Frage zur aktuellen Stellung',
+  prompts:['Welche Fehler sollte die Seite am Zug hier vermeiden? Bewerte den letzten Zug nicht ohne Zugverlauf.','Welche taktischen Drohungen gibt es hier? Nutze nur überprüfte Varianten.','Erkläre den besten praktischen Plan für die Seite am Zug und warum.']},
+ ru:{name:'Chessy',subtitle:'Твой шахматный помощник',idle:'Готов обсудить эту позицию.',ready:'Задай следующий вопрос или изучи проверенный вариант.',thinking:'Разбираю твой вопрос…',listening:'Слушаю твой вопрос…',speaking:'Озвучиваю объяснение…',promptsLabel:'Начни с вопроса по текущей позиции',
+  prompts:['Каких ошибок здесь следует избегать стороне, которая ходит? Не оценивай последний ход без истории партии.','Какие тактические угрозы есть в этой позиции? Используй только проверенные варианты.','Объясни лучший практический план для стороны, которая ходит, и почему.']},
+ az:{name:'Chessy',subtitle:'Şahmat köməkçin',idle:'Bu mövqeni müzakirə etməyə hazıram.',ready:'Növbəti sualı ver və ya yoxlanılmış variantı araşdır.',thinking:'Sualını təhlil edirəm…',listening:'Sualını dinləyirəm…',speaking:'İzahı səsləndirirəm…',promptsLabel:'Cari mövqe haqqında sual seç',
+  prompts:['Burada gediş edən tərəf hansı səhvlərdən qaçmalıdır? Partiyanın tarixçəsi olmadan son gedişi qiymətləndirmə.','Bu mövqedə hansı taktiki təhdidlər var? Yalnız yoxlanılmış variantlardan istifadə et.','Gediş edən tərəf üçün ən praktik planı və səbəbini izah et.']},
+ tr:{name:'Chessy',subtitle:'Satranç yardımcın',idle:'Bu konumu konuşmaya hazırım.',ready:'Başka soru sor veya doğrulanmış varyantı incele.',thinking:'Sorunu inceliyorum…',listening:'Sorunu dinliyorum…',speaking:'Açıklamayı seslendiriyorum…',promptsLabel:'Mevcut konum hakkında sor',
+  prompts:['Sırası gelen taraf burada hangi hatalardan kaçınmalı? Hamle geçmişi olmadan son hamleyi değerlendirme.','Bu konumdaki taktik tehditler neler? Yalnızca doğrulanmış varyantları kullan.','Sırası gelen taraf için en iyi pratik planı ve nedenini açıkla.']},
+ uk:{name:'Chessy',subtitle:'Твій шаховий помічник',idle:'Готовий обговорити цю позицію.',ready:'Постав наступне запитання або переглянь перевірений варіант.',thinking:'Аналізую твоє запитання…',listening:'Слухаю твоє запитання…',speaking:'Озвучую пояснення…',promptsLabel:'Почни із запитання про позицію',
+  prompts:['Яких помилок тут варто уникати стороні, що ходить? Не оцінюй останній хід без історії партії.','Які тактичні загрози є в цій позиції? Використовуй лише перевірені варіанти.','Поясни найкращий практичний план для сторони, що ходить, і чому.']}
+} satisfies Record<'en'|'de'|'ru'|'az'|'tr'|'uk',Copy>;
