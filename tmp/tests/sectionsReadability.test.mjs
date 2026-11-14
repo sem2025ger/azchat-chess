@@ -6,10 +6,12 @@ import {execFileSync} from 'node:child_process';
 import {tmpdir} from 'node:os';import {join,resolve} from 'node:path';
 import {checkSectionLayouts} from './sectionsLayout.browser.mjs';
 
-test('PreparationBoard renders the shared Home/Analysis board and outlined classic SVG pieces',()=>{
+test('PreparationBoard renders the shared Home/Analysis board and inherits the selected pieces',()=>{
  const source=readFileSync(new URL('../src/components/spieler/PreparationBoard.tsx',import.meta.url),'utf8');
  assert.match(source,/import ChessBoard from '\.\.\/ChessBoard'/);
- assert.match(source,/<ChessBoard game=\{board\} readOnly overrideBoardTheme="Classic Wood" overridePieceTheme="cburnett-classic"/);
+ assert.match(source,/<ChessBoard game=\{board\} readOnly overrideBoardTheme="Classic Wood" className=/);
+ assert.doesNotMatch(source,/overridePieceTheme/);
+ assert.match(source,/src=\{pieceAssetSrc\(pieceTheme, p\)\}/);
  assert.doesNotMatch(source,/preparation-mini-board|♔|♙/);
 });
 test('four section headings, one native page scroll owner, and Home fits the desktop viewport',{timeout:180000},async()=>{

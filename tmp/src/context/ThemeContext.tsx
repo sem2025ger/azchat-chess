@@ -24,8 +24,8 @@ interface ThemeContextType {
   setConfirmMobileMoves: (val: boolean) => void;
 }
 
-const DEFAULT_PIECE_THEME: PieceTheme = 'cburnett-classic';
-const VALID_PIECE_THEMES = new Set<string>(PIECE_STYLES.map((style) => style.id));
+const DEFAULT_PIECE_THEME: PieceTheme = 'neo';
+const VALID_PIECE_THEMES = new Set<string>(PIECE_STYLES.filter((style) => style.id === 'neo' || style.id === 'tournament').map((style) => style.id));
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 

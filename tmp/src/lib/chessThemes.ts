@@ -1,6 +1,12 @@
 export type BoardTheme = 'Classic Green' | 'Light Green' | 'Dark Green' | 'Classic Wood' | 'Dark Wood / Brown' | 'Premium Gold' | 'Obsidian / Dark' | 'Blue / Slate' | 'Premium Graphite Gold' | 'Modern Flat 2D';
 export type PieceTheme = 'classic' | 'neo' | 'tournament' | 'wood' | 'glass' | 'marble' | 'premium' | 'flat2d' | 'cburnett-classic';
 
+export function pieceAssetSrc(theme: PieceTheme, code: string) {
+  if (theme === 'cburnett-classic') return `/chess-assets/pieces/cburnett/${code}.svg`;
+  if (theme === 'neo' || theme === 'tournament') return `/pieces/mobile/${theme}/${code}.svg`;
+  return `/pieces/${theme}/${code}.svg`;
+}
+
 export const BOARD_THEMES: Record<BoardTheme, { light: string; dark: string }> = {
   'Classic Green': { light: 'bg-[#ebecd0]', dark: 'bg-[#739552]' },
   'Light Green': { light: 'bg-[#f0f1e0]', dark: 'bg-[#8ca86d]' },

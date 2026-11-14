@@ -1,6 +1,6 @@
 import { useRef, type DragEvent, type PointerEvent } from 'react';
 import { useThemeContext } from '../../context/ThemeContext';
-import { BOARD_THEMES } from '../../lib/chessThemes';
+import { BOARD_THEMES, pieceAssetSrc } from '../../lib/chessThemes';
 import type { PositionDraft } from '../../utils/analysisWorkspace';
 import type { AnalysisWords } from './copy';
 
@@ -26,9 +26,7 @@ export default function EditorBoard({ draft, selected, words, onPlace, onMove, m
 
   const pieceAsset = (piece: string) => {
     const code = `${piece === piece.toUpperCase() ? 'w' : 'b'}${piece.toUpperCase()}`;
-    return pieceTheme === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/${code}.svg`
-      : pieceTheme === 'neo' || pieceTheme === 'tournament'
-        ? `/pieces/mobile/${pieceTheme}/${code}.svg` : `/pieces/${pieceTheme}/${code}.svg`;
+    return pieceAssetSrc(pieceTheme, code);
   };
 
   const indexAt = (event: PointerEvent<HTMLDivElement>) => {
@@ -66,7 +64,7 @@ export default function EditorBoard({ draft, selected, words, onPlace, onMove, m
   };
 
   return (
-    <div className="w-full rounded-none md:rounded-lg relative overflow-hidden p-0 md:p-3 bg-[#262421] md:border-[6px] md:border-[#312e2b] shadow-[0_16px_38px_-18px_rgba(0,0,0,0.72)]">
+    <div className="w-full rounded-none md:rounded-lg relative overflow-hidden p-0 md:p-3 bg-[#262421] md:border-[6px] md:border-[#312e2b] shadow-[0_16px_38px_-18px_rgba(0,0,0,0.72)] desktop-editor-board">
       <div data-coordinate-axis="rank" aria-hidden="true" className="hidden lg:grid grid-rows-8 absolute left-0 top-[calc(0.75rem+1px)] bottom-[calc(0.75rem+1px)] w-3 text-[0.65rem] font-bold text-neutral-400 pointer-events-none">
         {[8,7,6,5,4,3,2,1].map(n => <span key={n} className="flex items-center justify-center">{n}</span>)}
       </div>

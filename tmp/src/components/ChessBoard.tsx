@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useThemeContext } from '../context/ThemeContext';
-import { BOARD_THEMES, type BoardTheme, type PieceTheme } from '../lib/chessThemes';
+import { BOARD_THEMES, pieceAssetSrc, type BoardTheme, type PieceTheme } from '../lib/chessThemes';
 import { Chess, type Square, type Move, type PieceSymbol, type Color } from 'chess.js';
 import { squareAtPoint, type BoardRect } from '../utils/boardCoordinates';
 
@@ -62,6 +62,7 @@ function ChessBoard({
   readOnly = false,
   confirmMovesMobile = false,
   homeBlackInk = false,
+  homeChessComPalette = false,
 }: {
   className?: string;
   showCoordinates?: boolean;
@@ -76,6 +77,7 @@ function ChessBoard({
   readOnly?: boolean;
   confirmMovesMobile?: boolean;
   homeBlackInk?: boolean;
+  homeChessComPalette?: boolean;
 }) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
   const [localGame, setLocalGame] = useState(() => new Chess());
@@ -457,7 +459,7 @@ function ChessBoard({
                   )}
                   style={{ left: `${fileIdx * 12.5}%`, top: `${rankIdx * 12.5}%` }}
                 >
-                  <PieceImage piece={p} theme={overridePieceTheme || pieceTheme} homeBlackInk={homeBlackInk} />
+                  <PieceImage piece={p} theme={overridePieceTheme || pieceTheme} homeBlackInk={homeBlackInk} homeChessComPalette={homeChessComPalette} />
                 </div>
               );
             })}
@@ -514,10 +516,12 @@ function PieceImage({
   piece,
   theme,
   homeBlackInk = false,
+  homeChessComPalette = false,
 }: {
   piece: { type: string; color: string };
-  theme: string;
+  theme: PieceTheme;
   homeBlackInk?: boolean;
+  homeChessComPalette?: boolean;
 }) {
   const pieceSetName = theme || 'classic'; // Fallback only to classic if undefined
   const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
@@ -526,11 +530,7 @@ function PieceImage({
     pieceSetName === 'cburnett-classic' && ['K', 'Q', 'R', 'B', 'N'].includes(piece.type.toUpperCase())
       ? `/pieces/home-cburnett-ink/${pieceCode}.svg`
       : null;
-  const src = pieceSetName === 'cburnett-classic'
-    ? `/chess-assets/pieces/cburnett/${pieceCode}.svg`
-    : pieceSetName === 'neo' || pieceSetName === 'tournament'
-      ? `/pieces/mobile/${pieceSetName}/${pieceCode}.svg`
-      : `/pieces/${pieceSetName}/${pieceCode}.svg`;
+  const src = pieceAssetSrc(pieceSetName, pieceCode);
 
   // Share the Neo pawn silhouette across the four desktop sets; preserve smaller screens.
   const pawnPalette = piece.color === 'w'
@@ -542,13 +542,15 @@ function PieceImage({
 
   // Use Merida SVGs (/pieces/mobile/neo and /pieces/mobile/tournament) on both desktop and mobile.
   const mobileSrc = pieceSetName === 'neo' || pieceSetName === 'tournament'
-    ? `/pieces/mobile/${pieceSetName}/${pieceCode}.svg`
+    ? src
     : null;
   const image = (
     <img
       src={src}
       alt={pieceCode}
       data-home-black-ink={homeBlackSource ? '' : undefined}
+      data-home-chesscom-piece={homeChessComPalette && pieceSetName === 'cburnett-classic' ? piece.color : undefined}
+      data-home-graphite-set={homeChessComPalette && piece.color === 'b' && piece.type !== 'p' && ['classic', 'neo', 'tournament'].includes(pieceSetName) ? pieceSetName : undefined}
       data-desktop-pawn={desktopPawnSrc ? piece.color : undefined}
       data-piece-theme={desktopPawnSrc ? pieceSetName : undefined}
       className="w-full h-full object-contain transform-gpu"

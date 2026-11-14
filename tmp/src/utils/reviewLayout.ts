@@ -1,10 +1,33 @@
-/** Approved desktop composition, scaled down together when the workspace is smaller. */
-export function reviewLayout(width: number, height: number) {
-  // Reference is the approved HTML's 1560 x 880 workspace (excluding the sidebar).
+export const REVIEW_BOARD_GUTTER = 16;
+export const REVIEW_TOP_CLEARANCE = 16;
+
+/** Match Home's field and height. Only loaded game names need extra top clearance. */
+export function reviewLayout(width: number, height: number, homeField: number, homeTop: number, compact = false, hasPlayerNames = false, homeFieldLeft?: number) {
   const scale = Math.max(0, Math.min(1, width / 1560, height / 880));
-  const boardSize = 736 * scale; // Slightly smaller desktop frame; keep the board square and the surrounding composition proportional.
+  const boardInset = REVIEW_BOARD_GUTTER + 1; // The playing field has a one-pixel border.
+  const sideInsets = (40 + (compact ? 20 : 55)) * scale;
   const evaluationSpace = 54 * scale;
-  const columnGap = 51 * scale;
-  const panelWidth = 630 * scale; // A narrower desktop site rail frees room for PV notation.
-  return { scale, boardSize, boardColumn: boardSize + evaluationSpace, panelWidth, columnGap };
+  const columnGap = 19 * scale;
+  const preferredPanelWidth = Math.max(335, 630 * scale);
+  const topLabel = Math.max(18, 24 * scale);
+  const minimumTopInset = hasPlayerNames ? topLabel + REVIEW_TOP_CLEARANCE : 0;
+  const preferredTopInset = Math.max(minimumTopInset, homeTop - boardInset);
+  const bottomSpace = 36 * scale + 12;
+  const boardSize = Math.max(0, Math.min(
+    homeField + 2 * boardInset,
+    width - sideInsets - evaluationSpace - columnGap - 335,
+    height - preferredTopInset - bottomSpace,
+  ));
+  const topInset = preferredTopInset;
+  const boardColumn = boardSize + evaluationSpace;
+  const panelWidth = Math.min(preferredPanelWidth, width - sideInsets - boardColumn - columnGap);
+  // Keep the entire board/panel group as close as space allows to Home's field x.
+  // On narrow desktop windows the panel requires a minimum width, so clamp safely.
+  const rightInset = (compact ? 20 : 55) * scale;
+  const maxLeftInset = Math.max(0, width - boardColumn - columnGap - panelWidth - rightInset);
+  const boardFieldOffset = 54 * scale + REVIEW_BOARD_GUTTER;
+  const leftInset = homeFieldLeft === undefined
+    ? 40 * scale
+    : Math.max(0, Math.min(maxLeftInset, homeFieldLeft - boardFieldOffset));
+  return { scale, boardSize, boardColumn, panelWidth, columnGap, topLabel, topInset, leftInset };
 }

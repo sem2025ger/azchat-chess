@@ -27,3 +27,28 @@ test('bishop keeps its light plus; all other black Home figures have no white de
   assert.match(ink('bN'), /#55514d/);
   assert.match(ink('bN'), /#363431/);
 });
+
+test('Chess.com white and black pawn palette keeps original black major figures', () => {
+  assert.match(home, /VITE_HOME_CHESSCOM_PIECES === 'true'/);
+  assert.match(home, /homeBlackInk homeChessComPalette=\{homeChessComPieces\}/);
+  assert.match(home, /xl:p-3 overflow-hidden/);
+  assert.match(home, /xl:ring-0/);
+  assert.match(home, /img\[data-home-chesscom-piece="w"\]/);
+  assert.match(home, /img\[data-home-chesscom-piece="b"\]\[alt="bP"\] \{\s*filter: grayscale\(1\) contrast\(.42\) brightness\(.61\)/);
+  assert.doesNotMatch(home, /img\[data-home-chesscom-piece="b"\]:not\(\[alt="bP"\]\)/);
+  assert.match(source, /homeBlackInk && piece.color === 'b'/);
+  assert.match(source, /homeBlackSource && <source media="\(min-width: 1280px\)"/);
+  assert.doesNotMatch(source, /homeSolidBlackSource|home-solid-black/);
+  for (const kind of ['bK', 'bQ', 'bR', 'bB', 'bN']) assert.match(ink(kind), /<svg/);
+});
+
+test('opt-in desktop graphite figures target exactly three styles, never CBURNETT or pawns', () => {
+  assert.match(source, /data-home-graphite-set=\{homeChessComPalette && piece.color === 'b' && piece.type !== 'p' && \['classic', 'neo', 'tournament'\]\.includes\(pieceSetName\)/);
+  for (const theme of ['classic', 'neo', 'tournament']) {
+    assert.match(home, new RegExp('img\\[data-home-graphite-set="' + theme + '"\\]'));
+  }
+  assert.doesNotMatch(home, /data-home-graphite-set="cburnett-classic"/);
+  assert.match(home, /@media \(min-width: 1280px\) \{\s*\.home-screen-root \.home-board img\[data-home-chesscom-piece="w"\]/);
+  assert.match(home, /filter: grayscale\(1\) contrast\(\.83\) brightness\(\.90\) drop-shadow\(0 -1px 1px rgba\(250,250,245,\.12\)\)/);
+  assert.match(home, /filter: grayscale\(1\) contrast\(1\.02\) brightness\(\.90\) drop-shadow\(0 -1px 1px rgba\(250,250,245,\.12\)\)/);
+});

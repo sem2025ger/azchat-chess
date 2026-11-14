@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_POSITION } from 'chess.js';
 import { ArrowDown, ArrowUp, Eraser, RotateCcw, Trash2, Undo2 } from 'lucide-react';
 import { useThemeContext } from '../../context/ThemeContext';
+import { pieceAssetSrc } from '../../lib/chessThemes';
 import { analysisFromFen, AnalysisInputError, positionDraftFen, validateAnalysisFen, type AnalysisInputErrorCode, type AnalysisLoad, type PositionDraft } from '../../utils/analysisWorkspace';
 import type { AnalysisWords } from './copy';
 import { useLanguage } from '../../context/LanguageContext';
@@ -55,8 +56,7 @@ export default function PositionTools({
   const pieceName = (piece: string) => `${piece === piece.toUpperCase() ? words.white : words.black} ${words[piece.toLowerCase() as 'k' | 'q' | 'r' | 'b' | 'n' | 'p']}`;
   const pieceImage = (piece: string) => {
     const code = `${piece === piece.toUpperCase() ? 'w' : 'b'}${piece.toUpperCase()}`;
-    return pieceTheme === 'cburnett-classic' ? `/chess-assets/pieces/cburnett/${code}.svg`
-      : pieceTheme === 'neo' || pieceTheme === 'tournament' ? `/pieces/mobile/${pieceTheme}/${code}.svg` : `/pieces/${pieceTheme}/${code}.svg`;
+    return pieceAssetSrc(pieceTheme, code);
   };
   const reset = (next: string) => { setFen(next); onReset(next); };
 

@@ -27,7 +27,7 @@ import MultiversePanel from '../components/analysis/MultiversePanel';
 
 import { createPositionMapSnapshot, selectPositionMapVariation, type PositionMapSnapshot } from '../utils/positionMapNavigation';
 import { positionMapLabel } from '../components/analysis/positionMapLabels';
-import { reviewLayout } from '../utils/reviewLayout';
+import { REVIEW_BOARD_GUTTER, reviewLayout } from '../utils/reviewLayout';
 import { annotatedPgn, type PositionEvaluation } from '../utils/positionMap';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
@@ -116,6 +116,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
   const [loadedGameTitle, setLoadedGameTitle] = useState('');
   const [loadedGameDetails, setLoadedGameDetails] = useState<{ white: string; black: string; timeControl?: string } | null>(null);
+  const hasReviewPlayers = Boolean(loadedGameDetails && (loadedGameDetails.white.trim() || loadedGameDetails.black.trim()));
   const [editingPosition, setEditingPosition] = useState(false);
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1024px)');
@@ -273,15 +274,36 @@ export default function GameScreen({ mode }: GameScreenProps) {
     if (!workspace) return;
     const measure = () => {
       if (!window.matchMedia('(min-width: 1024px)').matches) return;
-      const next = reviewLayout(workspace.clientWidth, workspace.clientHeight);
-      if (next.boardSize > 0) setReviewGeometry(previous => previous?.scale === next.scale ? previous : next);
+      const reference = getComputedStyle(workspace, '::before');
+      const homeFrame = parseFloat(reference.width);
+      const homeInset = parseFloat(reference.paddingLeft);
+      const height = workspace.clientHeight;
+      const wide = window.matchMedia('(min-width: 1280px)').matches;
+      // Home centers the frame together with its 51px controls and 12px gap.
+      const homeTop = homeInset + (wide
+        ? (height - homeFrame - 63) / 2
+        : parseFloat(getComputedStyle(document.documentElement).fontSize) / 2);
+      const compact = window.matchMedia('(max-width: 1279px)').matches;
+      // Reproduce Home's centered desktop grid position, not only its board width.
+      const gridWidth = Math.min(workspace.clientWidth, 85 * parseFloat(getComputedStyle(document.documentElement).fontSize));
+      const gridGap = Math.min(32, Math.max(24, window.innerWidth * .022));
+      const firstTrack = .6 * (gridWidth - 56 - gridGap);
+      const homeColumn = Math.min(622, window.innerHeight - 112, firstTrack - 12);
+      const homeFieldLeft = wide
+        ? (workspace.clientWidth - gridWidth) / 2 + 28 + (firstTrack - homeColumn) / 2 + 12
+        : undefined;
+      const next = reviewLayout(workspace.clientWidth, height, homeFrame - 2 * homeInset, homeTop, compact, hasReviewPlayers, homeFieldLeft);
+      if (next.boardSize > 0) setReviewGeometry(previous =>
+        previous?.scale === next.scale && previous.boardSize === next.boardSize &&
+          previous.panelWidth === next.panelWidth && previous.topInset === next.topInset ? previous : next
+      );
     };
     const observer = new ResizeObserver(measure);
     observer.observe(workspace);
     window.addEventListener('resize', measure);
     measure();
     return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
-  }, [mode]);
+  }, [mode, hasReviewPlayers]);
 
   const playerFlag = profile?.countryCode
     ? countryCodeToFlag(profile.countryCode)
@@ -1114,7 +1136,17 @@ export default function GameScreen({ mode }: GameScreenProps) {
     if (selection) setMobileTool(null);
   }, []);
   return (
-    <div data-live-game-layout={isMultiplayer ? "" : undefined} data-postgame-analysis={isPostGameAnalysis ? "" : undefined} ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", isMultiplayer ? "lg:py-4" : "lg:-mt-4 xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
+    <div data-live-game-layout={isMultiplayer ? "" : undefined} data-postgame-analysis={isPostGameAnalysis ? "" : undefined} ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? {
+      "--review-scale": reviewGeometry.scale,
+      "--review-board-size": `${reviewGeometry.boardSize}px`,
+      "--review-board-column": `${reviewGeometry.boardColumn}px`,
+      "--review-panel-width": `${reviewGeometry.panelWidth}px`,
+      "--review-column-gap": `${reviewGeometry.columnGap}px`,
+      "--review-board-gutter": `${REVIEW_BOARD_GUTTER}px`,
+      "--review-top-label": `${reviewGeometry.topLabel}px`,
+      "--review-top-inset": `${reviewGeometry.topInset}px`,
+      "--review-left-inset": `${reviewGeometry.leftInset}px`,
+    } as CSSProperties : undefined} data-review-players={mode === 'review' && hasReviewPlayers ? 'true' : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", isMultiplayer ? "lg:py-4" : "lg:-mt-4 xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
 
       {mode === 'review' && <>
         <MobileAnalysisHeader activeTab={activeTab} onTab={setActiveTab}
@@ -1333,8 +1365,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </header>
           )}
 
-          {/* Colour labels follow the board orientation; loaded games supply player names. */}
-          {mode === 'review' && (
+          {/* Player names are shown only for loaded games, never as generic colour labels. */}
+          {mode === 'review' && hasReviewPlayers && (
             <div className="desktop-analysis-player-top hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
               <div className="flex min-w-0 items-center gap-2">
                 <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-500", playerColor === 'w' ? "bg-neutral-950" : "bg-[#f5f2e8]")} />
@@ -1399,7 +1431,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] max-md:!aspect-[50/51] border-b-0 md:w-full md:border-b-[8px] lg:!w-full lg:!max-w-[min(630px,calc(100dvh-120px))] lg:!flex-[0_1_auto]",
               mode !== 'review' && "transition-[width] duration-300"
             )}>
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
+              <div className={cx("absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10", mode === 'review' && "lg:hidden")} />
               
               {gameOverMessage ? (
                 <GameResultDialog key={`${roomId}:${gameOverMessage}`} message={gameOverMessage} onDismiss={dismissResult} onNewGame={() => navigate('/play')} />
@@ -1469,7 +1501,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
           </div>
 
-          {mode === 'review' && (
+          {mode === 'review' && hasReviewPlayers && (
             <div className="desktop-analysis-review-player-bottom hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
               <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-400", playerColor === 'w' ? "bg-[#f5f2e8]" : "bg-neutral-950")} />
               <span className="min-w-0 truncate font-semibold text-neutral-200" title={displayPlayerName(playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black)}>
@@ -1540,7 +1572,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
       {/* Professional Sidebar Sidebar Tabs */}
       <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' ? "desktop-analysis-panel" : "animate-fade-in-right transition-all")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
-        {mode === 'review' && <h2 className="desktop-analysis-panel-title hidden lg:flex" aria-label={words.analysis}>{words.analysis}</h2>}
+        {mode === 'review' && <h2 className="desktop-analysis-panel-title hidden lg:flex">
+          <span>{words.analysis}</span>
+        </h2>}
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">
