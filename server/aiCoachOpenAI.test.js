@@ -46,19 +46,58 @@ test('tactical focus keeps legal checks available without promoting unanalysed m
  }
 });
 
-test('line presentation preserves main/secondary ordering and limits excerpts to demonstrated outcomes',async()=>{
+test('line presentation covers three available variations with grounded assessments and concise plans',async()=>{
  const evidence={candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:900},candidateLines:[{id:'L1',moves:['e4','e5','Nf3'],scoreKind:'cp',scoreWhite:5,depth:7},{id:'L2',moves:['d4','d5'],scoreKind:'cp',scoreWhite:0,depth:7}]};
  await generateAnswer(query,evidence,{apiKey:key,fetchImpl:async(_url,options)=>{
   const body=JSON.parse(options.body),input=JSON.parse(body.input);
   assert.deepEqual(input.evidence,evidence);
   assert.match(body.instructions,/candidateLines\[0\] is the main line in the supplied ordering/);
-  assert.match(body.instructions,/one secondary line only when it adds a distinct relevant idea or defence/);
-  assert.match(body.instructions,/shortest consecutive prefix/);
+  assert.match(body.instructions,/Explain all three supplied lines/);
+  assert.match(body.instructions,/If fewer than three lines are supplied, explain only those available/);
+  assert.match(body.instructions,/moves, its supplied evaluation, a supported positional reason and a practical plan/);
+  assert.match(body.instructions,/Name the moving side naturally/);
+  assert.match(body.instructions,/Do not append routine disclaimers/);
   assert.match(body.instructions,/Never use a fixed move count/);
-  assert.match(body.instructions,/deeper engine verification is needed/);
   assert.match(body.instructions,/do not apply facts for its final position to an earlier cutoff/);
   return answerResponse();
  }});
+});
+
+test('three server lines retain their own exact endpoint facts and White-perspective score units',async()=>{
+ const moves=[['e4','e5','Nf3'],['d4','d5','c4'],['Nf3','d5','g3']];
+ const scores=[0,5,-12];
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:moves.map((sanPv,i)=>({sanPv,scoreKind:'cp',scoreWhite:scores[i],depth:7}))})};
+ const reply=await groundedChat(readyIndex,query,{engine,positionFactsEnabled:true,openaiApiKey:key,fetchImpl:async(_url,options)=>{
+  const body=JSON.parse(options.body),input=JSON.parse(body.input),lines=input.evidence.candidateLines;
+  assert.equal(lines.length,3);
+  for(let i=0;i<3;i++){
+   const board=new Chess(query.fen);for(const san of moves[i])board.move(san,{strict:true});
+   assert.equal(lines[i].id,'L'+(i+1));assert.deepEqual(lines[i].moves,moves[i]);
+   assert.equal(lines[i].scoreWhite,scores[i]);assert.equal(lines[i].endFacts.fen,board.fen());
+   assert.deepEqual(lines[i].endFacts.material,require('./coachPositionFacts').positionFacts(board.fen()).material);
+  }
+  assert.match(body.instructions,/scoreWhite is in centipawns/);
+  assert.match(body.instructions,/divide by 100/);
+  assert.match(body.instructions,/0\.00 or \+0\.05/);
+  assert.match(body.instructions,/plans must follow the supplied position facts/);
+  assert.match(body.instructions,/The engine evaluation is not proof of its positional cause/);
+  assert.match(body.instructions,/Return JSON with exactly one string property answer, between 2 and 1200 characters/);
+  return answerResponse();
+ }});
+ assert.equal(reply.engineLines.length,3);assert.equal(reply.engineVerified,true);
+});
+
+test('a limited engine result never grows synthetic extra lines to meet the three-line presentation rule',async()=>{
+ for(const count of [0,1,2]){
+  const available=[['e4','e5'],['d4','d5']].slice(0,count);
+  const reply=await groundedChat(readyIndex,query,{openaiApiKey:key,engine:{analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:available.map(sanPv=>({sanPv,scoreKind:'cp',scoreWhite:0,depth:7}))})},fetchImpl:async(_url,options)=>{
+   const body=JSON.parse(options.body),input=JSON.parse(body.input);
+   assert.equal(input.evidence.candidateLines.length,count);
+   assert.match(body.instructions,/If fewer than three lines are supplied, explain only those available/);
+   return answerResponse();
+  }});
+  assert.equal(reply.engineLines?.length??0,count);
+ }
 });
 
 test('tactical focus preserves checks, legal evasions and terminal position evidence',async()=>{
