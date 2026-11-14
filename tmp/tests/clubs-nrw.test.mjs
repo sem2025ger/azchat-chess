@@ -41,7 +41,18 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  const disabledStart=disabledHome.indexOf(m3Start);
  const disabledFinish=disabledHome.indexOf(m3End,disabledStart);
  const withoutM3=disabledHome.slice(0,disabledStart)+disabledHome.slice(disabledFinish+m3End.length);
- assert.equal(withoutM3.replace(flagGatedLink,''),homeBaseline);
+ // The king is an approved, mobile-only visual addition (PR #195).
+ // Remove only its exact markup before comparing all disabled NRW/M3 Home code.
+ const approvedMobileKing = [
+  '              <span className="relative inline-block h-0 w-0 align-baseline" aria-hidden="true">',
+  '                <span className="absolute bottom-[0px] left-[11px] h-[44px] w-[22px]">',
+  '                  <img src="/brand/sidebar-king.svg" alt="" width="22" height="44" className="absolute inset-0 h-full w-full object-fill" />',
+  '                  <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />',
+  '                </span>',
+  '              </span>',
+ ].join(String.fromCharCode(10)) + String.fromCharCode(10);
+ assert.equal(withoutM3.split(approvedMobileKing).length,2,'approved mobile king appears exactly once');
+ assert.equal(withoutM3.replace(approvedMobileKing,'').replace(flagGatedLink,''),homeBaseline);
  for(const path of ['/region/nrw','/region/nrw/turniere','/region/nrw/ligen','/region/nrw/vereine','/region/nrw/news','/region/nrw/live','/clubs-nrw/bochumer-sv-02','/spieltag','/vorbereitung']){
   assert.equal(nrwAuthReturnTarget(path,{clubs:false,spieltag:false,preparation:false}),null);
   assert.equal(nrwAuthReturnTarget(path,{clubs:true,spieltag:true,preparation:true}),path);
