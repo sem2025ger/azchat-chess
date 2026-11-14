@@ -252,5 +252,5 @@ try {
   ws?.close();
   chrome?.kill('SIGKILL');
   for (const server of [onServer, offServer]) { server.closeAllConnections(); server.close(); }
-  if (profile) await rm(profile, { recursive:true, force:true });
+  if (profile) await rm(profile, { recursive:true, force:true, maxRetries:15, retryDelay:150 });
 }
