@@ -61,7 +61,7 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
   chrome=spawn(binary,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--disable-background-networking','--remote-allow-origins=*','--remote-debugging-port=0','--user-data-dir='+chromeDir,'about:blank'],{stdio:['ignore','ignore','pipe']});
   let errorLog='';chrome.stderr.on('data',v=>errorLog=(errorLog+v).slice(-5000));
   let port;
-  for(let i=0;i<200;i++){if(chrome.exitCode!==null)throw Error(errorLog);try{port=Number((await readFile(join(chromeDir,'DevToolsActivePort'),'utf8')).split('\n')[0]);if(port)break}catch{}await pause(50)}
+  for(let i=0;i<600;i++){if(chrome.exitCode!==null)throw Error(errorLog);try{port=Number((await readFile(join(chromeDir,'DevToolsActivePort'),'utf8')).split('\n')[0]);if(port)break}catch{}await pause(50)}
   assert.ok(port,errorLog);
   const target=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();
   ws=new WebSocket(target.find(x=>x.type==='page').webSocketDebuggerUrl);
