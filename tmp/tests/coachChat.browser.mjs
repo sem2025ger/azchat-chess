@@ -11,6 +11,8 @@ const {installAiCoach}=require('./aiCoach.js');
 const fixture=String.raw`
 import '/src/index.css';import React,{useState}from'react';import{createRoot}from'react-dom/client';import{MemoryRouter,Routes,Route,useNavigate}from'react-router-dom';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import CoachChat from'/src/components/spieler/CoachChat.tsx';import GlobalPositionSearch from'/src/components/spieler/GlobalPositionSearch.tsx';import OpeningPrep from'/src/components/spieler/OpeningPrep.tsx';import{ThemeProvider}from'/src/context/ThemeContext.tsx';import{clearPositionSearchState}from'/src/utils/positionSearchState.ts';import{loadAnalysisSession}from'/src/utils/analysisSession.ts';
 localStorage.setItem('app-language','de');window.streams=[];window.mode='ready';const original=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+window.clipboardMode='ready';window.clipboardWrites=[];
+Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.clipboardWrites.push(text);if(window.clipboardMode==='hold')await new Promise(resolve=>window.releaseClipboard=resolve);if(window.clipboardMode==='reject')throw new DOMException('fixture clipboard denial','NotAllowedError');}}});
 navigator.mediaDevices.getUserMedia=async(...args)=>{if(window.mode==='denied')throw new DOMException('fixture denial','NotAllowedError');const stream=await original(...args);window.streams.push(stream);if(window.mode==='permission-hold')await new Promise(r=>window.releasePermission=r);return stream;};
 function App(){const{setLanguage}=useLanguage();const[token,setToken]=useState('synthetic-user'),[fen,setFen]=useState('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');const[account,setAccount]=useState('account-initial'),[workspace,setWorkspace]=useState(false);window.setWorkspace=setWorkspace;window.navigate=useNavigate();window.analysis=loadAnalysisSession;window.language=setLanguage;window.setToken=setToken;window.setAccount=setAccount;window.logout=()=>{clearPositionSearchState();setAccount('guest');setToken('');};window.setFen=setFen;return <Routes><Route path='/game' element={<div id='analysis-fixture'>Analysis route</div>}/><Route path='/' element={<main style={{maxWidth:390,padding:10,margin:'auto'}}>{workspace?<GlobalPositionSearch key={account} accountId={account} token={token} coach={(color,onColorChange,onPreparedMoves)=><OpeningPrep token={token} accountId={account} color={color} onColorChange={onColorChange} onPreparedMoves={onPreparedMoves}/>}/>:<CoachChat key={account} accountId={account} token={token} fen={fen} side='white'/>}</main>}/></Routes>;}
 createRoot(document.getElementById('root')).render(<ThemeProvider><LanguageProvider><MemoryRouter><App/></MemoryRouter></LanguageProvider></ThemeProvider>);
@@ -73,8 +75,29 @@ export async function checkCoachChat({captureRoot}={}){
  for(const width of [390,1280]){await cdp('Emulation.setDeviceMetricsOverride',{width,height:844,deviceScaleFactor:1,mobile:width===390});for(const lang of ['de','en','az','tr','ua','ru']){
   const t=coachChatCopy[lang==='ua'?'uk':lang];clock+=61000;await evaluate('window.language('+JSON.stringify(lang)+');window.setToken('+JSON.stringify('synthetic-'+width+'-'+lang)+');window.setAccount('+JSON.stringify('account-'+width+'-'+lang)+')');await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(t.title));if(!await evaluate('!!document.querySelector(".coach-chat-panel")'))await click(t.title);
   await fill('Study the centre');await click(t.send);await wait('document.querySelector(".coach-chat-message.assistant")');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'fit '+lang+' '+width);assert.ok(!(await evaluate('document.body.innerText')).includes(t.privacy));assert.equal(calls.at(-1).body.position,new Chess().fen());assert.equal(calls.at(-1).body.history.length,0);
+  const text=await evaluate('document.querySelector(".coach-chat-message.assistant > p").textContent'),beforeCopy=calls.length;
+  await click(t.copyAnswer);
+  await wait('document.querySelector(".coach-chat-copy")?.getAttribute("aria-label")==='+JSON.stringify(t.copiedAnswer));
+  assert.equal(await evaluate('window.clipboardWrites.at(-1)'),text,'copy writes the exact answer');
+  assert.equal(await evaluate('document.querySelector(".coach-chat-copy [role=status]").textContent'),t.copiedAnswer,lang);
+  assert.ok(await evaluate('!!document.querySelector(".coach-chat-copy .lucide-check")'),'visible success check '+lang);
+  assert.equal(calls.length,beforeCopy,'copy never sends a chat or audio request');
+  assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'copied feedback fits '+lang+' '+width);
  }}
- const t=coachChatCopy.ru;await fill('Explain it more simply');await click(t.send);await wait('document.querySelectorAll(".coach-chat-message.assistant").length===2');assert.equal(calls.at(-1).body.history.length,2);
+ const t=coachChatCopy.ru;
+ await wait('document.querySelector(".coach-chat-copy")?.textContent==='+JSON.stringify(t.copyAnswer));
+ assert.ok(await evaluate('!!document.querySelector(".coach-chat-copy .lucide-copy")'),'copy control resets after its success interval');
+ await evaluate('window.clipboardMode="hold"');await click(t.copyAnswer);
+ await wait('typeof window.releaseClipboard==="function"');
+ assert.equal(await evaluate('!!document.querySelector(".coach-chat-copy .lucide-check")'),false,'pending clipboard promise is not success');
+ await evaluate('window.releaseClipboard();window.releaseClipboard=null;window.clipboardMode="ready"');
+ await wait('document.querySelector(".coach-chat-copy")?.textContent==='+JSON.stringify(t.copiedAnswer));
+ await evaluate('window.clipboardMode="reject"');await click(t.copiedAnswer);
+ await wait('document.querySelector("[role=alert]")?.textContent.includes('+JSON.stringify(t.copyFailed)+')');
+ assert.equal(await evaluate('!!document.querySelector(".coach-chat-copy .lucide-check")'),false,'clipboard rejection never shows success');
+ assert.equal(await evaluate('document.querySelector(".coach-chat-copy").textContent'),t.copyAnswer);
+ await evaluate('window.clipboardMode="ready"');
+ await fill('Explain it more simply');await click(t.send);await wait('document.querySelectorAll(".coach-chat-message.assistant").length===2');assert.equal(calls.at(-1).body.history.length,2);
  // Archive navigation requires an explicit search; teaching alone does not open games.
  await fill('Find five games');await click(t.send);await wait('document.querySelector(".coach-chat-games")');
  // Returning from analysis restores the exact conversation, public games, draft and scroll,
@@ -259,8 +282,20 @@ export async function checkCoachChat({captureRoot}={}){
   assert.equal(await evaluate('!!document.querySelector(".coach-chat-engine-unlinked")'),false,lang);
   assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'fallback fits desktop '+lang);
  }
+ // A completed copy from an old position must not mark a new conversation as copied.
+ await evaluate('window.clipboardMode="hold"');await click(coachChatCopy.ru.copyAnswer);
+ await wait('typeof window.releaseClipboard==="function"');
+ const nextFen=new Chess();nextFen.move('e4');
+ await evaluate('window.setFen('+JSON.stringify(nextFen.fen())+')');
+ await wait('document.querySelectorAll(".coach-chat-message").length===0');
+ if(!await evaluate('!!document.querySelector(".coach-chat-panel")'))await click(coachChatCopy.ru.title);
+ await fill('New position after pending clipboard request');await click(coachChatCopy.ru.send);
+ await wait('document.querySelector(".coach-chat-message.assistant")');
+ await evaluate('window.releaseClipboard();window.releaseClipboard=null;window.clipboardMode="ready"');
+ await pause();
+ assert.equal(await evaluate('!!document.querySelector(".coach-chat-copy .lucide-check")'),false,'stale copy result is ignored after position switch');
  mode='ready';
-assert.deepEqual(exceptions,[]);console.log('PASS CoachChat: real HTTP router, real MediaRecorder with Chromium fake microphone, multipart provider adapter, actual loopback WebSocket/WAV playback, six locales at 390/1280, bounded context, auth/error handling, denied/late permissions, close cleanup, stale board cancellation, analysis round-trip restoration, scroll/draft preservation, token rotation, account isolation, logout cleanup and actual workspace colour propagation. OpenAI responses are synthetic; no hosted credentials or external API calls.');
+assert.deepEqual(exceptions,[]);console.log('PASS CoachChat: real HTTP router, real MediaRecorder with Chromium fake microphone, multipart provider adapter, actual loopback WebSocket/WAV playback, six locales at 390/1280, copy success/reset/pending/rejection/stale-position feedback, bounded context, auth/error handling, denied/late permissions, close cleanup, stale board cancellation, analysis round-trip restoration, scroll/draft preservation, token rotation, account isolation, logout cleanup and actual workspace colour propagation. OpenAI responses and clipboard writes are synthetic; no hosted credentials or external API calls.');
  }finally{for(const p of pending.values())clearTimeout(p.timer);ws?.close();chrome?.kill('SIGKILL');await server?.close();if(api)await new Promise(r=>api.close(r));if(wss){for(const client of wss.clients)client.terminate();await new Promise(r=>wss.close(r));}if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});if(cacheDir)await rm(cacheDir,{recursive:true,force:true});}
 }
 if(process.argv[1]===fileURLToPath(import.meta.url))await checkCoachChat({captureRoot:process.env.COACH_CAPTURE});
