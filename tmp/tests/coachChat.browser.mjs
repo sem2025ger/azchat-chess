@@ -96,7 +96,13 @@ export async function checkCoachChat({captureRoot}={}){
  await wait('document.querySelector("[role=alert]")?.textContent.includes('+JSON.stringify(t.copyFailed)+')');
  assert.equal(await evaluate('!!document.querySelector(".coach-chat-copy .lucide-check")'),false,'clipboard rejection never shows success');
  assert.equal(await evaluate('document.querySelector(".coach-chat-copy").textContent'),t.copyAnswer);
- await evaluate('window.clipboardMode="ready"');
+ await evaluate('window.clipboardMode="ready";window.language("de")');
+ await wait('document.querySelector(".coach-chat-copy")?.textContent==='+JSON.stringify(coachChatCopy.de.copyAnswer));
+ await click(coachChatCopy.de.copyAnswer);
+ await wait('document.querySelector(".coach-chat-copy")?.textContent==='+JSON.stringify(coachChatCopy.de.copiedAnswer));
+ assert.equal(await evaluate('!!document.querySelector("[role=alert]")'),false,'retry clears the previous clipboard error even after a locale switch');
+ await evaluate('window.language("ru")');
+ await wait('document.querySelector(".coach-chat-copy")?.textContent==='+JSON.stringify(t.copyAnswer));
  await fill('Explain it more simply');await click(t.send);await wait('document.querySelectorAll(".coach-chat-message.assistant").length===2');assert.equal(calls.at(-1).body.history.length,2);
  // Archive navigation requires an explicit search; teaching alone does not open games.
  await fill('Find five games');await click(t.send);await wait('document.querySelector(".coach-chat-games")');
