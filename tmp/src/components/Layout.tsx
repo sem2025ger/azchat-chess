@@ -7,7 +7,7 @@ import { Home, Grid, MessageSquare, User, Settings, Circle, MapPin } from 'lucid
 import { premiumInterfaceThemes } from '../lib/interfaceThemes';
 import { useThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { type Language } from '../translations';
+import { languageOptions, type Language } from '../translations';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import RouteLoadingFallback from './RouteLoadingFallback';
@@ -108,7 +108,7 @@ export default function Layout() {
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
             {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" themeColor="theme-gold" bronzeLabel />}
-            {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
+            {desktop && (import.meta.env.VITE_SPIELTAG_ENABLED === 'true' || import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true') && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
             {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label={t("nav.spieler")} themeColor="theme-blue" />}
           </nav>
@@ -118,10 +118,12 @@ export default function Layout() {
 
           {/* Shared six-language selector — persistent across routes */}
           <div className="flex flex-col gap-3">
-            <div className="hidden xl:flex bg-neutral-900/70 p-0.5 rounded-lg border border-white/10 shadow-[0_0_18px_rgba(34,211,238,0.14)] premium-cycle-container transition-all">
-              {(['en', 'de', 'az', 'tr', 'ua', 'ru'] as Language[]).map(lang => (
+            <div role="group" aria-label={t('settings.changeLanguage')} className="hidden lg:grid grid-cols-3 xl:flex bg-neutral-900/70 p-0.5 rounded-lg border border-white/10 shadow-[0_0_18px_rgba(34,211,238,0.14)] premium-cycle-container transition-all">
+              {languageOptions.map(({ id: lang, name }) => (
                 <button
                   key={lang}
+                  aria-label={name}
+                  aria-pressed={language === lang}
                   onClick={() => setLanguage(lang)}
                   className={cx(
                     "flex-1 py-1 text-[0.6rem] font-black uppercase rounded-md transition-colors transition-shadow duration-300 active:scale-95 sidebar-item",
@@ -134,9 +136,11 @@ export default function Layout() {
             </div>
 
             <div className="md:hidden grid grid-cols-3 gap-2 items-center mb-2 premium-cycle-container p-2 rounded-xl border border-white/5">
-              {(['en', 'de', 'az', 'tr', 'ua', 'ru'] as Language[]).map(lang => (
+              {languageOptions.map(({ id: lang, name }) => (
                 <button
                   key={lang}
+                  aria-label={name}
+                  aria-pressed={language === lang}
                   onClick={() => setLanguage(lang)}
                   className={cx(
                     "w-10 h-10 text-[0.7rem] font-black uppercase rounded-xl transition-all flex items-center justify-center sidebar-item",

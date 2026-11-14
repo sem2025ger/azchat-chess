@@ -38,7 +38,7 @@
   .mobile-analysis-tabs button[aria-pressed="true"] {
     color: #bff6f3; background: #123437; box-shadow: inset 0 0 0 1px #75ded52b;
   }
-  .mobile-analysis-engine { flex: none; color: #c0d3cc; font-size: var(--mobile-analysis-label-size); font-weight: 650; white-space: nowrap; }
+  .mobile-analysis-engine { flex: none; color: #c0a47c; font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif; font-size: var(--mobile-analysis-label-size); font-weight: 600; white-space: nowrap; }
   .mobile-analysis-more {
     display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;
     flex: none; color: #e1d1af; border: 1px solid #d4ba7e24; border-radius: 12px; background: #1c201e;
@@ -57,7 +57,7 @@
   .desktop-analysis-screen [data-mobile-move-navigation] button { min-height: 44px; border-radius: 10px; box-shadow: none; color: #e4d2a6; }
   .desktop-analysis-screen > .desktop-analysis-panel { display: none; }
   .mobile-analysis-details { flex: none; height: 94px; margin: 3px 8px 0; min-width: 0; border: 1px solid #d0d7cf14; border-radius: 14px; background: #111816; overflow: hidden; }
-  .mobile-analysis-score { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 64px; min-height: 36px; padding: 4px 6px; border: 1px solid #e2ded04d; border-radius: 8px; background: linear-gradient(145deg, #ddcda6 0%, #c2b99b 70%, #969d94 100%); box-shadow: inset 0 0 0 1px #121a1b42, inset 0 -3px 8px #171c2420; color: #182021; font: 900 1.1875rem/1.2 ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .mobile-analysis-score { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 64px; min-height: 34px; padding: 4px 6px; border: 1px solid #e2ded04d; border-radius: 8px; background: linear-gradient(145deg, #ddcda6 0%, #c2b99b 70%, #969d94 100%); box-shadow: inset 0 0 0 1px #121a1b42, inset 0 -3px 8px #171c2420; color: #182021; font: 900 1.1875rem/1.2 ui-monospace, monospace; font-variant-numeric: tabular-nums; }
   .mobile-analysis-line { display: flex; height: 46px; align-items: center; gap: 6px; padding: 3px 8px; }
   .mobile-analysis-line + .mobile-analysis-line { border-top: 1px solid #ffffff14; }
   .mobile-analysis-line p { flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; white-space: nowrap; color: #f2f3ed; font: oblique 6deg 900 1.3125rem/1.25 Arial, "Helvetica Neue", sans-serif; scrollbar-width: thin; scrollbar-color: #8d9c8959 transparent; }
@@ -70,18 +70,18 @@
      graphite/champagne border. No change to the 94px container or board. */
   .mobile-analysis-score {
     box-sizing: border-box;
-    flex: 0 0 68px;
-    width: 68px;
-    min-width: 68px;
-    max-width: 68px;
-    height: 36px;
+    flex: 0 0 66px;
+    width: 66px;
+    min-width: 66px;
+    max-width: 66px;
+    height: 34px;
     border: 1px solid rgba(206, 173, 117, .63);
     border-radius: 9px;
     background: linear-gradient(155deg, #333741 0%, #232831 54%, #141a20 100%);
     box-shadow: inset 0 1px 0 rgba(255,255,255,.12),
       inset 0 0 0 1px rgba(242,205,137,.08), 0 3px 9px #0005;
     color: #f4e8cd;
-    font: 800 1.0625rem/1.2 ui-monospace, monospace;
+    font: 800 .9375rem/1.2 ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
     white-space: nowrap;

@@ -118,13 +118,14 @@ if (process.env.CLUBS_NRW_ENABLED === 'true') app.get('/api/clubs-nrw/news', cre
 // Spieler reads/requests share the existing HTTP origin policy; no game wiring.
 require('./spieler').installSpielerFromEnv(app,verifyTokenProxy);
 require('./spieltag').installSpieltagFromEnv(app,verifyTokenProxy);
+require('./teamTournaments').installTeamTournamentsFromEnv(app,verifyTokenProxy);
 require('./vorbereitung').installVorbereitungFromEnv(app,verifyTokenProxy);
 const coachIndex=require('./positions').installPositionsFromEnv(app,verifyTokenProxy);
 require('./aiCoach').installAiCoachFromEnv(app,verifyTokenProxy,coachIndex);
 
 app.get('/health', (req, res) => {
   const ok = durableGames.ready();
-  res.status(ok ? 200 : 503).json({ ok, service: "aztr-chess-server" });
+  res.status(ok ? 200 : 503).json({ ok, service: "aztr-chess-server", commit: process.env.RENDER_GIT_COMMIT || null });
 });
 
 const io = new Server(server, {

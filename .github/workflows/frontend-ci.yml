@@ -50,8 +50,8 @@ jobs:
         run: npm ci --ignore-scripts --prefix ../server
 
       - name: Frontend tests
-        # Bound concurrent Chromium launches on the hosted runner.
-        run: node --test --test-concurrency=2 tests/*.test.mjs
+        # Serialize Chromium startup on hosted runners without skipping checks.
+        run: node --test --test-concurrency=1 tests/*.test.mjs
         env:
           SECTIONS_CAPTURE: ${{ runner.temp }}/sections-layouts
 
@@ -73,6 +73,11 @@ jobs:
 
       - name: Spieltag browser regression (synthetic private team)
         run: dbus-run-session -- node tests/spieltag.browser.mjs
+
+      - name: MULTIVERSE browser regression (flag ON build in an isolated outDir; dist stays flag OFF)
+        run: |
+          VITE_CHESSAZ_MULTIVERSE=true npx vite build --outDir dist-multiverse
+          dbus-run-session -- node tests/multiverse.browser.mjs
 
       - name: Lint
         run: npm run lint

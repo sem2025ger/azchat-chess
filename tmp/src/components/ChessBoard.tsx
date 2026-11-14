@@ -52,6 +52,7 @@ function ChessBoard({
   className,
   showCoordinates = true,
   externalCoordinatesOnDesktop = false,
+  externalCoordinates = false,
   highlightedSquares = [],
   game,
   onMove,
@@ -65,6 +66,7 @@ function ChessBoard({
   className?: string;
   showCoordinates?: boolean;
   externalCoordinatesOnDesktop?: boolean;
+  externalCoordinates?: boolean;
   highlightedSquares?: Square[];
   game?: Chess;
   onMove?: (source: string, target: string, promotion?: string) => boolean;
@@ -337,20 +339,20 @@ function ChessBoard({
         className
       )}
     >
-      {showCoordinates && externalCoordinatesOnDesktop && (
+      {showCoordinates && (externalCoordinates || externalCoordinatesOnDesktop) && (
         <>
           {/* Use the existing desktop frame gutters; the square grid and pointer bounds stay unchanged. */}
           <div
             data-coordinate-axis="rank"
             aria-hidden="true"
-            className="hidden lg:grid grid-rows-8 absolute left-0 top-[calc(0.75rem+1px)] bottom-[calc(0.75rem+1px)] w-3 text-[0.65rem] leading-none font-bold text-neutral-400 select-none pointer-events-none"
+            className={cx("grid-rows-8 absolute w-3 text-[0.65rem] leading-none font-bold text-neutral-400 select-none pointer-events-none", externalCoordinates ? "grid -left-4 top-px bottom-px" : "hidden lg:grid left-0 top-[calc(0.75rem+1px)] bottom-[calc(0.75rem+1px)]")}
           >
             {ranks.map(rank => <span key={rank} className="flex items-center justify-center">{rank}</span>)}
           </div>
           <div
             data-coordinate-axis="file"
             aria-hidden="true"
-            className="hidden lg:grid grid-cols-8 absolute left-[calc(0.75rem+1px)] right-[calc(0.75rem+1px)] bottom-0 h-3 text-[0.65rem] leading-none font-bold text-neutral-400 select-none pointer-events-none"
+            className={cx("grid-cols-8 absolute h-3 text-[0.65rem] leading-none font-bold text-neutral-400 select-none pointer-events-none", externalCoordinates ? "grid left-px right-px -bottom-4" : "hidden lg:grid left-[calc(0.75rem+1px)] right-[calc(0.75rem+1px)] bottom-0")}
           >
             {files.map(file => <span key={file} className="flex items-center justify-center">{file}</span>)}
           </div>
@@ -409,7 +411,7 @@ function ChessBoard({
                       className={cx(
                         'absolute top-0.5 left-1 text-[0.55rem] md:text-[0.7rem] font-bold select-none z-10 pointer-events-none',
                         isDark ? 'text-white/50' : 'text-black/40',
-                        externalCoordinatesOnDesktop && 'lg:hidden'
+                        externalCoordinates ? 'hidden' : externalCoordinatesOnDesktop && 'lg:hidden'
                       )}
                     >
                       {rank}
@@ -421,7 +423,7 @@ function ChessBoard({
                       className={cx(
                         'absolute bottom-0.5 right-1 text-[0.55rem] md:text-[0.7rem] font-bold select-none z-10 pointer-events-none',
                         isDark ? 'text-white/50' : 'text-black/40',
-                        externalCoordinatesOnDesktop && 'lg:hidden'
+                        externalCoordinates ? 'hidden' : externalCoordinatesOnDesktop && 'lg:hidden'
                       )}
                     >
                       {file}

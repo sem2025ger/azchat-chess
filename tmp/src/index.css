@@ -1606,7 +1606,7 @@
 @media (min-width: 1024px) {
   .desktop-analysis-screen .analysis-engine-score {
     font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important;
-    font-size: 0.9375rem !important;
+    font-size: 0.8125rem !important;
     font-style: normal;
     font-weight: 500 !important;
     letter-spacing: -.015em;
@@ -2007,7 +2007,7 @@ aside nav{padding-top:12px!important}
   .desktop-analysis-screen .desktop-analysis-stockfish {height:clamp(222px,43%,274px)!important;}
   .desktop-analysis-screen .analysis-engine-variations {gap:8px!important;}
   .desktop-analysis-screen .analysis-engine-variations > .analysis-engine-line {min-height:40px!important;padding:4px 8px!important;box-sizing:border-box;}
-  .desktop-analysis-screen .analysis-engine-score[data-score-side] {box-sizing:border-box;height:30px!important;min-height:30px!important;max-height:30px!important;align-self:center;margin-block:auto;flex:0 0 58px;width:58px!important;min-width:58px!important;max-width:58px!important;}
+  .desktop-analysis-screen .analysis-engine-score[data-score-side] {box-sizing:border-box;height:28px!important;min-height:28px!important;max-height:28px!important;align-self:center;margin-block:auto;flex:0 0 56px;width:56px!important;min-width:56px!important;max-width:56px!important;}
   .desktop-analysis-screen .analysis-engine-line {gap:7px!important;}
   .desktop-analysis-screen .analysis-engine-moves {gap:2px 3px!important;font-size:.79rem!important;letter-spacing:-.15px;mask-image:none!important;overflow:hidden!important;}
   .desktop-analysis-screen .desktop-analysis-bottom-actions {width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;position:relative;z-index:40;box-sizing:border-box;}
@@ -2053,4 +2053,18 @@ aside nav{padding-top:12px!important}
 /* Owner follow-up: make secondary Stockfish SAN legible without changing scores or the leading moves. */
 @media (min-width:1024px) {
   .desktop-analysis-screen .analysis-engine-moves span.text-neutral-400 { color:#c5c7c3; }
+}
+
+/* Match the already-approved postgame Stockfish label on desktop review. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen .analysis-stockfish-name {
+    color: #c0a47c !important;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-size: .82rem !important;
+    font-weight: 600 !important;
+    font-style: normal;
+    line-height: 1.3 !important;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
 }

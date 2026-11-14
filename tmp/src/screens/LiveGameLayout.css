@@ -1,0 +1,239 @@
+/* Online games keep the same square grid before and after the result.
+   Evaluation and coordinates use the gutter, never a new flex column. */
+[data-live-game-layout] .live-game-board-row {
+  gap: 0;
+  padding: 0 0 18px 18px;
+}
+[data-live-game-layout] .live-game-board-frame {
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+[data-live-game-layout] .live-game-chessboard {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  transition: none;
+}
+[data-live-game-layout] .live-game-chessboard > .aspect-square {
+  border-radius: 0;
+}
+[data-live-game-layout] .live-game-evaluation[aria-hidden="true"] { visibility: hidden; }
+@media (min-width: 768px) {
+  [data-live-game-layout] .live-game-board-row { padding-left: 40px; }
+  [data-live-game-layout] .live-game-evaluation {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 18px;
+    width: 24px;
+    padding: 0;
+    transform: none;
+    transition: opacity 150ms ease;
+  }
+  [data-live-game-layout] .live-game-evaluation > div { width: 100%;
+  }
+}
+@media (min-width: 1024px) {
+  [data-live-game-layout] > .panel-glow-cycle { left: 0; }
+  /* The online board size stays fixed from live play through result dismissal. */
+  [data-live-game-layout] .live-game-board-stack { max-width: 72vh; }
+  /* Only the dismissed-result analysis sidebar moves closer to the board. */
+  [data-live-game-layout][data-postgame-analysis] > .panel-glow-cycle { left: -12px; }
+}
+@media (min-width: 1280px) {
+  [data-live-game-layout] .live-game-board-stack { max-width: 84vh; }
+}
+@media (max-width: 767px) {
+  [data-live-game-layout] .live-game-board-column { order: 1; }
+  [data-live-game-layout] [data-postgame-mobile-analysis] { order: 3; flex-shrink: 0; }
+  [data-live-game-layout] > .panel-glow-cycle { order: 2; flex: none; }
+  [data-live-game-layout] { overflow-y: auto; }
+  [data-live-game-layout] .live-game-board-column { flex-shrink: 0; }
+}
+
+/* Three fixed PV slots survive the pending -> partial -> complete search cycle.
+   Long lines scroll horizontally instead of wrapping and shifting other rows. */
+[data-live-game-layout] .analysis-engine-content { gap: 12px; }
+[data-live-game-layout] .analysis-engine-status { height: 40px; min-height: 40px; max-height: 40px; }
+[data-live-game-layout] .analysis-engine-variations { gap: 8px; }
+[data-live-game-layout] .analysis-engine-line {
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  align-items: center;
+  gap: 8px;
+}
+[data-live-game-layout] .analysis-engine-score {
+  flex: 0 0 54px;
+  width: 54px;
+  min-width: 54px;
+  max-width: 54px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  padding: 2px 4px;
+  border-radius: 6px;
+  font-size: .75rem;
+  line-height: 20px;
+  font-variant-numeric: tabular-nums;
+  box-shadow: none;
+}
+[data-live-game-layout] .analysis-engine-score[data-score-side="white"] {
+  background: #ccd0c6;
+  color: #20251f;
+  border-color: #9ba491;
+}
+[data-live-game-layout] .analysis-engine-score[data-score-side="black"] {
+  background: #222720;
+  color: #d0d4c8;
+  border-color: #525b4b;
+}
+[data-live-game-layout] .analysis-engine-pv { min-width: 0; padding-top: 0; }
+[data-live-game-layout] .analysis-engine-moves {
+  height: 26px;
+  line-height: 22px;
+  flex-wrap: nowrap;
+  align-items: center;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  font-size: .84rem;
+}
+[data-live-game-layout] .analysis-engine-moves > span { flex-shrink: 0; }
+[data-live-game-layout] .analysis-engine-moves:focus-visible { outline: 1px solid #a8ae9e; outline-offset: 1px; }
+
+/* Postgame PV scrollbar: dark colours, unchanged width and pointer target. */
+[data-postgame-analysis] .analysis-engine-moves,
+[data-postgame-analysis] [data-postgame-mobile-analysis] .overflow-x-auto {
+  scrollbar-color: #4b544b #111611;
+}
+[data-postgame-analysis] .analysis-engine-moves::-webkit-scrollbar-track,
+[data-postgame-analysis] [data-postgame-mobile-analysis] .overflow-x-auto::-webkit-scrollbar-track {
+  background-color: #111611;
+}
+[data-postgame-analysis] .analysis-engine-moves::-webkit-scrollbar-thumb,
+[data-postgame-analysis] [data-postgame-mobile-analysis] .overflow-x-auto::-webkit-scrollbar-thumb {
+  background-color: #4b544b;
+  border-radius: 6px;
+}
+
+/* Postgame typography only; the regular Analysis workspace remains unchanged. */
+[data-postgame-analysis] .analysis-engine-score {
+  box-sizing: border-box;
+  flex: 0 0 56px;
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  padding: 4px 5px;
+  border-radius: 9px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  font-size: .8125rem;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -.015em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  white-space: nowrap;
+  text-shadow: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 3px 10px rgba(0,0,0,.20);
+}
+[data-postgame-analysis] .analysis-engine-score[data-score-side="white"] {
+  background: linear-gradient(145deg,#F4F0E8,#DCD7CD);
+  color: #181916;
+  border-color: #D5C9B4;
+}
+[data-postgame-analysis] .analysis-engine-score[data-score-side="black"] {
+  background: linear-gradient(145deg,#242522,#131513);
+  color: #F3F0E8;
+  border-color: #77746C;
+}
+[data-postgame-analysis] .analysis-engine-score[data-score-side="pending"] {
+  background: #2A2A26;
+  color: #C1BCAF;
+  border-color: #55534E;
+}
+[data-postgame-analysis] .analysis-engine-moves > span.text-white {
+  color: #c7cbc2;
+  font-weight: 600;
+}
+[data-postgame-analysis] .analysis-stockfish-name,
+[data-postgame-analysis] .postgame-stockfish-name {
+  color: #c0a47c;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  font-size: .82rem;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+[data-postgame-analysis] .analysis-stockfish-depth {
+  display: none;
+}
+[data-postgame-analysis] [data-postgame-mobile-analysis] [aria-label^="Engine line"] {
+  grid-template-columns: 66px minmax(0,1fr);
+}
+[data-postgame-analysis] .postgame-engine-score {
+  box-sizing: border-box;
+  flex: 0 0 66px;
+  width: 66px;
+  min-width: 66px;
+  max-width: 66px;
+  height: 34px;
+  min-height: 34px;
+  max-height: 34px;
+  padding: 4px 6px;
+  border: 1px solid rgba(206,173,117,.63);
+  border-radius: 9px;
+  background: linear-gradient(155deg,#333741 0%,#232831 54%,#141a20 100%);
+  color: #f4e8cd;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 0 0 1px rgba(242,205,137,.08), 0 3px 9px #0005;
+  font: 800 .9375rem/1.2 ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  white-space: nowrap;
+}
+
+/* Match the review notation by viewport, without resizing engine rows. */
+@media (min-width: 1024px) {
+  [data-postgame-analysis] .analysis-engine-moves {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-size: .79rem;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: -.15px;
+    text-shadow: none;
+  }
+}
+@media (min-width: 1600px) and (min-height: 800px) {
+  [data-postgame-analysis] .analysis-engine-moves {
+    font-size: .84rem;
+    line-height: 1.35;
+    letter-spacing: 0;
+  }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  [data-postgame-analysis] .analysis-engine-moves {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-size: .9rem;
+    font-weight: 500;
+  }
+}
+@media (max-width: 767px) {
+  [data-postgame-analysis] .postgame-engine-moves {
+    font: oblique 6deg 900 1.3125rem/1.25 Arial, "Helvetica Neue", sans-serif;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+}

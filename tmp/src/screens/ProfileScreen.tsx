@@ -9,6 +9,7 @@ import { supabase } from '../services/supabase';
 import { calculateMatchStats, getMatchResultForPlayer } from '../utils/profileContract';
 import { authCallbackUrl, clubReturnTarget, inviteReturnTarget, inviteAuthCallbackUrl } from '../lib/authCallbackUrl';
 import { nrwAuthReturnTarget } from '../lib/nrwAuthReturn';
+import { tournamentsEnabled } from '../services/teamTournaments';
 import { prefetchRoute } from '../routeLoaders';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -47,6 +48,7 @@ export default function ProfileScreen() {
     clubs: import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true',
     spieltag: import.meta.env.VITE_SPIELTAG_ENABLED === 'true',
     preparation: import.meta.env.VITE_VORBEREITUNG_ENABLED === 'true',
+    tournaments: tournamentsEnabled(import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED),
   });
   const mobileReturnTo = requestedReturn === '/play' || requestedReturn?.startsWith('/play?room=') || requestedReturn?.startsWith('/play?invite=1&tc=')
     ? requestedReturn
