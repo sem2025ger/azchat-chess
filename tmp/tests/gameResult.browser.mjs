@@ -180,7 +180,9 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
           const s = getComputedStyle(el);
           return { size: parseFloat(s.fontSize), weight: Number(s.fontWeight), variant: s.fontVariantNumeric };
         });
-        assert.equal(scoreStyle.size, 13, 'Postgame score matches 13px desktop review');
+        // Desktop review sets the score to 0.8125rem; the app root is 17px (index.css), so compare in rem.
+        const rootFontSize = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
+        assert.equal(scoreStyle.size, 0.8125 * rootFontSize, 'Postgame score matches the 0.8125rem desktop review');
         assert.equal(scoreStyle.weight, 500, 'Postgame score matches the Inter review weight');
         const scoreBadgeRect = await scoreBadge.boundingBox();
         assert.equal(Math.round(scoreBadgeRect.width), 56, 'Postgame score matches review badge width');
@@ -202,7 +204,9 @@ export async function verifyGameResult(browser, base, { supabaseHost = 'fixture'
         assert.equal(await mobileName.count(), 1, 'Mobile postgame engine label is present');
         assert.equal(await mobileName.evaluate(el => getComputedStyle(el).color), 'rgb(192, 164, 124)');
         const mobileScore = page.locator('[data-postgame-analysis] .postgame-engine-score').first();
-        assert.equal(parseFloat(await mobileScore.evaluate(el => getComputedStyle(el).fontSize)), 15, 'Mobile postgame score matches 15px mobile review');
+        // Mobile review and postgame both use .9375rem; compare in rem against the 17px app root.
+        const mobileRootFontSize = await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize));
+        assert.equal(parseFloat(await mobileScore.evaluate(el => getComputedStyle(el).fontSize)), 0.9375 * mobileRootFontSize, 'Mobile postgame score matches the .9375rem mobile review');
         const mobileBadgeRect = await mobileScore.boundingBox();
         assert.equal(Math.round(mobileBadgeRect.width), 66, 'Mobile postgame score matches review badge width');
         assert.equal(Math.round(mobileBadgeRect.height), 34, 'Mobile postgame score matches review badge height');
