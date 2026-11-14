@@ -8,7 +8,8 @@ import {
 } from '../../services/teamTournaments';
 import { tournamentCopy, tournamentErrorMessage, type TournamentCopy } from './copy';
 import { CreateTournament, TournamentDetail } from './TeamTournamentViews';
-import { M3Create, M3EventPanel } from './TeamTournamentsM3Panel';
+import { CreateHubTeaser, M3Create, M3EventPanel } from './TeamTournamentsM3Panel';
+import { RotateCw } from 'lucide-react';
 import '../../styles/sections.css';
 
 type ScopeProps = { selected: string | null; onSelect: (id: string | null) => void };
@@ -118,9 +119,55 @@ function TournamentScope({ selected, onSelect, token, actorId, actorUsername, tr
   }
 
   const current = list?.tournaments.find(x => x.id === selected);
+  const createHubEnabled = import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' &&
+    import.meta.env.VITE_AI_ORGANIZER_ENABLED === 'true';
   const conflict = error instanceof TournamentError && ['result_conflict', 'invalid_state'].includes(error.code);
   const locked = busy || conflict || loading;
   const signIn = tournamentSignInPath(selected, location.search);
+  // Hub layout (both M3 and AI flags): banner header, creation blocks visible on entry,
+  // tournament list below. With the flags off the markup below is the previous one.
+  const hubOverview = createHubEnabled && !selected;
+  const legacyForm = <CreateTournament tr={tr} busy={locked} onCreate={(name, rules) => void run(async (api, signal) => {
+    const result = await api.create(name, rules, signal);
+    if (!signal.aborted) onSelect(result.id);
+  }, false)} />;
+  const listCard = (heading: string | null) => list && <section className="section-card">
+    {heading && <h2>{heading}</h2>}
+    {list.tournaments.length === 0 ? <p>{tr('empty')}</p> : <ul className="team-tournament-list">
+      {list.tournaments.map(item => <li key={item.id}>
+        <Link to={'/spieltag?tab=turniere&tournament=' + item.id}>{item.name}</Link>
+        <span>{tr(item.status)}{item.current_round ? ' · ' + tr('round') + ' ' + item.current_round : ''}</span>
+      </li>)}
+    </ul>}
+  </section>;
+  const status = <>
+    {loading && <p role="status">{tr('loading')}</p>}
+    {error != null && <p role="alert">{tournamentErrorMessage(error instanceof TournamentError ? error.code : '', tr)}</p>}
+    {saved && !loading && <p role="status">{tr('saved')}</p>}
+  </>;
+  if (hubOverview) return <section className="section-page team-tournament-page team-tournament-hub">
+    <header className="team-tournament-hero">
+      <div className="team-tournament-hero-text">
+        <p className="team-tournament-eyebrow">{tr('createHubEyebrow')}</p>
+        <h1>{tr('tab')}</h1>
+        <p className="team-tournament-lead">{tr('createHubLead')}</p>
+      </div>
+      <button type="button" className="team-tournament-refresh" disabled={busy || loading} onClick={reload}
+        aria-label={tr('refresh')} title={tr('refresh')}>
+        <RotateCw size={18} aria-hidden="true" />
+      </button>
+    </header>
+    {status}
+    {list && (token
+      ? list.can_create && <M3Create tr={tr} token={token} onCreated={id => onSelect(id)}
+          limited={list.create_limit !== undefined}
+          legacy={list.create_limit === undefined ? <details className="team-legacy-mode">
+            <summary>{tr('createHubLegacy')}</summary>
+            {legacyForm}
+          </details> : undefined} />
+      : <CreateHubTeaser tr={tr} signIn={signIn} />)}
+    {listCard(tr('createHubListTitle'))}
+  </section>;
   return <section className="section-page team-tournament-page">
     <header>
       <h1>{event?.name ?? tr('tab')}</h1>
@@ -131,23 +178,10 @@ function TournamentScope({ selected, onSelect, token, actorId, actorUsername, tr
         <button type="button" disabled={busy || loading} onClick={reload}>{tr('refresh')}</button>
       </div>
     </header>
-    {loading && <p role="status">{tr('loading')}</p>}
-    {error != null && <p role="alert">{tournamentErrorMessage(error instanceof TournamentError ? error.code : '', tr)}</p>}
-    {saved && !loading && <p role="status">{tr('saved')}</p>}
+    {status}
     {!selected && list && <>
-      <section className="section-card">
-        <h2>{tr('tab')}</h2>
-        {list.tournaments.length === 0 ? <p>{tr('empty')}</p> : <ul className="team-tournament-list">
-          {list.tournaments.map(item => <li key={item.id}>
-            <Link to={'/spieltag?tab=turniere&tournament=' + item.id}>{item.name}</Link>
-            <span>{tr(item.status)}{item.current_round ? ' · ' + tr('round') + ' ' + item.current_round : ''}</span>
-          </li>)}
-        </ul>}
-      </section>
-      {list.can_create && <CreateTournament tr={tr} busy={locked} onCreate={(name, rules) => void run(async (api, signal) => {
-        const result = await api.create(name, rules, signal);
-        if (!signal.aborted) onSelect(result.id);
-      }, false)} />}
+      {listCard(tr('tab'))}
+      {list.can_create && legacyForm}
       {import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' && token && list.can_create &&
         <M3Create tr={tr} token={token} onCreated={id => onSelect(id)} />}
     </>}

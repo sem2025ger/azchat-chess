@@ -45,10 +45,11 @@ function SpieltagTabs() {
     setParams(id ? { tab: 'turniere', tournament: id } : { tab: 'turniere' });
   }
   return <>
-    <nav className="team-tournament-tabs" aria-label={tr('tab')}>
-      {workspace && <Link to="/spieltag" aria-current={!tournaments ? 'page' : undefined}>{tr('workspace')}</Link>}
+    {/* A single tab is no navigation: without the matchday workspace the tournaments page heading is enough. */}
+    {workspace && <nav className="team-tournament-tabs" aria-label={tr('tab')}>
+      <Link to="/spieltag" aria-current={!tournaments ? 'page' : undefined}>{tr('workspace')}</Link>
       <Link to="/spieltag?tab=turniere" aria-current={tournaments ? 'page' : undefined}>{tr('tab')}</Link>
-    </nav>
+    </nav>}
     {tournaments ? <Suspense fallback={<p role="status">{tr('loading')}</p>}>
       <TeamTournamentsTab selected={params.get('tournament')} onSelect={select} />
     </Suspense> : <SpieltagWorkspaceScreen />}

@@ -74,3 +74,368 @@
   .team-tournament-tabs { padding-inline: 16px; }
   .team-tournament-table :is(td,th) { padding-inline: .23rem; }
 }
+
+
+/* AI Organizer M1. Scoped to the feature-flagged panel; the legacy form remains unchanged. */
+.ai-organizer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  margin: .65rem 0 1.5rem;
+  border: 1px solid rgba(164, 141, 111, .36);
+  border-radius: 14px;
+  background: linear-gradient(160deg, #171b27, #10141d 78%);
+  color: #ede8df;
+}
+.ai-organizer-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid #ffffff19;
+}
+.ai-organizer-header h3 { margin: 0; font-weight: 700; font-size: 1.07rem; }
+.ai-organizer-header small { color: #b5a18a; letter-spacing: .09em; font-size: .7rem; }
+.ai-organizer-header p { margin: 0; color: #b9b6b4; font-size: .78rem; max-width: 13rem; line-height: 1.5; }
+/* Chat log scrolls on its own only once it overflows. No overscroll containment: with it,
+   Chrome swallowed wheel/touch scrolling over the (even empty) log and the page stopped scrolling. */
+.ai-organizer-history {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  padding: 1.2rem 1rem;
+  overflow-y: auto;
+  min-height: 13rem;
+  max-height: min(63vh, 36rem);
+  scrollbar-width: thin;
+}
+.ai-organizer-intro { font-size: .93rem; color: #b7b4b2; }
+.ai-organizer-bubble {
+  width: fit-content;
+  max-width: min(92%, 37rem);
+  padding: .8rem 1rem;
+  border: 1px solid #ffffff1b;
+  border-radius: 14px;
+  font-size: .92rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.ai-organizer-user {
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+  background: #293749;
+  border-color: #6a81964d;
+}
+.ai-organizer-assistant {
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  background: #25272e;
+}
+.ai-organizer-draft {
+  align-self: flex-start;
+  max-width: 100%;
+  width: min(100%, 42rem);
+  padding: 1.1rem;
+  border: 1px solid #98836f78;
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  background: #22242a;
+}
+.ai-organizer-draft h4 { font-size: 1rem; margin: 0; }
+.ai-organizer-draft > p { font-size: .82rem; color: #c5c0b8; }
+.ai-organizer-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .8rem;
+  margin-top: 1rem;
+}
+.ai-organizer-fields label {
+  display: grid;
+  gap: .35rem;
+  min-width: 0;
+  font-size: .79rem;
+  color: #e4e1d9;
+}
+.ai-organizer-fields input { box-sizing: border-box; width: 100%; min-width: 0; }
+.ai-organizer-field-missing > span,
+.ai-organizer-field-missing small { color: #efb89e; }
+.ai-organizer-field-missing input { border-color: #c07f65 !important; }
+.ai-organizer-draft-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .65rem; margin-top: 1rem; }
+.ai-organizer .ai-organizer-primary { background: #3e474f; border-color: #a99380; color: #f5eee5; }
+.ai-organizer-status { color: #c4b9a9; font-size: .85rem; }
+.ai-organizer-error { color: #ffbfa8; margin: .35rem 1rem; font-size: .85rem; }
+.ai-organizer-composer {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .8rem;
+  border-top: 1px solid #ffffff24;
+  background: #171a22;
+}
+.team-tournament-page .ai-organizer-composer input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid #ffffff38;
+  background: #11151e;
+  color: #f4eee3;
+}
+.ai-organizer-composer button { flex: 0 0 auto; display: grid; place-items: center; min-width: 44px; height: 44px; padding: .4rem; }
+.ai-organizer-recording {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  min-height: 3rem;
+  padding: .4rem 1rem;
+  color: #e6c4a4;
+  font-size: .85rem;
+}
+.ai-organizer-wave { display: flex; align-items: center; gap: 3px; height: 36px; }
+.ai-organizer-wave i { width: 3px; border-radius: 10px; background: #b9a28a; transition: height 80ms linear; }
+@media (max-width: 600px) {
+  .ai-organizer-header { flex-direction: column; gap: .35rem; padding: .85rem; }
+  .ai-organizer-header p { max-width: 100%; }
+  .ai-organizer-history { padding: .85rem; max-height: 55vh; }
+  .ai-organizer-bubble { max-width: 96%; }
+  .ai-organizer-draft { padding: .8rem; }
+  .ai-organizer-fields { grid-template-columns: minmax(0, 1fr); }
+  .ai-organizer-draft-actions { flex-direction: column; }
+  .ai-organizer-draft-actions button { width: 100%; }
+  .ai-organizer-composer { gap: .3rem; padding: .55rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-organizer-wave i { transition: none; }
+}
+
+
+/* Organizer hub: isolated behind VITE_AI_ORGANIZER_ENABLED + M3. */
+/* Banner header */
+.team-tournament-hub { gap: 22px; }
+.team-tournament-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  overflow: hidden;
+  padding: clamp(1.4rem, 3vw, 2.2rem) clamp(1.2rem, 3vw, 2.4rem);
+  border: 1px solid rgba(215, 189, 139, .28);
+  border-radius: 20px;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(215, 189, 139, .16), transparent 55%),
+    radial-gradient(90% 120% at 100% 100%, rgba(84, 110, 150, .16), transparent 60%),
+    linear-gradient(150deg, #1b1f2a, #111419 75%);
+  box-shadow: 0 18px 40px -28px rgba(0, 0, 0, .8), inset 0 1px 0 rgba(255, 255, 255, .04);
+}
+.team-tournament-hero-text { min-width: 0; max-width: 46rem; }
+.team-tournament-page .team-tournament-hero .team-tournament-eyebrow {
+  margin: 0 0 .55rem;
+  color: #d7bd8b;
+  font-size: .74rem;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.section-page > .team-tournament-hero h1 {
+  margin: 0;
+  font: 600 clamp(2.3rem, 5vw, 3.4rem)/1.05 'Bodoni Moda', Georgia, serif;
+  letter-spacing: -.01em;
+  background: linear-gradient(180deg, #f3dfb6 0%, #d7bd8b 55%, #b8955a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.team-tournament-page .team-tournament-hero .team-tournament-lead {
+  margin: .8rem 0 0;
+  max-width: 40rem;
+  color: #c9c4ba;
+  font-size: clamp(.92rem, 1.4vw, 1.02rem);
+  line-height: 1.6;
+}
+.team-tournament-page .team-tournament-refresh {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  border-color: rgba(215, 189, 139, .35);
+  background: rgba(17, 20, 25, .6);
+  color: #d7bd8b;
+}
+.team-tournament-page .team-tournament-refresh:not(:disabled):hover { background: #d7bd8b; color: #211b13; }
+.team-tournament-refresh:disabled svg { animation: team-refresh-spin 1s linear infinite; }
+@keyframes team-refresh-spin { to { transform: rotate(360deg); } }
+
+/* Two creation blocks */
+.team-create-hub { min-width: 0; }
+.team-create-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 1rem;
+}
+.team-create-hub-grid > * { min-width: 0; }
+.team-create-block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(164, 141, 111, .36);
+  border-radius: 16px;
+  background: linear-gradient(160deg, #171b27, #10141d 78%);
+  color: #ede8df;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.team-create-block:hover, .team-create-block:focus-within {
+  border-color: rgba(215, 189, 139, .55);
+  box-shadow: 0 12px 32px -24px rgba(215, 189, 139, .45);
+}
+.team-create-block-body { position: relative; flex: 1 1 auto; min-height: 0; }
+/* Half-collapsed: same visible height for both blocks, soft fade above the toggle. */
+.team-create-block[data-expanded="false"] .team-create-block-body { max-height: 23rem; overflow: hidden; }
+.team-create-block[data-expanded="false"] .team-create-block-body::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 5rem;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(16, 20, 29, 0), #10141d 85%);
+}
+.team-tournament-page .team-create-expand {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  width: 100%;
+  max-width: none;
+  min-height: 46px;
+  border: 0;
+  border-top: 1px solid #ffffff14;
+  border-radius: 0;
+  background: rgba(215, 189, 139, .07);
+  color: #e5c992;
+  font-size: .86rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.team-tournament-page .team-create-expand:not(:disabled):hover { background: rgba(215, 189, 139, .16); color: #f3dfb6; }
+.team-create-expand svg { transition: transform .2s ease; }
+.team-create-expand[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+/* Manual block content */
+.team-create-manual .team-create-block-body { display: flex; flex-direction: column; gap: .9rem; padding: 1.25rem; }
+.team-create-manual header { display: grid; gap: .3rem; padding-bottom: .9rem; border-bottom: 1px solid #ffffff19; }
+.team-create-manual h2, .team-create-ai .ai-organizer-header h3 { font-size: 1.15rem; font-weight: 700; margin: 0; color: #f1e9db; }
+.team-create-manual header p { margin: 0; color: #b9b6b4; font-size: .87rem; line-height: 1.5; }
+
+/* AI block content */
+.team-create-ai .ai-organizer { margin: 0; border: 0; border-radius: 0; background: transparent; height: 100%; }
+.team-create-ai .ai-organizer-header { flex-direction: column; gap: .35rem; padding: 1.25rem 1.25rem .9rem; }
+.team-create-ai .ai-organizer-header p { max-width: 100%; font-size: .87rem; }
+.team-create-ai .ai-organizer-history { flex: 1 1 auto; min-height: 9rem; max-height: min(60vh, 34rem); }
+.team-create-ai[data-expanded="false"] .ai-organizer-history { min-height: 8.5rem; }
+/* The message field stays reachable when collapsed: it sits outside the fade. */
+.team-create-ai[data-expanded="false"] .team-create-block-body { max-height: none; overflow: visible; }
+.team-create-ai[data-expanded="false"] .team-create-block-body::after { content: none; }
+.team-create-ai[data-expanded="false"] .ai-organizer-history { max-height: 8.5rem; }
+.ai-organizer-brand { display: grid; gap: .3rem; }
+.ai-organizer-brand small { font-size: .82rem; letter-spacing: .06em; color: #c9b69a; }
+.ai-organizer-badge {
+  display: inline-block;
+  vertical-align: .18em;
+  margin-inline-start: .55rem;
+  padding: .1rem .45rem;
+  border: 1px solid #d7bd8b99;
+  border-radius: 6px;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: #e5c992;
+  cursor: help;
+}
+.team-tournament-page .ai-organizer-steps { margin: .2rem 0 0; color: #d7bd8b; font-size: .78rem; font-weight: 600; letter-spacing: .03em; }
+.team-tournament-page .ai-organizer-example {
+  flex-shrink: 0;
+  display: grid;
+  gap: .25rem;
+  width: 100%;
+  text-align: start;
+  border-style: dashed;
+  border-color: rgba(215, 189, 139, .4);
+  background: rgba(215, 189, 139, .05);
+  color: #e6dccb;
+  font-size: .85rem;
+  line-height: 1.45;
+}
+.team-tournament-page .ai-organizer-example:not(:disabled):hover { background: rgba(215, 189, 139, .14); color: #f3ead9; border-color: #d7bd8b; }
+.ai-organizer-example span { color: #d7bd8b; font-size: .74rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+
+.team-create-manual-form, .team-create-extra-fields { display: grid; gap: .85rem; }
+.team-create-manual-form label, .team-create-extra-fields label { display: grid; min-width: 0; gap: .35rem; font-size: .86rem; }
+.team-create-manual-form input { box-sizing: border-box; width: 100%; min-width: 0; }
+.team-create-extra { min-width: 0; border-top: 1px solid #ffffff23; padding-top: .35rem; }
+.team-create-extra summary { color: #e6c9a2; }
+.team-create-extra-fields { padding-top: .65rem; }
+.team-create-auto-note { color: #b8b4ab; font-size: .8rem; line-height: 1.45; }
+.team-create-form-error { color: #ffbfa8; font-size: .85rem; }
+.team-tournament-page .team-create-primary { width: 100%; background: #5d5143; color: #fff5e7; border-color: #b39b7d; font-weight: 600; }
+.team-create-mobile-switch { display: none; }
+.team-create-limit-note { margin: .7rem .2rem 0; color: #a9a49b; font-size: .78rem; }
+/* Legacy M1 form: quiet link-style disclosure at the bottom of the manual card. */
+.team-create-manual .team-legacy-mode { margin-top: auto; padding-top: .35rem; border-top: 1px solid #ffffff19; }
+.team-create-manual .team-legacy-mode summary { width: fit-content; padding: .45rem 0 0; font-size: .8rem; color: #b5a18a; text-decoration: underline; text-underline-offset: .2em; }
+.team-create-manual .team-legacy-mode summary:hover { color: #e5c992; }
+.team-create-manual .team-legacy-mode .section-card { margin-top: .7rem; }
+
+/* Signed-out preview */
+.team-create-teaser .team-create-block-body { max-height: 16rem; overflow: hidden; }
+.team-create-teaser-fields { display: grid; gap: .55rem; margin: 0; padding: 0; list-style: none; }
+.team-create-teaser-fields li {
+  padding: .7rem .8rem;
+  border: 1px solid #ffffff1f;
+  border-radius: 8px;
+  background: #151719;
+  color: #8f8b84;
+  font-size: .84rem;
+}
+.team-tournament-page a.team-create-signin {
+  display: block;
+  width: fit-content;
+  margin: 1rem auto 0;
+  padding: .75rem 1.4rem;
+  border-radius: 999px;
+  background: #d7bd8b;
+  color: #211b13;
+  font-weight: 600;
+  text-decoration: none;
+}
+.team-tournament-page a.team-create-signin:hover { background: #e8d1a6; }
+
+@media (max-width: 840px) {
+  .team-create-hub-grid { grid-template-columns: minmax(0, 1fr); }
+  .team-create-ai .ai-organizer-history { max-height: 55vh; }
+  .team-create-mobile-switch {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .4rem; margin-bottom: .8rem; padding: .25rem;
+    border: 1px solid #ffffff24; border-radius: 10px; background: #151822;
+  }
+  .team-tournament-page .team-create-mobile-switch button { width: 100%; }
+  .team-create-mobile-switch button[aria-pressed="true"] { background: #6b5c49; color: #fff5e7; }
+  .team-create-hub-grid[data-mobile-mode="manual"] > .team-create-ai,
+  .team-create-hub-grid[data-mobile-mode="ai"] > .team-create-manual { display: none; }
+}
+@media (max-width: 600px) {
+  .team-tournament-hero { border-radius: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .team-tournament-refresh:disabled svg, .team-create-expand svg { animation: none; transition: none; }
+}

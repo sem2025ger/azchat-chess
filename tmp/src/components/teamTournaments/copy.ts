@@ -134,6 +134,55 @@ const labels = {
   reportSaved: ['Meldung gespeichert', 'Report saved', 'Nəticə saxlandı', 'Bildirim kaydedildi', 'Повідомлення збережено', 'Сообщение сохранено'],
   reportError: ['Meldung nicht gespeichert. Bitte neu laden.', 'Report not saved. Please reload.', 'Nəticə saxlanmadı. Yenilə.', 'Sonuç kaydedilmedi. Yenile.', 'Не збережено. Оновіть.', 'Не сохранено. Обновите.'],
 
+  createHubTitle: ['Turnier organisieren', 'Organize a tournament', 'Turnir təşkil et', 'Turnuva düzenle', 'Організувати турнір', 'Организовать турнир'],
+  createHubChoose: ['Erstellung wählen', 'Choose creation method', 'Yaratma üsulunu seçin', 'Oluşturma yöntemini seçin', 'Оберіть спосіб створення', 'Выберите способ создания'],
+  createHubManual: ['Manuell erstellen', 'Create manually', 'Əl ilə yarat', 'Elle oluştur', 'Створити вручну', 'Создать вручную'],
+  createHubEyebrow: ['Mannschaftsturniere für Vereine', 'Team tournaments for clubs', 'Klublar üçün komanda turnirləri', 'Kulüpler için takım turnuvaları', 'Командні турніри для клубів', 'Командные турниры для клубов'],
+  createHubLead: ['Turnier anlegen, Mannschaften einladen, online spielen – manuell in drei Feldern oder im Gespräch mit AI.', 'Create a tournament, invite teams, play online — manually in three fields or by talking to AI.', 'Turnir yaradın, komandaları dəvət edin, onlayn oynayın – üç sahədə əl ilə və ya AI ilə danışaraq.', 'Turnuva oluşturun, takımları davet edin, çevrimiçi oynayın – üç alanda elle veya AI ile konuşarak.', 'Створіть турнір, запросіть команди, грайте онлайн — вручну в трьох полях або в розмові з AI.', 'Создайте турнир, пригласите команды, играйте онлайн — вручную в трёх полях или в разговоре с AI.'],
+  createHubExpand: ['Aufklappen', 'Expand', 'Genişləndir', 'Genişlet', 'Розгорнути', 'Развернуть'],
+  createHubCollapse: ['Einklappen', 'Collapse', 'Yığ', 'Daralt', 'Згорнути', 'Свернуть'],
+  createHubSignIn: ['Anmelden, um ein Turnier zu erstellen', 'Sign in to create a tournament', 'Turnir yaratmaq üçün daxil olun', 'Turnuva oluşturmak için giriş yapın', 'Увійдіть, щоб створити турнір', 'Войдите, чтобы создать турнир'],
+  createHubListTitle: ['Alle Turniere', 'All tournaments', 'Bütün turnirlər', 'Tüm turnuvalar', 'Усі турніри', 'Все турниры'],
+  createHubLimitNote: ['Bis zu 2 laufende Turniere und 5 AI-Anfragen pro Tag.', 'Up to 2 running tournaments and 5 AI requests per day.', 'Eyni anda 2 turnirə qədər və gündə 5 AI sorğusu.', 'Aynı anda en fazla 2 turnuva ve günde 5 AI isteği.', 'До 2 активних турнірів і 5 запитів до AI на день.', 'До 2 активных турниров и 5 запросов к AI в день.'],
+  createLimitError: ['Du hast bereits 2 laufende Turniere. Beende eines, um ein neues anzulegen.', 'You already run 2 tournaments. Finish one to create another.', 'Artıq 2 aktiv turniriniz var. Yenisini yaratmaq üçün birini bitirin.', 'Zaten 2 aktif turnuvanız var. Yenisi için birini bitirin.', 'У вас уже 2 активні турніри. Завершіть один, щоб створити новий.', 'У вас уже 2 активных турнира. Завершите один, чтобы создать новый.'],
+  createHubIntro: ['Mannschaftsturniere für Vereine: Turnier anlegen, Mannschaften einladen, online spielen.', 'Team tournaments for clubs: create a tournament, invite teams, play online.', 'Klublar üçün komanda turnirləri: turnir yaradın, komandaları dəvət edin, onlayn oynayın.', 'Kulüpler için takım turnuvaları: turnuva oluşturun, takımları davet edin, çevrimiçi oynayın.', 'Командні турніри для клубів: створіть турнір, запросіть команди, грайте онлайн.', 'Командные турниры для клубов: создайте турнир, пригласите команды, играйте онлайн.'],
+  createHubManualHint: ['Drei Felder – fertig. Alles Weitere wird automatisch vorbereitet.', 'Three fields — done. Everything else is prepared automatically.', 'Üç sahə – hazır. Qalanı avtomatik hazırlanır.', 'Üç alan – tamam. Gerisi otomatik hazırlanır.', 'Три поля — і готово. Решту підготуємо автоматично.', 'Три поля — и готово. Остальное подготовим автоматически.'],
+  createHubMore: ['Weitere Einstellungen', 'More settings', 'Əlavə ayarlar', 'Diğer ayarlar', 'Додаткові налаштування', 'Дополнительные настройки'],
+  createHubAutoInfo: ['Anmeldefrist wird automatisch vorgeschlagen.', 'Registration deadline will be suggested automatically.', 'Qeydiyyat müddəti avtomatik təklif ediləcək.', 'Kayıt son tarihi otomatik önerilecek.', 'Кінцевий термін реєстрації буде запропоновано автоматично.', 'Срок регистрации будет предложен автоматически.'],
+  createHubDeadlineAuto: ['Anmeldeschluss:', 'Registration closes:', 'Qeydiyyat bitir:', 'Kayıt bitişi:', 'Реєстрація до:', 'Регистрация до:'],
+  createHubDeadlineError: ['Bitte einen gültigen Anmeldeschluss vor Turnierbeginn wählen.', 'Choose a valid registration deadline before the event starts.', 'Turnir başlamazdan əvvəl düzgün qeydiyyat müddəti seçin.', 'Turnuva başlamadan önce geçerli bir kayıt bitişi seçin.', 'Оберіть коректний кінцевий термін реєстрації до початку турніру.', 'Укажите корректный срок регистрации до начала турнира.'],
+  createHubOverview: ['Turniere ansehen', 'View tournaments', 'Turnirlərə bax', 'Turnuvaları gör', 'Переглянути турніри', 'Смотреть турниры'],
+  createHubLegacy: ['Erweiterter Turniermodus', 'Advanced tournament mode', 'Geniş turnir rejimi', 'Gelişmiş turnuva modu', 'Розширений режим турніру', 'Расширенный режим турнира'],
+  aiOrganizerTitle: ['AI Turnier', 'AI Turnier', 'AI Turnier', 'AI Turnier', 'AI Turnier', 'AI Turnier'],
+  aiOrganizerHint: ['Beschreibe dein Turnier in eigenen Worten – per Sprache oder Text. Du prüfst den Entwurf und bestätigst die Erstellung.', 'Describe your tournament in your own words — by voice or text. You review the draft and confirm creation.', 'Turniri öz sözlərinizlə təsvir edin – səslə və ya mətnlə. Qaralamanı yoxlayır və yaradılmasını təsdiqləyirsiniz.', 'Turnuvanızı kendi sözlerinizle anlatın – sesle veya metinle. Taslağı kontrol eder ve oluşturmayı onaylarsınız.', 'Опишіть турнір своїми словами — голосом або текстом. Ви перевіряєте чернетку та підтверджуєте створення.', 'Опишите турнир своими словами — голосом или текстом. Вы проверяете черновик и подтверждаете создание.'],
+  aiOrganizerSteps: ['Beschreiben → Entwurf prüfen → Erstellen', 'Describe → Review draft → Create', 'Təsvir edin → Qaralamanı yoxlayın → Yaradın', 'Anlatın → Taslağı kontrol edin → Oluşturun', 'Опишіть → Перевірте чернетку → Створіть', 'Опишите → Проверьте черновик → Создайте'],
+  aiOrganizerExample: ['Bochum Cup am Samstag um 15 Uhr, 4 Bretter, bis zu 6 Mannschaften', 'Bochum Cup on Saturday at 3 pm, 4 boards, up to 6 teams', 'Bochum Kuboku şənbə günü saat 15:00-da, 4 lövhə, 6 komandaya qədər', 'Bochum Kupası cumartesi 15:00, 4 tahta, en fazla 6 takım', 'Кубок Бохума в суботу о 15:00, 4 дошки, до 6 команд', 'Кубок Бохума в субботу в 15:00, 4 доски, до 6 команд'],
+  aiOrganizerTryExample: ['Beispiel einsetzen', 'Use an example', 'Nümunəni yaz', 'Örnek kullan', 'Вставити приклад', 'Вставить пример'],
+  aiOrganizerDailyLimit: ['Tageslimit für AI-Anfragen erreicht. Morgen geht es weiter – oder manuell erstellen.', 'Daily AI limit reached. Try again tomorrow or create manually.', 'Gündəlik AI limiti bitdi. Sabah yenidən cəhd edin və ya əl ilə yaradın.', 'Günlük AI sınırına ulaşıldı. Yarın tekrar deneyin veya elle oluşturun.', 'Денний ліміт AI вичерпано. Спробуйте завтра або створіть вручну.', 'Дневной лимит AI исчерпан. Попробуйте завтра или создайте вручную.'],
+  aiOrganizerDisclosure: ['KI-gestützt · Du prüfst und erstellst das Turnier.', 'Powered by AI · you review and create.', 'Süni intellekt dəstəyi · turniri siz yoxlayıb yaradırsınız.', 'Yapay zekâ destekli · turnuvayı siz kontrol edip oluşturursunuz.', 'На основі ШІ · ви перевіряєте та створюєте турнір.', 'На основе ИИ · вы проверяете и создаёте турнир.'],
+  aiOrganizerPrompt: ['Beschreibe dein Turnier …', 'Describe your tournament…', 'Turnirinizi təsvir edin…', 'Turnuvanızı açıklayın…', 'Опишіть свій турнір…', 'Опишите свой турнир…'],
+  aiOrganizerSend: ['Senden', 'Send', 'Göndər', 'Gönder', 'Надіслати', 'Отправить'],
+  aiOrganizerVoice: ['Sprachnachricht aufnehmen', 'Record voice', 'Səs yaz', 'Ses kaydet', 'Записати голос', 'Записать голос'],
+  aiOrganizerStop: ['Aufnahme beenden', 'Stop recording', 'Yazını bitir', 'Kaydı bitir', 'Завершити запис', 'Остановить запись'],
+  aiOrganizerRecording: ['Aufnahme läuft', 'Recording', 'Səs yazılır', 'Kaydediliyor', 'Триває запис', 'Идёт запись'],
+  aiOrganizerTranscribing: ['Sprache wird erkannt …', 'Transcribing…', 'Səs tanınır…', 'Ses tanınıyor…', 'Розпізнавання мовлення…', 'Распознавание речи…'],
+  aiOrganizerThinking: ['Entwurf wird vorbereitet …', 'Preparing draft…', 'Qaralama hazırlanır…', 'Taslak hazırlanıyor…', 'Готується чернетка…', 'Подготавливаю черновик…'],
+  aiOrganizerDraft: ['Dein Turnierentwurf', 'Your tournament draft', 'Turnir qaralamanız', 'Turnuva taslağınız', 'Чернетка турніру', 'Черновик турнира'],
+  aiOrganizerMissing: ['Erforderlich', 'Needed', 'Lazımdır', 'Gerekli', 'Потрібно', 'Требуется'],
+  aiOrganizerApply: ['Entwurf übernehmen', 'Use this draft', 'Qaralamanı tətbiq et', 'Taslağı uygula', 'Використати чернетку', 'Использовать черновик'],
+  aiOrganizerCreate: ['Turnier erstellen', 'Create tournament', 'Turnir yarat', 'Turnuva oluştur', 'Створити турнір', 'Создать турнир'],
+  aiOrganizerReady: ['Alles bereit – bitte prüfen.', 'Ready for your review.', 'Yoxlama üçün hazırdır.', 'Kontrol için hazır.', 'Готово до перевірки.', 'Готово к проверке.'],
+  aiOrganizerEdit: ['Felder direkt bearbeiten', 'Edit the fields below', 'Aşağıdakı sahələri dəyişin', 'Aşağıdaki alanları düzenleyin', 'Відредагуйте поля нижче', 'Отредактируйте поля ниже'],
+  aiOrganizerEmpty: ['Nenne Datum, Uhrzeit und Turnierregeln.', 'Tell me the date, time and tournament rules.', 'Tarixi, saatı və turnir qaydalarını deyin.', 'Tarih, saat ve turnuva kurallarını belirtin.', 'Укажіть дату, час і правила турніру.', 'Укажите дату, время и правила турнира.'],
+  aiOrganizerUnavailable: ['KI-Dienst ist momentan nicht verfügbar.', 'AI service is temporarily unavailable.', 'AI xidməti müvəqqəti əlçatan deyil.', 'Yapay zekâ hizmeti geçici olarak kullanılamıyor.', 'Сервіс ШІ тимчасово недоступний.', 'Сервис ИИ временно недоступен.'],
+  aiOrganizerNotConfigured: ['KI-Dienst wurde noch nicht eingerichtet.', 'AI is not configured yet.', 'AI hələ quraşdırılmayıb.', 'Yapay zekâ henüz yapılandırılmadı.', 'ШІ ще не налаштовано.', 'ИИ ещё не настроен.'],
+  aiOrganizerRateLimited: ['Zu viele Anfragen. Bitte später erneut versuchen.', 'Too many requests. Try later.', 'Çox sorğu göndərildi. Sonra yenidən cəhd edin.', 'Çok fazla istek. Daha sonra tekrar deneyin.', 'Забагато запитів. Спробуйте пізніше.', 'Слишком много запросов. Попробуйте позже.'],
+  aiOrganizerMicUnavailable: ['Mikrofon nicht verfügbar. Bitte Text eingeben.', 'Microphone unavailable. Please type instead.', 'Mikrofon əlçatan deyil. Mətn yazın.', 'Mikrofon kullanılamıyor. Metin yazın.', 'Мікрофон недоступний. Введіть текст.', 'Микрофон недоступен. Введите текст.'],
+  aiOrganizerMicDenied: ['Mikrofonzugriff verweigert.', 'Microphone permission denied.', 'Mikrofona icazə verilmədi.', 'Mikrofon izni reddedildi.', 'Немає дозволу на мікрофон.', 'Нет разрешения на микрофон.'],
+  aiOrganizerTooLong: ['Aufnahme zu lang oder zu groß.', 'Recording too long or too large.', 'Səs yazısı çox uzun və ya böyükdür.', 'Kayıt çok uzun veya büyük.', 'Запис надто довгий або великий.', 'Запись слишком длинная или большая.'],
+  aiOrganizerFillMissing: ['Bitte die markierten Felder ausfüllen.', 'Please complete the highlighted fields.', 'İşarələnmiş sahələri doldurun.', 'İşaretli alanları doldurun.', 'Заповніть позначені поля.', 'Заполните отмеченные поля.'],
+  aiOrganizerMissingStart: ['Bitte Beginn mit Datum und Uhrzeit angeben.', 'Please add the start date and time.', 'Başlama tarixini və saatını yazın.', 'Başlangıç tarihi ve saatini girin.', 'Укажіть дату й час початку.', 'Укажите дату и время начала.'],
+  aiOrganizerCancel: ['Abbrechen', 'Cancel', 'Ləğv et', 'İptal et', 'Скасувати', 'Отмена'],
 } as const;
 
 export type TournamentCopy = (key: keyof typeof labels) => string;
@@ -145,6 +194,7 @@ export function tournamentErrorMessage(code: string, tr: TournamentCopy) {
   if (code === 'lineup_incomplete') return tr('m3LineupIncomplete');
   if (code === 'player_already_registered') return tr('m3DuplicatePlayer');
   if (code === 'no_previous_lineup') return tr('m3NoPrevious');
+  if (code === 'create_limit') return tr('createLimitError');
   if (code === 'invalid_time') return tr('invalid');
   if (code === 'result_conflict' || code === 'invalid_state') return tr('conflict');
   if (code === 'invalid_input' || code === 'already_exists') return tr('invalid');

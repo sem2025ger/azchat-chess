@@ -15,6 +15,7 @@ import {coachChatCopy} from '../../i18n/coachChatCopy';
 import {readPositionSearchState,writePositionSearchState,positionSearchRevision} from '../../utils/positionSearchState';
 import {readCoachSpeech,createCoachPlayback} from '../../services/coachSpeech';
 import './CoachChat.css';
+import { startBoundedAudioRecording, type AudioCapture } from '../../utils/audioCapture';
 type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string;moves?:string[];continuation?:string[]};
 type CandidateLine={moves:string[];score?:EngineScore};
 type Reply={answer:string;games:ResultGame[];generated:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLines?:unknown;engineVerified?:boolean;position?:string};
@@ -56,7 +57,6 @@ const archiveHeadings:Record<string,string>={ru:'В партиях встреч�
 const archiveWords:Record<string,number>={одну:1,один:1,одна:1,две:2,два:2,дві:2,три:3,четыре:4,чотири:4,пять:5,"п'ять":5,шесть:6,семь:7,восемь:8,девять:9,десять:10,one:1,two:2,three:3,four:4,five:5,ten:10,ein:1,zwei:2,drei:3,vier:4,fünf:5,bir:1,iki:2,üç:3,dört:4,beş:5};
 function archiveCount(message:string):number|null{const value=message.toLowerCase();if(!/(?:парт(?:ии|ий|ию|ия|ій|ії)|part(?:ien|ies|y|i)|games?|oyun|partiya)/iu.test(value)||!/(?:найд|покаж|подбер|да[йй]|знайд|find|show|list|suche|zeig|finde|göster|bul|tap|göstər)/iu.test(value))return null;const number=value.match(/\b([1-9]|1[0-9]|20)\b/u);const word=value.match(/[\p{L}']+/gu)?.find(w=>Object.prototype.hasOwnProperty.call(archiveWords,w));return number?Number(number[1]):word?archiveWords[word]:null;}
 function verifiedArchiveGame(game:{id:string;white:string;black:string;result:string;pgn:string;ply:number},fen:string):ResultGame|null{try{const board=new Chess();board.loadPgn(game.pgn);const history=board.history();if(!Number.isInteger(game.ply)||game.ply<0||game.ply>history.length)return null;const checkpoint=new Chess();for(let n=0;n<game.ply;n++)checkpoint.move(history[n]);const target=new Chess(fen);const position=(chess:Chess)=>chess.fen().split(' ').slice(0,4).join(' ');if(position(checkpoint)!==position(target))return null;return {...game,moves:history.slice(0,30),continuation:history.slice(game.ply,game.ply+6)};}catch{return null;}}
-const MAX_AUDIO_BYTES=2*1024*1024;
 function apiUrl(path:string){
  const root=new URL(import.meta.env.VITE_SERVER_URL||'');
  if(root.protocol!=='https:'&&!(root.protocol==='http:'&&['localhost','127.0.0.1'].includes(root.hostname)))throw Error('config');
@@ -126,15 +126,13 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
   const timer=setTimeout(()=>{void analyzeWithStockfish();},500);
   return()=>{clearTimeout(timer);engineJobRef.current?.cancel();engineJobRef.current=null;};
  },[open,token,fen]);
- const sectionRef=useRef<HTMLElement>(null),request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),recordTimer=useRef<ReturnType<typeof setTimeout>|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
+ const sectionRef=useRef<HTMLElement>(null),request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<AudioCapture|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
  const playback=useRef<ReturnType<typeof createCoachPlayback>>(null),speechCache=useRef(new Map<string,Blob>());
  const stopSpeech=useCallback(()=>{speechRequest.current?.abort();speechRequest.current=null;playback.current?.stop();playback.current=null;setSpeechPlaying(false);setSpeechError('');audioRef.current?.pause();if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;setClip(null);setSpeechBusy(null);},[]);
  const cancel=useCallback(()=>{
   onVariationPreview?.([], -1);setPreview(null);
   epoch.current++;busyRef.current=false;request.current?.abort();request.current=null;stopSpeech();
-  if(recordTimer.current)clearTimeout(recordTimer.current);recordTimer.current=null;
-  const current=recorder.current;recorder.current=null;if(current){current.onstop=null;current.ondataavailable=null;current.onerror=null;if(current.state!=='inactive')current.stop();}
-  stream.current?.getTracks().forEach(track=>track.stop());stream.current=null;setRecording(false);setBusy(null);
+  recorder.current?.cancel();recorder.current=null;setRecording(false);setBusy(null);
  },[stopSpeech,onVariationPreview]);
  useEffect(()=>{cancel();setError('');setSpeechError('');return cancel;},[token,cancel]);
  useEffect(()=>{if(token&&accountId!=='guest')writePositionSearchState(accountId,{context,open,draft,items,voiceReplies,scrollTop,expanded},'chat',storageRevision);},[storageRevision,accountId,context,token,open,draft,items,voiceReplies,scrollTop,expanded]);
@@ -193,36 +191,35 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
   finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}
  }
  async function toggleVoice(){
-  if(recorder.current){if(recorder.current.state!=='inactive')recorder.current.stop();return;}
+  if(recorder.current){recorder.current.stop();return;}
   if(busyRef.current||!token)return;
-  if(!window.isSecureContext||!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){setError(t.micUnavailable);return;}
   stopSpeech();const currentEpoch=epoch.current;busyRef.current=true;setBusy('microphone');setError('');
-  let acquired:MediaStream|null=null;
   try{
-   acquired=await navigator.mediaDevices.getUserMedia({audio:true});
-   if(epoch.current!==currentEpoch){acquired.getTracks().forEach(track=>track.stop());return;}
-   stream.current=acquired;
-   const type=['audio/webm;codecs=opus','audio/mp4','audio/webm','audio/ogg;codecs=opus'].find(value=>MediaRecorder.isTypeSupported(value));
-   if(!type)throw Error('unsupported');
-   const instance=new MediaRecorder(acquired,{mimeType:type});recorder.current=instance;
-   const chunks:Blob[]=[];let size=0,tooLarge=false;
-   instance.ondataavailable=event=>{size+=event.data.size;if(size>MAX_AUDIO_BYTES){tooLarge=true;if(instance.state!=='inactive')instance.stop();}else if(event.data.size)chunks.push(event.data);};
-   instance.onerror=()=>{cancel();setError(t.micUnavailable);};
-   instance.onstop=()=>{
-    acquired?.getTracks().forEach(track=>track.stop());stream.current=null;recorder.current=null;if(recordTimer.current)clearTimeout(recordTimer.current);recordTimer.current=null;
-    if(epoch.current!==currentEpoch)return;setRecording(false);
-    if(tooLarge){busyRef.current=false;setBusy(null);setError(t.tooLong);return;}
-    const audio=new Blob(chunks,{type:instance.mimeType});
-    if(audio.size<16){busyRef.current=false;setBusy(null);setError(t.empty);return;}
-    const abort=new AbortController();request.current=abort;busyRef.current=true;setBusy('transcribe');
-    void (async()=>{try{
-     const response=await checked(await fetch(apiUrl('transcribe?language='+lang),{method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store',headers:{Authorization:'Bearer '+token,'Content-Type':audio.type},body:audio}));
-     const data=await response.json();if(typeof data.text!=='string'||data.text.length>500)throw Error('api');
-     if(!abort.signal.aborted)setDraft(data.text);
-    }catch(e){if(!abort.signal.aborted)setError(describe(e));}finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}})();
-   };
-   instance.start(250);busyRef.current=false;setBusy(null);setRecording(true);voicePreference.current=true;setVoiceReplies(true);recordTimer.current=setTimeout(()=>{if(instance.state!=='inactive')instance.stop();},30000);
-  }catch(e){acquired?.getTracks().forEach(track=>track.stop());stream.current=null;recorder.current=null;if(epoch.current===currentEpoch){busyRef.current=false;setBusy(null);setError(e instanceof DOMException&&e.name==='NotAllowedError'?t.micDenied:t.micUnavailable);}}
+   const recording=await startBoundedAudioRecording({
+    onError:reason=>{
+     recorder.current=null;
+     if(epoch.current!==currentEpoch)return;
+     busyRef.current=false;setBusy(null);setRecording(false);
+     setError(reason==='too_long'?t.tooLong:reason==='empty'?t.empty:t.micUnavailable);
+    },
+    onComplete:audio=>{
+     recorder.current=null;
+     if(epoch.current!==currentEpoch)return;
+     setRecording(false);
+     const abort=new AbortController();request.current=abort;busyRef.current=true;setBusy('transcribe');
+     void (async()=>{try{
+      const response=await checked(await fetch(apiUrl('transcribe?language='+lang),{method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store',headers:{Authorization:'Bearer '+token,'Content-Type':audio.type},body:audio}));
+      const data=await response.json();if(typeof data.text!=='string'||data.text.length>500)throw Error('api');
+      if(!abort.signal.aborted)setDraft(data.text);
+     }catch(e){if(!abort.signal.aborted)setError(describe(e));}finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}})();
+    },
+   });
+   if(epoch.current!==currentEpoch){recording.cancel();return;}
+   recorder.current=recording;busyRef.current=false;setBusy(null);setRecording(true);
+   voicePreference.current=true;setVoiceReplies(true);
+  }catch(e){
+   if(epoch.current===currentEpoch){busyRef.current=false;setBusy(null);setError(e instanceof DOMException&&e.name==='NotAllowedError'?t.micDenied:t.micUnavailable);}
+  }
  }
  if(import.meta.env.VITE_AI_COACH_ENABLED!=='true')return null;
  return <section ref={sectionRef} className="coach-chat" aria-label={t.title}>
