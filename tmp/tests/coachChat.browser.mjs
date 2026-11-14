@@ -76,6 +76,7 @@ export async function checkCoachChat({captureRoot}={}){
   const t=coachChatCopy[lang==='ua'?'uk':lang];clock+=61000;await evaluate('window.language('+JSON.stringify(lang)+');window.setToken('+JSON.stringify('synthetic-'+width+'-'+lang)+');window.setAccount('+JSON.stringify('account-'+width+'-'+lang)+')');await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(t.title));if(!await evaluate('!!document.querySelector(".coach-chat-panel")'))await click(t.title);
   await fill('Study the centre');await click(t.send);await wait('document.querySelector(".coach-chat-message.assistant")');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'fit '+lang+' '+width);assert.ok(!(await evaluate('document.body.innerText')).includes(t.privacy));assert.equal(calls.at(-1).body.position,new Chess().fen());assert.equal(calls.at(-1).body.history.length,0);
   const text=await evaluate('document.querySelector(".coach-chat-message.assistant > p").textContent'),beforeCopy=calls.length;
+  assert.equal(await evaluate('document.querySelector(".coach-chat-copy [role=status]")===null'),true,'idle copy control is not an active status '+lang);
   await click(t.copyAnswer);
   await wait('document.querySelector(".coach-chat-copy")?.getAttribute("aria-label")==='+JSON.stringify(t.copiedAnswer));
   assert.equal(await evaluate('window.clipboardWrites.at(-1)'),text,'copy writes the exact answer');
@@ -96,6 +97,7 @@ export async function checkCoachChat({captureRoot}={}){
  await wait('document.querySelector("[role=alert]")?.textContent.includes('+JSON.stringify(t.copyFailed)+')');
  assert.equal(await evaluate('!!document.querySelector(".coach-chat-copy .lucide-check")'),false,'clipboard rejection never shows success');
  assert.equal(await evaluate('document.querySelector(".coach-chat-copy").textContent'),t.copyAnswer);
+ assert.equal(await evaluate('document.querySelector(".coach-chat-copy [role=status]")===null'),true,'clipboard denial does not announce success');
  await evaluate('window.clipboardMode="ready";window.language("de")');
  await wait('document.querySelector(".coach-chat-copy")?.textContent==='+JSON.stringify(coachChatCopy.de.copyAnswer));
  await click(coachChatCopy.de.copyAnswer);
