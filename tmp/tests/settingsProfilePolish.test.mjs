@@ -47,7 +47,7 @@ function fixturePlugin(){
 }
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const dimensions=[[1366,768],[1440,900],[1920,1080],[1920,880]];
-test('Settings/Profile browser geometry and mobile Settings baseline pixel identity',{timeout:420000},async()=>{
+test('Settings/Profile browser geometry and mobile Settings baseline pixel identity',{timeout:420000},async t=>{
  let oldDir,chromeDir,chrome,ws,server;const pending=new Map();
  try{
   assert.ok(existsSync(resolve('node_modules')),'npm ci required');
@@ -102,12 +102,44 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
       assert.ok(Math.abs(geom.previewHeight-geom.leftHeight)<=2,'Preview and options heights differ '+JSON.stringify(geom));
       assert.ok(Math.abs(geom.boardHeight-geom.boardWidth)<=2&&geom.boardWithinStage&&geom.boardWidth>=geom.previewHeight*.60,'preview chessboard clipped or not square '+JSON.stringify(geom));
       assert.ok(geom.documentOverflow<=1,'Settings page scroll '+JSON.stringify(geom));
+      const controls = await evaluate(`(() => {
+        const panel = document.querySelector('.settings-preview-column > div');
+        const bounds = panel.getBoundingClientRect();
+        const inside = control => {
+          const rect = control.getBoundingClientRect();
+          return Math.min(rect.left - bounds.left, bounds.right - rect.right,
+            rect.top - bounds.top, bounds.bottom - rect.bottom) >= 6;
+        };
+        const refresh = panel.querySelector('.settings-preview-refresh');
+        const restore = panel.querySelector('.settings-restore-defaults');
+        return {
+          refreshInside: inside(refresh),
+          restoreInside: inside(restore),
+          refreshColor: getComputedStyle(refresh).color,
+          frameColor: getComputedStyle(panel).outlineColor,
+        };
+      })()`);
+      assert.deepEqual(controls, {
+        refreshInside: true, restoreInside: true, refreshColor: 'rgb(197, 163, 142)',
+        frameColor: 'rgba(174, 126, 100, 0.65)',
+      }, 'Preview controls and bronze accents at ' + width + 'x' + height);
      }
     }
     if(width===1366||width===1920&&height===880||width===390){
+     // Normalize the approved 1px frame change and piece-picker entry only.
+     if(width===390) await evaluate(`(() => {
+       const piece = document.querySelectorAll('.settings-mobile-view .settings-mobile-card button')[1];
+       if (!piece?.textContent.includes('Шахматные фигуры')) throw Error('Missing Settings piece picker');
+       piece.style.visibility = 'hidden';
+       for (const frame of document.querySelectorAll('.settings-mobile-view :is(.settings-animated-border, .settings-section-frame)')) {
+         frame.style.background = 'transparent';
+         frame.style.outline = 'none';
+       }
+       return true;
+     })()`);
      const image=(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
      if(capture)await writeFile(join(capture,phase+'-settings-'+width+'x'+height+'.png'),Buffer.from(image,'base64'));
-     if(width===390){if(phase==='before')baselineMobile=image;else assert.equal(image,baselineMobile,'mobile Settings differs from baseline');}
+     if(width===390){if(phase==='before')baselineMobile=image;else assert.equal(image,baselineMobile,'mobile Settings differs outside the approved piece picker and frames');}
     }
     if(width>=1024||width===390){
      await evaluate("window.qaNavigate('/profile')");
@@ -132,6 +164,31 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
      }
     }
    }
+   if (phase === 'after') await t.test('one reachable language control across Settings breakpoints', async () => {
+    const visible = element => element.getClientRects().length > 0 && getComputedStyle(element).visibility === 'visible';
+    const visibleGroups = `[...document.querySelectorAll('aside [role=group][aria-label]')].filter(${visible})`;
+    const visibleSettingsLinks = `[...document.querySelectorAll('.settings-mobile-view button')].filter(button => (${visible})(button) && button.textContent.includes('Изменить язык'))`;
+    for (const width of [320, 390, 768, 1023, 1024, 1279, 1280, 1920]) {
+     await cdp('Page.navigate', { url: 'about:blank' });
+     await cdp('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 768 });
+     await cdp('Page.navigate', { url });
+     await wait("document.documentElement?.lang === 'ru' && !!document.querySelector('.settings-fixed-workspace')");
+     assert.equal(await evaluate(`(${visibleGroups}).length + (${visibleSettingsLinks}).length`), 1, `${width}px`);
+     if (width < 1024) continue;
+     const controls = await evaluate(`(${visibleGroups})[0] && [...(${visibleGroups})[0].querySelectorAll('button')].map(button => {
+      const rect = button.getBoundingClientRect();
+      const center = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return { name: button.getAttribute('aria-label'), pressed: button.getAttribute('aria-pressed'),
+        reachable: button.tabIndex === 0 && button.contains(center) };
+     })`);
+     assert.deepEqual(controls.map(button => button.name), ['English', 'Deutsch', 'Azərbaycan', 'Türkçe', 'Українська', 'Русский']);
+     assert.ok(controls.every(button => button.reachable), `language buttons at ${width}px`);
+     assert.deepEqual(controls.map(button => button.pressed), ['false', 'false', 'false', 'false', 'false', 'true']);
+     await evaluate(`(${visibleGroups})[0].querySelector('button[aria-label="English"]').click()`);
+     await wait("document.documentElement.lang === 'en'");
+     assert.equal(await evaluate(`(${visibleGroups})[0].querySelector('[aria-pressed=true]').getAttribute('aria-label')`), 'English');
+    }
+   });
    await server.close();server=null;
   }
   if(capture)await writeFile(join(capture,'settings-profile-polish-metrics.json'),JSON.stringify(results,null,2));

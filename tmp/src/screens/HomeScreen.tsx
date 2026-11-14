@@ -5,10 +5,13 @@ import ChessBoard from '../components/ChessBoard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import MyTournamentCard from '../components/teamTournaments/MyTournamentCard';
 
 export default function HomeScreen() {
   const { t } = useLanguage();
   useAuth();
+  const homeUnifiedCard = import.meta.env.VITE_HOME_UNIFIED_CARD === 'true';
+  const homeChessComPieces = import.meta.env.VITE_HOME_CHESSCOM_PIECES === 'true';
 
   // Independent desktop Home move history; mobile board state stays untouched.
   const [desktopReview, setDesktopReview] = useState<HomeBoardReview>({ moves: [], index: 0 });
@@ -42,6 +45,53 @@ export default function HomeScreen() {
 
   return (
     <div className="flex flex-col min-h-full xl:h-full w-full xl:overflow-hidden items-center justify-start xl:justify-center bg-transparent transition-all relative home-screen-root">
+      {homeUnifiedCard && (
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,700&display=swap');
+
+          @media (min-width: 1280px) {
+            .home-screen-root .home-unified-card .home-unified-slogan {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 9px;
+              font-family: 'Cormorant Garamond', Georgia, serif;
+              font-size: clamp(28px, 2.53vw, 36px);
+              font-weight: 700;
+              font-style: italic;
+              line-height: 1.15;
+              letter-spacing: 0.02em;
+              overflow: visible;
+              text-overflow: clip;
+              text-shadow: none;
+              margin-bottom: 6px;
+            }
+            .home-screen-root .home-unified-card .home-unified-slogan-part {
+              display: inline-flex;
+              align-items: center;
+              gap: 9px;
+              flex: none;
+            }
+            .home-screen-root .home-unified-card .home-unified-slogan-word {
+              background: linear-gradient(180deg, #f4f6f8 0%, #cfd5db 50%, #9aa3ac 100%);
+              background-clip: text;
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              color: transparent;
+              text-shadow: none;
+              filter: drop-shadow(0 0 5px rgba(220,228,235,0.18));
+            }
+            .home-screen-root .home-unified-card .home-unified-slogan-diamond {
+              display: inline-block;
+              width: 7px;
+              height: 7px;
+              flex: 0 0 7px;
+              transform: rotate(45deg);
+              background: linear-gradient(135deg, #eef1f4, #8d969f);
+            }
+          }
+        `}</style>
+      )}
       <style>{`
         /* Keep the existing mobile Home piece scaling; match Analysis on desktop. */
         @media (max-width: 767px) {
@@ -92,10 +142,6 @@ export default function HomeScreen() {
             border: 1px solid rgba(221, 184, 110, .5);
             border-bottom: 1px solid rgba(221, 184, 110, .3);
             border-radius: 24px;
-            background:
-              radial-gradient(ellipse at 5% 0%, rgba(230, 180, 101, .14), transparent 42%),
-              radial-gradient(ellipse at 96% 100%, rgba(117, 122, 169, .10), transparent 44%),
-              linear-gradient(130deg, #20201e 0%, #13161a 47%, #0c1116 100%);
             box-shadow: 0 15px 28px -18px rgba(0,0,0,.85),
               0 0 0 1px rgba(176, 142, 85, .11),
               inset 0 1px 0 rgba(255, 234, 182, .17),
@@ -176,20 +222,17 @@ export default function HomeScreen() {
             padding: 30px 28px;
             gap: 24px;
             border: 1px solid rgba(200, 157, 89, 0.58);
-            /* Fine, translucent mineral grain over the approved obsidian palette.
-               Keep the underlying colors and shape unchanged; desktop only. */
-            background:
-              url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.73' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.72 0 0 0 0 0.61 0 0 0 0 0.47 0.18 0 0 0 -0.055'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23grain)'/%3E%3C/svg%3E") center / 180px 180px repeat,
-              radial-gradient(ellipse at 22% 6%, rgba(119, 78, 31, 0.14), transparent 63%),
-              radial-gradient(ellipse at 86% 90%, rgba(92, 56, 24, 0.09), transparent 60%),
-              repeating-linear-gradient(132deg, rgba(220, 180, 113, 0.009) 0px, transparent 2px, transparent 7px),
-              linear-gradient(138deg, #080807 0%, #14110E 38%, #110F0D 68%, #070706 100%);
             box-shadow:
               0 24px 48px -22px rgba(0, 0, 0, 0.88),
               0 0 14px rgba(168, 113, 49, 0.11),
               inset 0 1px 0 rgba(222, 186, 117, 0.14),
               inset 0 -18px 38px rgba(0, 0, 0, 0.42);
             transition: border-color 280ms ease, box-shadow 280ms ease;
+          }
+          .home-screen-root .desktop-home-arena.home-unified-card {
+            background:
+              radial-gradient(120% 70% at 30% 0%, rgba(205,215,230,0.07) 0%, rgba(205,215,230,0) 55%),
+              linear-gradient(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%);
           }
           .home-screen-root .desktop-home-arena::before {
             border-color: rgba(209, 168, 96, 0.34);
@@ -370,6 +413,24 @@ export default function HomeScreen() {
             filter: none;
           }
         }
+        /* Desktop Home only: restrained Chess.com-like white and graphite pieces. */
+        @media (min-width: 1280px) {
+          .home-screen-root .home-board img[data-home-chesscom-piece="w"] {
+            filter: contrast(.8) brightness(1.08) !important;
+          }
+          .home-screen-root .home-board img[data-home-chesscom-piece="b"][alt="bP"] {
+            filter: grayscale(1) contrast(.42) brightness(.61) brightness(1.10) !important;
+          }
+          /* Match non-pawn black figures to the existing satin graphite pawns.
+             Preserve the original piece paths and highlights; never affect CBURNETT. */
+          .home-screen-root .home-board img[data-home-graphite-set="classic"] {
+            filter: grayscale(1) contrast(.83) brightness(.90) drop-shadow(0 -1px 1px rgba(250,250,245,.12)) drop-shadow(0 2px 3px rgba(0,0,0,.34)) !important;
+          }
+          .home-screen-root .home-board img[data-home-graphite-set="neo"],
+          .home-screen-root .home-board img[data-home-graphite-set="tournament"] {
+            filter: grayscale(1) contrast(1.02) brightness(.90) drop-shadow(0 -1px 1px rgba(250,250,245,.12)) drop-shadow(0 2px 3px rgba(0,0,0,.34)) !important;
+          }
+        }
       `}</style>
 
       {/* 2-Column Layout */}
@@ -377,9 +438,9 @@ export default function HomeScreen() {
 
         {/* LEFT: Chessboard */}
         <div className="flex flex-col items-center xl:items-end w-full xl:w-[60%] max-w-[320px] md:max-w-[600px] xl:max-w-[min(630px,calc(100dvh-120px))] shrink-0 relative perspective-1000 board-container home-board-column xl:-mt-10">
-          <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board home-board-frame max-md:hidden">
+          <div className="relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] xl:p-3 overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 xl:ring-0 group transform-gpu transition-transform duration-1000 board-perspective home-board home-board-frame max-md:hidden">
             <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.06] to-transparent pointer-events-none z-10" />
-            <ChessBoard game={desktopGame} onMove={handleDesktopMove} overrideBoardTheme="Classic Wood" homeBlackInk className="!border-none !p-1 md:!p-3 xl:!p-2" />
+            <ChessBoard game={desktopGame} onMove={handleDesktopMove} overrideBoardTheme="Classic Wood" homeBlackInk homeChessComPalette={homeChessComPieces} className="!border-none !p-1 md:!p-3 xl:!p-0" />
           </div>
           <MobileHomeBoard />
           {/* Desktop move controls sit below the board without affecting its vertical position. */}
@@ -392,7 +453,7 @@ export default function HomeScreen() {
         <div className="flex-1 w-full flex flex-col justify-center items-center xl:items-stretch max-w-2xl xl:max-w-[420px] z-20 gap-2 md:gap-4 mb-4 xl:mb-0 -mt-6 md:-mt-0 xl:-mt-10 xl:ml-8 max-md:order-first max-md:flex-none max-md:mt-0 max-md:mb-0 max-md:px-1 home-dashboard-column">
           
           {/* Premium Flags / Desktop Slogan Block */}
-          <div className="desktop-home-slogan flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[linear-gradient(135deg,rgba(6,182,212,0.10),rgba(7,15,17,0.98)_42%,rgba(7,15,17,0.98))] border-[2px] border-cyan-500/[0.34] transition-colors shadow-[0_0_12px_rgba(6,182,212,0.08)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100 max-md:hidden">
+          <div className={`desktop-home-slogan flex items-center justify-center gap-2 md:gap-7 py-2 md:py-5 px-5 md:px-12 rounded-[1.5rem] md:rounded-[2.2rem] bg-[linear-gradient(135deg,rgba(6,182,212,0.10),rgba(7,15,17,0.98)_42%,rgba(7,15,17,0.98))] border-[2px] border-cyan-500/[0.34] transition-colors shadow-[0_0_12px_rgba(6,182,212,0.08)] self-center w-auto shrink-0 z-30 mb-0 md:mb-2 scale-[0.8] md:scale-100 max-md:hidden${homeUnifiedCard ? " xl:hidden" : ""}`}>
              <GermanyFlag />
              <AzerbaijanFlag />
              <TurkeyFlag />
@@ -400,8 +461,19 @@ export default function HomeScreen() {
           </div>
 
           {/* Premium Dashboard Card */}
-          <div className="mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 max-md:gap-0 md:gap-4 bg-[#121212]/98 p-3 max-md:py-5 max-md:px-4 md:p-6 rounded-[2rem] max-md:rounded-[1.75rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]">
+          <div className={`mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 max-md:gap-0 md:gap-4 p-3 max-md:py-5 max-md:px-4 md:p-6 rounded-[2rem] max-md:rounded-[1.75rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]${homeUnifiedCard ? " home-unified-card" : ""}`}>
 
+
+          {homeUnifiedCard && (
+            <span className="desktop-home-slogan-text home-unified-slogan hidden">
+              {t('home.slogan').split(/\s*[•·]\s*/u).map((part, index) => (
+                <span key={part + index} className="home-unified-slogan-part">
+                  {index > 0 && <span className="home-unified-slogan-diamond" aria-hidden="true" />}
+                  <span className="home-unified-slogan-word">{part}</span>
+                </span>
+              ))}
+            </span>
+          )}
 
           {/* 1. Hero Brand Header */}
           <div className="flex flex-col">
@@ -410,6 +482,12 @@ export default function HomeScreen() {
             </h1>
             <h1 className="chess-arena-reference-title md:hidden text-[2.2rem] text-center leading-[0.95] tracking-[-0.03em]">
               Chess Arena
+              <span className="relative inline-block h-0 w-0 align-baseline" aria-hidden="true">
+                <span className="absolute bottom-[0px] left-[11px] h-[44px] w-[22px]">
+                  <img src="/brand/sidebar-king.svg" alt="" width="22" height="44" className="absolute inset-0 h-full w-full object-fill" />
+                  <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
+                </span>
+              </span>
             </h1>
           </div>
 
@@ -418,6 +496,11 @@ export default function HomeScreen() {
               NRW – Schach
             </Link>
           )}
+
+          {/* M3 HOME CARD START */}
+          {import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true' &&
+            import.meta.env.VITE_TEAM_TOURNAMENTS_M3_ENABLED === 'true' && <MyTournamentCard />}
+          {/* M3 HOME CARD END */}
 
           {/* Text-only play action, shared with the mobile Arena. */}
           <Link

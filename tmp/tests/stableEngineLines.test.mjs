@@ -46,6 +46,6 @@ test('desktop and mobile score geometry is fixed without changing board layout',
   assert.match(desktop, /\.desktop-analysis-screen \.desktop-analysis-stockfish \{\s*height: clamp\(228px, 47%, 282px\) !important/);
   assert.match(desktop, /\.desktop-analysis-screen \.analysis-engine-score \{[\s\S]*?width: 70px !important/);
   assert.match(desktop, /\.desktop-analysis-screen \.analysis-engine-score \{[\s\S]*?background: linear-gradient\([^\n]+\) !important/);
-  assert.match(mobile, /\.mobile-analysis-score \{[\s\S]*?width: 68px/);
+  assert.match(mobile, /\.mobile-analysis-score \{[\s\S]*?width: 66px/);
   assert.match(mobile, /\.mobile-analysis-score \{[\s\S]*?font-variant-numeric: tabular-nums/);
 });

@@ -49,7 +49,7 @@ function App() {
                     <Route path="settings" element={<SettingsScreen />} />
                     {import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <Route path="spieler" element={<SpielerScreen />} />}
                     <Route path="update-password" element={<UpdatePasswordScreen />} />
-                    {import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <Route path="spieltag" element={<SpieltagScreen />} />}
+                    {(import.meta.env.VITE_SPIELTAG_ENABLED === 'true' || import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true') && <Route path="spieltag" element={<SpieltagScreen />} />}
                     {import.meta.env.VITE_VORBEREITUNG_ENABLED === 'true' && <Route path="vorbereitung" element={<VorbereitungScreen />} />}
                     {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Route path="region/:regionId" element={<RegionOverview />} />}
                     {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Route path="region/:regionId/:section" element={<RegionOverview />} />}

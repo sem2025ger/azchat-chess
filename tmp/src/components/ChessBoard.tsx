@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useThemeContext } from '../context/ThemeContext';
-import { BOARD_THEMES, type BoardTheme, type PieceTheme } from '../lib/chessThemes';
+import { BOARD_THEMES, pieceAssetSrc, type BoardTheme, type PieceTheme } from '../lib/chessThemes';
 import { Chess, type Square, type Move, type PieceSymbol, type Color } from 'chess.js';
 import { squareAtPoint, type BoardRect } from '../utils/boardCoordinates';
 
@@ -52,6 +52,7 @@ function ChessBoard({
   className,
   showCoordinates = true,
   externalCoordinatesOnDesktop = false,
+  externalCoordinates = false,
   highlightedSquares = [],
   game,
   onMove,
@@ -61,10 +62,12 @@ function ChessBoard({
   readOnly = false,
   confirmMovesMobile = false,
   homeBlackInk = false,
+  homeChessComPalette = false,
 }: {
   className?: string;
   showCoordinates?: boolean;
   externalCoordinatesOnDesktop?: boolean;
+  externalCoordinates?: boolean;
   highlightedSquares?: Square[];
   game?: Chess;
   onMove?: (source: string, target: string, promotion?: string) => boolean;
@@ -74,6 +77,7 @@ function ChessBoard({
   readOnly?: boolean;
   confirmMovesMobile?: boolean;
   homeBlackInk?: boolean;
+  homeChessComPalette?: boolean;
 }) {
   const { boardTheme, pieceTheme, specialThemesEnabled } = useThemeContext();
   const [localGame, setLocalGame] = useState(() => new Chess());
@@ -337,20 +341,20 @@ function ChessBoard({
         className
       )}
     >
-      {showCoordinates && externalCoordinatesOnDesktop && (
+      {showCoordinates && (externalCoordinates || externalCoordinatesOnDesktop) && (
         <>
           {/* Use the existing desktop frame gutters; the square grid and pointer bounds stay unchanged. */}
           <div
             data-coordinate-axis="rank"
             aria-hidden="true"
-            className="hidden lg:grid grid-rows-8 absolute left-0 top-[calc(0.75rem+1px)] bottom-[calc(0.75rem+1px)] w-3 text-[0.65rem] leading-none font-bold text-neutral-400 select-none pointer-events-none"
+            className={cx("grid-rows-8 absolute w-3 text-[0.65rem] leading-none font-bold text-neutral-400 select-none pointer-events-none", externalCoordinates ? "grid -left-4 top-px bottom-px" : "hidden lg:grid left-0 top-[calc(0.75rem+1px)] bottom-[calc(0.75rem+1px)]")}
           >
             {ranks.map(rank => <span key={rank} className="flex items-center justify-center">{rank}</span>)}
           </div>
           <div
             data-coordinate-axis="file"
             aria-hidden="true"
-            className="hidden lg:grid grid-cols-8 absolute left-[calc(0.75rem+1px)] right-[calc(0.75rem+1px)] bottom-0 h-3 text-[0.65rem] leading-none font-bold text-neutral-400 select-none pointer-events-none"
+            className={cx("grid-cols-8 absolute h-3 text-[0.65rem] leading-none font-bold text-neutral-400 select-none pointer-events-none", externalCoordinates ? "grid left-px right-px -bottom-4" : "hidden lg:grid left-[calc(0.75rem+1px)] right-[calc(0.75rem+1px)] bottom-0")}
           >
             {files.map(file => <span key={file} className="flex items-center justify-center">{file}</span>)}
           </div>
@@ -409,7 +413,7 @@ function ChessBoard({
                       className={cx(
                         'absolute top-0.5 left-1 text-[0.55rem] md:text-[0.7rem] font-bold select-none z-10 pointer-events-none',
                         isDark ? 'text-white/50' : 'text-black/40',
-                        externalCoordinatesOnDesktop && 'lg:hidden'
+                        externalCoordinates ? 'hidden' : externalCoordinatesOnDesktop && 'lg:hidden'
                       )}
                     >
                       {rank}
@@ -421,7 +425,7 @@ function ChessBoard({
                       className={cx(
                         'absolute bottom-0.5 right-1 text-[0.55rem] md:text-[0.7rem] font-bold select-none z-10 pointer-events-none',
                         isDark ? 'text-white/50' : 'text-black/40',
-                        externalCoordinatesOnDesktop && 'lg:hidden'
+                        externalCoordinates ? 'hidden' : externalCoordinatesOnDesktop && 'lg:hidden'
                       )}
                     >
                       {file}
@@ -455,7 +459,7 @@ function ChessBoard({
                   )}
                   style={{ left: `${fileIdx * 12.5}%`, top: `${rankIdx * 12.5}%` }}
                 >
-                  <PieceImage piece={p} theme={overridePieceTheme || pieceTheme} homeBlackInk={homeBlackInk} />
+                  <PieceImage piece={p} theme={overridePieceTheme || pieceTheme} homeBlackInk={homeBlackInk} homeChessComPalette={homeChessComPalette} />
                 </div>
               );
             })}
@@ -512,10 +516,12 @@ function PieceImage({
   piece,
   theme,
   homeBlackInk = false,
+  homeChessComPalette = false,
 }: {
   piece: { type: string; color: string };
-  theme: string;
+  theme: PieceTheme;
   homeBlackInk?: boolean;
+  homeChessComPalette?: boolean;
 }) {
   const pieceSetName = theme || 'classic'; // Fallback only to classic if undefined
   const pieceCode = `${piece.color}${piece.type.toUpperCase()}`;
@@ -524,11 +530,7 @@ function PieceImage({
     pieceSetName === 'cburnett-classic' && ['K', 'Q', 'R', 'B', 'N'].includes(piece.type.toUpperCase())
       ? `/pieces/home-cburnett-ink/${pieceCode}.svg`
       : null;
-  const src = pieceSetName === 'cburnett-classic'
-    ? `/chess-assets/pieces/cburnett/${pieceCode}.svg`
-    : pieceSetName === 'neo' || pieceSetName === 'tournament'
-      ? `/pieces/mobile/${pieceSetName}/${pieceCode}.svg`
-      : `/pieces/${pieceSetName}/${pieceCode}.svg`;
+  const src = pieceAssetSrc(pieceSetName, pieceCode);
 
   // Share the Neo pawn silhouette across the four desktop sets; preserve smaller screens.
   const pawnPalette = piece.color === 'w'
@@ -540,13 +542,15 @@ function PieceImage({
 
   // Use Merida SVGs (/pieces/mobile/neo and /pieces/mobile/tournament) on both desktop and mobile.
   const mobileSrc = pieceSetName === 'neo' || pieceSetName === 'tournament'
-    ? `/pieces/mobile/${pieceSetName}/${pieceCode}.svg`
+    ? src
     : null;
   const image = (
     <img
       src={src}
       alt={pieceCode}
       data-home-black-ink={homeBlackSource ? '' : undefined}
+      data-home-chesscom-piece={homeChessComPalette && pieceSetName === 'cburnett-classic' ? piece.color : undefined}
+      data-home-graphite-set={homeChessComPalette && piece.color === 'b' && piece.type !== 'p' && ['classic', 'neo', 'tournament'].includes(pieceSetName) ? pieceSetName : undefined}
       data-desktop-pawn={desktopPawnSrc ? piece.color : undefined}
       data-piece-theme={desktopPawnSrc ? pieceSetName : undefined}
       className="w-full h-full object-contain transform-gpu"

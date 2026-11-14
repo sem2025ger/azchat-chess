@@ -2,14 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --chessaz-bronze-frame: 174 126 100;
+}
+
 /* Home desktop: retain the original visual plane and keep the chessboard
    modestly enlarged within its column. Do not scale or translate the scene toward
    the viewer; balance the right-hand Arena and slogan in the same grid. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen {
+    --home-field-inset: calc(.75rem + 1px);
+    --home-board-width: min(588px, calc(100% - 6rem - 12px));
+  }
+  .desktop-analysis-screen::before {
+    /* Resolve the Home grid's responsive board width in the same route viewport. */
+    content: '';
+    position: absolute;
+    inset: 0 auto auto 0;
+    visibility: hidden;
+    pointer-events: none;
+    box-sizing: content-box;
+    width: var(--home-board-width);
+    padding-left: var(--home-field-inset);
+  }
+}
+@media (width: 1024px) {
+  .desktop-analysis-screen { --home-board-width: calc(100% - 6rem - 12px); }
+}
+@media (min-width:1024px) and (max-width:1279px) {
+  /* Reduce the desktop Home field by the same 12px used by the review geometry. */
+  .home-screen-root .home-board-column {width:calc(100% - 12px);max-width:588px;}
+}
 @media(min-width:1280px){
+ .desktop-analysis-screen {
+   --home-grid-gap:clamp(24px,2.2vw,32px);
+   --home-board-limit:min(634px,calc(100dvh - 100px));
+   --home-grid-tracks:calc(min(100%,85rem) - 56px - var(--home-grid-gap));
+   --home-board-width:calc(min(var(--home-board-limit),calc(.6 * var(--home-grid-tracks)),calc(var(--home-grid-tracks) - 320px)) - 12px);
+ }
  [data-home-route] [data-route-scroll]{overflow:hidden}
  .home-screen-root{height:100%;min-height:0;padding:24px 0}
  .home-screen-root [data-mobile-home-stack]{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);align-items:center;justify-items:center;gap:clamp(24px,2.2vw,32px);height:100%;min-height:0;padding:0 28px;overflow:visible}
- .home-screen-root .home-board-column{width:100%;max-width:min(660px,calc(100dvh - 125px));margin-top:0;align-items:stretch;perspective:1400px}
+ .home-screen-root .home-board-column{width:calc(100% - 12px);max-width:min(622px,calc(100dvh - 112px));margin-top:0;align-items:stretch;perspective:1400px}
  .home-screen-root .home-desktop-controls{position:static;margin-top:12px}
  .home-screen-root .home-dashboard-column{margin:0;width:100%;max-width:420px;min-width:0}
 }
@@ -431,54 +465,27 @@
   100% { background-position: -200% center; }
 }
 
-/* Settings Animated Glow Border */
-.settings-animated-border {
-  background: linear-gradient(135deg, rgba(0, 206, 209, 0.5), rgba(168, 85, 247, 0.5), rgba(59, 130, 246, 0.5), rgba(223, 176, 98, 0.5), rgba(0, 206, 209, 0.5));
-  background-size: 300% 300%;
-  animation: none;
+/* Reuse the existing 1px inset on each Settings section. */
+.settings-section-frame {
+  outline: 1px solid rgb(var(--chessaz-bronze-frame) / .65);
+  outline-offset: -1px;
 }
 
-@keyframes settingsBorderGlow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .settings-animated-border {
-    animation: none;
-    background: linear-gradient(135deg, rgba(0, 206, 209, 0.5), rgba(168, 85, 247, 0.5));
-  }
-}
-
-/* Home Board Premium Animated Frame */
+/* Keep the Home board rim without changing the dimensions of the field. */
 @media (min-width: 1280px) {
   .home-board-frame {
-    box-shadow:
-      inset 0 0 0 1px rgba(212, 175, 55, 0.62),
-      0 0 12px rgba(212, 175, 55, 0.12);
+    outline: 1px solid rgba(212, 175, 55, 0.62);
+    outline-offset: -1px;
   }
 
   .home-board-frame::after {
     content: '';
     position: absolute;
     inset: 1px;
+    border: 1px solid rgba(18, 14, 8, 0.96);
     border-radius: inherit;
     pointer-events: none;
     z-index: 20;
-    box-shadow: inset 0 0 0 1px rgba(18, 14, 8, 0.96);
-    animation: none;
-  }
-}
-
-@keyframes homeBoardFrameTone {
-  0%,
-  100% {
-    box-shadow: inset 0 0 0 1px rgba(18, 14, 8, 0.96);
-  }
-
-  50% {
-    box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.96);
   }
 }
 
@@ -583,30 +590,22 @@
   }
 }
 
-/* Home Arena accents shared by mobile and desktop: opacity-only crossfades. */
-  .mobile-home-arena {
-    isolation: isolate;
-    border-color: rgba(223, 176, 98, 0.28);
-    background: linear-gradient(145deg, #201b18, #15151d 60%, #111b1b);
-  }
-
-  .mobile-home-arena::before,
-  .mobile-home-arena::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    z-index: -1;
-    pointer-events: none;
-    border-radius: inherit;
-    border: 1px solid rgba(239, 204, 139, 0.7);
-    box-shadow: inset 0 0 20px rgba(223, 176, 98, 0.08), 0 0 12px rgba(223, 176, 98, 0.12);
-    opacity: 0.5;
-  }
-
-  .mobile-home-arena::after {
-    border-color: rgba(179, 153, 237, 0.65);
-    box-shadow: inset 0 0 20px rgba(167, 139, 250, 0.07), 0 0 12px rgba(167, 139, 250, 0.12);
-  }
+/* Chess Arena keeps a thin frame at every breakpoint. The inset outline
+   preserves the card's existing border box and its approved background. */
+.home-screen-root .mobile-home-arena {
+  border-color: transparent !important;
+  outline: 1px solid rgb(var(--chessaz-bronze-frame) / .65);
+  outline-offset: -1px;
+  box-shadow: none !important;
+  isolation: isolate;
+}
+.home-screen-root .mobile-home-arena::before,
+.home-screen-root .mobile-home-arena::after {
+  display: none;
+}
+.mobile-home-arena {
+  background: linear-gradient(165deg, #222743 0%, #1a1f38 55%, #14182e 100%);
+}
 
   .mobile-home-arena h1 {
     background-image: linear-gradient(110deg, #f5d58e, #f3dfbc 45%, #cbb5f6);
@@ -1218,7 +1217,7 @@
     column-gap: var(--review-column-gap, 51px) !important;
     row-gap: 12px;
     max-width: none !important;
-    padding: calc(10px * var(--review-scale, 1)) calc(55px * var(--review-scale, 1)) calc(38px * var(--review-scale, 1)) calc(66px * var(--review-scale, 1)) !important;
+    padding: var(--review-top-inset, 0px) calc(55px * var(--review-scale, 1)) 0 var(--review-left-inset, calc(40px * var(--review-scale, 1))) !important;
     margin: 0 !important;
     height: 100% !important;
     min-height: 0 !important;
@@ -1253,17 +1252,24 @@
     aspect-ratio: 1;
     margin: 0 !important;
     border-bottom-width: 0;
+    overflow: visible;
+    box-shadow: none;
     flex: 0 0 var(--review-board-size, auto) !important;
   }
-  .desktop-analysis-screen .desktop-analysis-player-top,
   .desktop-analysis-screen .desktop-analysis-review-player-bottom {
     display: flex;
     height: calc(36px * var(--review-scale, 1));
     min-height: calc(36px * var(--review-scale, 1));
     padding-left: calc(54px * var(--review-scale, 1));
   }
-  .desktop-analysis-screen:has(.desktop-analysis-player-top) > .desktop-analysis-panel {
-    margin-top: calc(36px * var(--review-scale, 1)) !important;
+  .desktop-analysis-screen .desktop-analysis-player-top {
+    display: flex;
+    position: absolute;
+    inset-inline: 0;
+    top: calc(-1 * var(--review-top-label, 24px));
+    height: var(--review-top-label, 24px);
+    padding-left: calc(54px * var(--review-scale, 1));
+    z-index: 20;
   }
   .desktop-analysis-screen > .desktop-analysis-panel {
     grid-row: 1;
@@ -1274,13 +1280,38 @@
     min-height: 0 !important;
     max-height: none !important;
   }
-  .desktop-analysis-screen .desktop-analysis-main-board {
+  .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) {
+    --analysis-board-gutter: var(--review-board-gutter, 16px);
     width: 100%;
     height: 100%;
-    padding: calc(16px * var(--review-scale, 1)) !important;
-    border-width: calc(6px * var(--review-scale, 1)) !important;
+    padding: var(--analysis-board-gutter) !important;
+    border-width: 0 !important;
+    overflow: visible;
+    background: transparent;
+    box-shadow: none;
   }
-  .desktop-analysis-screen .desktop-analysis-evaluation { translate: none; padding: 0; width: calc(24px * var(--review-scale, 1)); flex-shrink: 0; }
+  .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) .aspect-square.border {
+    border-color: #746951;
+    box-shadow: none;
+  }
+  .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) > [data-coordinate-axis="rank"] {
+    inset-block: calc(var(--analysis-board-gutter) + 1px);
+    width: calc(var(--analysis-board-gutter) - 4px);
+  }
+  .desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) > [data-coordinate-axis="file"] {
+    inset-inline: calc(var(--analysis-board-gutter) + 1px);
+    bottom: -2px;
+    height: calc(var(--analysis-board-gutter) - 3px);
+  }
+  .desktop-analysis-screen .desktop-analysis-evaluation {
+    translate: none;
+    padding: 0;
+    width: calc(24px * var(--review-scale, 1));
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: calc(var(--review-board-gutter, 16px) + 1px);
+    height: calc(var(--review-board-size, 580px) - 2 * (var(--review-board-gutter, 16px) + 1px));
+  }
   .desktop-analysis-screen .desktop-analysis-stockfish { height: auto; max-height: 58%; overflow-y: auto; flex: 0 1 auto; }
   .desktop-analysis-screen .desktop-analysis-stockfish > div { height: auto; overflow: visible; }
   .desktop-analysis-screen .analysis-engine-status { flex-wrap: wrap; gap: 8px; }
@@ -1606,7 +1637,7 @@
 @media (min-width: 1024px) {
   .desktop-analysis-screen .analysis-engine-score {
     font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif !important;
-    font-size: 0.9375rem !important;
+    font-size: 0.8125rem !important;
     font-style: normal;
     font-weight: 500 !important;
     letter-spacing: -.015em;
@@ -1660,10 +1691,8 @@
   .desktop-analysis-screen > .desktop-analysis-panel {
     overflow:hidden!important;
     background:linear-gradient(158deg,#171b1b 0%,#141718 54%,#0e1112 100%)!important;
-    border:2px solid rgba(198,166,108,.50)!important;
-    box-shadow:inset 0 1px 0 rgba(248,223,171,.11),
-      inset 0 0 0 1px rgba(176,139,75,.10),
-      0 16px 38px rgba(0,0,0,.44)!important;
+    border:1px solid rgba(158,146,126,.34)!important;
+    box-shadow:0 10px 24px -16px rgba(0,0,0,.38)!important;
     isolation:isolate;
   }
   .desktop-analysis-screen .desktop-analysis-panel .analysis-redesign-header {
@@ -2007,13 +2036,14 @@ aside nav{padding-top:12px!important}
   .desktop-analysis-screen .desktop-analysis-stockfish {height:clamp(222px,43%,274px)!important;}
   .desktop-analysis-screen .analysis-engine-variations {gap:8px!important;}
   .desktop-analysis-screen .analysis-engine-variations > .analysis-engine-line {min-height:40px!important;padding:4px 8px!important;box-sizing:border-box;}
-  .desktop-analysis-screen .analysis-engine-score[data-score-side] {box-sizing:border-box;height:30px!important;min-height:30px!important;max-height:30px!important;align-self:center;margin-block:auto;flex:0 0 58px;width:58px!important;min-width:58px!important;max-width:58px!important;}
+  .desktop-analysis-screen .analysis-engine-score[data-score-side] {box-sizing:border-box;height:28px!important;min-height:28px!important;max-height:28px!important;align-self:center;margin-block:auto;flex:0 0 56px;width:56px!important;min-width:56px!important;max-width:56px!important;}
   .desktop-analysis-screen .analysis-engine-line {gap:7px!important;}
   .desktop-analysis-screen .analysis-engine-moves {gap:2px 3px!important;font-size:.79rem!important;letter-spacing:-.15px;mask-image:none!important;overflow:hidden!important;}
-  .desktop-analysis-screen .desktop-analysis-bottom-actions {width:100%;display:flex;align-items:center;gap:8px;padding:7px 10px;position:relative;z-index:40;box-sizing:border-box;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions {width:100%;display:flex;align-items:center;gap:8px;padding:10px 16px 12px;position:relative;z-index:40;box-sizing:border-box;}
   .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button,
   .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-save-wrapper {flex:1 1 0;min-width:0;margin:0;}
-  .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button {width:0;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button {width:0;padding-inline:8px;gap:6px;white-space:nowrap;overflow:hidden;}
+  .desktop-analysis-screen .desktop-analysis-new-button > span {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .desktop-analysis-screen .desktop-analysis-bottom-actions .desktop-analysis-save-menu-root,
   .desktop-analysis-screen .desktop-analysis-bottom-actions .desktop-analysis-save-button {width:100%;box-sizing:border-box;}
   .desktop-analysis-screen .desktop-analysis-save-feedback {position:absolute;bottom:calc(100% + 2px);left:0;pointer-events:none;padding:2px 5px;background:#181917;border-radius:4px;}
@@ -2024,7 +2054,7 @@ aside nav{padding-top:12px!important}
   .desktop-analysis-screen > .desktop-analysis-panel {box-sizing:border-box;width:var(--review-panel-width)!important;min-width:0!important;max-width:var(--review-panel-width)!important;margin-left:0!important;}
 }
 @media (min-width:1280px) {
-  #root aside {width:260px;min-width:260px;max-width:260px;}
+  #root aside {width:240px;min-width:240px;max-width:240px;}
   #root aside .site-nav-link .site-nav-label {white-space:nowrap;}
 }
 
@@ -2053,4 +2083,79 @@ aside nav{padding-top:12px!important}
 /* Owner follow-up: make secondary Stockfish SAN legible without changing scores or the leading moves. */
 @media (min-width:1024px) {
   .desktop-analysis-screen .analysis-engine-moves span.text-neutral-400 { color:#c5c7c3; }
+}
+
+/* Match the already-approved postgame Stockfish label on desktop review. */
+@media (min-width: 1024px) {
+  .desktop-analysis-screen .analysis-stockfish-name {
+    color: #c0a47c !important;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-size: .82rem !important;
+    font-weight: 600 !important;
+    font-style: normal;
+    line-height: 1.3 !important;
+    letter-spacing: 0;
+    text-shadow: none;
+  }
+}
+
+/* PR #200 follow-up: align the panel with the *playing field*, not its 17px coordinate gutter.
+   Keep both desktop routes 12px smaller and preserve all bottom move navigation. */
+@media (min-width:1024px) {
+  .desktop-analysis-screen > .desktop-analysis-panel {
+    margin-top:var(--review-board-gutter, 16px)!important;
+    height:calc(var(--review-board-size, 580px) - 2 * var(--review-board-gutter, 16px))!important;
+  }
+  .desktop-analysis-screen .desktop-analysis-compact-opponent {display:none;}
+}
+@media (min-width:1024px) and (max-width:1279px) {
+  .desktop-analysis-screen {padding-right:calc(20px * var(--review-scale, 1))!important;}
+  .desktop-analysis-screen .desktop-analysis-player-top {display:none!important;}
+  .desktop-analysis-screen[data-review-players="true"] .desktop-analysis-player-top {
+    display:flex!important;
+  }
+  #root .desktop-analysis-screen h2.desktop-analysis-panel-title {
+    justify-content:space-between;
+    gap:12px;
+  }
+  .desktop-analysis-screen .desktop-analysis-compact-opponent {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex:0 1 auto;
+    min-width:0;
+    max-width:50%;
+    font:600 .75rem/1.3 Inter,system-ui,sans-serif;
+    background:none;
+    color:#d4d1ca;
+    -webkit-text-fill-color:#d4d1ca;
+  }
+}
+
+/* Flat Home and Analysis surfaces. Retain the board rings and keyboard focus indicators. */
+.home-screen-root .home-board,
+.desktop-analysis-screen .desktop-analysis-board-frame,
+.desktop-analysis-screen .desktop-analysis-evaluation > div {
+  --tw-shadow: 0 0 #0000 !important;
+}
+
+.home-screen-root .desktop-home-slogan,
+.home-screen-root .home-board > .touch-manipulation,
+.home-screen-root .home-board .aspect-square.border,
+.desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board),
+.desktop-analysis-screen :is(.desktop-analysis-main-board, .desktop-editor-board) .aspect-square.border,
+.desktop-analysis-screen :is(.desktop-analysis-panel, .analysis-redesign-header, .desktop-analysis-transport,
+  .analysis-redesign-menu-list, .desktop-analysis-save-menu, .mobile-analysis-tool-dialog, .mobile-analysis-actions-dialog),
+.desktop-analysis-screen .desktop-analysis-stockfish .panel-glow-cycle {
+  box-shadow: none !important;
+}
+
+/* Keep the long Schach-Treff club-action label readable inside its panel on desktop. */
+@media (min-width: 1024px) {
+  #root .schach-treff .st-room-list .st-create-room {
+    box-sizing: border-box;
+    width: calc(100% + 20px);
+    max-width: none;
+    margin-left: -10px;
+  }
 }

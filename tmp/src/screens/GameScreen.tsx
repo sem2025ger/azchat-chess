@@ -2,6 +2,8 @@ import { lazy, Suspense, useState, useEffect, useLayoutEffect, useRef, useMemo, 
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import ChessBoard from '../components/ChessBoard';
+import GameResultDialog from '../components/GameResultDialog';
+import './LiveGameLayout.css';
 import { Flag, Handshake, ChevronLeft, ChevronRight, FastForward, Rewind, History, Cpu, RotateCcw, Clock, Map, FolderOpen, Pencil, X, ArrowUpDown } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -15,17 +17,23 @@ import { mobileAnalysisCopy } from '../components/analysis/mobileAnalysisCopy';
 import { type StockfishEngine, type EngineResult } from '../utils/StockfishEngine';
 import { acquireAnalysisEngine, releaseAnalysisEngine } from '../utils/analysisEngineSession';
 import { Chess, DEFAULT_POSITION, type Square } from 'chess.js';
+import { MultiverseComputerSession } from '../utils/multiverseComputer';
+import { type MultiverseBranch, replayMultiverseBranch } from '../utils/multiverse';
+import { multiverseCopy } from '../utils/multiverseCopy';
+import { loadMultiverseBranches, saveMultiverseBranches } from '../utils/multiverseStorage';
+import { MULTIVERSE_SHARE_PARAM, decodeMultiverseShare } from '../utils/multiverseShare';
+import MultiversePanel from '../components/analysis/MultiversePanel';
 
 
 import { createPositionMapSnapshot, selectPositionMapVariation, type PositionMapSnapshot } from '../utils/positionMapNavigation';
 import { positionMapLabel } from '../components/analysis/positionMapLabels';
-import { reviewLayout } from '../utils/reviewLayout';
+import { REVIEW_BOARD_GUTTER, reviewLayout } from '../utils/reviewLayout';
 import { annotatedPgn, type PositionEvaluation } from '../utils/positionMap';
 import { playChessSound, preloadChessSounds, setChessSoundMuted, type ChessSoundType } from '../utils/chessSounds';
 import { useThemeContext } from '../context/ThemeContext';
 import { createTimeoutManager } from '../utils/timeoutManager';
 import { emptyAnalysisSession, loadAnalysisSession, saveAnalysisSession } from '../utils/analysisSession';
-import { analysisMovePairs, playAnalysisMoveAtView, positionDraft, placeDraftPiece, analysisFromFen, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
+import { analysisMovePairs, playAnalysisMoveAtView, positionDraft, placeDraftPiece, analysisFromFen, analysisFromMoves, type PositionDraft, type AnalysisLoad } from '../utils/analysisWorkspace';
 import { analysisCopy } from '../components/analysis/copy';
 import { attachLiveRecovery, decodeLiveSnapshot } from '../utils/liveGameRecovery';
 import { displayPlayerName } from '../utils/displayPlayerName';
@@ -63,7 +71,33 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
   const words = analysisCopy[language];
-  const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position'>('analysis');
+  const mw = multiverseCopy[language];
+  const multiverseFlag = import.meta.env.VITE_CHESSAZ_MULTIVERSE === 'true';
+  // Share links and the Training tab belong to the Analysis route only.
+  const multiverseReview = mode === 'review' && multiverseFlag;
+  const [computerBranch, setComputerBranch] = useState<MultiverseBranch | null>(null);
+  const [computerError, setComputerError] = useState(false);
+  const [computerSide, setComputerSide] = useState<'w' | 'b'>('w');
+  const [computerDepth, setComputerDepth] = useState(8);
+  const [computerRoot, setComputerRoot] = useState<string | null>(null);
+  const computerSession = useRef<MultiverseComputerSession | null>(null);
+  const [multiverseNotice, setMultiverseNotice] = useState<string | null>(null);
+  // A shared link (?mv=) is decoded once; invalid payloads never replace the saved analysis.
+  const [sharedBranch] = useState<MultiverseBranch | null | 'invalid'>(() => {
+    if (!multiverseReview) return null;
+    const encoded = new URLSearchParams(window.location.search).get(MULTIVERSE_SHARE_PARAM);
+    if (!encoded) return null;
+    try { return decodeMultiverseShare(encoded, `shared-${Date.now()}`); } catch { return 'invalid'; }
+  });
+  const [savedBranches, setSavedBranches] = useState<MultiverseBranch[]>(() => {
+    const stored = multiverseFlag && typeof localStorage !== 'undefined' ? loadMultiverseBranches(localStorage) : [];
+    if (sharedBranch && sharedBranch !== 'invalid' && !stored.some(b => b.rootFen === sharedBranch.rootFen && b.moves.join(' ') === sharedBranch.moves.join(' '))) return [...stored.slice(-19), sharedBranch];
+    return stored;
+  });
+  useEffect(() => { if (multiverseFlag && typeof localStorage !== 'undefined') saveMultiverseBranches(savedBranches, localStorage); }, [multiverseFlag, savedBranches]);
+  const endComputer = () => { computerSession.current?.stop(); computerSession.current = null; setComputerBranch(null); setComputerRoot(null); setComputerError(false); };
+  useEffect(() => () => { computerSession.current?.stop(); computerSession.current = null; }, []);
+  const [workspaceTab, setWorkspaceTab] = useState<'analysis' | 'map' | 'games' | 'position' | 'multiverse'>('analysis');
   const [mapSnapshot, setMapSnapshot] = useState<PositionMapSnapshot | null>(null);
   // The mobile analysis tools open only on demand; preserve the full-size board.
   const [mobileTool, setMobileTool] = useState<'map' | 'games' | 'position' | null>(null);
@@ -82,6 +116,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
   const [loadedGameTitle, setLoadedGameTitle] = useState('');
   const [loadedGameDetails, setLoadedGameDetails] = useState<{ white: string; black: string; timeControl?: string } | null>(null);
+  const hasReviewPlayers = Boolean(loadedGameDetails && (loadedGameDetails.white.trim() || loadedGameDetails.black.trim()));
   const [editingPosition, setEditingPosition] = useState(false);
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1024px)');
@@ -91,7 +126,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     media.addEventListener('change', closeOnDesktop);
     return () => media.removeEventListener('change', closeOnDesktop);
   }, []);
-  const tabBeforeEditor = useRef<'analysis' | 'map' | 'games'>('analysis');
+  const tabBeforeEditor = useRef<'analysis' | 'map' | 'games' | 'multiverse'>('analysis');
   const [editorSelectedPiece, setEditorSelectedPiece] = useState('P');
   const [positionDraftValue, setPositionDraftValue] = useState<PositionDraft>(() => positionDraft(new Chess().fen()));
   const [positionDraftUndo, setPositionDraftUndo] = useState<PositionDraft[]>([]);
@@ -118,7 +153,15 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const { user, profile } = useAuth();
   const [initialAnalysis] = useState(() => {
     if (mode !== 'review') return emptyAnalysisSession();
-    const sharedFen = new URLSearchParams(window.location.search).get('fen');
+    const params = new URLSearchParams(window.location.search);
+    const sharedVariation = import.meta.env.VITE_CHESSAZ_MULTIVERSE === 'true' ? params.get(MULTIVERSE_SHARE_PARAM) : null;
+    if (sharedVariation) {
+      try {
+        const branch = decodeMultiverseShare(sharedVariation, 'shared');
+        return { ...analysisFromMoves(branch.moves, branch.rootFen), viewMoveIndex: -1 };
+      } catch { /* Invalid shared variation never replaces saved analysis. */ }
+    }
+    const sharedFen = params.get('fen');
     if (sharedFen) {
       try { return analysisFromFen(sharedFen); } catch { /* Invalid shared input never replaces saved analysis. */ }
     }
@@ -137,6 +180,16 @@ export default function GameScreen({ mode }: GameScreenProps) {
       : false
   );
   const effectivePvLines = mode === 'review' && !isDesktop ? 2 : 3;
+  // The MULTIVERSE panel lives in the sidebar tab from lg upwards and below the board on smaller screens; never both.
+  const [isWideDesktop, setIsWideDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches);
+  useEffect(() => {
+    if (!multiverseFlag) return;
+    const media = window.matchMedia('(min-width: 1024px)');
+    const handleChange = (event: MediaQueryListEvent) => setIsWideDesktop(event.matches);
+    setIsWideDesktop(media.matches);
+    media.addEventListener('change', handleChange);
+    return () => media.removeEventListener('change', handleChange);
+  }, [multiverseFlag]);
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 768px)');
@@ -221,15 +274,36 @@ export default function GameScreen({ mode }: GameScreenProps) {
     if (!workspace) return;
     const measure = () => {
       if (!window.matchMedia('(min-width: 1024px)').matches) return;
-      const next = reviewLayout(workspace.clientWidth, workspace.clientHeight);
-      if (next.boardSize > 0) setReviewGeometry(previous => previous?.scale === next.scale ? previous : next);
+      const reference = getComputedStyle(workspace, '::before');
+      const homeFrame = parseFloat(reference.width);
+      const homeInset = parseFloat(reference.paddingLeft);
+      const height = workspace.clientHeight;
+      const wide = window.matchMedia('(min-width: 1280px)').matches;
+      // Home centers the frame together with its 51px controls and 12px gap.
+      const homeTop = homeInset + (wide
+        ? (height - homeFrame - 63) / 2
+        : parseFloat(getComputedStyle(document.documentElement).fontSize) / 2);
+      const compact = window.matchMedia('(max-width: 1279px)').matches;
+      // Reproduce Home's centered desktop grid position, not only its board width.
+      const gridWidth = Math.min(workspace.clientWidth, 85 * parseFloat(getComputedStyle(document.documentElement).fontSize));
+      const gridGap = Math.min(32, Math.max(24, window.innerWidth * .022));
+      const firstTrack = .6 * (gridWidth - 56 - gridGap);
+      const homeColumn = Math.min(622, window.innerHeight - 112, firstTrack - 12);
+      const homeFieldLeft = wide
+        ? (workspace.clientWidth - gridWidth) / 2 + 28 + (firstTrack - homeColumn) / 2 + 12
+        : undefined;
+      const next = reviewLayout(workspace.clientWidth, height, homeFrame - 2 * homeInset, homeTop, compact, hasReviewPlayers, homeFieldLeft);
+      if (next.boardSize > 0) setReviewGeometry(previous =>
+        previous?.scale === next.scale && previous.boardSize === next.boardSize &&
+          previous.panelWidth === next.panelWidth && previous.topInset === next.topInset ? previous : next
+      );
     };
     const observer = new ResizeObserver(measure);
     observer.observe(workspace);
     window.addEventListener('resize', measure);
     measure();
     return () => { observer.disconnect(); window.removeEventListener('resize', measure); };
-  }, [mode]);
+  }, [mode, hasReviewPlayers]);
 
   const playerFlag = profile?.countryCode
     ? countryCodeToFlag(profile.countryCode)
@@ -247,10 +321,24 @@ export default function GameScreen({ mode }: GameScreenProps) {
   const [moveRejectMessage, setMoveRejectMessage] = useState<string | null>(null);
   const [disconnectNotice, setDisconnectNotice] = useState<string | null>(null);
   const [gameOverMessage, setGameOverMessage] = useState<string | null>(null);
+  const confirmedEndedRoomRef = useRef<string | null>(null);
+  const postGameAnalysisRoomRef = useRef<string | null>(null);
+  const [postGameAnalysisRoom, setPostGameAnalysisRoom] = useState<string | null>(null);
+  const isPostGameAnalysis = isMultiplayer && postGameAnalysisRoom === roomId;
+  // Training is available in Analysis and, after the result is dismissed, on the finished online game.
+  const multiverseEnabled = multiverseFlag && (mode === 'review' || isPostGameAnalysis);
+  const dismissResult = useCallback(() => {
+    // A connection error is not confirmation that the online game has ended.
+    if (isMultiplayer && roomId && confirmedEndedRoomRef.current === roomId) {
+      postGameAnalysisRoomRef.current = roomId;
+      setPostGameAnalysisRoom(roomId);
+    }
+    setActiveTab('analysis');
+  }, [isMultiplayer, roomId, setActiveTab]);
   const [drawOfferBy, setDrawOfferBy] = useState<'w' | 'b' | null>(null);
   const [gameActionMessage, setGameActionMessage] = useState<string | null>(null);
   const isLiveMultiplayer = isMultiplayer && !gameOverMessage;
-  const analysisActive = !isLiveMultiplayer && (isDesktop || activeTab === 'analysis');
+  const analysisActive = !isLiveMultiplayer && !computerBranch && (isDesktop || activeTab === 'analysis');
   const canSendGameAction =
     isMultiplayer && isConnected && syncedRoom === roomId && Boolean(socket) && Boolean(roomId) && !gameOverMessage;
 
@@ -297,8 +385,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   useEffect(() => {
     if (!socket || !roomId) return;
-    const isCurrentRoomEvent = (data: any) => !data?.roomId || data.roomId === roomId;
+    // Once the result is dismissed, this workspace is a local analysis only.
+    const isLocalAnalysis = () => postGameAnalysisRoomRef.current === roomId;
+    const isCurrentRoomEvent = (data: any) => !isLocalAnalysis() && (!data?.roomId || data.roomId === roomId);
     const onStart = (data: any) => {
+      if (!isCurrentRoomEvent(data)) return;
       setTimeLeft({ white: data.whiteTime, black: data.blackTime });
     };
     const onUpdate = (data: any) => {
@@ -336,15 +427,18 @@ export default function GameScreen({ mode }: GameScreenProps) {
     };
     const onGameOver = (data: any) => {
       if (!isCurrentRoomEvent(data)) return;
+      confirmedEndedRoomRef.current = roomId;
       timeoutManagerRef.current.clear('gameActionMessage');
       timeoutManagerRef.current.clear('disconnectNotice');
       setDrawOfferBy(null);
       setGameActionMessage(null);
       setDisconnectNotice(null);
       setGameOverMessage(mapGameOverReasonRef.current(data, playerColorRef.current));
+      setActiveTab('analysis');
     };
 
     const onMoveRejected = (data: { reason?: string }) => {
+      if (isLocalAnalysis()) return;
       locallyPlayedFenRef.current = null;
       const confirmedFen = lastConfirmedFenRef.current;
       const rollbackGame = new Chess(confirmedFen);
@@ -432,6 +526,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
         setServerColor({ roomId, color: snapshot.color });
       }
       setGameOverMessage(snapshot.ended ? mapGameOverReasonRef.current(data.outcome, playerColorRef.current) : null);
+      if (snapshot.ended) {
+        confirmedEndedRoomRef.current = roomId;
+        setActiveTab('analysis');
+      }
       if (data?.whiteTime !== undefined) {
         setTimeLeft({ white: data.whiteTime, black: data.blackTime });
       }
@@ -441,6 +539,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
     };
 
     const onSessionExpired = () => {
+      if (isLocalAnalysis()) return;
       setSyncedRoom(null);
       timeoutManagerRef.current.clear('disconnectNotice');
       setDisconnectNotice(null);
@@ -491,6 +590,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
   }, [socket, roomId]);
 
   useEffect(() => {
+    confirmedEndedRoomRef.current = null;
+    postGameAnalysisRoomRef.current = null;
+    setPostGameAnalysisRoom(null);
     setDrawOfferBy(null);
     setGameActionMessage(null);
   }, [roomId]);
@@ -506,6 +608,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const loadWorkspaceAnalysis = (analysis: AnalysisLoad, title = '', details?: { white: string; black: string; timeControl?: string }) => {
     if (mode !== 'review') return;
+    endComputer();
     engineRef.current?.stop();
     setEvaluations({});
     setPlanHighlight(null);
@@ -529,6 +632,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
   };
 
   const startNewAnalysis = () => {
+    endComputer();
     engineRef.current?.stop();
     setEvaluations({});
     setPlanHighlight(null);
@@ -637,17 +741,22 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
   const handleGameMove = useCallback(
     (source: string, target: string, promotion: string = 'q') => {
-      if (isMultiplayer && !canSendGameAction) return false;
+      if (computerBranch) {
+        // Training move against the local Stockfish session; never reaches the socket.
+        const uci = `${source}${target}${promotion === 'q' ? '' : promotion}`;
+        return computerSession.current?.move(uci) ?? false;
+      }
+      if (isMultiplayer && !isPostGameAnalysis && !canSendGameAction) return false;
       // Replay of a live game is read-only. Analysis may branch at any past ply.
-      if (mode !== 'review' && viewMoveIndex !== -1) {
+      if (mode !== 'review' && !isPostGameAnalysis && viewMoveIndex !== -1) {
         setViewMoveIndex(-1);
         return false;
       }
-      if (isMultiplayer && playerColor !== game.turn()) {
+      if (isMultiplayer && !isPostGameAnalysis && playerColor !== game.turn()) {
         return false;
       }
       try {
-        if (mode === 'review') {
+        if (mode === 'review' || isPostGameAnalysis) {
           const branch = playAnalysisMoveAtView(
             moveHistory, positionHistory, viewMoveIndex, source, target, promotion,
           );
@@ -659,7 +768,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
           setPositionHistory(analysis.positionHistory);
           setMoveHistory(analysis.moveHistory);
           setViewMoveIndex(-1);
-          setGameOverMessage(analysis.game.isGameOver()
+          // Keep the authoritative online outcome, including after analysis mate/draw.
+          if (!isPostGameAnalysis) setGameOverMessage(analysis.game.isGameOver()
             ? analysis.game.isCheckmate() ? 'Game over: checkmate.'
               : analysis.game.isStalemate() ? 'Game over: stalemate.'
               : 'Game over: draw.'
@@ -699,7 +809,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       }
       return false;
     },
-    [viewMoveIndex, moveHistory, positionHistory, game, socket, roomId, sound, mode, isMultiplayer, playerColor, canSendGameAction, setViewMoveIndex]
+    [computerBranch, viewMoveIndex, moveHistory, positionHistory, game, socket, roomId, sound, mode, isMultiplayer, isPostGameAnalysis, playerColor, canSendGameAction, setViewMoveIndex]
   );
 
 
@@ -762,7 +872,75 @@ export default function GameScreen({ mode }: GameScreenProps) {
     }
   }, [game, viewMoveIndex, positionHistory]);
 
-  const currentEngineResult = mode === 'review' && engineResult?.analyzedFen !== displayedGame.fen() ? null : engineResult;
+  const computerGame = useMemo(() => computerBranch ? replayMultiverseBranch(computerBranch) : null, [computerBranch]);
+  const beginComputer = (fen: string) => {
+    if (!multiverseEnabled) return;
+    endComputer();
+    engineRef.current?.stop();
+    try {
+      const session = new MultiverseComputerSession(fen, computerSide, computerDepth, setComputerBranch, () => setComputerError(true));
+      computerSession.current = session;
+      setComputerRoot(fen);
+      setComputerBranch(session.getBranch());
+      setEditingPosition(false);
+      setWorkspaceTab('multiverse');
+    } catch { setComputerError(true); }
+  };
+  const saveComputerBranch = () => {
+    if (!computerBranch || computerBranch.moves.length === 0) return;
+    const entry = { ...computerBranch, id: `${Date.now()}`, label: `${mw.branch} ${savedBranches.length + 1}` };
+    setSavedBranches(old => [...old.slice(-19), entry]);
+    setMultiverseNotice(mw.saved);
+  };
+  const openSavedBranch = (branch: MultiverseBranch) => {
+    endComputer();
+    if (mode !== 'review') {
+      // The finished online game stays untouched: open the variation on the Analysis route instead.
+      try { saveAnalysisSession(branch.moves, -1, undefined, branch.rootFen); navigate('/game'); } catch { setComputerError(true); }
+      return;
+    }
+    try { loadWorkspaceAnalysis({ ...analysisFromMoves(branch.moves, branch.rootFen), viewMoveIndex: -1 }, branch.label); } catch { setComputerError(true); }
+  };
+  // Leaving the postgame workspace (new game, room change) ends any running training session.
+  useEffect(() => {
+    if (multiverseEnabled || !computerSession.current) return;
+    endComputer();
+  }, [multiverseEnabled]);
+  useEffect(() => {
+    if (!multiverseNotice) return;
+    const timer = setTimeout(() => setMultiverseNotice(null), 2500);
+    return () => clearTimeout(timer);
+  }, [multiverseNotice]);
+  useEffect(() => {
+    if (sharedBranch === null) return;
+    setMultiverseNotice(sharedBranch === 'invalid' ? mw.sharedInvalid : mw.shared);
+    setWorkspaceTab('multiverse');
+    const nextParams = new URLSearchParams(window.location.search);
+    nextParams.delete(MULTIVERSE_SHARE_PARAM);
+    navigate({ search: nextParams.toString() }, { replace: true });
+    // Runs once for the initial URL; copy language changes must not re-trigger it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedBranch]);
+  const multiversePanel = multiverseEnabled ? <MultiversePanel
+    mw={mw}
+    playable={!computerBranch && !displayedGame.isGameOver()}
+    computerBranch={computerBranch}
+    computerGame={computerGame}
+    computerError={computerError}
+    computerSide={computerSide}
+    computerDepth={computerDepth}
+    onSideChange={setComputerSide}
+    onDepthChange={setComputerDepth}
+    onPlayFromHere={() => beginComputer(displayedGame.fen())}
+    onRetry={() => computerRoot && beginComputer(computerRoot)}
+    onReturn={endComputer}
+    onSave={saveComputerBranch}
+    savedBranches={savedBranches}
+    onOpen={openSavedBranch}
+    onDelete={id => setSavedBranches(old => old.filter(x => x.id !== id))}
+    notice={multiverseNotice}
+  /> : null;
+  const currentEngineResult = (mode === 'review' || isPostGameAnalysis) && engineResult?.analyzedFen !== displayedGame.fen() ? null : engineResult;
   const openPositionMap = () => {
     setEditingPosition(false);
     setPlanHighlight(null);
@@ -958,7 +1136,17 @@ export default function GameScreen({ mode }: GameScreenProps) {
     if (selection) setMobileTool(null);
   }, []);
   return (
-    <div ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? { "--review-scale": reviewGeometry.scale, "--review-board-size": `${reviewGeometry.boardSize}px`, "--review-board-column": `${reviewGeometry.boardColumn}px`, "--review-panel-width": `${reviewGeometry.panelWidth}px`, "--review-column-gap": `${reviewGeometry.columnGap}px` } as CSSProperties : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center lg:-mt-4 min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", !isMultiplayer && "xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
+    <div data-live-game-layout={isMultiplayer ? "" : undefined} data-postgame-analysis={isPostGameAnalysis ? "" : undefined} ref={reviewWorkspaceRef} style={mode === 'review' && reviewGeometry ? {
+      "--review-scale": reviewGeometry.scale,
+      "--review-board-size": `${reviewGeometry.boardSize}px`,
+      "--review-board-column": `${reviewGeometry.boardColumn}px`,
+      "--review-panel-width": `${reviewGeometry.panelWidth}px`,
+      "--review-column-gap": `${reviewGeometry.columnGap}px`,
+      "--review-board-gutter": `${REVIEW_BOARD_GUTTER}px`,
+      "--review-top-label": `${reviewGeometry.topLabel}px`,
+      "--review-top-inset": `${reviewGeometry.topInset}px`,
+      "--review-left-inset": `${reviewGeometry.leftInset}px`,
+    } as CSSProperties : undefined} data-review-players={mode === 'review' && hasReviewPlayers ? 'true' : undefined} className={cx("flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[100rem] mx-auto px-0 md:px-2 lg:px-4 xl:px-6 pb-12 md:pb-6 lg:pb-1 pt-0 md:pt-2 lg:pt-0 gap-1 md:gap-4 lg:gap-3 overflow-y-auto lg:overflow-hidden bg-transparent relative lg:items-center min-h-full lg:h-[calc(100vh-85px)] max-md:h-full max-md:max-h-full max-md:min-h-0 max-md:pb-1 max-md:gap-0 max-md:overflow-hidden", isMultiplayer ? "lg:py-4" : "lg:-mt-4 xl:h-[calc(100vh-40px)] xl:translate-y-[32px]", mode === 'review' ? "desktop-analysis-screen" : "animate-fade-in transition-all")}>
 
       {mode === 'review' && <>
         <MobileAnalysisHeader activeTab={activeTab} onTab={setActiveTab}
@@ -988,7 +1176,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
       )}
             {/* Mobile analysis panel above the board */}
       {mode !== 'review' && !isLiveMultiplayer && (
-        <section className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
+        <section data-postgame-mobile-analysis={isMultiplayer ? "" : undefined} className="md:hidden mx-1 mt-1 mb-1 overflow-hidden rounded-xl border border-white/[0.08] bg-[#111310]/95 ring-1 ring-cyan-400/10 shrink-0 shadow-[0_10px_24px_-18px_rgba(0,206,209,0.45)]">
           <div className="min-h-14 grid grid-cols-[max-content_minmax(0,1fr)_max-content] items-center gap-1 px-1.5 py-1.5 border-b border-white/[0.08] bg-gradient-to-r from-cyan-950/30 via-black/25 to-black/40">
             <div className="flex min-w-0 shrink-0 items-center gap-1">
               <button
@@ -1016,7 +1204,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 Moves
               </button>
             </div>
-            <div className="min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-cyan-100 bg-cyan-500/15 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] whitespace-nowrap">
+            <div className="postgame-stockfish-name min-h-11 min-w-0 justify-self-end flex items-center rounded-lg px-2 text-[0.875rem] font-bold text-cyan-100 bg-cyan-500/15 ring-1 ring-cyan-400/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] whitespace-nowrap">
               <span>Stockfish 19</span>
             </div>
           </div>
@@ -1047,7 +1235,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 return (
                   <div key={index} aria-label={`Engine line ${index + 1}`} className="min-h-10 grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-2 border-b border-white/[0.06] last:border-b-0">
                     <div className={cx(
-                      "h-8 rounded-lg flex items-center justify-center font-mono text-[0.82rem] font-black border",
+                      "postgame-engine-score h-8 rounded-lg flex items-center justify-center font-mono text-[0.82rem] font-black border",
                       score.startsWith('+')
                         ? "bg-white text-black border-white"
                         : score.startsWith('-')
@@ -1056,7 +1244,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                     )}>
                       {score}
                     </div>
-                    <div tabIndex={0} aria-label={`Moves for engine line ${index + 1}`} className="min-w-0 whitespace-nowrap overflow-x-auto overscroll-x-contain touch-pan-x py-2 text-[0.8125rem] leading-5 font-semibold text-neutral-100 tracking-tight">
+                    <div tabIndex={0} aria-label={`Moves for engine line ${index + 1}`} className="postgame-engine-moves min-w-0 whitespace-nowrap overflow-x-auto overscroll-x-contain touch-pan-x py-2 text-[0.8125rem] leading-5 font-semibold text-neutral-100 tracking-tight">
                       {moves}
                     </div>
                   </div>
@@ -1163,9 +1351,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
       )}
 
       {/* Mobile Analysis Drawer Header */}
-      <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 group w-full py-0 lg:-translate-y-4 lg:flex-1", !isMultiplayer && "lg:min-w-0", mode === 'review' ? "desktop-analysis-board-column" : "animate-scale-up")}>
+      <div className={cx("flex flex-col items-center justify-start lg:justify-between relative min-h-0 group w-full py-0 lg:flex-1", isMultiplayer && "live-game-board-column", !isMultiplayer && "lg:min-w-0 lg:-translate-y-4", mode === 'review' ? "desktop-analysis-board-column" : "animate-scale-up")}>
 
-        <div className={cx("w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]", mode === 'review' && "desktop-analysis-board-stack")}>
+        <div className={cx("live-game-board-stack w-full lg:max-w-[70vh] xl:max-w-[82vh] flex flex-col justify-start lg:justify-center gap-0 md:gap-2 lg:gap-1 relative mx-auto min-h-0 lg:h-full", !isMultiplayer && "lg:!max-w-[74vh] xl:!max-w-[94vh]", mode === 'review' && "desktop-analysis-board-stack")}>
 
           {mode === 'review' && (
             <header className="desktop-analysis-hero hidden lg:flex shrink-0 min-w-0 items-center justify-between gap-3 px-2" aria-label={words.analysis}>
@@ -1177,8 +1365,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </header>
           )}
 
-          {/* Colour labels follow the board orientation; loaded games supply player names. */}
-          {mode === 'review' && (
+          {/* Player names are shown only for loaded games, never as generic colour labels. */}
+          {mode === 'review' && hasReviewPlayers && (
             <div className="desktop-analysis-player-top hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
               <div className="flex min-w-0 items-center gap-2">
                 <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-500", playerColor === 'w' ? "bg-neutral-950" : "bg-[#f5f2e8]")} />
@@ -1199,7 +1387,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
             !isMultiplayer && "hidden md:flex",
             mode === 'review' && "lg:hidden"
-          )}>
+          )} data-live-game-player={isMultiplayer ? "opponent" : undefined}>
             <div className="flex min-w-0 flex-1 items-center gap-2.5 pr-2">
               <div className="relative w-8 h-8 bg-neutral-900 rounded-lg border border-white/10 ring-1 ring-black flex items-center justify-center">
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-[2px] border-[#161512] animate-pulse" />
@@ -1212,17 +1400,18 @@ export default function GameScreen({ mode }: GameScreenProps) {
               </div>
             </div>
             <div className="bg-[#1a1a1a] px-3 py-1 rounded-lg border-b-[2px] border-neutral-800 font-mono text-lg font-black text-neutral-400 shadow-xl flex items-center justify-center min-w-[75px] ring-1 ring-white/5">
-              {isMultiplayer ? formatTime(timeLeft.black) : '--:--'}
+              {isMultiplayer ? formatTime(playerColor === 'w' ? timeLeft.black : timeLeft.white) : '--:--'}
             </div>
           </div>
 
-          <div className={cx("relative flex gap-0 md:gap-6 w-full justify-center group/board items-center py-0 md:py-1 lg:h-full lg:min-h-0 lg:flex-1", mode === 'review' && "desktop-analysis-board-row")}>
+          <div className={cx("relative flex gap-0 md:gap-6 w-full justify-center group/board items-center py-0 md:py-1 lg:h-full lg:min-h-0 lg:flex-1", isMultiplayer && "live-game-board-row", mode === 'review' && "desktop-analysis-board-row")}>
 
-            {/* Desktop evaluation bar — preserved from production. */}
-            <div className={cx(
+            {/* Evaluation stays outside the online board geometry. */}
+            <div aria-hidden={!analysisActive} className={cx(
               "hidden md:block self-stretch rounded-2xl overflow-hidden py-1",
               mode !== 'review' && "transition-all duration-1000 ease-in-out",
               analysisActive ? "w-6 md:w-8 opacity-100 translate-x-0" : "w-0 opacity-0 overflow-hidden -translate-x-8 pointer-events-none",
+              isMultiplayer && "live-game-evaluation",
               mode === 'review' && "desktop-analysis-evaluation"
             )}>
               <EvaluationBar
@@ -1234,6 +1423,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             </div>
 
             <div ref={analysisBoardRef} className={cx(
+              isMultiplayer && "live-game-board-frame",
               mode === 'review' && "desktop-analysis-board-frame",
               "max-w-none shrink min-w-0 aspect-square relative rounded-none md:rounded-[1.5rem] overflow-hidden shadow-2xl md:shadow-[0_45px_100px_-20px_rgba(0,0,0,1)] border-b-[2px] md:border-b-[8px] border-black/60 ring-0 md:ring-1 ring-white/5 mx-auto sm:max-w-[560px] lg:max-w-none lg:flex-1 lg:max-h-full",
               isMultiplayer
@@ -1241,20 +1431,10 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 : "w-[min(100%,calc(100dvh-18rem-env(safe-area-inset-bottom,0px)))] max-md:!aspect-[50/51] border-b-0 md:w-full md:border-b-[8px] lg:!w-full lg:!max-w-[min(630px,calc(100dvh-120px))] lg:!flex-[0_1_auto]",
               mode !== 'review' && "transition-[width] duration-300"
             )}>
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10" />
+              <div className={cx("absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none z-10", mode === 'review' && "lg:hidden")} />
               
               {gameOverMessage ? (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-                  <div className="bg-neutral-900 border border-white/10 p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 text-center">
-                    <span className="text-white font-black text-xl tracking-wide">{gameOverMessage}</span>
-                    <button 
-                      onClick={() => navigate('/play')} 
-                      className="bg-chess-active hover:bg-chess-active/80 text-white px-6 py-2 rounded-xl font-bold transition-all active:scale-95 shadow-lg"
-                    >
-                      New Game
-                    </button>
-                  </div>
-                </div>
+                <GameResultDialog key={`${roomId}:${gameOverMessage}`} message={gameOverMessage} onDismiss={dismissResult} onNewGame={() => navigate('/play')} />
               ) : disconnectNotice ? (
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-amber-600/90 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-2xl backdrop-blur-md animate-fade-in text-center pointer-events-none">
                   {disconnectNotice}
@@ -1270,15 +1450,18 @@ export default function GameScreen({ mode }: GameScreenProps) {
                   <EditorBoard draft={positionDraftValue} selected={editorSelectedPiece} words={words} onPlace={placePositionPiece} onMove={movePositionPiece} />
                 </Suspense>
               ) : <ChessBoard
-                className={!isMultiplayer ? `p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 max-md:[&_.aspect-square]:!aspect-[50/51] ${mode === 'review' ? 'desktop-analysis-main-board transition-none duration-0' : ''}` : undefined}
+                className={isMultiplayer ? 'live-game-chessboard' : `p-0 border-0 rounded-none md:p-3 md:border-[6px] md:rounded-lg max-md:[&_[draggable]_img]:scale-110 max-md:[&_.aspect-square]:!aspect-[50/51] ${mode === 'review' ? 'desktop-analysis-main-board transition-none duration-0' : ''}`}
+                externalCoordinates={isMultiplayer}
                 externalCoordinatesOnDesktop={mode === 'review'}
                 highlightedSquares={mode === 'review' && workspaceTab === 'map' && planHighlight?.fen === displayedGame.fen() ? planHighlight.squares : undefined}
                 overrideBoardTheme={boardTheme}
-                confirmMovesMobile={mode === 'live' && confirmMobileMoves}
-                game={displayedGame}
+                confirmMovesMobile={mode === 'live' && !isPostGameAnalysis && confirmMobileMoves}
+                game={computerGame || displayedGame}
                 onMove={handleGameMove}
-                orientation={mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
-                readOnly={(mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn())}
+                orientation={computerBranch ? computerSide : mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
+                readOnly={computerBranch
+                  ? (computerGame?.turn() !== computerSide || computerError)
+                  : !isPostGameAnalysis && ((mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn()))}
               />}
             </div>
           </div>
@@ -1287,7 +1470,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             "flex justify-between items-center px-3 py-1 bg-black/40 rounded-xl border border-white/5 shadow-2xl backdrop-blur-xl ring-1 ring-white/5 shrink-0 z-10",
             !isMultiplayer && "hidden md:flex",
             mode === 'review' && "lg:hidden"
-          )}>
+          )} data-live-game-player={isMultiplayer ? "self" : undefined}>
             <div className="flex min-w-0 flex-1 items-center gap-2.5 pr-2">
               <div className="relative group/avatar">
                 <div className="w-8 h-8 bg-neutral-900 rounded-lg flex items-center justify-center overflow-hidden shadow-2xl border border-chess-gold/30 ring-1 ring-black group-hover/avatar:ring-chess-gold transition-all duration-500">
@@ -1314,11 +1497,11 @@ export default function GameScreen({ mode }: GameScreenProps) {
               </div>
             </div>
             <div className="bg-neutral-950 px-3 py-1 rounded-lg border-b-[2px] border-chess-active font-mono text-lg font-black text-white shadow-[0_15px_50px_-5px_rgba(0,206,209,0.5)] ring-1 ring-chess-active/40 flex items-center justify-center min-w-[75px] transition-all hover:translate-y-[-1px] active:translate-y-[1px]">
-              {isMultiplayer ? formatTime(timeLeft.white) : '--:--'}
+              {isMultiplayer ? formatTime(playerColor === 'w' ? timeLeft.white : timeLeft.black) : '--:--'}
             </div>
           </div>
 
-          {mode === 'review' && (
+          {mode === 'review' && hasReviewPlayers && (
             <div className="desktop-analysis-review-player-bottom hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
               <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-400", playerColor === 'w' ? "bg-[#f5f2e8]" : "bg-neutral-950")} />
               <span className="min-w-0 truncate font-semibold text-neutral-200" title={displayPlayerName(playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black)}>
@@ -1384,11 +1567,14 @@ export default function GameScreen({ mode }: GameScreenProps) {
           </button>}
         </nav>
       )}
+      {multiversePanel && !isWideDesktop && <div data-postgame-multiverse-mobile={mode !== 'review' ? "" : undefined} className={cx("lg:hidden mx-2 mb-2 shrink-0", mode !== 'review' && "order-4")}>{multiversePanel}</div>}
 
       {/* Professional Sidebar Sidebar Tabs */}
       <div className={cx("w-full lg:w-[440px] xl:w-[470px] lg:-left-10 lg:-top-[15px] shrink-0 flex flex-col bg-transparent md:bg-[#121212]/80 md:backdrop-blur-[60px] rounded-none md:rounded-[1.5rem] lg:rounded-[2rem] border-0 md:border-[2px] border-transparent shadow-none md:shadow-[0_20px_50px_-10px_rgba(0,0,0,0.8)] min-h-0 md:min-h-[400px] lg:h-[calc(82vh+30px)] lg:min-h-[630px] lg:max-h-[810px] relative overflow-hidden border-b-0 md:border-b-[4px] border-b-black/40 panel-glow-cycle mx-2 md:mx-0 max-md:flex-1 max-md:shrink max-md:mx-0", !isMultiplayer && "lg:left-0 lg:!w-[35%] xl:!w-[35%] lg:!max-w-[440px] xl:bg-[linear-gradient(155deg,#121715_0%,#101311_55%,#0C100E_100%)] xl:min-h-0 xl:max-h-none xl:h-[var(--analysis-board-height)]", mode === 'review' ? "desktop-analysis-panel" : "animate-fade-in-right transition-all")} style={!isMultiplayer && analysisBoardHeight !== null ? { "--analysis-board-height": `${analysisBoardHeight}px` } as CSSProperties : undefined}>
 
-        {mode === 'review' && <h2 className="desktop-analysis-panel-title hidden lg:flex" aria-label={words.analysis}>{words.analysis}</h2>}
+        {mode === 'review' && <h2 className="desktop-analysis-panel-title hidden lg:flex">
+          <span>{words.analysis}</span>
+        </h2>}
         {/* Premium Segmented Control Tab Navigation */}
         <nav className="hidden p-0.5 bg-black/40 border-b border-white/[0.03] relative z-20 shrink-0">
           <div className="flex bg-neutral-900/80 p-1 rounded-xl gap-0.5 relative overflow-hidden ring-1 ring-white/5">
@@ -1418,18 +1604,19 @@ export default function GameScreen({ mode }: GameScreenProps) {
         {mode === 'review' && (
           <>
             <nav aria-label={words.analysis} className="desktop-analysis-workspace-tabs hidden lg:flex shrink-0 items-center gap-1 border-b border-white/[0.06] bg-black/15 p-2">
-              {(['analysis', 'map', 'games'] as const).map(tab => (
+              {([...(['analysis', 'map', 'games'] as const), ...(multiverseReview ? (['multiverse'] as const) : [])]).map(tab => (
                 <button key={tab} type="button" aria-pressed={workspaceTab === tab} onClick={() => {
                   setEditingPosition(false);
                   setPlanHighlight(null);
                   if (tab === 'map') openPositionMap();
                   else setWorkspaceTab(tab);
                 }} className={cx("min-h-9 min-w-0 flex-1 rounded-xl px-2 text-xs font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-200", workspaceTab === tab ? "border border-amber-200/20 bg-gradient-to-br from-amber-200/10 via-[#1c1c18] to-teal-900/15 text-amber-100" : "border border-transparent text-neutral-500 hover:bg-white/5 hover:text-neutral-200")}>
-                  {tab === 'map' ? positionMapLabel[language] : words[tab]}
+                  {tab === 'map' ? positionMapLabel[language] : tab === 'multiverse' ? mw.tab : words[tab]}
                 </button>
               ))}
             </nav>
             <Suspense fallback={<p role="status" className="hidden lg:block p-4 text-xs text-neutral-400">{words.loading}</p>}>
+            {workspaceTab === 'multiverse' && multiversePanel && isWideDesktop && <div className="hidden lg:block min-h-0 flex-1 overflow-y-auto custom-scrollbar p-2">{multiversePanel}</div>}
             {workspaceTab === 'games'  && <div className="hidden lg:flex min-h-0 flex-1 flex-col"><SavedGamesPanel key={user?.id || 'guest'} userId={user?.id} language={language} words={words} onLoad={loadWorkspaceAnalysis} /></div>}
             {workspaceTab === 'map' && <div className="hidden lg:flex min-h-0 flex-1 flex-col">
               {mapSnapshot?.frozen && <button type="button" className="mx-4 mt-3 rounded-lg border border-amber-200/20 px-3 py-2 text-xs font-semibold text-amber-100 hover:bg-white/5" onClick={() => {
@@ -1463,12 +1650,14 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 candidates={currentEngineResult && analysisData?.continuation?.length ? [analysisData.continuation] : undefined}
                 lines={currentEngineResult?.analyzedFen === displayedGame.fen() ? analysisData?.lines : undefined}
                 reviewLayout={mode === 'review'}
+                stableLines={isMultiplayer}
                 requestedDepth={mode === 'review' ? analysisDepth : undefined}
                 onIncreaseDepth={mode === 'review' ? () => setAnalysisDepth(depth => Math.min(36, depth + 6)) : undefined}
                 error={engineFailed}
               />
             )}
           </div>
+          {mode !== 'review' && multiversePanel && isWideDesktop && <div data-postgame-multiverse="" className="shrink-0 max-h-[50%] overflow-y-auto custom-scrollbar p-2 border-b border-white/[0.06]">{multiversePanel}</div>}
 
           <div className={cx("flex-1 min-h-0 flex flex-col overflow-hidden bg-black/[0.1]", !isMultiplayer && "xl:bg-black/[0.025]")}>
             <div className="desktop-analysis-move-scroll flex-1 min-h-0 overflow-y-auto custom-scrollbar">
@@ -1528,17 +1717,17 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
 
 
-        {viewMoveIndex !== -1 && isMultiplayer && (
+        {viewMoveIndex !== -1 && isLiveMultiplayer && (
           <div className="md:hidden text-center text-chess-gold text-[0.58rem] font-bold animate-pulse mt-0.5 -mb-0.5 leading-none">
             Replay mode — press Live to move
           </div>
         )}
         {/* Mobile Move Controls Row */}
-        <div className={cx(
+        <div data-live-game-navigation className={cx(
           "md:hidden items-center justify-between gap-1.5 py-1 px-1 mx-2 shrink-0 mt-0 mb-1 z-10",
           isMultiplayer ? "flex" : "hidden"
         )}>
-          <button 
+          <button type="button" aria-label={t('game.navigation.first')}
             onClick={() => { if (hasHistory) setViewMoveIndex(0); }} 
             disabled={!hasHistory} 
             className="flex-1 flex justify-center text-white p-2 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"
@@ -1546,7 +1735,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             <Rewind size={18} />
           </button>
           
-          <button 
+          <button type="button" aria-label={t('game.navigation.previous')}
             onClick={() => {
               if (!hasHistory) return;
               const currentIndex = viewMoveIndex === -1 ? positionHistory.length - 1 : viewMoveIndex;
@@ -1558,7 +1747,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             <ChevronLeft size={20} />
           </button>
           
-          <button 
+          <button type="button" aria-label={t('game.navigation.last')}
             onClick={() => setViewMoveIndex(-1)} 
             disabled={!hasHistory} 
             className="flex-[1.35] flex justify-center text-white hover:text-white p-2 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-chess-active/90 to-chess-active/70 border border-chess-active/50 shadow-[0_5px_20px_rgba(0,206,209,0.4)] hover:shadow-[0_8px_25px_rgba(0,206,209,0.6)] ring-1 ring-chess-active/40"
@@ -1566,7 +1755,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             <History size={20} className={viewMoveIndex !== -1 ? "animate-pulse" : ""} />
           </button>
           
-          <button 
+          <button type="button" aria-label={t('game.navigation.next')}
             onClick={() => {
               if (!hasHistory) return;
               if (viewMoveIndex === -1) return;
@@ -1582,7 +1771,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
             <ChevronRight size={20} />
           </button>
           
-          <button 
+          <button type="button" aria-label={t('game.navigation.last')}
             onClick={() => setViewMoveIndex(-1)} 
             disabled={!hasHistory} 
             className="flex-1 flex justify-center text-white p-2 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-30 disabled:pointer-events-none bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-md shadow-xl hover:from-white/10 hover:to-white/5 hover:shadow-[0_0_20px_rgba(255,255,255,0.1)] ring-1 ring-white/5 hover:ring-white/20"

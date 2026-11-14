@@ -7,7 +7,7 @@ import { Home, Grid, MessageSquare, User, Settings, Circle, MapPin } from 'lucid
 import { premiumInterfaceThemes } from '../lib/interfaceThemes';
 import { useThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { type Language } from '../translations';
+import { languageOptions, type Language } from '../translations';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import RouteLoadingFallback from './RouteLoadingFallback';
@@ -76,10 +76,10 @@ export default function Layout() {
     )} data-analysis-route={isDesktopAnalysisRoute || undefined} data-reading-route={isReadingRoute || undefined} data-home-route={isHomeRoute || undefined}>
 
       {/* Premium Sidebar Navigation - Hidden on Mobile */}
-      <aside className="hidden md:flex w-20 xl:w-[260px] bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
+      <aside className="hidden md:flex w-20 xl:w-[240px] bg-[#11110f]/95 border-r border-white/[0.05] flex-col justify-between shrink-0 relative z-50 transition-all duration-500 overflow-hidden">
         <div className="flex flex-col flex-1 overflow-y-auto custom-scrollbar">
 
-          <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-6 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
+          <div className="h-16 xl:h-auto xl:py-3 flex items-center justify-center xl:justify-start px-2 xl:px-4 border-b border-white/[0.03] shrink-0 bg-white/[0.01]">
             <div className="flex flex-col overflow-hidden xl:overflow-visible justify-center w-full items-center xl:items-start">
               <div className="flex w-full items-center justify-center xl:justify-start gap-1.5 xl:gap-0" aria-label="Chessaz.de">
                 <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.72rem] xl:leading-[1.8rem] tracking-tight not-italic leading-none whitespace-nowrap text-center xl:text-left">
@@ -103,25 +103,27 @@ export default function Layout() {
             </div>
           </div>
 
-          <nav className="px-3 xl:px-5 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
+          <nav className="px-3 xl:px-4 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
             {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" themeColor="theme-gold" bronzeLabel />}
-            {desktop && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
+            {desktop && (import.meta.env.VITE_SPIELTAG_ENABLED === 'true' || import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true') && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
             {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label={t("nav.spieler")} themeColor="theme-blue" />}
           </nav>
         </div>
 
-        <div className="p-2 xl:p-5 space-y-3 border-t border-white/[0.05] bg-black/40 shadow-inner shrink-0">
+        <div className="p-2 xl:p-4 space-y-3 border-t border-white/[0.05] bg-black/40 shadow-inner shrink-0">
 
           {/* Shared six-language selector — persistent across routes */}
           <div className="flex flex-col gap-3">
-            <div className="hidden xl:flex bg-neutral-900/70 p-0.5 rounded-lg border border-white/10 shadow-[0_0_18px_rgba(34,211,238,0.14)] premium-cycle-container transition-all">
-              {(['en', 'de', 'az', 'tr', 'ua', 'ru'] as Language[]).map(lang => (
+            <div role="group" aria-label={t('settings.changeLanguage')} className="hidden lg:grid grid-cols-3 xl:flex bg-neutral-900/70 p-0.5 rounded-lg border border-white/10 shadow-[0_0_18px_rgba(34,211,238,0.14)] premium-cycle-container transition-all">
+              {languageOptions.map(({ id: lang, name }) => (
                 <button
                   key={lang}
+                  aria-label={name}
+                  aria-pressed={language === lang}
                   onClick={() => setLanguage(lang)}
                   className={cx(
                     "flex-1 py-1 text-[0.6rem] font-black uppercase rounded-md transition-colors transition-shadow duration-300 active:scale-95 sidebar-item",
@@ -134,9 +136,11 @@ export default function Layout() {
             </div>
 
             <div className="md:hidden grid grid-cols-3 gap-2 items-center mb-2 premium-cycle-container p-2 rounded-xl border border-white/5">
-              {(['en', 'de', 'az', 'tr', 'ua', 'ru'] as Language[]).map(lang => (
+              {languageOptions.map(({ id: lang, name }) => (
                 <button
                   key={lang}
+                  aria-label={name}
+                  aria-pressed={language === lang}
                   onClick={() => setLanguage(lang)}
                   className={cx(
                     "w-10 h-10 text-[0.7rem] font-black uppercase rounded-xl transition-all flex items-center justify-center sidebar-item",
@@ -204,7 +208,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       }
     >
       <div className="w-8 flex justify-center shrink-0 group-hover:scale-110 transition-transform duration-150 motion-reduce:transition-none">{icon}</div>
-      <span className="site-nav-copy ml-4 hidden xl:flex"><span className={cx("site-nav-label", bronzeLabel && "site-nav-label--bronze")}>{label}</span></span>
+      <span className="site-nav-copy ml-3 hidden xl:flex"><span className={cx("site-nav-label", bronzeLabel && "site-nav-label--bronze")}>{label}</span></span>
 
       {/* Active Indicator Dot */}
       <NavItemActiveDot />

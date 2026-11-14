@@ -58,6 +58,6 @@ export function findSettings(entries: SettingEntry[], search: string, names: Rec
 
 export const STYLE_PRESETS = {
   blitz: { board: 'Dark Green', pieces: 'neo', sound: 'Soft', background: 'Void Black' },
-  study: { board: 'Light Green', pieces: 'cburnett-classic', sound: 'Soft', background: 'Deep Space' },
-  focus: { board: 'Premium Graphite Gold', pieces: 'cburnett-classic', sound: 'Default', background: 'Obsidian Gold' },
+  study: { board: 'Light Green', pieces: 'tournament', sound: 'Soft', background: 'Deep Space' },
+  focus: { board: 'Premium Graphite Gold', pieces: 'tournament', sound: 'Default', background: 'Obsidian Gold' },
 } as const;

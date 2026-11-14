@@ -284,6 +284,34 @@ try {
   await waitFor("document.querySelectorAll('.analysis-engine-line').length === 3 && [...document.querySelectorAll('.analysis-engine-score')].every(score => score.textContent.trim() !== '—')");
   assert.equal(await evaluate("document.querySelectorAll('[aria-label^=\\\"Линий анализа:\\\" ]').length"),0,'Desktop has no line-count selector');
   assert.equal(await evaluate("getComputedStyle(document.querySelector('#mobile-analysis-details')).display"), 'none', 'Mobile panel stays hidden on desktop');
+  const frame = await evaluate(`(() => {
+    const wrapper = document.querySelector('.desktop-analysis-board-frame');
+    const board = wrapper.querySelector('.desktop-analysis-main-board');
+    const field = board.querySelector('.aspect-square.border');
+    const fieldRect = field.getBoundingClientRect();
+    const labelRects = axis => [...board.querySelectorAll('[data-coordinate-axis="' + axis + '"] span')].map(label => {
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      return range.getBoundingClientRect();
+    });
+    const ranks = labelRects('rank');
+    const files = labelRects('file');
+    return {
+      wrapperShadow: getComputedStyle(wrapper).boxShadow,
+      boardBackground: getComputedStyle(board).backgroundColor,
+      boardShadow: getComputedStyle(board).boxShadow,
+      fieldShadow: getComputedStyle(field).boxShadow,
+      border: getComputedStyle(field).borderWidth,
+      ranksOutside: ranks.length === 8 && ranks.every(label => label.right <= fieldRect.left - 2),
+      filesOutside: files.length === 8 && files.every(label => label.top >= fieldRect.bottom + 2),
+    };
+  })()`);
+  assert.equal(frame.wrapperShadow, 'none', 'The outer review wrapper must have no decorative frame');
+  assert.equal(frame.boardBackground, 'rgba(0, 0, 0, 0)', 'Coordinate gutters must show the page background');
+  assert.equal(frame.boardShadow, 'none');
+  assert.equal(frame.fieldShadow, 'none');
+  assert.equal(frame.border, '1px', 'Only the thin border at the playing field is visible');
+  assert.ok(frame.ranksOutside && frame.filesOutside, 'All 16 labels must be visibly outside the field border');
   console.log('PASS desktop fixed three-line Stockfish analysis');
   // The final owner polish must keep three PVs while making their typography readable
   // and restoring visible score insets on a wide desktop monitor.
@@ -300,13 +328,15 @@ try {
     const br=badge.getBoundingClientRect();
     return {lineHeights:lines.map(el=>el.getBoundingClientRect().height),
       fontSize:parseFloat(getComputedStyle(text).fontSize),topInset:br.top-row.top,
-      bottomInset:row.bottom-br.bottom,title:document.querySelector('.desktop-analysis-panel-title')?.textContent?.trim(),
+      bottomInset:row.bottom-br.bottom,title:document.querySelector('.desktop-analysis-panel-title')?.firstElementChild?.textContent?.trim(),
+      wideOpponentHidden:!document.querySelector('.desktop-analysis-compact-opponent'),
       width:document.querySelector('.desktop-analysis-panel')?.getBoundingClientRect().width};
   })()`);
   assert.deepEqual(ownerGeometry.lineHeights.map(Math.round),[46,46,46],JSON.stringify(ownerGeometry));
   assert.ok(ownerGeometry.fontSize>=14 && ownerGeometry.fontSize<=14.5,JSON.stringify(ownerGeometry));
   assert.ok(ownerGeometry.topInset>=4 && ownerGeometry.bottomInset>=4,JSON.stringify(ownerGeometry));
   assert.equal(ownerGeometry.title,'Анализ');
+  assert.equal(ownerGeometry.wideOpponentHidden,true,'Generic Black/White caption must not be rendered in empty Analysis');
   console.log('PASS owner final desktop 1920x880 geometry '+JSON.stringify(ownerGeometry));
 
   // Lobby layout is independent of game/analysis layout and needs no account.
