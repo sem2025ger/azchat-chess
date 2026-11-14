@@ -12,6 +12,8 @@ import {useLanguage} from '../../context/LanguageContext';
 import {openSpielerAnalysis} from '../../services/spieler';
 import {openingPrepLanguage} from '../../i18n/openingPrepCopy';
 import {coachChatCopy} from '../../i18n/coachChatCopy';
+import {chessyCopy} from '../../i18n/chessyCopy';
+import ChessyAvatar from './ChessyAvatar';
 import {readPositionSearchState,writePositionSearchState,positionSearchRevision} from '../../utils/positionSearchState';
 import {readCoachSpeech,createCoachPlayback} from '../../services/coachSpeech';
 import './CoachChat.css';
@@ -71,6 +73,7 @@ export default function CoachChat(props:Props){
 }
 function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}:Props){
  const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId();
+ const chessyEnabled=import.meta.env.VITE_CHESSY_ENABLED==='true',chessy=chessyCopy[lang],inputRef=useRef<HTMLInputElement>(null);
  const context=JSON.stringify([fen,side]);
  const [storageRevision]=useState(positionSearchRevision);
  const [headerTarget,setHeaderTarget]=useState<HTMLElement|null>(null);
@@ -221,11 +224,13 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    if(epoch.current===currentEpoch){busyRef.current=false;setBusy(null);setError(e instanceof DOMException&&e.name==='NotAllowedError'?t.micDenied:t.micUnavailable);}
   }
  }
+ const chessyState=recording?'listening':busy?'thinking':speechPlaying?'speaking':items.length?'ready':'idle';
  if(import.meta.env.VITE_AI_COACH_ENABLED!=='true')return null;
- return <section ref={sectionRef} className="coach-chat" aria-label={t.title}>
-  {(headerTarget?createPortal(<button type="button" className="coach-chat-toggle" aria-label={t.title} aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}><MessageSquare size={16}/>{t.askChat}</button>,headerTarget):<button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}><MessageSquare size={16}/>{t.title}</button>)}
+ return <section ref={sectionRef} className={chessyEnabled?'coach-chat chessy-enabled':'coach-chat'} aria-label={t.title}>
+  {(headerTarget?createPortal(<button type="button" className="coach-chat-toggle" aria-label={t.title} aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}>{chessyEnabled?<ChessyAvatar state={chessyState} compact/>:<MessageSquare size={16}/>}<span>{chessyEnabled?chessy.name:t.askChat}</span></button>,headerTarget):<button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}>{chessyEnabled?<ChessyAvatar state={chessyState} compact/>:<MessageSquare size={16}/>}<span>{chessyEnabled?chessy.name:t.title}</span></button>)}
 
   {open&&<div className="coach-chat-panel">
+   {chessyEnabled&&<div className="chessy-intro"><ChessyAvatar state={chessyState}/><div><strong>{chessy.name} · AI Coach</strong><p role="status">{chessy[chessyState]}</p></div></div>}
    <div className="coach-chat-actions"><button type="button" disabled={!items.length||!!busy||recording} onClick={()=>{if(!window.confirm(t.clearConfirm))return;cancel();setItems([]);setDraft('');setExpanded([]);setPreview(null);onVariationPreview?.([], -1);setScrollTop(0);setError('');}}><Trash2 size={15}/>{t.clearChat}</button></div>
    <div ref={listRef} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="coach-chat-history" role="log" aria-live="polite" aria-relevant="additions text">
     {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p className={m.archiveOnly?'coach-chat-archive-heading':undefined}>{m.text}</p>{m.role==='assistant'&&<>
@@ -240,10 +245,11 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    {!token&&<p className="coach-chat-error" role="status">{t.auth}</p>}
    {error&&<p className="coach-chat-error" role="alert">{error}</p>}
    {speechError&&<p className="coach-chat-error coach-chat-speech-error" role="alert">{speechError}</p>}
+   {chessyEnabled&&<div className="chessy-prompts" aria-label={chessy.promptsLabel}><span className="chessy-prompts-label">{chessy.promptsLabel}</span>{chessy.prompts.map(question=><button key={question} type="button" disabled={!token||!!busy||recording} onClick={()=>{setDraft(question);inputRef.current?.focus();}}>{question}</button>)}</div>}
    <label className="coach-chat-voice-option"><input type="checkbox" checked={voiceReplies} disabled={!token} onChange={e=>{voicePreference.current=e.target.checked;setVoiceReplies(e.target.checked);if(!e.target.checked)stopSpeech();}}/>{t.autoVoice}</label>
    <form className="coach-chat-compose" onSubmit={send}>
     <label className="sr-only" htmlFor={inputId}>{t.placeholder}</label>
-    <input id={inputId} value={draft} maxLength={500} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder} disabled={!token||!!busy||recording}/>
+    <input ref={inputRef} id={inputId} value={draft} maxLength={500} onChange={e=>setDraft(e.target.value)} placeholder={t.placeholder} disabled={!token||!!busy||recording}/>
     <button type="button" onClick={()=>void toggleVoice()} disabled={!token||!!busy} aria-label={recording?t.stop:t.voice} aria-pressed={recording} title={t.privacy}>{recording?<Square size={15}/>:<Mic size={17}/>}</button>
     <button type="submit" aria-label={t.send} disabled={!token||!!busy||recording||draft.trim().length<2}><Send size={17}/></button>
    </form>
