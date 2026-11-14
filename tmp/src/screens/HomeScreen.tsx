@@ -45,6 +45,53 @@ export default function HomeScreen() {
 
   return (
     <div className="flex flex-col min-h-full xl:h-full w-full xl:overflow-hidden items-center justify-start xl:justify-center bg-transparent transition-all relative home-screen-root">
+      {homeUnifiedCard && (
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,700&display=swap');
+
+          @media (min-width: 1280px) {
+            .home-screen-root .home-unified-card .home-unified-slogan {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 9px;
+              font-family: 'Cormorant Garamond', Georgia, serif;
+              font-size: clamp(28px, 2.53vw, 36px);
+              font-weight: 700;
+              font-style: italic;
+              line-height: 1.15;
+              letter-spacing: 0.02em;
+              overflow: visible;
+              text-overflow: clip;
+              text-shadow: none;
+              margin-bottom: 6px;
+            }
+            .home-screen-root .home-unified-card .home-unified-slogan-part {
+              display: inline-flex;
+              align-items: center;
+              gap: 9px;
+              flex: none;
+            }
+            .home-screen-root .home-unified-card .home-unified-slogan-word {
+              background: linear-gradient(180deg, #f4f6f8 0%, #cfd5db 50%, #9aa3ac 100%);
+              background-clip: text;
+              -webkit-background-clip: text;
+              -webkit-text-fill-color: transparent;
+              color: transparent;
+              text-shadow: none;
+              filter: drop-shadow(0 0 5px rgba(220,228,235,0.18));
+            }
+            .home-screen-root .home-unified-card .home-unified-slogan-diamond {
+              display: inline-block;
+              width: 7px;
+              height: 7px;
+              flex: 0 0 7px;
+              transform: rotate(45deg);
+              background: linear-gradient(135deg, #eef1f4, #8d969f);
+            }
+          }
+        `}</style>
+      )}
       <style>{`
         /* Keep the existing mobile Home piece scaling; match Analysis on desktop. */
         @media (max-width: 767px) {
@@ -418,7 +465,14 @@ export default function HomeScreen() {
 
 
           {homeUnifiedCard && (
-            <span className="desktop-home-slogan-text hidden">{t('home.slogan')}</span>
+            <span className="desktop-home-slogan-text home-unified-slogan hidden">
+              {t('home.slogan').split(/\s*[•·]\s*/u).map((part, index) => (
+                <span key={part + index} className="home-unified-slogan-part">
+                  {index > 0 && <span className="home-unified-slogan-diamond" aria-hidden="true" />}
+                  <span className="home-unified-slogan-word">{part}</span>
+                </span>
+              ))}
+            </span>
           )}
 
           {/* 1. Hero Brand Header */}
