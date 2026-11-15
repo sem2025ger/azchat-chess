@@ -92,21 +92,31 @@ function installAiCoach(app,{enabled=false,index=null,verifyToken=async()=>null,
  app.use('/api/ai-coach',router);
  return router;
 }
-// AI_COACH_ENGINE_MOVETIME_MS: integer 300–3000 (default 900). Anything else keeps the
+// AI_COACH_ENGINE_MOVETIME_MS: integer 300–6000 (default 900). Anything else keeps the
 // default and logs a warning, so a typo in Render can never disable or overload the engine.
 const DEFAULT_MOVETIME_MS=900;
 function engineMovetimeFromEnv(env,log=(entry)=>console.warn(JSON.stringify(entry))){
  const raw=env.AI_COACH_ENGINE_MOVETIME_MS;
  if(raw===undefined||raw==='')return DEFAULT_MOVETIME_MS;
  const value=/^\d{3,4}$/.test(raw)?Number(raw):NaN;
- if(value>=300&&value<=3000)return value;
+ if(value>=300&&value<=6000)return value;
  log({event:'coach_engine_config_invalid',setting:'AI_COACH_ENGINE_MOVETIME_MS',used:DEFAULT_MOVETIME_MS});
  return DEFAULT_MOVETIME_MS;
+}
+// Target depth defaults to 16; the engine raises it when minDepth is larger.
+const DEFAULT_MIN_DEPTH=12;
+function engineMinDepthFromEnv(env,log=(entry)=>console.warn(JSON.stringify(entry))){
+ const raw=env.AI_COACH_ENGINE_MIN_DEPTH;
+ if(raw===undefined||raw==='')return DEFAULT_MIN_DEPTH;
+ const value=/^(?:[8-9]|1\d|2[0-4])$/.test(raw)?Number(raw):NaN;
+ if(Number.isInteger(value)&&value>=8&&value<=24)return value;
+ log({event:'coach_engine_config_invalid',setting:'AI_COACH_ENGINE_MIN_DEPTH',used:DEFAULT_MIN_DEPTH});
+ return DEFAULT_MIN_DEPTH;
 }
 // Server engine is opt-in (default off) and starts lazily on the first chat request.
 function engineFromEnv(env){
  if(env.AI_COACH_ENABLED!=='true'||env.AI_COACH_SERVER_ENGINE_ENABLED!=='true')return null;
- const engine=require('./coachEngine').createCoachEngine({movetimeMs:engineMovetimeFromEnv(env)});
+ const engine=require('./coachEngine').createCoachEngine({movetimeMs:engineMovetimeFromEnv(env),minDepth:engineMinDepthFromEnv(env)});
  process.once('exit',()=>engine.close());
  return engine;
 }
@@ -127,4 +137,4 @@ function installAiCoachFromEnv(app,verifyToken,index,env=process.env){
   openaiApiKey:env.OPENAI_API_KEY||null,openaiModel:env.OPENAI_COACH_MODEL||'gpt-6-sol',engine,
   positionFactsEnabled:env.AI_COACH_POSITION_FACTS_ENABLED==='true',knowledgeCatalogEnabled:env.AI_COACH_KNOWLEDGE_CATALOG_ENABLED==='true'});
 }
-module.exports={installAiCoach,installAiCoachFromEnv,engineFromEnv,engineMovetimeFromEnv};
+module.exports={installAiCoach,installAiCoachFromEnv,engineFromEnv,engineMovetimeFromEnv,engineMinDepthFromEnv};
