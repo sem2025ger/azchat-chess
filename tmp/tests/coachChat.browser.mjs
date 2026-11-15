@@ -41,6 +41,7 @@ export async function checkCoachChat({captureRoot}={}){
  // Simulate the backend with AI_COACH_SERVER_ENGINE_ENABLED=true: its own verified lines in engineLines.
  let serverLines=null;
  app.post('/api/ai-coach/chat',express.json({limit:'16kb'}),(req,res,next)=>{
+  if(mode==='server-shallow')return res.json({answer:'Shallow engine analysis was refused.',generated:true,games:[],engineVerified:false,engineError:'engine_shallow',candidateLines:req.body.candidateLines||[],position:req.body.fen});
   if(!['server-lines','server-lines-malformed','server-lines-other-fen','server-lines-no-provider'].includes(mode))return next();
   const board=new Chess(req.body.fen),first=board.moves()[0];board.move(first);const reply=board.moves()[0];
   const second=new Chess(req.body.fen).moves()[1];
@@ -272,6 +273,16 @@ export async function checkCoachChat({captureRoot}={}){
   assert.equal(await evaluate(last+'.querySelector(".coach-chat-engine-source").textContent'),'Stockfish 19',bad);
   assert.ok(await evaluate('!!'+last+'.querySelector(".coach-chat-engine-unlinked")'),bad+': provenance warning kept');
  }
+ // A failed depth gate must show the existing localized unavailable notice
+ // even when the browser provides weaker local variations.
+ mode='server-shallow';clock+=61000;
+ const beforeShallow=await evaluate('document.querySelectorAll(".coach-chat-message.assistant").length');
+ await fill('Explain once more');await click(tr.send);
+ await wait('document.querySelectorAll(".coach-chat-message.assistant").length==='+(beforeShallow+1));
+ const shallowLast='[...document.querySelectorAll(".coach-chat-message.assistant")].at(-1)';
+ await wait(shallowLast+'.innerText.includes('+JSON.stringify(tr.engineUnavailable)+')');
+ assert.equal(await evaluate(shallowLast+'.innerText.includes('+JSON.stringify(tr.engineUnavailable)+')'),true,'shallow server search must be disclosed');
+ assert.equal(await evaluate(shallowLast+'.querySelector(".coach-chat-engine-source")?.textContent.includes('+JSON.stringify(tr.engineServer)+')??false'),false,'shallow result never labelled server-verified');
  // No OpenAI key does not mean Stockfish is unavailable or that only archive data exist.
  const noProviderCopy={de:'OpenAI ist auf diesem Server noch nicht eingerichtet.',en:'OpenAI is not configured on this server yet.',az:'Bu serverdə OpenAI hələ qurulmayıb.',tr:'OpenAI bu sunucuda henüz yapılandırılmadı.',ua:'OpenAI ще не налаштований на цьому сервері.',ru:'OpenAI пока не настроен на этом сервере.'};
  for(const lang of ['de','en','az','tr','ua','ru']){
