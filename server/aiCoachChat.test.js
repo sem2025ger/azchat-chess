@@ -154,6 +154,37 @@ test('V1.1 Steinitz: replay server PV and expose only verified endpoint facts to
  assert.ok(!observed[0].instructions.includes('endFacts'));
 });
 
+test('Italian owner QA: line facts reach the model only, with the sacrifice, fork and check rules',async()=>{
+ const ITALIAN='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const lines=[['d3 Nf6 Nc3 h6 h3 a6 O-O O-O a3 d6',12],['Nc3 Nf6 d3 h6 Bb3 a5 Nxe5 Nxe5 d4 Bd6',10],['c3 Nf6 d4 exd4 cxd4 Bb4+ Bd2 Nxe4 Bxb4 Nxb4',8]]
+  .map(([moves,score])=>({...lineFixture(moves.split(' ')),scoreWhite:score,depth:16}));
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines})};
+ const q={fen:ITALIAN,message:'Оцени позицию, объясни три лучших продолжения',language:'ru',side:'any'};
+ const observed=[];
+ const fetchImpl=async(_url,options)=>{
+  const payload=JSON.parse(options.body);
+  observed.push({evidence:JSON.parse(payload.input).evidence,instructions:payload.instructions});
+  return verifiedReply();
+ };
+ const off=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:false});
+ const on=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true});
+ const [d3,nc3,c3]=observed[1].evidence.candidateLines.map(line=>line.endFacts);
+ assert.equal(d3.materialVsEval.matchesEval,true);
+ assert.deepEqual(nc3.materialVsEval,{startWhite:0,endWhite:-2,evalWhite:0.1,matchesEval:false});
+ assert.equal(nc3.doubleAttacks[0].move,'8. d4');
+ assert.deepEqual(nc3.doubleAttacks[0].targets.map(t=>t.square+' '+t.piece),['c5 bishop','e5 knight']);
+ assert.deepEqual(c3.checks,[{ply:6,move:'6... Bb4+',side:'black',legalReplies:7,materialGainForCheckingSide:1}]);
+ assert.equal(c3.materialVsEval.matchesEval,false);
+ assert.ok(observed[1].instructions.includes('describe it as a temporary sacrifice'));
+ assert.ok(observed[1].instructions.includes('Never claim a fork, double attack or pin that is not listed.'));
+ assert.ok(observed[1].instructions.includes('describe it as a forcing move that gains time, not as a threat.'));
+ assert.equal(observed[0].evidence.candidateLines.some(line=>line.endFacts),false);
+ assert.ok(!observed[0].instructions.includes('temporary sacrifice'));
+ for(const key of ['endFacts','materialVsEval','doubleAttacks','materialGainForCheckingSide'])
+  assert.equal(JSON.stringify(on).includes(key),false,key+' never reaches the browser');
+ assert.equal(JSON.stringify(off.engineLines),JSON.stringify(on.engineLines));
+});
+
 test('V1.1 malformed SAN cannot crash chat, and cannot get endFacts',async()=>{
  const q={fen:STEINITZ_FEN,message:'Какой план здесь у белых?',language:'ru',side:'any'};
  const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},
