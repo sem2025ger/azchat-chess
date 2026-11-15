@@ -41,6 +41,7 @@ function restoredChat(accountId:string,context:string,fen:string){
   if(m.archiveOnly!==undefined&&typeof m.archiveOnly!=='boolean')return true;
   if(m.engineLinked!==undefined&&typeof m.engineLinked!=='boolean')return true;
   if(m.engineServer!==undefined&&typeof m.engineServer!=='boolean')return true;
+  if(m.engineUnavailable!==undefined&&typeof m.engineUnavailable!=='boolean')return true;
   if(m.candidateLines!==undefined&&(!Array.isArray(m.candidateLines)||m.candidateLines.length>3||m.candidateLines.some(l=>!l||!Array.isArray(l.moves)||l.moves.length>10||l.moves.some(move=>typeof move!=='string'||move.length>16))))return true;
   // Scores belong only to server-verified lines; those are re-validated from the exact FEN.
   if(m.engineServer){

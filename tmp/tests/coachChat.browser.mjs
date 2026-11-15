@@ -283,6 +283,19 @@ export async function checkCoachChat({captureRoot}={}){
  await wait(shallowLast+'.innerText.includes('+JSON.stringify(tr.engineUnavailable)+')');
  assert.equal(await evaluate(shallowLast+'.innerText.includes('+JSON.stringify(tr.engineUnavailable)+')'),true,'shallow server search must be disclosed');
  assert.equal(await evaluate(shallowLast+'.querySelector(".coach-chat-engine-source")?.textContent.includes('+JSON.stringify(tr.engineServer)+')??false'),false,'shallow result never labelled server-verified');
+ // Without any local lines the same refusal shows the unavailable notice exactly once.
+ {
+  const stored=JSON.parse(await evaluate('sessionStorage.getItem('+JSON.stringify(chatKey(account))+')'));
+  const refused=stored.payload.items.filter(m=>m.role==='assistant').at(-1);
+  assert.equal(refused.engineUnavailable,true,'shallow refusal is persisted');refused.candidateLines=[];
+  await evaluate('window.setAccount("restore-probe")');await wait('document.querySelectorAll(".coach-chat-message").length===0');
+  await evaluate('sessionStorage.setItem('+JSON.stringify(chatKey(account))+','+JSON.stringify(JSON.stringify(stored))+')');
+  await evaluate('window.setAccount('+JSON.stringify(account)+')');await pause();await pause();
+  if(!await evaluate('!!document.querySelector(".coach-chat-panel")'))await click(tr.title);
+  await wait(shallowLast+'?.innerText.includes('+JSON.stringify(tr.engineUnavailable)+')');
+  assert.equal(await evaluate('[...'+shallowLast+'.querySelectorAll(".coach-chat-notice")].filter(n=>n.textContent==='+JSON.stringify(tr.engineUnavailable)+').length'),1,'unavailable notice is shown once without local lines');
+  assert.equal(await evaluate('!!'+shallowLast+'.querySelector(".coach-chat-study")'),false);
+ }
  // No OpenAI key does not mean Stockfish is unavailable or that only archive data exist.
  const noProviderCopy={de:'OpenAI ist auf diesem Server noch nicht eingerichtet.',en:'OpenAI is not configured on this server yet.',az:'Bu serverdə OpenAI hələ qurulmayıb.',tr:'OpenAI bu sunucuda henüz yapılandırılmadı.',ua:'OpenAI ще не налаштований на цьому сервері.',ru:'OpenAI пока не настроен на этом сервере.'};
  for(const lang of ['de','en','az','tr','ua','ru']){
