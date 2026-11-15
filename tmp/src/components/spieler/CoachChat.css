@@ -25,7 +25,8 @@
 @media(max-width:600px){.coach-chat-panel{padding:10px}.coach-chat-history{max-height:52dvh}.coach-chat-message{padding:9px}.coach-chat-compose{gap:5px!important;grid-template-columns:minmax(0,1fr) 40px 40px}.coach-chat-compose button{width:40px}}
 
 /* Compact, accessible actions preserve the existing conversation layout. */
-.coach-chat-actions{display:flex;justify-content:flex-end;gap:8px}
+.coach-chat-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;flex:none}
+.coach-chat-actions .coach-chat-expand{display:none;margin-right:auto}
 .coach-chat-actions button,.coach-chat-message-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:6px 10px;font-size:.75rem;line-height:1.3;width:auto;white-space:nowrap}
 .coach-chat-message-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .coach-chat-message .coach-chat-message-actions button{width:auto;margin-top:0;text-align:center}
@@ -154,3 +155,25 @@
 /* Source attribution for the two replayable engine variations. */
 .coach-chat-engine-source{display:block;color:#bda078;font-size:11px;font-weight:600;letter-spacing:.065em;line-height:1.4}
 .coach-chat-eval{font-variant-numeric:tabular-nums;font-weight:600;color:#e6d3b1;white-space:nowrap}
+
+/* Desktop reading space stays beside the board, with one native history scroller. */
+@media (min-width:1101px) {
+ .spieler-page .spieler-position-workspace .coach-chat-actions .coach-chat-expand{display:inline-flex}
+ .spieler-page .spieler-position-workspace .coach-chat-panel--expanded{
+  position:fixed;inset:auto;z-index:90;max-height:none;
+ }
+ .spieler-page .spieler-position-workspace .coach-chat-panel--expanded :is(.chessy-intro,.chessy-prompts){display:none}
+ .spieler-page .spieler-position-workspace .coach-chat-panel--expanded .coach-chat-history{flex:1 1 0}
+}
+@media (min-width:1024px) {
+ .spieler-page .spieler-position-workspace .coach-chat-history{scrollbar-width:auto}
+ .spieler-page .spieler-position-workspace .coach-chat-history::-webkit-scrollbar{width:16px;height:16px}
+ .spieler-page .spieler-position-workspace .coach-chat-history::-webkit-scrollbar-track{background:#171a1d;border-radius:10px}
+ .spieler-page .spieler-position-workspace .coach-chat-history::-webkit-scrollbar-thumb{
+  background:#8a7b67;border:3px solid #171a1d;border-radius:10px;min-height:44px;
+ }
+ .spieler-page .spieler-position-workspace .coach-chat-history::-webkit-scrollbar-thumb:hover{background:#b09a7d}
+ @supports not selector(::-webkit-scrollbar){
+  .spieler-page .spieler-position-workspace .coach-chat-history{scrollbar-color:#8a7b67 #171a1d}
+ }
+}
