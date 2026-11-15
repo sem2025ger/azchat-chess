@@ -1,5 +1,5 @@
-import {useCallback,useEffect,useId,useRef,useState,type FormEvent} from 'react';
-import {Mic,Send,MessageSquare,Square,Volume2,Copy,Check,Trash2} from 'lucide-react';
+import {useCallback,useEffect,useId,useLayoutEffect,useRef,useState,type FormEvent} from 'react';
+import {Mic,Send,MessageSquare,Square,Volume2,Copy,Check,Trash2,Maximize2,Minimize2} from 'lucide-react';
 import {useNavigate} from 'react-router-dom';
 import {Chess} from 'chess.js';
 import {StockfishEngine} from '../../utils/StockfishEngine';
@@ -90,7 +90,7 @@ export default function CoachChat(props:Props){
  return <CoachConversation key={JSON.stringify([props.accountId,props.fen,props.side])} {...props}/>;
 }
 function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}:Props){
- const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId();
+ const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId(),panelId=useId();
  const chessyEnabled=import.meta.env.VITE_CHESSY_ENABLED==='true',chessy=chessyCopy[lang],inputRef=useRef<HTMLInputElement>(null);
  const context=JSON.stringify([fen,side]);
  const [storageRevision]=useState(positionSearchRevision);
@@ -99,6 +99,8 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
  const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context,fen):null);
  const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0),[speechError,setSpeechError]=useState(''),[speechPlaying,setSpeechPlaying]=useState(false),[expanded,setExpanded]=useState<number[]>(saved?.expanded??[]);
  const [preview,setPreview]=useState<{item:number;line:number;ply:number}|null>(null);
+ const [readingExpanded,setReadingExpanded]=useState(false);
+ const [readingBounds,setReadingBounds]=useState<{left:number;top:number;width:number;height:number}|null>(null);
  // Keep one bounded background analysis per exact FEN; never start a second
  // worker for a question while an analysis of that FEN is still running.
  const engineCacheRef=useRef<{fen:string;depth:number;lines:CandidateLine[]}|null>(null);
@@ -148,6 +150,31 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
   return()=>{clearTimeout(timer);engineJobRef.current?.cancel();engineJobRef.current=null;};
  },[open,token,fen]);
  const sectionRef=useRef<HTMLElement>(null),request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<AudioCapture|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
+ // Enlarge only into the space to the right of the study board. The existing
+ // conversation stays mounted, including draft, requests and variation replay.
+ useLayoutEffect(()=>{
+  if(!open||!readingExpanded)return;
+  const section=sectionRef.current,workspace=section?.closest('.spieler-position-workspace');
+  const rail=section?.closest('.global-position-right-rail');
+  const board=workspace?.querySelector('.preparation-shared-board');
+  if(!rail||!board)return;
+  const route=section?.closest('[data-route-scroll]');
+  let frame=0;
+  const measure=()=>{
+   if(!window.matchMedia('(min-width: 1101px)').matches){setReadingExpanded(false);return;}
+   const railBox=rail.getBoundingClientRect(),boardBox=board.getBoundingClientRect();
+   const left=Math.max(railBox.left,boardBox.right+8),top=Math.max(12,(route?.getBoundingClientRect().top??0)+8);
+   const width=window.innerWidth-left-12,height=window.innerHeight-top-12;
+   if(width<240||height<240){setReadingExpanded(false);return;}
+   setReadingBounds(previous=>previous&&previous.left===left&&previous.top===top&&previous.width===width&&previous.height===height?previous:{left,top,width,height});
+  };
+  const schedule=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure);};
+  const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'&&!event.defaultPrevented){event.preventDefault();setReadingExpanded(false);}};
+  measure();
+  const observer=new ResizeObserver(schedule);observer.observe(rail);observer.observe(board);
+  window.addEventListener('resize',schedule);document.addEventListener('scroll',schedule,true);document.addEventListener('keydown',escape);
+  return()=>{cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener('resize',schedule);document.removeEventListener('scroll',schedule,true);document.removeEventListener('keydown',escape);};
+ },[open,readingExpanded]);
  const playback=useRef<ReturnType<typeof createCoachPlayback>>(null),speechCache=useRef(new Map<string,Blob>());
  const stopSpeech=useCallback(()=>{speechRequest.current?.abort();speechRequest.current=null;playback.current?.stop();playback.current=null;setSpeechPlaying(false);setSpeechError('');audioRef.current?.pause();if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;setClip(null);setSpeechBusy(null);},[]);
  const cancel=useCallback(()=>{
@@ -245,11 +272,11 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
  const chessyState=recording?'listening':busy?'thinking':speechPlaying?'speaking':items.length?'ready':'idle';
  if(import.meta.env.VITE_AI_COACH_ENABLED!=='true')return null;
  return <section ref={sectionRef} className={chessyEnabled?'coach-chat chessy-enabled':'coach-chat'} aria-label={t.title}>
-  {(headerTarget?createPortal(<button type="button" className="coach-chat-toggle" aria-label={t.title} aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}>{chessyEnabled?<ChessyAvatar state={chessyState} compact/>:<MessageSquare size={16}/>}<span>{chessyEnabled?chessy.name:t.askChat}</span></button>,headerTarget):<button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}>{chessyEnabled?<ChessyAvatar state={chessyState} compact/>:<MessageSquare size={16}/>}<span>{chessyEnabled?chessy.name:t.title}</span></button>)}
+  {(headerTarget?createPortal(<button type="button" className="coach-chat-toggle" aria-label={t.title} aria-expanded={open} onClick={()=>{if(open)cancel();setReadingExpanded(false);setOpen(value=>!value);}}>{chessyEnabled?<ChessyAvatar state={chessyState} compact/>:<MessageSquare size={16}/>}<span>{chessyEnabled?chessy.name:t.askChat}</span></button>,headerTarget):<button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setReadingExpanded(false);setOpen(value=>!value);}}>{chessyEnabled?<ChessyAvatar state={chessyState} compact/>:<MessageSquare size={16}/>}<span>{chessyEnabled?chessy.name:t.title}</span></button>)}
 
-  {open&&<div className="coach-chat-panel">
+  {open&&<div id={panelId} className={'coach-chat-panel'+(readingExpanded?' coach-chat-panel--expanded':'')} style={readingExpanded&&readingBounds?readingBounds:undefined}>
    {chessyEnabled&&<div className="chessy-intro"><ChessyAvatar state={chessyState}/><div><strong>{chessy.name} · AI Coach</strong><p role="status">{chessy[chessyState]}</p></div></div>}
-   <div className="coach-chat-actions"><button type="button" disabled={!items.length||!!busy||recording} onClick={()=>{if(!window.confirm(t.clearConfirm))return;cancel();setItems([]);setDraft('');setExpanded([]);setPreview(null);onVariationPreview?.([], -1);setScrollTop(0);setError('');}}><Trash2 size={15}/>{t.clearChat}</button></div>
+   <div className="coach-chat-actions"><button type="button" className="coach-chat-expand" aria-expanded={readingExpanded} aria-controls={panelId} title={readingExpanded?t.restoreChat:t.expandChat} onClick={()=>setReadingExpanded(value=>!value)}>{readingExpanded?<Minimize2 size={15} aria-hidden="true"/>:<Maximize2 size={15} aria-hidden="true"/>}{readingExpanded?t.restoreChat:t.expandChat}</button><button type="button" disabled={!items.length||!!busy||recording} onClick={()=>{if(!window.confirm(t.clearConfirm))return;cancel();setItems([]);setDraft('');setExpanded([]);setPreview(null);onVariationPreview?.([], -1);setScrollTop(0);setError('');}}><Trash2 size={15}/>{t.clearChat}</button></div>
    <div ref={listRef} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="coach-chat-history" role="log" aria-live="polite" aria-relevant="additions text">
     {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p className={m.archiveOnly?'coach-chat-archive-heading':undefined}>{m.text}</p>{m.role==='assistant'&&<>
      {!m.generated&&<small className="coach-chat-notice">{t.notConfigured}</small>}{m.engineUnavailable&&<small className="coach-chat-notice">{t.engineUnavailable}</small>}
@@ -273,7 +300,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    </form>
 
 
-   <button type="button" className="coach-chat-collapse-bottom" onClick={()=>{cancel();setOpen(false);}}>{t.closeChat} ↑</button>
+   <button type="button" className="coach-chat-collapse-bottom" onClick={()=>{cancel();setReadingExpanded(false);setOpen(false);}}>{t.closeChat} ↑</button>
   </div>}
  </section>;
 }
