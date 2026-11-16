@@ -3,7 +3,7 @@ const {Chess,validateFen}=require('chess.js');
 const {LANGUAGE_CODES,safeGame}=require('./aiCoachCore');
 const {generateAnswer}=require('./aiCoachOpenAI');
 const {positionFacts}=require('./coachPositionFacts');
-const {lineFacts,settlement}=require('./coachLineFacts');
+const {lineFacts,lineMechanisms,settlement}=require('./coachLineFacts');
 const {lookupCoachBibliography}=require('./coachKnowledge');
 const {selectStrategyKnowledge}=require('./coachStrategyKnowledge');
 const {isPlanRequest}=require('./coachPlanDemo');
@@ -87,7 +87,7 @@ function withLineEndFacts(lines,fen){
     return {fen:finalFen,plies:moves.length,material:facts.material,majorities:facts.majorities,
      white:{pawns:facts.white.pawns,king:facts.white.king,minorityAttack:facts.white.strategy.minorityAttack,files:facts.white.files,outposts:facts.white.outposts,strategy:facts.white.strategy,pieces:board.board().flat().filter(p=>p?.color==='w').map(({type,square})=>({type,square}))},
      black:{pawns:facts.black.pawns,king:facts.black.king,minorityAttack:facts.black.strategy.minorityAttack,files:facts.black.files,outposts:facts.black.outposts,strategy:facts.black.strategy,pieces:board.board().flat().filter(p=>p?.color==='b').map(({type,square})=>({type,square}))},
-     ...lineFacts(fen,moves,score),unsettled:settlement(fen,moves,score).unsettled};
+     ...lineFacts(fen,moves,score),moveMechanisms:lineMechanisms(fen,moves),unsettled:settlement(fen,moves,score).unsettled};
    };
    const original=factsFor(line.moves,line);if(!original)return line;
    if(!line.continuation)return {...line,endFacts:original};
