@@ -2,24 +2,15 @@
 
 ## Scope and provenance
 
-Source supplied by the owner: Aron Nimzowitsch, *My System*, Quality Chess English
-new translation, scanned PDF. The PDF is used **only to identify general chess
-strategic concepts**. The English translation and modern edition are not cleared
-for redistribution. No image, quotation, translation, game score, annotated PGN,
-passage, or source PDF is embedded in the ChessAZ repository, model prompts or API.
+ChessAZ expresses independently formulated general chess-strategy principles, including
+central control, development, restraint, prophylaxis, blockade, outposts, open
+files, pawn chains and overprotection. Their historical public-domain reference
+is Aron Nimzowitsch, *Mein System* (B. Kagan, Berlin, 1925; author died 1935).
 
-Topics reviewed in the supplied PDF (printed page numbering):
-
-- **Centre and development**, pp. 17–30: central influence and development tempo.
-- **Open files / 7th rank**, pp. 31–52: file control and penetration points.
-- **Passed pawn and blockade**, pp. 73–102: restraint is more than immediate capture.
-- **Pinned pieces / pawn chains**, pp. 125–164: structural restraints and attack on chain bases.
-- **Prophylaxis and the centre**, pp. 177–200: prevent opponent counterplay; consolidate.
-- **Isolated queen's pawn**, pp. 229–233: static weakness versus dynamic possibilities.
-- **Overprotection and weak pawns**, pp. 247–252: strategically important defended points.
-
-These are section/topic references, not a claim that the application stores or
-quotes the referenced edition. Principles are independently phrased for ChessAZ.
+The repository contains no book text, translation, diagrams, annotated game scores
+or source-book materials. Strategic terminology is not an engine evaluation:
+all practical recommendations must be checked against the actual position and
+the verified Stockfish lines.
 
 ## Runtime architecture
 
