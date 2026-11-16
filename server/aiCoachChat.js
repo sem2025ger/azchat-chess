@@ -99,6 +99,37 @@ function withLineEndFacts(lines,fen){
   }catch{return line;} // A corrupt SAN cannot compromise the chat request.
  });
 }
+// Keep the existing 16 KiB model-evidence contract. First discard least useful
+// NEW restriction entries (piece-move geometry), then pawn restrictions, always
+// removing their matching attribution. Do not truncate older verified facts.
+function boundRestrictionEvidence(evidence){
+ if(evidence.candidateOrigin!=='server_stockfish_19')return;
+ const size=()=>Buffer.byteLength(JSON.stringify(evidence),'utf8');
+ let bytes=size();
+ while(bytes>=16*1024){
+  const entries=[];
+  for(const line of evidence.candidateLines||[])for(const facts of [line.endFacts,line.lineEndFacts]){
+   const denied=facts?.moveMechanisms?.deniedSquares;
+   if(!Array.isArray(denied))continue;
+   for(let i=0;i<denied.length;i++)
+    entries.push({facts,index:i,event:denied[i]});
+  }
+  if(!entries.length)break;
+  const pawnMove=event=>/(?:\.\s|\.\.\.\s)[a-h]/.test(event.move);
+  const choice=[...entries].reverse().find(x=>!pawnMove(x.event))||entries[entries.length-1];
+  const mechanisms=choice.facts.moveMechanisms;
+  const [removed]=mechanisms.deniedSquares.splice(choice.index,1);
+  const labelIndex=(mechanisms.strategyLabels||[]).findIndex(x=>
+   x.theme==='restriction'&&x.move===removed.move&&x.square===removed.square&&
+   JSON.stringify(x.pieces)===JSON.stringify(removed.pieces));
+  if(labelIndex>=0)mechanisms.strategyLabels.splice(labelIndex,1);
+  if(!mechanisms.deniedSquares.length)delete mechanisms.deniedSquares;
+  if(!mechanisms.strategyLabels?.length)delete mechanisms.strategyLabels;
+  if(!Object.keys(mechanisms).length)delete choice.facts.moveMechanisms;
+  bytes=size();
+ }
+}
+
 async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null,positionFactsEnabled=false,knowledgeCatalogEnabled=false,strategyKnowledgeEnabled=false,planDemoEnabled=false}={}){
  const requested=gameRequest(query.message);
  let result=null,analysis=null,engineError=null;
@@ -118,6 +149,7 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
   ...(positionFactsEnabled?{positionFacts:currentFacts}:{}),
   ...(strategyKnowledge?{strategyKnowledge}:{}),
   ...(knowledgeCatalogEnabled&&lookupCoachBibliography(query.message)?{coachBibliography:lookupCoachBibliography(query.message)}:{})};
+ boundRestrictionEvidence(evidence);
  const archiveOnly=!!requested&&!!result;
  let answer,planDemonstration=null,lineLessons=null;
  if(archiveOnly)answer=gameHeadings[language];

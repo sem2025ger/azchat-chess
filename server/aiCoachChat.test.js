@@ -219,6 +219,12 @@ test('V1.1 three independent 10-ply PVs keep model evidence under 16KB',async()=
    assert.equal(evidence.candidateLines.length,3);
    for(const line of evidence.candidateLines)assert.equal(line.endFacts.plies,10);
    assert.ok(Buffer.byteLength(JSON.stringify(evidence),'utf8')<16*1024);
+   for(const line of evidence.candidateLines){
+    const mechanisms=line.endFacts.moveMechanisms||{};
+    const denied=mechanisms.deniedSquares||[],labels=mechanisms.strategyLabels||[];
+    assert.equal(denied.length,labels.length,'no orphaned restriction attribution after bounding');
+    for(const e of denied)assert.ok(labels.some(x=>x.move===e.move&&x.square===e.square));
+   }
    return verifiedReply();
   }});
 });
