@@ -20,8 +20,9 @@ import './CoachChat.css';
 import { startBoundedAudioRecording, type AudioCapture } from '../../utils/audioCapture';
 type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string;moves?:string[];continuation?:string[]};
 type CandidateLine={moves:string[];score?:EngineScore};
-type Reply={answer:string;games:ResultGame[];generated:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLines?:unknown;engineVerified?:boolean;engineError?:string;position?:string};
-type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated?:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLinked?:boolean;engineServer?:boolean;engineUnavailable?:boolean};
+type Reply={answer:string;games:ResultGame[];generated:boolean;planDemonstration?:{lineId:string;intro:string;conclusion:string};archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLines?:unknown;engineVerified?:boolean;engineError?:string;position?:string};
+type PlanDemo={lineIndex:number;intro:string;conclusion:string};
+type ChatItem={role:'user'|'assistant';text:string;planDemo?:PlanDemo;games?:ResultGame[];generated?:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLinked?:boolean;engineServer?:boolean;engineUnavailable?:boolean};
 type Clip={url:string;item:number;autoplay:boolean};
 type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string;onVariationPreview?:(moves:string[],ply:number)=>void};
 type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number;expanded?:number[]};
@@ -42,10 +43,17 @@ function restoredChat(accountId:string,context:string,fen:string){
   if(m.engineLinked!==undefined&&typeof m.engineLinked!=='boolean')return true;
   if(m.engineServer!==undefined&&typeof m.engineServer!=='boolean')return true;
   if(m.engineUnavailable!==undefined&&typeof m.engineUnavailable!=='boolean')return true;
+  if(m.planDemo!==undefined){
+   const d=m.planDemo;
+   if(!m.engineServer||!m.engineLinked||!d||!Number.isInteger(d.lineIndex)||d.lineIndex<0||d.lineIndex>=3||
+    typeof d.intro!=='string'||d.intro.length<2||d.intro.length>700||
+    typeof d.conclusion!=='string'||d.conclusion.length<2||d.conclusion.length>450||
+    m.text!==d.intro+'\n'+d.conclusion)return true;
+  }
   if(m.candidateLines!==undefined&&(!Array.isArray(m.candidateLines)||m.candidateLines.length>3||m.candidateLines.some(l=>!l||!Array.isArray(l.moves)||l.moves.length>10||l.moves.some(move=>typeof move!=='string'||move.length>16))))return true;
   // Scores belong only to server-verified lines; those are re-validated from the exact FEN.
   if(m.engineServer){
-   if(m.engineLinked!==true||!m.candidateLines?.length)return true;
+   if(m.engineLinked!==true||!m.candidateLines?.length||m.planDemo&&m.planDemo.lineIndex>=m.candidateLines.length)return true;
    const again=serverEngineLines(m.candidateLines.map(l=>({moves:l.moves,scoreKind:l.score?.kind,scoreWhite:l.score?.white})),fen);
    if(!again||JSON.stringify(again)!==JSON.stringify(m.candidateLines.map(l=>({moves:l.moves,score:l.score}))))return true;
   }else if(m.candidateLines?.some(l=>l.score!==undefined))return true;
@@ -194,6 +202,14 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
   if(code==='transcript_too_long'||code==='payload_too_large')return t.tooLong;
   return t.unavailable;
  }
+ function readFullLesson(m:ChatItem){
+  if(!m.planDemo)return m.text;
+  const moves=m.candidateLines?.[m.planDemo.lineIndex]?.moves;
+  if(!moves?.length)return m.text;
+  const start=(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0);
+  const full=[m.planDemo.intro,formatNumberedMoves(moves,start),m.planDemo.conclusion].join('\n');
+  return full.length<=1200?full:m.text;
+ }
  async function speak(text:string,item:number){
   stopSpeech();const abort=new AbortController();speechRequest.current=abort;setSpeechBusy(item);setSpeechError('');
   const cacheKey=lang+':'+text;
@@ -237,7 +253,24 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
     // and keep the provenance warning on the local lines.
     const serverClaimed=requested===null&&!data.archiveOnly&&data.engineVerified===true;
     const serverLines=serverClaimed&&data.position===fen?serverEngineLines(data.engineLines,fen):null;
-    setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:requested!==null?data.games.slice(0,20):[],generated:data.generated,archiveOnly:data.archiveOnly===true,candidateLines:serverLines??(!data.archiveOnly?analysisLines:[]),engineLinked:serverLines?true:!serverClaimed&&!legacyBackend&&analysisLines.length>0&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines),...(serverLines?{engineServer:true}:{}),...(data.engineError?{engineUnavailable:true}:{})}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
+    const incoming=data.planDemonstration;
+    const lineIndex=typeof incoming?.lineId==='string'&&/^L[1-3]$/.test(incoming.lineId)?Number(incoming.lineId.slice(1))-1:-1;
+    const planDemo:PlanDemo|null=import.meta.env.VITE_CHESSY_PLAN_DEMO_ENABLED==='true'&&serverLines&&lineIndex>=0&&lineIndex<serverLines.length&&
+     typeof incoming?.intro==='string'&&incoming.intro.length>=2&&incoming.intro.length<=700&&
+     typeof incoming.conclusion==='string'&&incoming.conclusion.length>=2&&incoming.conclusion.length<=450&&
+     data.answer===incoming.intro+'\n'+incoming.conclusion
+     ?{lineIndex,intro:incoming.intro,conclusion:incoming.conclusion}:null;
+    const responseItem:ChatItem={role:'assistant',text:data.answer,games:requested!==null?data.games.slice(0,20):[],generated:data.generated,
+     archiveOnly:data.archiveOnly===true,candidateLines:serverLines??(!data.archiveOnly?analysisLines:[]),
+     engineLinked:serverLines?true:!serverClaimed&&!legacyBackend&&analysisLines.length>0&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines),
+     ...(serverLines?{engineServer:true}:{}),...(planDemo?{planDemo}:{}),...(data.engineError?{engineUnavailable:true}:{})};
+    setItems([...previous,{role:'user',text:message},responseItem]);
+    if(planDemo&&serverLines){
+     // First show the original position. Each arrow advances this verified variation.
+     setPreview({item:previous.length+1,line:planDemo.lineIndex,ply:0});
+     onVariationPreview?.(serverLines[planDemo.lineIndex].moves,0);
+    }
+    if(voicePreference.current&&!data.archiveOnly)void speak(readFullLesson(responseItem),previous.length+1);}
   }catch(e){if(!abort.signal.aborted){setError(describe(e));if(fromDraft)setDraft(message);setItems(previous);}}
   finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}
  }
