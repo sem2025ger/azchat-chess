@@ -18,7 +18,7 @@ const PLAN_DEMO_INSTRUCTION=[
  'Choose lineId only from candidateLines ids when the ACTUAL moves in that particular line meaningfully demonstrate that plan and its result. No convenient opponent mistakes, fabricated steps or speculative variations. If none of the supplied lines demonstrates the claimed plan, choose lineId "none" and explain the limitation instead of pretending to verify an illustration. A principal variation confirms the considered sequence, not that the claimed strategic cause is established.',
  'In conclusion (one or two sentences) explain what the chosen line ACTUALLY achieves at its last displayed position using endFacts and the evaluation, not what might happen in uncalculated future moves. Distinguish a strategic objective from an advantage already obtained. Name a relevant opponent reply from that chosen line or a condition which limits the plan. Respect mate, tactics, objective equal positions, and White-perspective scores. If the requested side does not move first, account for the opponent\'s reply before describing the plan. Never claim a material gain that the supplied moves do not show.',
  'Return exactly three plain-text fields intro, lineId, conclusion under the supplied JSON schema. No links, HTML, markdown, quotations from chess books or unsupported numerical evaluations. Do not explain all candidate lines in this mode; the UI keeps the other variants separately.'
-].join('\\n');
+].join('\n');
 
 const TACTICAL_FOCUS_INSTRUCTION=[
  'For tactical questions, legalMoves and legalMoveDetails establish legality, not tactical value. A legal check, capture or static attack alone does not demonstrate a tactical threat. Explain a concrete threat only when candidateLines show a continuation and a supported consequence; identify the target and the relevant reply. Do not enumerate unselected legal checks or add caveats about moves absent from candidateLines unless the user explicitly asks about that move. If no concrete tactic is demonstrated, say only that none is demonstrated by the supplied lines, not that no tactics exist in the position. Preserve legal evasions and terminal facts from positionStatus.',
@@ -86,11 +86,11 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
   'Do not claim a move is illegal if it appears in legalMoves. Explain uncertainty and offer the analysis board for engine verification.',
   'No links, HTML or markdown. Return JSON with exactly one string property answer, between 2 and 1200 characters.'
  ].join('\n'):null;
- const instructions=(serverEngine?serverInstructions:legacyInstructions)+'\\n'+TACTICAL_FOCUS_INSTRUCTION+'\\n'+ASSESSMENT_PLAN_INSTRUCTION+(evidence.positionFacts?'\\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\\n'+BIBLIOGRAPHY_INSTRUCTION:'')+(evidence.strategyKnowledge?'\\n'+STRATEGY_KNOWLEDGE_INSTRUCTION:'');
+ const instructions=(serverEngine?serverInstructions:legacyInstructions)+'\n'+TACTICAL_FOCUS_INSTRUCTION+'\n'+ASSESSMENT_PLAN_INSTRUCTION+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'')+(evidence.strategyKnowledge?'\n'+STRATEGY_KNOWLEDGE_INSTRUCTION:'');
  const finalInstructions=planMode?instructions
   .replace('Explain all three supplied lines when three are available, in their supplied order.','Explain only the one verified line that supports the illustrated plan.')
   .replace('No links, HTML or markdown. Return JSON with exactly one string property answer, between 2 and 1200 characters.','No links, HTML or markdown. Use the supplied three-field illustrated lesson JSON schema.')
-  +'\\n'+PLAN_DEMO_INSTRUCTION:instructions;
+  +'\n'+PLAN_DEMO_INSTRUCTION:instructions;
  const format=planMode?{type:'json_schema',name:'chessaz_plan_lesson',strict:true,schema:{type:'object',properties:{intro:{type:'string'},lineId:{type:'string',enum:['none',...planLineIds]},conclusion:{type:'string'}},required:['intro','lineId','conclusion'],additionalProperties:false}}
   :{type:'json_schema',name:'chessaz_coach_answer',strict:true,schema:{type:'object',properties:{answer:{type:'string'}},required:['answer'],additionalProperties:false}};
  const response=await fetchImpl('https://api.openai.com/v1/responses',{
@@ -108,9 +108,9 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
  if(texts.length!==1)throw providerError();
  const value=JSON.parse(texts[0]);
  if(planMode){
-  const safe=(text,max)=>typeof text==='string'&&text.trim().length>=2&&text.length<=max&&!/https?:\\/\\/|<[^>]*>/.test(text)&&!/[^\\p{Script=Latin}\\p{Script=Cyrillic}\\p{Script=Common}\\p{Script=Inherited}]/u.test(text);
+  const safe=(text,max)=>typeof text==='string'&&text.trim().length>=2&&text.length<=max&&!/https?:\/\/|<[^>]*>/.test(text)&&!/[^\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Common}\p{Script=Inherited}]/u.test(text);
   if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).sort().join(',')!=='conclusion,intro,lineId'||!safe(value.intro,700)||!safe(value.conclusion,450)||!['none',...planLineIds].includes(value.lineId))throw providerError();
-  const intro=value.intro.trim(),conclusion=value.conclusion.trim(),answer=intro+'\\n'+conclusion;
+  const intro=value.intro.trim(),conclusion=value.conclusion.trim(),answer=intro+'\n'+conclusion;
   if(answer.length>1200)throw providerError();
   return {answer,...(value.lineId!=='none'?{planDemonstration:{lineId:value.lineId,intro,conclusion}}:{})};
  }
