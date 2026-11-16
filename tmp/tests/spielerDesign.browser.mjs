@@ -158,13 +158,13 @@ export async function checkSpielerDesign({root=process.cwd(),captureRoot,phase='
      assert.notEqual(afterContinuation,beforeContinuation,'continuation changes the actual shared board');
      assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-study-nav button[aria-label]').nextElementSibling.nextElementSibling.disabled"),true,'replay ends after continuation, not original PV');
 
-     assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion strong').textContent.trim()"),coachChatCopy.ru.planOutcome+':');
+     assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion strong').textContent.trim()"),coachChatCopy.ru.planOutcome+' 1:');
      for(const lang of ['de','en','az','tr','ua','ru']){
       await evaluate("window.fixtureLanguage("+JSON.stringify(lang)+")");
       const text=await evaluate("(()=>{const m=[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1);return {plan:m.querySelector('.coach-chat-plan-primary strong')?.textContent,outcome:m.querySelector('.coach-chat-plan-conclusion strong')?.textContent}})()");
       const tr=coachChatCopy[lang==='ua'?'uk':lang];
       assert.equal(text.plan,tr.planReplay,'plan localized '+lang);
-      assert.equal(text.outcome?.trim(),tr.planOutcome+':','conclusion localized '+lang);
+      assert.equal(text.outcome?.trim(),tr.planOutcome+' 1:','conclusion localized '+lang);
       assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-continuation strong').textContent.trim()"),chessyCopy[lang==='ua'?'uk':lang].stockfishContinuation+':','continuation localized '+lang);
      }
      await evaluate("window.fixtureLanguage('ru')");
@@ -173,6 +173,7 @@ export async function checkSpielerDesign({root=process.cwd(),captureRoot,phase='
      await wait("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion')?.dataset.lessonLine==='1'");
      assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector(':scope>p').textContent"),'План варианта 2: другой конкретный замысел.','intro follows selected variation');
      assert.ok((await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion').textContent")).includes('другая конечная позиция'),'outcome follows selected variation');
+     assert.ok((await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion strong').textContent")).includes(coachChatCopy.ru.planOutcome+' 2:'),'outcome visibly names the selected variation');
      assert.equal(await evaluate('window.layoutChatCalls'),beforeSwitch,'switching never calls the model');
      await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelectorAll('.coach-chat-plan-alternatives button')[1].click()");
      await wait("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion')===null");
