@@ -23,3 +23,16 @@ test('continuation boundary labels exist in all six languages',()=>{
  const expected={ru:'продолжение Stockfish',de:'Fortsetzung von Stockfish',en:'Stockfish continuation',az:'Stockfish davamı',tr:'Stockfish devamı',uk:'продовження Stockfish'};
  for(const [lang,label]of Object.entries(expected))assert.equal(chessyCopy[lang].stockfishContinuation,label);
 });
+
+test('each selected variation uses its own lesson, never the primary outcome',()=>{
+ const fn=source.slice(source.indexOf('function lessonForLine('),source.indexOf('type Clip='));
+ const lessonForLine=new Function(ts.transpile(fn,{target:ts.ScriptTarget.ES2022})+';return lessonForLine;')();
+ const primary={lineIndex:0,intro:'Main objective',conclusion:'Main endpoint'};
+ const other={lineIndex:1,intro:'Fork and recapture',conclusion:'Queen developed; material equal'};
+ const item={planDemo:primary,lineLessons:[primary,other],candidateLines:[{}, {}, {unsettled:true}]};
+ assert.deepEqual(lessonForLine(item,0),primary);
+ assert.deepEqual(lessonForLine(item,1),other);
+ assert.equal(lessonForLine(item,2),undefined);
+ assert.equal(lessonForLine({planDemo:primary},1),undefined,'legacy chat must not reuse a main-line conclusion for an alternative');
+ for(const copy of Object.values(chessyCopy)){assert.ok(copy.unsettledLine.length>10);assert.ok(copy.noLineLesson.length>10);}
+});
