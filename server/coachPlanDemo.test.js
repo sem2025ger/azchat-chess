@@ -63,6 +63,10 @@ test('server sends a lesson only when independently verified Stockfish lines and
  const off=await groundedChat(null,query,opts);
  const on=await groundedChat(null,query,{...opts,planDemoEnabled:true});
  assert.equal(off.planDemonstration,undefined);
+ const withoutStrategy=await groundedChat(null,query,{...opts,planDemoEnabled:true,strategyKnowledgeEnabled:false});
+ const withoutFacts=await groundedChat(null,query,{...opts,planDemoEnabled:true,positionFactsEnabled:false});
+ assert.equal(withoutStrategy.planDemonstration,undefined);
+ assert.equal(withoutFacts.planDemonstration,undefined);
  assert.equal(on.engineVerified,true);
  assert.equal(on.planDemonstration.lineId,'L1');
  assert.equal(on.answer,lesson.intro+'\n'+lesson.conclusion);
