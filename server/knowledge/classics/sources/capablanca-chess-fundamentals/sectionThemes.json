@@ -1,0 +1,182 @@
+{
+ "s1": [
+  "basic-mates",
+  "endgame-technique"
+ ],
+ "s2": [
+  "passed-pawn",
+  "pawn-endings",
+  "king-activity"
+ ],
+ "s3": [
+  "pawn-endings",
+  "opposition",
+  "king-activity",
+  "passed-pawn"
+ ],
+ "s4": [
+  "combinations",
+  "attack-on-king"
+ ],
+ "s5": [
+  "piece-values"
+ ],
+ "s6": [
+  "opening-development",
+  "centre-control"
+ ],
+ "s7": [
+  "centre-control",
+  "opening-development"
+ ],
+ "s8": [
+  "opening-traps",
+  "combinations"
+ ],
+ "s9": [
+  "pawn-endings",
+  "pawn-majority"
+ ],
+ "s10": [
+  "pawn-endings",
+  "king-activity",
+  "endgame-technique"
+ ],
+ "s11": [
+  "passed-pawn",
+  "pawn-majority",
+  "pawn-endings"
+ ],
+ "s12": [
+  "passed-pawn",
+  "pawn-endings"
+ ],
+ "s13": [
+  "opposition",
+  "pawn-endings",
+  "king-activity"
+ ],
+ "s14": [
+  "minor-pieces",
+  "endgame-technique"
+ ],
+ "s15": [
+  "basic-mates",
+  "minor-pieces",
+  "endgame-technique"
+ ],
+ "s16": [
+  "queen-vs-rook",
+  "endgame-technique"
+ ],
+ "s17": [
+  "attack-on-king",
+  "combinations"
+ ],
+ "s18": [
+  "attack-on-king",
+  "combinations"
+ ],
+ "s19": [
+  "threats",
+  "planning"
+ ],
+ "s20": [
+  "initiative"
+ ],
+ "s21": [
+  "attack-on-king",
+  "piece-coordination"
+ ],
+ "s22": [
+  "threats",
+  "initiative"
+ ],
+ "s23": [
+  "initiative",
+  "defence"
+ ],
+ "s24": [
+  "piece-coordination",
+  "planning"
+ ],
+ "s25": [
+  "planning",
+  "annotated-game"
+ ],
+ "s26": [
+  "attack-on-king",
+  "planning"
+ ],
+ "s27": [
+  "defence",
+  "planning"
+ ],
+ "s28": [
+  "rook-endings",
+  "passed-pawn",
+  "king-activity"
+ ],
+ "s29": [
+  "rook-endings",
+  "endgame-technique"
+ ],
+ "s30": [
+  "minor-pieces",
+  "rook-endings",
+  "endgame-technique"
+ ],
+ "s31": [
+  "pawn-structure"
+ ],
+ "s32": [
+  "pawn-structure",
+  "planning"
+ ],
+ "s33": [
+  "holes-outposts",
+  "pawn-structure"
+ ],
+ "g1": [
+  "annotated-game"
+ ],
+ "g2": [
+  "annotated-game"
+ ],
+ "g3": [
+  "annotated-game"
+ ],
+ "g4": [
+  "annotated-game"
+ ],
+ "g5": [
+  "annotated-game"
+ ],
+ "g6": [
+  "annotated-game"
+ ],
+ "g7": [
+  "annotated-game"
+ ],
+ "g8": [
+  "annotated-game"
+ ],
+ "g9": [
+  "annotated-game"
+ ],
+ "g10": [
+  "annotated-game"
+ ],
+ "g11": [
+  "annotated-game"
+ ],
+ "g12": [
+  "annotated-game"
+ ],
+ "g13": [
+  "annotated-game"
+ ],
+ "g14": [
+  "annotated-game"
+ ]
+}
