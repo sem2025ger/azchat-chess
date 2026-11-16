@@ -22,7 +22,7 @@ Other Stockfish lines remain available under “Other engine lines”. Existing 
 
 Two independent feature switches, both **false by default**:
 
-- API QA: `AI_COACH_PLAN_DEMO_ENABLED=true`. Requires an available server Stockfish engine (`AI_COACH_SERVER_ENGINE_ENABLED=true`) for real linked illustrations.
+- API QA: `AI_COACH_PLAN_DEMO_ENABLED=true`. Also requires `AI_COACH_SERVER_ENGINE_ENABLED=true`, `AI_COACH_POSITION_FACTS_ENABLED=true`, and `AI_COACH_STRATEGY_KNOWLEDGE_ENABLED=true` so every illustrated plan combines confirmed engine lines with deterministic board facts and the classical strategy bank.
 - Vercel Preview: `VITE_CHESSY_PLAN_DEMO_ENABLED=true`. Builds a frontend capable of rendering the new structured lesson; old deployments ignore the optional data and remain backward compatible.
 
 Do not activate these in production without real authenticated QA review, legal/actual-move regression, variation replay check, answer quality samples in all six locales and explicit owner approval. Stacked draft PR #235 targets #234, not `main`.
