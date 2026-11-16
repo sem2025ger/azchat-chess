@@ -44,22 +44,24 @@ function selectStrategyKnowledge(facts,{limit=6}={}){
  if(!facts||typeof facts!=='object'||!facts.white||!facts.black)return null;
  if(!Number.isInteger(limit)||limit<1||limit>cap)return null;
  const buckets=new Map(authors.map(author=>[author,[]]));
+ const priority={passed_own:10,opponent_passed:10,occupied_hole_own:9,outpost_own:9,isolated_own:8,undefended_own:8,material_imbalance:7,half_open_file:6,own_uncastled:2,opponent_uncastled:2};
  for(const entry of bank.entries){
   for(const [side,oppSide] of [['white','black'],['black','white']]){
    const evidence=match(entry.condition,facts[side],facts[oppSide],facts,side);
    if(evidence)buckets.get(entry.author).push({
     id:entry.id,author:entry.author,work:entry.work,sourceUrl:entry.sourceUrl,basis:entry.basis,
     side,theme:entry.theme,idea:entry.idea,goal:entry.goal,positionEvidence:evidence,
-    status:'historically_informed_heuristic_not_engine_verified'
+    status:'historically_informed_heuristic_not_engine_verified',priority:priority[entry.condition]||0
    });
   }
  }
+ for(const rows of buckets.values())rows.sort((a,b)=>b.priority-a.priority);
  const result=[];
  while(result.length<limit){
   let didAdd=false;
   for(const author of authors){
    const next=buckets.get(author).shift();
-   if(next){result.push(next);didAdd=true;if(result.length===limit)break;}
+   if(next){const {priority:rank,...publicCue}=next;result.push(publicCue);didAdd=true;if(result.length===limit)break;}
   }
   if(!didAdd)break;
  }
