@@ -177,3 +177,12 @@
   .spieler-page .spieler-position-workspace .coach-chat-history{scrollbar-color:#8a7b67 #171a1d}
  }
 }
+
+/* Optional illustrated Chessy lesson: the chosen engine line sits between plan and outcome. */
+.coach-chat-message .coach-chat-plan-primary{border-color:#bda078;background:#2e302d;font-weight:500}
+.coach-chat-plan-primary strong{color:#ead6ab}
+.coach-chat-plan-alternatives{margin-top:7px;border-top:1px solid #514d45;padding-top:7px}
+.coach-chat-plan-alternatives summary{cursor:pointer;color:#cabb9e;font-size:.79rem;padding:5px 3px}
+.coach-chat-plan-alternatives button{margin-top:6px!important}
+.coach-chat-message p.coach-chat-plan-conclusion{margin-top:10px;padding:9px 10px;border-left:2px solid #bda078;background:#292d2c}
+.coach-chat-plan-conclusion strong{color:#e9d2a8}
