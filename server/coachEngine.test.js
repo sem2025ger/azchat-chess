@@ -467,3 +467,27 @@ test('[real] truncated Italian exchange gets verified dxe5 with the unchanged de
   assert.ok(Math.abs(facts.materialVsEval.endWhite-line.continuation.evalWhite)<1);
  }finally{engine.close();}
 });
+
+test('production preserves the verified root PV tail even with no budget remaining for another search',async()=>{
+ const board=new Chess(ITALIAN),moves=[...NC3_LINE.sanPv,'dxe5','Bxe5','Qd3','d6'],uci=[];
+ for(const san of moves){const m=board.move(san,{strict:true});uci.push(m.from+m.to);}
+ let time=0,searches=0;
+ const engine=createCoachEngine({verify:noVerify,movetimeMs:100,now:()=>time,log:()=>{},spawnImpl:fakeSpawn((cmd,emit)=>{
+  if(cmd==='uci')emit('uciok');if(cmd==='isready')emit('readyok');
+  if(cmd.startsWith('go ')){
+   searches++;time=100;
+   setImmediate(()=>{for(let i=1;i<=3;i++)emit('info depth 16 multipv '+i+' score cp 10 nodes 1 time 100 pv '+uci.join(' '));emit('bestmove b1c3');});
+  }
+ })});
+ try{
+  const result=await engine.analyze(ITALIAN);
+  assert.equal(searches,1,'no CPU or depth budget added');
+  for(const line of result.lines){
+   assert.deepEqual(line.sanPv,NC3_LINE.sanPv);
+   assert.deepEqual(line.continuation.moves,['dxe5','Bxe5','Qd3','d6']);
+   assert.equal(line.continuation.source,'root_pv');assert.equal(line.continuation.settled,true);
+   assert.equal(line.fullSanPv,undefined,'internal complete PV not exposed or cached twice');
+   assert.equal(lineFacts(ITALIAN,[...line.sanPv,...line.continuation.moves],line).materialVsEval.endWhite,0);
+  }
+ }finally{engine.close();}
+});

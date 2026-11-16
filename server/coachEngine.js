@@ -34,13 +34,16 @@ function parseInfo(line,turn){
 }
 // Replay EVERY ply of the PV with chess.js from the exact root; one illegal ply rejects the
 // line. SAN is capped for display only after the whole PV has been validated.
-function sanLine(fen,uciPv){
+function fullSanLine(fen,uciPv){
  const board=new Chess(fen),san=[];
  for(const uci of uciPv){
   if(!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci))return null;
   try{san.push(board.move({from:uci.slice(0,2),to:uci.slice(2,4),...(uci[4]?{promotion:uci[4]}:{})}).san);}catch{return null;}
  }
- return san.length?san.slice(0,MAX_SAN_PLIES):null;
+ return san.length?san:null;
+}
+function sanLine(fen,uciPv){
+ const san=fullSanLine(fen,uciPv);return san?san.slice(0,MAX_SAN_PLIES):null;
 }
 async function verifyFiles(enginePath,pinned){
  const dir=path.dirname(enginePath);
@@ -53,23 +56,35 @@ async function verifyFiles(enginePath,pinned){
 // All follow-ups share the ORIGINAL job's remaining search budget. A failed depth
 // gate discards the continuation; the original line stays legal but unresolved.
 async function settleLine(fen,line,{search,remainingMs}){
+ const {fullSanPv,...original}=line;
  const initial=settlement(fen,line.sanPv,line);
- if(!initial.unsettled)return {...line,unsettled:false};
+ // The SAME depth-gated root search already verified these moves. Preserve its
+ // tail before spending any additional CPU; never invent or splice a variation.
+ if(Array.isArray(fullSanPv)&&fullSanPv.length>line.sanPv.length&&
+  line.sanPv.every((san,i)=>san===fullSanPv[i])){
+  const tail=fullSanPv.slice(line.sanPv.length,line.sanPv.length+6);
+  for(let length=tail.length;length>0;length--){
+   const moves=tail.slice(0,length),state=settlement(fen,[...line.sanPv,...moves],line);
+   if(!state.unsettled)return {...original,unsettled:false,continuation:{moves,
+    evalWhite:line.scoreKind==='cp'?line.scoreWhite/100:null,depth:line.depth,settled:true,source:'root_pv'}};
+  }
+ }
+ if(!initial.unsettled)return {...original,unsettled:false};
  const moves=[];let state=initial,score=line,depth=Infinity;
  try{
   while(state.unsettled&&moves.length<6){
    const cap=Math.min(900,Math.floor(remainingMs()));
-   if(cap<=0)return {...line,unsettled:true};
+   if(cap<=0)return {...original,unsettled:true};
    const result=await search(state.fen,cap),next=result.lines[0];
-   if(!next?.sanPv?.length)return {...line,unsettled:true};
+   if(!next?.sanPv?.length)return {...original,unsettled:true};
    moves.push(next.sanPv[0]);score=next;depth=Math.min(depth,next.depth);
    state=settlement(fen,[...line.sanPv,...moves],score);
   }
  }catch(error){
   if(error.code==='engine_cancelled')throw error;
-  return {...line,unsettled:true};
+  return {...original,unsettled:true};
  }
- return {...line,unsettled:state.unsettled,continuation:{moves,
+ return {...original,unsettled:state.unsettled,continuation:{moves,
   evalWhite:score.scoreKind==='cp'?score.scoreWhite/100:null,depth,settled:!state.unsettled}};
 }
 
@@ -147,7 +162,7 @@ function createCoachEngine({
      if(complete[0].depth<minDepth)return finish(reject,Object.assign(engineError('engine_shallow'),{depth:complete[0].depth}));
      // An illegal PV means corrupted engine output: reject the whole set instead of
      // returning a partial MultiPV set as verified evidence.
-     const lines=complete.map((x)=>{const san=sanLine(fen,x.uciPv);return san&&{...x,uciPv:x.uciPv.slice(0,MAX_SAN_PLIES),sanPv:san};});
+     const lines=complete.map((x)=>{const san=fullSanLine(fen,x.uciPv);return san&&{...x,uciPv:x.uciPv.slice(0,MAX_SAN_PLIES),sanPv:san.slice(0,MAX_SAN_PLIES),fullSanPv:san.slice(0,MAX_SAN_PLIES+6)};});
      if(lines.some(x=>!x))return finish(reject,engineError('engine_unavailable'));
      finish(resolve,{fen,engine:ENGINE_NAME,nnue,budget,elapsedMs:now()-started,lines});
     }

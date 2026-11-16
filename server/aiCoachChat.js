@@ -85,8 +85,8 @@ function withLineEndFacts(lines,fen){
     const finalFen=board.fen(),facts=positionFacts(finalFen);
     if(!facts)return null;
     return {fen:finalFen,plies:moves.length,material:facts.material,majorities:facts.majorities,
-     white:{pawns:facts.white.pawns,king:facts.white.king,minorityAttack:facts.white.strategy.minorityAttack},
-     black:{pawns:facts.black.pawns,king:facts.black.king,minorityAttack:facts.black.strategy.minorityAttack},
+     white:{pawns:facts.white.pawns,king:facts.white.king,minorityAttack:facts.white.strategy.minorityAttack,files:facts.white.files,outposts:facts.white.outposts,strategy:facts.white.strategy,pieces:board.board().flat().filter(p=>p?.color==='w').map(({type,square})=>({type,square}))},
+     black:{pawns:facts.black.pawns,king:facts.black.king,minorityAttack:facts.black.strategy.minorityAttack,files:facts.black.files,outposts:facts.black.outposts,strategy:facts.black.strategy,pieces:board.board().flat().filter(p=>p?.color==='b').map(({type,square})=>({type,square}))},
      ...lineFacts(fen,moves,score),unsettled:settlement(fen,moves,score).unsettled};
    };
    const original=factsFor(line.moves,line);if(!original)return line;
@@ -119,18 +119,18 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
   ...(strategyKnowledge?{strategyKnowledge}:{}),
   ...(knowledgeCatalogEnabled&&lookupCoachBibliography(query.message)?{coachBibliography:lookupCoachBibliography(query.message)}:{})};
  const archiveOnly=!!requested&&!!result;
- let answer,planDemonstration=null;
+ let answer,planDemonstration=null,lineLessons=null;
  if(archiveOnly)answer=gameHeadings[language];
  else if(openaiApiKey){
   // Only a server-recomputed line can be linked to an illustrated lesson.
   const showPlan=planDemoEnabled&&positionFactsEnabled&&strategyKnowledgeEnabled&&!!analysis&&isPlanRequest(query.message);
   const result=await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal,planDemo:showPlan});
   if(typeof result==='string')answer=result;
-  else {answer=result.answer;planDemonstration=result.planDemonstration||null;}
+  else {answer=result.answer;planDemonstration=result.planDemonstration||null;lineLessons=result.lineLessons||null;}
  }else answer=fallback[language](result.total||0);
  return {answer,generated:archiveOnly||!!openaiApiKey,provider:archiveOnly?null:openaiApiKey?'openai':null,providerStatus:archiveOnly?'archive':openaiApiKey?'ready':'not_configured',
   source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:!!analysis,candidateLines:clientLines,
-  ...(planDemonstration?{planDemonstration}:{}),
+  ...(planDemonstration?{planDemonstration}:{}),...(lineLessons?{lineLessons}:{}),
   ...(engine&&!requested?(analysis?{engineLines:serverEngineLines(analysis)}:{engineError}):{}),position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);const moves=board.history();return {...game,moves:moves.slice(0,30),continuation:moves.slice(game.ply,game.ply+6)};}):openaiApiKey?[]:games};
 }
 module.exports={validChatQuery,groundedChat,publicChatGames,gameRequest,legalCandidateLines,serverEngineLines};
