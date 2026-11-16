@@ -1,7 +1,8 @@
 'use strict';
 // Deterministic facts about the MOVES of one server-verified Stockfish line:
 // material at the line end compared with the engine score, double attacks made by
-// the moved piece, and every check with its consequence at the line end.
+// the moved piece, and every check (verified checkmate included) with the material
+// change from that check to the line end.
 // Static attack rules only (no pins, no search); model evidence, never browser output.
 const {Chess}=require('chess.js');
 
@@ -39,14 +40,15 @@ function lineFacts(fen,moves,{scoreKind,scoreWhite}={}){
   const label=number+(move.color==='w'?'. ':'... ')+move.san,side=SIDE[move.color];
   const attack=doubleAttack(board,move);
   if(attack)doubleAttacks.push({ply:i+1,move:label,side,...attack});
-  if(board.inCheck())checks.push({ply:i+1,move:label,side,legalReplies:board.moves().length,before});
+  if(board.inCheck())checks.push({ply:i+1,move:label,side,legalReplies:board.moves().length,checkmate:board.isCheckmate(),before});
  });
  const endWhite=materialWhite(board);
  const evalWhite=scoreKind==='cp'&&Number.isFinite(scoreWhite)?scoreWhite/100:null;
  return {
   materialVsEval:{startWhite,endWhite,evalWhite,matchesEval:evalWhite===null?null:Math.abs(endWhite-evalWhite)<MATERIAL_EVAL_GAP},
   doubleAttacks,
-  checks:checks.map(({before,...check})=>({...check,materialGainForCheckingSide:(endWhite-before)*(check.side==='white'?1:-1)}))
+  // ||0 normalises -0 for Black checks without material change.
+  checks:checks.map(({before,...check})=>({...check,materialGainForCheckingSide:((endWhite-before)*(check.side==='white'?1:-1))||0}))
  };
 }
 

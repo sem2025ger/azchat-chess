@@ -173,13 +173,19 @@ test('Italian owner QA: line facts reach the model only, with the sacrifice, for
  assert.deepEqual(nc3.materialVsEval,{startWhite:0,endWhite:-2,evalWhite:0.1,matchesEval:false});
  assert.equal(nc3.doubleAttacks[0].move,'8. d4');
  assert.deepEqual(nc3.doubleAttacks[0].targets.map(t=>t.square+' '+t.piece),['c5 bishop','e5 knight']);
- assert.deepEqual(c3.checks,[{ply:6,move:'6... Bb4+',side:'black',legalReplies:7,materialGainForCheckingSide:1}]);
+ assert.deepEqual(c3.checks,[{ply:6,move:'6... Bb4+',side:'black',legalReplies:7,checkmate:false,materialGainForCheckingSide:1}]);
  assert.equal(c3.materialVsEval.matchesEval,false);
- assert.ok(observed[1].instructions.includes('describe it as a temporary sacrifice'));
+ assert.ok(observed[1].instructions.includes('which may be temporary or lasting'));
+ assert.ok(observed[1].instructions.includes('Say that material is regained only when the supplied moves of that line show the recapture.'));
+ assert.ok(observed[1].instructions.includes('never present a legal move that is not in the supplied line'));
+ assert.ok(observed[1].instructions.includes('A listed fork is an attack, not a capture'));
  assert.ok(observed[1].instructions.includes('Never claim a fork, double attack or pin that is not listed.'));
- assert.ok(observed[1].instructions.includes('describe it as a forcing move that gains time, not as a threat.'));
+ assert.ok(observed[1].instructions.includes('zero material gain does not make a check a mere tempo move'));
+ // Removed rules: no categorical ban on lasting imbalances, no gain+matchesEval gate for checks.
+ assert.ok(!observed[1].instructions.includes('never as a lasting loss or gain of material'));
+ assert.ok(!observed[1].instructions.includes('only when that gain is positive and materialVsEval.matchesEval is true'));
  assert.equal(observed[0].evidence.candidateLines.some(line=>line.endFacts),false);
- assert.ok(!observed[0].instructions.includes('temporary sacrifice'));
+ assert.ok(!observed[0].instructions.includes('materialVsEval'));
  for(const key of ['endFacts','materialVsEval','doubleAttacks','materialGainForCheckingSide'])
   assert.equal(JSON.stringify(on).includes(key),false,key+' never reaches the browser');
  assert.equal(JSON.stringify(off.engineLines),JSON.stringify(on.engineLines));
@@ -213,4 +219,17 @@ test('V1.1 three independent 10-ply PVs keep model evidence under 16KB',async()=
    assert.ok(Buffer.byteLength(JSON.stringify(evidence),'utf8')<16*1024);
    return verifiedReply();
   }});
+});
+
+test('1.f3 e5 2.g4: a server mate line reaches the model as a verified checkmate',async()=>{
+ const FOOLS='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2';
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines:[{sanPv:['Qh4#'],scoreKind:'mate',scoreWhite:-1,depth:245,wdlWhite:[0,0,1000]}]})};
+ let observed=null;
+ const reply=await groundedChat(null,{fen:FOOLS,message:'Оцени позицию и предложи план игры за чёрных.',language:'ru',side:'any'},{openaiApiKey:'synthetic',engine,positionFactsEnabled:true,
+  fetchImpl:async(_url,options)=>{const payload=JSON.parse(options.body);observed={evidence:JSON.parse(payload.input).evidence,instructions:payload.instructions};return verifiedReply();}});
+ const facts=observed.evidence.candidateLines[0].endFacts;
+ assert.deepEqual(facts.checks,[{ply:1,move:'2... Qh4#',side:'black',legalReplies:0,checkmate:true,materialGainForCheckingSide:0}]);
+ assert.equal(facts.materialVsEval.matchesEval,null);
+ assert.ok(observed.instructions.includes('A check with checkmate true is a verified checkmate: state it first and plainly as mate, never as a check that gains time.'));
+ assert.equal(JSON.stringify(reply).includes('checkmate'),false,'line facts never reach the browser');
 });
