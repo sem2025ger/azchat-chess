@@ -11,6 +11,8 @@ const POSITION_FACTS_INSTRUCTION='evidence.positionFacts was computed determinis
 
 const BIBLIOGRAPHY_INSTRUCTION='evidence.coachBibliography contains only a server-owned bibliographic catalogue: titles, authors, publication metadata and provenance types. It contains NO book pages, original annotations, verified positions or full book analyses. Use it only to answer questions about listed books, and distinguish original authorship from later editors. NEVER quote or paraphrase alleged book passages, cite a page, claim you read/ingested a book, or attribute a positional idea, variation or game to these books solely from this catalogue. For any chess move, line or evaluation rely on position, legalMoves and the verified evidence instead. The catalogue is not permission to train on copyrighted editions.';
 
+const NIMZOWITSCH_INSTRUCTION='evidence.nimzowitschStrategy is an original, NON-VERBATIM ChessAZ teaching framework based on general strategic concepts associated with Nimzowitsch, NOT a copy of a book, translation, historical game or author annotation. Only its signals are deterministic server-computed positional geometry; neither signals nor the framework are engine evaluations. The verified Stockfish candidateLines, exact scores and best opponent replies take precedence. First give a position evaluation grounded in those lines, then a concrete plan and its limitation or alternative. Use a listed signal only if relevant to the user question and the actual line; keep its recorded squares or files exact. A feature such as an isolated pawn, blockade or outpost is NOT automatically an advantage or a best move. Do not invent a tactical variation, quote a book, attribute any line or specific wording to the author, or cite page numbers from this framework.';
+
 // Check actual streamed bytes, including when Content-Length is absent or false.
 async function readBytes(response,limit){
  if(!response.ok||Number(response.headers.get('content-length')||0)>limit){await response.body?.cancel().catch(()=>{});throw providerError();}
@@ -60,7 +62,7 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
   'Do not claim a move is illegal if it appears in legalMoves. Explain uncertainty and offer the analysis board for engine verification.',
   'No links, HTML or markdown. Return JSON with exactly one string property answer, between 2 and 1200 characters.'
  ].join('\n'):null;
- const instructions=(serverEngine?serverInstructions:legacyInstructions)+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'');
+ const instructions=(serverEngine?serverInstructions:legacyInstructions)+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'')+(evidence.nimzowitschStrategy?'\n'+NIMZOWITSCH_INSTRUCTION:'');
  const response=await fetchImpl('https://api.openai.com/v1/responses',{
   method:'POST',redirect:'error',signal:requestSignal(signal),headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
   body:JSON.stringify({model,store:false,instructions,reasoning:{effort:'low'},max_output_tokens:1800,
