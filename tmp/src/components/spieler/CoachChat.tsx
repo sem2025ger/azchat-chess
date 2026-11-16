@@ -183,11 +183,14 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
   }catch(e){player?.stop();if(playback.current===player)playback.current=null;if(!abort.signal.aborted){const code=e instanceof Error?e.message:'';setSpeechError(code==='speech_timeout'||(e instanceof DOMException&&e.name==='TimeoutError')?t.speechTimeout:code==='speech_too_long'?t.speechTooLong:code==='rate_limit'?t.rate:code==='provider_not_configured'?t.notConfigured:t.speechUnavailable);setSpeechPlaying(false);}}
   finally{if(!abort.signal.aborted)setSpeechBusy(null);}
  }
- async function send(event:FormEvent){
-  event.preventDefault();const message=draft.trim();if(message.length<2||!token||busyRef.current||recorder.current)return;
+ function send(event:FormEvent){event.preventDefault();void ask(draft.trim(),true);}
+ // One chat workflow for typed questions and the Chessy plan buttons. A button
+ // question leaves the user's unsent draft untouched; FEN and side are unchanged.
+ async function ask(message:string,fromDraft:boolean){
+  if(message.length<2||!token||busyRef.current||recorder.current)return;
   busyRef.current=true;
   stopSpeech();const abort=new AbortController();request.current?.abort();request.current=abort;const previous=items.slice(-58);
-  setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);setPreview(null);onVariationPreview?.([], -1);
+  setBusy('chat');if(fromDraft)setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);setPreview(null);onVariationPreview?.([], -1);
   try{
    const requested=archiveCount(message);
    const analysisLines=requested===null?await analyzeWithStockfish():[];
@@ -208,7 +211,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
     const serverClaimed=requested===null&&!data.archiveOnly&&data.engineVerified===true;
     const serverLines=serverClaimed&&data.position===fen?serverEngineLines(data.engineLines,fen):null;
     setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:requested!==null?data.games.slice(0,20):[],generated:data.generated,archiveOnly:data.archiveOnly===true,candidateLines:serverLines??(!data.archiveOnly?analysisLines:[]),engineLinked:serverLines?true:!serverClaimed&&!legacyBackend&&analysisLines.length>0&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines),...(serverLines?{engineServer:true}:{}),...(data.engineError?{engineUnavailable:true}:{})}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
-  }catch(e){if(!abort.signal.aborted){setError(describe(e));setDraft(message);setItems(previous);}}
+  }catch(e){if(!abort.signal.aborted){setError(describe(e));if(fromDraft)setDraft(message);setItems(previous);}}
   finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}
  }
  async function toggleVoice(){
@@ -263,7 +266,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    {!token&&<p className="coach-chat-error" role="status">{t.auth}</p>}
    {error&&<p className="coach-chat-error" role="alert">{error}</p>}
    {speechError&&<p className="coach-chat-error coach-chat-speech-error" role="alert">{speechError}</p>}
-   {chessyEnabled&&<div className="chessy-prompts" aria-label={chessy.promptsLabel}><span className="chessy-prompts-label">{chessy.promptsLabel}</span>{chessy.prompts.map(question=><button key={question} type="button" disabled={!token||!!busy||recording} onClick={()=>{setDraft(question);inputRef.current?.focus();}}>{question}</button>)}</div>}
+   {chessyEnabled&&<div className="chessy-prompts" role="group" aria-label={chessy.planQuestion}><span className="chessy-prompts-label">{chessy.planQuestion}</span>{(['white','black'] as const).map(planSide=><button key={planSide} type="button" disabled={!token||!!busy||recording} onClick={()=>void ask(chessy.planRequest[planSide],false)}>{planSide==='white'?chessy.forWhite:chessy.forBlack}</button>)}</div>}
    <label className="coach-chat-voice-option"><input type="checkbox" checked={voiceReplies} disabled={!token} onChange={e=>{voicePreference.current=e.target.checked;setVoiceReplies(e.target.checked);if(!e.target.checked)stopSpeech();}}/>{t.autoVoice}</label>
    <form className="coach-chat-compose" onSubmit={send}>
     <label className="sr-only" htmlFor={inputId}>{t.placeholder}</label>

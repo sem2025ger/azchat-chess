@@ -5,6 +5,7 @@ import {mkdtemp,readFile,rm,mkdir,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';import {fileURLToPath} from 'node:url';import {createRequire} from 'node:module';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';import {Chess} from 'chess.js';
 import {coachChatCopy} from '../src/i18n/coachChatCopy.ts';
+import {chessyCopy} from '../src/i18n/chessyCopy.ts';
 import {formatEngineScore} from '../src/utils/engineLines.ts';
 const require=createRequire(new URL('../../server/package.json',import.meta.url)),express=require('express'),{WebSocket,WebSocketServer}=require('ws');
 const {installAiCoach}=require('./aiCoach.js');
@@ -60,7 +61,7 @@ export async function checkCoachChat({captureRoot}={}){
   }});
  api=app.listen(0,'127.0.0.1');await new Promise(r=>api.once('listening',r));
  cacheDir=await mkdtemp(join(tmpdir(),'chessaz-chat-vite-'));
- const makeServer=enabled=>createServer({configFile:false,envDir:false,cacheDir,plugins:[{name:'coach-chat-fixture',resolveId(id){if(id==='/__coach-chat.tsx')return id;},load(id){if(id==='/__coach-chat.tsx')return fixture;},configureServer(vite){vite.middlewares.use(async(req,res,next)=>{if(req.url!=='/coach-chat-fixture')return next();res.setHeader('Content-Type','text/html');res.end(await vite.transformIndexHtml('/coach-chat-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#202020;color:white"><div id="root"></div><script type="module" src="/__coach-chat.tsx"></script></body></html>'));});}},react()],server:{host:'127.0.0.1',port:0,hmr:false},define:{'import.meta.env.VITE_AI_COACH_ENABLED':JSON.stringify(String(enabled)),'import.meta.env.VITE_SERVER_URL':JSON.stringify('http://127.0.0.1:'+api.address().port)}});server=await makeServer(false);await server.listen();
+ const makeServer=(enabled,chessy=false)=>createServer({configFile:false,envDir:false,cacheDir,plugins:[{name:'coach-chat-fixture',resolveId(id){if(id==='/__coach-chat.tsx')return id;},load(id){if(id==='/__coach-chat.tsx')return fixture;},configureServer(vite){vite.middlewares.use(async(req,res,next)=>{if(req.url!=='/coach-chat-fixture')return next();res.setHeader('Content-Type','text/html');res.end(await vite.transformIndexHtml('/coach-chat-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#202020;color:white"><div id="root"></div><script type="module" src="/__coach-chat.tsx"></script></body></html>'));});}},react()],server:{host:'127.0.0.1',port:0,hmr:false},define:{'import.meta.env.VITE_AI_COACH_ENABLED':JSON.stringify(String(enabled)),'import.meta.env.VITE_CHESSY_ENABLED':JSON.stringify(String(chessy)),'import.meta.env.VITE_SERVER_URL':JSON.stringify('http://127.0.0.1:'+api.address().port)}});server=await makeServer(false);await server.listen();
  const binary=process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(existsSync);assert.ok(binary,'Chromium required');profile=await mkdtemp(join(tmpdir(),'chessaz-chat-chrome-'));
  chrome=spawn(binary,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--use-fake-ui-for-media-stream','--use-fake-device-for-media-stream','--autoplay-policy=no-user-gesture-required','--remote-allow-origins=*','--remote-debugging-port=0','--user-data-dir='+profile,...JSON.parse(process.env.CHROME_ARGS||'[]'),'about:blank'],{stdio:['ignore','ignore','pipe']});
  let stderr='';chrome.stderr.on('data',c=>stderr=(stderr+c).slice(-4000));const pause=()=>new Promise(r=>setTimeout(r,50));let port;
@@ -327,6 +328,40 @@ export async function checkCoachChat({captureRoot}={}){
  await pause();
  assert.equal(await evaluate('!!document.querySelector(".coach-chat-copy .lucide-check")'),false,'stale copy result is ignored after position switch');
  mode='ready';
+ // Chessy flag ON: one universal plan question with two side buttons. Each button
+ // submits through the existing chat workflow; the FEN, side to move and archive
+ // filter stay exactly as on the board, and an unsent typed draft is kept.
+ await server.close();server=await makeServer(true,true);await server.listen();
+ await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'coach-chat-fixture'});await wait('typeof window.setToken==="function"');
+ clock+=61000;await evaluate('window.language("ru");window.setToken("synthetic-chessy");window.setAccount("chessy-plan")');
+ // Black to move: the White plan is for the side that is not to move.
+ const planFen='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2';
+ await evaluate('window.setFen('+JSON.stringify(planFen)+')');
+ await wait('document.querySelector(".coach-chat-toggle")');
+ if(!await evaluate('!!document.querySelector(".coach-chat-panel")'))await click(chessyCopy.ru.name);
+ await wait('document.querySelector(".chessy-prompts")');
+ assert.equal(await evaluate('document.querySelector(".chessy-prompts-label").textContent'),'Оцени позицию и предложи план игры');
+ assert.deepEqual(await evaluate('[...document.querySelectorAll(".chessy-prompts button")].map(b=>b.textContent)'),['За белых','За чёрных']);
+ await fill('Мой черновик');
+ const planStart=calls.filter(c=>c.kind==="chat").length;
+ await click('За белых');
+ await wait('document.querySelectorAll(".coach-chat-message.assistant").length===1');
+ await click('За чёрных');
+ await wait('document.querySelectorAll(".coach-chat-message.assistant").length===2');
+ const planCalls=calls.filter(c=>c.kind==='chat').slice(planStart);
+ assert.equal(planCalls.length,2,'each side button sends exactly one chat request');
+ assert.deepEqual(planCalls.map(c=>c.body.question),[chessyCopy.ru.planRequest.white,chessyCopy.ru.planRequest.black]);
+ assert.equal(planCalls[0].body.position,planCalls[1].body.position,'same FEN for both perspectives');
+ assert.equal(planCalls[0].body.position,planFen,'board FEN is sent unchanged');
+ assert.deepEqual(planCalls.map(c=>c.body.sideToMove),['b','b'],'side to move unchanged');
+ assert.equal(planCalls[0].body.archiveFilterSide,planCalls[1].body.archiveFilterSide,'archive filter unchanged');
+ assert.deepEqual(planCalls[0].body.legalMoves,planCalls[1].body.legalMoves);
+ assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").value'),'Мой черновик','typed draft survives a plan button');
+ assert.deepEqual(await evaluate('[...document.querySelectorAll(".coach-chat-message.user")].map(m=>m.innerText.trim())'),[chessyCopy.ru.planRequest.white,chessyCopy.ru.planRequest.black]);
+ // Free-form chat remains available next to the plan buttons.
+ await click(coachChatCopy.ru.send);
+ await wait('document.querySelectorAll(".coach-chat-message.assistant").length===3');
+ assert.equal(calls.filter(c=>c.kind==='chat').at(-1).body.question,'Мой черновик');
 assert.deepEqual(exceptions,[]);console.log('PASS CoachChat: real HTTP router, real MediaRecorder with Chromium fake microphone, multipart provider adapter, actual loopback WebSocket/WAV playback, six locales at 390/1280, copy success/reset/pending/rejection/stale-position feedback, bounded context, auth/error handling, denied/late permissions, close cleanup, stale board cancellation, analysis round-trip restoration, scroll/draft preservation, token rotation, account isolation, logout cleanup and actual workspace colour propagation. OpenAI responses and clipboard writes are synthetic; no hosted credentials or external API calls.');
  }finally{for(const p of pending.values())clearTimeout(p.timer);ws?.close();chrome?.kill('SIGKILL');await server?.close();if(api)await new Promise(r=>api.close(r));if(wss){for(const client of wss.clients)client.terminate();await new Promise(r=>wss.close(r));}if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});if(cacheDir)await rm(cacheDir,{recursive:true,force:true});}
 }
