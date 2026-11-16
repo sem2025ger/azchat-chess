@@ -2,7 +2,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const {Chess}=require('chess.js');
-const {lineFacts,settlement}=require('./coachLineFacts');
+const {lineFacts,lineMechanisms,settlement}=require('./coachLineFacts');
 
 // Owner QA position (15 Nov 2026): Italian Game after 1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5,
 // with the three server-verified Stockfish 19 lines and scores shown on QA.
@@ -79,4 +79,27 @@ test('1.f3 e5 2.g4 Qh4#: checkmate without a capture is listed as a verified mat
  // The same mate as a one-move server line from the position before it.
  const before='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2';
  assert.deepEqual(lineFacts(before,['Qh4#'],{scoreKind:'mate',scoreWhite:-1}).checks,[{ply:1,move:'2... Qh4#',side:'black',legalReplies:0,checkmate:true,materialGainForCheckingSide:0}]);
+});
+
+test('move mechanisms: Italian Nc3 really blocks c2-c3, while d4 controls both fork targets',()=>{
+ const nc3=lineMechanisms(ITALIAN,NC3);
+ assert.ok(nc3.blockedPawnSteps.some(item=>item.move==='4. Nc3'&&item.pawn==='c2'&&item.blockedSquare==='c3'&&item.piece==='knight'));
+ const d4=nc3.pawnControls.find(item=>item.move==='8. d4');
+ assert.deepEqual(d4.squares,['c5','e5']);
+ assert.equal(nc3.freedSquaresUsed,undefined,'do not infer a purpose or square reuse absent from the line');
+});
+
+test('move mechanisms: a3 demonstrably frees a2 for Ba2, and h3 covers g4',()=>{
+ const start=new Chess();
+ for(const san of ['e4','e5','Bc4','Bc5','Nf3','Nf6','d3','d6','Bb3','O-O'])start.move(san,{strict:true});
+ const mechanisms=lineMechanisms(start.fen(),['h3','h6','a3','a6','Ba2']);
+ assert.deepEqual(mechanisms.freedSquaresUsed,[{square:'a2',side:'white',freedBy:'7. a3',usedBy:'8. Ba2',piece:'bishop'}]);
+ assert.deepEqual(mechanisms.pawnControls.find(x=>x.move==='6. h3').squares,['g4']);
+ assert.deepEqual(mechanisms.pawnControls.find(x=>x.move==='7. a3').squares,['b4']);
+});
+
+test('move mechanisms: piece route requires actual same-piece moves; reject invented continuations',()=>{
+ const mechanisms=lineMechanisms(new Chess().fen(),['e4','e5','Nf3','Nc6','Ng1']);
+ assert.deepEqual(mechanisms.pieceRoutes,[{side:'white',piece:'knight',from:'g1',via:'f3',to:'g1',firstMove:'2. Nf3',nextMove:'3. Ng1'}]);
+ assert.throws(()=>lineMechanisms(new Chess().fen(),['e4','Qh4#']),/Invalid move/);
 });
