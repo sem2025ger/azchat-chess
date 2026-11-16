@@ -117,7 +117,7 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
  if(archiveOnly)answer=gameHeadings[language];
  else if(openaiApiKey){
   // Only a server-recomputed line can be linked to an illustrated lesson.
-  const showPlan=planDemoEnabled&&!!analysis&&isPlanRequest(query.message);
+  const showPlan=planDemoEnabled&&positionFactsEnabled&&strategyKnowledgeEnabled&&!!analysis&&isPlanRequest(query.message);
   const result=await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal,planDemo:showPlan});
   if(typeof result==='string')answer=result;
   else {answer=result.answer;planDemonstration=result.planDemonstration||null;}
