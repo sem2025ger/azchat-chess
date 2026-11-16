@@ -111,6 +111,65 @@ test('lessons are complete, unique and bound to every eligible line in one provi
  for(const alternatives of [[],[lesson.alternatives[0],lesson.alternatives[0]],[{...lesson.alternatives[0],lineId:'L3'}]])await assert.rejects(generateAnswer(query,evidence,{apiKey:'synthetic',planDemo:true,fetchImpl:async()=>mockReply({...lesson,alternatives})}),/provider_unavailable/);
 });
 
+test('diagnostic: requested model input and exact raw answer survive across three chess positions',async()=>{
+ const italian='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const fools=new Chess();for(const move of ['f3','e5','g4'])fools.move(move);
+ const cases=[
+  {fen:italian,moves:['Nc3','Nf6','d3','h6','Bb3','a5','Nxe5','Nxe5','d4','Bd6'],score:10},
+  {fen:new Chess().fen(),moves:['e4','e5','Nf3','Nc6'],score:0},
+  {fen:fools.fen(),moves:['Qh4#'],score:null}
+ ];
+ for(const [i,fixture] of cases.entries()){
+  const evidence={candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:6000},candidateLines:[
+   {id:'L1',moves:fixture.moves,scoreKind:fixture.score===null?'mate':'cp',scoreWhite:fixture.score,depth:16}
+  ]};
+  const original='Проверка '+(i+1)+': оценка зависит от точной позиции.\nПлан объясняется конкретными ходами и ответом соперника; результат не подменяется общим советом.';
+  let providerCalls=0;
+  const output=await generateAnswer({...query,fen:fixture.fen},evidence,{apiKey:'synthetic',fetchImpl:async(_url,options)=>{
+   providerCalls++;
+   const request=JSON.parse(options.body),input=JSON.parse(request.input);
+   assert.equal(input.position,fixture.fen);
+   assert.deepEqual(input.evidence.candidateLines[0].moves,fixture.moves);
+   assert.match(request.instructions,/real chess argument rather than a generic three-sentence summary/);
+   assert.match(request.instructions,/opponent's key resource/);
+   return mockReply({answer:original});
+  }});
+  assert.equal(providerCalls,1);
+  assert.equal(output,original,'provider response text must not be summarized or truncated by the server adapter');
+ }
+});
+
+test('diagnostic: chat distinguishes model response from archive fallback without rewriting analysis',async()=>{
+ const exact='Оценка равная.\nПлан белых — подготовить e4, чёрные отвечают ...e5.\nВариант показан без домыслов.';
+ const syntheticIndex={status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})};
+ const model=await groundedChat(syntheticIndex,query,{openaiApiKey:'synthetic',fetchImpl:async()=>mockReply({answer:exact})});
+ assert.equal(model.answer,exact);
+ assert.equal(model.generated,true);
+ assert.equal(model.provider,'openai');
+ assert.equal(model.providerStatus,'ready');
+ const fallback=await groundedChat(syntheticIndex,query);
+ assert.equal(fallback.generated,false);
+ assert.equal(fallback.provider,null);
+ assert.equal(fallback.providerStatus,'not_configured');
+ assert.notEqual(fallback.answer,exact);
+});
+
+test('illustrated mode requests separate explanations of alternative verified lines, not conflicting single-line instructions',async()=>{
+ const evidence={candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:6000},candidateLines:[
+  {id:'L1',moves:['e4','e5'],scoreKind:'cp',scoreWhite:5,depth:16},
+  {id:'L2',moves:['d4','d5'],scoreKind:'cp',scoreWhite:0,depth:16}
+ ]};
+ await generateAnswer(query,evidence,{apiKey:'synthetic',planDemo:true,fetchImpl:async(_url,options)=>{
+  const request=JSON.parse(options.body);
+  assert.match(request.instructions,/roughly three to five purposeful sentences/);
+  assert.match(request.instructions,/each other eligible line independently in alternatives/);
+  assert.doesNotMatch(request.instructions,/Explain only the one verified line that supports the illustrated plan/);
+  assert.match(request.instructions,/two or three concise sentences within the field limit/);
+  assert.deepEqual(request.text.format.schema.properties.alternatives.items.properties.lineId.enum,['L1','L2']);
+  return mockReply(lesson);
+ }});
+});
+
 test('[real] Italian lesson carries the recapture AND subsequent play through facts, schema and line-bound lessons',async()=>{
  const {createCoachEngine}=require('./coachEngine');
  const root='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
