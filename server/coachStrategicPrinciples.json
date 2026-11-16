@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "kind": "position_conditioned_original_strategy_cues",
+  "status": "pilot_not_full_books",
+  "curation": "Original English paraphrases of themes; no book text copied. Historical attribution strengths differ by record. These are heuristic cues, not position evaluations or engine calculations.",
+  "authors": [
+    "Wilhelm Steinitz",
+    "Emanuel Lasker",
+    "Aron Nimzowitsch",
+    "Alexander Alekhine"
+  ],
+  "entries": [
+    {
+      "id": "steinitz-advantage-before-attack",
+      "author": "Wilhelm Steinitz",
+      "work": "The Modern Chess Instructor (1889)",
+      "sourceUrl": "https://en.chessbase.com/post/an-interview-with-wilhelm-steinitz",
+      "basis": "author_text_excerpt",
+      "theme": "premise_of_attack",
+      "condition": "opponent_uncastled",
+      "idea": "Before advocating a direct king attack, establish a concrete reason that the opponent cannot defend adequately; lack of castling alone proves no win.",
+      "goal": "Identify the exploitable weakness and the opponent's strongest defense."
+    },
+    {
+      "id": "steinitz-accumulate-assets",
+      "author": "Wilhelm Steinitz",
+      "work": "The Modern Chess Instructor (1889)",
+      "sourceUrl": "https://books.google.com/books/about/The_Modern_Chess_Instructor.html?id=e4IiyAEACAAJ",
+      "basis": "interpretation_with_source",
+      "theme": "accumulation",
+      "condition": "half_open_file",
+      "idea": "Small positional assets can be developed methodically before seeking forcing play; a half-open file is a candidate asset, not proof of superiority.",
+      "goal": "Specify an entry square, target and the required supporting pieces."
+    },
+    {
+      "id": "steinitz-material-vs-position",
+      "author": "Wilhelm Steinitz",
+      "work": "The Modern Chess Instructor (1889)",
+      "sourceUrl": "https://en.chessbase.com/post/an-interview-with-wilhelm-steinitz",
+      "basis": "interpretation_with_source",
+      "theme": "material_and_compensation",
+      "condition": "material_imbalance",
+      "idea": "Material count and positional evaluation must be weighed separately; do not announce compensation or recovery without visible positional or calculated support.",
+      "goal": "Explain the actual imbalance and the confirmed practical resource, if any."
+    },
+    {
+      "id": "lasker-target-position",
+      "author": "Emanuel Lasker",
+      "work": "Lasker's Manual of Chess (1927), The Plan",
+      "sourceUrl": "https://en.wikisource.org/wiki/Page:Lasker_(1927)_-_Manual_of_Chess.pdf/216",
+      "basis": "author_text",
+      "theme": "target_position",
+      "condition": "isolated_own",
+      "idea": "Define a desirable resulting position first, then work backwards to the manoeuvres required; an isolated pawn calls for a concrete target arrangement, not a generic slogan.",
+      "goal": "State the desired piece placement and pawn structure, with risks."
+    },
+    {
+      "id": "lasker-calculation-before-plan",
+      "author": "Emanuel Lasker",
+      "work": "Lasker's Manual of Chess (1927), The Combination",
+      "sourceUrl": "https://en.wikisource.org/wiki/Page:Lasker_(1927)_-_Manual_of_Chess.pdf/152",
+      "basis": "author_text",
+      "theme": "forcing_verification",
+      "condition": "undefended_own",
+      "idea": "Check forcing sequences and defensive responses before following a slow positional plan; a geometrically attacked unprotected unit needs tactical verification.",
+      "goal": "Identify the attacked unit and whether the supplied variations actually resolve the threat."
+    },
+    {
+      "id": "lasker-opening-mobilization",
+      "author": "Emanuel Lasker",
+      "work": "Lasker's Manual of Chess (1927), Theory of the Openings",
+      "sourceUrl": "https://en.wikisource.org/wiki/Page:Lasker_(1927)_-_Manual_of_Chess.pdf/73",
+      "basis": "author_text",
+      "theme": "mobilization",
+      "condition": "own_uncastled",
+      "idea": "Ask which concrete arrangement would make undeveloped forces more effective and preserve king safety; castling status is only one clue.",
+      "goal": "Specify developmental priorities and which central operation becomes feasible."
+    },
+    {
+      "id": "nimzowitsch-blockade",
+      "author": "Aron Nimzowitsch",
+      "work": "Mein System (1925–1927)",
+      "sourceUrl": "https://www.chesshistory.com/winter/extra/mysystem.html",
+      "basis": "well_attested_theme",
+      "theme": "passed_pawn_blockade",
+      "condition": "opponent_passed",
+      "idea": "When confronting an enemy passed pawn, examine a stable blockading square and which piece can occupy it; do not claim an actual blockade unless the board supports it.",
+      "goal": "Name the pawn, possible blockade square, and a counter-resource."
+    },
+    {
+      "id": "nimzowitsch-outpost",
+      "author": "Aron Nimzowitsch",
+      "work": "Mein System (1925–1927)",
+      "sourceUrl": "https://www.chessmarket.gr/wp-content/uploads/2021/02/MySystem-excerpt.pdf",
+      "basis": "well_attested_theme",
+      "theme": "outpost",
+      "condition": "outpost_own",
+      "idea": "An established outpost may support long-term pressure and coordination; it is valuable only if its occupant has a useful role and cannot be neutralized cheaply.",
+      "goal": "Identify the occupant and a specific target or defensive task."
+    },
+    {
+      "id": "nimzowitsch-open-file",
+      "author": "Aron Nimzowitsch",
+      "work": "Mein System (1925–1927)",
+      "sourceUrl": "https://www.chessmarket.gr/wp-content/uploads/2021/02/MySystem-excerpt.pdf",
+      "basis": "well_attested_theme",
+      "theme": "open_file_pressure",
+      "condition": "half_open_file",
+      "idea": "Use a half-open file to examine rook penetration, coordination, and entry squares, without assuming the invasion is tactically possible.",
+      "goal": "Identify the file, possible entry square, and opposing counterplay."
+    },
+    {
+      "id": "nimzowitsch-prophylaxis",
+      "author": "Aron Nimzowitsch",
+      "work": "Mein System (1925–1927)",
+      "sourceUrl": "https://www.chessmarket.gr/wp-content/uploads/2021/02/MySystem-excerpt.pdf",
+      "basis": "well_attested_theme",
+      "theme": "prophylaxis",
+      "condition": "occupied_hole_own",
+      "idea": "When an opponent occupies a weak complex, first consider how to restrict reinforcement or exchange the active piece before pursuing your own slow plan.",
+      "goal": "Identify the actual occupied weak square and the opponent's next useful move."
+    },
+    {
+      "id": "alekhine-dynamic-coordination",
+      "author": "Alexander Alekhine",
+      "work": "My Best Games of Chess 1908–1923 (1927)",
+      "sourceUrl": "https://classicchess.com/annotated/alexander-alekhine-my-best-games-of-chess-19081923-1927/",
+      "basis": "editorial_inference_from_annotated_games",
+      "theme": "coordination",
+      "condition": "opponent_uncastled",
+      "idea": "In the style of Alekhine's annotated dynamic games, evaluate whether coordinated development can create a concrete central or king-side initiative; do not force an attack by analogy.",
+      "goal": "Describe the supporting pieces and the tactical reply that must be calculated."
+    },
+    {
+      "id": "alekhine-conversion",
+      "author": "Alexander Alekhine",
+      "work": "My Best Games of Chess 1924–1937 (1939)",
+      "sourceUrl": "https://books.google.com/books/about/My_Best_Games_of_Chess_1924_1937.html?id=oCYMAAAAYAAJ",
+      "basis": "editorial_inference_from_annotated_games",
+      "theme": "conversion",
+      "condition": "passed_own",
+      "idea": "Illustrated by the precision of Alekhine's annotated games: turn a positional asset into a concrete next task, and calculate counterplay before calling the position winning.",
+      "goal": "Name the passed pawn and the required support, blockade-breaking or diversion."
+    }
+  ]
+}
