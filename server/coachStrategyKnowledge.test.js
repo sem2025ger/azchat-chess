@@ -55,7 +55,7 @@ test('legacy context stays exactly unchanged with positional facts off; on adds 
  const index={status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})};
  const packets=[],fetchImpl=async(_url,options)=>{packets.push(JSON.parse(options.body));return answer();};
  await groundedChat(index,question,{openaiApiKey:'synthetic',fetchImpl});
- await groundedChat(index,question,{openaiApiKey:'synthetic',fetchImpl,positionFactsEnabled:true});
+ await groundedChat(index,question,{openaiApiKey:'synthetic',fetchImpl,positionFactsEnabled:true,strategyKnowledgeEnabled:true});
  const before=JSON.parse(packets[0].input).evidence,after=JSON.parse(packets[1].input).evidence;
  assert.equal(Object.hasOwn(before,'positionFacts'),false);
  assert.equal(Object.hasOwn(before,'strategyKnowledge'),false);
