@@ -56,12 +56,18 @@ test('legacy context stays exactly unchanged with positional facts off; on adds 
  const packets=[],fetchImpl=async(_url,options)=>{packets.push(JSON.parse(options.body));return answer();};
  await groundedChat(index,question,{openaiApiKey:'synthetic',fetchImpl});
  await groundedChat(index,question,{openaiApiKey:'synthetic',fetchImpl,positionFactsEnabled:true,strategyKnowledgeEnabled:true});
+ await groundedChat(index,question,{openaiApiKey:'synthetic',fetchImpl,positionFactsEnabled:true});
+ await groundedChat(index,question,{openaiApiKey:'synthetic',fetchImpl,strategyKnowledgeEnabled:true});
  const before=JSON.parse(packets[0].input).evidence,after=JSON.parse(packets[1].input).evidence;
  assert.equal(Object.hasOwn(before,'positionFacts'),false);
  assert.equal(Object.hasOwn(before,'strategyKnowledge'),false);
  assert.ok(after.positionFacts&&after.strategyKnowledge);
  assert.equal(after.strategyKnowledge.kind,'strategy_cues');
  assert.equal(after.coachBibliography,undefined);
+ const factsOnly=JSON.parse(packets[2].input).evidence;
+ assert.ok(factsOnly.positionFacts);
+ assert.equal(Object.hasOwn(factsOnly,'strategyKnowledge'),false);
+ assert.deepEqual(JSON.parse(packets[3].input).evidence,before);
  assert.doesNotMatch(packets[0].instructions,/evidence.strategyKnowledge is a server-curated/);
  assert.match(packets[1].instructions,/evidence.strategyKnowledge is a server-curated/);
  assert.match(packets[1].instructions,/MUST NOT be stated as an explicit rule written by that author/);
