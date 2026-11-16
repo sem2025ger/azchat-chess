@@ -103,3 +103,45 @@ test('move mechanisms: piece route requires actual same-piece moves; reject inve
  assert.deepEqual(mechanisms.pieceRoutes,[{side:'white',piece:'knight',from:'g1',via:'f3',to:'g1',firstMove:'2. Nf3',nextMove:'3. Ng1'}]);
  assert.throws(()=>lineMechanisms(new Chess().fen(),['e4','Qh4#']),/Invalid move/);
 });
+
+
+test('Italian 6.h3 covers g4 newly reachable by Nf6, but not the blocked bishop c8',()=>{
+ const facts=lineMechanisms(ITALIAN,D3.slice(0,5));
+ const denied=facts.deniedSquares.find(item=>item.move==='6. h3'&&item.square==='g4');
+ assert.deepEqual(denied,{move:'6. h3',side:'white',square:'g4',pieces:['Nf6']});
+ assert.deepEqual(facts.strategyLabels.find(item=>item.move==='6. h3'&&item.square==='g4'),{
+  theme:'restriction',source:'Nimzowitsch, Mein System (1925)',
+  move:'6. h3',square:'g4',pieces:['Nf6']
+ });
+ assert.equal(denied.pieces.includes('Bc8'),false,'the d7 pawn blocks Bc8-g4; do not invent a legal bishop move');
+});
+
+test('Italian 4.a3 newly covers b4 previously available to black minor pieces',()=>{
+ const facts=lineMechanisms(ITALIAN,['a3']);
+ const denied=facts.deniedSquares.find(item=>item.move==='4. a3'&&item.square==='b4');
+ assert.ok(denied);
+ assert.equal(denied.pieces.includes('Bc5'),true);
+ assert.equal(denied.pieces.includes('Nc6'),true);
+ assert.equal(facts.strategyLabels.some(item=>item.theme==='restriction'&&item.move==='4. a3'&&item.square==='b4'),true);
+});
+
+test('pawn control over unreachable squares does not produce restriction or a label',()=>{
+ const facts=lineMechanisms(new Chess().fen(),['h3']);
+ assert.equal(facts.deniedSquares,undefined);
+ assert.equal(facts.strategyLabels,undefined);
+});
+
+test('old pawn control cannot be credited to a new piece move (mutation guard)',()=>{
+ // e2 already controls f3; Rh3 also attacks it, but did not take it away.
+ const fen='4k3/8/8/8/7n/8/4P3/4K2R w K - 0 1';
+ const facts=lineMechanisms(fen,['Rh3']);
+ assert.equal((facts.deniedSquares||[]).some(e=>e.square==='f3'&&e.pieces.includes('Nh4')),false);
+ assert.equal((facts.strategyLabels||[]).some(e=>e.square==='f3'),false);
+});
+
+test('capture and check sequences do not invent denied squares or throw',()=>{
+ assert.doesNotThrow(()=>lineMechanisms(ITALIAN,C3));
+ const facts=lineMechanisms(ITALIAN,C3);
+ assert.equal((facts.strategyLabels||[]).every(label=>(facts.deniedSquares||[]).some(e=>
+  label.move===e.move&&label.square===e.square&&JSON.stringify(label.pieces)===JSON.stringify(e.pieces))),true);
+});

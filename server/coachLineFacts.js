@@ -66,6 +66,39 @@ function lineFacts(fen,moves,{scoreKind,scoreWhite}={}){
 }
 
 
+const FILES='abcdefgh';
+
+// Pawn control is geometric, not a claim that an enemy piece move is illegal.
+function pawnControlledSquares(board,color){
+ const result=new Set(),direction=color==='w'?1:-1;
+ for(const row of board.board())for(const piece of row){
+  if(!piece||piece.color!==color||piece.type!=='p')continue;
+  const rank=Number(piece.square[1])+direction,file=FILES.indexOf(piece.square[0]);
+  if(rank<1||rank>8)continue;
+  for(const f of [file-1,file+1])if(f>=0&&f<8)result.add(FILES[f]+rank);
+ }
+ return result;
+}
+
+// The opponent did not actually get a turn before M. Hypothetical quiet moves
+// identify squares it could have occupied; never claim they were its plan.
+function opponentQuietDestinations(board){
+ if(board.inCheck())return null;
+ const fields=board.fen().split(' ');
+ fields[1]=fields[1]==='w'?'b':'w';
+ fields[3]='-'; // En-passant is not transferable to the hypothetical turn.
+ let alternate;
+ try{alternate=new Chess(fields.join(' '));}catch{return null;}
+ if(alternate.inCheck())return null;
+ const targets=new Map();
+ for(const move of alternate.moves({verbose:true})){
+  if(!'nbrq'.includes(move.piece)||move.captured)continue;
+  if(!targets.has(move.to))targets.set(move.to,new Set());
+  targets.get(move.to).add(move.piece.toUpperCase()+move.from);
+ }
+ return targets;
+}
+
 /**
  * Mechanisms visible in an exact, legal SAN sequence. These are board events,
  * not Stockfish's explanation of a move or proof that a plan is best.
@@ -73,12 +106,35 @@ function lineFacts(fen,moves,{scoreKind,scoreWhite}={}){
  */
 function lineMechanisms(fen,moves){
  const board=new Chess(fen),freed=new Map(),lastMoveByPieceSquare=new Map();
- const facts={pawnControls:[],freedSquaresUsed:[],blockedPawnSteps:[],pieceRoutes:[]};
+ const facts={pawnControls:[],freedSquaresUsed:[],blockedPawnSteps:[],pieceRoutes:[],deniedSquares:[],strategyLabels:[]};
  const files='abcdefgh';
  for(let i=0;i<moves.length;i++){
-  const number=board.moveNumber();
+  const number=board.moveNumber(),mover=board.turn();
+  const opponentDestinations=opponentQuietDestinations(board);
+  const pawnsBefore=opponentDestinations?pawnControlledSquares(board,mover):null;
+  const attackersBefore=opponentDestinations?new Map(
+   [...opponentDestinations.keys()].map(square=>[square,board.attackers(square,mover)])
+  ):null;
   const move=board.move(moves[i],{strict:true});
   const side=SIDE[move.color],label=number+(move.color==='w'?'. ':'... ')+move.san;
+  if(opponentDestinations&&!board.inCheck()){
+   const pawnsAfter=pawnControlledSquares(board,move.color);
+   for(const [square,opponentPieces] of opponentDestinations){
+    // Without this condition, old pawn control can be falsely credited to M.
+    if(pawnsBefore.has(square))continue;
+    const newlyPawnControlled=pawnsAfter.has(square);
+    const newlyPieceControlled=move.piece!=='p'
+     &&board.attackers(square,move.color).includes(move.to)
+     &&!attackersBefore.get(square).includes(move.from);
+    if(!newlyPawnControlled&&!newlyPieceControlled)continue;
+    const pieces=[...opponentPieces].sort();
+    facts.deniedSquares.push({move:label,side,square,pieces});
+    facts.strategyLabels.push({
+     theme:'restriction',source:'Nimzowitsch, Mein System (1925)',
+     move:label,square,pieces:[...pieces]
+    });
+   }
+  }
   const freedBy=freed.get(move.color+':'+move.to);
   // A pawn's advance actually vacated the square later used by this piece.
   if(freedBy?.piece==='pawn'&&move.piece!=='p')facts.freedSquaresUsed.push({
