@@ -6,6 +6,7 @@ const {positionFacts}=require('./coachPositionFacts');
 const {lineFacts}=require('./coachLineFacts');
 const {lookupCoachBibliography}=require('./coachKnowledge');
 const {selectStrategyKnowledge}=require('./coachStrategyKnowledge');
+const {isPlanRequest}=require('./coachPlanDemo');
 
 const fallback={
  de:(total)=>'In dieser Stellung wurden '+total+' öffentliche Partien gefunden. Du kannst die Beispiele unten in der Analyse öffnen.',
@@ -92,7 +93,7 @@ function withLineEndFacts(lines,fen){
   }catch{return line;} // A corrupt SAN cannot compromise the chat request.
  });
 }
-async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null,positionFactsEnabled=false,knowledgeCatalogEnabled=false,strategyKnowledgeEnabled=false}={}){
+async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null,positionFactsEnabled=false,knowledgeCatalogEnabled=false,strategyKnowledgeEnabled=false,planDemoEnabled=false}={}){
  const requested=gameRequest(query.message);
  let result=null,analysis=null,engineError=null;
  const engineRun=engine&&!requested?engine.analyze(query.fen,{signal}).then(value=>{analysis=value.lines.length?value:null;if(!analysis)engineError='engine_unavailable';},e=>{engineError=e.code||'engine_unavailable';}):null;
@@ -112,9 +113,18 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
   ...(strategyKnowledge?{strategyKnowledge}:{}),
   ...(knowledgeCatalogEnabled&&lookupCoachBibliography(query.message)?{coachBibliography:lookupCoachBibliography(query.message)}:{})};
  const archiveOnly=!!requested&&!!result;
- const answer=archiveOnly?gameHeadings[language]:openaiApiKey?await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal}):fallback[language](result.total||0);
+ let answer,planDemonstration=null;
+ if(archiveOnly)answer=gameHeadings[language];
+ else if(openaiApiKey){
+  // Only a server-recomputed line can be linked to an illustrated lesson.
+  const showPlan=planDemoEnabled&&!!analysis&&isPlanRequest(query.message);
+  const result=await generateAnswer({...query,language},evidence,{apiKey:openaiApiKey,model:openaiModel,fetchImpl,signal,planDemo:showPlan});
+  if(typeof result==='string')answer=result;
+  else {answer=result.answer;planDemonstration=result.planDemonstration||null;}
+ }else answer=fallback[language](result.total||0);
  return {answer,generated:archiveOnly||!!openaiApiKey,provider:archiveOnly?null:openaiApiKey?'openai':null,providerStatus:archiveOnly?'archive':openaiApiKey?'ready':'not_configured',
   source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:!!analysis,candidateLines:clientLines,
+  ...(planDemonstration?{planDemonstration}:{}),
   ...(engine&&!requested?(analysis?{engineLines:serverEngineLines(analysis)}:{engineError}):{}),position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);const moves=board.history();return {...game,moves:moves.slice(0,30),continuation:moves.slice(game.ply,game.ply+6)};}):openaiApiKey?[]:games};
 }
 module.exports={validChatQuery,groundedChat,publicChatGames,gameRequest,legalCandidateLines,serverEngineLines};
