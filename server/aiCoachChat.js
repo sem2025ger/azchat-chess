@@ -92,7 +92,7 @@ function withLineEndFacts(lines,fen){
   }catch{return line;} // A corrupt SAN cannot compromise the chat request.
  });
 }
-async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null,positionFactsEnabled=false,knowledgeCatalogEnabled=false}={}){
+async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null,positionFactsEnabled=false,knowledgeCatalogEnabled=false,strategyKnowledgeEnabled=false}={}){
  const requested=gameRequest(query.message);
  let result=null,analysis=null,engineError=null;
  const engineRun=engine&&!requested?engine.analyze(query.fen,{signal}).then(value=>{analysis=value.lines.length?value:null;if(!analysis)engineError='engine_unavailable';},e=>{engineError=e.code||'engine_unavailable';}):null;
@@ -103,7 +103,7 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
  const games=result?publicChatGames(result,query.fen,requested??5):[],language=normalizeLanguage(query.language);
  const clientLines=legalCandidateLines(query.candidateLines,query.fen)||[];
  const currentFacts=positionFactsEnabled?positionFacts(query.fen):null;
- const strategyKnowledge=currentFacts?selectStrategyKnowledge(currentFacts):null;
+ const strategyKnowledge=positionFactsEnabled&&strategyKnowledgeEnabled&&currentFacts?selectStrategyKnowledge(currentFacts):null;
  const evidence={archiveAvailable:!!result,matched:result?.total??null,
   ...(analysis?{candidateLines:positionFactsEnabled?withLineEndFacts(serverEngineLines(analysis),query.fen):serverEngineLines(analysis),candidateOrigin:'server_stockfish_19',engine:{name:analysis.engine,budgetMs:analysis.budget.movetimeMs,perspective:'white'}}:{candidateLines:clientLines,candidateOrigin:'untrusted_client_legality_checked'}),
   nextMoves:(result?.nextMoves||[]).slice(0,8).map(x=>({move:x.move,count:x.count})),
