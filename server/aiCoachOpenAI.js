@@ -91,7 +91,7 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
   'Do not claim a move is illegal if it appears in legalMoves. Explain uncertainty and offer the analysis board for engine verification.',
   'No links, HTML or markdown. Return JSON with exactly one string property answer, between 2 and 1200 characters.'
  ].join('\n'):null;
- const instructions=(serverEngine?serverInstructions:legacyInstructions)+'\n'+TACTICAL_FOCUS_INSTRUCTION+'\n'+ASSESSMENT_PLAN_INSTRUCTION+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION+(serverEngine?'\n'+MOVE_MECHANISMS_INSTRUCTION:''):'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'')+(evidence.strategyKnowledge?'\n'+STRATEGY_KNOWLEDGE_INSTRUCTION:'');
+ const instructions=(serverEngine?serverInstructions:legacyInstructions)+'\n'+TACTICAL_FOCUS_INSTRUCTION+'\n'+ASSESSMENT_PLAN_INSTRUCTION+(serverEngine&&evidence.candidateLines?.some(line=>line.endFacts?.moveMechanisms)?'\n'+MOVE_MECHANISMS_INSTRUCTION:'')+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'')+(evidence.strategyKnowledge?'\n'+STRATEGY_KNOWLEDGE_INSTRUCTION:'');
  const finalInstructions=planMode?instructions
   .replace('Explain all three supplied lines when three are available, in their supplied order.','Explain the chosen verified line in the main lesson, and each other eligible line independently in alternatives; never mix facts between them.')
   .replace('No links, HTML or markdown. Return JSON with exactly one string property answer, between 2 and 1200 characters.','No links, HTML or markdown. Use the supplied illustrated lesson JSON schema.')
