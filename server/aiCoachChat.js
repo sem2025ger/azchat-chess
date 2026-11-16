@@ -3,7 +3,7 @@ const {Chess,validateFen}=require('chess.js');
 const {LANGUAGE_CODES,safeGame}=require('./aiCoachCore');
 const {generateAnswer}=require('./aiCoachOpenAI');
 const {positionFacts}=require('./coachPositionFacts');
-const {lineFacts}=require('./coachLineFacts');
+const {lineFacts,settlement}=require('./coachLineFacts');
 const {lookupCoachBibliography}=require('./coachKnowledge');
 const {selectStrategyKnowledge}=require('./coachStrategyKnowledge');
 const {isPlanRequest}=require('./coachPlanDemo');
@@ -72,7 +72,7 @@ function publicChatGames(result,fen,count=5){
 // Server-verified engine evidence (flag-gated). The engine result replaces client lines as
 // model evidence; client lines stay in the response because the current UI renders them.
 function serverEngineLines(analysis){
- return analysis.lines.map((line,i)=>({id:'L'+(i+1),moves:line.sanPv,scoreKind:line.scoreKind,scoreWhite:line.scoreWhite,depth:line.depth,wdlWhite:line.wdlWhite}));
+ return analysis.lines.map((line,i)=>({id:'L'+(i+1),moves:line.sanPv,scoreKind:line.scoreKind,scoreWhite:line.scoreWhite,depth:line.depth,wdlWhite:line.wdlWhite,...(typeof line.unsettled==='boolean'?{unsettled:line.unsettled}:{}),...(line.continuation?{continuation:line.continuation}:{})}));
 }
 // Only server-verified Stockfish lines may receive deterministic end-position facts.
 // End facts are model evidence, never exposed in the browser-facing response.
@@ -80,16 +80,22 @@ function withLineEndFacts(lines,fen){
  return lines.map(line=>{
   try{
    if(!Array.isArray(line.moves)||line.moves.length===0||line.moves.length>10)return line;
-   const board=new Chess(fen);
-   for(const san of line.moves)board.move(san,{strict:true});
-   const finalFen=board.fen(),facts=positionFacts(finalFen);
-   if(!facts)return line;
-   return {...line,endFacts:{
-    fen:finalFen,plies:line.moves.length,material:facts.material,majorities:facts.majorities,
-    white:{pawns:facts.white.pawns,king:facts.white.king,minorityAttack:facts.white.strategy.minorityAttack},
-    black:{pawns:facts.black.pawns,king:facts.black.king,minorityAttack:facts.black.strategy.minorityAttack},
-    ...lineFacts(fen,line.moves,line)
-   }};
+   const factsFor=(moves,score)=>{
+    const board=new Chess(fen);for(const san of moves)board.move(san,{strict:true});
+    const finalFen=board.fen(),facts=positionFacts(finalFen);
+    if(!facts)return null;
+    return {fen:finalFen,plies:moves.length,material:facts.material,majorities:facts.majorities,
+     white:{pawns:facts.white.pawns,king:facts.white.king,minorityAttack:facts.white.strategy.minorityAttack},
+     black:{pawns:facts.black.pawns,king:facts.black.king,minorityAttack:facts.black.strategy.minorityAttack},
+     ...lineFacts(fen,moves,score),unsettled:settlement(fen,moves,score).unsettled};
+   };
+   const original=factsFor(line.moves,line);if(!original)return line;
+   if(!line.continuation)return {...line,endFacts:original};
+   const c=line.continuation;
+   if(!Array.isArray(c.moves)||!c.moves.length||c.moves.length>6)return {...line,endFacts:{...original,unsettled:true}};
+   const score={scoreKind:c.evalWhite===null?'mate':'cp',scoreWhite:c.evalWhite===null?null:c.evalWhite*100};
+   const endFacts=factsFor([...line.moves,...c.moves],score);
+   return {...line,lineEndFacts:original,endFacts:{...endFacts,unsettled:c.settled!==true||endFacts.unsettled}};
   }catch{return line;} // A corrupt SAN cannot compromise the chat request.
  });
 }

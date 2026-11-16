@@ -175,8 +175,10 @@ test('Italian owner QA: line facts reach the model only, with the sacrifice, for
  assert.deepEqual(nc3.doubleAttacks[0].targets.map(t=>t.square+' '+t.piece),['c5 bishop','e5 knight']);
  assert.deepEqual(c3.checks,[{ply:6,move:'6... Bb4+',side:'black',legalReplies:7,checkmate:false,materialGainForCheckingSide:1}]);
  assert.equal(c3.materialVsEval.matchesEval,false);
- assert.ok(observed[1].instructions.includes('which may be temporary or lasting'));
- assert.ok(observed[1].instructions.includes('Say that material is regained only when the supplied moves of that line show the recapture.'));
+ assert.ok(!observed[1].instructions.includes('which may be temporary or lasting'));
+ assert.equal(nc3.unsettled,true);
+ assert.ok(observed[1].instructions.includes('give no plan or material conclusion for that line'));
+ assert.ok(observed[1].instructions.includes('Say that material is regained only when the supplied moves of that line or its verified continuation show the recapture.'));
  assert.ok(observed[1].instructions.includes('never present a legal move that is not in the supplied line'));
  assert.ok(observed[1].instructions.includes('A listed fork is an attack, not a capture'));
  assert.ok(observed[1].instructions.includes('Never claim a fork, double attack or pin that is not listed.'));
@@ -251,4 +253,24 @@ test('1.f3 e5 2.g4: a server mate line reaches the model as a verified checkmate
  assert.equal(facts.materialVsEval.matchesEval,null);
  assert.ok(observed.instructions.includes('A check with checkmate true is a verified checkmate: state it first and plainly as mate, never as a check that gains time.'));
  assert.equal(JSON.stringify(reply).includes('checkmate'),false,'line facts never reach the browser');
+});
+
+test('settled continuation facts replace the endpoint while preserving lineEndFacts and original PV',async()=>{
+ const fen='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const moves='Nc3 Nf6 d3 h6 Bb3 a5 Nxe5 Nxe5 d4 Bd6'.split(' ');
+ const continuation={moves:['dxe5','Bxe5'],evalWhite:-0.1,depth:16,settled:true};
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines:[{...lineFixture(moves),scoreWhite:10,continuation,unsettled:false}]})};
+ const reply=await groundedChat(null,{fen,message:'Оцени позицию',language:'ru',side:'any'},{engine,openaiApiKey:'synthetic',positionFactsEnabled:true,fetchImpl:async(_url,options)=>{
+  const line=JSON.parse(JSON.parse(options.body).input).evidence.candidateLines[0];
+  assert.deepEqual(line.moves,moves);assert.deepEqual(line.continuation,continuation);
+  assert.equal(line.lineEndFacts.materialVsEval.endWhite,-2);
+  assert.equal(line.lineEndFacts.unsettled,true);
+  assert.equal(line.endFacts.materialVsEval.endWhite,0);
+  assert.equal(line.endFacts.materialVsEval.evalWhite,-0.1);
+  assert.equal(line.endFacts.materialVsEval.matchesEval,true);
+  assert.equal(line.endFacts.unsettled,false);assert.equal(line.endFacts.plies,12);
+  return verifiedReply();
+ }});
+ assert.deepEqual(reply.engineLines[0].moves,moves);assert.deepEqual(reply.engineLines[0].continuation,continuation);
+ assert.ok(!JSON.stringify(reply).includes('endFacts'));
 });

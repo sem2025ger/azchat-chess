@@ -31,6 +31,19 @@ function doubleAttack(board,move){
  return targets.length>=2?{attacker:{piece:NAME[piece.type],square:move.to},targets}:null;
 }
 
+// "Unsettled" is an evidence limit, never an error or a refutation of a sacrifice.
+function settlement(fen,moves,{scoreKind,scoreWhite}={}){
+ const board=new Chess(fen);let last=null;
+ for(const san of moves)last=board.move(san,{strict:true});
+ const material=materialWhite(board),evalWhite=scoreKind==='cp'&&Number.isFinite(scoreWhite)?scoreWhite/100:null;
+ const gap=evalWhite===null?null:Math.abs(material-evalWhite);
+ const captureAvailable=board.moves({verbose:true}).some(move=>{
+  if(!move.captured)return false;
+  board.move(move.san,{strict:true});const changed=materialWhite(board)!==material;board.undo();return changed;
+ });
+ return {fen:board.fen(),unsettled:gap!==null&&gap>=MATERIAL_EVAL_GAP&&(!!last?.captured||captureAvailable)};
+}
+
 function lineFacts(fen,moves,{scoreKind,scoreWhite}={}){
  const board=new Chess(fen);
  const startWhite=materialWhite(board),doubleAttacks=[],checks=[];
@@ -52,4 +65,4 @@ function lineFacts(fen,moves,{scoreKind,scoreWhite}={}){
  };
 }
 
-module.exports={lineFacts};
+module.exports={lineFacts,settlement};

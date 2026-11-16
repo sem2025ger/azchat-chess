@@ -4,7 +4,8 @@ const assert=require('node:assert/strict');
 const {EventEmitter}=require('node:events');
 const {PassThrough}=require('node:stream');
 const {Chess}=require('chess.js');
-const {createCoachEngine,parseInfo,sanLine}=require('./coachEngine');
+const {createCoachEngine,settleLine,parseInfo,sanLine}=require('./coachEngine');
+const {lineFacts}=require('./coachLineFacts');
 // Existing lifecycle tests intentionally exercise shallow fake-engine fixtures.
 const legacyEngine=(options)=>createCoachEngine({minDepth:1,...options});
 
@@ -410,5 +411,59 @@ test('[real] Italian Game quality gate: three legal depth-12+ Stockfish lines',a
    for(const san of line.sanPv)assert.ok(board.move(san,{strict:true}));
    assert.equal(line.scoreKind,'cp');
   }
+ }finally{engine.close();}
+});
+
+const ITALIAN='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+const NC3_LINE={sanPv:'Nc3 Nf6 d3 h6 Bb3 a5 Nxe5 Nxe5 d4 Bd6'.split(' '),scoreKind:'cp',scoreWhite:10,depth:16};
+
+test('settlement keeps a quiet line without searching and marks an exhausted exchange unresolved',async()=>{
+ let searches=0;const search=async()=>{searches++;throw Error('must not search');};
+ const quiet=await settleLine(ITALIAN,{...NC3_LINE,sanPv:['d3','Nf6']},{remainingMs:()=>900,search});
+ assert.equal(quiet.unsettled,false);assert.equal(quiet.continuation,undefined);
+ const exhausted=await settleLine(ITALIAN,NC3_LINE,{remainingMs:()=>0,search});
+ assert.equal(exhausted.unsettled,true);assert.equal(exhausted.continuation,undefined);
+ assert.equal(searches,0);
+ const shallow=await settleLine(ITALIAN,NC3_LINE,{remainingMs:()=>900,search:async()=>{throw Object.assign(Error(),{code:'engine_shallow'});}});
+ assert.equal(shallow.unsettled,true);assert.equal(shallow.continuation,undefined);
+});
+
+test('production engine completes an unsettled line using MultiPV 1 and restores MultiPV 3 for the next job',async()=>{
+ const board=new Chess(ITALIAN),uci=[];for(const san of NC3_LINE.sanPv){const m=board.move(san);uci.push(m.from+m.to);}
+ const commands=[];let searches=0,root=true;
+ const engine=createCoachEngine({verify:noVerify,movetimeMs:900,log:()=>{},spawnImpl:fakeSpawn((cmd,emit)=>{
+  commands.push(cmd);if(cmd.startsWith('position fen '))root=cmd.includes(ITALIAN.split(' ')[0]);if(cmd==='uci')emit('uciok');if(cmd==='isready')emit('readyok');
+  if(cmd.startsWith('go ')){
+   searches++;
+   setImmediate(()=>{
+    if(root){
+     for(let i=1;i<=3;i++)emit('info depth 16 multipv '+i+' score cp 10 nodes 1 time 1 pv '+uci.join(' '));
+    }else emit('info depth 16 multipv 1 score cp 10 nodes 1 time 1 pv d4e5 d6e5');
+    emit('bestmove '+(root?'b1c3':'d4e5'));
+   });
+  }
+ })});
+ try{
+  const result=await engine.analyze(ITALIAN);
+  assert.equal(result.lines[0].continuation.moves[0],'dxe5');
+  assert.equal(result.lines[0].continuation.settled,true);
+  assert.deepEqual(result.lines[0].sanPv,NC3_LINE.sanPv,'original PV never silently extended');
+  assert.ok(commands.includes('setoption name MultiPV value 1'));
+  assert.equal((await engine.analyze(ITALIAN)).cached,true);
+  const before=commands.length;await engine.analyze(ITALIAN.replace(/ 4$/,' 99'));
+  assert.ok(commands.slice(before).includes('setoption name MultiPV value 3'));
+ }finally{engine.close();}
+});
+
+test('[real] truncated Italian exchange gets verified dxe5 with the unchanged depth gate',async()=>{
+ const engine=createCoachEngine({multiPv:1,movetimeMs:900,log:()=>{}});
+ try{
+  await engine.warmup();const deadline=Date.now()+6000;
+  const line=await settleLine(ITALIAN,NC3_LINE,{remainingMs:()=>deadline-Date.now(),search:(fen)=>engine.analyze(fen)});
+  assert.equal(line.continuation?.moves[0],'dxe5');
+  assert.equal(line.continuation.settled,true);assert.ok(line.continuation.depth>=12);
+  const facts=lineFacts(ITALIAN,[...line.sanPv,...line.continuation.moves],{scoreKind:'cp',scoreWhite:line.continuation.evalWhite*100});
+  assert.equal(facts.materialVsEval.matchesEval,true);
+  assert.ok(Math.abs(facts.materialVsEval.endWhite-line.continuation.evalWhite)<1);
  }finally{engine.close();}
 });

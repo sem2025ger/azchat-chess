@@ -82,3 +82,20 @@ test('server sends a lesson only when independently verified Stockfish lines and
  const noPlan=await groundedChat(null,{...query,message:'Объясни ход Nf3'},{...opts,planDemoEnabled:true});
  assert.equal(noPlan.planDemonstration,undefined);
 });
+
+test('both instruction modes reject invented compensation and an unresolved line cannot be chosen for a plan',async()=>{
+ const line={id:'L1',moves:['e4'],scoreKind:'cp',scoreWhite:0,depth:16,endFacts:{unsettled:false}};
+ const evidence={candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:900},positionFacts:{},candidateLines:[line]};
+ for(const planDemo of [false,true])await generateAnswer(query,evidence,{apiKey:'synthetic',planDemo,fetchImpl:async(_url,opts)=>{
+  const body=JSON.parse(opts.body);
+  assert.ok(!body.instructions.includes('compensation, which may be temporary or lasting'));
+  assert.match(body.instructions,/give no plan or material conclusion for that line/);
+  assert.match(body.instructions,/lineEndFacts preserves the original endpoint/);
+  if(planDemo)assert.match(body.instructions,/do not select its lineId/);
+  return mockReply(planDemo?lesson:{answer:'Verified QA fixture.'});
+ }});
+ await generateAnswer(query,{...evidence,candidateLines:[{...line,endFacts:{unsettled:true}}]},{apiKey:'synthetic',planDemo:true,fetchImpl:async(_url,opts)=>{
+  assert.equal(JSON.parse(opts.body).text.format.name,'chessaz_coach_answer');
+  return mockReply({answer:'Обмен не завершён в показанном варианте.'});
+ }});
+});

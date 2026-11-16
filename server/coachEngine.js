@@ -7,6 +7,7 @@ const {createHash}=require('node:crypto');
 const {readFile}=require('node:fs/promises');
 const path=require('node:path');
 const {Chess,validateFen}=require('chess.js');
+const {settlement}=require('./coachLineFacts');
 
 const ENGINE_NAME='stockfish-19-lite';
 const ENGINE_FILE='stockfish/bin/stockfish-19-lite-single.js';
@@ -47,6 +48,29 @@ async function verifyFiles(enginePath,pinned){
   const bytes=await readFile(path.join(dir,name));
   if(createHash('sha256').update(bytes).digest('hex')!==sha)throw engineError('engine_unavailable');
  }
+}
+
+// All follow-ups share the ORIGINAL job's remaining search budget. A failed depth
+// gate discards the continuation; the original line stays legal but unresolved.
+async function settleLine(fen,line,{search,remainingMs}){
+ const initial=settlement(fen,line.sanPv,line);
+ if(!initial.unsettled)return {...line,unsettled:false};
+ const moves=[];let state=initial,score=line,depth=Infinity;
+ try{
+  while(state.unsettled&&moves.length<6){
+   const cap=Math.min(900,Math.floor(remainingMs()));
+   if(cap<=0)return {...line,unsettled:true};
+   const result=await search(state.fen,cap),next=result.lines[0];
+   if(!next?.sanPv?.length)return {...line,unsettled:true};
+   moves.push(next.sanPv[0]);score=next;depth=Math.min(depth,next.depth);
+   state=settlement(fen,[...line.sanPv,...moves],score);
+  }
+ }catch(error){
+  if(error.code==='engine_cancelled')throw error;
+  return {...line,unsettled:true};
+ }
+ return {...line,unsettled:state.unsettled,continuation:{moves,
+  evalWhite:score.scoreKind==='cp'?score.scoreWhite/100:null,depth,settled:!state.unsettled}};
 }
 
 function createCoachEngine({
@@ -102,12 +126,12 @@ function createCoachEngine({
   return ready;
  }
 
- function search(job){
-  const fen=job.fen,turn=fen.split(' ')[1],legal=new Chess(fen).moves().length,want=Math.min(multiPv,legal);
+ function search(job,{fen=job.fen,timeCap=movetimeMs,pv=multiPv}={}){
+  const turn=fen.split(' ')[1],legal=new Chess(fen).moves().length,want=Math.min(pv,legal);
   return new Promise((resolve,reject)=>{
    const current={},started=now();let complete=null,finished=false;
    const finish=(fn,value)=>{if(finished)return;finished=true;clearTimeout(timer);listener=null;running=null;fn(value);};
-   const timer=setTimeout(()=>{kill();finish(reject,engineError('engine_timeout'));},movetimeMs+2000);
+   const timer=setTimeout(()=>{kill();finish(reject,engineError('engine_timeout'));},timeCap+2000);
    running={fail:(e)=>finish(reject,e),stop:()=>{kill();finish(reject,engineError('engine_cancelled'));}};
    listener=(line)=>{
     const info=parseInfo(line,turn);
@@ -128,7 +152,8 @@ function createCoachEngine({
      finish(resolve,{fen,engine:ENGINE_NAME,nnue,budget,elapsedMs:now()-started,lines});
     }
    };
-   send('ucinewgame');send('position fen '+fen);send('go depth '+effectiveTargetDepth+' movetime '+movetimeMs);
+   send('setoption name MultiPV value '+pv);
+   send('ucinewgame');send('position fen '+fen);send('go depth '+effectiveTargetDepth+' movetime '+timeCap);
   });
  }
 
@@ -142,7 +167,16 @@ function createCoachEngine({
    await start();
    if(closed)throw engineError('engine_unavailable');
    if(!job.subscribers.size)throw engineError('engine_cancelled');
-   const result=await search(job);
+   const searchStarted=now(),searchDeadline=searchStarted+movetimeMs;
+   const result=await search(job),lines=[];
+   for(const line of result.lines)lines.push(await settleLine(job.fen,line,{
+    remainingMs:()=>Math.max(0,searchDeadline-now()),
+    search:(fen,timeCap)=>{
+     if(closed||!job.subscribers.size)throw engineError('engine_cancelled');
+     return search(job,{fen,timeCap,pv:1});
+    }
+   }));
+   result.lines=lines;result.elapsedMs=now()-searchStarted;
    if(result.lines.length){cache.set(job.key,result);if(cache.size>cacheSize)cache.delete(cache.keys().next().value);}
    const best=result.lines[0];
    safeLog({event:'coach_engine_analysis',engine:ENGINE_NAME,movetimeMs,multiPv,lines:result.lines.length,
@@ -202,4 +236,4 @@ function createCoachEngine({
  return {analyze,warmup,close,status};
 }
 
-module.exports={createCoachEngine,parseInfo,sanLine,ENGINE_NAME,PINNED_SHA256};
+module.exports={createCoachEngine,settleLine,parseInfo,sanLine,ENGINE_NAME,PINNED_SHA256};
