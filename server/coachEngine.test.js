@@ -5,6 +5,8 @@ const {EventEmitter}=require('node:events');
 const {PassThrough}=require('node:stream');
 const {Chess}=require('chess.js');
 const {createCoachEngine,parseInfo,sanLine}=require('./coachEngine');
+// Existing lifecycle tests intentionally exercise shallow fake-engine fixtures.
+const legacyEngine=(options)=>createCoachEngine({minDepth:1,...options});
 
 const START='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const SICILIAN_BLACK='rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2';
@@ -55,7 +57,7 @@ test('sanLine replays every ply and rejects an illegal line',()=>{
 });
 
 test('only a complete exact MultiPV set from one depth is used',async()=>{
- const engine=createCoachEngine({verify:noVerify,spawnImpl:fakeSpawn(standardScript([
+ const engine=legacyEngine({verify:noVerify,spawnImpl:fakeSpawn(standardScript([
   'info depth 10 multipv 1 score cp 30 wdl 50 920 30 nodes 10 time 10 pv e2e4 e7e5',
   'info depth 10 multipv 2 score cp 20 wdl 40 930 30 nodes 10 time 10 pv d2d4 d7d5',
   'info depth 10 multipv 3 score cp 10 wdl 30 940 30 nodes 10 time 10 pv c2c4',
@@ -70,7 +72,7 @@ test('only a complete exact MultiPV set from one depth is used',async()=>{
 });
 
 test('one illegal PV rejects the whole set instead of returning a partial verified set',async()=>{
- const engine=createCoachEngine({verify:noVerify,spawnImpl:fakeSpawn(standardScript([
+ const engine=legacyEngine({verify:noVerify,spawnImpl:fakeSpawn(standardScript([
   'info depth 10 multipv 1 score cp 30 nodes 10 time 10 pv e2e4 e7e5',
   'info depth 10 multipv 2 score cp 20 nodes 10 time 10 pv d2d4 d7d5',
   'info depth 10 multipv 3 score cp 10 nodes 10 time 10 pv e2e5',
@@ -89,7 +91,7 @@ const goodScript=(onGo)=>(cmd,emit)=>{
 
 test('abort during engine start-up never runs an orphaned search',async()=>{
  const g=gate();let searches=0;
- const engine=createCoachEngine({verify:g.verify,movetimeMs:20,spawnImpl:fakeSpawn(goodScript(()=>searches++))});
+ const engine=legacyEngine({verify:g.verify,movetimeMs:20,spawnImpl:fakeSpawn(goodScript(()=>searches++))});
  const abort=new AbortController();
  const pendingResult=engine.analyze(START,{signal:abort.signal});
  abort.abort();
@@ -104,7 +106,7 @@ test('abort during engine start-up never runs an orphaned search',async()=>{
 
 test('abandoned queued jobs are removed at once and never cause engine_busy',async()=>{
  const g=gate();
- const engine=createCoachEngine({verify:g.verify,maxQueue:2,movetimeMs:20,spawnImpl:fakeSpawn(goodScript())});
+ const engine=legacyEngine({verify:g.verify,maxQueue:2,movetimeMs:20,spawnImpl:fakeSpawn(goodScript())});
  const first=engine.analyze(START);
  for(let n=2;n<12;n++){
   const abort=new AbortController(),p=engine.analyze(START.replace(/ 1$/,' '+n),{signal:abort.signal});
@@ -119,7 +121,7 @@ test('abandoned queued jobs are removed at once and never cause engine_busy',asy
 
 test('a new request right after the last caller aborts a running search gets its own result',async()=>{
  let searches=0;
- const engine=createCoachEngine({verify:noVerify,movetimeMs:20,spawnImpl:fakeSpawn((cmd,emit)=>{
+ const engine=legacyEngine({verify:noVerify,movetimeMs:20,spawnImpl:fakeSpawn((cmd,emit)=>{
   if(cmd==='uci')emit('uciok');if(cmd==='isready')emit('readyok');
   if(cmd.startsWith('go')&&++searches>1){emit('info depth 5 multipv 1 score cp 1 nodes 1 time 1 pv e2e4');emit('info depth 5 multipv 2 score cp 0 nodes 1 time 1 pv d2d4');emit('info depth 5 multipv 3 score cp 0 nodes 1 time 1 pv c2c4');emit('bestmove e2e4');}
  })});
@@ -137,7 +139,7 @@ test('a new request right after the last caller aborts a running search gets its
 
 test('close during checksum verification spawns no process and rejects callers',async()=>{
  const g=gate();let spawned=0;
- const engine=createCoachEngine({verify:g.verify,spawnImpl:fakeSpawn(goodScript(),{onSpawn:()=>spawned++})});
+ const engine=legacyEngine({verify:g.verify,spawnImpl:fakeSpawn(goodScript(),{onSpawn:()=>spawned++})});
  const pendingResult=engine.analyze(START);
  engine.close();
  g.open();
@@ -149,7 +151,7 @@ test('close during checksum verification spawns no process and rejects callers',
 
 test('close while the engine starts kills the child and runs no search',async()=>{
  let searches=0,child=null,ready=null;
- const engine=createCoachEngine({verify:noVerify,spawnImpl:fakeSpawn((cmd,emit)=>{
+ const engine=legacyEngine({verify:noVerify,spawnImpl:fakeSpawn((cmd,emit)=>{
   if(cmd==='uci')emit('uciok');
   if(cmd==='isready')ready=()=>emit('readyok');
   if(cmd.startsWith('go'))searches++;
@@ -165,7 +167,7 @@ test('close while the engine starts kills the child and runs no search',async()=
 
 test('wrong checksum makes the engine unavailable without spawning',async()=>{
  let spawned=0;
- const engine=createCoachEngine({pinned:{'stockfish-19-lite-single.wasm':'0'.repeat(64)},spawnImpl:()=>{spawned++;throw Error('must not spawn');}});
+ const engine=legacyEngine({pinned:{'stockfish-19-lite-single.wasm':'0'.repeat(64)},spawnImpl:()=>{spawned++;throw Error('must not spawn');}});
  await assert.rejects(engine.analyze(START),{code:'engine_unavailable'});
  await assert.rejects(engine.analyze(START),{code:'engine_unavailable'});
  assert.equal(spawned,0);assert.equal(engine.status().disabled,true);
@@ -174,7 +176,7 @@ test('wrong checksum makes the engine unavailable without spawning',async()=>{
 
 test('bounded queue rejects with engine_busy; identical FENs are coalesced',async()=>{
  let searches=0;
- const engine=createCoachEngine({verify:noVerify,maxQueue:2,movetimeMs:20,spawnImpl:fakeSpawn((cmd,emit)=>{
+ const engine=legacyEngine({verify:noVerify,maxQueue:2,movetimeMs:20,spawnImpl:fakeSpawn((cmd,emit)=>{
   if(cmd==='uci')emit('uciok');if(cmd==='isready')emit('readyok');
   if(cmd.startsWith('go')){searches++;setTimeout(()=>{emit('info depth 5 multipv 1 score cp 1 nodes 1 time 1 pv e2e4');emit('info depth 5 multipv 2 score cp 0 nodes 1 time 1 pv d2d4');emit('info depth 5 multipv 3 score cp 0 nodes 1 time 1 pv c2c4');emit('bestmove e2e4');},30);}
  })});
@@ -191,7 +193,7 @@ test('bounded queue rejects with engine_busy; identical FENs are coalesced',asyn
 
 test('a hung search times out and the engine is restarted for the next request',async()=>{
  let spawns=0,hang=true;
- const engine=createCoachEngine({verify:noVerify,movetimeMs:20,deadlineMs:5000,spawnImpl:fakeSpawn((cmd,emit)=>{
+ const engine=legacyEngine({verify:noVerify,movetimeMs:20,deadlineMs:5000,spawnImpl:fakeSpawn((cmd,emit)=>{
   if(cmd==='uci')emit('uciok');if(cmd==='isready')emit('readyok');
   if(cmd.startsWith('go')&&!hang){emit('info depth 5 multipv 1 score cp 1 nodes 1 time 1 pv e2e4');emit('info depth 5 multipv 2 score cp 0 nodes 1 time 1 pv d2d4');emit('info depth 5 multipv 3 score cp 0 nodes 1 time 1 pv c2c4');emit('bestmove e2e4');}
  },{onSpawn:()=>spawns++})});
@@ -204,7 +206,7 @@ test('a hung search times out and the engine is restarted for the next request',
 
 test('abort cancels the caller and stops an orphaned search; deadline rejects queued waiters',async()=>{
  let killed=0;
- const engine=createCoachEngine({verify:noVerify,movetimeMs:5000,deadlineMs:60,spawnImpl:fakeSpawn((cmd,emit)=>{
+ const engine=legacyEngine({verify:noVerify,movetimeMs:5000,deadlineMs:60,spawnImpl:fakeSpawn((cmd,emit)=>{
   if(cmd==='uci')emit('uciok');if(cmd==='isready')emit('readyok');
  },{onSpawn:(child)=>{const k=child.kill;child.kill=()=>{killed++;k();};}})});
  const abort=new AbortController();
@@ -218,7 +220,7 @@ test('abort cancels the caller and stops an orphaned search; deadline rejects qu
 });
 
 test('terminal and invalid positions never reach the engine',async()=>{
- const engine=createCoachEngine({verify:noVerify,spawnImpl:()=>{throw Error('must not spawn');}});
+ const engine=legacyEngine({verify:noVerify,spawnImpl:()=>{throw Error('must not spawn');}});
  await assert.rejects(engine.analyze('7k/5QQ1/8/8/8/8/8/K7 b - - 0 1'),{code:'terminal_position'});
  await assert.rejects(engine.analyze('not a fen'),{code:'invalid_position'});
  engine.close();
@@ -226,7 +228,7 @@ test('terminal and invalid positions never reach the engine',async()=>{
 
 test('each search logs depth and timing as numbers only, never the position or moves',async()=>{
  const logs=[];
- const engine=createCoachEngine({verify:noVerify,movetimeMs:50,log:(e)=>logs.push(e),spawnImpl:fakeSpawn(standardScript([
+ const engine=legacyEngine({verify:noVerify,movetimeMs:50,log:(e)=>logs.push(e),spawnImpl:fakeSpawn(standardScript([
   'info depth 12 seldepth 19 multipv 1 score cp 30 nodes 4321 time 48 pv e2e4 e7e5',
   'info depth 12 seldepth 21 multipv 2 score cp 20 nodes 4321 time 48 pv d2d4 d7d5',
   'info depth 12 seldepth 17 multipv 3 score cp 10 nodes 4321 time 48 pv c2c4',
@@ -247,7 +249,7 @@ test('each search logs depth and timing as numbers only, never the position or m
 
 test('failed searches log only a stable code; a throwing logger never breaks analysis',async()=>{
  const logs=[];let hang=true;
- const engine=createCoachEngine({verify:noVerify,movetimeMs:20,log:(e)=>{logs.push(e);throw Error('log sink down');},spawnImpl:fakeSpawn((cmd,emit)=>{
+ const engine=legacyEngine({verify:noVerify,movetimeMs:20,log:(e)=>{logs.push(e);throw Error('log sink down');},spawnImpl:fakeSpawn((cmd,emit)=>{
   if(cmd==='uci')emit('uciok');if(cmd==='isready')emit('readyok');
   if(cmd.startsWith('go')&&!hang){emit('info depth 5 multipv 1 score cp 1 nodes 1 time 1 pv e2e4');emit('info depth 5 multipv 2 score cp 0 nodes 1 time 1 pv d2d4');emit('info depth 5 multipv 3 score cp 0 nodes 1 time 1 pv c2c4');emit('bestmove e2e4');}
  })});
@@ -260,7 +262,7 @@ test('failed searches log only a stable code; a throwing logger never breaks ana
 });
 
 // Real Stockfish 19 lite from the pinned npm package.
-const real=createCoachEngine({movetimeMs:300});
+const real=legacyEngine({movetimeMs:300});
 test.after(()=>real.close());
 
 test('[real] start position: three legal exact lines with cp score and depth',async()=>{
@@ -298,7 +300,7 @@ test('[real] position with a single legal move returns one line',async()=>{
 
 test('prewarm initializes engine once without starting a position search',async()=>{
  let spawns=0,searches=0;
- const engine=createCoachEngine({verify:noVerify,spawnImpl:fakeSpawn(goodScript(()=>searches++),{onSpawn:()=>spawns++})});
+ const engine=legacyEngine({verify:noVerify,spawnImpl:fakeSpawn(goodScript(()=>searches++),{onSpawn:()=>spawns++})});
  await Promise.all([engine.warmup(),engine.warmup()]);
  assert.equal(spawns,1);assert.equal(searches,0);assert.equal(engine.status().started,true);
  await engine.analyze(START);assert.equal(searches,1);engine.close();
@@ -307,7 +309,7 @@ test('prewarm initializes engine once without starting a position search',async(
 test('cold initialization gets a bounded allowance without extending warm search timeout',async()=>{
  let release;
  const verify=()=>new Promise(r=>release=r);
- const engine=createCoachEngine({verify,spawnImpl:fakeSpawn(goodScript()),startupMs:200,deadlineMs:15,movetimeMs:20});
+ const engine=legacyEngine({verify,spawnImpl:fakeSpawn(goodScript()),startupMs:200,deadlineMs:15,movetimeMs:20});
  const pending=engine.analyze(START);
  await new Promise(r=>setTimeout(r,30));
  release();const result=await pending;
@@ -316,7 +318,7 @@ test('cold initialization gets a bounded allowance without extending warm search
 
 test('request during prewarm uses cold allowance and reports coldStart true',async()=>{
  const g=gate(),logs=[];
- const engine=createCoachEngine({verify:g.verify,spawnImpl:fakeSpawn(goodScript()),startupMs:200,deadlineMs:15,movetimeMs:20,log:x=>logs.push(x)});
+ const engine=legacyEngine({verify:g.verify,spawnImpl:fakeSpawn(goodScript()),startupMs:200,deadlineMs:15,movetimeMs:20,log:x=>logs.push(x)});
  const warming=engine.warmup();
  const pending=engine.analyze(START);
  await new Promise(r=>setTimeout(r,30));
@@ -329,7 +331,7 @@ test('request during prewarm uses cold allowance and reports coldStart true',asy
 });
 
 test('a prewarmed engine retains the short search deadline',async()=>{
- const engine=createCoachEngine({verify:noVerify,spawnImpl:fakeSpawn((cmd,emit)=>{
+ const engine=legacyEngine({verify:noVerify,spawnImpl:fakeSpawn((cmd,emit)=>{
   if(cmd==='uci')emit('uciok');
   if(cmd==='isready')emit('readyok');
  }),startupMs:200,deadlineMs:30,movetimeMs:500});
@@ -339,4 +341,74 @@ test('a prewarmed engine retains the short search deadline',async()=>{
  const elapsed=Date.now()-began;
  assert.ok(elapsed>=20&&elapsed<170,'warm deadline must not include 200 ms startup allowance');
  engine.close();
+});
+
+
+test('quality gate rejects shallow exact MultiPV sets without caching and logs the depth',async()=>{
+ const logs=[];let searches=0,command='';
+ const scripted=fakeSpawn((cmd,emit)=>{
+  if(cmd==='uci')emit('uciok');
+  if(cmd==='isready')emit('readyok');
+  if(cmd.startsWith('go ')){
+   searches++;command=cmd;
+   setImmediate(()=>{
+    emit('info depth 11 multipv 1 score cp 62 nodes 80 time 5 pv e2e4 e7e5');
+    emit('info depth 11 multipv 2 score cp 31 nodes 80 time 5 pv d2d4 d7d5');
+    emit('info depth 11 multipv 3 score cp 17 nodes 80 time 5 pv c2c4');
+    emit('bestmove e2e4');
+   });
+  }
+ });
+ const engine=createCoachEngine({verify:noVerify,spawnImpl:scripted,minDepth:12,targetDepth:16,movetimeMs:100,log:e=>logs.push(e)});
+ try{
+  await assert.rejects(engine.analyze(START),{code:'engine_shallow'});
+  assert.equal(engine.status().cached,0);
+  await assert.rejects(engine.analyze(START),{code:'engine_shallow'});
+  assert.equal(searches,2,'shallow result must never be cached');
+  assert.equal(command,'go depth 16 movetime 100');
+  assert.deepEqual(logs.map(e=>[e.event,e.code,e.depth]),[
+   ['coach_engine_failed','engine_shallow',11],
+   ['coach_engine_failed','engine_shallow',11]
+  ]);
+  assert.ok(!JSON.stringify(logs).includes(START));
+ }finally{engine.close();}
+});
+
+test('quality gate accepts an exact depth-12 set and caches it',async()=>{
+ let searches=0;
+ const script=fakeSpawn(standardScript([
+  'info depth 12 multipv 1 score cp 22 nodes 40 time 8 pv e2e4 e7e5',
+  'info depth 12 multipv 2 score cp 16 nodes 40 time 8 pv d2d4 d7d5',
+  'info depth 12 multipv 3 score cp 11 nodes 40 time 8 pv c2c4',
+  'bestmove e2e4'
+ ]),{onSpawn:()=>searches++});
+ const engine=createCoachEngine({verify:noVerify,spawnImpl:script,minDepth:12,targetDepth:16,movetimeMs:100,log:()=>{}});
+ try{
+  assert.deepEqual(engine.status().budget,{movetimeMs:100,minDepth:12,targetDepth:16,multiPv:3,hashMb:16});
+  const result=await engine.analyze(START);
+  assert.deepEqual(result.lines.map(line=>line.depth),[12,12,12]);
+  assert.equal((await engine.analyze(START)).cached,true);
+  assert.equal(searches,1);
+ }finally{engine.close();}
+});
+
+test('target depth follows minimum when configured above default',()=>{
+ const engine=createCoachEngine({verify:noVerify,minDepth:20,targetDepth:16});
+ try{assert.equal(engine.status().budget.targetDepth,20);}
+ finally{engine.close();}
+});
+
+test('[real] Italian Game quality gate: three legal depth-12+ Stockfish lines',async()=>{
+ const italian='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const engine=createCoachEngine({minDepth:12,targetDepth:16,movetimeMs:6000,log:()=>{}});
+ try{
+  const result=await engine.analyze(italian);
+  assert.equal(result.lines.length,3);
+  assert.ok(result.lines.every(line=>line.depth>=12&&!line.bound));
+  for(const line of result.lines){
+   const board=new Chess(italian);
+   for(const san of line.sanPv)assert.ok(board.move(san,{strict:true}));
+   assert.equal(line.scoreKind,'cp');
+  }
+ }finally{engine.close();}
 });

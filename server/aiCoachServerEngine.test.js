@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),express=require('express');
 const {Chess}=require('chess.js');
 const {groundedChat}=require('./aiCoachChat');
-const {installAiCoach,installAiCoachFromEnv,engineFromEnv,engineMovetimeFromEnv}=require('./aiCoach');
+const {installAiCoach,installAiCoachFromEnv,engineFromEnv,engineMovetimeFromEnv,engineMinDepthFromEnv}=require('./aiCoach');
 
 const fen='rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2';
 const clientLines=[{moves:['d6','d4']},{moves:['e6','d4']}];
@@ -50,7 +50,7 @@ test('flag on: model receives server lines with White-perspective scores; client
 });
 
 test('flag on: engine failure falls back to the legacy path and reports a stable code',async()=>{
- for(const code of ['engine_busy','engine_timeout','engine_unavailable']){
+ for(const code of ['engine_busy','engine_timeout','engine_unavailable','engine_shallow']){
   const engine=fakeEngine(async()=>{throw Object.assign(Error(code),{code});}),{seen,fetchImpl}=capture();
   const response=await groundedChat(index,query,{openaiApiKey:'k',fetchImpl,engine});
   assert.equal(seen.input.evidence.candidateOrigin,'untrusted_client_legality_checked');
@@ -121,12 +121,12 @@ test('HTTP chat route forwards the configured engine',async()=>{
  }finally{await new Promise(r=>server.close(r));}
 });
 
-test('engine movetime comes from a validated setting: default 900, range 300–3000',()=>{
+test('engine movetime comes from a validated setting: default 900, range 300–6000',()=>{
  const warnings=[];const read=(raw)=>engineMovetimeFromEnv(raw===undefined?{}:{AI_COACH_ENGINE_MOVETIME_MS:raw},(e)=>warnings.push(e));
  assert.equal(read(undefined),900);assert.equal(read(''),900);
- for(const [raw,ms] of [['300',300],['900',900],['2000',2000],['3000',3000]])assert.equal(read(raw),ms,raw);
+ for(const [raw,ms] of [['300',300],['900',900],['2000',2000],['3000',3000],['6000',6000]])assert.equal(read(raw),ms,raw);
  assert.equal(warnings.length,0);
- for(const raw of ['299','3001','0','-500','1500.5','2e3',' 2000','2000ms','abc','99999'])assert.equal(read(raw),900,raw);
+ for(const raw of ['299','6001','0','-500','1500.5','2e3',' 2000','2000ms','abc','99999'])assert.equal(read(raw),900,raw);
  assert.equal(warnings.length,10);
  assert.deepEqual(warnings[0],{event:'coach_engine_config_invalid',setting:'AI_COACH_ENGINE_MOVETIME_MS',used:900});
  const engine=engineFromEnv({AI_COACH_ENABLED:'true',AI_COACH_SERVER_ENGINE_ENABLED:'true',AI_COACH_ENGINE_MOVETIME_MS:'2000'});
@@ -149,4 +149,19 @@ test('prewarm rejection emits exactly one bounded, redacted operational log',asy
   assert.deepEqual(logs,[{event:'coach_engine_warmup_failed',engine:'stockfish-19-lite',code:'engine_unavailable'}]);
   assert.equal(JSON.stringify(logs).includes('SECRET'),false);
  }finally{module.createCoachEngine=original;console.warn=warn;}
+});
+
+test('environment: minDepth defaults to 12, validates 8–24 and flows to the engine',()=>{
+ const warnings=[],read=(raw)=>engineMinDepthFromEnv(raw===undefined?{}:{AI_COACH_ENGINE_MIN_DEPTH:raw},entry=>warnings.push(entry));
+ assert.equal(read(undefined),12);assert.equal(read(''),12);
+ for(const [raw,depth] of [['8',8],['12',12],['16',16],['24',24]])assert.equal(read(raw),depth);
+ for(const raw of ['7','25','0','012','12.5','1e1',' 12','12 ','abc','-2'])assert.equal(read(raw),12,raw);
+ assert.equal(warnings.length,10);
+ assert.deepEqual(warnings[0],{event:'coach_engine_config_invalid',setting:'AI_COACH_ENGINE_MIN_DEPTH',used:12});
+ const engine=engineFromEnv({AI_COACH_ENABLED:'true',AI_COACH_SERVER_ENGINE_ENABLED:'true',AI_COACH_ENGINE_MIN_DEPTH:'20',AI_COACH_ENGINE_MOVETIME_MS:'6000'});
+ try{
+  assert.equal(engine.status().budget.minDepth,20);
+  assert.equal(engine.status().budget.targetDepth,20);
+  assert.equal(engine.status().budget.movetimeMs,6000);
+ }finally{engine.close();}
 });

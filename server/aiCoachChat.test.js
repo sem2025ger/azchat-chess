@@ -154,6 +154,43 @@ test('V1.1 Steinitz: replay server PV and expose only verified endpoint facts to
  assert.ok(!observed[0].instructions.includes('endFacts'));
 });
 
+test('Italian owner QA: line facts reach the model only, with the sacrifice, fork and check rules',async()=>{
+ const ITALIAN='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const lines=[['d3 Nf6 Nc3 h6 h3 a6 O-O O-O a3 d6',12],['Nc3 Nf6 d3 h6 Bb3 a5 Nxe5 Nxe5 d4 Bd6',10],['c3 Nf6 d4 exd4 cxd4 Bb4+ Bd2 Nxe4 Bxb4 Nxb4',8]]
+  .map(([moves,score])=>({...lineFixture(moves.split(' ')),scoreWhite:score,depth:16}));
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines})};
+ const q={fen:ITALIAN,message:'Оцени позицию, объясни три лучших продолжения',language:'ru',side:'any'};
+ const observed=[];
+ const fetchImpl=async(_url,options)=>{
+  const payload=JSON.parse(options.body);
+  observed.push({evidence:JSON.parse(payload.input).evidence,instructions:payload.instructions});
+  return verifiedReply();
+ };
+ const off=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:false});
+ const on=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true});
+ const [d3,nc3,c3]=observed[1].evidence.candidateLines.map(line=>line.endFacts);
+ assert.equal(d3.materialVsEval.matchesEval,true);
+ assert.deepEqual(nc3.materialVsEval,{startWhite:0,endWhite:-2,evalWhite:0.1,matchesEval:false});
+ assert.equal(nc3.doubleAttacks[0].move,'8. d4');
+ assert.deepEqual(nc3.doubleAttacks[0].targets.map(t=>t.square+' '+t.piece),['c5 bishop','e5 knight']);
+ assert.deepEqual(c3.checks,[{ply:6,move:'6... Bb4+',side:'black',legalReplies:7,checkmate:false,materialGainForCheckingSide:1}]);
+ assert.equal(c3.materialVsEval.matchesEval,false);
+ assert.ok(observed[1].instructions.includes('which may be temporary or lasting'));
+ assert.ok(observed[1].instructions.includes('Say that material is regained only when the supplied moves of that line show the recapture.'));
+ assert.ok(observed[1].instructions.includes('never present a legal move that is not in the supplied line'));
+ assert.ok(observed[1].instructions.includes('A listed fork is an attack, not a capture'));
+ assert.ok(observed[1].instructions.includes('Never claim a fork, double attack or pin that is not listed.'));
+ assert.ok(observed[1].instructions.includes('zero material gain does not make a check a mere tempo move'));
+ // Removed rules: no categorical ban on lasting imbalances, no gain+matchesEval gate for checks.
+ assert.ok(!observed[1].instructions.includes('never as a lasting loss or gain of material'));
+ assert.ok(!observed[1].instructions.includes('only when that gain is positive and materialVsEval.matchesEval is true'));
+ assert.equal(observed[0].evidence.candidateLines.some(line=>line.endFacts),false);
+ assert.ok(!observed[0].instructions.includes('materialVsEval'));
+ for(const key of ['endFacts','materialVsEval','doubleAttacks','materialGainForCheckingSide'])
+  assert.equal(JSON.stringify(on).includes(key),false,key+' never reaches the browser');
+ assert.equal(JSON.stringify(off.engineLines),JSON.stringify(on.engineLines));
+});
+
 test('V1.1 malformed SAN cannot crash chat, and cannot get endFacts',async()=>{
  const q={fen:STEINITZ_FEN,message:'Какой план здесь у белых?',language:'ru',side:'any'};
  const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},
@@ -182,4 +219,36 @@ test('V1.1 three independent 10-ply PVs keep model evidence under 16KB',async()=
    assert.ok(Buffer.byteLength(JSON.stringify(evidence),'utf8')<16*1024);
    return verifiedReply();
   }});
+});
+
+test('Chessy White/Black plan requests: same FEN to the engine and identical model evidence',async()=>{
+ const ITALIAN='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const lines=[['d3 Nf6 Nc3 h6 h3 a6 O-O O-O a3 d6',12],['Nc3 Nf6 d3 h6 Bb3 a5 Nxe5 Nxe5 d4 Bd6',10],['c3 Nf6 d4 exd4 cxd4 Bb4+ Bd2 Nxe4 Bxb4 Nxb4',8]]
+  .map(([moves,score])=>({...lineFixture(moves.split(' ')),scoreWhite:score,depth:16}));
+ const analysed=[],seen=[];
+ const engine={analyze:async fen=>{analysed.push(fen);return {engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines};}};
+ const fetchImpl=async(_url,options)=>{const input=JSON.parse(JSON.parse(options.body).input);seen.push(input);return verifiedReply();};
+ const replies=[];
+ for(const message of ['Оцени позицию и предложи план игры за белых.','Оцени позицию и предложи план игры за чёрных.'])
+  replies.push(await groundedChat(null,{fen:ITALIAN,message,language:'ru',side:'any'},{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true}));
+ assert.deepEqual(analysed,[ITALIAN,ITALIAN]);
+ assert.deepEqual(seen.map(input=>input.question),['Оцени позицию и предложи план игры за белых.','Оцени позицию и предложи план игры за чёрных.']);
+ for(const key of ['position','sideToMove','archiveFilterSide','legalMoves','evidence'])
+  assert.equal(JSON.stringify(seen[0][key]),JSON.stringify(seen[1][key]),key+' does not depend on the requested side');
+ assert.equal(seen[0].sideToMove,'w');
+ assert.deepEqual(seen[0].evidence.candidateLines.map(line=>line.scoreWhite),[12,10,8]);
+ assert.equal(JSON.stringify(replies[0].engineLines),JSON.stringify(replies[1].engineLines));
+});
+
+test('1.f3 e5 2.g4: a server mate line reaches the model as a verified checkmate',async()=>{
+ const FOOLS='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2';
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines:[{sanPv:['Qh4#'],scoreKind:'mate',scoreWhite:-1,depth:245,wdlWhite:[0,0,1000]}]})};
+ let observed=null;
+ const reply=await groundedChat(null,{fen:FOOLS,message:'Оцени позицию и предложи план игры за чёрных.',language:'ru',side:'any'},{openaiApiKey:'synthetic',engine,positionFactsEnabled:true,
+  fetchImpl:async(_url,options)=>{const payload=JSON.parse(options.body);observed={evidence:JSON.parse(payload.input).evidence,instructions:payload.instructions};return verifiedReply();}});
+ const facts=observed.evidence.candidateLines[0].endFacts;
+ assert.deepEqual(facts.checks,[{ply:1,move:'2... Qh4#',side:'black',legalReplies:0,checkmate:true,materialGainForCheckingSide:0}]);
+ assert.equal(facts.materialVsEval.matchesEval,null);
+ assert.ok(observed.instructions.includes('A check with checkmate true is a verified checkmate: state it first and plainly as mate, never as a check that gains time.'));
+ assert.equal(JSON.stringify(reply).includes('checkmate'),false,'line facts never reach the browser');
 });

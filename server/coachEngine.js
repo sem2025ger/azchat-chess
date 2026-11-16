@@ -51,15 +51,17 @@ async function verifyFiles(enginePath,pinned){
 
 function createCoachEngine({
  enginePath=(()=>{try{return require.resolve(ENGINE_FILE);}catch{return null;}})(),
- pinned=PINNED_SHA256,movetimeMs=900,multiPv=3,hashMb=16,maxQueue=4,deadlineMs=8000,
+ pinned=PINNED_SHA256,movetimeMs=900,minDepth=12,targetDepth=16,multiPv=3,hashMb=16,maxQueue=4,
+ deadlineMs=Math.max(8000,movetimeMs+2500),
  startupMs=10000,cacheSize=500,spawnImpl=spawn,verify=verifyFiles,now=Date.now,
  // Structured operational log: numbers and codes only, never FEN, moves, user text or ids.
  log=(entry)=>console.log(JSON.stringify(entry))
 }={}){
  const cache=new Map(),pending=new Map(),queue=[];
  let child=null,ready=null,buffer='',listener=null,running=null,active=null,disabled=false,nnue=null,closed=false,initialized=false;
- const budget={movetimeMs,multiPv,hashMb};
- const keyOf=(fen)=>[ENGINE_NAME,movetimeMs,multiPv,hashMb,fen].join('|');
+ const effectiveTargetDepth=Math.max(minDepth,targetDepth);
+ const budget={movetimeMs,minDepth,targetDepth:effectiveTargetDepth,multiPv,hashMb};
+ const keyOf=(fen)=>[ENGINE_NAME,movetimeMs,minDepth,effectiveTargetDepth,multiPv,hashMb,fen].join('|');
 
  function safeLog(entry){try{log(entry);}catch{/* Logging must never affect analysis. */}}
  function send(line){child.stdin.write(line+'\n');}
@@ -113,11 +115,12 @@ function createCoachEngine({
      current[info.multipv]=info;
      // Keep only a complete, exact set from one depth; never mix depths or bound scores.
      const set=Array.from({length:want},(_,k)=>current[k+1]);
-     if(set.every(x=>x&&x.depth===set[0].depth&&!x.bound))complete=set;
+     if(set.every(x=>x&&Number.isInteger(x.depth)&&x.depth>0&&x.depth===set[0].depth&&!x.bound))complete=set;
      return;
     }
     if(line.startsWith('bestmove')){
      if(!complete)return finish(reject,engineError('engine_unavailable'));
+     if(complete[0].depth<minDepth)return finish(reject,Object.assign(engineError('engine_shallow'),{depth:complete[0].depth}));
      // An illegal PV means corrupted engine output: reject the whole set instead of
      // returning a partial MultiPV set as verified evidence.
      const lines=complete.map((x)=>{const san=sanLine(fen,x.uciPv);return san&&{...x,uciPv:x.uciPv.slice(0,MAX_SAN_PLIES),sanPv:san};});
@@ -125,7 +128,7 @@ function createCoachEngine({
      finish(resolve,{fen,engine:ENGINE_NAME,nnue,budget,elapsedMs:now()-started,lines});
     }
    };
-   send('ucinewgame');send('position fen '+fen);send('go movetime '+movetimeMs);
+   send('ucinewgame');send('position fen '+fen);send('go depth '+effectiveTargetDepth+' movetime '+movetimeMs);
   });
  }
 
@@ -147,7 +150,7 @@ function createCoachEngine({
     searchMs:result.elapsedMs,totalMs:now()-startedAt,coldStart:cold});
    job.settle(null,result);
   }catch(e){
-   safeLog({event:'coach_engine_failed',engine:ENGINE_NAME,movetimeMs,code:e.code||'engine_unavailable',totalMs:now()-startedAt,coldStart:cold});
+   safeLog({event:'coach_engine_failed',engine:ENGINE_NAME,movetimeMs,code:e.code||'engine_unavailable',...(e.code==='engine_shallow'?{depth:e.depth}:{}),totalMs:now()-startedAt,coldStart:cold});
    job.settle(e);
   }
   finally{if(pending.get(job.key)===job)pending.delete(job.key);active=null;pump();}

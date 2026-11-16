@@ -3,6 +3,7 @@ const {Chess,validateFen}=require('chess.js');
 const {LANGUAGE_CODES,safeGame}=require('./aiCoachCore');
 const {generateAnswer}=require('./aiCoachOpenAI');
 const {positionFacts}=require('./coachPositionFacts');
+const {lineFacts}=require('./coachLineFacts');
 const {lookupCoachBibliography}=require('./coachKnowledge');
 
 const fallback={
@@ -84,7 +85,8 @@ function withLineEndFacts(lines,fen){
    return {...line,endFacts:{
     fen:finalFen,plies:line.moves.length,material:facts.material,majorities:facts.majorities,
     white:{pawns:facts.white.pawns,king:facts.white.king,minorityAttack:facts.white.strategy.minorityAttack},
-    black:{pawns:facts.black.pawns,king:facts.black.king,minorityAttack:facts.black.strategy.minorityAttack}
+    black:{pawns:facts.black.pawns,king:facts.black.king,minorityAttack:facts.black.strategy.minorityAttack},
+    ...lineFacts(fen,line.moves,line)
    }};
   }catch{return line;} // A corrupt SAN cannot compromise the chat request.
  });
