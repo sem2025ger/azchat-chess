@@ -36,6 +36,8 @@ test('opt-in structured plan keeps its engine line ID and has valid bounded outp
  ]};
  const value=await generateAnswer(query,evidence,{apiKey:'synthetic',planDemo:true,fetchImpl:async(_url,opts)=>{request=JSON.parse(opts.body);return mockReply(lesson);}});
  assert.equal(request.text.format.name,'chessaz_plan_lesson');
+ assert.equal(request.reasoning.effort,'medium','illustrated lessons require real position reasoning');
+ assert.equal(request.max_output_tokens,4800);
  assert.deepEqual(request.text.format.schema.properties.lineId.enum,['none','L1','L2']);
  assert.match(request.instructions,/interface renders intro/);
  assert.match(request.instructions,/ACTUAL moves/);
@@ -183,6 +185,9 @@ test('[real] Italian lesson carries the recapture AND subsequent play through fa
    assert.deepEqual(line.continuation.moves.slice(0,2),['dxe5','Bxe5']);
    assert.ok(line.continuation.moves.length>2,'the lesson continues after material restoration');
    assert.equal(line.continuation.source,'root_pv');assert.equal(line.endFacts.unsettled,false);
+   assert.ok(line.endFacts.moveMechanisms.blockedPawnSteps.some(item=>item.move==='4. Nc3'&&item.pawn==='c2'&&item.blockedSquare==='c3'));
+   assert.deepEqual(line.endFacts.moveMechanisms.pawnControls.find(item=>item.move==='8. d4').squares,['c5','e5']);
+   assert.match(body.instructions,/freedSquaresUsed/);
    assert.equal(line.lineEndFacts.material.balanceWhite,-2);assert.equal(line.endFacts.material.balanceWhite,0);
    const board=new Chess(root);for(const san of [...line.moves,...line.continuation.moves])board.move(san,{strict:true});
    assert.equal(board.fen(),line.endFacts.fen);
