@@ -6,13 +6,14 @@ import {tmpdir} from 'node:os';import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 import {sectionsFixturePlugin} from './sectionsFixtures.mjs';
+import {coachChatCopy} from '../src/i18n/coachChatCopy.ts';
 
 export async function checkSpielerDesign({root=process.cwd(),captureRoot,phase='after',verify=true}={}){
- const plugin=sectionsFixturePlugin(),load=plugin.load;plugin.load=id=>{let code=load(id);if(id==='/__sections_fixture.tsx'){code=code.replace('import{LanguageProvider}', 'import{LanguageProvider,useLanguage}').replace('<LanguageProvider><MemoryRouter>', '<LanguageProvider><LanguageProbe/><MemoryRouter>');code=code.replace("if(path==='/api/spieler/search')", `if(path==='/api/ai-coach/chat')data={answer:'Тестовый ответ: сначала проверьте безопасность короля и развитие фигур. План зависит от позиции: Nf3, c3 и O-O нужно сопоставить с ответами соперника. '+ 'Подробное объяснение для проверки читаемости и прокрутки. '.repeat(8),generated:true,games:Array.from({length:5},(_,i)=>({id:'layout-'+i,white:'Synthetic White with a long name '+i,black:'Synthetic Black with a long name '+i,ply:0,pgn:'1. e4 e5',result:'*'}))};
+ const plugin=sectionsFixturePlugin(),load=plugin.load;plugin.load=id=>{let code=load(id);if(id==='/__sections_fixture.tsx'){code=code.replace('import{LanguageProvider}', 'import{Chess}from"chess.js";import{LanguageProvider,useLanguage}').replace('<LanguageProvider><MemoryRouter>', '<LanguageProvider><LanguageProbe/><MemoryRouter>');code=code.replace("if(path==='/api/spieler/search')", `if(path==='/api/ai-coach/chat'){window.layoutChatCalls=(window.layoutChatCalls||0)+1;const position=JSON.parse(options.body).fen;const probe=new Chess(position);const engineLines=probe.moves().slice(0,3).map((move,i)=>({id:'layout-line-'+i,moves:[move],scoreKind:'cp',scoreWhite:12-i*2,depth:16}));data={position,engineVerified:true,engineLines,answer:'Тестовый ответ: сначала проверьте безопасность короля и развитие фигур. План зависит от позиции: Nf3, c3 и O-O нужно сопоставить с ответами соперника. '+ 'Подробное объяснение для проверки читаемости и прокрутки. '.repeat(8),generated:true,games:Array.from({length:5},(_,i)=>({id:'layout-'+i,white:'Synthetic White with a long name '+i,black:'Synthetic Black with a long name '+i,ply:0,pgn:'1. e4 e5',result:'*'}))};}
  else if(path==='/api/ai-coach/preparation')data={opening:'custom',color:JSON.parse(options.body).color,moves:['e4','c5'],ply:2,turn:'white',matched:37,inspected:15,briefing:null,groups:['Nf3','Nc3','d4'].map(move=>({move,replyColor:'black',availableInSample:5,replies:[{move:'d6',count:5}],games:Array.from({length:5},(_,i)=>({id:'prep-'+move+i,white:'Synthetic White '+i,black:'Synthetic Black '+i,result:'*',date:'2026-10-30',event:'Layout fixture',ply:0,pgn:'1. e4 e5',first25:['e4','e5']}))}))};
  else if(path==='/api/spieler/search')`);code+=`function LanguageProbe(){const {setLanguage}=useLanguage();window.fixtureLanguage=setLanguage;return null;}`;}return code;};
  const server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-sections-vite-'+process.pid+'-'+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:Object.fromEntries([
-  ['VITE_SERVER_URL','https://sections-fixture.invalid'],...['VITE_SPIELER_V1_ENABLED','VITE_CLUBS_NRW_ENABLED','VITE_SPIELTAG_ENABLED','VITE_VORBEREITUNG_ENABLED','VITE_POSITION_SEARCH_ENABLED','VITE_AI_COACH_ENABLED'].map(k=>[k,'true'])
+  ['VITE_SERVER_URL','https://sections-fixture.invalid'],...['VITE_SPIELER_V1_ENABLED','VITE_CLUBS_NRW_ENABLED','VITE_SPIELTAG_ENABLED','VITE_VORBEREITUNG_ENABLED','VITE_POSITION_SEARCH_ENABLED','VITE_AI_COACH_ENABLED','VITE_CHESSY_ENABLED'].map(k=>[k,'true'])
  ].map(([k,v])=>['import.meta.env.'+k,JSON.stringify(v)]))});
  let chrome,ws,profile;const pending=new Map(),exceptions=[],diagnostics=[],measurements=[];
  try{
@@ -77,6 +78,53 @@ export async function checkSpielerDesign({root=process.cwd(),captureRoot,phase='
     const layout=await evaluate(`(()=>{const r=s=>{const x=document.querySelector(s).getBoundingClientRect();return {top:x.top,bottom:x.bottom,left:x.left,right:x.right};};return {prep:r('.chessaz-ai-coach'),chat:r('.coach-chat'),history:r('.coach-chat-history'),compose:r('.coach-chat-compose'),controls:r('.global-position-controls'),width:document.documentElement.scrollWidth,viewport:innerWidth};})()`);
     assert.ok(layout.chat.left>=layout.prep.left,'floating chat remains on the right');assert.ok(layout.history.bottom<=layout.compose.top+1,'history never covers composer');assert.ok(await evaluate(`getComputedStyle(document.querySelector('.coach-chat-panel')).position==='absolute'`),'chat overlays the search rail without covering the chessboard');assert.ok(layout.width<=layout.viewport+1,'expanded sections fit horizontally');
     await evaluate(`document.querySelector('.chessaz-ai-coach-results-panel>summary').click()`);await pause(40);assert.ok(await evaluate(`document.querySelector('.coach-chat-panel').getBoundingClientRect().bottom<=innerHeight+1`),'floating chat remains entirely inside viewport');
+    // Reading mode uses the real Chessy surface and three server-bound lines.
+    assert.equal(await evaluate(`document.querySelectorAll('.coach-chat-study-choices button').length`),3);
+    await evaluate(`document.querySelector('.coach-chat-study-choices button').click()`);
+    await evaluate(`document.querySelector('.coach-chat-study-nav button[aria-label]').nextElementSibling.nextElementSibling.click()`);
+    await evaluate(`(()=>{const input=document.querySelector('.coach-chat-compose input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Keep my reading draft');input.dispatchEvent(new Event('input',{bubbles:true}));})()`);await pause(30);
+    const compact=await evaluate(`(()=>{const b=document.querySelector('.preparation-shared-board').getBoundingClientRect();return {board:{x:b.x,y:b.y,width:b.width,height:b.height},history:document.querySelector('.coach-chat-history').clientHeight,calls:window.layoutChatCalls};})()`);
+    for(const lang of ['de','en','az','tr','ua','ru']){
+     const copy=coachChatCopy[lang==='ua'?'uk':lang];
+     await evaluate('window.fixtureLanguage('+JSON.stringify(lang)+')');await wait(`document.querySelector('.coach-chat-expand').textContent===${JSON.stringify(copy.expandChat)}`);
+     const beforeReading=await evaluate(`(()=>{const b=document.querySelector('.preparation-shared-board').getBoundingClientRect();return {board:{x:b.x,y:b.y,width:b.width,height:b.height},history:document.querySelector('.coach-chat-history').clientHeight};})()`);
+     await evaluate(`document.querySelector('.coach-chat-expand').click()`);await wait(`document.querySelector('.coach-chat-expand').getAttribute('aria-expanded')==='true'`);await pause(30);
+     const reading=await evaluate(`(()=>{const r=s=>{const e=document.querySelector(s),b=e.getBoundingClientRect();return{x:b.x,y:b.y,width:b.width,height:b.height,right:b.right,bottom:b.bottom};};return{board:r('.preparation-shared-board'),panel:r('.coach-chat-panel'),history:r('.coach-chat-history'),compose:r('.coach-chat-compose'),intro:getComputedStyle(document.querySelector('.chessy-intro')).display,prompts:getComputedStyle(document.querySelector('.chessy-prompts')).display,label:document.querySelector('.coach-chat-expand').textContent,controlled:document.querySelector('.coach-chat-expand').getAttribute('aria-controls')===document.querySelector('.coach-chat-panel').id,draft:document.querySelector('.coach-chat-compose input').value,preview:document.querySelector('.coach-chat-study-nav span').textContent,calls:window.layoutChatCalls,scrollbar:getComputedStyle(document.querySelector('.coach-chat-history'),'::-webkit-scrollbar').width};})()`);
+     assert.deepEqual({x:reading.board.x,y:reading.board.y,width:reading.board.width,height:reading.board.height},beforeReading.board,'expanding keeps the chessboard geometry '+lang);
+     assert.ok(reading.panel.x>=reading.board.right+7,'reading panel never covers the board '+lang);
+     assert.ok(reading.panel.y>=0&&reading.panel.bottom<=height-10&&reading.panel.right<=width-10,'reading panel fits viewport '+lang);
+     assert.ok(reading.history.height>beforeReading.history+80,'reading mode gives the answer substantially more space '+lang);
+     assert.ok(reading.history.bottom<=reading.compose.y,'answer and composer stay separate '+lang);
+     assert.equal(reading.intro,'none');assert.equal(reading.prompts,'none');assert.equal(reading.label,copy.restoreChat);assert.equal(reading.controlled,true);
+     assert.equal(reading.draft,'Keep my reading draft');assert.equal(reading.preview,'1 / 1');assert.equal(reading.calls,compact.calls,'expand makes no model request');
+     assert.equal(reading.scrollbar,'16px','mouse can grab a wider native scrollbar');
+     if(lang==='ru')await capture('chessy-reading-'+width+'x'+height);
+     await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
+     await wait(`document.querySelector('.coach-chat-expand').getAttribute('aria-expanded')==='false'`);
+     assert.equal(await evaluate(`document.querySelector('.coach-chat-compose input').value`),'Keep my reading draft','Escape preserves draft');
+    }
+    // Drag the actual native thumb instead of simulating scrollTop changes.
+    await evaluate(`document.querySelector('.coach-chat-expand').click()`);await pause(30);
+    await evaluate(`(()=>{const list=document.querySelector('.coach-chat-history'),probe=document.createElement('div');probe.id='chessy-thumb-probe';probe.style.minHeight='900px';list.appendChild(probe);list.scrollTop=0;})()`);await pause(30);
+    const thumb=await evaluate(`(()=>{const el=document.querySelector('.coach-chat-history'),r=el.getBoundingClientRect();return{x:Math.round(r.right-8),y:Math.round(r.top+16),bottom:Math.round(r.bottom-16),overflow:el.scrollHeight>el.clientHeight+20};})()`);
+    assert.ok(thumb.overflow,'long answer needs a draggable scrollbar');
+    await cdp('Input.dispatchMouseEvent',{type:'mousePressed',x:thumb.x,y:thumb.y,button:'left',buttons:1,clickCount:1});
+    await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:thumb.x,y:thumb.bottom,button:'left',buttons:1});
+    await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',x:thumb.x,y:thumb.bottom,button:'left',buttons:0,clickCount:1});
+    await wait(`document.querySelector('.coach-chat-history').scrollTop>20`);
+    await cdp('Input.dispatchMouseEvent',{type:'mousePressed',x:thumb.x,y:thumb.bottom,button:'left',buttons:1,clickCount:1});
+    await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:thumb.x,y:thumb.y,button:'left',buttons:1});
+    await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',x:thumb.x,y:thumb.y,button:'left',buttons:0,clickCount:1});
+    await wait(`document.querySelector('.coach-chat-history').scrollTop<5`);
+    await evaluate(`document.getElementById('chessy-thumb-probe').remove()`);
+    await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height,deviceScaleFactor:1,mobile:false});
+    await wait(`(()=>{const p=document.querySelector('.coach-chat-panel').getBoundingClientRect(),b=document.querySelector('.preparation-shared-board').getBoundingClientRect();return p.x>=b.right+7&&p.right>1420&&p.right<=1430;})()`);
+    await cdp('Emulation.setDeviceMetricsOverride',{width:1100,height,deviceScaleFactor:1,mobile:false});
+    await wait(`document.querySelector('.coach-chat-expand').getAttribute('aria-expanded')==='false'`);
+    assert.equal(await evaluate(`getComputedStyle(document.querySelector('.coach-chat-expand')).display`),'none','stacked layout keeps its existing board/chat flow');
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});await pause(50);
+    await evaluate(`document.querySelector('.coach-chat-expand').click()`);await pause(30);
+    await evaluate(`document.querySelector('.coach-chat-expand').click()`);await pause(30);
     if(width===1280&&height===720){
      await evaluate(`(()=>{const probe=document.createElement('div');probe.id='chat-scroll-probe';probe.style.height='1200px';document.querySelector('.global-position-search').appendChild(probe);document.querySelector('.coach-chat-history').scrollIntoView({block:'center'});document.querySelector('.coach-chat-history').scrollTop=0;})()`);await pause(50);
      const at=await evaluate(`(()=>{const r=document.querySelector('.coach-chat-history').getBoundingClientRect();return{x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2),outer:document.querySelector('[data-route-scroll]').scrollTop};})()`);
