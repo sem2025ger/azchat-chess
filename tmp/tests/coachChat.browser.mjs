@@ -57,7 +57,7 @@ export async function checkCoachChat({captureRoot}={}){
    const transcription=url.endsWith('transcriptions');assert.equal(url,transcription?'https://api.openai.com/v1/audio/transcriptions':'https://api.openai.com/v1/responses');
    if(transcription){assert.ok(options.body.get('file').size>16);calls.push({kind:'transcribe',language:options.body.get('language')});if(mode==='hold-transcribe')await new Promise(r=>release=r);return Response.json({text:'How should I develop my pieces?'});}
    const body=JSON.parse(options.body),input=JSON.parse(body.input);calls.push({kind:'chat',body:input,instructions:body.instructions});if(mode==='hold-chat')await new Promise(r=>release=r);if(mode==='error')return new Response('SECRET provider error',{status:401});
-   return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Fixture answer: '+input.question})}]}]});
+   return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Fixture answer: '+input.question+'\nThe practical plan and opponent response are preserved on screen.'})}]}]});
   }});
  api=app.listen(0,'127.0.0.1');await new Promise(r=>api.once('listening',r));
  cacheDir=await mkdtemp(join(tmpdir(),'chessaz-chat-vite-'));
@@ -78,6 +78,7 @@ export async function checkCoachChat({captureRoot}={}){
   const t=coachChatCopy[lang==='ua'?'uk':lang];clock+=61000;await evaluate('window.language('+JSON.stringify(lang)+');window.setToken('+JSON.stringify('synthetic-'+width+'-'+lang)+');window.setAccount('+JSON.stringify('account-'+width+'-'+lang)+')');await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(t.title));if(!await evaluate('!!document.querySelector(".coach-chat-panel")'))await click(t.title);
   await fill('Study the centre');await click(t.send);await wait('document.querySelector(".coach-chat-message.assistant")');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'fit '+lang+' '+width);assert.ok(!(await evaluate('document.body.innerText')).includes(t.privacy));assert.equal(calls.at(-1).body.position,new Chess().fen());assert.equal(calls.at(-1).body.history.length,0);
   const text=await evaluate('document.querySelector(".coach-chat-message.assistant > p").textContent'),beforeCopy=calls.length;
+  assert.equal(text,'Fixture answer: Study the centre\nThe practical plan and opponent response are preserved on screen.','model text must reach the browser verbatim, including the second paragraph, in every language and width');
   assert.equal(await evaluate('document.querySelector(".coach-chat-copy [role=status]")===null'),true,'idle copy control is not an active status '+lang);
   await click(t.copyAnswer);
   await wait('document.querySelector(".coach-chat-copy")?.getAttribute("aria-label")==='+JSON.stringify(t.copiedAnswer));
