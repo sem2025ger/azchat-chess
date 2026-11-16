@@ -6,14 +6,15 @@ import {tmpdir} from 'node:os';import {join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 import {sectionsFixturePlugin} from './sectionsFixtures.mjs';
+import {chessyCopy} from '../src/i18n/chessyCopy.ts';
 import {coachChatCopy} from '../src/i18n/coachChatCopy.ts';
 
 export async function checkSpielerDesign({root=process.cwd(),captureRoot,phase='after',verify=true}={}){
- const plugin=sectionsFixturePlugin(),load=plugin.load;plugin.load=id=>{let code=load(id);if(id==='/__sections_fixture.tsx'){code=code.replace('import{LanguageProvider}', 'import{Chess}from"chess.js";import{LanguageProvider,useLanguage}').replace('<LanguageProvider><MemoryRouter>', '<LanguageProvider><LanguageProbe/><MemoryRouter>');code=code.replace("if(path==='/api/spieler/search')", `if(path==='/api/ai-coach/chat'){window.layoutChatCalls=(window.layoutChatCalls||0)+1;const position=JSON.parse(options.body).fen;const probe=new Chess(position);const engineLines=probe.moves().slice(0,3).map((move,i)=>({id:'layout-line-'+i,moves:[move],scoreKind:'cp',scoreWhite:12-i*2,depth:16}));data={position,engineVerified:true,engineLines,answer:'Тестовый ответ: сначала проверьте безопасность короля и развитие фигур. План зависит от позиции: Nf3, c3 и O-O нужно сопоставить с ответами соперника. '+ 'Подробное объяснение для проверки читаемости и прокрутки. '.repeat(8),generated:true,games:Array.from({length:5},(_,i)=>({id:'layout-'+i,white:'Synthetic White with a long name '+i,black:'Synthetic Black with a long name '+i,ply:0,pgn:'1. e4 e5',result:'*'}))};}
+ const plugin=sectionsFixturePlugin(),load=plugin.load;plugin.load=id=>{let code=load(id);if(id==='/__sections_fixture.tsx'){code=code.replace('import{LanguageProvider}', 'import{Chess}from"chess.js";import{LanguageProvider,useLanguage}').replace('<LanguageProvider><MemoryRouter>', '<LanguageProvider><LanguageProbe/><MemoryRouter>');code=code.replace("if(path==='/api/spieler/search')", `if(path==='/api/ai-coach/chat'){window.layoutChatCalls=(window.layoutChatCalls||0)+1;const position=JSON.parse(options.body).fen;const probe=new Chess(position);const engineLines=probe.moves().slice(0,3).map((move,i)=>({id:'layout-line-'+i,moves:[move],scoreKind:'cp',scoreWhite:12-i*2,depth:16}));if(/план|продолжение/.test(JSON.parse(options.body).message))for(const line of engineLines){const follow=new Chess(position);for(const san of line.moves)follow.move(san);const move=follow.moves()[0];if(move)line.continuation={moves:[move],evalWhite:0.1,depth:16,settled:true};}data={position,engineVerified:true,engineLines,answer:'Тестовый ответ: сначала проверьте безопасность короля и развитие фигур. План зависит от позиции: Nf3, c3 и O-O нужно сопоставить с ответами соперника. '+ 'Подробное объяснение для проверки читаемости и прокрутки. '.repeat(8),generated:true,games:Array.from({length:5},(_,i)=>({id:'layout-'+i,white:'Synthetic White with a long name '+i,black:'Synthetic Black with a long name '+i,ply:0,pgn:'1. e4 e5',result:'*'}))};if(JSON.parse(options.body).message.includes('план')){const intro='Позиция близка к равной. План белых — развить фигуры и подготовить борьбу за центр.',conclusion='В показанном варианте белые улучшают развитие, но решающего преимущества ещё нет.';data.answer=intro+'\\n'+conclusion;data.planDemonstration={lineId:'L1',intro,conclusion};data.engineLines=data.engineLines.map((line,i)=>({...line,id:'L'+(i+1)}));data.lineLessons=data.engineLines.slice(0,2).map((line,i)=>({lineId:line.id,intro:i===0?intro:'План варианта 2: другой конкретный замысел.',conclusion:i===0?conclusion:'Итог варианта 2: другая конечная позиция.'}));data.engineLines[2].unsettled=true;delete data.engineLines[2].continuation;}}
  else if(path==='/api/ai-coach/preparation')data={opening:'custom',color:JSON.parse(options.body).color,moves:['e4','c5'],ply:2,turn:'white',matched:37,inspected:15,briefing:null,groups:['Nf3','Nc3','d4'].map(move=>({move,replyColor:'black',availableInSample:5,replies:[{move:'d6',count:5}],games:Array.from({length:5},(_,i)=>({id:'prep-'+move+i,white:'Synthetic White '+i,black:'Synthetic Black '+i,result:'*',date:'2026-10-30',event:'Layout fixture',ply:0,pgn:'1. e4 e5',first25:['e4','e5']}))}))};
  else if(path==='/api/spieler/search')`);code+=`function LanguageProbe(){const {setLanguage}=useLanguage();window.fixtureLanguage=setLanguage;return null;}`;}return code;};
  const server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-sections-vite-'+process.pid+'-'+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:Object.fromEntries([
-  ['VITE_SERVER_URL','https://sections-fixture.invalid'],...['VITE_SPIELER_V1_ENABLED','VITE_CLUBS_NRW_ENABLED','VITE_SPIELTAG_ENABLED','VITE_VORBEREITUNG_ENABLED','VITE_POSITION_SEARCH_ENABLED','VITE_AI_COACH_ENABLED','VITE_CHESSY_ENABLED'].map(k=>[k,'true'])
+  ['VITE_SERVER_URL','https://sections-fixture.invalid'],...['VITE_SPIELER_V1_ENABLED','VITE_CLUBS_NRW_ENABLED','VITE_SPIELTAG_ENABLED','VITE_VORBEREITUNG_ENABLED','VITE_POSITION_SEARCH_ENABLED','VITE_AI_COACH_ENABLED','VITE_CHESSY_ENABLED','VITE_CHESSY_PLAN_DEMO_ENABLED'].map(k=>[k,'true'])
  ].map(([k,v])=>['import.meta.env.'+k,JSON.stringify(v)]))});
  let chrome,ws,profile;const pending=new Map(),exceptions=[],diagnostics=[],measurements=[];
  try{
@@ -132,6 +133,63 @@ export async function checkSpielerDesign({root=process.cwd(),captureRoot,phase='
      await evaluate(`document.querySelector('.coach-chat-history').scrollTop=document.querySelector('.coach-chat-history').scrollHeight`);await pause(30);await cdp('Input.dispatchMouseEvent',{type:'mouseWheel',x:at.x,y:at.y,deltaX:0,deltaY:160});assert.ok(await evaluate(`document.querySelector('.coach-chat-history').scrollTop>0`),'chat uses its own scroll rather than route scroll');await evaluate(`document.getElementById('chat-scroll-probe').remove()`);
     }
     await evaluate(`document.querySelector('.coach-chat-panel').scrollIntoView({block:'center'})`);await pause(50);await capture('spieler-expanded-'+width+'x'+height);
+    // The plan's verified Stockfish line appears immediately between idea and result.
+    if(height===720){
+     await evaluate("window.fixtureLanguage('ru')");
+     await evaluate("document.querySelector('.chessy-prompts button').click()");
+     await wait("document.querySelector('.coach-chat-plan-primary')");
+     const illustrated=await evaluate("(()=>{const m=[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1),intro=m.querySelector(':scope>p'),plan=m.querySelector('.coach-chat-plan-primary'),result=m.querySelector('.coach-chat-plan-conclusion'),nav=m.querySelector('.coach-chat-study-nav'),actions=m.querySelector('.coach-chat-message-actions');return {text:intro?.textContent,plan:plan?.textContent,outcome:result?.textContent,order:!!(intro.compareDocumentPosition(plan)&Node.DOCUMENT_POSITION_FOLLOWING)&&!!(plan.compareDocumentPosition(result)&Node.DOCUMENT_POSITION_FOLLOWING),nav:nav?.textContent,copy:!!actions?.querySelector('.coach-chat-copy'),listen:!!actions?.querySelector('.coach-chat-listen'),alternatives:!!m.querySelector('.coach-chat-plan-alternatives')};})()");
+     assert.ok(illustrated.text.includes('Позиция близка'),'brief objective assessment');
+     assert.ok(illustrated.plan.includes('Показать план на доске'),'verified main line');
+     assert.ok(illustrated.outcome.includes('решающего преимущества ещё нет'),'explains the actual result');
+     assert.ok(illustrated.order,'plan → line → outcome');
+     assert.ok(illustrated.nav.includes('0 / 2'),'starts at exact original FEN');
+     assert.ok(illustrated.copy&&illustrated.listen&&illustrated.alternatives,'copy, audio and alternatives preserved');
+     await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-study-nav button[aria-label]').nextElementSibling.nextElementSibling.click()");
+     await wait("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-study-nav span').textContent.includes('1 / 2')");
+     assert.ok(await evaluate("document.querySelector('.preparation-shared-board [data-piece-square]')!==null"),'move preview appears on the study board');
+     assert.ok(illustrated.plan.includes('продолжение Stockfish'),'separate labelled continuation in plan');
+     const beforeContinuation=await evaluate("[...document.querySelectorAll('.preparation-shared-board [data-piece-square]')].map(e=>e.getAttribute('data-piece-square')).sort().join(',')");
+     await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-study-nav button[aria-label]').nextElementSibling.nextElementSibling.click()");
+     await wait("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-study-nav span').textContent.includes('2 / 2')");
+     assert.ok(await evaluate("document.querySelector('.coach-chat-continuation-boundary')!==null"),'replay crosses the visible continuation boundary');
+     await wait("[...document.querySelectorAll('.preparation-shared-board [data-piece-square]')].map(e=>e.getAttribute('data-piece-square')).sort().join(',')!=="+JSON.stringify(beforeContinuation));
+     const afterContinuation=await evaluate("[...document.querySelectorAll('.preparation-shared-board [data-piece-square]')].map(e=>e.getAttribute('data-piece-square')).sort().join(',')");
+     assert.notEqual(afterContinuation,beforeContinuation,'continuation changes the actual shared board');
+     assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-study-nav button[aria-label]').nextElementSibling.nextElementSibling.disabled"),true,'replay ends after continuation, not original PV');
+
+     assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion strong').textContent.trim()"),coachChatCopy.ru.planOutcome+' 1:');
+     for(const lang of ['de','en','az','tr','ua','ru']){
+      await evaluate("window.fixtureLanguage("+JSON.stringify(lang)+")");
+      const text=await evaluate("(()=>{const m=[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1);return {plan:m.querySelector('.coach-chat-plan-primary strong')?.textContent,outcome:m.querySelector('.coach-chat-plan-conclusion strong')?.textContent}})()");
+      const tr=coachChatCopy[lang==='ua'?'uk':lang];
+      assert.equal(text.plan,tr.planReplay,'plan localized '+lang);
+      assert.equal(text.outcome?.trim(),tr.planOutcome+' 1:','conclusion localized '+lang);
+      assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-continuation strong').textContent.trim()"),chessyCopy[lang==='ua'?'uk':lang].stockfishContinuation+':','continuation localized '+lang);
+     }
+     await evaluate("window.fixtureLanguage('ru')");
+     const beforeSwitch=await evaluate('window.layoutChatCalls');
+     await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelectorAll('.coach-chat-plan-alternatives button')[0].click()");
+     await wait("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion')?.dataset.lessonLine==='1'");
+     assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector(':scope>p').textContent"),'План варианта 2: другой конкретный замысел.','intro follows selected variation');
+     assert.ok((await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion').textContent")).includes('другая конечная позиция'),'outcome follows selected variation');
+     assert.ok((await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion strong').textContent")).includes(coachChatCopy.ru.planOutcome+' 2:'),'outcome visibly names the selected variation');
+     assert.equal(await evaluate('window.layoutChatCalls'),beforeSwitch,'switching never calls the model');
+     await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelectorAll('.coach-chat-plan-alternatives button')[1].click()");
+     await wait("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-conclusion')===null");
+     assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector(':scope>p').textContent"),chessyCopy.ru.unsettledLine,'unresolved alternative does not inherit a conclusion');
+     for(const lang of ['de','en','az','tr','ua','ru']){
+      await evaluate('window.fixtureLanguage('+JSON.stringify(lang)+')');
+      assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-unsettled').textContent"),chessyCopy[lang==='ua'?'uk':lang].unsettledLine,'unsettled notice localized '+lang);
+     }
+     const beforeMain=await evaluate("document.querySelectorAll('.coach-chat-message.assistant').length");
+     await evaluate("(()=>{const input=document.querySelector('.coach-chat-compose input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Объясни продолжение');input.dispatchEvent(new Event('input',{bubbles:true}));})()");
+     await evaluate("document.querySelector('.coach-chat-compose').requestSubmit()");
+     await wait("document.querySelectorAll('.coach-chat-message.assistant').length>"+beforeMain);
+     assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-plan-primary')===null"),true,'ordinary chat remains outside the plan schema');
+     assert.equal(await evaluate("[...document.querySelectorAll('.coach-chat-message.assistant')].at(-1).querySelector('.coach-chat-continuation strong').textContent.trim()"),chessyCopy.ru.stockfishContinuation+':','main chat displays the same separate continuation');
+
+    }
     await evaluate(`(()=>{document.querySelector('.coach-chat-toggle').click();for(const d of document.querySelectorAll('.position-advanced-settings[open]'))d.querySelector('summary').click();document.querySelector('[data-route-scroll]').scrollTop=0;})()`);
    }
    await evaluate("window.fixtureNavigate('/spieler?tab=opponent')");await wait(`!document.getElementById('spieler-section-panel-opponent').hidden`);await evaluate("window.fixtureLanguage('ru')");await pause(100);if(!verify)await capture('opponent-ru-'+width+'x'+height);

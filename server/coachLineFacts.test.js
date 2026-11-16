@@ -2,7 +2,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const {Chess}=require('chess.js');
-const {lineFacts}=require('./coachLineFacts');
+const {lineFacts,settlement}=require('./coachLineFacts');
 
 // Owner QA position (15 Nov 2026): Italian Game after 1.e4 e5 2.Nf3 Nc6 3.Bc4 Bc5,
 // with the three server-verified Stockfish 19 lines and scores shown on QA.
@@ -10,6 +10,14 @@ const ITALIAN='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4
 const D3='d3 Nf6 Nc3 h6 h3 a6 O-O O-O a3 d6'.split(' ');
 const NC3='Nc3 Nf6 d3 h6 Bb3 a5 Nxe5 Nxe5 d4 Bd6'.split(' ');
 const C3='c3 Nf6 d4 exd4 cxd4 Bb4+ Bd2 Nxe4 Bxb4 Nxb4'.split(' ');
+
+test('settlement follows the specified capture AND material/eval gap rule',()=>{
+ assert.equal(settlement(ITALIAN,D3,{scoreKind:'cp',scoreWhite:12}).unsettled,false);
+ assert.equal(settlement(ITALIAN,NC3,{scoreKind:'cp',scoreWhite:10}).unsettled,true);
+ assert.equal(settlement(ITALIAN,[...NC3,'dxe5'],{scoreKind:'cp',scoreWhite:0}).unsettled,true,'gap exactly one pawn still requires settlement');
+ assert.equal(settlement(ITALIAN,[...NC3,'dxe5','Bxe5'],{scoreKind:'cp',scoreWhite:10}).unsettled,false);
+ assert.equal(settlement(ITALIAN,NC3,{scoreKind:'mate',scoreWhite:3}).unsettled,false,'mate is not a pawn evaluation');
+});
 
 test('Italian d3 line: material matches the evaluation, no double attacks, no checks',()=>{
  assert.deepEqual(lineFacts(ITALIAN,D3,{scoreKind:'cp',scoreWhite:12}),{
