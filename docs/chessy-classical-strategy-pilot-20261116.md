@@ -30,7 +30,7 @@ The evidence is uneven: Alekhine principles in this pilot are clearly labelled *
 3. This pilot is not a comprehensive study of all works by these four masters.
 4. Cues are selected from computed position features, never treated as evidence of a win, compensation, forcing line or move legality.
 5. `Stockfish 19` is the sole source of verified candidate variations/scores, when server evidence is available. Model explanations MUST check those lines before proposing a concrete continuation.
-6. The existing `AI_COACH_POSITION_FACTS_ENABLED` gate also governs this pilot. With position facts off, the evidence packet is unchanged. No environment, engine-time or depth settings are modified.
+6. The pilot requires BOTH `AI_COACH_POSITION_FACTS_ENABLED=true` and the independent new `AI_COACH_STRATEGY_KNOWLEDGE_ENABLED=true`. The new switch defaults OFF, so existing position-facts-only behavior and its evidence contract remain unchanged. With either switch off, strategy cues are omitted. No current environment, engine-time or depth settings are modified.
 7. Chessy must not assert that a historical author wrote a literal quotation or that a contemporary translation was ingested.
 8. Even when the cue triggers, the model may disregard it if contradicted by a verified line or current tactical necessity.
 
