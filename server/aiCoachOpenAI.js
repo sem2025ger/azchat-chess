@@ -18,6 +18,14 @@ const TACTICAL_FOCUS_INSTRUCTION=[
  'Use the supplied line through its endpoint when explaining that endpoint; an exact consecutive prefix is enough only when the point is already established there. Never use a fixed move count for every position, splice or reorder lines, extend supplied variations, or claim to have searched deeper. When shortening a line, do not apply facts for its final position to an earlier cutoff. Do not append routine disclaimers about material not being won or needing the analysis board when a quiet line and its evaluation already answer the question. Mention a limitation only when it is essential to an unresolved concrete claim; never replace a supported assessment and plan with a generic request for further checking.'
 ].join('\n');
 
+// Chessy analysis model: Stockfish supplies the calculation, the coach supplies the
+// strategic explanation. Appended in both model paths; it never changes the evidence.
+const ASSESSMENT_PLAN_INSTRUCTION=[
+ 'For a position assessment or plan request, act as a professional analyst, not a narrator of engine moves. Develop the answer in this order of ideas, adapted to the position rather than as fixed headings: the objective evaluation; the positional factors that justify it (material, king safety, piece activity and coordination, pawn structure and pawn breaks, weak squares, space, development and initiative, open files and diagonals, imbalances, tactical threats); what the side being discussed should aim for; a concrete practical plan; and how the supplied candidateLines support or challenge that plan. When positionFacts are supplied, name structural features only as listed there. Tactics come first when they decide the position: a verified mate, a forcing sequence or an immediate threat outranks long-term planning, and a supplied line that refutes a plan overrides it.',
+ 'When the user asks for a plan for White or for Black, that side sets only the perspective of the plan. The evaluation stays objective and the same for either request: never shift, soften or reinterpret a score in favour of the requested side, and quote White-perspective numbers as given. If the requested side is not to move, say that the opponent moves first and base the plan on the replies shown in the supplied lines, or on the position in general terms when no line covers them.',
+ 'Keep engine evidence and chess reasoning apart. Only the supplied candidateLines with their supplied scores and the server-listed facts are engine evidence; general strategic judgement is your chess reasoning and must not be presented as engine-confirmed. Never invent engine calculations, principal variations, depths or verified conclusions, and do not describe Stockfish as infallible. An equal evaluation does not imply equal material. If no candidateLines are supplied, still give a useful strategic assessment and plan from the position without a numerical evaluation, and do not present it as engine-verified.'
+].join('\n');
+
 // Check actual streamed bytes, including when Content-Length is absent or false.
 async function readBytes(response,limit){
  if(!response.ok||Number(response.headers.get('content-length')||0)>limit){await response.body?.cancel().catch(()=>{});throw providerError();}
@@ -67,7 +75,7 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
   'Do not claim a move is illegal if it appears in legalMoves. Explain uncertainty and offer the analysis board for engine verification.',
   'No links, HTML or markdown. Return JSON with exactly one string property answer, between 2 and 1200 characters.'
  ].join('\n'):null;
- const instructions=(serverEngine?serverInstructions:legacyInstructions)+'\n'+TACTICAL_FOCUS_INSTRUCTION+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'');
+ const instructions=(serverEngine?serverInstructions:legacyInstructions)+'\n'+TACTICAL_FOCUS_INSTRUCTION+'\n'+ASSESSMENT_PLAN_INSTRUCTION+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'');
  const response=await fetchImpl('https://api.openai.com/v1/responses',{
   method:'POST',redirect:'error',signal:requestSignal(signal),headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
   body:JSON.stringify({model,store:false,instructions,reasoning:{effort:'low'},max_output_tokens:1800,

@@ -294,3 +294,22 @@ test('invalid coach response maps to safe HTTP 503 provider_unavailable',async()
   assert.equal(response.headers.get('cache-control'),'no-store');
  });
 });
+
+test('Chessy analysis model: assessment, perspective and evidence rules are sent once in both model paths',async()=>{
+ for(const useServerEngine of [false,true]){
+  const evidence=useServerEngine?{candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:900},candidateLines:[]}:{candidateOrigin:'untrusted_client_legality_checked',candidateLines:[]};
+  let rules='';
+  await generateAnswer(query,evidence,{apiKey:key,fetchImpl:async(_url,options)=>{rules=JSON.parse(options.body).instructions;return answerResponse();}});
+  assert.equal(rules.split('act as a professional analyst, not a narrator of engine moves').length-1,1);
+  assert.match(rules,/the objective evaluation; the positional factors that justify it/);
+  assert.match(rules,/how the supplied candidateLines support or challenge that plan/);
+  assert.match(rules,/a verified mate, a forcing sequence or an immediate threat outranks long-term planning/);
+  assert.match(rules,/that side sets only the perspective of the plan/);
+  assert.match(rules,/never shift, soften or reinterpret a score in favour of the requested side/);
+  assert.match(rules,/If the requested side is not to move, say that the opponent moves first/);
+  assert.match(rules,/must not be presented as engine-confirmed/);
+  assert.match(rules,/do not describe Stockfish as infallible/);
+  assert.match(rules,/An equal evaluation does not imply equal material/);
+  assert.match(rules,/If no candidateLines are supplied, still give a useful strategic assessment and plan/);
+ }
+});

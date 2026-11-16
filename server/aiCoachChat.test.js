@@ -221,6 +221,25 @@ test('V1.1 three independent 10-ply PVs keep model evidence under 16KB',async()=
   }});
 });
 
+test('Chessy White/Black plan requests: same FEN to the engine and identical model evidence',async()=>{
+ const ITALIAN='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const lines=[['d3 Nf6 Nc3 h6 h3 a6 O-O O-O a3 d6',12],['Nc3 Nf6 d3 h6 Bb3 a5 Nxe5 Nxe5 d4 Bd6',10],['c3 Nf6 d4 exd4 cxd4 Bb4+ Bd2 Nxe4 Bxb4 Nxb4',8]]
+  .map(([moves,score])=>({...lineFixture(moves.split(' ')),scoreWhite:score,depth:16}));
+ const analysed=[],seen=[];
+ const engine={analyze:async fen=>{analysed.push(fen);return {engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines};}};
+ const fetchImpl=async(_url,options)=>{const input=JSON.parse(JSON.parse(options.body).input);seen.push(input);return verifiedReply();};
+ const replies=[];
+ for(const message of ['Оцени позицию и предложи план игры за белых.','Оцени позицию и предложи план игры за чёрных.'])
+  replies.push(await groundedChat(null,{fen:ITALIAN,message,language:'ru',side:'any'},{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true}));
+ assert.deepEqual(analysed,[ITALIAN,ITALIAN]);
+ assert.deepEqual(seen.map(input=>input.question),['Оцени позицию и предложи план игры за белых.','Оцени позицию и предложи план игры за чёрных.']);
+ for(const key of ['position','sideToMove','archiveFilterSide','legalMoves','evidence'])
+  assert.equal(JSON.stringify(seen[0][key]),JSON.stringify(seen[1][key]),key+' does not depend on the requested side');
+ assert.equal(seen[0].sideToMove,'w');
+ assert.deepEqual(seen[0].evidence.candidateLines.map(line=>line.scoreWhite),[12,10,8]);
+ assert.equal(JSON.stringify(replies[0].engineLines),JSON.stringify(replies[1].engineLines));
+});
+
 test('1.f3 e5 2.g4: a server mate line reaches the model as a verified checkmate',async()=>{
  const FOOLS='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2';
  const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines:[{sanPv:['Qh4#'],scoreKind:'mate',scoreWhite:-1,depth:245,wdlWhite:[0,0,1000]}]})};
