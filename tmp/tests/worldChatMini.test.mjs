@@ -24,6 +24,7 @@ test('World Chat always selects the world-chat slug and cannot open another club
   assert.match(chat, /const requested = typeof window === 'undefined' \|\| worldRoute \? null/);
   assert.match(chat, /const communitySlug = worldRoute \? 'world-chat' : 'chessaz-deutsch'/);
   assert.match(chat, /query\.eq\('id',requested\) : query\.eq\('slug',communitySlug\)/);
+  assert.match(chat, /const isClub = !worldChat && new URLSearchParams/);
   assert.match(chat, /compact=\{worldChat\}/);
   assert.match(chat, /worldChat \? null : <MembersPanel/);
   assert.match(chat, /onThread=\{compact \? undefined/);
