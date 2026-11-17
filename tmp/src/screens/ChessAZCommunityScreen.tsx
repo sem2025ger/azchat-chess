@@ -87,30 +87,32 @@ const ru: Words = {
   submit: 'Публикация…', joined: 'Участник'
 };
 
-export default function ChessAZCommunityScreen() {
+export default function ChessAZCommunityScreen({ worldChat = false }: { worldChat?: boolean } = {}) {
   const desktop = useDesktop();
+  const { t: siteT } = useLanguage();
+  const homePath = worldChat ? '/world-chat' : '/chat';
   const t = useSchachTreffCopy();
   const copy = useV2Copy();
   const [showCommunity, setShowCommunity] = useState(false);
-  if (desktop) return <CommunityRouter />;
+  if (desktop) return <CommunityRouter worldChat={worldChat} />;
   const params = new URLSearchParams(window.location.search);
-  const club = params.get('club');
+  const club = worldChat ? null : params.get('club');
   return <div className="st-mobile-page">
-    <header className="st-mobile-header"><h1>{t.title}</h1>{import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <Link to="/world-chat">World Chat</Link>}</header>
-    <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
+    <header className="st-mobile-header"><h1>{worldChat ? siteT('world.title') : t.title}</h1>{import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <Link to={worldChat ? '/chat' : '/world-chat'}>{worldChat ? t.title : siteT('world.title')}</Link>}</header>
+    <aside className="st-mobile-rooms"><GeneralRoomLink label={worldChat ? siteT('world.title') : t.general} href={homePath} search={worldChat ? '' : window.location.search} className="st-mobile-general" />
       <ClubRooms currentClubId={club} heading={v2Enabled ? copy.myClubs : undefined} />
       {v2Enabled && <DirectList currentClubId={club} />}
     </aside>
     {!club && <button type="button" className="st-mobile-community" aria-pressed={showCommunity} onClick={() => setShowCommunity(!showCommunity)}>{showCommunity ? t.backGeneral : t.more}</button>}
-    {!club && showCommunity ? <div className="st-mobile-legacy"><CommunityRouter /></div> : <SchachTreffDesktop hideRooms />}
+    {!club && showCommunity ? <div className="st-mobile-legacy"><CommunityRouter worldChat={worldChat} /></div> : <SchachTreffDesktop hideRooms />}
   </div>;
 }
-function CommunityRouter() {
+function CommunityRouter({ worldChat = false }: { worldChat?: boolean }) {
   const desktop = useDesktop();
-  return desktop ? <SchachTreffDesktop /> : <LegacyCommunityScreen />;
+  return desktop ? <SchachTreffDesktop /> : <LegacyCommunityScreen worldChat={worldChat} />;
 }
 
-function LegacyCommunityScreen() {
+function LegacyCommunityScreen({ worldChat = false }: { worldChat?: boolean }) {
   const { language, t: siteT } = useLanguage();
   const t = language === 'de' ? de : language === 'ru' ? ru : en;
   const { user, isLoading: authLoading } = useAuth();
@@ -143,7 +145,7 @@ function LegacyCommunityScreen() {
 
   const refresh = useCallback(async () => {
     const { data: found, error: clubError } = await supabase.from('chess_clubs')
-      .select('id,name,description').eq('slug', 'chessaz-deutsch').maybeSingle();
+      .select('id,name,description').eq('slug', worldChat ? 'world-chat' : 'chessaz-deutsch').maybeSingle();
     if (clubError) throw clubError;
     setClub(found as Club | null);
     if (!found || !user) {
@@ -221,7 +223,7 @@ function LegacyCommunityScreen() {
     } else {
       setNames({});
     }
-  }, [user]);
+  }, [user, worldChat]);
 
   useEffect(() => {
     let active = true;
@@ -257,6 +259,11 @@ function LegacyCommunityScreen() {
     } finally {
       setBusy(false);
     }
+  };
+  const joinWorldChat = () => {
+    if (!worldChat || !club || !user || member || busy) return;
+    void perform(() => supabase.from('chess_club_members')
+      .insert({ club_id: club.id, user_id: user.id, role: 'member' }));
   };
   const sendMessage = async (event: FormEvent) => {
     event.preventDefault();
@@ -303,8 +310,8 @@ function LegacyCommunityScreen() {
         <div className="flex flex-wrap items-start gap-4">
           <div className="rounded-xl bg-amber-400/10 p-3 text-amber-300"><Globe size={32} /></div>
           <div className="flex-1 min-w-52">
-            <h1 className="text-2xl md:text-3xl font-bold text-amber-200">{t.welcome}</h1>
-            <p className="mt-1 text-sm text-neutral-300">{t.subtitle}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-amber-200">{worldChat ? siteT('world.title') : t.welcome}</h1>
+            <p className="mt-1 text-sm text-neutral-300">{worldChat ? siteT('world.subtitle') : t.subtitle}</p>
             <p className="mt-2 text-xs text-neutral-400">{t.foundation}</p>
           </div>
           {member && <span className="rounded-full bg-emerald-800/40 px-3 py-1 text-xs text-emerald-200">{t.joined}</span>}
@@ -313,16 +320,17 @@ function LegacyCommunityScreen() {
       {(loading || authLoading) && <p className="mt-5 flex items-center gap-2"><Loader2 className="animate-spin" size={18} />{t.loading}</p>}
       {error && <p role="alert" className="mt-4 rounded-lg border border-red-500/40 p-3 text-red-200">{error}</p>}
       {notice && <p role="status" className="mt-4 text-emerald-200">{notice}</p>}
-      {!loading && !club && !error && <p className="mt-5" role="status">{siteT('schach.inviteOnly')}</p>}
+      {!loading && !club && !error && <p className="mt-5" role="status">{siteT(worldChat ? 'world.unavailable' : 'schach.inviteOnly')}</p>}
       {!loading && club && !member && (
         <section className={`${surface} mt-5 flex items-center justify-between gap-4`}>
-          <p className="text-sm text-neutral-300">{siteT('schach.inviteOnly')}</p>
-          {!user && <Link to="/profile?returnTo=%2Fchat" className={button}>{t.login}</Link>}
+          <p className="text-sm text-neutral-300">{siteT(worldChat ? 'world.joinHint' : 'schach.inviteOnly')}</p>
+          {worldChat && user && <button type="button" className={button} disabled={busy} onClick={joinWorldChat}>{t.join}</button>}
+          {!user && <Link to={worldChat ? '/profile?returnTo=%2Fworld-chat' : '/profile?returnTo=%2Fchat'} className={button}>{t.login}</Link>}
         </section>
       )}
       {club && member && !loading && (
         <div className="mt-5 space-y-5">
-          <nav role="tablist" aria-label="ChessAZ Deutsch club sections" className="flex gap-2 overflow-x-auto rounded-xl border border-white/10 bg-neutral-900/80 p-2">
+          <nav role="tablist" aria-label={worldChat ? siteT('world.title') : 'ChessAZ Deutsch club sections'} className="flex gap-2 overflow-x-auto rounded-xl border border-white/10 bg-neutral-900/80 p-2">
             {clubTabs.map(item => {
               const Icon = item.icon;
               return <button type="button" role="tab" key={item.id} id={`club-tab-${item.id}`}
@@ -344,7 +352,7 @@ function LegacyCommunityScreen() {
               }}>{schach.reports}</button>
             </details>}
             <div ref={feed} aria-live="polite" className="mb-4 max-h-[26rem] min-h-48 space-y-3 overflow-y-auto">
-              {!messages.length && <p className="text-neutral-400">{t.emptyMessages}</p>}
+              {!messages.length && <p className="text-neutral-400">{worldChat ? siteT('world.empty') : t.emptyMessages}</p>}
               {messages.map(item => (
                 <article key={item.id} className="rounded-xl border border-white/5 bg-black/30 p-3">
                   <p className="mb-1 text-xs text-amber-200">{names[item.author_id] ?? (item.author_id === user?.id ? t.joined : 'ChessAZ')}
@@ -471,8 +479,8 @@ function LegacyCommunityScreen() {
           </section>
           <section id="club-panel-about" role="tabpanel" aria-labelledby="club-tab-about" hidden={activeTab !== 'about'} className={`${surface} ${activeTab !== 'about' ? 'hidden' : ''}`}>
             <h2 className="mb-3 flex items-center gap-2 text-xl font-bold"><Info size={22}/>{language === 'de' ? 'Über den Club' : language === 'ru' ? 'О клубе' : 'About the club'}</h2>
-            <p className="max-w-3xl text-neutral-300">{club.description || t.subtitle}</p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-white/10 p-4"><p className="text-xs text-neutral-400">{language === 'de' ? 'Sprache' : language === 'ru' ? 'Язык' : 'Language'}</p><p>Deutsch</p></div><div className="rounded-xl border border-white/10 p-4"><p className="text-xs text-neutral-400">{language === 'de' ? 'Schachgemeinschaft' : language === 'ru' ? 'Сообщество' : 'Community'}</p><p>ChessAZ Deutsch</p></div></div>
+            <p className="max-w-3xl text-neutral-300">{worldChat ? siteT('world.aboutText') : (club.description || t.subtitle)}</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-white/10 p-4"><p className="text-xs text-neutral-400">{language === 'de' ? 'Sprache' : language === 'ru' ? 'Язык' : 'Language'}</p><p>{worldChat ? siteT('world.international') : 'Deutsch'}</p></div><div className="rounded-xl border border-white/10 p-4"><p className="text-xs text-neutral-400">{language === 'de' ? 'Schachgemeinschaft' : language === 'ru' ? 'Сообщество' : 'Community'}</p><p>{worldChat ? siteT('world.title') : 'ChessAZ Deutsch'}</p></div></div>
             <p className="mt-4 text-sm text-neutral-400">{language === 'de' ? 'Automatische Paarungen und Live-Turnierpartien sind noch nicht verfügbar.' : language === 'ru' ? 'Автоматические жеребьёвки и турнирные партии пока не запущены.' : 'Automatic pairings and tournament games are not yet live.'}</p>
           </section>
         </div>
