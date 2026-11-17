@@ -102,7 +102,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
       void supabase.removeChannel(channel);
     };
   }, [clubId, member, user?.id]);
-  const direct = useDirectChats(v2Enabled ? user?.id : undefined);
+  const direct = useDirectChats(v2Enabled && !worldChat ? user?.id : undefined);
   const dmChat = v2Enabled ? direct.chats.find(chat => chat.clubId === clubId) : undefined;
   const block = useBlock(dmChat?.partnerId);
   const dmOpen = useOpenDirectChat();
