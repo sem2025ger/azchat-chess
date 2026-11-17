@@ -37,6 +37,9 @@ test('Schach-Treff cannot be joined directly in the UI and invited members retur
   assert.match(invites, /joined\.slug === 'chessaz-deutsch'/);
   assert.match(invites, /\? '\/chat' : '\/chat\?' \+ new URLSearchParams/);
   assert.match(chat, /communitySlug === 'chessaz-deutsch'\) && \['admin','moderator'\]/);
+  const legacy = read('../src/screens/ChessAZCommunityScreen.tsx');
+  assert.doesNotMatch(legacy, /onClick=\{membershipAction\}/, 'legacy mobile must not expose direct Schach join');
+  assert.match(legacy, /siteT\('schach\.inviteOnly'\)/);
 });
 
 test('all new user-facing labels support all six existing language codes', () => {
