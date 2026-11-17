@@ -1,10 +1,2 @@
-.world-chat-page{width:100%;min-width:0;height:100%;overflow:auto;background:#0A0B0B}
-.world-chat-page .schach-treff{max-width:1100px}
-@media(min-width:1024px){
-  .world-chat-page .schach-treff.st-v2 .st-columns.st2-no-rooms{grid-template-columns:minmax(0,1fr)}
-  .world-chat-page .schach-treff.st-v2 .st-columns>.st-chat{height:calc(100dvh - 145px);min-height:0}
-}
-@media(max-width:1023px){
-  .world-chat-page .schach-treff{box-sizing:border-box;width:100%;padding:12px 10px 86px}
-  .world-chat-page .schach-treff.st-v2 .st-columns>.st-chat{height:calc(100dvh - 205px);min-height:350px}
-}
+.world-chat-page{width:100%;min-width:0;min-height:100%;background:#0A0B0B}
+/* The shared Schach-Treff shell owns both layouts; no World-only size restrictions. */
