@@ -282,6 +282,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
               <span className="st2-online-dot" aria-hidden="true" /><strong>{onlineCount ?? '—'}</strong> {copy1.onlineNow}
             </span>
             <SeekButton />
+            {worldChat && <WorldChatShareLink />}
             {!worldChat && canInvite && clubId && <RoomInvite key={clubId + '-' + inviteRevision} clubId={clubId} />}
           </div>}
           {isClub && <>
@@ -427,6 +428,39 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
       })}
     </div>;
   })}</>;
+}
+
+
+/** Open World Chat needs a shareable public link, not a private-club invite token. */
+function WorldChatShareLink() {
+  const { t } = useLanguage();
+  const [copied, setCopied] = useState(false);
+  const [fallback, setFallback] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const url = typeof window === 'undefined' ? '' : window.location.origin + '/world-chat';
+  async function copy() {
+    setCopied(false);
+    setFailed(false);
+    setFallback(false);
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+    } catch {
+      setFallback(true);
+    }
+  }
+  return <div className="st-invite-control">
+    <button type="button" className="st-invite-trigger" aria-label={t('world.share')} onClick={() => void copy()}>
+      {copied ? <Check size={16} aria-hidden="true" /> : <Link2 size={16} aria-hidden="true" />}
+      <span className="st-invite-label">{copied ? t('world.linkCopied') : t('world.share')}</span>
+    </button>
+    {copied && <span className="st-invite-mobile-status" role="status">{t('world.linkCopied')}</span>}
+    {fallback && <div className="st-invite-popover" role="group" aria-label={t('world.share')}>
+      <input aria-label={t('world.share')} readOnly value={url} onFocus={event => event.currentTarget.select()} />
+      <button type="button" onClick={() => { try { window.getSelection()?.removeAllRanges(); } catch { setFailed(true); } setFallback(false); }}>{t('world.close')}</button>
+    </div>}
+    {failed && <span role="alert">{t('world.copyHelp')}</span>}
+  </div>;
 }
 
 function RoomInvite({ clubId }: { clubId: string }) {
