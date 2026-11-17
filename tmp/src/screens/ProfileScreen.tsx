@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import { calculateMatchStats, getMatchResultForPlayer } from '../utils/profileContract';
-import { authCallbackUrl, clubReturnTarget, inviteReturnTarget, inviteAuthCallbackUrl } from '../lib/authCallbackUrl';
+import { authCallbackUrl, clubReturnTarget, inviteReturnTarget, inviteAuthCallbackUrl, worldChatAuthCallbackUrl } from '../lib/authCallbackUrl';
 import { nrwAuthReturnTarget } from '../lib/nrwAuthReturn';
 import { tournamentsEnabled } from '../services/teamTournaments';
 import { prefetchRoute } from '../routeLoaders';
@@ -62,7 +62,8 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     // Warm the destination without altering the secure allowlisted return target.
-    if (clubReturnTo) prefetchRoute('/chat');
+    if (clubReturnTo === '/world-chat') prefetchRoute('/world-chat');
+    else if (clubReturnTo) prefetchRoute('/chat');
   }, [clubReturnTo]);
 
   useEffect(() => {
@@ -166,7 +167,8 @@ export default function ProfileScreen() {
           options: {
             data: { username: requestedName },
             emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play'),
-            ...(inviteReturnTo ? { emailRedirectTo: inviteAuthCallbackUrl(window.location.origin, '/profile', inviteReturnTo) } : nrwEmailRedirect())
+            ...(inviteReturnTo ? { emailRedirectTo: inviteAuthCallbackUrl(window.location.origin, '/profile', inviteReturnTo) } : nrwEmailRedirect()),
+            ...(clubReturnTo === '/world-chat' ? { emailRedirectTo: worldChatAuthCallbackUrl(window.location.origin, '/profile') } : {})
           }
         });
         if (error) throw error;
@@ -210,7 +212,8 @@ export default function ProfileScreen() {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: authCallbackUrl(window.location.origin, '/update-password', Boolean(clubReturnTo), mobileReturnTo === '/play'),
-        ...(inviteReturnTo ? { redirectTo: inviteAuthCallbackUrl(window.location.origin, '/update-password', inviteReturnTo) } : {})
+        ...(inviteReturnTo ? { redirectTo: inviteAuthCallbackUrl(window.location.origin, '/update-password', inviteReturnTo) } : {}),
+        ...(clubReturnTo === '/world-chat' ? { redirectTo: worldChatAuthCallbackUrl(window.location.origin, '/update-password') } : {})
       });
       if (error) throw error;
       setAuthMessage(t('auth.resetEmailSent'));
@@ -237,7 +240,8 @@ export default function ProfileScreen() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: authCallbackUrl(window.location.origin, '/profile', Boolean(clubReturnTo), mobileReturnTo === '/play'),
-            ...(inviteReturnTo ? { emailRedirectTo: inviteAuthCallbackUrl(window.location.origin, '/profile', inviteReturnTo) } : nrwEmailRedirect()) }
+            ...(inviteReturnTo ? { emailRedirectTo: inviteAuthCallbackUrl(window.location.origin, '/profile', inviteReturnTo) } : nrwEmailRedirect()),
+            ...(clubReturnTo === '/world-chat' ? { emailRedirectTo: worldChatAuthCallbackUrl(window.location.origin, '/profile') } : {}) }
       });
       if (error) throw error;
       setAuthMessage(t('auth.magicLinkSent'));
