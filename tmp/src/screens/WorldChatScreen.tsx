@@ -1,7 +1,8 @@
-import SchachTreffDesktop from './SchachTreffDesktop';
+import ChessAZCommunityScreen from './ChessAZCommunityScreen';
 import './WorldChatScreen.css';
 
-// Separate route and data room; reuse the approved message, position and challenge stack.
+// Both communities use the same desktop and mobile experiences.
+// Data isolation is enforced by the selected club slug and Supabase RLS.
 export default function WorldChatScreen() {
-  return <div className="world-chat-page"><SchachTreffDesktop hideRooms /></div>;
+  return <div className="world-chat-page"><ChessAZCommunityScreen worldChat /></div>;
 }
