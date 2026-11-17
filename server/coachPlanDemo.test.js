@@ -36,13 +36,16 @@ test('opt-in structured plan keeps its engine line ID and has valid bounded outp
  ]};
  const value=await generateAnswer(query,evidence,{apiKey:'synthetic',planDemo:true,fetchImpl:async(_url,opts)=>{request=JSON.parse(opts.body);return mockReply(lesson);}});
  assert.equal(request.text.format.name,'chessaz_plan_lesson');
- assert.equal(request.reasoning.effort,'medium','illustrated lessons require real position reasoning');
+ assert.equal(request.reasoning.effort,'low','lessons default to low effort so they fit the chat deadline');
+ assert.match(request.instructions,/every intro at most 650 characters and every conclusion at most 420 characters/);
  assert.equal(request.max_output_tokens,4800);
  assert.deepEqual(request.text.format.schema.properties.lineId.enum,['none','L1','L2']);
  assert.match(request.instructions,/interface renders intro/);
  assert.match(request.instructions,/ACTUAL moves/);
  assert.deepEqual(value,{answer:lesson.intro+'\n'+lesson.conclusion,planDemonstration:{lineId:'L1',intro:lesson.intro,conclusion:lesson.conclusion},lineLessons:[{lineId:'L1',intro:lesson.intro,conclusion:lesson.conclusion},...lesson.alternatives]});
  assert.equal(JSON.parse(request.input).evidence.candidateLines[0].moves.join(' '),'e4 e5 Nf3 Nc6');
+ await generateAnswer(query,evidence,{apiKey:'synthetic',planDemo:true,planReasoning:'medium',fetchImpl:async(_url,opts)=>{request=JSON.parse(opts.body);return mockReply(lesson);}});
+ assert.equal(request.reasoning.effort,'medium','AI_COACH_PLAN_REASONING=medium is honoured');
 });
 
 test('none option is an honest plain-text answer without a fictitious board illustration',async()=>{
@@ -103,14 +106,17 @@ test('both instruction modes reject invented compensation and an unresolved line
  }});
 });
 
-test('lessons are complete, unique and bound to every eligible line in one provider request',async()=>{
+test('lessons are unique and bound to eligible lines in one provider request; alternatives are optional',async()=>{
  const evidence={candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:6000},candidateLines:[{id:'L1',moves:['e4']},{id:'L2',moves:['d4']},{id:'L3',moves:['c4'],endFacts:{unsettled:true}}]};
  let calls=0;
  const fetchImpl=async(_url,opts)=>{calls++;const body=JSON.parse(opts.body);assert.match(body.instructions,/causal chain/);assert.match(body.instructions,/recapture is an intermediate step/);assert.deepEqual(body.text.format.schema.properties.alternatives.items.properties.lineId.enum,['L1','L2']);return mockReply(lesson);};
  const result=await generateAnswer(query,evidence,{apiKey:'synthetic',planDemo:true,fetchImpl});
  assert.equal(calls,1);assert.deepEqual(result.lineLessons.map(l=>l.lineId),['L1','L2']);
  assert.notEqual(result.lineLessons[0].conclusion,result.lineLessons[1].conclusion);
- for(const alternatives of [[],[lesson.alternatives[0],lesson.alternatives[0]],[{...lesson.alternatives[0],lineId:'L3'}]])await assert.rejects(generateAnswer(query,evidence,{apiKey:'synthetic',planDemo:true,fetchImpl:async()=>mockReply({...lesson,alternatives})}),/provider_unavailable/);
+ // A complete main lesson without alternatives is a valid lesson, never an error for the player.
+ const mainOnly=await generateAnswer(query,evidence,{apiKey:'synthetic',planDemo:true,fetchImpl:async()=>mockReply({...lesson,alternatives:[]})});
+ assert.deepEqual(mainOnly.lineLessons.map(l=>l.lineId),['L1']);
+ for(const alternatives of [[lesson.alternatives[0],lesson.alternatives[0]],[{...lesson.alternatives[0],lineId:'L3'}]])await assert.rejects(generateAnswer(query,evidence,{apiKey:'synthetic',planDemo:true,fetchImpl:async()=>mockReply({...lesson,alternatives})}),/provider_unavailable/);
 });
 
 test('diagnostic: requested model input and exact raw answer survive across three chess positions',async()=>{

@@ -6,7 +6,11 @@ const MAX_AUDIO_BYTES=2*1024*1024; // Microphone upload only.
 const MAX_SPEECH_BYTES=6*1024*1024; // At most 131 seconds of 24 kHz mono PCM.
 const SPEECH_TIMEOUT_MS=90000;
 const AUDIO_TYPES=new Map([['audio/webm','webm'],['audio/mp4','mp4'],['audio/ogg','ogg'],['audio/wav','wav'],['audio/mpeg','mp3']]);
-const providerError=(code='provider_unavailable')=>Object.assign(Error(code),{code});
+// reason is internal diagnostics for server logs; clients only ever receive code.
+const providerError=(code='provider_unavailable',reason=code)=>Object.assign(Error(code),{code,reason});
+// Responses echo the instructions, so a lesson response exceeds the transcription cap.
+const RESPONSE_MAX_BYTES=262144;
+const PLAN_INTRO_LIMIT=650,PLAN_CONCLUSION_LIMIT=420,PLAN_INTRO_MAX=700,PLAN_CONCLUSION_MAX=450;
 const POSITION_FACTS_INSTRUCTION='evidence.positionFacts was computed deterministically by the ChessAZ server. Mention a pawn-structure, file, outpost, hanging-piece or king-safety feature only if it is listed in positionFacts, and use its exact squares. Never assert such a feature that is not listed. The hanging section is static (no pins or tactics); for tactics rely on candidateLines. Call a pawn blockaded only if it is listed in pawns.blockaded; an own piece in front of a pawn is not a blockade. Each candidate line may include endFacts: verified pawn structure, material and king data for the position at the END of that line. When you describe the structure after a line (doubled, isolated, passed or blockaded pawns, pawn islands, king shelter), use only that line\'s endFacts. Never infer the pawn structure after captures yourself. Call a bishop bad, a square a hole/weak square, a wing a pawn majority, or a structure a minority attack only if the server lists it (strategy.bishops[].bad, strategy.holes, majorities, strategy.minorityAttack). If a hole is listed in strategy.holesPawnCanOccupy, say that the defender can still occupy it with that pawn advance. endFacts may also describe the moves of that line. endFacts.materialVsEval is a diagnostic comparison of the material balance at the line end (White perspective, pawn units: pawn 1, knight 3, bishop 3, rook 5, queen 9) with the engine evaluation; it does not show how play continues after the line. A line may contain a separate server-verified continuation {moves, evalWhite, depth, settled}. Describe the result after that continuation, naming its moves as the engine\'s continuation, never as part of the original PV. endFacts then describes the position after the continuation; lineEndFacts preserves the original endpoint. continuation.source=root_pv means the retained tail of the same depth-gated root calculation, not a fresh evaluation of the final position. If endFacts.unsettled is true, say the exchange is unfinished in the shown line and give no plan or material conclusion for that line. Compensation may be named only when endFacts.unsettled is false and materialVsEval.matchesEval is false (a material/evaluation gap of at least one pawn); never invent its mechanism. Say that material is regained only when the supplied moves of that line or its verified continuation show the recapture. Never invent a later capture or recapture, and never present a legal move that is not in the supplied line or continuation as engine evidence. endFacts.doubleAttacks lists verified double attacks (forks): the moved piece attacks two or more enemy pieces that are the king, more valuable or undefended. A listed fork is an attack, not a capture: say that a target is won only when the supplied moves capture it. When a listed double attack explains the line, name the attacking piece and both targets with their squares. Never claim a fork, double attack or pin that is not listed. endFacts.checks lists every check of the line with its number of legal replies, checkmate, and materialGainForCheckingSide: the material change from just before that check to the end of the whole line, which includes later exchanges and is not caused by the check alone. A check with checkmate true is a verified checkmate: state it first and plainly as mate, never as a check that gains time. For any other check, describe the purpose that the supplied moves show; zero material gain does not make a check a mere tempo move, and do not credit an earlier check with material won later in the line unless the moves show the connection.';
 
 const MOVE_MECHANISMS_INSTRUCTION='candidateLines[].endFacts.moveMechanisms lists deterministic events replayed from that exact server-verified line (and its separately labeled continuation, if supplied), not an engine explanation or proof of a good plan. pawnControls gives geometrically controlled squares after the named pawn move, not a forced threat; freedSquaresUsed proves that a preceding pawn advance vacated a square later occupied by a friendly piece, not that the move was played for this purpose; blockedPawnSteps means an own piece temporarily obstructs the next push of the named pawn, not that the pawn can never advance; pieceRoutes names verified consecutive moves by the same piece. Use these links to explain why moves relate to each other and what a player can concretely improve, but distinguish the observed mechanism from an inferred plan. Do not claim an objective advantage, guaranteed pawn break, tactical win or counterplay based on a moveMechanisms event alone. Refer only to the selected line\'s events and endFacts, never merge different alternatives. deniedSquares proves only that the move now covers a square an opponent knight, bishop, rook or queen could previously reach with a legal non-capturing move; it does not prove that moving there is now illegal or losing. Chessy may say that the move "takes square X away from piece P" in this strategic sense, and call it restriction, a concept from Nimzowitsch\'s Mein System (1925), only when a matching strategyLabels entry derives from deniedSquares. Do not claim the opponent intended that square, that restriction was the move\'s only purpose, or quote any book or cite any page.';
@@ -20,7 +24,7 @@ const PLAN_DEMO_INSTRUCTION=[
  'Choose lineId only from candidateLines ids when the ACTUAL moves in that particular line meaningfully demonstrate that plan and its result. No convenient opponent mistakes, fabricated steps or speculative variations. If none of the supplied lines demonstrates the claimed plan, choose lineId "none" and explain the limitation instead of pretending to verify an illustration. A principal variation confirms the considered sequence, not that the claimed strategic cause is established.',
  'In conclusion (two or three concise sentences within the field limit) explain what the chosen line ACTUALLY achieves at its last displayed position using endFacts and the evaluation, not what might happen in uncalculated future moves. Distinguish a strategic objective from an advantage already obtained. Name a relevant opponent reply from that chosen line or a condition which limits the plan. Respect mate, tactics, objective equal positions, and White-perspective scores. If the requested side does not move first, account for the opponent\'s reply before describing the plan. Never claim a material gain that the supplied moves do not show.',
  'Use a separate server-verified continuation when supplied: name it as the engine continuation and describe the result using endFacts after that continuation, with lineEndFacts reserved for the original endpoint. If endFacts.unsettled is true, the exchange is unfinished: give no plan or material conclusion for that line and do not select its lineId. Compensation may be named only for a settled line whose material/evaluation gap remains at least one pawn, without inventing its mechanism.',
- 'Return intro, lineId, conclusion and alternatives under the supplied JSON schema. alternatives must contain a separate {lineId,intro,conclusion} lesson for EVERY other eligible line, exactly once, using that line alone. If lineId is none, alternatives must be empty. The UI changes the explanation and outcome when switching lines; never reuse a conclusion from another line.',
+ 'Return intro, lineId, conclusion and alternatives under the supplied JSON schema. Hard limits: every intro at most 650 characters and every conclusion at most 420 characters, including spaces. The main lesson comes first and must be complete. alternatives may contain a separate {lineId,intro,conclusion} lesson for other eligible lines, each at most once, using that line alone; return an empty array rather than shortening the main lesson. If lineId is none, alternatives must be empty. The UI changes the explanation and outcome when switching lines; never reuse a conclusion from another line.',
  'For EACH lesson explain the causal chain: concrete objective, key mechanism (for example a verified pawn fork or material restoration), the opponent resource, and what the FULL shown sequence achieves. A recapture is an intermediate step: use the verified tail after it to explain development, pressure or a pawn break when those moves are supplied. Describe the actual endpoint using its pieces, files, pawn structure and king safety; distinguish an advantage on one part of the board from the objective evaluation. A pawn on e4 alone is not proof of central superiority. If only quiet moves are supplied, explain a specific useful change and counterplay, not an unsupported attack. No links, HTML, markdown, quotations from books or unsupported numerical evaluations.'
 ].join('\n');
 
@@ -41,17 +45,29 @@ const ASSESSMENT_PLAN_INSTRUCTION=[
 
 // Check actual streamed bytes, including when Content-Length is absent or false.
 async function readBytes(response,limit){
- if(!response.ok||Number(response.headers.get('content-length')||0)>limit){await response.body?.cancel().catch(()=>{});throw providerError();}
- const reader=response.body?.getReader();if(!reader)throw providerError();
+ if(!response.ok||Number(response.headers.get('content-length')||0)>limit){await response.body?.cancel().catch(()=>{});throw providerError('provider_unavailable',response.ok?'response_too_large':'http_'+response.status);}
+ const reader=response.body?.getReader();if(!reader)throw providerError('provider_unavailable','no_body');
  const chunks=[];let bytes=0;
- try{while(true){const {value,done}=await reader.read();if(done)break;bytes+=value.byteLength;if(bytes>limit)throw providerError();chunks.push(value);}}
+ try{while(true){const {value,done}=await reader.read();if(done)break;bytes+=value.byteLength;if(bytes>limit)throw providerError('provider_unavailable','response_too_large');chunks.push(value);}}
  finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
  return Buffer.concat(chunks,bytes);
 }
-async function readJson(response){return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await readBytes(response,32768)));}
-function requestSignal(signal){return signal?AbortSignal.any([signal,AbortSignal.timeout(25000)]):AbortSignal.timeout(25000);}
+async function readJson(response,limit=32768){
+ const bytes=await readBytes(response,limit);
+ try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch{throw providerError('provider_unavailable','invalid_json');}
+}
+function requestSignal(signal,timeoutMs=25000){return signal?AbortSignal.any([signal,AbortSignal.timeout(timeoutMs)]):AbortSignal.timeout(timeoutMs);}
+// A field slightly over its limit is cut at the last full sentence; anything longer is rejected.
+function fitField(text,max){
+ if(typeof text!=='string')return null;
+ const value=text.trim();
+ if(value.length<=max)return value;
+ if(value.length>Math.floor(max*1.15))return null;
+ const head=value.slice(0,max),end=Math.max(...['.','!','?','…'].map(mark=>head.lastIndexOf(mark)));
+ return end>=Math.floor(max/2)?head.slice(0,end+1).trim():null;
+}
 function requireKey(apiKey){if(!apiKey)throw providerError('provider_not_configured');}
-async function generateAnswer({message,fen,side,language,history=[]},evidence,{apiKey,model='gpt-6-sol',fetchImpl=fetch,signal,planDemo=false}={}){
+async function generateAnswer({message,fen,side,language,history=[]},evidence,{apiKey,model='gpt-6-sol',fetchImpl=fetch,signal,planDemo=false,timeoutMs=25000,planReasoning='low'}={}){
  requireKey(apiKey);
  if(!/^gpt-[a-z0-9.-]{2,64}$/.test(model))throw providerError('provider_not_configured');
  const board=new Chess(fen);
@@ -98,35 +114,55 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
   +'\n'+PLAN_DEMO_INSTRUCTION:instructions;
  const format=planMode?{type:'json_schema',name:'chessaz_plan_lesson',strict:true,schema:{type:'object',properties:{intro:{type:'string'},lineId:{type:'string',enum:['none',...planLineIds]},conclusion:{type:'string'},alternatives:{type:'array',items:{type:'object',properties:{lineId:{type:'string',enum:planLineIds},intro:{type:'string'},conclusion:{type:'string'}},required:['lineId','intro','conclusion'],additionalProperties:false}}},required:['intro','lineId','conclusion','alternatives'],additionalProperties:false}}
   :{type:'json_schema',name:'chessaz_coach_answer',strict:true,schema:{type:'object',properties:{answer:{type:'string'}},required:['answer'],additionalProperties:false}};
- const response=await fetchImpl('https://api.openai.com/v1/responses',{
-  method:'POST',redirect:'error',signal:requestSignal(signal),headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
-  body:JSON.stringify({model,store:false,instructions:finalInstructions,reasoning:{effort:planMode?'medium':'low'},max_output_tokens:planMode?4800:1800,
+ let response,data;
+ try{
+ response=await fetchImpl('https://api.openai.com/v1/responses',{
+  method:'POST',redirect:'error',signal:requestSignal(signal,timeoutMs),headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
+  body:JSON.stringify({model,store:false,instructions:finalInstructions,reasoning:{effort:planMode?(planReasoning==='medium'?'medium':'low'):'low'},max_output_tokens:planMode?4800:1800,
    input:JSON.stringify({question:message.trim(),history,position:fen,archiveFilterSide:side,sideToMove:board.turn(),legalMoves:board.moves(),
     pieces:board.board().flat().filter(Boolean).map(({square,color,type})=>({square,color,piece:type})),
     positionStatus:{inCheck:board.isCheck(),checkmate:board.isCheckmate(),stalemate:board.isStalemate(),insufficientMaterial:board.isInsufficientMaterial()},
     legalMoveDetails:board.moves({verbose:true}).map(({san,from,to,piece,captured,promotion})=>({san,from,to,piece,...(captured?{captured}:{}),...(promotion?{promotion}:{})})),evidence}),
    text:{format}})
  });
- const data=await readJson(response);
- if(data.status!=='completed')throw providerError();
- const texts=(data.output||[]).filter(x=>x.type==='message'&&x.role==='assistant').flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text);
- if(texts.length!==1)throw providerError();
- const value=JSON.parse(texts[0]);
- if(planMode){
-  const safe=(text,max)=>typeof text==='string'&&text.trim().length>=2&&text.length<=max&&!/https?:\/\/|<[^>]*>/.test(text)&&!/[^\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Common}\p{Script=Inherited}]/u.test(text);
-  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).sort().join(',')!=='alternatives,conclusion,intro,lineId'||!safe(value.intro,700)||!safe(value.conclusion,450)||!['none',...planLineIds].includes(value.lineId))throw providerError();
-  if(!Array.isArray(value.alternatives)||value.alternatives.length>2)throw providerError();
-  const remaining=value.lineId==='none'?[]:planLineIds.filter(id=>id!==value.lineId),seen=new Set();
-  for(const lesson of value.alternatives){
-   if(!lesson||Object.keys(lesson).sort().join(',')!=='conclusion,intro,lineId'||!remaining.includes(lesson.lineId)||seen.has(lesson.lineId)||!safe(lesson.intro,700)||!safe(lesson.conclusion,450))throw providerError();
-   seen.add(lesson.lineId);
-  }
-  if(seen.size!==remaining.length)throw providerError();
-  const intro=value.intro.trim(),conclusion=value.conclusion.trim(),answer=intro+'\n'+conclusion;
-  if(answer.length>1200)throw providerError();
-  return {answer,...(value.lineId!=='none'?{planDemonstration:{lineId:value.lineId,intro,conclusion},lineLessons:[{lineId:value.lineId,intro,conclusion},...value.alternatives.map(l=>({lineId:l.lineId,intro:l.intro.trim(),conclusion:l.conclusion.trim()}))]}:{})};
+ data=await readJson(response,RESPONSE_MAX_BYTES);
+ }catch(error){
+  if(signal?.aborted)throw error; // The client left; nothing to diagnose or retry.
+  if(error?.reason&&error.code)throw error;
+  throw providerError('provider_unavailable',error?.name==='TimeoutError'||error?.name==='AbortError'?'timeout':'network');
  }
- if(typeof value.answer!=='string'||value.answer.trim().length<2||value.answer.length>1200||/https?:\/\/|<[^>]*>/.test(value.answer)||/[^\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Common}\p{Script=Inherited}]/u.test(value.answer)||/["»]\s*\}|"answer"\s*:/.test(value.answer))throw providerError();
+ const outputTokens=Number.isFinite(data?.usage?.output_tokens)?data.usage.output_tokens:null;
+ const fail=reason=>Object.assign(providerError('provider_unavailable',reason),{outputTokens});
+ if(data.status!=='completed')throw fail('incomplete:'+(data.incomplete_details?.reason||data.status||'unknown'));
+ const texts=(data.output||[]).filter(x=>x.type==='message'&&x.role==='assistant').flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text);
+ if(texts.length!==1)throw fail('no_output_text');
+ let value;try{value=JSON.parse(texts[0]);}catch{throw fail('invalid_json');}
+ if(planMode){
+  const clean=text=>typeof text==='string'&&text.trim().length>=2&&!/https?:\/\/|<[^>]*>/.test(text)&&!/[^\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Common}\p{Script=Inherited}]/u.test(text);
+  const lessonOf=(raw,which)=>{
+   if(!raw||typeof raw!=='object'||Array.isArray(raw)||!clean(raw.intro)||!clean(raw.conclusion))throw fail('plan_validation:'+which+'_content');
+   const intro=fitField(raw.intro,PLAN_INTRO_MAX),conclusion=fitField(raw.conclusion,PLAN_CONCLUSION_MAX);
+   if(intro===null)throw fail('plan_validation:'+which+'_intro_length');
+   if(conclusion===null)throw fail('plan_validation:'+which+'_conclusion_length');
+   return {intro,conclusion};
+  };
+  if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).sort().join(',')!=='alternatives,conclusion,intro,lineId')throw fail('plan_validation:shape');
+  if(!['none',...planLineIds].includes(value.lineId))throw fail('plan_validation:line_id');
+  const main=lessonOf(value,'main');
+  if(!Array.isArray(value.alternatives)||value.alternatives.length>2)throw fail('plan_validation:alternatives_shape');
+  if(value.lineId==='none'&&value.alternatives.length)throw fail('plan_validation:alternatives_without_line');
+  // Alternatives are optional extras: a valid main lesson is never discarded for them.
+  const remaining=value.lineId==='none'?[]:planLineIds.filter(id=>id!==value.lineId),seen=new Set(),alternatives=[];
+  for(const lesson of value.alternatives){
+   if(!lesson||typeof lesson!=='object'||Object.keys(lesson).sort().join(',')!=='conclusion,intro,lineId'||!remaining.includes(lesson.lineId)||seen.has(lesson.lineId))throw fail('plan_validation:alternative_line');
+   seen.add(lesson.lineId);
+   try{alternatives.push({lineId:lesson.lineId,...lessonOf(lesson,'alternative')});}catch{/* Drop only this optional lesson. */}
+  }
+  const answer=main.intro+'\n'+main.conclusion;
+  if(answer.length>1200)throw fail('plan_validation:answer_length');
+  return {answer,...(value.lineId!=='none'?{planDemonstration:{lineId:value.lineId,...main},lineLessons:[{lineId:value.lineId,...main},...alternatives]}:{})};
+ }
+ if(typeof value?.answer!=='string'||value.answer.trim().length<2||value.answer.length>1200||/https?:\/\/|<[^>]*>/.test(value.answer)||/[^\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Common}\p{Script=Inherited}]/u.test(value.answer)||/["»]\s*\}|"answer"\s*:/.test(value.answer))throw fail('answer_validation');
  return value.answer.trim();
 }
 async function transcribeAudio(bytes,type,language,{apiKey,fetchImpl=fetch,signal}={}){
