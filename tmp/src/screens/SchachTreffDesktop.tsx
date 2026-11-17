@@ -310,14 +310,14 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
             </div>}
           </div>}
         </div>}
-        {!worldChat && pinAvailable && (pin || canPin) && (pinEdit && canPin ? <form onSubmit={savePin} className="st-pin-form">
+        {!worldChat && <>{pinAvailable && (pin || canPin) && (pinEdit && canPin ? <form onSubmit={savePin} className="st-pin-form">
           <input autoFocus aria-label={t.pinned} value={pinDraft} maxLength={500} onChange={e => setPinDraft(e.target.value)} />
           <button disabled={busy}>{t.pinAction}</button>
           <button type="button" onClick={() => setPinEdit(false)}>{t.cancel}</button>
         </form> : pin && <button type="button" className="st-pin" aria-expanded={pinExpanded}
           title={pinExpanded ? t.showLess : t.showMore} onClick={() => setPinExpanded(!pinExpanded)}>
           <Pin size={15} aria-hidden="true" /><span className="st-pin-title">{t.pinned}</span><span className="st-pin-text">{pin.body}</span>
-        </button>)}
+        </button>)}</>}
         <div className="st-messages" aria-live="polite" ref={feedRef} onScroll={event => {
           const feed = event.currentTarget;
           followFeed.current = feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
@@ -414,7 +414,9 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
             {moderationEnabled && message.deleted_at ? <p className="st-moderation-status">{t.deleted}</p>
               : <ChallengeMessage messageId={message.id} body={message.body ?? ''} />}
             {moderationEnabled && message.hidden_at && <p className="st-moderation-status">{t.hiddenMessage}</p>}
-            {v2 && !message.deleted_at && v2.fens.get(message.id) && <PositionMessage fen={v2.fens.get(message.id)!} onReply={compact ? undefined : fen => v2.replyPosition(message, fen)} />}
+            {v2 && !message.deleted_at && v2.fens.get(message.id) && (compact
+              ? <PositionMessage fen={v2.fens.get(message.id)!} />
+              : <PositionMessage fen={v2.fens.get(message.id)!} onReply={fen => v2.replyPosition(message, fen)} />)}
             {v2 && social && <>
               <ReactionBar summary={summary} replies={compact ? 0 : (v2.replies.get(message.id) ?? 0)}
                 onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => { if (!compact) v2.openThread(message); }} />
