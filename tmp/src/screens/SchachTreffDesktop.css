@@ -161,3 +161,7 @@
   .schach-treff dialog form{display:grid;gap:8px}
   .schach-treff dialog button,.schach-treff dialog input:not([type=radio]),.schach-treff dialog select{min-height:44px;padding:6px 8px;background:#101113;color:#F2EEE3;border:1px solid #ffffff25;border-radius:8px}
 }
+
+/* Route switch is present on both /chat and /world-chat; share the existing bronze tokens. */
+.schach-treff>header .st-switch-chat{display:inline-flex;align-items:center;justify-content:center;flex:none;min-height:40px;padding:7px 12px;border:1px solid #B8916A55;border-radius:9px;background:#B8916A12;color:#D4A373;font-size:13px;font-weight:600;white-space:nowrap;text-decoration:none}
+.schach-treff>header .st-switch-chat:hover{border-color:#D4A373;color:#F2EEE3}
