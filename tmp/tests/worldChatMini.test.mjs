@@ -52,6 +52,17 @@ test('all new user-facing labels support all six existing language codes', () =>
   }
 });
 
+test('World Chat sign-in return is explicitly allowlisted, including OTP and recovery', () => {
+  const helper = read('../src/lib/authCallbackUrl.ts');
+  const profile = read('../src/screens/ProfileScreen.tsx');
+  assert.match(helper, /if \(value === '\/world-chat'\) return '\/world-chat'/);
+  assert.match(helper, /return value === '\/chat' \? '\/chat' : null/);
+  assert.match(helper, /callback\.searchParams\.set\('returnTo', '\/world-chat'\)/);
+  assert.match(profile, /clubReturnTo === '\/world-chat'/);
+  assert.match(profile, /emailRedirectTo: worldChatAuthCallbackUrl\(window\.location\.origin, '\/profile'\)/);
+  assert.match(profile, /redirectTo: worldChatAuthCallbackUrl\(window\.location\.origin, '\/update-password'\)/);
+});
+
 test('QA migration retains members, requires a verified Schach admin, and preserves ten-link invite limits', () => {
   assert.match(migration, /VALUES \('world-chat', 'World Chat'/);
   assert.match(migration, /kind='community' AND m\.role='admin'/);
