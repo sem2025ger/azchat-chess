@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Check, Link2, Pin } from 'lucide-react';
 import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
-import { useOptionalLanguage } from '../context/LanguageContext';
+import { useLanguage, useOptionalLanguage } from '../context/LanguageContext';
 import { supabase } from '../services/supabase';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import '@fontsource/bodoni-moda/latin-600.css';
@@ -32,6 +32,8 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
  const regional=useRegionalCopy();
   const t=useSchachTreffCopy();
   const language=useOptionalLanguage()?.language||'de';
+  const { t: siteT } = useLanguage();
+  const worldChat = typeof window !== 'undefined' && window.location.pathname === '/world-chat';
   const { user, isLoading } = useAuth();
   const [clubId, setClubId] = useState<string | null>(null);
   const [pin, setPin] = useState<{ body: string; author: string | null } | null>(null);
@@ -115,13 +117,14 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     if (feed && followFeed.current) feed.scrollTop = feed.scrollHeight;
   }, [clubId, member, newestMessage, loading]);
   const dialog = useRef<HTMLDialogElement>(null);
-  useEffect(() => { const previous = document.title; document.title = t.title; return () => { document.title = previous; }; }, [t.title]);
+  useEffect(() => { const previous = document.title; document.title = worldChat ? siteT('world.title') : t.title; return () => { document.title = previous; }; }, [t.title, worldChat, siteT]);
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
   const refresh = useCallback(async () => {
     const version = ++refreshVersion.current;
     const requested = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('club');
+    const communitySlug = typeof window !== 'undefined' && window.location.pathname === '/world-chat' ? 'world-chat' : 'chessaz-deutsch';
     const query = moderationEnabled ? supabase.from('chess_clubs').select('id,kind,is_open,slug') : supabase.from('chess_clubs').select('id');
-    const club = await (requested && /^[0-9a-f-]{36}$/i.test(requested) ? query.eq('id',requested) : query.eq('slug','chessaz-deutsch')).maybeSingle();
+    const club = await (requested && /^[0-9a-f-]{36}$/i.test(requested) ? query.eq('id',requested) : query.eq('slug',communitySlug)).maybeSingle();
     if (club.error) throw club.error;
     const clubData = club.data as { id: string; kind?: string; is_open?: boolean; slug?: string } | null;
     if (moderationEnabled && version !== refreshVersion.current) return;
@@ -149,7 +152,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
       setPrivateAdmin(membership.data?.role === 'admin' && clubData.kind === 'room' && !clubData.is_open && clubData.slug !== 'chessaz-deutsch');
     }
     setMember(Boolean(membership.data));
-    setCanInvite(Boolean(requested) && ['admin','moderator'].includes(membership.data?.role ?? ''));
+    setCanInvite((Boolean(requested) || communitySlug === 'chessaz-deutsch') && ['admin','moderator'].includes(membership.data?.role ?? ''));
     setCanPin(pinMigrationAvailable && ['admin','moderator'].includes(membership.data?.role ?? ''));
     if (!membership.data) { setMessages([]); setProfiles([]); setV2Data(null); return; }
     const feedQuery = (threaded = false) => {
@@ -260,23 +263,24 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     : messages;
   return <section className={v2Enabled ? 'schach-treff st-v2' : 'schach-treff'} lang={language==="ua"?"uk":language} data-schach-treff-desktop>
     <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member} finished={finishedChallenges}>
-    <header><h1>{t.title}</h1>{import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Link className="st-region-entry" to="/region/nrw" aria-label={regional('NRW-Regionalübersicht öffnen')}>NRW ↗</Link>}<div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
+    <header><h1>{worldChat ? siteT('world.title') : t.title}</h1>{import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <Link className="st-switch-chat" to={worldChat ? '/chat' : '/world-chat'}>{worldChat ? 'Schach-Treff' : siteT('world.title')}</Link>}{!worldChat && import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Link className="st-region-entry" to="/region/nrw" aria-label={regional('NRW-Regionalübersicht öffnen')}>NRW ↗</Link>}{!worldChat && <div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
       {(v2Enabled || menu) && <nav hidden={!menu} aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}{v2Enabled && <FeedbackButton />}</nav>}
-    </div></header>
+    </div>}</header>
     {error && (v2Enabled ? <Toast message={error} closeLabel={t.close} onClose={() => setError('')} /> : <p role="alert">{error}</p>)}
-    {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
+    {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p role="status">{worldChat ? siteT('world.unavailable') : siteT('schach.inviteOnly')}</p> : !member ? (worldChat ? <div className="st-surface"><p>{siteT('world.joinHint')}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fworld-chat">{t.login}</Link>}</div> : <p role="status">{siteT('schach.inviteOnly')}</p>) :
     <div className={hideRooms && v2Enabled ? 'st-columns st2-no-rooms' : 'st-columns'}>{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} heading={v2Enabled ? copy1.myClubs : undefined} />{v2Enabled && <DirectList currentClubId={clubId} />}</aside>}
       <section className="st-surface st-chat">
         {(isClub || hasChatActions || v2Enabled) && <div className="st-chat-header">
           {/* The rooms column already says "General chat": the feed headline is the room's motto (owner, 13 Nov). */}
           {v2Enabled && !isClub && <div className="st2-general-heading">
-            <h2 className="st2-general-title st2-general-motto"><span className="st2-sr-only">{t.general}: </span>{copy1.subtitle.split(' ').flatMap((word, index) => [index ? ' ' : '', word.includes('-') ? <span key={index} className="st2-nowrap">{word}</span> : word])}</h2>
+            {worldChat ? <h2 className="st2-general-title st2-general-motto">{siteT('world.subtitle')}</h2> : <h2 className="st2-general-title st2-general-motto"><span className="st2-sr-only">{t.general}: </span>{copy1.subtitle.split(' ').flatMap((word, index) => [index ? ' ' : '', word.includes('-') ? <span key={index} className="st2-nowrap">{word}</span> : word])}</h2>}
           </div>}
           {v2Enabled && !isClub && <div className="st2-chat-meta">
             <span className="st2-online" aria-label={onlineCount === null ? copy1.onlineNow : `${onlineCount} ${copy1.onlineNow}`} aria-live="polite">
               <span className="st2-online-dot" aria-hidden="true" /><strong>{onlineCount ?? '—'}</strong> {copy1.onlineNow}
             </span>
             <SeekButton />
+            {!worldChat && canInvite && clubId && <RoomInvite key={clubId + '-' + inviteRevision} clubId={clubId} />}
           </div>}
           {isClub && <>
             <a className="st-back-general" href="/chat"><ArrowLeft size={16} aria-hidden="true" /><span>{t.general}</span></a>
@@ -304,7 +308,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
             </div>}
           </div>}
         </div>}
-        {pinAvailable && (pin || canPin) && (pinEdit && canPin ? <form onSubmit={savePin} className="st-pin-form">
+        {!worldChat && pinAvailable && (pin || canPin) && (pinEdit && canPin ? <form onSubmit={savePin} className="st-pin-form">
           <input autoFocus aria-label={t.pinned} value={pinDraft} maxLength={500} onChange={e => setPinDraft(e.target.value)} />
           <button disabled={busy}>{t.pinAction}</button>
           <button type="button" onClick={() => setPinEdit(false)}>{t.cancel}</button>
@@ -316,7 +320,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
           const feed = event.currentTarget;
           followFeed.current = feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
         }}>
-          {!messages.length && !error && <p>{t.empty}</p>}
+          {!messages.length && !error && <p>{worldChat ? siteT('world.empty') : t.empty}</p>}
           <MessageItems messages={timeline} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} moderator={moderator} openModeration={setModerationAction} v2={v2} />
         </div>
         {moderationEnabled && moderationNotice && (v2Enabled
@@ -340,7 +344,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         ? <ThreadPanel key={thread.id} clubId={clubId} root={thread} people={profiles} onClose={() => setThread(null)} onChanged={() => void refresh()}
             revision={threadRevision} rootFen={v2.fens.get(thread.id)} scrollToEnd={threadScroll} onScrolled={threadScrolled}
             renderPosition={fen => <PositionMessage fen={fen} size={200} onReply={() => setComposer({ fen, root: thread })} />} />
-        : <MembersPanel members={members} messages={messages} me={user?.id} onlineIds={onlineIds} onPlayer={setPlayer}
+        : worldChat ? null : <MembersPanel members={members} messages={messages} me={user?.id} onlineIds={onlineIds} onPlayer={setPlayer}
             onMessage={direct.available ? person => void dmOpen.open(person.id) : undefined} />)}
       {v2Enabled && composer && <PositionDialog initialFen={composer.fen} reply={Boolean(composer.root)} onSend={sendPosition} onClose={() => setComposer(null)} />}
       {v2Enabled && viewing && <GameViewer game={viewing} onClose={() => setViewing(null)} />}
