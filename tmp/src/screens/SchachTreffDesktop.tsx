@@ -121,8 +121,10 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   useEffect(() => { if (panel || player) dialog.current?.showModal(); else dialog.current?.close(); }, [panel, player]);
   const refresh = useCallback(async () => {
     const version = ++refreshVersion.current;
-    const requested = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('club');
-    const communitySlug = typeof window !== 'undefined' && window.location.pathname === '/world-chat' ? 'world-chat' : 'chessaz-deutsch';
+    const worldRoute = typeof window !== 'undefined' && window.location.pathname === '/world-chat';
+    // World Chat cannot be switched to a private room by a ?club= URL parameter.
+    const requested = typeof window === 'undefined' || worldRoute ? null : new URLSearchParams(window.location.search).get('club');
+    const communitySlug = worldRoute ? 'world-chat' : 'chessaz-deutsch';
     const query = moderationEnabled ? supabase.from('chess_clubs').select('id,kind,is_open,slug') : supabase.from('chess_clubs').select('id');
     const club = await (requested && /^[0-9a-f-]{36}$/i.test(requested) ? query.eq('id',requested) : query.eq('slug',communitySlug)).maybeSingle();
     if (club.error) throw club.error;
@@ -321,7 +323,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
           followFeed.current = feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
         }}>
           {!messages.length && !error && <p>{worldChat ? siteT('world.empty') : t.empty}</p>}
-          <MessageItems messages={timeline} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} moderator={moderator} openModeration={setModerationAction} v2={v2} />
+          <MessageItems messages={timeline} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} moderator={moderator} openModeration={setModerationAction} v2={v2} compact={worldChat} />
         </div>
         {moderationEnabled && moderationNotice && (v2Enabled
           ? <Toast message={moderationNotice} tone="status" closeLabel={t.close} onClose={() => setModerationNotice('')} />
@@ -364,10 +366,10 @@ type V2Items = {
   fens: Map<string, string>; results: Map<string, ChatGameResult>; replyPosition: (message: ClubMessage, fen: string) => void;
   watch: (game: ChatGameResult) => void; kindLabel: (control: string) => string;
 };
-function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, openModeration, v2 }: {
+function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, openModeration, v2, compact = false }: {
   messages: ClubMessage[]; profiles: Profile[]; me?: string;
   onPlayer: (profile: Profile) => void; stamp: (value: string) => string;
-  moderator: boolean; openModeration: (action: ModerationAction) => void; v2?: V2Items;
+  moderator: boolean; openModeration: (action: ModerationAction) => void; v2?: V2Items; compact?: boolean;
 }) {
   const challengeIds = useChallengeMessageIds();
   const t = useSchachTreffCopy();
@@ -412,11 +414,11 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
             {moderationEnabled && message.deleted_at ? <p className="st-moderation-status">{t.deleted}</p>
               : <ChallengeMessage messageId={message.id} body={message.body ?? ''} />}
             {moderationEnabled && message.hidden_at && <p className="st-moderation-status">{t.hiddenMessage}</p>}
-            {v2 && !message.deleted_at && v2.fens.get(message.id) && <PositionMessage fen={v2.fens.get(message.id)!} onReply={fen => v2.replyPosition(message, fen)} />}
+            {v2 && !message.deleted_at && v2.fens.get(message.id) && <PositionMessage fen={v2.fens.get(message.id)!} onReply={compact ? undefined : fen => v2.replyPosition(message, fen)} />}
             {v2 && social && <>
-              <ReactionBar summary={summary} replies={v2.replies.get(message.id) ?? 0}
-                onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />
-              <MessageTools summary={summary} onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />
+              <ReactionBar summary={summary} replies={compact ? 0 : (v2.replies.get(message.id) ?? 0)}
+                onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => { if (!compact) v2.openThread(message); }} />
+              <MessageTools summary={summary} onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={compact ? undefined : () => v2.openThread(message)} />
             </>}
             {moderationEnabled && <MessageActions message={message} own={own} moderator={moderator}
               challenge={challengeIds.has(message.id)} open={openModeration} t={t} />}
