@@ -33,11 +33,11 @@ type ClubTab = 'discussions' | 'tournaments' | 'members' | 'rating' | 'about';
 type ClubMember = { user_id: string; role: string; joined_at: string };
 type ClubProfile = { id: string; username: string; rating_blitz: number | null; rating_rapid: number | null; rating_bullet: number | null; country_code: string | null };
 const clubTabs = [
-  { id: 'discussions', icon: MessageCircle, en: 'Discussions', de: 'Diskussionen', ru: 'Обсуждения' },
-  { id: 'tournaments', icon: Trophy, en: 'Tournaments', de: 'Turniere', ru: 'Турниры' },
-  { id: 'members', icon: Users, en: 'Members', de: 'Mitglieder', ru: 'Участники' },
-  { id: 'rating', icon: BarChart3, en: 'Rating', de: 'Rangliste', ru: 'Рейтинг' },
-  { id: 'about', icon: Info, en: 'About', de: 'Über den Club', ru: 'О клубе' }
+  { id: 'discussions', icon: MessageCircle, en: 'Discussions', de: 'Diskussionen', ru: 'Обсуждения', az: 'Müzakirələr', tr: 'Tartışmalar', ua: 'Обговорення' },
+  { id: 'tournaments', icon: Trophy, en: 'Tournaments', de: 'Turniere', ru: 'Турниры', az: 'Turnirlər', tr: 'Turnuvalar', ua: 'Турніри' },
+  { id: 'members', icon: Users, en: 'Members', de: 'Mitglieder', ru: 'Участники', az: 'Üzvlər', tr: 'Üyeler', ua: 'Учасники' },
+  { id: 'rating', icon: BarChart3, en: 'Rating', de: 'Rangliste', ru: 'Рейтинг', az: 'Reytinq', tr: 'Sıralama', ua: 'Рейтинг' },
+  { id: 'about', icon: Info, en: 'About', de: 'Über den Club', ru: 'О клубе', az: 'İcma haqqında', tr: 'Topluluk hakkında', ua: 'Про спільноту' }
 ] as const;
 type Words = Record<'welcome' | 'subtitle' | 'join' | 'login' | 'membersOnly' | 'messages' | 'send' |
   'messagePlaceholder' | 'events' | 'create' | 'eventPlaceholder' | 'participate' | 'withdraw' |
@@ -87,6 +87,44 @@ const ru: Words = {
   submit: 'Публикация…', joined: 'Участник'
 };
 
+
+const az: Words = {
+  welcome:'ChessAZ Deutsch', subtitle:'Almandilli şahmatçılar üçün icma',
+  join:'İcmaya qoşul', login:'Daxil ol', membersOnly:'Müzakirələri görmək üçün icmaya qoşulun',
+  messages:'İcma müzakirəsi', send:'Göndər', messagePlaceholder:'Mesaj yazın…',
+  events:'Club Pulse · tədbir təklifləri', create:'Tədbir təklif et', eventPlaceholder:'Məsələn, bu axşam blits?',
+  participate:'İştirak edirəm', withdraw:'İmtina et', ready:'Kifayət qədər iştirakçı var',
+  players:'oyunçu', loading:'İcma yüklənir…', failed:'İcma məlumatları yüklənmədi və ya saxlanmadı.',
+  success:'Yadda saxlanıldı', emptyMessages:'Hələ mesaj yoxdur. İlk mesajı yazın.',
+  emptyEvents:'Hələ tədbir təklifi yoxdur.', noClub:'İcma hələ qurulmayıb.',
+  foundation:'Tədbir təklifləri maraqlananları toplayır; avtomatik turnirlər hələ aktiv deyil.',
+  submit:'Yayımlanır…', joined:'Üzv'
+};
+const tr: Words = {
+  welcome:'ChessAZ Deutsch', subtitle:'Almanca konuşan satranççılar için topluluk',
+  join:'Topluluğa katıl', login:'Giriş yap', membersOnly:'Tartışmaları görmek için topluluğa katılın',
+  messages:'Topluluk sohbeti', send:'Gönder', messagePlaceholder:'Bir mesaj yazın…',
+  events:'Club Pulse · etkinlik önerileri', create:'Etkinlik öner', eventPlaceholder:'Örneğin bu akşam yıldırım?',
+  participate:'Katılıyorum', withdraw:'Vazgeç', ready:'Yeterli katılımcı var',
+  players:'oyuncu', loading:'Topluluk yükleniyor…', failed:'Topluluk verileri yüklenemedi veya kaydedilemedi.',
+  success:'Kaydedildi', emptyMessages:'Henüz mesaj yok. Sohbeti başlatın.',
+  emptyEvents:'Henüz etkinlik önerisi yok.', noClub:'Topluluk henüz kurulmadı.',
+  foundation:'Etkinlik önerileri oyuncuları buluşturur; otomatik turnuvalar henüz etkin değil.',
+  submit:'Yayınlanıyor…', joined:'Üye'
+};
+const ua: Words = {
+  welcome:'ChessAZ Deutsch', subtitle:'Спільнота для німецькомовних шахістів',
+  join:'Приєднатися до спільноти', login:'Увійти', membersOnly:'Приєднайтеся, щоб переглядати обговорення',
+  messages:'Обговорення спільноти', send:'Надіслати', messagePlaceholder:'Напишіть повідомлення…',
+  events:'Club Pulse · пропозиції подій', create:'Запропонувати подію', eventPlaceholder:'Наприклад, бліц сьогодні ввечері?',
+  participate:'Беру участь', withdraw:'Скасувати участь', ready:'Достатньо учасників',
+  players:'гравців', loading:'Завантаження спільноти…', failed:'Не вдалося завантажити або зберегти дані спільноти.',
+  success:'Збережено', emptyMessages:'Повідомлень ще немає. Почніть розмову.',
+  emptyEvents:'Пропозицій подій поки немає.', noClub:'Спільноту ще не налаштовано.',
+  foundation:'Пропозиції подій збирають гравців; автоматичні турніри ще не активовано.',
+  submit:'Публікація…', joined:'Учасник'
+};
+
 export default function ChessAZCommunityScreen({ worldChat = false }: { worldChat?: boolean } = {}) {
   const desktop = useDesktop();
   const { t: siteT } = useLanguage();
@@ -114,7 +152,7 @@ function CommunityRouter({ worldChat = false }: { worldChat?: boolean }) {
 
 function LegacyCommunityScreen({ worldChat = false }: { worldChat?: boolean }) {
   const { language, t: siteT } = useLanguage();
-  const t = language === 'de' ? de : language === 'ru' ? ru : en;
+  const t = language === 'de' ? de : language === 'ru' ? ru : language === 'az' ? az : language === 'tr' ? tr : language === 'ua' ? ua : en;
   const { user, isLoading: authLoading } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
   const [member, setMember] = useState(false);
@@ -325,7 +363,7 @@ function LegacyCommunityScreen({ worldChat = false }: { worldChat?: boolean }) {
         <section className={`${surface} mt-5 flex items-center justify-between gap-4`}>
           <p className="text-sm text-neutral-300">{siteT(worldChat ? 'world.joinHint' : 'schach.inviteOnly')}</p>
           {worldChat && user && <button type="button" className={button} disabled={busy} onClick={joinWorldChat}>{t.join}</button>}
-          {!user && <Link to={worldChat ? '/profile?returnTo=%2Fworld-chat' : '/profile?returnTo=%2Fchat'} className={button}>{t.login}</Link>}
+          {!user && (worldChat ? <Link to="/profile?returnTo=%2Fworld-chat" className={button}>{t.login}</Link> : <Link to="/profile?returnTo=%2Fchat" className={button}>{t.login}</Link>)}
         </section>
       )}
       {club && member && !loading && (
@@ -337,7 +375,7 @@ function LegacyCommunityScreen({ worldChat = false }: { worldChat?: boolean }) {
                 aria-selected={activeTab === item.id} aria-controls={`club-panel-${item.id}`}
                 onClick={() => { setActiveTab(item.id); setError(''); setNotice(''); }}
                 className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 ${activeTab === item.id ? 'bg-amber-400 text-neutral-950' : 'text-neutral-300 hover:bg-white/10'}`}>
-                <Icon size={17} aria-hidden="true" /> {language === 'de' ? item.de : language === 'ru' ? item.ru : item.en}
+                <Icon size={17} aria-hidden="true" /> {language === 'de' ? item.de : language === 'ru' ? item.ru : language === 'az' ? item.az : language === 'tr' ? item.tr : language === 'ua' ? item.ua : item.en}
               </button>;
             })}
           </nav>
