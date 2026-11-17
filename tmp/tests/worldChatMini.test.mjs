@@ -15,9 +15,14 @@ test('World Chat is a separate, default-off v2-only route with its own lazy-load
   assert.match(app, /VITE_WORLD_CHAT_ENABLED === 'true' && import\.meta\.env\.VITE_SCHACH_TREFF_V2 === 'true'/);
   assert.match(app, /path="world-chat" element=\{<WorldChatScreen \/>\}/);
   assert.match(read('../src/routeLoaders.ts'), /worldChat: cacheImport\(\(\) => import\('\.\/screens\/WorldChatScreen'\)\)/);
-  assert.match(wrapper, /<SchachTreffDesktop hideRooms \/>/);
+  assert.match(wrapper, /<ChessAZCommunityScreen worldChat \/>/);
   assert.match(layout, /to="\/world-chat".*label=\{t\('world\.title'\)\}/);
-  assert.match(read('../src/screens/ChessAZCommunityScreen.tsx'), /<Link to="\/world-chat">World Chat<\/Link>/);
+  const mobile = read('../src/screens/ChessAZCommunityScreen.tsx');
+  assert.match(mobile, /worldChat = false/);
+  assert.match(mobile, /<CommunityRouter worldChat=\{worldChat\} \/>/);
+  assert.match(mobile, /<SchachTreffDesktop hideRooms \/>/);
+  assert.match(mobile, /href=\{homePath\}/);
+  assert.match(mobile, /worldChat \? 'world-chat' : 'chessaz-deutsch'/);
 });
 
 test('World Chat always selects the world-chat slug and cannot open another club through query parameters', () => {
@@ -25,11 +30,33 @@ test('World Chat always selects the world-chat slug and cannot open another club
   assert.match(chat, /const communitySlug = worldRoute \? 'world-chat' : 'chessaz-deutsch'/);
   assert.match(chat, /query\.eq\('id',requested\) : query\.eq\('slug',communitySlug\)/);
   assert.match(chat, /const isClub = !worldChat && new URLSearchParams/);
-  assert.match(chat, /compact=\{worldChat\}/);
-  assert.match(chat, /worldChat \? null : <MembersPanel/);
-  assert.match(chat, /onThread=\{compact \? undefined/);
-  assert.match(chat, /compact\s*\? <PositionMessage fen=/);
+  assert.match(chat, /worldChat \? siteT\('world.title'\) : t.general/);
+  assert.match(chat, /href=\{worldChat \? '\/world-chat' : '\/chat'\}/);
+  assert.doesNotMatch(chat, /compact=\{worldChat\}/);
+  assert.match(chat, /: <MembersPanel members=\{members\}/);
+  assert.match(chat, /onThread=\{\(\) => v2\.openThread\(message\)\}/);
+  assert.match(chat, /replies=\{v2\.replies\.get\(message.id\) \?\? 0\}/);
   assert.match(chat, /onReply=\{fen => v2\.replyPosition\(message, fen\)\}/);
+});
+
+test('both chat routes share reactions, threads, position replies, members, DMs and moderation', () => {
+  const mobile = read('../src/screens/ChessAZCommunityScreen.tsx');
+  const rooms = read('../src/components/schachTreff/GeneralRoomLink.tsx');
+  assert.match(chat, /<DirectList currentClubId=\{clubId\} \/>/);
+  assert.match(chat, /const direct = useDirectChats\(v2Enabled \? user\?\.id : undefined\)/);
+  assert.match(chat, /\{pinAvailable && \(pin \|\| canPin\) &&/);
+  assert.match(chat, /<MembersPanel members=\{members\}/);
+  assert.match(chat, /<ThreadPanel key=\{thread.id\}/);
+  assert.match(chat, /<PositionDialog initialFen=\{composer.fen\}/);
+  assert.match(chat, /<MessageTools summary=\{summary\}/);
+  assert.match(chat, /<MessageActions message=\{message\}/);
+  assert.match(chat, /<WorldChatShareLink \/>/);
+  assert.match(chat, /<PlayerSummary userId=\{player.id\}>/);
+  assert.match(mobile, /<LegacyCommunityScreen worldChat=\{worldChat\} \/>/);
+  assert.match(mobile, /siteT\('world.aboutText'\)/);
+  assert.match(mobile, /onClick=\{joinWorldChat\}/);
+  assert.match(rooms, /href=\{href\}/);
+  assert.match(rooms, /<UnreadBadge clubId=\{worldClubId\}/);
 });
 
 test('Schach-Treff cannot be joined directly in the UI and invited members return to its canonical route', () => {
@@ -40,11 +67,12 @@ test('Schach-Treff cannot be joined directly in the UI and invited members retur
   assert.match(chat, /communitySlug === 'chessaz-deutsch'\) && \['admin','moderator'\]/);
   const legacy = read('../src/screens/ChessAZCommunityScreen.tsx');
   assert.doesNotMatch(legacy, /onClick=\{membershipAction\}/, 'legacy mobile must not expose direct Schach join');
-  assert.match(legacy, /siteT\('schach\.inviteOnly'\)/);
+  assert.match(legacy, /worldChat \? 'world.joinHint' : 'schach.inviteOnly'/);
+  assert.match(legacy, /!worldChat \|\| !club \|\| !user \|\| member \|\| busy/);
 });
 
 test('all new user-facing labels support all six existing language codes', () => {
-  for (const key of ['world.title', 'world.subtitle', 'world.joinHint', 'world.unavailable', 'world.empty', 'schach.inviteOnly']) {
+  for (const key of ['world.title', 'world.subtitle', 'world.joinHint', 'world.unavailable', 'world.empty', 'world.aboutText', 'world.international', 'world.share', 'world.linkCopied', 'schach.inviteOnly']) {
     const line = translations.split('\n').find(value => value.includes("'" + key + "':"));
     assert.ok(line, 'missing translation ' + key);
     for (const locale of ['de','en','az','tr','ua','ru']) {
