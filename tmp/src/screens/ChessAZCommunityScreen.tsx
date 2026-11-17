@@ -111,7 +111,7 @@ function CommunityRouter() {
 }
 
 function LegacyCommunityScreen() {
-  const { language } = useLanguage();
+  const { language, t: siteT } = useLanguage();
   const t = language === 'de' ? de : language === 'ru' ? ru : en;
   const { user, isLoading: authLoading } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
@@ -276,11 +276,6 @@ function LegacyCommunityScreen() {
     }));
     if (saved) setEventTitle('');
   };
-  const membershipAction = () => {
-    if (!club || !user || busy) return;
-    void perform(() => supabase.from('chess_club_members')
-      .insert({ club_id: club.id, user_id: user.id, role: 'member' }));
-  };
   const toggleParticipation = (item: ClubEvent, participating: boolean) => {
     if (!user || busy) return;
     void perform(() => participating
@@ -318,13 +313,11 @@ function LegacyCommunityScreen() {
       {(loading || authLoading) && <p className="mt-5 flex items-center gap-2"><Loader2 className="animate-spin" size={18} />{t.loading}</p>}
       {error && <p role="alert" className="mt-4 rounded-lg border border-red-500/40 p-3 text-red-200">{error}</p>}
       {notice && <p role="status" className="mt-4 text-emerald-200">{notice}</p>}
-      {!loading && !club && !error && <p className="mt-5">{t.noClub}</p>}
+      {!loading && !club && !error && <p className="mt-5" role="status">{siteT('schach.inviteOnly')}</p>}
       {!loading && club && !member && (
         <section className={`${surface} mt-5 flex items-center justify-between gap-4`}>
-          <p className="text-sm text-neutral-300">{user ? t.membersOnly : t.login}</p>
-          {user
-            ? <button className={button} disabled={busy} onClick={membershipAction}>{t.join}</button>
-            : <Link to="/profile?returnTo=%2Fchat" className={button}>{language === 'de' ? 'Anmelden' : language === 'ru' ? 'Войти' : 'Sign in'}</Link>}
+          <p className="text-sm text-neutral-300">{siteT('schach.inviteOnly')}</p>
+          {!user && <Link to="/profile?returnTo=%2Fchat" className={button}>{t.login}</Link>}
         </section>
       )}
       {club && member && !loading && (
