@@ -45,8 +45,16 @@ export function authCallbackUrl(
   return callback.toString();
 }
 
-export function clubReturnTarget(value: string | null): '/chat' | null {
+export function clubReturnTarget(value: string | null): '/chat' | '/world-chat' | null {
+  if (value === '/world-chat') return '/world-chat';
   return value === '/chat' ? '/chat' : null;
+}
+
+// Exact in-app return path, never a user-supplied URL or arbitrary query string.
+export function worldChatAuthCallbackUrl(origin: string, path: '/profile' | '/update-password'): string {
+  const callback = new URL(authCallbackUrl(origin, path));
+  callback.searchParams.set('returnTo', '/world-chat');
+  return callback.toString();
 }
 
 export function inviteReturnTarget(value: string | null): string | null {
