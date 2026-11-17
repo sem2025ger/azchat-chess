@@ -434,13 +434,12 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
 /** Open World Chat needs a shareable public link, not a private-club invite token. */
 function WorldChatShareLink() {
   const { t } = useLanguage();
+  const schach = useSchachTreffCopy();
   const [copied, setCopied] = useState(false);
   const [fallback, setFallback] = useState(false);
-  const [failed, setFailed] = useState(false);
   const url = typeof window === 'undefined' ? '' : window.location.origin + '/world-chat';
   async function copy() {
     setCopied(false);
-    setFailed(false);
     setFallback(false);
     try {
       await navigator.clipboard.writeText(url);
@@ -457,9 +456,8 @@ function WorldChatShareLink() {
     {copied && <span className="st-invite-mobile-status" role="status">{t('world.linkCopied')}</span>}
     {fallback && <div className="st-invite-popover" role="group" aria-label={t('world.share')}>
       <input aria-label={t('world.share')} readOnly value={url} onFocus={event => event.currentTarget.select()} />
-      <button type="button" onClick={() => { try { window.getSelection()?.removeAllRanges(); } catch { setFailed(true); } setFallback(false); }}>{t('world.close')}</button>
+      <button type="button" onClick={() => setFallback(false)}>{schach.close}</button>
     </div>}
-    {failed && <span role="alert">{t('world.copyHelp')}</span>}
   </div>;
 }
 
