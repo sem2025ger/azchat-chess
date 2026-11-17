@@ -107,7 +107,7 @@ export default function Layout() {
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
-            {import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <NavItem to="/world-chat" icon={<MessageSquare size={20} />} label={t('world.title')} themeColor="theme-violet" bronzeLabel />}
+            {import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <NavItem to="/world-chat" icon={<MessageSquare size={20} />} label={t('world.title')} themeColor="theme-violet" />}
             {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" themeColor="theme-gold" bronzeLabel />}
             {desktop && (import.meta.env.VITE_SPIELTAG_ENABLED === 'true' || import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true') && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
