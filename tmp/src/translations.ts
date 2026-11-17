@@ -20,6 +20,12 @@ export const translations: TranslationDictionary = {
   'nav.play': { en: 'Play', de: 'Spielen', ua: 'Грати', ru: 'Играть', az: 'Oyna', tr: 'Oyna' },
   'nav.game': { en: 'Analysis', de: 'Analyse', ua: 'Аналіз', ru: 'Анализ', az: 'Analiz', tr: 'Analiz' },
   'nav.chat': { en: 'ChessAZ Deutsch', de: 'ChessAZ Deutsch', ua: 'ChessAZ Deutsch', ru: 'ChessAZ Deutsch', az: 'ChessAZ Deutsch', tr: 'ChessAZ Deutsch' },
+  'world.title': { de: 'World Chat', en: 'World Chat', az: 'Dünya Çatı', tr: 'Dünya Sohbeti', ua: 'Світовий чат', ru: 'Мировой чат' },
+  'world.subtitle': { de: 'Schach verbindet die Welt', en: 'Chess connects the world', az: 'Şahmat dünyanı birləşdirir', tr: 'Satranç dünyayı birleştirir', ua: 'Шахи об’єднують світ', ru: 'Шахматы объединяют мир' },
+  'world.joinHint': { de: 'Tritt dem offenen Welt-Chat bei, um Nachrichten zu lesen und mitzuschreiben.', en: 'Join the open World Chat to read and post messages.', az: 'Mesajları oxumaq və yazmaq üçün açıq dünya çatına qoşul.', tr: 'Mesajları okumak ve yazmak için açık Dünya Sohbetine katıl.', ua: 'Приєднайтеся до відкритого світового чату, щоб читати й писати повідомлення.', ru: 'Вступите в открытый мировой чат, чтобы читать и отправлять сообщения.' },
+  'world.unavailable': { de: 'World Chat ist noch nicht eingerichtet.', en: 'World Chat has not been set up yet.', az: 'Dünya çatı hələ qurulmayıb.', tr: 'Dünya Sohbeti henüz kurulmadı.', ua: 'Світовий чат ще не налаштований.', ru: 'Мировой чат ещё не настроен.' },
+  'world.empty': { de: 'Noch keine Nachrichten. Beginne das Gespräch!', en: 'No messages yet. Start the conversation!', az: 'Hələ mesaj yoxdur. Söhbətə başla!', tr: 'Henüz mesaj yok. Sohbeti başlat!', ua: 'Повідомлень ще немає. Почніть розмову!', ru: 'Сообщений пока нет. Начните общение!' },
+  'schach.inviteOnly': { de: 'Der Schach-Treff ist nur mit Einladung zugänglich. Bitte öffne deinen Einladungslink.', en: 'Schach-Treff is invitation-only. Open your invitation link to join.', az: 'Schach-Treff-ə yalnız dəvətlə daxil olmaq olar. Dəvət linkini aç.', tr: 'Schach-Treff yalnızca davetle erişilebilir. Katılmak için davet bağlantını aç.', ua: 'Доступ до Schach-Treff лише за запрошенням. Відкрийте посилання-запрошення.', ru: 'Schach-Treff доступен только по приглашению. Откройте свою пригласительную ссылку.' },
   'nav.profile': { en: 'Profile', de: 'Profil', ua: 'Профіль', ru: 'Профиль', az: 'Profil', tr: 'Profil' },
   'nav.settings': { en: 'Settings', de: 'Einstellungen', ua: 'Налаштування', ru: 'Настройки', az: 'Ayarlar', tr: 'Ayarlar' },
 
