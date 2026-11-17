@@ -36,3 +36,11 @@ test('each selected variation uses its own lesson, never the primary outcome',()
  assert.equal(lessonForLine({planDemo:primary},1),undefined,'legacy chat must not reuse a main-line conclusion for an alternative');
  for(const copy of Object.values(chessyCopy)){assert.ok(copy.unsettledLine.length>10);assert.ok(copy.noLineLesson.length>10);}
 });
+
+test('the chat request waits longer than the server deadline so a lesson fallback can arrive',()=>{
+ assert.match(source,/const CHAT_TIMEOUT_MS=60000;/);
+ const at=source.indexOf('const payload={message,fen,side'),chatCall=source.slice(at,at+1200);
+ assert.ok(at>0);
+ assert.match(chatCall,/AbortSignal\.timeout\(CHAT_TIMEOUT_MS\)/);
+ assert.doesNotMatch(chatCall,/AbortSignal\.timeout\(30000\)/);
+});

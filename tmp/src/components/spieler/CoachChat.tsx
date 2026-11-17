@@ -21,6 +21,8 @@ import { startBoundedAudioRecording, type AudioCapture } from '../../utils/audio
 type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string;moves?:string[];continuation?:string[]};
 type Continuation={moves:string[];evalWhite:number|null;depth:number;settled:boolean};
 type CandidateLine={moves:string[];score?:EngineScore;unsettled?:boolean;continuation?:Continuation};
+// The server answers within 55 s (engine + lesson + one fallback answer); wait a little longer.
+const CHAT_TIMEOUT_MS=60000;
 const replayMoves=(line:CandidateLine)=>[...line.moves,...(line.continuation?.moves||[])];
 // Extend only FEN-bound server lines. Local browser hints never gain provenance.
 function verifiedContinuations(value:unknown,fen:string):CandidateLine[]|null{
@@ -273,7 +275,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    if(abort.signal.aborted)return;
    let data:Reply,legacyBackend=false;
    if(requested!==null){const records=await createPositionSearchApi(import.meta.env.VITE_SERVER_URL||'').search({fen,side,fideId:'',scope:'all',sort:'strongest',limit:requested},token,abort.signal);const archive=records.games.map(g=>verifiedArchiveGame(g,fen)).filter((g):g is ResultGame=>g!==null).slice(0,requested);data={answer:archive.length?archiveHeadings[lang]:t.unavailable,games:archive,generated:true,archiveOnly:archive.length>0};}
-   else{const payload={message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text})),...(analysisLines.length?{candidateLines:analysisLines}:{})};const opts={method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store' as const,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token}};
+   else{const payload={message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text})),...(analysisLines.length?{candidateLines:analysisLines}:{})};const opts={method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(CHAT_TIMEOUT_MS)]),cache:'no-store' as const,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token}};
     let response=await fetch(apiUrl('chat'),{...opts,body:JSON.stringify(payload)});
     // The isolated QA backend may still run the older API. Do not break chat before its QA rollout.
     if(response.status===400&&'candidateLines'in payload){const failure=await response.clone().json().catch(()=>null);if(failure?.code==='invalid_query'){legacyBackend=true;response=await fetch(apiUrl('chat'),{...opts,body:JSON.stringify({...payload,candidateLines:undefined})});}}
