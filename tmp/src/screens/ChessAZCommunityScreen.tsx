@@ -33,11 +33,11 @@ type ClubTab = 'discussions' | 'tournaments' | 'members' | 'rating' | 'about';
 type ClubMember = { user_id: string; role: string; joined_at: string };
 type ClubProfile = { id: string; username: string; rating_blitz: number | null; rating_rapid: number | null; rating_bullet: number | null; country_code: string | null };
 const clubTabs = [
-  { id: 'discussions', icon: MessageCircle, en: 'Discussions', de: 'Diskussionen', ru: 'Обсуждения' },
-  { id: 'tournaments', icon: Trophy, en: 'Tournaments', de: 'Turniere', ru: 'Турниры' },
-  { id: 'members', icon: Users, en: 'Members', de: 'Mitglieder', ru: 'Участники' },
-  { id: 'rating', icon: BarChart3, en: 'Rating', de: 'Rangliste', ru: 'Рейтинг' },
-  { id: 'about', icon: Info, en: 'About', de: 'Über den Club', ru: 'О клубе' }
+  { id: 'discussions', icon: MessageCircle, en: 'Discussions', de: 'Diskussionen', ru: 'Обсуждения', az: 'Müzakirələr', tr: 'Tartışmalar', ua: 'Обговорення' },
+  { id: 'tournaments', icon: Trophy, en: 'Tournaments', de: 'Turniere', ru: 'Турниры', az: 'Turnirlər', tr: 'Turnuvalar', ua: 'Турніри' },
+  { id: 'members', icon: Users, en: 'Members', de: 'Mitglieder', ru: 'Участники', az: 'Üzvlər', tr: 'Üyeler', ua: 'Учасники' },
+  { id: 'rating', icon: BarChart3, en: 'Rating', de: 'Rangliste', ru: 'Рейтинг', az: 'Reytinq', tr: 'Sıralama', ua: 'Рейтинг' },
+  { id: 'about', icon: Info, en: 'About', de: 'Über den Club', ru: 'О клубе', az: 'İcma haqqında', tr: 'Topluluk hakkında', ua: 'Про спільноту' }
 ] as const;
 type Words = Record<'welcome' | 'subtitle' | 'join' | 'login' | 'membersOnly' | 'messages' | 'send' |
   'messagePlaceholder' | 'events' | 'create' | 'eventPlaceholder' | 'participate' | 'withdraw' |
@@ -87,32 +87,72 @@ const ru: Words = {
   submit: 'Публикация…', joined: 'Участник'
 };
 
-export default function ChessAZCommunityScreen() {
+
+const az: Words = {
+  welcome:'ChessAZ Deutsch', subtitle:'Almandilli şahmatçılar üçün icma',
+  join:'İcmaya qoşul', login:'Daxil ol', membersOnly:'Müzakirələri görmək üçün icmaya qoşulun',
+  messages:'İcma müzakirəsi', send:'Göndər', messagePlaceholder:'Mesaj yazın…',
+  events:'Club Pulse · tədbir təklifləri', create:'Tədbir təklif et', eventPlaceholder:'Məsələn, bu axşam blits?',
+  participate:'İştirak edirəm', withdraw:'İmtina et', ready:'Kifayət qədər iştirakçı var',
+  players:'oyunçu', loading:'İcma yüklənir…', failed:'İcma məlumatları yüklənmədi və ya saxlanmadı.',
+  success:'Yadda saxlanıldı', emptyMessages:'Hələ mesaj yoxdur. İlk mesajı yazın.',
+  emptyEvents:'Hələ tədbir təklifi yoxdur.', noClub:'İcma hələ qurulmayıb.',
+  foundation:'Tədbir təklifləri maraqlananları toplayır; avtomatik turnirlər hələ aktiv deyil.',
+  submit:'Yayımlanır…', joined:'Üzv'
+};
+const tr: Words = {
+  welcome:'ChessAZ Deutsch', subtitle:'Almanca konuşan satranççılar için topluluk',
+  join:'Topluluğa katıl', login:'Giriş yap', membersOnly:'Tartışmaları görmek için topluluğa katılın',
+  messages:'Topluluk sohbeti', send:'Gönder', messagePlaceholder:'Bir mesaj yazın…',
+  events:'Club Pulse · etkinlik önerileri', create:'Etkinlik öner', eventPlaceholder:'Örneğin bu akşam yıldırım?',
+  participate:'Katılıyorum', withdraw:'Vazgeç', ready:'Yeterli katılımcı var',
+  players:'oyuncu', loading:'Topluluk yükleniyor…', failed:'Topluluk verileri yüklenemedi veya kaydedilemedi.',
+  success:'Kaydedildi', emptyMessages:'Henüz mesaj yok. Sohbeti başlatın.',
+  emptyEvents:'Henüz etkinlik önerisi yok.', noClub:'Topluluk henüz kurulmadı.',
+  foundation:'Etkinlik önerileri oyuncuları buluşturur; otomatik turnuvalar henüz etkin değil.',
+  submit:'Yayınlanıyor…', joined:'Üye'
+};
+const ua: Words = {
+  welcome:'ChessAZ Deutsch', subtitle:'Спільнота для німецькомовних шахістів',
+  join:'Приєднатися до спільноти', login:'Увійти', membersOnly:'Приєднайтеся, щоб переглядати обговорення',
+  messages:'Обговорення спільноти', send:'Надіслати', messagePlaceholder:'Напишіть повідомлення…',
+  events:'Club Pulse · пропозиції подій', create:'Запропонувати подію', eventPlaceholder:'Наприклад, бліц сьогодні ввечері?',
+  participate:'Беру участь', withdraw:'Скасувати участь', ready:'Достатньо учасників',
+  players:'гравців', loading:'Завантаження спільноти…', failed:'Не вдалося завантажити або зберегти дані спільноти.',
+  success:'Збережено', emptyMessages:'Повідомлень ще немає. Почніть розмову.',
+  emptyEvents:'Пропозицій подій поки немає.', noClub:'Спільноту ще не налаштовано.',
+  foundation:'Пропозиції подій збирають гравців; автоматичні турніри ще не активовано.',
+  submit:'Публікація…', joined:'Учасник'
+};
+
+export default function ChessAZCommunityScreen({ worldChat = false }: { worldChat?: boolean } = {}) {
   const desktop = useDesktop();
+  const { t: siteT } = useLanguage();
+  const homePath = worldChat ? '/world-chat' : '/chat';
   const t = useSchachTreffCopy();
   const copy = useV2Copy();
   const [showCommunity, setShowCommunity] = useState(false);
-  if (desktop) return <CommunityRouter />;
+  if (desktop) return <CommunityRouter worldChat={worldChat} />;
   const params = new URLSearchParams(window.location.search);
-  const club = params.get('club');
+  const club = worldChat ? null : params.get('club');
   return <div className="st-mobile-page">
-    <header className="st-mobile-header"><h1>{t.title}</h1></header>
-    <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
+    <header className="st-mobile-header"><h1>{worldChat ? siteT('world.title') : t.title}</h1>{import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <Link to={worldChat ? '/chat' : '/world-chat'}>{worldChat ? t.title : siteT('world.title')}</Link>}</header>
+    <aside className="st-mobile-rooms"><GeneralRoomLink label={worldChat ? siteT('world.title') : t.general} href={homePath} search={worldChat ? '' : window.location.search} className="st-mobile-general" />
       <ClubRooms currentClubId={club} heading={v2Enabled ? copy.myClubs : undefined} />
       {v2Enabled && <DirectList currentClubId={club} />}
     </aside>
     {!club && <button type="button" className="st-mobile-community" aria-pressed={showCommunity} onClick={() => setShowCommunity(!showCommunity)}>{showCommunity ? t.backGeneral : t.more}</button>}
-    {!club && showCommunity ? <div className="st-mobile-legacy"><CommunityRouter /></div> : <SchachTreffDesktop hideRooms />}
+    {!club && showCommunity ? <div className="st-mobile-legacy"><CommunityRouter worldChat={worldChat} /></div> : <SchachTreffDesktop hideRooms />}
   </div>;
 }
-function CommunityRouter() {
+function CommunityRouter({ worldChat = false }: { worldChat?: boolean }) {
   const desktop = useDesktop();
-  return desktop ? <SchachTreffDesktop /> : <LegacyCommunityScreen />;
+  return desktop ? <SchachTreffDesktop /> : <LegacyCommunityScreen worldChat={worldChat} />;
 }
 
-function LegacyCommunityScreen() {
-  const { language } = useLanguage();
-  const t = language === 'de' ? de : language === 'ru' ? ru : en;
+function LegacyCommunityScreen({ worldChat = false }: { worldChat?: boolean }) {
+  const { language, t: siteT } = useLanguage();
+  const t = language === 'de' ? de : language === 'ru' ? ru : language === 'az' ? az : language === 'tr' ? tr : language === 'ua' ? ua : en;
   const { user, isLoading: authLoading } = useAuth();
   const [club, setClub] = useState<Club | null>(null);
   const [member, setMember] = useState(false);
@@ -143,7 +183,7 @@ function LegacyCommunityScreen() {
 
   const refresh = useCallback(async () => {
     const { data: found, error: clubError } = await supabase.from('chess_clubs')
-      .select('id,name,description').eq('slug', 'chessaz-deutsch').maybeSingle();
+      .select('id,name,description').eq('slug', worldChat ? 'world-chat' : 'chessaz-deutsch').maybeSingle();
     if (clubError) throw clubError;
     setClub(found as Club | null);
     if (!found || !user) {
@@ -221,7 +261,7 @@ function LegacyCommunityScreen() {
     } else {
       setNames({});
     }
-  }, [user]);
+  }, [user, worldChat]);
 
   useEffect(() => {
     let active = true;
@@ -258,6 +298,11 @@ function LegacyCommunityScreen() {
       setBusy(false);
     }
   };
+  const joinWorldChat = () => {
+    if (!worldChat || !club || !user || member || busy) return;
+    void perform(() => supabase.from('chess_club_members')
+      .insert({ club_id: club.id, user_id: user.id, role: 'member' }));
+  };
   const sendMessage = async (event: FormEvent) => {
     event.preventDefault();
     if (!club || !user || !member || !message.trim() || busy) return;
@@ -275,11 +320,6 @@ function LegacyCommunityScreen() {
       min_players: 4, max_players: 16
     }));
     if (saved) setEventTitle('');
-  };
-  const membershipAction = () => {
-    if (!club || !user || busy) return;
-    void perform(() => supabase.from('chess_club_members')
-      .insert({ club_id: club.id, user_id: user.id, role: 'member' }));
   };
   const toggleParticipation = (item: ClubEvent, participating: boolean) => {
     if (!user || busy) return;
@@ -308,8 +348,8 @@ function LegacyCommunityScreen() {
         <div className="flex flex-wrap items-start gap-4">
           <div className="rounded-xl bg-amber-400/10 p-3 text-amber-300"><Globe size={32} /></div>
           <div className="flex-1 min-w-52">
-            <h1 className="text-2xl md:text-3xl font-bold text-amber-200">{t.welcome}</h1>
-            <p className="mt-1 text-sm text-neutral-300">{t.subtitle}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-amber-200">{worldChat ? siteT('world.title') : t.welcome}</h1>
+            <p className="mt-1 text-sm text-neutral-300">{worldChat ? siteT('world.subtitle') : t.subtitle}</p>
             <p className="mt-2 text-xs text-neutral-400">{t.foundation}</p>
           </div>
           {member && <span className="rounded-full bg-emerald-800/40 px-3 py-1 text-xs text-emerald-200">{t.joined}</span>}
@@ -318,25 +358,24 @@ function LegacyCommunityScreen() {
       {(loading || authLoading) && <p className="mt-5 flex items-center gap-2"><Loader2 className="animate-spin" size={18} />{t.loading}</p>}
       {error && <p role="alert" className="mt-4 rounded-lg border border-red-500/40 p-3 text-red-200">{error}</p>}
       {notice && <p role="status" className="mt-4 text-emerald-200">{notice}</p>}
-      {!loading && !club && !error && <p className="mt-5">{t.noClub}</p>}
+      {!loading && !club && !error && <p className="mt-5" role="status">{siteT(worldChat ? 'world.unavailable' : 'schach.inviteOnly')}</p>}
       {!loading && club && !member && (
         <section className={`${surface} mt-5 flex items-center justify-between gap-4`}>
-          <p className="text-sm text-neutral-300">{user ? t.membersOnly : t.login}</p>
-          {user
-            ? <button className={button} disabled={busy} onClick={membershipAction}>{t.join}</button>
-            : <Link to="/profile?returnTo=%2Fchat" className={button}>{language === 'de' ? 'Anmelden' : language === 'ru' ? 'Войти' : 'Sign in'}</Link>}
+          <p className="text-sm text-neutral-300">{siteT(worldChat ? 'world.joinHint' : 'schach.inviteOnly')}</p>
+          {worldChat && user && <button type="button" className={button} disabled={busy} onClick={joinWorldChat}>{t.join}</button>}
+          {!user && (worldChat ? <Link to="/profile?returnTo=%2Fworld-chat" className={button}>{t.login}</Link> : <Link to="/profile?returnTo=%2Fchat" className={button}>{t.login}</Link>)}
         </section>
       )}
       {club && member && !loading && (
         <div className="mt-5 space-y-5">
-          <nav role="tablist" aria-label="ChessAZ Deutsch club sections" className="flex gap-2 overflow-x-auto rounded-xl border border-white/10 bg-neutral-900/80 p-2">
+          <nav role="tablist" aria-label={worldChat ? siteT('world.title') : 'ChessAZ Deutsch club sections'} className="flex gap-2 overflow-x-auto rounded-xl border border-white/10 bg-neutral-900/80 p-2">
             {clubTabs.map(item => {
               const Icon = item.icon;
               return <button type="button" role="tab" key={item.id} id={`club-tab-${item.id}`}
                 aria-selected={activeTab === item.id} aria-controls={`club-panel-${item.id}`}
                 onClick={() => { setActiveTab(item.id); setError(''); setNotice(''); }}
                 className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-300 ${activeTab === item.id ? 'bg-amber-400 text-neutral-950' : 'text-neutral-300 hover:bg-white/10'}`}>
-                <Icon size={17} aria-hidden="true" /> {language === 'de' ? item.de : language === 'ru' ? item.ru : item.en}
+                <Icon size={17} aria-hidden="true" /> {language === 'de' ? item.de : language === 'ru' ? item.ru : language === 'az' ? item.az : language === 'tr' ? item.tr : language === 'ua' ? item.ua : item.en}
               </button>;
             })}
           </nav>
@@ -351,7 +390,7 @@ function LegacyCommunityScreen() {
               }}>{schach.reports}</button>
             </details>}
             <div ref={feed} aria-live="polite" className="mb-4 max-h-[26rem] min-h-48 space-y-3 overflow-y-auto">
-              {!messages.length && <p className="text-neutral-400">{t.emptyMessages}</p>}
+              {!messages.length && <p className="text-neutral-400">{worldChat ? siteT('world.empty') : t.emptyMessages}</p>}
               {messages.map(item => (
                 <article key={item.id} className="rounded-xl border border-white/5 bg-black/30 p-3">
                   <p className="mb-1 text-xs text-amber-200">{names[item.author_id] ?? (item.author_id === user?.id ? t.joined : 'ChessAZ')}
@@ -478,8 +517,8 @@ function LegacyCommunityScreen() {
           </section>
           <section id="club-panel-about" role="tabpanel" aria-labelledby="club-tab-about" hidden={activeTab !== 'about'} className={`${surface} ${activeTab !== 'about' ? 'hidden' : ''}`}>
             <h2 className="mb-3 flex items-center gap-2 text-xl font-bold"><Info size={22}/>{language === 'de' ? 'Über den Club' : language === 'ru' ? 'О клубе' : 'About the club'}</h2>
-            <p className="max-w-3xl text-neutral-300">{club.description || t.subtitle}</p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-white/10 p-4"><p className="text-xs text-neutral-400">{language === 'de' ? 'Sprache' : language === 'ru' ? 'Язык' : 'Language'}</p><p>Deutsch</p></div><div className="rounded-xl border border-white/10 p-4"><p className="text-xs text-neutral-400">{language === 'de' ? 'Schachgemeinschaft' : language === 'ru' ? 'Сообщество' : 'Community'}</p><p>ChessAZ Deutsch</p></div></div>
+            <p className="max-w-3xl text-neutral-300">{worldChat ? siteT('world.aboutText') : (club.description || t.subtitle)}</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-white/10 p-4"><p className="text-xs text-neutral-400">{language === 'de' ? 'Sprache' : language === 'ru' ? 'Язык' : 'Language'}</p><p>{worldChat ? siteT('world.international') : 'Deutsch'}</p></div><div className="rounded-xl border border-white/10 p-4"><p className="text-xs text-neutral-400">{language === 'de' ? 'Schachgemeinschaft' : language === 'ru' ? 'Сообщество' : 'Community'}</p><p>{worldChat ? siteT('world.title') : 'ChessAZ Deutsch'}</p></div></div>
             <p className="mt-4 text-sm text-neutral-400">{language === 'de' ? 'Automatische Paarungen und Live-Turnierpartien sind noch nicht verfügbar.' : language === 'ru' ? 'Автоматические жеребьёвки и турнирные партии пока не запущены.' : 'Automatic pairings and tournament games are not yet live.'}</p>
           </section>
         </div>
