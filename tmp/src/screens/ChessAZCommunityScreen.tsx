@@ -96,7 +96,7 @@ export default function ChessAZCommunityScreen() {
   const params = new URLSearchParams(window.location.search);
   const club = params.get('club');
   return <div className="st-mobile-page">
-    <header className="st-mobile-header"><h1>{t.title}</h1></header>
+    <header className="st-mobile-header"><h1>{t.title}</h1>{import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <Link to="/world-chat">World Chat</Link>}</header>
     <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
       <ClubRooms currentClubId={club} heading={v2Enabled ? copy.myClubs : undefined} />
       {v2Enabled && <DirectList currentClubId={club} />}
