@@ -53,7 +53,7 @@ export function useOpenAnalysis() {
   }, [navigate]);
 }
 
-export function PositionMessage({ fen, onReply, size }: { fen: string; onReply: (fen: string) => void; size?: number }) {
+export function PositionMessage({ fen, onReply, size }: { fen: string; onReply?: (fen: string) => void; size?: number }) {
   const copy = useV2Copy2();
   const open = useOpenAnalysis();
   const caption = copy.sideToMove(sideToMoveIsWhite(fen));
@@ -61,7 +61,7 @@ export function PositionMessage({ fen, onReply, size }: { fen: string; onReply: 
     <MiniBoard fen={fen} label={`${copy.position}: ${caption}`} size={size} />
     <small>{caption}</small>
     <div className="st2-card-actions">
-      <button type="button" className="st2-secondary" onClick={() => onReply(fen)}>{copy.replyWithPosition}</button>
+      {onReply && <button type="button" className="st2-secondary" onClick={() => onReply(fen)}>{copy.replyWithPosition}</button>}
       <button type="button" className="st2-bronze-outline" onClick={() => open({ fen })}>{copy.openInAnalysis}</button>
     </div>
   </div>;
