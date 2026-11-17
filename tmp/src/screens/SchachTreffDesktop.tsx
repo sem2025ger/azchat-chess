@@ -106,7 +106,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const dmChat = v2Enabled ? direct.chats.find(chat => chat.clubId === clubId) : undefined;
   const block = useBlock(dmChat?.partnerId);
   const dmOpen = useOpenDirectChat();
-  const isClub = new URLSearchParams(window.location.search).has('club');
+  const isClub = !worldChat && new URLSearchParams(window.location.search).has('club');
   const feedRef = useRef<HTMLDivElement>(null);
   const followFeed = useRef(true);
   const newestMessage = messages.at(-1)?.id;
