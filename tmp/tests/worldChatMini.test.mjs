@@ -28,7 +28,8 @@ test('World Chat always selects the world-chat slug and cannot open another club
   assert.match(chat, /compact=\{worldChat\}/);
   assert.match(chat, /worldChat \? null : <MembersPanel/);
   assert.match(chat, /onThread=\{compact \? undefined/);
-  assert.match(chat, /onReply=\{compact \? undefined/);
+  assert.match(chat, /compact\s*\? <PositionMessage fen=/);
+  assert.match(chat, /onReply=\{fen => v2\.replyPosition\(message, fen\)\}/);
 });
 
 test('Schach-Treff cannot be joined directly in the UI and invited members return to its canonical route', () => {
