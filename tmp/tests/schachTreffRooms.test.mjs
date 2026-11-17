@@ -10,6 +10,10 @@ test('general room link marks only the current general chat', async () => {
   for(const search of ['', '?club=11111111-1111-4111-8111-111111111111']) {
    const html=renderToStaticMarkup(createElement(Link,{label:'Общий чат',search,className:'room'}));
    assert.match(html,/href="\/chat"/); assert.equal(html.includes('aria-current="page"'),search==='');
+   const world=renderToStaticMarkup(createElement(Link,{label:'World Chat',search,className:'room',href:'/world-chat'}));
+   assert.match(world,/href="\/world-chat"/);
+   assert.doesNotMatch(world,/href="\/chat"/);
+   assert.equal(world.includes('aria-current="page"'),search==='');
   }
  } finally { await server.close(); }
 });
