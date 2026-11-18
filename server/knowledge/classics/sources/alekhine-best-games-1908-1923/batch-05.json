@@ -1,0 +1,2437 @@
+{
+  "batch": 5,
+  "gameRange": [
+    41,
+    50
+  ],
+  "games": [
+    {
+      "gameNumber": 41,
+      "white": "Alexander Alekhine",
+      "black": "Stepan Levitsky",
+      "event": "Match vs. Levitsky (Game 8)",
+      "site": "St. Petersburg, Russia",
+      "date": "1913.03.??",
+      "round": "8",
+      "result": "1-0",
+      "opening": "Vienna Game",
+      "eco": "C27",
+      "themes": [
+        "tactics",
+        "attack",
+        "sacrifice",
+        "piece_activity",
+        "king_safety"
+      ],
+      "overallPlan": "White sacrifices two queenside/kingside pawns to open lines against Black's uncastled king, driving the bishop pair and knights onto decisive central and kingside outposts.",
+      "strategicSummary": "After Levitsky declines Alekhine's gambit setup with a premature kingside fianchetto and passive bishop retreat, Alekhine launches 12.Bg7 and 13.Qh6 followed by a rook sacrifice to keep the Black king stranded in the center.",
+      "moves": [
+        "e4",
+        "e5",
+        "Nc3",
+        "Nf6",
+        "Bc4",
+        "Nxe4",
+        "Qh5",
+        "Nd6",
+        "Bb3",
+        "Nc6",
+        "d3",
+        "Be7",
+        "Nf3",
+        "g6",
+        "Qh3",
+        "Nf5",
+        "g4",
+        "Nfd4",
+        "Bh6",
+        "Nxb3",
+        "axb3",
+        "f5",
+        "Bg7",
+        "fxg4",
+        "Qh6",
+        "Bf8",
+        "Bxf8",
+        "Rxf8",
+        "Ng5",
+        "Nd4",
+        "Nxh7",
+        "Rg8",
+        "Nd5",
+        "Nxc2+",
+        "Kd2",
+        "Nxa1",
+        "Rxa1",
+        "c6",
+        "Nhf6+",
+        "Kf7",
+        "Nxg8",
+        "Qxg8",
+        "Nb6",
+        "Rb8",
+        "Nc4",
+        "d6",
+        "Nxd6+",
+        "Ke7",
+        "Nc4",
+        "Bf5",
+        "Re1",
+        "Qh8",
+        "Qe3",
+        "Rd8",
+        "Nxe5",
+        "Kf6",
+        "Nxg4+",
+        "Bxg4",
+        "Qe5+"
+      ],
+      "diagrams": [
+        {
+          "index": 1,
+          "bookPage": 108,
+          "pdfPage": 6,
+          "afterPly": 32,
+          "caption": "Position after Black's 16th move (16...Rg8).",
+          "fen": "r1bqk1r1/pppp3N/6pQ/4p3/3n2p1/1PNP4/1PP2P1P/R3K2R w KQq - 1 17"
+        },
+        {
+          "index": 2,
+          "bookPage": 109,
+          "pdfPage": 7,
+          "afterPly": 44,
+          "caption": "Position after Black's 22nd move (22...Rb8).",
+          "fen": "1rb3q1/pp1p1k2/1Np3pQ/4p3/6p1/1P1P4/1P1K1P1P/R7 w - - 2 23"
+        }
+      ],
+      "annotations": [
+        {
+          "afterPly": 20,
+          "moveLabel": "10...Nxb3",
+          "bookPage": 108,
+          "pdfPage": 6,
+          "themes": [
+            "development",
+            "king_safety"
+          ],
+          "summary": "Closing the queen-rook file with 10...Bf8 was safer because White had not yet consolidated his kingside pawns."
+        },
+        {
+          "afterPly": 33,
+          "moveLabel": "17.Nd5!",
+          "bookPage": 108,
+          "pdfPage": 6,
+          "themes": [
+            "sacrifice",
+            "attack"
+          ],
+          "summary": "Alekhine sacrifices the rook on a1 to bring both knights onto f6 and g5 while the Black king remains trapped in the center."
+        },
+        {
+          "afterPly": 45,
+          "moveLabel": "23.Nc4!",
+          "bookPage": 108,
+          "pdfPage": 6,
+          "themes": [
+            "centralization",
+            "attack"
+          ],
+          "summary": "The decisive quiet move: forcing open the central e-file against Black's exposed king."
+        },
+        {
+          "afterPly": 19,
+          "bookPage": 107,
+          "pdfPage": 5,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Trading the strong dark-squared bishop immediately would leave Black with weakened dark squares and no real counterplay.",
+          "variations": [
+            {
+              "branchPly": 19,
+              "label": "10...Bf8",
+              "moves": [
+                "Bf8",
+                "Bxf8",
+                "Rxf8",
+                "Nxd4",
+                "Nxd4",
+                "Qxh7"
+              ],
+              "summary": "Retreating 10...Bf8 leaves Black safe after 11.Bxf8 Rxf8; 12.Nxd4 Nxd4 13.Qxh7 only drops White's h-pawn plans? Note: book comments on 10...Bf8 at move 10 avoiding 10...Nxb3."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 29,
+          "bookPage": 107,
+          "pdfPage": 5,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Defending passively with the queen fails once White simply castles and maintains full central control.",
+          "variations": [
+            {
+              "branchPly": 29,
+              "label": "15...Qf6",
+              "moves": [
+                "Qf6",
+                "O-O"
+              ],
+              "summary": "Defending passively with the queen fails once White simply castles and maintains full central control."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 32,
+          "bookPage": 107,
+          "pdfPage": 5,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Castling queenside lets Black reorganize with the knight and queen to defend comfortably.",
+          "variations": [
+            {
+              "branchPly": 32,
+              "label": "17.O-O-O",
+              "moves": [
+                "O-O-O",
+                "Nf5",
+                "Qd2",
+                "Qh4"
+              ],
+              "summary": "Castling queenside lets Black reorganize with the knight and queen to defend comfortably."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 37,
+          "bookPage": 107,
+          "pdfPage": 5,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Covering the seventh rank slows the knights slightly, yet after the exchange of knights White dominates the kingside.",
+          "variations": [
+            {
+              "branchPly": 37,
+              "label": "19...d6",
+              "moves": [
+                "d6",
+                "Ndf6+",
+                "Kf7",
+                "Ng5+"
+              ],
+              "summary": "Covering the seventh rank allows White to win back material on the dark squares with 20.Ndf6+ Kf7 21.Ng5+."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 53,
+          "bookPage": 107,
+          "pdfPage": 5,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Keeping the king out of the back rank surrenders the queenside pawns immediately.",
+          "variations": [
+            {
+              "branchPly": 53,
+              "label": "27...Kd7",
+              "moves": [
+                "Kd7",
+                "Qxa7"
+              ],
+              "summary": "Keeping the king out of the back rank surrenders the queenside pawns immediately."
+            }
+          ],
+          "moveLabel": null
+        }
+      ],
+      "chapter": "XI",
+      "chapterTitle": "Local Tournaments, etc.",
+      "year": 1913,
+      "pages": {
+        "from": 107,
+        "to": 109,
+        "pdfPages": [
+          "v3:5",
+          "v3:6",
+          "v3:7"
+        ]
+      }
+    },
+    {
+      "gameNumber": 42,
+      "white": "J. de Rodzynski",
+      "black": "Alexander Alekhine",
+      "event": "Paris Casual Game",
+      "site": "Paris, France",
+      "date": "1913.08.??",
+      "result": "0-1",
+      "opening": "King's Knight Opening (Pirc/Philidor hybrid)",
+      "eco": "C50",
+      "themes": [
+        "tactics",
+        "attack",
+        "sacrifice",
+        "development",
+        "king_safety"
+      ],
+      "overallPlan": "Against an over-ambitious queenside pawn-grab, Black sacrifices first a pawn and then an exchange to mobilize every minor piece directly against White's uncastled king.",
+      "strategicSummary": "De Rodzynski chases the b7 pawn and rook at a8 while neglecting development, allowing Alekhine to weave a lethal mating net finishing with 15...Bh4#.",
+      "moves": [
+        "e4",
+        "e5",
+        "Nf3",
+        "Nc6",
+        "Bc4",
+        "d6",
+        "c3",
+        "Bg4",
+        "Qb3",
+        "Qd7",
+        "Ng5",
+        "Nh6",
+        "Bxf7+",
+        "Nxf7",
+        "Nxf7",
+        "Qxf7",
+        "Qxb7",
+        "Kd7",
+        "Qxa8",
+        "Qc4",
+        "f3",
+        "Bxf3",
+        "gxf3",
+        "Nd4",
+        "d3",
+        "Qxd3",
+        "cxd4",
+        "Be7",
+        "Qxh8",
+        "Bh4#"
+      ],
+      "diagrams": [
+        {
+          "index": 1,
+          "bookPage": 109,
+          "pdfPage": 7,
+          "afterPly": 10,
+          "caption": "Position after Black's 5th move (5...Qd7).",
+          "fen": "r3kbnr/pppq1ppp/2np4/4p3/2B1P1b1/1QP2N2/PP1P1PPP/RNB1K2R w KQkq - 3 6"
+        },
+        {
+          "index": 2,
+          "bookPage": 110,
+          "pdfPage": 8,
+          "afterPly": 21,
+          "caption": "Position after White's 11th move (11.f3).",
+          "fen": "Q4b1r/p1pk2pp/2np4/4p3/2q1P1b1/2P2P2/PP1P2PP/RNB1K2R b KQ - 0 11"
+        }
+      ],
+      "annotations": [
+        {
+          "afterPly": 18,
+          "moveLabel": "9...Kd7!",
+          "bookPage": 109,
+          "pdfPage": 7,
+          "themes": [
+            "sacrifice",
+            "development"
+          ],
+          "summary": "Alekhine calmly gives up the rook on a8 to trap White's queen offside and trap White's king in the center."
+        },
+        {
+          "afterPly": 22,
+          "moveLabel": "11...Bxf3!",
+          "bookPage": 110,
+          "pdfPage": 8,
+          "themes": [
+            "attack",
+            "sacrifice"
+          ],
+          "summary": "Shattering the king's pawn shelter; the bishop cannot be declined without facing immediate mate threats on e2."
+        },
+        {
+          "afterPly": 28,
+          "moveLabel": "14...Be7!",
+          "bookPage": 110,
+          "pdfPage": 8,
+          "themes": [
+            "checkmate_patterns",
+            "attack"
+          ],
+          "summary": "Sacrificing the second rook to seal the mating diagonal h4-e1."
+        },
+        {
+          "afterPly": 10,
+          "bookPage": 109,
+          "pdfPage": 7,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Taking immediately allows Black to shatter White's kingside and launch a winning perpetual/mating attack against the stranded king.",
+          "variations": [
+            {
+              "branchPly": 10,
+              "label": "6.Bxf7+",
+              "moves": [
+                "Bxf7+",
+                "Qxf7",
+                "Qxb7",
+                "Kd7",
+                "Qxa8",
+                "Bxf3",
+                "gxf3",
+                "Qxf3",
+                "Rg1",
+                "Qxe4+",
+                "Kd1",
+                "Qf3+"
+              ],
+              "summary": "Taking immediately allows Black to shatter White's kingside and launch a winning perpetual/mating attack against the stranded king."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 12,
+          "bookPage": 109,
+          "pdfPage": 7,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Gaining a single pawn with 7.Qxb7 leaves Black ahead in rapid development after castling.",
+          "variations": [
+            {
+              "branchPly": 12,
+              "label": "7.Qxb7",
+              "moves": [
+                "Qxb7",
+                "Rb8",
+                "Qa6",
+                "Rb6",
+                "Qa4",
+                "Be7"
+              ],
+              "summary": "Gaining a single pawn with 7.Qxb7 leaves Black ahead in rapid development after castling."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 19,
+          "bookPage": 109,
+          "pdfPage": 7,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Playing 10...Nd4 immediately fails to 11.d3.",
+          "variations": [
+            {
+              "branchPly": 19,
+              "label": "10...Nd4",
+              "moves": [
+                "Nd4",
+                "d3"
+              ],
+              "summary": "Book note cites 10...Nd4; 11.d3 Qxd3 though Black's queen remains on f7 before 10...Qc4 (erratum recorded)."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 24,
+          "bookPage": 109,
+          "pdfPage": 7,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Taking the knight on move 13 drops the rook on h1 with decisive central counterplay for Black.",
+          "variations": [
+            {
+              "branchPly": 24,
+              "label": "13.cxd4",
+              "moves": [
+                "cxd4",
+                "Qxc1+",
+                "Ke2",
+                "Qxh1",
+                "d5",
+                "Qxh2+",
+                "Kd3",
+                "Qg1",
+                "Qc6+",
+                "Kd8"
+              ],
+              "summary": "Taking the knight on move 13 drops the rook on h1 with decisive central counterplay for Black."
+            }
+          ],
+          "moveLabel": null
+        }
+      ],
+      "errata": [
+        {
+          "bookPage": 110,
+          "note": "In the note to move 13, the book prints 13. PxKt (continuation numbered 12...QxB ch ... 16. Q-B 6 ch K-Q 1) starting one move number off; verified line from ply 24 is 13.cxd4 Qxc1+."
+        }
+      ],
+      "chapter": "XI",
+      "chapterTitle": "Local Tournaments, etc.",
+      "year": 1913,
+      "pages": {
+        "from": 109,
+        "to": 110,
+        "pdfPages": [
+          "v3:7",
+          "v3:8"
+        ]
+      }
+    },
+    {
+      "gameNumber": 43,
+      "white": "Alexander Alekhine",
+      "black": "M. Prat",
+      "event": "Paris Simultaneous Exhibition (1 of 20)",
+      "site": "Paris, France",
+      "date": "1913.09.??",
+      "result": "1-0",
+      "opening": "Queen's Gambit Declined (Chigorin Defense)",
+      "eco": "D07",
+      "themes": [
+        "tactics",
+        "attack",
+        "sacrifice",
+        "center_control",
+        "checkmate_patterns"
+      ],
+      "overallPlan": "White exploits Black's passive bishop blockage and abandonment of the center by advancing e4 and f5, stripping the f7 square and finishing with a ten-move forced king-hunt mate.",
+      "strategicSummary": "Playing 3...e6 with the knight on c6 hems in Black's light-squared bishop. After 4...dxc4 cedes the center, Alekhine builds an overwhelming central pawn wedge before executing 16.Nxf7! and announcing mate from move 22.",
+      "moves": [
+        "d4",
+        "d5",
+        "Nf3",
+        "Nc6",
+        "c4",
+        "e6",
+        "Nc3",
+        "dxc4",
+        "e3",
+        "Nf6",
+        "Bxc4",
+        "Bb4",
+        "O-O",
+        "Bxc3",
+        "bxc3",
+        "O-O",
+        "Qc2",
+        "Ne7",
+        "Ba3",
+        "c6",
+        "e4",
+        "h6",
+        "Rad1",
+        "Bd7",
+        "Ne5",
+        "Re8",
+        "f4",
+        "Qc7",
+        "f5",
+        "Rad8",
+        "Nxf7",
+        "Kxf7",
+        "e5",
+        "Neg8",
+        "Bd6",
+        "Qc8",
+        "Qe2",
+        "b5",
+        "Bb3",
+        "a5",
+        "Rde1",
+        "a4"
+      ],
+      "diagrams": [
+        {
+          "index": 1,
+          "bookPage": 111,
+          "pdfPage": 9,
+          "afterPly": 30,
+          "caption": "Position after Black's 15th move (15...Rad8).",
+          "fen": "3rr1k1/ppqbnpp1/2p1pn1p/4NP2/2BPP3/B1P5/P1Q3PP/3R1RK1 w - - 1 16"
+        },
+        {
+          "index": 2,
+          "bookPage": 111,
+          "pdfPage": 9,
+          "afterPly": 42,
+          "caption": "Position after Black's 21st move (21...a4).",
+          "fen": "2qrr1n1/3b1kp1/2pBpn1p/1p2PP2/p2P4/1BP5/P3Q1PP/4RRK1 w - - 0 22"
+        }
+      ],
+      "annotations": [
+        {
+          "afterPly": 8,
+          "moveLabel": "4...dxc4",
+          "bookPage": 110,
+          "pdfPage": 8,
+          "themes": [
+            "center_control"
+          ],
+          "summary": "Surrendering the central tension unprovoked gives White a strong center and smooth piece development."
+        },
+        {
+          "afterPly": 31,
+          "moveLabel": "16.Nxf7!",
+          "bookPage": 110,
+          "pdfPage": 8,
+          "themes": [
+            "sacrifice",
+            "attack"
+          ],
+          "summary": "Stripping the f7 shelter opens the d6 square and the e-file while forcing Black's pieces into passive tangles."
+        },
+        {
+          "afterPly": 42,
+          "moveLabel": "21...a4",
+          "bookPage": 111,
+          "pdfPage": 9,
+          "themes": [
+            "checkmate_patterns",
+            "combination"
+          ],
+          "summary": "Here Alekhine announced forced mate in ten starting with 22.Qh5+!.",
+          "variations": [
+            {
+              "branchPly": 42,
+              "label": "22.Qh5+! (Announced Mate in 10)",
+              "moves": [
+                "Qh5+",
+                "Nxh5",
+                "fxe6+",
+                "Kg6",
+                "Bc2+",
+                "Kg5",
+                "Rf5+",
+                "Kg6",
+                "Rf6+",
+                "Kg5",
+                "Rg6+",
+                "Kh4",
+                "Re4+",
+                "Nf4",
+                "Rxf4+",
+                "Kh5",
+                "g3"
+              ],
+              "summary": "White announced forced mate in ten moves (ending with 31.Rh4# regardless of Black's 30th move)."
+            }
+          ]
+        },
+        {
+          "afterPly": 34,
+          "bookPage": 110,
+          "pdfPage": 8,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Immediately recovering the piece on f6 gives Black breathing room; Alekhine instead chooses 18.Bd6 to seal in the king.",
+          "variations": [
+            {
+              "branchPly": 34,
+              "label": "18.exf6",
+              "moves": [
+                "exf6",
+                "gxf6"
+              ],
+              "summary": "Immediately recovering the piece on f6 gives Black breathing room; Alekhine instead chooses 18.Bd6 to seal in the king.",
+              "subvariations": [
+                {
+                  "branchStep": 1,
+                  "label": "18...Nxf6",
+                  "moves": [
+                    "Nxf6",
+                    "fxe6+",
+                    "Bxe6"
+                  ],
+                  "summary": "Taking on f6 with the knight walks into 19.fxe6+ Bxe6 with an overwhelming attack (book also notes 20.RxKt ch)."
+                }
+              ]
+            }
+          ],
+          "moveLabel": null
+        }
+      ],
+      "errata": [
+        {
+          "bookPage": 111,
+          "note": "Mainline ends at 21...a4 (ply 42), where White announced mate in 10 ending '30. P-Kt 3!, any; 31. R-R 4 mate'; stored up to 30.g3 in the announced-mate variation because 'any' is not a single SAN move."
+        }
+      ],
+      "chapter": "XI",
+      "chapterTitle": "Local Tournaments, etc.",
+      "year": 1913,
+      "pages": {
+        "from": 110,
+        "to": 111,
+        "pdfPages": [
+          "v3:8",
+          "v3:9"
+        ]
+      }
+    },
+    {
+      "gameNumber": 44,
+      "white": "Alexander Alekhine",
+      "black": "Edward Lasker",
+      "event": "Paris Exhibition Game",
+      "site": "Paris, France",
+      "date": "1913.09.??",
+      "result": "1-0",
+      "opening": "Vienna Game",
+      "eco": "C26",
+      "themes": [
+        "attack",
+        "pawn_structure",
+        "king_safety",
+        "queenside_attack",
+        "space_advantage"
+      ],
+      "overallPlan": "Facing opposite-side castling, White uses 11.f3! to keep options on both wings, then pushes a systematic queenside pawn avalanche once Black castles long.",
+      "strategicSummary": "With 11.f3!, Alekhine forces Lasker to declare his king's shelter. Once Black commits to 11...O-O-O, White clears central defenders with 12.Nd5 and advances his a-, b-, c-, and d-pawns in Philidor-style waves until Black's defensive shield collapses.",
+      "moves": [
+        "e4",
+        "e5",
+        "Nc3",
+        "Nf6",
+        "Bc4",
+        "Bc5",
+        "d3",
+        "Nc6",
+        "Bg5",
+        "d6",
+        "Na4",
+        "Bb6",
+        "Nxb6",
+        "axb6",
+        "Ne2",
+        "Be6",
+        "Nc3",
+        "h6",
+        "Bh4",
+        "Qe7",
+        "f3",
+        "O-O-O",
+        "Nd5",
+        "Bxd5",
+        "Bxd5",
+        "g5",
+        "Bf2",
+        "Nxd5",
+        "exd5",
+        "Nb4",
+        "c4",
+        "f5",
+        "O-O",
+        "h5",
+        "a4",
+        "Rdg8",
+        "a5",
+        "bxa5",
+        "Rxa5",
+        "Na6",
+        "b4",
+        "Kd8",
+        "c5",
+        "Ke8",
+        "d4",
+        "Kf7",
+        "b5",
+        "dxc5",
+        "bxa6",
+        "b6",
+        "d6",
+        "Qxd6",
+        "Qb3+",
+        "Qe6",
+        "d5",
+        "Qd6",
+        "Ra2",
+        "Ra8",
+        "Re1",
+        "Rhd8",
+        "Qd3",
+        "Qf6",
+        "g4",
+        "c6",
+        "gxf5",
+        "Rxd5",
+        "Qe4",
+        "h4",
+        "Qg4",
+        "Qh6",
+        "Be3",
+        "Kf6",
+        "Rg2",
+        "Rg8",
+        "f4",
+        "exf4",
+        "Bxf4"
+      ],
+      "diagrams": [
+        {
+          "index": 1,
+          "bookPage": 112,
+          "pdfPage": 10,
+          "afterPly": 20,
+          "caption": "Position after Black's 10th move (10...Qe7).",
+          "fen": "r3k2r/1pp1qpp1/1pnpbn1p/4p3/2B1P2B/2NP4/PPP2PPP/R2QK2R w KQkq - 2 11"
+        },
+        {
+          "index": 2,
+          "bookPage": 113,
+          "pdfPage": 11,
+          "afterPly": 47,
+          "caption": "Position after White's 24th move (24.b5).",
+          "fen": "6rr/1pp1qk2/n2p4/RPPPpppp/3P4/5P2/5BPP/3Q1RK1 b - - 0 24"
+        },
+        {
+          "index": 3,
+          "bookPage": 113,
+          "pdfPage": 11,
+          "afterPly": 62,
+          "caption": "Position after Black's 31st move (31...Qf6).",
+          "fen": "r2r4/2p2k2/Pp3q2/2pPpppp/8/3Q1P2/R4BPP/4R1K1 w - - 7 32"
+        }
+      ],
+      "annotations": [
+        {
+          "afterPly": 21,
+          "moveLabel": "11.f3!",
+          "bookPage": 112,
+          "pdfPage": 10,
+          "themes": [
+            "pawn_structure",
+            "prophylaxis",
+            "strategy"
+          ],
+          "summary": "Retains freedom on both wings, securing g2 against ...g5-g4 threats while reserving g4 for White if Black castles short."
+        },
+        {
+          "afterPly": 49,
+          "moveLabel": "25.bxa6",
+          "bookPage": 113,
+          "pdfPage": 11,
+          "themes": [
+            "passed_pawn",
+            "queenside_attack"
+          ],
+          "summary": "Winning the trapped knight on a6 creates a dangerous passed a-pawn that anchors White's queenside dominance."
+        },
+        {
+          "afterPly": 77,
+          "moveLabel": "39.Bxf4!",
+          "bookPage": 114,
+          "pdfPage": 12,
+          "themes": [
+            "attack",
+            "king_safety"
+          ],
+          "summary": "Cleaner than 39.Bd4+, removing the kingside shield while avoiding ...Kf7 escape squares."
+        },
+        {
+          "afterPly": 10,
+          "bookPage": 111,
+          "pdfPage": 9,
+          "themes": [
+            "attack",
+            "pawn_structure"
+          ],
+          "summary": "Immediate exchange on f6 gives White nothing because Black holds the open g-file and central pawns.",
+          "variations": [
+            {
+              "branchPly": 10,
+              "label": "6.Nd5",
+              "moves": [
+                "Nd5",
+                "Be6",
+                "Nxf6+",
+                "gxf6",
+                "Bxe6",
+                "fxe6",
+                "Qh5+",
+                "Kd7"
+              ],
+              "summary": "Immediate exchange on f6 gives White nothing because Black holds the open g-file and central pawns."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 20,
+          "bookPage": 111,
+          "pdfPage": 9,
+          "themes": [
+            "attack",
+            "pawn_structure"
+          ],
+          "summary": "Retreating the queen to d2 allows Black to capture the bishop and pick up the e4 pawn with knight.",
+          "variations": [
+            {
+              "branchPly": 20,
+              "label": "11.Qd2",
+              "moves": [
+                "Qd2",
+                "Bxc4",
+                "dxc4",
+                "Nxe4"
+              ],
+              "summary": "Retreating the queen to d2 allows Black to capture the bishop and pick up the e4 pawn with knight."
+            },
+            {
+              "branchPly": 20,
+              "label": "11.O-O",
+              "moves": [
+                "O-O",
+                "g5",
+                "Bg3",
+                "h5"
+              ],
+              "summary": "Castling kingside immediately invites Black's rapid pawn advance with ...g5 and ...h5."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 50,
+          "bookPage": 111,
+          "pdfPage": 9,
+          "themes": [
+            "attack",
+            "pawn_structure"
+          ],
+          "summary": "Keeping the rook on the second rank and doubling on the e/c files was another clean technical path.",
+          "variations": [
+            {
+              "branchPly": 50,
+              "label": "26.Ra2",
+              "moves": [
+                "Ra2",
+                "cxd4",
+                "Qb3",
+                "Kg7",
+                "Rc1"
+              ],
+              "summary": "Playing 26.Ra2 cxd4 27.Qb3 Kg7 28.Rc1 followed by Rac2 was a still simpler winning route.",
+              "subvariations": [
+                {
+                  "branchStep": 1,
+                  "label": "26...exd4",
+                  "moves": [
+                    "exd4",
+                    "Re1",
+                    "Qd6",
+                    "Rae2"
+                  ],
+                  "summary": "Recapturing with the e-pawn allows White to double rooks along the e-file."
+                }
+              ]
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 65,
+          "bookPage": 111,
+          "pdfPage": 9,
+          "themes": [
+            "attack",
+            "pawn_structure"
+          ],
+          "summary": "Capturing toward the center lets White transfer his bishop to g3 and dominate the central dark squares.",
+          "variations": [
+            {
+              "branchPly": 65,
+              "label": "33...cxd5",
+              "moves": [
+                "cxd5",
+                "Bg3",
+                "c4",
+                "Qd1"
+              ],
+              "summary": "Capturing toward the center lets White transfer his bishop to g3 and dominate the central dark squares."
+            }
+          ],
+          "moveLabel": null
+        }
+      ],
+      "errata": [
+        {
+          "bookPage": 112,
+          "note": "In Variation I on 11.Qd2, 11...BxB is illegal because the dark-squared bishops were already traded at move 7 (7.Nxb6 axb6); stored a cleaned note reference without the illegal branch."
+        },
+        {
+          "bookPage": 113,
+          "note": "Diagrams on p. 113 match the game's actual minor pieces/pawns with minor plate differences noted in early editions."
+        }
+      ],
+      "chapter": "XI",
+      "chapterTitle": "Local Tournaments, etc.",
+      "year": 1913,
+      "pages": {
+        "from": 111,
+        "to": 114,
+        "pdfPages": [
+          "v3:9",
+          "v3:10",
+          "v3:11",
+          "v3:12"
+        ]
+      }
+    },
+    {
+      "gameNumber": 45,
+      "white": "Alexander Alekhine",
+      "black": "Emanuel Lasker",
+      "event": "Moscow Exhibition Game",
+      "site": "Moscow, Russia",
+      "date": "1914.03.??",
+      "result": "1/2-1/2",
+      "opening": "Scotch Game (Classical Variation)",
+      "eco": "C45",
+      "themes": [
+        "tactics",
+        "sacrifice",
+        "draw_perpetual",
+        "king_safety"
+      ],
+      "overallPlan": "White steers away from heavy QGD/Ruy Lopez theory into the Scotch, then spots a double bishop-and-rook sacrifice at move 13 to force perpetual check against the World Champion.",
+      "strategicSummary": "After Black allows 10.Bg5 Be6 instead of the cautious 10...c6, Alekhine prepares with 12.Rhe1 and unleashes 13.Bxh6! followed by 14.Rxe6! to secure an immediate draw by perpetual check.",
+      "moves": [
+        "e4",
+        "e5",
+        "Nf3",
+        "Nc6",
+        "d4",
+        "exd4",
+        "Nxd4",
+        "Nf6",
+        "Nc3",
+        "Bb4",
+        "Nxc6",
+        "bxc6",
+        "Bd3",
+        "d5",
+        "exd5",
+        "cxd5",
+        "O-O",
+        "O-O",
+        "Bg5",
+        "Be6",
+        "Qf3",
+        "Be7",
+        "Rfe1",
+        "h6",
+        "Bxh6",
+        "gxh6",
+        "Rxe6",
+        "fxe6",
+        "Qg3+",
+        "Kh8",
+        "Qg6"
+      ],
+      "diagrams": [
+        {
+          "index": 1,
+          "bookPage": 114,
+          "pdfPage": 12,
+          "afterPly": 24,
+          "caption": "Position after Black's 12th move (12...h6).",
+          "fen": "r2q1rk1/p1p1bpp1/4bn1p/3p2B1/8/2NB1Q2/PPP2PPP/R3R1K1 w - - 0 13"
+        }
+      ],
+      "annotations": [
+        {
+          "afterPly": 20,
+          "moveLabel": "10...Be6",
+          "bookPage": 114,
+          "pdfPage": 12,
+          "themes": [
+            "opening_theory"
+          ],
+          "summary": "Allowing White to target the kingside dark squares directly; 10...c6 is the safer standard reply.",
+          "variations": [
+            {
+              "branchPly": 20,
+              "label": "11.Bxf6",
+              "moves": [
+                "Bxf6",
+                "Qxf6",
+                "Nxd5",
+                "Bxd5",
+                "Qh5",
+                "g6",
+                "Qxd5",
+                "Qxb2",
+                "Rab1"
+              ],
+              "summary": "Winning a pawn temporarily leads only to rapid simplifications and equality."
+            }
+          ]
+        },
+        {
+          "afterPly": 25,
+          "moveLabel": "13.Bxh6!",
+          "bookPage": 114,
+          "pdfPage": 12,
+          "themes": [
+            "sacrifice",
+            "draw_perpetual"
+          ],
+          "summary": "Forces open the g-file so White follows up with the exchange sacrifice on e6 and traps Black's king on h8."
+        },
+        {
+          "afterPly": 29,
+          "bookPage": 114,
+          "pdfPage": 12,
+          "themes": [
+            "tactics",
+            "sacrifice"
+          ],
+          "summary": "Stepping toward f7 walks into an instant mate on g6.",
+          "variations": [
+            {
+              "branchPly": 29,
+              "label": "15...Kf7",
+              "moves": [
+                "Kf7",
+                "Qg6#"
+              ],
+              "summary": "Stepping toward f7 walks into an instant mate on g6."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 31,
+          "bookPage": 114,
+          "pdfPage": 12,
+          "themes": [
+            "tactics",
+            "sacrifice"
+          ],
+          "summary": "Black cannot prevent perpetual check even by bringing the queen to e8.",
+          "variations": [
+            {
+              "branchPly": 31,
+              "label": "16...Qe8",
+              "moves": [
+                "Qe8",
+                "Qxh6+",
+                "Kg8",
+                "Qg5+"
+              ],
+              "summary": "Black cannot prevent perpetual check even by bringing the queen to e8."
+            }
+          ],
+          "moveLabel": null
+        }
+      ],
+      "chapter": "XI",
+      "chapterTitle": "Local Tournaments, etc.",
+      "year": 1914,
+      "pages": {
+        "from": 114,
+        "to": 115,
+        "pdfPages": [
+          "v3:12",
+          "v3:13"
+        ]
+      }
+    },
+    {
+      "gameNumber": 46,
+      "white": "Alexander Alekhine",
+      "black": "Nikolai Zubareff",
+      "event": "Moscow Championship (Brilliancy Prize)",
+      "site": "Moscow, Russia",
+      "date": "1916.??.??",
+      "result": "1-0",
+      "opening": "Nimzo-Indian Defense",
+      "eco": "E20",
+      "themes": [
+        "center_control",
+        "attack",
+        "bishop_pair",
+        "sacrifice",
+        "diagonal"
+      ],
+      "overallPlan": "White exploits Black's slow queenside fianchetto by seizing a commanding pawn center with 5.e4 and 15.d5, then opening the long a1-h8 diagonal for a decisive king-side rook sacrifice.",
+      "strategicSummary": "Zubareff plays 4...b6 instead of contesting the center with 4...c5, allowing Alekhine to build a massive center, seal in Black's queenside, re-route the dark-squared bishop to b2, and finish with 23.Rxh7+!.",
+      "moves": [
+        "d4",
+        "Nf6",
+        "c4",
+        "e6",
+        "Nc3",
+        "Bb4",
+        "Qc2",
+        "b6",
+        "e4",
+        "Bb7",
+        "Bd3",
+        "Bxc3+",
+        "bxc3",
+        "d6",
+        "Ne2",
+        "Nbd7",
+        "O-O",
+        "O-O",
+        "f4",
+        "h6",
+        "Ng3",
+        "Qe7",
+        "Qe2",
+        "Rae8",
+        "Ba3",
+        "c5",
+        "Rae1",
+        "Kh8",
+        "d5",
+        "Ng8",
+        "e5",
+        "g6",
+        "Qd2",
+        "exd5",
+        "cxd5",
+        "dxe5"
+      ],
+      "diagrams": [
+        {
+          "index": 1,
+          "bookPage": 115,
+          "pdfPage": 13,
+          "afterPly": 33,
+          "caption": "Position after White's 17th move (17.Qd2).",
+          "fen": "4rrnk/pb1nqp2/1p1pp1pp/2pPP3/2P2P2/B1PB2N1/P2Q2PP/4RRK1 b - - 1 17"
+        },
+        {
+          "index": 2,
+          "bookPage": 116,
+          "pdfPage": 14,
+          "caption": "Position after Black's 22nd move (22...Qh4).",
+          "fen": "4rr2/pb1n1p1k/1p2P1pp/2pPp3/6nq/2PB2N1/PB1Q2PP/4RRK1 w - - 0 23"
+        }
+      ],
+      "annotations": [
+        {
+          "afterPly": 8,
+          "moveLabel": "4...b6",
+          "bookPage": 115,
+          "pdfPage": 13,
+          "themes": [
+            "center_control"
+          ],
+          "summary": "A premature fianchetto that concedes e4; 4...c5 was required to contest the central dark squares."
+        },
+        {
+          "afterPly": 29,
+          "moveLabel": "15.d5!",
+          "bookPage": 115,
+          "pdfPage": 13,
+          "themes": [
+            "space_advantage",
+            "tactics"
+          ],
+          "summary": "Fixes the central pawns because 15...exd5 runs into 16.Nf5."
+        },
+        {
+          "afterPly": 11,
+          "bookPage": 115,
+          "pdfPage": 13,
+          "themes": [
+            "center_control",
+            "attack"
+          ],
+          "summary": "Fighting in the center before giving up the bishop leaves White's position clearly better anyway.",
+          "variations": [
+            {
+              "branchPly": 11,
+              "label": "6...d5",
+              "moves": [
+                "d5",
+                "cxd5",
+                "exd5",
+                "e5",
+                "Ne4",
+                "Ne2"
+              ],
+              "summary": "Fighting in the center before giving up the bishop leaves White's position clearly better anyway."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 24,
+          "bookPage": 115,
+          "pdfPage": 13,
+          "themes": [
+            "center_control",
+            "attack"
+          ],
+          "summary": "Playing 13.Ba3 a move earlier would invite counterplay with ...Ng4 against e3.",
+          "variations": [
+            {
+              "branchPly": 24,
+              "label": "13.Ba3 (earlier)",
+              "moves": [
+                "Ba3",
+                "Ng4"
+              ],
+              "summary": "Playing 13.Ba3 a move earlier would invite counterplay with ...Ng4 against e3."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 33,
+          "bookPage": 115,
+          "pdfPage": 13,
+          "themes": [
+            "center_control",
+            "attack"
+          ],
+          "summary": "Capturing e5 first with the d-pawn loses immediately to 19.e6! ripping open the diagonal.",
+          "variations": [
+            {
+              "branchPly": 33,
+              "label": "17...dxe5",
+              "moves": [
+                "dxe5",
+                "fxe5",
+                "exd5",
+                "e6",
+                "fxe6",
+                "Bxg6"
+              ],
+              "summary": "Capturing e5 first with the d-pawn loses immediately to 19.e6! and 20.Bxg6 ripping open the kingside."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 36,
+          "moveLabel": null,
+          "bookPage": 116,
+          "pdfPage": 14,
+          "themes": [
+            "center_control",
+            "attack"
+          ],
+          "summary": "From the p. 116 diagram after 22...Qh4: White sacrifices the rook on f7 (printed 23.R x P ch) and drives Black's king to g5 into a decisive check.",
+          "variations": [
+            {
+              "startFen": "4rr2/pb1n1p1k/1p2P1pp/2pPp3/6nq/2PB2N1/PB1Q2PP/4RRK1 w - - 0 23",
+              "label": "23.Rxf7+! (Post-Diagram Finish)",
+              "moves": [
+                "Rxf7+",
+                "Rxf7",
+                "Bxg6+",
+                "Kxg6",
+                "Qd3+",
+                "Kg5",
+                "Bc1+"
+              ],
+              "summary": "From the p. 116 diagram after 22...Qh4: White sacrifices the rook on f7 (printed 23.R x P ch) and drives Black's king to g5 into a decisive check."
+            }
+          ]
+        }
+      ],
+      "errata": [
+        {
+          "bookPage": 116,
+          "note": "Source prints both 10. P-B 4 (f4, verified on the p. 115 diagram) and 19. P-B 4! (already on f4). Mainline is validated cleanly through 18...dxe5 (ply 36); also note move 23 prints '23. R x P ch' = 23.Rxf7+ (not Rxh7+), verified from the p. 116 diagram."
+        }
+      ],
+      "chapter": "XI",
+      "chapterTitle": "Local Tournaments, etc.",
+      "year": 1916,
+      "pages": {
+        "from": 115,
+        "to": 116,
+        "pdfPages": [
+          "v3:13",
+          "v3:14"
+        ]
+      }
+    },
+    {
+      "gameNumber": 47,
+      "white": "Alexander Evenssohn",
+      "black": "Alexander Alekhine",
+      "event": "Kiev Exhibition Game",
+      "site": "Kiev",
+      "date": "1916.05.??",
+      "result": "0-1",
+      "opening": "Philidor Defense",
+      "eco": "C41",
+      "themes": [
+        "blockade",
+        "outpost",
+        "file_control",
+        "bad_bishop",
+        "endgame"
+      ],
+      "overallPlan": "Black seizes the d4 outpost, exchanges off all defending knights so White is saddled with a completely hemmed-in bishop on f2/e1, and infiltrates down the d-file.",
+      "strategicSummary": "Once White needlessly retreats 11.Ne1 instead of fighting for the d-file, Alekhine plants knights on d4 and f4, forces minor-piece trades leaving White with a dead bishop behind pawns on dark/light blocks, locks the kingside with ...h5 and ...g4, and penetrates cleanly with ...Rd3 and ...Qc6.",
+      "moves": [
+        "e4",
+        "e5",
+        "Nf3",
+        "d6",
+        "d4",
+        "Nf6",
+        "Nc3",
+        "Nbd7",
+        "Bc4",
+        "Be7",
+        "O-O",
+        "O-O",
+        "dxe5",
+        "dxe5",
+        "Bg5",
+        "c6",
+        "a4",
+        "Qc7",
+        "Qe2",
+        "Nc5",
+        "Ne1",
+        "Ne6",
+        "Be3",
+        "Nd4",
+        "Qd1",
+        "Rd8",
+        "Nd3",
+        "Be6",
+        "Bxe6",
+        "Nxe6",
+        "Qe1",
+        "Rd7",
+        "f3",
+        "Rad8",
+        "Bf2",
+        "Nh5",
+        "Ne2",
+        "c5",
+        "b3",
+        "Nhf4",
+        "Nexf4",
+        "Nxf4",
+        "Nxf4",
+        "exf4",
+        "c3",
+        "Qe5",
+        "Ra2",
+        "Rd3",
+        "Rc2",
+        "b6",
+        "Qc1",
+        "Qe6",
+        "Qb1",
+        "Bf6",
+        "b4",
+        "c4",
+        "Qc1",
+        "g5",
+        "h3",
+        "Be5",
+        "Qa1",
+        "h5",
+        "a5",
+        "g4",
+        "axb6",
+        "axb6",
+        "Bh4",
+        "f6",
+        "Be1",
+        "g3",
+        "Qa7",
+        "Qc6",
+        "Qa3",
+        "b5",
+        "Qb2",
+        "Qb6+",
+        "Kh1",
+        "Rd1",
+        "Rc1",
+        "Qe3",
+        "Ra1",
+        "Rxa1",
+        "Qxa1",
+        "Qe2",
+        "Rg1",
+        "Rd1",
+        "Qa8+",
+        "Kg7",
+        "Qa7+",
+        "Kg6",
+        "Qe7",
+        "Qxe1",
+        "Qe8+",
+        "Kg5",
+        "Qg8+",
+        "Kh4"
+      ],
+      "diagrams": [
+        {
+          "index": 1,
+          "bookPage": 116,
+          "pdfPage": 14,
+          "afterPly": 10,
+          "caption": "Position after Black's 5th move (5...Be7).",
+          "fen": "r1bqk2r/pppnbppp/3p1n2/4p3/2BPP3/2N2N2/PPP2PPP/R1BQK2R w KQkq - 5 6"
+        },
+        {
+          "index": 2,
+          "bookPage": 118,
+          "pdfPage": 16,
+          "afterPly": 39,
+          "caption": "Position after White's 20th move (20.b3).",
+          "fen": "3r2k1/ppqrbppp/4n3/2p1p2n/P3P3/1P1N1P2/2P1NBPP/R3QRK1 b - - 0 20"
+        },
+        {
+          "index": 3,
+          "bookPage": 118,
+          "pdfPage": 16,
+          "afterPly": 66,
+          "caption": "Position after Black's 33rd move (33...axb6; printed diagram shows 33...gxf3).",
+          "fen": "3r2k1/p4p2/1P2q3/4b2p/1Pp1Pp2/2Pr1p1P/2R2BP1/Q4RK1 w - - 0 34",
+          "printerErratum": "Diagram 3 on p. 118 shows 33...gxf3 (black pawn on f3, a7 pawn still present, White pawn on b6), whereas moves 35...g3, 36.Qa7, 37...b5 and Diagram 4 on p. 119 confirm 33...axb6 (printed 33...P x Kt P)."
+        },
+        {
+          "index": 4,
+          "bookPage": 119,
+          "pdfPage": 17,
+          "afterPly": 79,
+          "caption": "Position after White's 40th move (40.Rc1).",
+          "fen": "3r2k1/7p/1q3p2/1p2b2p/1P2Pp2/2Pr1PpP/1QR3P1/2RrB2K b - - 2 40",
+          "printerErratum": "Book diagram 4 on p. 119 reflects 35...g3, 36.Qa7, 37...b5, with a minor plate difference showing f1 rook alongside c1/d1."
+        }
+      ],
+      "annotations": [
+        {
+          "afterPly": 21,
+          "moveLabel": "11.Ne1",
+          "bookPage": 117,
+          "pdfPage": 15,
+          "themes": [
+            "rook_coordination",
+            "strategy"
+          ],
+          "summary": "Retreating the knight to the first rank severs the connection between White's rooks; 11.Rad1 was needed to contest the d-file."
+        },
+        {
+          "afterPly": 40,
+          "moveLabel": "20...Nhf4!",
+          "bookPage": 118,
+          "pdfPage": 16,
+          "themes": [
+            "blockade",
+            "bad_bishop"
+          ],
+          "summary": "Initiates the decisive trades that saddle White with an immobile dark-squared bishop on f2."
+        },
+        {
+          "afterPly": 86,
+          "moveLabel": "43...Rd1!",
+          "bookPage": 119,
+          "pdfPage": 17,
+          "themes": [
+            "tactics",
+            "back_rank"
+          ],
+          "summary": "Seals the blockade and leaves White helpless against promotion and mating threats without allowing perpetual check."
+        },
+        {
+          "afterPly": 10,
+          "bookPage": 116,
+          "pdfPage": 14,
+          "themes": [
+            "blockade",
+            "outpost"
+          ],
+          "summary": "Exchanging queens early offers White an endgame edge thanks to queenside castling and open d-file control.",
+          "variations": [
+            {
+              "branchPly": 10,
+              "label": "6.dxe5",
+              "moves": [
+                "dxe5",
+                "Nxe5",
+                "Nxe5",
+                "dxe5",
+                "Qxd8+",
+                "Bxd8",
+                "Bg5"
+              ],
+              "summary": "Exchanging queens early offers White an endgame edge thanks to queenside castling and open d-file control."
+            },
+            {
+              "branchPly": 10,
+              "label": "6.Bxf7+",
+              "moves": [
+                "Bxf7+",
+                "Kxf7",
+                "Ng5+",
+                "Kg8",
+                "Ne6",
+                "Qe8",
+                "Nxc7",
+                "Qg6",
+                "Nxa8",
+                "Qxg2",
+                "Rf1",
+                "exd4",
+                "Qxd4",
+                "Ne5"
+              ],
+              "summary": "The sacrifice on f7 is unsound because Black develops a crushing attack on the weakened white squares."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 24,
+          "bookPage": 116,
+          "pdfPage": 14,
+          "themes": [
+            "blockade",
+            "outpost"
+          ],
+          "summary": "Eliminating the d4 knight creates a strong passed pawn and dark-square targets on White's kingside.",
+          "variations": [
+            {
+              "branchPly": 24,
+              "label": "13.Bxd4",
+              "moves": [
+                "Bxd4",
+                "exd4",
+                "Nd1",
+                "Bd6",
+                "g3",
+                "Bh3",
+                "Ng2",
+                "Rae8"
+              ],
+              "summary": "Eliminating the d4 knight creates a strong passed pawn and dark-square targets on White's kingside."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 38,
+          "bookPage": 116,
+          "pdfPage": 14,
+          "themes": [
+            "blockade",
+            "outpost"
+          ],
+          "summary": "Leaving knights on the board gives Black an even sharper infiltration on f4.",
+          "variations": [
+            {
+              "branchPly": 38,
+              "label": "20.Nc3",
+              "moves": [
+                "Nc3",
+                "c4",
+                "Nd5",
+                "Qd6",
+                "Nc1",
+                "Nhf4"
+              ],
+              "summary": "Leaving knights on the board gives Black an even sharper infiltration on f4."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 66,
+          "bookPage": 118,
+          "pdfPage": 16,
+          "themes": [
+            "tactics",
+            "attack"
+          ],
+          "summary": "Capturing on g4 allows Black to force open the kingside against White's bishop.",
+          "variations": [
+            {
+              "branchPly": 66,
+              "label": "34.hxg4",
+              "moves": [
+                "hxg4",
+                "hxg4",
+                "fxg4",
+                "Qxg4"
+              ],
+              "summary": "Note from p. 118 assumes 33...gxf3 (34.hxg4 hxg4 35.fxg4 Qxg4 36.Bxf3); after 33...axb6, capturing on g4 still opens lines for Black's pieces."
+            }
+          ],
+          "moveLabel": null
+        }
+      ],
+      "errata": [
+        {
+          "bookPage": 118,
+          "note": "Move 33 prints 33...P x Kt P (33...axb6, capturing White's b6 pawn, matching 35...g3, 36.Qa7, 37...b5 and the p. 119 diagram), while the p. 118 diagram instead depicts 33...gxf3."
+        }
+      ],
+      "chapter": "XI",
+      "chapterTitle": "Local Tournaments, etc.",
+      "year": 1916,
+      "pages": {
+        "from": 116,
+        "to": 119,
+        "pdfPages": [
+          "v3:14",
+          "v3:15",
+          "v3:16",
+          "v3:17"
+        ]
+      }
+    },
+    {
+      "gameNumber": 48,
+      "white": "Alexander Alekhine",
+      "black": "M. Feldt",
+      "event": "Tarnopol Military Hospital Blindfold Exhibition",
+      "site": "Tarnopol",
+      "date": "1916.09.??",
+      "result": "1-0",
+      "opening": "French Defense (Rubinstein Variation)",
+      "eco": "C10",
+      "themes": [
+        "tactics",
+        "sacrifice",
+        "smothered_mate",
+        "dark_square_weakness",
+        "attack"
+      ],
+      "overallPlan": "White turns Black's premature 5...f5 weakening of e5 and e6 into a deadly outpost and strikes with a double queen-and-knight sacrifice finishing in a smothered or corner mate.",
+      "strategicSummary": "Playing blindfold at a military hospital, Alekhine immediately anchors knights on e5 and f3 after 5...f5, waits for the careless 14...c5, and executes 15.Nf7! Kxf7 16.Qxe6+! to announce mate in two.",
+      "moves": [
+        "e4",
+        "e6",
+        "d4",
+        "d5",
+        "Nc3",
+        "Nf6",
+        "exd5",
+        "Nxd5",
+        "Ne4",
+        "f5",
+        "Ng5",
+        "Be7",
+        "N5f3",
+        "c6",
+        "Ne5",
+        "O-O",
+        "Ngf3",
+        "b6",
+        "Bd3",
+        "Bb7",
+        "O-O",
+        "Re8",
+        "c4",
+        "Nf6",
+        "Bf4",
+        "Nbd7",
+        "Qe2",
+        "c5",
+        "Nf7",
+        "Kxf7",
+        "Qxe6+",
+        "Kg6"
+      ],
+      "diagrams": [
+        {
+          "index": 1,
+          "bookPage": 120,
+          "pdfPage": 18,
+          "afterPly": 28,
+          "caption": "Position after Black's 14th move (14...c5).",
+          "fen": "r2qr1k1/pb1nb1pp/1p2pn2/2p1Np2/2PP1B2/3B1N2/PP2QPPP/R4RK1 w - - 0 15"
+        }
+      ],
+      "annotations": [
+        {
+          "afterPly": 10,
+          "moveLabel": "5...f5",
+          "bookPage": 119,
+          "pdfPage": 17,
+          "themes": [
+            "pawn_structure",
+            "weak_squares"
+          ],
+          "summary": "Creates an irreparable hole on e5 and e6; 5...Nd7 followed by ...c5 was sound."
+        },
+        {
+          "afterPly": 29,
+          "moveLabel": "15.Nf7!",
+          "bookPage": 120,
+          "pdfPage": 18,
+          "themes": [
+            "sacrifice",
+            "smothered_mate"
+          ],
+          "summary": "Decoys Black's king onto f7 and e6 where Ng5# or g4! Nh4# decides immediately."
+        },
+        {
+          "afterPly": 21,
+          "bookPage": 119,
+          "pdfPage": 17,
+          "themes": [
+            "tactics",
+            "sacrifice"
+          ],
+          "summary": "Blocking the bishop's diagonal on d7 allows White to drive the d5 knight back and plant pieces on f7 and e6.",
+          "variations": [
+            {
+              "branchPly": 21,
+              "label": "11...Nd7",
+              "moves": [
+                "Nd7",
+                "c4",
+                "N5f6",
+                "Ng5"
+              ],
+              "summary": "Blocking the bishop's diagonal on d7 allows White to drive the d5 knight back and plant pieces on f7 and e6."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 31,
+          "bookPage": 119,
+          "pdfPage": 17,
+          "themes": [
+            "tactics",
+            "sacrifice"
+          ],
+          "summary": "Accepting the queen sacrifice walks into immediate smothered mate.",
+          "variations": [
+            {
+              "branchPly": 31,
+              "label": "16...Kxe6",
+              "moves": [
+                "Kxe6",
+                "Ng5#"
+              ],
+              "summary": "Accepting the queen sacrifice walks into immediate smothered mate."
+            },
+            {
+              "branchPly": 31,
+              "label": "16...Kf8",
+              "moves": [
+                "Kf8",
+                "Ng5"
+              ],
+              "summary": "Retreating to f8 loses on the spot to threats of Qf7# and Nxh7+."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 32,
+          "bookPage": 119,
+          "pdfPage": 17,
+          "themes": [
+            "tactics",
+            "sacrifice"
+          ],
+          "summary": "Alekhine announced forced mate in two moves starting with 17.g4!.",
+          "variations": [
+            {
+              "branchPly": 32,
+              "label": "17.g4! (Announced Mate in Two)",
+              "moves": [
+                "g4",
+                "Be4",
+                "Nh4#"
+              ],
+              "summary": "Alekhine announced forced mate in two moves starting with 17.g4!."
+            }
+          ],
+          "moveLabel": null
+        }
+      ],
+      "errata": [
+        {
+          "bookPage": 120,
+          "note": "In the concluding text for the announced mate in two, the book misprints the final move number as '19. Kt-R 4, mate' instead of '18. Kt-R 4, mate' (17.g4! Be4 18.Nh4#)."
+        }
+      ],
+      "chapter": "XI",
+      "chapterTitle": "Local Tournaments, etc.",
+      "year": 1916,
+      "pages": {
+        "from": 119,
+        "to": 120,
+        "pdfPages": [
+          "v3:17",
+          "v3:18"
+        ]
+      }
+    },
+    {
+      "gameNumber": 49,
+      "white": "Alexander Alekhine",
+      "black": "M. Gofmeister",
+      "event": "Odds Game Conclusion",
+      "site": "Petrograd, Russia",
+      "date": "1917.12.??",
+      "result": "1-0",
+      "opening": "Endgame Study / Odds Game",
+      "eco": "A00",
+      "startFen": "k1rb4/p3r3/Pp1Q1p2/3P2q1/P1P5/1R4nP/6PK/2R3B1 w - - 0 1",
+      "themes": [
+        "passed_pawn",
+        "endgame",
+        "tactics",
+        "promotion",
+        "sacrifice"
+      ],
+      "overallPlan": "Facing both perpetual check and back-rank infiltration, White ignores material entirely—even sacrificing the queen—so his connected queenside passed pawns force promotion.",
+      "strategicSummary": "Alekhine pushes 1.c5! and sacrifices his queen on d6 with 3.b6! because Black's rook and king are paralyzed against the three connected passed pawns rolling to b7 and d7.",
+      "moves": [
+        "c5",
+        "b5",
+        "axb5",
+        "Ne4",
+        "b6",
+        "Nxd6",
+        "cxd6",
+        "Rec7",
+        "b7+",
+        "Kb8",
+        "d7",
+        "Qg3+",
+        "Kh1"
+      ],
+      "diagrams": [
+        {
+          "index": 1,
+          "bookPage": 120,
+          "pdfPage": 18,
+          "isInitial": true,
+          "caption": "Initial Position (with p. 120 diagram printer errata noted).",
+          "fen": "k1rb4/p3r3/Pp1Q1p2/3P2q1/P1P5/1R4nP/6PK/2R3B1 w - - 0 1",
+          "printerErratum": "The printed Initial Position diagram on p. 120 (and Position after 1...P-Kt 4 on p. 121) omits Black's e7 rook and White's d5 pawn, prints a6 as a5, and omits Black's b6 pawn; verified ground-truth position matches all variations and both the p. 121 (after move 4) and p. 122 (final) diagrams."
+        },
+        {
+          "index": 2,
+          "bookPage": 121,
+          "pdfPage": 19,
+          "afterPly": 7,
+          "caption": "Position after White's 4th move (4.cxd6).",
+          "fen": "k1rb4/p3r3/PP1P1p2/3P2q1/P7/1R5P/6PK/2R3B1 b - - 0 4",
+          "printerErratum": "White a4 pawn already advanced/captured via 2.axb5; p. 121 diagram shows clean 6th rank PP1P1p2 without a4, matching final position."
+        },
+        {
+          "index": 3,
+          "bookPage": 122,
+          "pdfPage": 20,
+          "afterPly": 13,
+          "caption": "Final Position after White's 7th move (7.Kh1).",
+          "fen": "1krb4/pPrP4/P4p2/3P4/8/1R4qP/6P1/2R3BK b - - 2 7"
+        }
+      ],
+      "annotations": [
+        {
+          "afterPly": 1,
+          "moveLabel": "1.c5!",
+          "bookPage": 120,
+          "pdfPage": 18,
+          "themes": [
+            "passed_pawn",
+            "initiative"
+          ],
+          "summary": "Ignores both Black's ...Nf1+ perpetual check and ...Ne4 threats in order to break open the queenside pawns.",
+          "variations": [
+            {
+              "branchPly": 1,
+              "label": "1...Nf1+",
+              "moves": [
+                "Nf1+",
+                "Kh1",
+                "Ng3+",
+                "Rxg3",
+                "Qxg3",
+                "cxb6",
+                "Qxd6",
+                "Rxc8+",
+                "Qb8",
+                "b7+",
+                "Rxb7",
+                "axb7+",
+                "Kxb7",
+                "Rxb8+",
+                "Kxb8",
+                "Bf2",
+                "f5",
+                "g3"
+              ],
+              "summary": "Attempting perpetual check allows White to liquidate into an easily won extra-pawn bishop ending."
+            },
+            {
+              "branchPly": 1,
+              "label": "1...Ne4",
+              "moves": [
+                "Ne4",
+                "cxb6",
+                "Nxd6",
+                "b7+",
+                "Rxb7",
+                "axb7+",
+                "Nxb7",
+                "Rxc8#"
+              ],
+              "summary": "Taking the queen directly loses at once to the connected b-pawn check and back-rank mate."
+            }
+          ]
+        },
+        {
+          "afterPly": 5,
+          "moveLabel": "3.b6!",
+          "bookPage": 121,
+          "pdfPage": 19,
+          "themes": [
+            "sacrifice",
+            "passed_pawn"
+          ],
+          "summary": "Deliberately leaves the queen on d6 en prise: once recaptured by 4.cxd6, the united passed pawns are unstoppable."
+        },
+        {
+          "afterPly": 3,
+          "bookPage": 120,
+          "pdfPage": 18,
+          "themes": [
+            "passed_pawn",
+            "endgame"
+          ],
+          "summary": "Even after Black captures on c1, White's connected pawns on the 6th and 7th ranks crush all resistance.",
+          "variations": [
+            {
+              "branchPly": 3,
+              "label": "2...Nf1+",
+              "moves": [
+                "Nf1+",
+                "Kh1",
+                "Ng3+",
+                "Rxg3",
+                "Qxg3",
+                "b6",
+                "Qxd6",
+                "cxd6",
+                "Rxc1"
+              ],
+              "summary": "Even after Black captures on c1, White's connected pawns on the 6th and 7th ranks crush all resistance."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 7,
+          "bookPage": 120,
+          "pdfPage": 18,
+          "themes": [
+            "passed_pawn",
+            "endgame"
+          ],
+          "summary": "Captures on c1 fail to b7+ and Bxa7+ forcing mate.",
+          "variations": [
+            {
+              "branchPly": 7,
+              "label": "4...Rxc1",
+              "moves": [
+                "Rxc1",
+                "b7+",
+                "Rxb7",
+                "axb7+",
+                "Kb8",
+                "Bxa7+"
+              ],
+              "summary": "Captures on c1 fail to b7+ and Bxa7+ forcing mate."
+            },
+            {
+              "branchPly": 7,
+              "label": "4...Bc7",
+              "moves": [
+                "Bc7",
+                "b7+",
+                "Kb8",
+                "dxc7+",
+                "Rexc7",
+                "Rxc7",
+                "Rxc7",
+                "Bxa7+"
+              ],
+              "summary": "Trying to block on c7 still loses the endgame after dxc7+ and Rxa7/Bxa7+."
+            }
+          ],
+          "moveLabel": null
+        }
+      ],
+      "errata": [
+        {
+          "bookPage": 120,
+          "note": "Initial Position diagram on p. 120 and Diagram 2 on p. 121 omit Black's e7 rook, White's d5 pawn, and show White's a6 pawn on a5 and omit Black's b6 pawn. Replay of all printed variations and p. 121/p. 122 diagrams establishes startFen k1rb4/p3r3/Pp1Q1p2/3P2q1/P1P5/1R4nP/6PK/2R3B1 w - - 0 1."
+        }
+      ],
+      "chapter": "XI",
+      "chapterTitle": "Local Tournaments, etc.",
+      "year": 1917,
+      "pages": {
+        "from": 120,
+        "to": 122,
+        "pdfPages": [
+          "v3:18",
+          "v3:19",
+          "v3:20"
+        ]
+      }
+    },
+    {
+      "gameNumber": 50,
+      "white": "Alexander Alekhine",
+      "black": "Abram Rabinovitch",
+      "event": "Moscow Masters Triangular Tournament",
+      "site": "Moscow, Russia",
+      "date": "1918.05.??",
+      "result": "1-0",
+      "opening": "Petroff's Defense",
+      "eco": "C42",
+      "themes": [
+        "tactics",
+        "sacrifice",
+        "queen_vs_pieces",
+        "attack",
+        "innovation"
+      ],
+      "overallPlan": "White tests a Petroff Defense theoretical novelty (10.O-O) and follows with 12.b3! and 13.Bb2!, sacrificing the exchange to launch a relentless attack against Black's exposed king.",
+      "strategicSummary": "When Black accepts the bait on b2, Alekhine tears open the kingside on f7, wins Black's queen for three minor pieces with an extra pawn, and hunts the stranded Black king to the center before mating with 29.c5#.",
+      "moves": [
+        "e4",
+        "e5",
+        "Nf3",
+        "Nf6",
+        "Nxe5",
+        "d6",
+        "Nf3",
+        "Nxe4",
+        "Nc3",
+        "d5",
+        "Qe2",
+        "Be7",
+        "Nxe4",
+        "dxe4",
+        "Qxe4",
+        "O-O",
+        "Bc4",
+        "Bd6",
+        "O-O",
+        "Re8",
+        "Qd3",
+        "Nc6",
+        "b3",
+        "Qf6",
+        "Bb2",
+        "Qxb2",
+        "Ng5",
+        "Be6",
+        "Bxe6",
+        "fxe6",
+        "Qxh7+",
+        "Kf8",
+        "Rae1",
+        "Qf6",
+        "Qh5",
+        "Kg8",
+        "Re3",
+        "Bf4",
+        "Qh7+",
+        "Kf8",
+        "Qh8+",
+        "Ke7",
+        "Rxe6+",
+        "Qxe6",
+        "Qxg7+",
+        "Kd6",
+        "Nxe6",
+        "Rxe6",
+        "d4",
+        "Rae8",
+        "c4",
+        "R8e7",
+        "Qf8",
+        "Re4",
+        "Qf5",
+        "Rxd4",
+        "c5#"
+      ],
+      "diagrams": [
+        {
+          "index": 1,
+          "bookPage": 122,
+          "pdfPage": 20,
+          "afterPly": 18,
+          "caption": "Position after Black's 9th move (9...Bd6).",
+          "fen": "rnbq1rk1/ppp2ppp/3b4/8/2B1Q3/5N2/PPPP1PPP/R1B1K2R w KQ - 1 10"
+        },
+        {
+          "index": 2,
+          "bookPage": 123,
+          "pdfPage": 21,
+          "afterPly": 24,
+          "caption": "Position after Black's 12th move (12...Qf6).",
+          "fen": "r1b1r1k1/ppp2ppp/2nb1q2/8/2B5/1P1Q1N2/P1PP1PPP/R1B2RK1 w - - 3 13"
+        },
+        {
+          "index": 3,
+          "bookPage": 123,
+          "pdfPage": 21,
+          "afterPly": 32,
+          "caption": "Position after Black's 16th move (16...Kf8).",
+          "fen": "r3rk2/ppp3pQ/2nbp3/6N1/8/1P6/PqPP1PPP/R4RK1 w - - 1 17"
+        },
+        {
+          "index": 4,
+          "bookPage": 124,
+          "pdfPage": 22,
+          "afterPly": 54,
+          "caption": "Position after Black's 27th move (27...Re4).",
+          "fen": "5Q2/ppp1r3/2nk4/8/2PPrb2/1P6/P4PPP/5RK1 w - - 3 28"
+        }
+      ],
+      "annotations": [
+        {
+          "afterPly": 19,
+          "moveLabel": "10.O-O",
+          "bookPage": 122,
+          "pdfPage": 20,
+          "themes": [
+            "innovation",
+            "opening_theory"
+          ],
+          "summary": "Alekhine's novelty improves on 10.d4 by tucking the king away before setting up the b3-Bb2 sacrifice."
+        },
+        {
+          "afterPly": 25,
+          "moveLabel": "13.Bb2!",
+          "bookPage": 123,
+          "pdfPage": 21,
+          "themes": [
+            "sacrifice",
+            "attack"
+          ],
+          "summary": "Sacrifices a piece to lure Black's queen away from the kingside and expose f7.",
+          "variations": [
+            {
+              "branchPly": 25,
+              "label": "13...Qh6",
+              "moves": [
+                "Qh6",
+                "Rfe1",
+                "Bg4",
+                "h3",
+                "Bxf3",
+                "Qxf3",
+                "Rxe1+",
+                "Rxe1"
+              ],
+              "summary": "Declining the b2 bishop leaves Black fighting for compensation with no initiative."
+            }
+          ]
+        },
+        {
+          "afterPly": 55,
+          "moveLabel": "28.Qf5!",
+          "bookPage": 124,
+          "pdfPage": 22,
+          "themes": [
+            "tactics",
+            "checkmate_patterns"
+          ],
+          "summary": "Forces material gain; after 28...Rxd4 29.c5# ended the game."
+        },
+        {
+          "afterPly": 18,
+          "bookPage": 122,
+          "pdfPage": 20,
+          "themes": [
+            "tactics",
+            "sacrifice"
+          ],
+          "summary": "Black equalizes comfortably after 12...Nc6 against the older 10.d4, motivating Alekhine's 10.O-O innovation.",
+          "variations": [
+            {
+              "branchPly": 18,
+              "label": "10.d4 (Leonhardt–Schlechter)",
+              "moves": [
+                "d4",
+                "Re8",
+                "Ne5",
+                "Bxe5",
+                "dxe5",
+                "Nc6",
+                "Bf4",
+                "Qh4",
+                "O-O-O",
+                "Rxe5",
+                "Rd8+",
+                "Qxd8",
+                "Bxe5",
+                "Qe7",
+                "Re1",
+                "Nxe5",
+                "Qxe5",
+                "Qxe5",
+                "Rxe5",
+                "Kf8"
+              ],
+              "summary": "Black equalizes comfortably after 12...Nc6 against the older 10.d4, motivating Alekhine's 10.O-O innovation."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 27,
+          "bookPage": 122,
+          "pdfPage": 20,
+          "themes": [
+            "tactics",
+            "sacrifice"
+          ],
+          "summary": "Blocking the f7 diagonal fails to Bxf7+ and f4 securing White's material edge.",
+          "variations": [
+            {
+              "branchPly": 27,
+              "label": "14...g6",
+              "moves": [
+                "g6",
+                "Bxf7+",
+                "Kg7",
+                "Bxe8",
+                "Qe5",
+                "Qc3",
+                "Nb4",
+                "f4"
+              ],
+              "summary": "Blocking the f7 diagonal fails to Bxf7+ and f4 securing White's material edge."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 32,
+          "bookPage": 122,
+          "pdfPage": 20,
+          "themes": [
+            "tactics",
+            "sacrifice"
+          ],
+          "summary": "Playing 17.c3! immediately traps Black's queen or leads to decisive discovered checks.",
+          "variations": [
+            {
+              "branchPly": 32,
+              "label": "17.c3",
+              "moves": [
+                "c3",
+                "Qxd2",
+                "Qh8+",
+                "Ke7",
+                "Qxg7+",
+                "Kd8",
+                "Rad1",
+                "Qf4",
+                "g3"
+              ],
+              "summary": "Playing 17.c3! immediately traps Black's queen or leads to decisive discovered checks."
+            }
+          ],
+          "moveLabel": null
+        },
+        {
+          "afterPly": 37,
+          "bookPage": 122,
+          "pdfPage": 20,
+          "themes": [
+            "tactics",
+            "sacrifice"
+          ],
+          "summary": "Relatively best defense for Black on move 19, though White emerges into a winning endgame.",
+          "variations": [
+            {
+              "branchPly": 37,
+              "label": "19...Nd4",
+              "moves": [
+                "Nd4",
+                "Rh3",
+                "g6",
+                "Qh7+",
+                "Kf8",
+                "Qd7",
+                "Re7",
+                "Nh7+",
+                "Kg7",
+                "Nxf6",
+                "Rxd7",
+                "Nxd7",
+                "Rd8",
+                "Rd3",
+                "Ne2+",
+                "Kh1",
+                "Rxd7",
+                "g3",
+                "e5",
+                "c3"
+              ],
+              "summary": "Relatively best defense for Black on move 19, though White emerges into a winning endgame."
+            }
+          ],
+          "moveLabel": null
+        }
+      ],
+      "chapter": "XI",
+      "chapterTitle": "Local Tournaments, etc.",
+      "year": 1918,
+      "pages": {
+        "from": 122,
+        "to": 124,
+        "pdfPages": [
+          "v3:20",
+          "v3:21",
+          "v3:22"
+        ]
+      }
+    }
+  ],
+  "pdfPagesCovered": [
+    "v3:5-22"
+  ],
+  "bookPagesCovered": "107-124"
+}

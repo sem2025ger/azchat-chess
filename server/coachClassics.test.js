@@ -3,12 +3,15 @@ const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('fs'),path=require('path');
 const {Chess,validateFen}=require('chess.js');
 const {build}=require('./knowledge/buildChessFundamentals');
+const {build:buildAlekhine}=require('./knowledge/buildAlekhineBestGames');
 const {serialize}=require('./scripts/buildClassicsKnowledge.js');
 const {THEME_IDS}=require('./knowledge/classicsThemes');
-const {isClassicsEnabled,loadClassics,findClassicPassages,themesFromQuestion,resetClassicsCacheForTests}=require('./coachClassics');
+const {isClassicsEnabled,loadClassics,findClassicPassages,themesFromQuestion,themesFromPositionFacts,resetClassicsCacheForTests}=require('./coachClassics');
 
 const FILE=path.join(__dirname,'knowledge','classics','capablanca-chess-fundamentals.json');
+const ALEKHINE_FILE=path.join(__dirname,'knowledge','classics','alekhine-best-games-1908-1923.json');
 const book=JSON.parse(fs.readFileSync(FILE,'utf8'));
+const alekhineBook=JSON.parse(fs.readFileSync(ALEKHINE_FILE,'utf8'));
 // Diagrams that show a pawn skeleton or a lone minor piece, without kings, by design.
 const KINGLESS_FIGURES=[36,89,90];
 
@@ -104,4 +107,60 @@ test('a king-and-pawn question finds the opposition section; text is bounded',()
  assert.ok(hits.every(h=>h.text.length<=302));
  assert.deepEqual(findClassicPassages({question:'xyz'}),[]);
  assert.ok(loadClassics().chunks.length>200);
+});
+
+test('committed Alekhine record equals a fresh build and obeys copyright rules',()=>{
+ assert.equal(fs.readFileSync(ALEKHINE_FILE,'utf8'),serialize(buildAlekhine()));
+ assert.equal(alekhineBook.author,'Alexander Alekhine');
+ assert.equal(alekhineBook.rights.translatorPublicDomainEUYear,2037);
+ assert.equal(alekhineBook.units.length,100);
+ assert.deepEqual(alekhineBook.units.map(u=>u.gameNumber),Array.from({length:100},(_,i)=>i+1));
+ assert.equal(alekhineBook.stats.pdfPagesProcessed,292);
+ assert.equal(alekhineBook.stats.mainlineMoves,6982);
+ assert.equal(alekhineBook.stats.variations,499);
+ assert.equal(alekhineBook.stats.variationMoves,3412);
+ assert.equal(alekhineBook.stats.totalValidatedMoves,10394);
+ assert.equal(alekhineBook.stats.diagrams,295);
+ assert.equal(alekhineBook.stats.annotations,544);
+ assert.equal(alekhineBook.stats.totalGeneratedFens,11288);
+ assert.equal(alekhineBook.stats.uniqueGeneratedFens,9763);
+ assert.ok(alekhineBook.errata.length>=50);
+ for(const u of alekhineBook.units){
+  assert.equal(Object.hasOwn(u,'originalText'),false,u.id);
+  for(const a of u.annotations)assert.equal(Object.hasOwn(a,'originalText'),false,u.id);
+ }
+});
+
+test('every Alekhine mainline, variation and diagram validates in chess.js',()=>{
+ for(const u of alekhineBook.units){
+  const c=new Chess(u.startFen);
+  for(const san of u.mainline)assert.ok(c.move(san),`${u.id} ${san}`);
+  for(const d of u.diagrams)assert.ok(validateFen(d.fen).ok,`${u.id} diag ${d.index}`);
+  for(const a of u.annotations){
+   for(const v of a.variations||[]){
+    const vc=new Chess(v.startFen);
+    for(const san of v.moves)assert.ok(vc.move(san),`${u.id} var ${v.label} ${san}`);
+   }
+  }
+ }
+});
+
+test('Alekhine position and question retrieval work alongside Capablanca',()=>{
+ resetClassicsCacheForTests();
+ const g97=alekhineBook.units.find(u=>u.id==='g97');
+ const diag20=g97.diagrams[1];
+ const byFen=findClassicPassages({fen:diag20.fen,question:'Alekhine sacrifice plan'});
+ assert.equal(byFen[0].bookId,'alekhine-best-games-1908-1923');
+ assert.equal(byFen[0].unitId,'g97');
+ assert.ok(byFen[0].reasons.includes('exact position'));
+ assert.match(byFen[0].citation,/Alexander Alekhine, My Best Games of Chess 1908-1923 \(1927\), Game 97:/);
+
+ const byLang=findClassicPassages({question:'Алехин сицилианская жертва ферзя',limit:2});
+ assert.ok(byLang.some(h=>h.bookId==='alekhine-best-games-1908-1923'));
+
+ assert.ok(themesFromPositionFacts({white:{pawns:{isolated:['d4']}},black:{pawns:{passed:['e5']}},material:{white:{bishopPair:true}}}).includes('bishop-pair'));
+
+ const capaFen='8/7R/8/2k2P2/1p6/3r4/5PKP/8 w - - 0 1';
+ const capaHits=findClassicPassages({fen:capaFen,question:'rook ending'});
+ assert.equal(capaHits[0].unitId,'e59');
 });
