@@ -132,7 +132,7 @@
    "eco": "D94",
    "result": "0-1",
    "pages": { "from": 32, "to": 35, "pdfPages": ["v1:50", "v1:51", "v1:52", "v1:53"] },
-   "overallPlan": "Black avoids premature queenside weakening after fianchettoing, secures d5 via 16...f5!, and meets White's misguided 21. Bg5 with a combinational Exchange-and-pawn counterstroke featuring 21...Nxe4 22. Bxg6 Qd5 and a decisive endgame victory capped by 36...Rd2!.",
+   "overallPlan": "Black avoids premature queenside weakening after fianchettoing, secures d5 via 16...f5!, and meets White's misguided 21. Bg5 with a combinational Exchange-and-pawn counterstroke featuring 21...Nxc3 22. Bxg6 Qd5 and a decisive endgame victory capped by 36...Rd2!.",
    "moves": [
     "d4","d5","Nf3","Nf6","c4","c6","e3","g6","Nc3","Bg7","Bd3","O-O","Qc2","Na6","a3","Nc7","O-O","Be6","cxd5","Nfxd5","h3","Nxc3","bxc3","c5","Rb1","Rb8","Rd1","c4","Be2","b5","Nd2","f5","Bf3","Bd5","e4","Ba8","Nf1","fxe4","Bxe4","Nd5","Bg5","Nxc3","Bxg6","Qd5","Bxh7+","Kh8","f4","Nxb1","Rxb1","Qxd4+","Kh1","Qc3","Kh2","Qxc2","Bxc2","e5","f5","Bf6","Bxf6+","Rxf6","Ne3","a5","Rd1","Rff8","Rd6","Rbd8","Rh6+","Kg7","Rg6+","Kf7","Ng4","Rd2","Nxe5+","Ke7","Bb1","Rb2","Re6+","Kd8","Rd6+","Kc8","h4","Rxb1","g4","c3","Rd3","b4","axb4","axb4"
    ],
@@ -659,7 +659,7 @@
    "eco": "C84",
    "result": "1-0",
    "pages": { "from": 54, "to": 56, "pdfPages": ["v2:12", "v2:13", "v2:14"] },
-   "overallPlan": "Alekhine snaps up the e5 pawn with 10. Ng5! after 9...Qxd5, relentlessly pressures the e5 blockader to turn his passed a-pawn into a monster at a7, sacrifices on b3 with 20. b3! to castle safely, and breaks Black's queenside blockade with 22. Qb5!.",
+   "overallPlan": "Alekhine snaps up the e5 pawn with 10. Ng5! after 9...dxe4, relentlessly pressures the e5 blockader to turn his passed a-pawn into a monster at a7, sacrifices on b3 with 20. b3! to castle safely, and breaks Black's queenside blockade with 22. Qc5!.",
    "moves": [
     "e4","e5","Nf3","Nc6","Bb5","a6","Ba4","Nf6","Qe2","Be7","c3","b5","Bb3","O-O","a4","d5","axb5","dxe4","Ng5","Na7","bxa6","Bf5","Bc2","Qd5","c4","Qd4","Nc3","Bg4","Qe3","Nc6","Ngxe4","Nb4","Nxf6+","Bxf6","Be4","Qxc4","a7","Rfd8","b3","Qxb3","O-O","Nc2","Qc5","c6","Rb1","Qe6","Bxc2","Be7","Qb6","Qd7","Ra1","f5","Ba4","Rdc8","Ba3","Bg5","Bc5","Bxd2","Nd5","Be2","Ne7+","Kh8","Nxc8","Rxc8","Bxc6"
    ],

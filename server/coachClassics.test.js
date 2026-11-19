@@ -116,18 +116,24 @@ test('committed Alekhine record equals a fresh build and obeys copyright rules',
  assert.equal(alekhineBook.units.length,100);
  assert.deepEqual(alekhineBook.units.map(u=>u.gameNumber),Array.from({length:100},(_,i)=>i+1));
  assert.equal(alekhineBook.stats.pdfPagesProcessed,292);
- assert.equal(alekhineBook.stats.mainlineMoves,6982);
+ assert.equal(alekhineBook.stats.mainlineMoves,7060);
  assert.equal(alekhineBook.stats.variations,499);
- assert.equal(alekhineBook.stats.variationMoves,3412);
- assert.equal(alekhineBook.stats.totalValidatedMoves,10394);
+ assert.equal(alekhineBook.stats.variationMoves,3390);
+ assert.equal(alekhineBook.stats.totalValidatedMoves,10450);
  assert.equal(alekhineBook.stats.diagrams,295);
- assert.equal(alekhineBook.stats.annotations,544);
- assert.equal(alekhineBook.stats.totalGeneratedFens,11288);
- assert.equal(alekhineBook.stats.uniqueGeneratedFens,9763);
- assert.ok(alekhineBook.errata.length>=50);
+ assert.equal(alekhineBook.stats.annotations,547);
+ assert.equal(alekhineBook.stats.totalGeneratedFens,11344);
+ assert.equal(alekhineBook.stats.uniqueGeneratedFens,9811);
+ assert.equal(alekhineBook.errata.length,48);
+ for(const e of alekhineBook.errata)assert.ok(typeof e.note==='string'&&e.note.trim().length>0,`erratum note must be descriptive string for game ${e.gameNumber}`);
+ // Regression: Games 10 and 21 replay completely (113 and 91 plies), no draft leaks or broken errata FENs in positionKeys.
+ assert.equal(alekhineBook.units.find(u=>u.id==='g10').mainline.length,113);
+ assert.equal(alekhineBook.units.find(u=>u.id==='g21').mainline.length,91);
  for(const u of alekhineBook.units){
   assert.equal(Object.hasOwn(u,'originalText'),false,u.id);
+  for(const d of u.diagrams)if(d.printerErratum)assert.equal(typeof d.printerErratum,'string',`${u.id} diag ${d.index}`);
   for(const a of u.annotations)assert.equal(Object.hasOwn(a,'originalText'),false,u.id);
+  for(const c of u.chunks)assert.doesNotMatch(c.text,/\(wait:|20\.dxe5\? no,|Actually 6\. Nh3|18\.fxe6!! Bxd1/,c.id);
  }
 });
 

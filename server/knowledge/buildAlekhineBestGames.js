@@ -148,11 +148,15 @@ function validateVariationTree(variations, parentFens, context, stats) {
  const out = [];
  for (let i = 0; i < variations.length; i++) {
   const v = variations[i];
+  assertNoVerbatimCopyrightFields(v, `${context} variation[${i}]`);
   const stepIndex = v.branchPly ?? v.branchStep;
   if (!v.startFen && (typeof stepIndex !== 'number' || stepIndex < 0 || stepIndex >= parentFens.length)) {
    throw new Error(`${context} variation[${i}]: invalid branchPly/branchStep ${stepIndex} (parent fens: ${parentFens.length})`);
   }
   const baseFen = v.startFen ? assertValidFen(v.startFen, `${context} variation[${i}]`) : parentFens[stepIndex];
+  if (v.startFen && typeof stepIndex === 'number' && parentFens[stepIndex] && posKey(baseFen) !== posKey(parentFens[stepIndex])) {
+   throw new Error(`${context} variation[${i}]: startFen does not match parentFens[${stepIndex}]`);
+  }
   const turn = baseFen.split(/\s+/)[1];
   if (v.sideToMove && v.sideToMove !== turn) {
    throw new Error(`${context} variation[${i}]: expected sideToMove=${v.sideToMove} but FEN turn is ${turn}`);
@@ -190,8 +194,10 @@ function validateVariationTree(variations, parentFens, context, stats) {
 
 function assertNoVerbatimCopyrightFields(obj, context) {
  if (!obj || typeof obj !== 'object') return;
- if (Object.prototype.hasOwnProperty.call(obj, 'originalText')) {
-  throw new Error(`${context}: forbidden "originalText" field found (copyright protection rule)`);
+ for (const forbidden of ['originalText', 'rawOcr', 'ocrText']) {
+  if (Object.prototype.hasOwnProperty.call(obj, forbidden)) {
+   throw new Error(`${context}: forbidden "${forbidden}" field found (copyright protection rule)`);
+  }
  }
 }
 
@@ -239,14 +245,17 @@ function buildGameUnit(game, stats) {
     }
    }
   }
-  if (d.printerErratum) {
+  if (d.printerErratum !== undefined && d.printerErratum !== null) {
+   if (typeof d.printerErratum !== 'string' || !d.printerErratum.trim()) {
+    throw new Error(`${dCtx}: printerErratum must be a non-empty descriptive string`);
+   }
    stats.errata.push({
     gameNumber: num,
     kind: 'diagram_printer_erratum',
     bookPage: d.bookPage ?? null,
     pdfPage: d.pdfPage ?? null,
     afterPly: d.afterPly ?? null,
-    note: d.printerErratum
+    note: d.printerErratum.trim()
    });
   }
 
@@ -314,7 +323,9 @@ function buildGameUnit(game, stats) {
 
  const positionKeySet = new Set();
  for (const f of replayed.fens) positionKeySet.add(posKey(f));
- for (const d of diagrams) positionKeySet.add(d.positionKey);
+ for (const d of diagrams) {
+  if (!d.printerErratum) positionKeySet.add(d.positionKey);
+ }
  function addVarKeys(vars) {
   for (const v of vars) {
    for (const f of v.fens) positionKeySet.add(posKey(f));

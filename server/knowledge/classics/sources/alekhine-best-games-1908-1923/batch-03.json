@@ -19,24 +19,20 @@
    "pages": { "from": 56, "to": 59, "pdfPages": ["v2:14", "v2:15", "v2:16", "v2:17"] },
    "overallPlan": "White refutes Black's 10...Nc5 and 13...Ne4? with 14. Bf4! and 16. Qd3, snares Black's kingside weakness after 24...Nxf2? with 27. Be6+ and a crushing passed c-pawn endgame capped by 44. Nf2!.",
    "moves": [
-    "e4","e5","Nf3","Nc6","Bb5","a6","Ba4","Nf6","O-O","Nxe4","d4","b5","Bb3","d5","dxe5","Be6","c3","Be7","Nbd2","Nc5","Bc2","Bg4","Re1","O-O","Nb3","Ne4","Bf4","f5","exf6","Nxf6","Qd3","Ne4","Bxc7","Qd7","Ne5","Nxe5","Bxe5","Bh4","Bg3","Bxg3","hxg3","Bf5","Qd4","Rfd8","Rad1","Qc7","Nd2","Nxf2","Bxf5","Nxd1","Be6+","Kh8","Rxd1","Qxg3","Bxd5","Rac8","Ne4","Qh4","b3","Rc6","Qf2","Qh5","Qf3","Qxf3","gxf3","g6","Rd2","Rb6","c4","bxc4","bxc4","Rb1+","Kf2","a5","c5","Rc1","c6","Kg7"
+    "e4","e5","Nf3","Nc6","Bb5","a6","Ba4","Nf6","O-O","Nxe4","d4","b5","Bb3","d5","dxe5","Be6","c3","Be7","Nbd2","Nc5","Bc2","Bg4","Re1","O-O","Nb3","Ne4","Bf4","f5","exf6","Nxf6","Qd3","Ne4","Bxc7","Qd7","Ne5","Nxe5","Bxe5","Bh4","Bg3","Bxg3","hxg3","Bf5","Qd4","Rfd8","Rad1","Qc7","Nd2","Nxf2","Bxf5","Nxd1","Rxd1","Qxg3","Be6+","Kh8","Bxd5","Rac8","Ne4","Qh4","b3","Rc6","Qf2","Qh5","Qf3","Qxf3","gxf3","g6","Rd2","Rb6","c4","bxc4","bxc4","Rb1+","Kf2","a5","c5","Rc1","c6","Kg7","Bc4","Rxc4","Rxd8","Rxc6","Rd7+","Kh6","Kg3","Rc5","Nf2","Kg5","Rd5+","Kf6","Rxc5"
    ],
    "diagrams": [
     { "index": 1, "bookPage": 57, "pdfPage": 15, "afterPly": 21, "fen": "r2qk2r/2p1bppp/p1n1b3/1pnpP3/8/2P2N2/PPBN1PPP/R1BQ1RK1 b kq - 4 11" },
     { "index": 2, "bookPage": 57, "pdfPage": 15, "afterPly": 42, "fen": "r4rk1/3q2pp/p7/1p1p1b2/4n3/1NPQ2P1/PPB2PP1/R3R1K1 w - - 1 22" },
-    {
-     "index": 3, "bookPage": 58, "pdfPage": 16, "afterPly": 78,
-     "fen": "3r4/6kp/2P3p1/B7/4N3/5P2/P2R1K2/2r5 w - - 1 40",
-     "printerErratum": "Diagram on p. 58 places White's bishop on a5 (wrong colour and square for Bd5) and omits Black's a5 pawn; text moves 40. Bc4 Rxc4 41. R x R also contain a score corruption around moves 34-41."
-    },
-    { "index": 4, "bookPage": 58, "pdfPage": 16, "fen": "8/3R3p/6pk/p1r5/8/5PK1/P4N2/8 b - - 0 44" }
+    { "index": 3, "bookPage": 58, "pdfPage": 16, "afterPly": 78, "fen": "3r4/6kp/2P3p1/p2B4/4N3/5P2/P2R1K2/2r5 w - - 1 40" },
+    { "index": 4, "bookPage": 58, "pdfPage": 16, "afterPly": 87, "fen": "8/3R3p/6pk/p1r5/8/5PK1/P4N2/8 b - - 5 44" }
    ],
    "errata": [
     {
-     "kind": "book_score_and_diagram_corruption",
-     "bookPage": "58",
-     "pdfPage": 16,
-     "note": "Moves 1-39 (78 plies) validate cleanly to 39...Kg7. On p. 58, Diagram 3 shows White's light-squared bishop on a5 and omits Black's a5 pawn, while the printed continuation 40. B-B4! R x B 41. R x R R x P 42. R-Q7 ch conflicts with 34. Rd2 + 38...Rc1 because Rd2 cannot recapture on c4 or subsequently check on d7 from c4. The concluding endgame from Diagram 4 (44. Nf2!) validates cleanly."
+     "kind": "book_score_printer_slip",
+     "bookPage": "59",
+     "pdfPage": 17,
+     "note": "Printed score on p. 59 gives 46. R x P after 44...Kg5 45. Rd5+ Kf6 instead of 46. R x R (46. Rxc5 winning the rook on c5), and the note on p. 59 prints 44...R—QR5 even though a5 is occupied by Black's pawn."
     }
    ],
    "annotations": [
@@ -63,22 +59,18 @@
      "summary": "Secures the edge because 22...Nxb3 leaves Black losing to 23. Nb5! Qd7 24. Bb3!."
     },
     {
-     "afterPly": 78, "moveLabel": "39...Kg7", "bookPage": 58, "pdfPage": 16,
-     "summary": "From the Diagram 4 position on p. 58 (44. Nf2!), Black loses immediately after 44...Kg5 45. Rd5+ Kf6 46. Rxc5, and 44...Ra5 fails to 45. Ng4+ Kh5 46. Rd5+ g5 47. Rd6 with mate to follow.",
-     "note": "Book scores 46. R x P on p. 59 after 44...Kg5 45. Rd5+ Kf6, though Diagram 4 shows Black's rook on c5 and a pawn only on a5; 46. Rxc5 wins the rook cleanly.",
+     "afterPly": 79, "moveLabel": "40.Bc4!", "bookPage": 58, "pdfPage": 16,
+     "summary": "Discovers the d-file attack against d8 while deflecting Black's c1 rook: 40...Rxd2+ 41. Nxd2 allows 42. c7, and 40...Rxc4 41. Rxd8 Rxc6 42. Rd7+ wins the exchange cleanly.",
      "variations": [
-      {
-       "branchPly": 78,
-       "startFen": "8/3R3p/6pk/p1r5/8/5PK1/P4N2/8 b - - 0 44",
-       "sideToMove": "b",
-       "label": "44...Kg5 45.Rd5+ Kf6 46.Rxc5 (Diagram 4, p. 58-59)",
-       "moves": ["Kg5", "Rd5+", "Kf6", "Rxc5"],
-       "summary": "Validated concluding sequence from p. 58 Diagram 4.",
-       "subvariations": [
-        { "branchStep": 0, "sideToMove": "b", "moves": ["Rc2", "Ng4+", "Kh5", "Rd5+", "g5", "Rd6"], "summary": "Illustrative line showing mate threats after Ng4+ (book prints 44...R—QR5 though a5 holds Black's pawn)." },
-        { "branchStep": 0, "sideToMove": "b", "moves": ["g5", "Ng4+", "Kh5", "Nf6+"], "summary": "Also loses by force." }
-       ]
-      }
+      { "branchPly": 79, "sideToMove": "b", "moves": ["Rxd2+", "Nxd2"], "summary": "White's passed c-pawn promotes after 42. c7." }
+     ]
+    },
+    {
+     "afterPly": 87, "moveLabel": "44.Nf2!", "bookPage": 58, "pdfPage": 16,
+     "summary": "Cuts off Black's king and sets up lethal mating and tactical threats: 44...Kg5 45. Rd5+ Kf6 46. Rxc5 wins the rook, while 44...g5 runs into 45. Ng4+ Kh5 46. Nf6+.",
+     "variations": [
+      { "branchPly": 87, "sideToMove": "b", "moves": ["Rc2", "Ng4+", "Kh5", "Rd5+", "g5", "Rd6"], "summary": "Illustrative line showing mate threats after Ng4+ (book note prints 44...R—QR5 though a5 holds Black's pawn)." },
+      { "branchPly": 87, "sideToMove": "b", "moves": ["g5", "Ng4+", "Kh5", "Nf6+"], "summary": "Also loses by force." }
      ]
     }
    ]
@@ -138,7 +130,7 @@
    "eco": "C49",
    "result": "0-1",
    "pages": { "from": 60, "to": 63, "pdfPages": ["v2:18", "v2:19", "v2:20", "v2:21"] },
-   "overallPlan": "Facing Rubinstein's 4...Nd4! accepted via 5. Bc4 Bc5 6. Nxe5 Qe7!, Alekhine sacrifices a pawn for rapid development, coordinates kingside and central threats to force 19. f4 and 24. cxd4, and after mutual time-trouble tactics (28. Bd4! Rxd4!) seals victory via 40...Rd8!.",
+   "overallPlan": "Facing Rubinstein's 4...Nd4! accepted via 5. Bc4 Bc5 6. Nxe5 Qe7!, Alekhine sacrifices a pawn for rapid development, coordinates kingside and central threats to force 19. f4 and 24. cxb4, and after mutual time-trouble tactics (28. Bd4! Rxd4!) seals victory via 40...Rd8!.",
    "moves": [
     "e4","e5","Nf3","Nc6","Nc3","Nf6","Bb5","Nd4","Bc4","Bc5","Nxe5","Qe7","Nd3","d5","Bxd5","Nxd5","Nxd5","Qxe4+","Ne3","Bd6","O-O","Be6","Ne1","O-O-O","c3","Nf5","Qc2","Qh4","Nf3","Qf4","Nxf5","Bxf5","d3","Qg4","Nd4","Qh5","f4","Rhe8","b4","c5","Nxf5","Qxf5","Qd2","Bc7","Rf3","cxb4","cxb4","g5","fxg5","Qe5","Bb2","Qxh2+","Kf1","Bg3","Bd4","Rxd4","Qc3+","Kb8","Qxd4","Be5","Qd7","Rc8","Rxf7","Qh1+","Kf2","Qh4+","Ke2","Qh5+","g4","Qh2+","Kf3","Qg3+","Ke4","Bc7","Rc1","Qg2+","Ke3","Bb6+","d4","Rd8","Rc7","Qg3+","Rf3","Qe1+","Kd3","Qd1+","Ke3","Bxd4+"
    ],

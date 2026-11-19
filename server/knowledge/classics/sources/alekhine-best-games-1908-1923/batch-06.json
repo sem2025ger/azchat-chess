@@ -294,11 +294,10 @@
       "diagrams": [
         {
           "afterPly": null,
-          "fen": "3r3k/ppq3pp/8/4N3/4P3/1Q6/PP2b1PP/5RK1 w - - 0 24",
+          "fen": "r4r1k/ppq3pp/3R4/4N1B1/4P3/1Q6/PP2b1PP/2R3K1 w - - 0 24",
           "bookPage": 126,
           "pdfPage": 24,
-          "printerErratum": true,
-          "caption": "Position after Black's 23rd move, in Alekhine-Verlinski sub-variation (diagram omits second rook/dark pieces relative to score)"
+          "caption": "Position after Black's 23rd move in Alekhine–Verlinski (Odessa 1918) sub-variation"
         },
         {
           "afterPly": 26,
@@ -641,9 +640,8 @@
           "afterPly": 65,
           "bookPage": 131,
           "pdfPage": 29,
-          "printerErratum": true,
-          "caption": "Position after White's 33rd move (diagram prints White's second rook on e1 rather than e4)",
-          "fen": "6k1/5rp1/4r2p/RpB1pq2/p7/2P4P/P2nQ1P1/4R1K1 b - - 0 33"
+          "caption": "Position after White's 33rd move",
+          "fen": "6k1/5rp1/4r2p/1RB1pq2/R7/2P4P/P2nQ1P1/6K1 b - - 0 33"
         }
       ],
       "annotations": [

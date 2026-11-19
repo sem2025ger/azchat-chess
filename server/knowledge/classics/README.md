@@ -63,11 +63,13 @@ the owner has to supply other sources as files.
    `originalText`, raw OCR, or PDF scans are stored in the repository. Only factual chess data
    (moves, variations, FENs, metadata, errata) and fresh technical ChessAZ coaching summaries are
    retained, enforced automatically by `assertNoVerbatimCopyrightFields` in `buildAlekhineBestGames.js`.
-3. Every mainline move (6,982), variation move (3,412 across 499 variations — 10,394 validated moves
-   total), and diagram FEN (295 diagrams) is replayed and verified with `chess.js`, yielding 11,288
-   generated FENs (9,763 unique FENs) indexed by 4-part normalized `positionKeys`.
-4. All 58 discovered book/diagram/score/arithmetic errata (including corrupted scores in Games 10
-   and 21 where unverified middle moves are never fabricated) are recorded explicitly in `errata`.
+3. Every mainline move (7,060 across all 100 complete games), variation move (3,390 across 499
+   variations — 10,450 validated moves total), and diagram FEN (295 diagrams) is replayed and
+   verified with `chess.js`, yielding 11,344 generated FENs (9,811 unique FENs) indexed by 4-part
+   normalized `positionKeys` (excluding printer-erratum plates).
+4. All 48 verified book/diagram/score/arithmetic errata are recorded explicitly in `errata` with
+   descriptive strings; Games 10 and 21 are re-verified against the scanned pages and replay to
+   completion (113 and 91 plies).
 
 Rebuild after changing the builder or the source files:
 

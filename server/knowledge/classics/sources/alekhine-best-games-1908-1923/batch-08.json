@@ -508,7 +508,7 @@
           "pdfPage": 25,
           "caption": "Position after Black's 32nd move",
           "fen": "8/1p4k1/pNp1b3/2P5/PP1P1p2/2K5/5PPr/6R1 w - - 0 33",
-          "printerErratum": true
+          "printerErratum": "Printed diagram on p. 187 omits Black's g4 pawn after 32...f4."
         }
       ],
       "annotations": [

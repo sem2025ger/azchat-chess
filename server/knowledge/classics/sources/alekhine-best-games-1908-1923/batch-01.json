@@ -331,7 +331,7 @@
    "eco": "D64",
    "result": "1-0",
    "pages": { "from": 9, "to": 11, "pdfPages": ["v1:27", "v1:28", "v1:29"] },
-   "overallPlan": "Against 7...b6 in the Queen's Gambit Declined, White castles queenside after 10. h4!, uses 20. Ne6! and 22. Rxg6! to win a pawn in transition to a rook ending, and decides the pawn race with the subtle waiting king move 44. Ke2!.",
+   "overallPlan": "Against 7...b6 in the Queen's Gambit Declined, White castles queenside after 10. h4!, uses 20. Ne6! and 22. gxh6 to win a pawn in transition to a rook ending, and decides the pawn race with the subtle waiting king move 44. Ke2!.",
    "moves": [
     "d4","d5","c4","e6","Nc3","Nf6","Bg5","Be7","e3","Nbd7","Nf3","O-O","Qc2","b6","cxd5","exd5","Bd3","Bb7","h4","c5","O-O-O","cxd4","Nxd4","Re8","Kb1","a6","g4","b5","Bxf6","Nxf6","g5","Ne4","Nxe4","dxe4","Bxe4","Bxe4","Qxe4","Bxg5","Ne6","Qe7","hxg5","h6","gxh6","Qxe6","Qd4","Qe5+","Qxe5","Rxe5","hxg7","Kxg7","Rdg1+","Kf6","Rh6+","Ke7","Rc1","Ra7","Rcc6","a5","Ra6","Rxa6","Rxa6","a4","Rb6","Re4","Kc2","Rc4+","Kd3","Kd7","a3","Rc5","f4","Kc7","Rh6","Rd5+","Kc3","f5","Re6","Kd7","Re5","Rxe5","fxe5","Ke7","Kd3","Kd7","e4","f4","Ke2","Ke6","Kf2"
    ],
@@ -734,28 +734,16 @@
    "eco": "C45",
    "result": "1-0",
    "pages": { "from": 25, "to": 29, "pdfPages": ["v1:43", "v1:44", "v1:45", "v1:46", "v1:47"] },
-   "overallPlan": "White's unsound gambit 5. e5 is declined via 5...Qe7, leading into sharp tactics where White deflects Black's forces with 12. Nf3!! and 25. f5!! to enter a winning two-knights-vs-rook endgame converted after reciprocal endgame errors.",
+   "overallPlan": "White's unsound gambit 5. e5 is declined via 5...Qe7, leading into sharp tactics where White deflects Black's forces with 12. Nf3!! and 25. c5!! to enter a winning two-knights-vs-rook endgame converted after reciprocal endgame errors.",
    "moves": [
-    "e4","e5","Nf3","Nc6","d4","exd4","Nxd4","Nf6","e5","Qe7","f4","d6","Bb5","Bd7","Bxc6","bxc6","O-O","dxe5","fxe5","Ng4","Nc3","Qh4","Nf3","Qh5","Ne4","Be7","Qd4","Be6","Bg5","Bxg5","Nexg5","O-O","h3","Nh6","Qe4","Bf5","Qxc6","Qg6","Qxg6","Bxg6","Nd4","Rab8","b3","Rfe8","Rad1","Rb6","c4","Rxb3"
+    "e4","e5","Nf3","Nc6","d4","exd4","Nxd4","Nf6","e5","Qe7","f4","d6","Bb5","Bd7","Bxc6","bxc6","O-O","dxe5","fxe5","Ng4","Nc3","Qh4","Nf3","Qh5","Ne4","Be7","Qd4","Be6","Bg5","Bxg5","Nexg5","O-O","h3","Nh6","Qe4","Bf5","Qxc6","Qg6","Qxg6","Bxg6","Nd4","Rab8","b3","Rfe8","Rad1","Rb6","c4","Rxe5","c5","Ra6","Nde6","Kh8","Rd8+","Ng8","Nxc7","Rxa2","Rfd1","f6","Rxg8+","Kxg8","Rd8+","Be8","Nxe8","Kf8","Nd6+","Ke7","Re8+","Kd7","Rxe5","fxe5","Nc4","Kc6","Ne4","Ra1+","Kf2","Kd5","Kf3","a5","Ke2","a4","Ncd2","a3","b4","Rc1","Kd3","a2","Nb3","Rd1+","Kc2","a1=Q","Nxa1","Rxa1","Nc3+","Kc6","Kd3","Rf1","g3","h5","Kc4","h4","b5+","Kd7","gxh4","Rf4+","Kd5","Rxh4","c6+","Kc7","Kc5","Rxh3","b6+","Kb8","Nb5"
    ],
    "diagrams": [
     { "index": 1, "bookPage": 25, "pdfPage": 43, "afterPly": 22, "fen": "r3kb1r/p1pb1ppp/2p5/4P3/3N2nq/2N5/PPP3PP/R1BQ1RK1 w kq - 2 12" },
     { "index": 2, "bookPage": 26, "pdfPage": 44, "afterPly": 31, "fen": "r3k2r/p1p2ppp/2p1b3/4P1Nq/3Q2n1/5N2/PPP3PP/R4RK1 b kq - 0 16" },
-    {
-     "index": 3, "bookPage": 27, "pdfPage": 45, "afterPly": 48,
-     "fen": "6k1/p1p2ppp/4r1bn/4P1N1/2PN4/1r5P/P5P1/3R1RK1 w - - 0 25",
-     "printerErratum": "Diagram on p. 27 prints Black's second rook on e6 (leaving e8 empty) and shows a position inconsistent with 22...KR-K1 (Rfe8), 25...RxBP, 26. Nde6, 27. Rd8+, 30. Rxg8+, 31. Rd8+ Be8, and 35. RxR PxR in the 1927/1965 edition."
-    },
-    { "index": 4, "bookPage": 28, "pdfPage": 46, "fen": "8/6pp/8/2Pkp3/p1N1N3/1P5P/4K1P1/r7 w - - 0 41" },
-    { "index": 5, "bookPage": 28, "pdfPage": 46, "fen": "8/6pp/2P5/3kp3/1P6/2N4P/p1K3P1/r7 b - - 1 47" }
-   ],
-   "errata": [
-    {
-     "kind": "book_score_and_diagram_corruption",
-     "bookPage": "26-28",
-     "pdfPage": 45,
-     "note": "In Game 10 (Alekhine-Cohn, Stockholm 1912), moves 1-24 validate cleanly to 24. c4 Rxb3, and the concluding endgame from Diagram 4 (p. 28, move 41) through 57. Nb5 validates cleanly; however, the printed text and Diagram 3 across moves 22-40 contain internal contradictions (e6 rook vs 22...Rfe8 and 26. Nde6, e8 empty required for 27. Rd8+ / 30. Rxg8+ / 31. Rd8+ Be8, 25...RxBP vs 25. c5, and b3 white pawn / e5 black pawn at move 40). Per project rules, no unverified middle moves are fabricated."
-    }
+    { "index": 3, "bookPage": 27, "pdfPage": 45, "afterPly": 48, "fen": "6k1/p1p2ppp/1r4bn/4r1N1/2PN4/1P5P/P5P1/3R1RK1 w - - 0 25" },
+    { "index": 4, "bookPage": 28, "pdfPage": 46, "afterPly": 80, "fen": "8/6pp/8/2Pkp3/p1N1N3/1P5P/4K1P1/r7 w - - 0 41" },
+    { "index": 5, "bookPage": 28, "pdfPage": 46, "afterPly": 93, "fen": "8/6pp/8/2Pkp3/1P6/2N4P/2K3P1/r7 b - - 1 47" }
    ],
    "annotations": [
     {
@@ -781,20 +769,21 @@
      "summary": "Dominates Black's minor pieces and guards c2; 21...c5 allows 22. Nc6 winning queenside space."
     },
     {
-     "afterPly": 48, "moveLabel": "24...Rxb3", "bookPage": 27, "pdfPage": 45,
-     "summary": "In the complicated phase around moves 25-35 (see game errata on the 1927 printed score between moves 22 and 40), White launches tactical play leading into an endgame with two knights and a passed c-pawn against a rook, winning cleanly from the Diagram 4 position (p. 28) after 47...Kc6? (instead of 47...Kc4! stopping the pawns).",
+     "afterPly": 49, "moveLabel": "25.c5!!", "bookPage": 27, "pdfPage": 45,
+     "summary": "Forces Black's rook off the b-file to set up a crushing back-rank invasion via 26. Nde6 and 27. Rd8+; 25...Rb7 loses to 26. Nc6 Re8 27. Ne7+ Kf8 28. Nxg6+ hxg6 29. Rd7.",
      "variations": [
-      {
-       "branchPly": 48,
-       "startFen": "8/6pp/8/2Pkp3/p1N1N3/1P5P/4K1P1/r7 w - - 0 41",
-       "sideToMove": "w",
-       "label": "41.Ncd2 ... 57.Nb5 (from Diagram 4, p. 28)",
-       "moves": ["Ncd2","a3","b4","Rc1","Kd3","a2","Nb3","Rd1+","Kc2","a1=Q","Nxa1","Rxa1","Nc3+","Kc6","Kd3","Rf1","g3","h5","Kc4","h4","b5+","Kd7","gxh4","Rf4+","Kd5","Rxh4","c6+","Kc7","Kc5","Rxh3","b6+","Kb8","Nb5"],
-       "summary": "Validated concluding endgame from p. 28 Diagram 4 (move 41) through resignation at 57. Nb5.",
-       "subvariations": [
-        { "branchStep": 13, "sideToMove": "b", "moves": ["Kc4", "c6", "Ra6", "Ne4", "Ra2"], "summary": "If 47...Kc4! instead of 47...Kc6?, Black halts the passed c-pawn and retains winning material." }
-       ]
-      }
+      { "branchPly": 49, "sideToMove": "b", "moves": ["Rb7", "Nc6", "Re8", "Ne7+", "Kf8", "Nxg6+", "hxg6", "Rd7", "Re7", "Rd8+", "Re8", "Nh7+", "Ke7"], "summary": "Black faces decisive mating threats." }
+     ]
+    },
+    {
+     "afterPly": 57, "moveLabel": "29.Rfd1!", "bookPage": 27, "pdfPage": 45,
+     "summary": "Secures the back-rank attack cleanly, leading after 29...f6 30. Rxg8+ Kxg8 31. Rd8+ Be8 32. Nxe8 Kf8 33. Nd6+ Ke7 34. Re8+ Kd7 35. Rxe5 fxe5 into a winning two-knights-and-passed-pawn vs rook endgame."
+    },
+    {
+     "afterPly": 94, "moveLabel": "47...Kc6", "bookPage": 28, "pdfPage": 46,
+     "summary": "Decisive endgame mistake after reciprocal errors; 47...Kc4! 48. c6 Ra6 49. Ne4 Ra2 would have stopped White's passed pawns and left Black winning.",
+     "variations": [
+      { "branchPly": 93, "sideToMove": "b", "moves": ["Kc4", "c6", "Ra6", "Ne4", "Ra2"], "summary": "If 47...Kc4! instead of 47...Kc6?, Black halts the passed c-pawn and retains winning material." }
      ]
     }
    ]

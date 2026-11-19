@@ -1582,7 +1582,7 @@
           "pdfPage": 6,
           "caption": "Final Position",
           "fen": "rr5R/3n4/k1pNp1p1/2PpPp2/pP1P4/2K3P1/1P3P2/R7 b - - 10 64",
-          "printerErratum": true
+          "printerErratum": "Printed Final Position diagram on p. 228 places White's 8th-rank rook on h8 instead of g8 after 63.Rh1 Nd7 64.Ra1."
         }
       ],
       "annotations": [
@@ -1874,8 +1874,7 @@
           "bookPage": 230,
           "pdfPage": 8,
           "caption": "Position after Black's 30th move",
-          "fen": "2bn1r2/p6k/1pP1r1pp/3Q4/P3NP2/4P1P1/6BP/4RRK1 w - - 1 31",
-          "printerErratum": true
+          "fen": "2bn1r2/p5qk/1pP1r1pp/3Q4/P3Np2/4P1P1/6BP/4RRK1 w - - 3 31"
         },
         {
           "afterPly": 65,
@@ -2027,7 +2026,7 @@
         "from": 232,
         "to": 235,
         "pdfPages": [
-          "v4:60",
+          "v5:10",
           "v5:11",
           "v5:12",
           "v5:13"
@@ -2578,8 +2577,8 @@
           "v5:16"
         ]
       },
-      "overallPlan": "Use 2.b4 to gain a central pawn majority after ...c5 3.bxc5, mask a kingside attack behind an apparent queenside bind, provoke Black's desperate knight sacrifice via 15.Nxc6!, and unleash the classic double-bishop sacrifice 20.Bxh7+! 22.Bxg7!.",
-      "strategicSummary": "Drewitt develops passively with 8...Bb6 and 14...Nd7, leaving himself tied up on both wings. With 15.Nxc6! Bxc6 16.c5!, Alekhine disguises his real objective behind queenside pressure, absorbs Black's tactical desperate piece sacrifice 16...Nxc5, lifts his rook with 18.Rf3! while letting Black take two queenside pawns, and delivers the famous Lasker–Bauer double-bishop sacrifice 20.Bxh7+! Kxh7 21.Rh3+ Kg8 22.Bxg7!.",
+      "overallPlan": "Use 2.b4 to gain a central pawn majority after 4...c5 5.bxc5, mask a kingside attack behind an apparent queenside bind, provoke Black's desperate knight sacrifice via 15.Nxc6!, and unleash the classic double-bishop sacrifice 20.Bxh7+! 22.Bxg7!.",
+      "strategicSummary": "Drewitt develops passively with 8...Bb6 and 14...Nd7, leaving himself tied up on both wings. With 15.Nxc6! Rxc6 16.c5!, Alekhine disguises his real objective behind queenside pressure, absorbs Black's tactical desperate piece sacrifice 16...Nxc5, lifts his rook with 18.Rf3! while letting Black take two queenside pawns, and delivers the famous Lasker–Bauer double-bishop sacrifice 20.Bxh7+! Kxh7 21.Rh3+ Kg8 22.Bxg7!.",
       "moves": [
         "Nf3",
         "d5",
@@ -2764,8 +2763,8 @@
           "v5:19"
         ]
       },
-      "overallPlan": "Secure the bishop pair against two directionless knights via 7.Na4 and 10.h3, regroup the dark-squared bishop to g3 (18.Qf5! 19.Bf2! 20.Bg3!) to target Black's c7 pawn on an open c-file after 21.d4, and break open the castled king with 24.h4! 27.Rf6! 33.Bxh6!.",
-      "strategicSummary": "Transposing from a Vienna into the King's Gambit Declined, Alekhine punishes Teichmann's unnecessary 7...a6 and 14...Rae8 by acquiring two bishops against knights lacking stable central squares. With 18.Qf5! 19.Bf2! 20.Bg3!, White dominates c7 while Black marks time passively. Pushing 21.d4 23.d5 and 24.h4! strips Black's kingside shelter, allowing rooks to invade via f6/e6 before 33.Bxh6! forces resignation.",
+      "overallPlan": "Secure the bishop pair against two directionless knights via 7.Na4 and 10.h3, regroup the dark-squared bishop to g3 (18.Qf5! 19.Bf2! 20.Bg3!) to target Black's c7 pawn on an open c-file after 21.d4, and break open the castled king with 24.h4! 27.Rc6! 33.Bxh6!.",
+      "strategicSummary": "Transposing from a Vienna into the King's Gambit Declined, Alekhine punishes Teichmann's unnecessary 7...a6 and 14...Rae8 by acquiring two bishops against knights lacking stable central squares. With 18.Qf5! 19.Bf2! 20.Bg3!, White dominates c7 while Black marks time passively. Pushing 21.d4 23.d5 and 24.h4! strips Black's kingside shelter, allowing rooks to invade via c6/e6 before 33.Bxh6! forces resignation.",
       "moves": [
         "e4",
         "e5",

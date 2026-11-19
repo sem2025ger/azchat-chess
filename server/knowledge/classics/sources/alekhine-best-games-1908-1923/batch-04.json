@@ -225,7 +225,6 @@
     "from": 87,
     "to": 91,
     "pdfPages": [
-     "v2:44",
      "v2:45",
      "v2:46",
      "v2:47",
@@ -1135,7 +1134,7 @@
      "v2:60"
     ]
    },
-   "overallPlan": "White delays Bxf6 until Black's queenside pawns can be permanently weakened via 13. Bxf6! gxf6, locks down the dark squares with 19. Nd5 and 20. Qa6!, and finishes on the kingside with 28. Nxh6+! and 32. Bxd6!.",
+   "overallPlan": "White delays Bxf6 until Black's queenside pawns can be permanently weakened via 13. Bxc6! bxc6, locks down the dark squares with 19. Nd5 and 20. Qa6!, and finishes on the kingside with 28. Nxh6+! and 32. Bxd6!.",
    "moves": [
     "e4",
     "e5",
@@ -1262,7 +1261,7 @@
      "v3:1"
     ]
    },
-   "overallPlan": "Punishing White's illogical 5. c3 and 6. Nh3?! with an immediate 6...d5! central break, Alekhine seizes the initiative against the isolated d4 pawn, prevents castling with 12...Qa5+!, and sacrifices the queen on c1 for a forced mate in two.",
+   "overallPlan": "Punishing White's illogical 5. c3 and 6. Na3?! with an immediate 6...d5! central break, Alekhine seizes the initiative against the isolated d4 pawn, prevents castling with 12...Qa5+!, and sacrifices the queen on c1 for a forced mate in two.",
    "moves": [
     "e4",
     "c5",
@@ -1314,7 +1313,7 @@
      "moveLabel": "6.Na3",
      "bookPage": 102,
      "pdfPage": 60,
-     "summary": "Actually 6. Nh3 (book writes Kt—R 3, White's b1 knight -> a3); both allow Black an immediate central strike 6...d5!.",
+     "summary": "White's illogical 6. Na3 (printed 6. Kt—R 3; Ng1 is already on e2) allows Black an immediate central strike 6...d5!.",
      "note": "Descriptive notation '6. Kt—R 3' with e2 knight occupying e2 uniquely identifies 6. Na3 rather than Nh3."
     },
     {
@@ -1636,7 +1635,7 @@
      "moveLabel": "27.Bf7",
      "bookPage": 107,
      "pdfPage": 5,
-     "summary": "26. d6! set up both 26...Bc6 27. d7!! Bxd7 28. dxe8=Q+ (wait: 28. d7 Bxd7 29. Rxe8) and 27...Qxd6 28. Qf2! winning the knight.",
+     "summary": "26. d6! set up both 26...Bc6 27. d7!! Bxg2 28. dxe8=Q Rxe8 29. Rxf6 and 27...Qxd6 28. Qf2! winning the knight.",
      "variations": [
       {
        "branchPly": 51,

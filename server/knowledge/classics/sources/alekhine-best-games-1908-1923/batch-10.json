@@ -1649,8 +1649,8 @@
           "v5:31"
         ]
       },
-      "overallPlan": "Exploit 6.Bxc6+? bxc6 by dominating the center with ...d5 and ...f5 while guarding the light squares, provoke kingside targets before opening files, and unleash 24...d4! 28...Qxf3+! using the hidden b7 bishop on the long diagonal.",
-      "strategicSummary": "White's premature 6.Bxc6+? concedes the bishop pair and central space without compensation (Alekhine compares Aurbach–Alekhine 1922 on 6.Re1). Black consolidates the center with 16...c5 and 17...c4!, prepares on the h1–a8 diagonal, and sacrifices the queen with 28...Qxf3+! 29.gxf3 Nf2+! 30.Kg1 Nxh3#.",
+      "overallPlan": "Exploit 6.Bxc6+? bxc6 by dominating the center with ...d5 and ...f5 while guarding the light squares, provoke kingside targets before opening files, and unleash 24...d4! 28...Qxh3! using the hidden b7 bishop on the long diagonal.",
+      "strategicSummary": "White's premature 6.Bxc6+? concedes the bishop pair and central space without compensation (Alekhine compares Aurbach–Alekhine 1922 on 6.Re1). Black consolidates the center with 16...c5 and 17...c4!, prepares on the h1–a8 diagonal, and sacrifices the queen with 28...Qxh3! 29.gxh3 Nf2+! 30.Kg1 Nxh3#.",
       "moves": [
         "e4",
         "e5",
@@ -1917,8 +1917,8 @@
           "v5:33"
         ]
       },
-      "overallPlan": "Meet the Sicilian with 3.Be2 followed by the Maróczy-style 7.Bf3! and 8.f4?!–c4 bind, provoke weaknesses along the long diagonal, push 17.f5!, and sacrifice the queen via 18.fxe6!! Bxd1 19.exf7+ Kh8 20.Nd5!! where the f7 pawn outweighs Black's queen.",
-      "strategicSummary": "Sämisch wastes critical tempi chasing an illusory bishop pair with 7...Ne5 8.f4! Nxf3+ and opposes on the long diagonal via 11...Nd7 12...Bf6. After 15.Kh1! and 17.f5!, Alekhine sacrifices the queen with 18.fxe6!! and 20.Nd5!!, leaving Black's queen powerless in all four variations I–IV.",
+      "overallPlan": "Meet the Sicilian with 3.Be2 followed by the Maróczy-style 7.Bf3! and 8.c4 bind, provoke weaknesses along the long diagonal, push 17.f5!, and sacrifice the queen via 18.fxe6!! Bxg3 19.exf7+ Kh8 20.Nd5!! where the f7 pawn outweighs Black's queen.",
+      "strategicSummary": "Sämisch wastes critical tempi chasing an illusory bishop pair with 7...Ne5 8.c4 Nxf3+ and opposes on the long diagonal via 11...Nd7 12...Bf6. After 15.Kh1! and 17.f5!, Alekhine sacrifices the queen with 18.fxe6!! Bxg3 and 20.Nd5!!, leaving Black's queen powerless in all four variations I–IV.",
       "moves": [
         "e4",
         "c5",

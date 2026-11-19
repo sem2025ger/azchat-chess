@@ -486,7 +486,7 @@
           "v3:60"
         ]
       },
-      "overallPlan": "Seize central space and open the center with 20.dxe5? no, 19...cxd4 -> 20.cxd4 when Black errs, exploit Black's ...g6 kingside weakness with 21.Bb3! and 24.Nc6!, and sacrifice with 26.f5! to dismantle Black's dark squares and force promotion on the e-file.",
+      "overallPlan": "Seize central space and open the center after 19...cxd4 20.cxd4 when Black errs, exploit Black's ...g6 kingside weakness with 21.Bb3! and 24.Nc6!, and sacrifice with 26.f5! to dismantle Black's dark squares and force promotion on the e-file.",
       "strategicSummary": "After Black's premature 19...cxd4 opens lines in the center and necessitates 20...g6, Alekhine immediately targets f7 and e6 via 21.Bb3!, 23.d5, and 24.Nc6. Once 26.f5! opens the f- and e-files, 29.Rd7! exploits back-rank tactics with an unstoppable passed e6-pawn.",
       "moves": [
         "d4",
@@ -657,7 +657,7 @@
           "v4:3"
         ]
       },
-      "overallPlan": "Avoid the quiet 3...e6 Tarrasch symmetry, offer a temporary pawn after 11.Nd6+, exploit White's delayed castling by swinging the rook to e8 and queen to g6, snatch White's kingside pawns with calculated precision, and finish cleanly with 24...Bb5!.",
+      "overallPlan": "Avoid quiet symmetry with 3...c5, offer a temporary pawn after 11.Nd6+, exploit White's delayed castling by swinging the rook to e8 and queen to g6, snatch White's kingside pawns with calculated precision, and finish cleanly with 24...Bb5!.",
       "strategicSummary": "Alekhine punishes Johner's neglect of king safety after 14.Qf4 by sacrificing the e4-pawn with 15...e5! to lock White's king in the center. Following 17...Qg6! and the deeply calculated captures 18...Qxg2! and 20...Qxh2, Black's 23...Ne5! and 24...Bb5! force liquidation into a lost endgame.",
       "moves": [
         "d4",
@@ -1561,11 +1561,10 @@
         },
         {
           "afterPly": null,
-          "fen": "3k2b1/p6r/1p2p1p1/4p3/2P1N3/1P2P3/4KP2/3R4 w - - 0 23",
+          "fen": "3k4/p5b1/1p2p1pp/2p1p3/2P1N3/4P2P/PP2KPP1/8 w - - 0 23",
           "bookPage": 174,
           "pdfPage": 12,
-          "printerErratum": true,
-          "caption": "Position after Black's 22nd move in sub-variation 21...Rd8 22.Rxd8+ Kxd8 (printed diagram shows d1 rook / g8 bishop schematic)"
+          "caption": "Position after Black's 22nd move in sub-variation 21...Rd8 22.Rxd8 Kxd8"
         },
         {
           "afterPly": 44,
@@ -1963,24 +1962,21 @@
           "afterPly": 59,
           "bookPage": 180,
           "pdfPage": 18,
-          "printerErratum": true,
-          "caption": "Position after White's 30th move (printed plate shifts b4-pawn to a4)",
+          "caption": "Position after White's 30th move",
           "fen": "r2r2k1/5pp1/4p1p1/8/1p3P2/1Pn3P1/2R2P1P/4RBK1 b - - 0 30"
         },
         {
           "afterPly": 72,
           "bookPage": 181,
           "pdfPage": 19,
-          "printerErratum": true,
-          "caption": "Position after Black's 36th move (printed plate omits Rc6 and shifts b4-pawn)",
+          "caption": "Position after Black's 36th move",
           "fen": "8/4kpp1/2r1p1p1/4R3/1pB2P1P/rPn3P1/3R1PK1/8 w - - 5 37"
         },
         {
           "afterPly": 85,
           "bookPage": 182,
           "pdfPage": 20,
-          "printerErratum": true,
-          "caption": "Position after White's 43rd move (printed plate omits Ra7)",
+          "caption": "Position after White's 43rd move",
           "fen": "6R1/r3k1p1/3r1p2/3RpP1p/1pB1n3/1P4P1/5PK1/8 b - - 7 43"
         }
       ],
