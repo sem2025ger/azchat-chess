@@ -4,7 +4,7 @@ const {LANGUAGE_CODES,safeGame}=require('./aiCoachCore');
 const {generateAnswer}=require('./aiCoachOpenAI');
 const {positionFacts}=require('./coachPositionFacts');
 const {lookupCoachBibliography}=require('./coachKnowledge');
-const {findClassicPassages,themesFromPositionFacts}=require('./coachClassics');
+const {findStructuralPassages}=require('./coachClassics');
 
 const fallback={
  de:(total)=>'In dieser Stellung wurden '+total+' öffentliche Partien gefunden. Du kannst die Beispiele unten in der Analyse öffnen. Eine Stockfish-Bewertung liegt hier nicht vor.',
@@ -100,14 +100,15 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
  if(engineRun)await engineRun;
  const games=result?publicChatGames(result,query.fen,requested??5):[],language=normalizeLanguage(query.language);
  const clientLines=legalCandidateLines(query.candidateLines,query.fen)||[];
- const computedFacts=positionFactsEnabled||classicsEnabled?positionFacts(query.fen):null;
- const classicPassages=classicsEnabled?findClassicPassages({
+ const computedFacts=positionFactsEnabled?positionFacts(query.fen):null;
+ // Attached only for this exact book position, a similar middlegame pawn structure or the same
+ // endgame material; otherwise nothing (theme tags alone attached mostly irrelevant games).
+ const classicPassages=classicsEnabled?findStructuralPassages({
   fen:query.fen,
-  themes:themesFromPositionFacts(computedFacts),
   question:query.message,
   limit:2,
   maxChars:650
- }).map(({bookId,unitId,citation,reasons,opening,eco,text})=>({bookId,unitId,citation,reasons,...(opening?{opening}:{}),...(eco?{eco}:{}),text})):[];
+ }).map(({bookId,unitId,citation,reasons,match,opening,eco,text})=>({bookId,unitId,citation,reasons,match,...(opening?{opening}:{}),...(eco?{eco}:{}),text})):[];
  const evidence={archiveAvailable:!!result,matched:result?.total??null,
   ...(analysis?{candidateLines:positionFactsEnabled?withLineEndFacts(serverEngineLines(analysis),query.fen):serverEngineLines(analysis),candidateOrigin:'server_stockfish_19',engine:{name:analysis.engine,budgetMs:analysis.budget.movetimeMs,perspective:'white'}}:{candidateLines:clientLines,candidateOrigin:'untrusted_client_legality_checked'}),
   nextMoves:(result?.nextMoves||[]).slice(0,8).map(x=>({move:x.move,count:x.count})),

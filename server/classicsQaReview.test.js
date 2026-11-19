@@ -26,7 +26,8 @@ test('classics QA review dry run produces sanitized 12-position OFF/ON report wi
   assert.equal(data.meta.allSucceeded,true);
   for(const rec of data.records){
    assert.equal(rec.runs.OFF.classicsKnowledge.length,0);
-   assert.ok(rec.runs.ON.classicsKnowledge.length>=1,`${rec.tc.id} should retrieve at least one classic`);
+   // Structural retrieval attaches at most 2 items, each with a stated match, or nothing at all.
+   assert.ok(rec.runs.ON.classicsKnowledge.length<=2,rec.tc.id);
    assert.ok(rec.runs.ON.evidenceBytes<16*1024);
   }
   const md=fs.readFileSync(mdOutput,'utf8');

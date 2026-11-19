@@ -3,6 +3,7 @@
 // Pure lookup: no network, no model call. Off unless AI_COACH_CLASSICS_ENABLED=true.
 const fs=require('fs');
 const path=require('path');
+const {Chess}=require('chess.js');
 const {THEMES,THEME_IDS,materialSignature}=require('./knowledge/classicsThemes');
 
 const CLASSICS_DIR=path.join(__dirname,'knowledge','classics');
@@ -237,5 +238,147 @@ function findClassicPassages({fen=null,themes=[],question='',limit=DEFAULT_LIMIT
  }));
 }
 
+// ---------- Structural retrieval (used by the chat) ----------
+// Theme tags alone matched almost any position (benchmark v1: 63% of middlegame hits irrelevant,
+// Game 54 returned for 10 of 40 positions). Here a passage is attached only when the book
+// contains this exact position, a middlegame with a similar pawn structure, or an ending with
+// the same pieces. Otherwise nothing is attached.
+const STRUCTURE_MIN_SIMILARITY=0.75;  // Jaccard over coloured pawn squares (middlegames)
+const STRUCTURE_MIN_PAWNS=8;          // fewer pawns: pawn overlap is not a meaningful structure signal
+const ENDGAME_MIN_SCORE=0.6;
+
+function parseBoard(board){
+ const white=new Set(),black=new Set(),count={};
+ board.split('/').forEach((row,ri)=>{
+  let file=0;
+  for(const ch of row){
+   if(/\d/.test(ch)){file+=Number(ch);continue;}
+   const sq=file+8*(7-ri);
+   if(ch==='P')white.add(sq);else if(ch==='p')black.add(sq);else if(ch!=='K'&&ch!=='k')count[ch]=(count[ch]||0)+1;
+   file++;
+  }
+ });
+ const side=letters=>[...'QRBN'].map(p=>letters(p).repeat(count[letters(p)]||0)).join('');
+ const whitePieces=side(p=>p),blackPieces=side(p=>p.toLowerCase()).toUpperCase();
+ return {white,black,pieces:whitePieces+'v'+blackPieces,swapped:blackPieces+'v'+whitePieces,pawns:white.size+black.size};
+}
+const flipRanks=set=>new Set([...set].map(sq=>(sq%8)+8*(7-Math.floor(sq/8))));
+function pawnJaccard(aW,aB,bW,bB){
+ let inter=0;
+ for(const s of aW)if(bW.has(s))inter++;
+ for(const s of aB)if(bB.has(s))inter++;
+ const union=aW.size+aB.size+bW.size+bB.size-inter;
+ return union?inter/union:0;
+}
+// Compare as-is and with colours reversed (board flipped, White and Black swapped).
+function structureSimilarity(q,k){
+ const same=pawnJaccard(q.white,q.black,k.white,k.black);
+ const reversed=pawnJaccard(q.white,q.black,flipRanks(k.black),flipRanks(k.white));
+ return reversed>same?{similarity:reversed,coloursReversed:true}:{similarity:same,coloursReversed:false};
+}
+
+// Every book position is indexed on the chunk that comments on it. Positions known only at unit
+// level (Capablanca start/diagrams, Alekhine plies outside every chunk's key list) go to the chunk
+// whose main-line ply range covers them, else to the unit's first chunk.
+function mainlinePlyKeys(unit){
+ if(!unit.startFen||!Array.isArray(unit.mainline))return [];
+ try{
+  const board=new Chess(unit.startFen),keys=[posKey(board.fen())];
+  for(const san of unit.mainline){board.move(san,{strict:true});keys.push(posKey(board.fen()));}
+  return keys;
+ }catch{return [];}
+}
+function structuralIndex(){
+ const store=loadClassics();
+ if(store.structural)return store.structural;
+ const byUnit=new Map();
+ store.chunks.forEach((entry,chunkIndex)=>{
+  const k=`${entry.bookId}:${entry.unit.id}`;
+  if(!byUnit.has(k))byUnit.set(k,[]);
+  byUnit.get(k).push(chunkIndex);
+ });
+ const assigned=new Map(); // chunkIndex -> Set(keys)
+ const add=(chunkIndex,key)=>{if(!assigned.has(chunkIndex))assigned.set(chunkIndex,new Set());assigned.get(chunkIndex).add(key);};
+ for(const chunkIdxs of byUnit.values()){
+  const unit=store.chunks[chunkIdxs[0]].unit;
+  const plyKeys=mainlinePlyKeys(unit),plyOf=new Map();
+  plyKeys.forEach((k,i)=>{if(!plyOf.has(k))plyOf.set(k,i);});
+  const ranges=chunkIdxs.map(ci=>{
+   const plies=[...store.chunks[ci].chunkPosKeys].map(k=>plyOf.get(k)).filter(n=>n!==undefined);
+   return {ci,min:plies.length?Math.min(...plies):Infinity,max:plies.length?Math.max(...plies):-Infinity};
+  });
+  const inChunk=new Set();
+  for(const ci of chunkIdxs)for(const k of store.chunks[ci].chunkPosKeys){add(ci,k);inChunk.add(k);}
+  for(const k of store.chunks[chunkIdxs[0]].unitPosKeys){
+   if(inChunk.has(k))continue;
+   const ply=plyOf.get(k);
+   const covering=ply===undefined?null:ranges.filter(r=>r.min<=ply&&ply<=r.max).sort((a,b)=>(a.max-a.min)-(b.max-b.min))[0];
+   add(covering?covering.ci:chunkIdxs[0],k);
+  }
+ }
+ const positions=[];
+ for(const [chunkIndex,keys] of assigned){
+  for(const key of keys){
+   positions.push({chunkIndex,key,board:parseBoard(key.split(' ')[0]),phase:materialSignature(key+' 0 1').phase});
+  }
+ }
+ store.structural={positions};
+ return store.structural;
+}
+
+function findStructuralPassages({fen,question='',limit=2,maxChars=DEFAULT_MAX_CHARS}={}){
+ if(!fen)return [];
+ const {chunks,posKeyFreq}=loadClassics();
+ const {positions}=structuralIndex();
+ const targetKey=posKey(fen),keyFreq=posKeyFreq.get(targetKey)||0;
+ const q=parseBoard(fen.split(' ')[0]),phase=materialSignature(fen).phase;
+ const qThemes=new Set(themesFromQuestion(question));
+ const best=new Map(); // chunkIndex -> candidate
+ const consider=(chunkIndex,cand)=>{const cur=best.get(chunkIndex);if(!cur||cand.score>cur.score)best.set(chunkIndex,cand);};
+ for(const p of positions){
+  if(p.key===targetKey&&keyFreq<=5){consider(p.chunkIndex,{score:100,match:{kind:'exact-position',similarity:1,coloursReversed:false},reasons:['exact position']});continue;}
+  if(phase==='endgame'){
+   if(p.phase!=='endgame')continue;
+   const reversedPieces=p.board.pieces===q.swapped&&p.board.pieces!==q.pieces;
+   if(p.board.pieces!==q.pieces&&!reversedPieces)continue;
+   const maxDiff=q.pawns>=4?2:1;
+   if(Math.abs(p.board.pawns-q.pawns)>maxDiff)continue;
+   const s=structureSimilarity(q,p.board);
+   const score=ENDGAME_MIN_SCORE+0.4*s.similarity;
+   consider(p.chunkIndex,{score,match:{kind:'endgame-material',similarity:Math.round(s.similarity*100)/100,coloursReversed:reversedPieces||s.coloursReversed},reasons:['same endgame material']});
+  }else{
+   if(q.pawns<STRUCTURE_MIN_PAWNS||p.phase==='endgame'||p.board.pawns<STRUCTURE_MIN_PAWNS)continue;
+   const s=structureSimilarity(q,p.board);
+   if(s.similarity<STRUCTURE_MIN_SIMILARITY)continue;
+   // Tie-break among equal structures: same minor/major pieces on both sides.
+   const samePieces=p.board.pieces===(s.coloursReversed?q.swapped:q.pieces);
+   consider(p.chunkIndex,{score:s.similarity+(samePieces?0.05:0),match:{kind:'pawn-structure',similarity:Math.round(s.similarity*100)/100,coloursReversed:s.coloursReversed},reasons:['similar pawn structure']});
+  }
+ }
+ let scored=[...best.entries()].map(([chunkIndex,c])=>{
+  const entry=chunks[chunkIndex];
+  const themeHits=[...qThemes].filter(t=>entry.chunkThemeSet.has(t));
+  return {entry,...c,rank:c.score+0.01*themeHits.length,reasons:[...c.reasons,...themeHits]};
+ });
+ const exact=scored.filter(c=>c.match.kind==='exact-position');
+ if(exact.length)scored=scored.filter(c=>c.match.kind==='exact-position'||c.rank>=STRUCTURE_MIN_SIMILARITY);
+ scored.sort((a,b)=>b.rank-a.rank||`${a.entry.bookId}:${a.entry.chunk.id}`.localeCompare(`${b.entry.bookId}:${b.entry.chunk.id}`));
+ const chosen=[],usedUnits=new Set();
+ for(const c of scored){
+  if(chosen.length>=Math.max(0,limit))break;
+  const unitKey=`${c.entry.bookId}:${c.entry.unit.id}`;
+  if(usedUnits.has(unitKey))continue;
+  usedUnits.add(unitKey);chosen.push(c);
+ }
+ return chosen.map(({entry:{book,bookId,unit,chunk},rank,match,reasons})=>({
+  bookId,unitId:unit.id,chunkId:chunk.id,score:Math.round(rank*100)/100,reasons:[...new Set(reasons)],match,
+  citation:citationOf(book,unit),
+  startFen:unit.startFen,
+  ...(unit.opening?{opening:unit.opening}:{}),
+  ...(unit.eco?{eco:unit.eco}:{}),
+  text:trimPassage(chunk.text,maxChars)
+ }));
+}
+
 function resetClassicsCacheForTests(){cache=null;}
-module.exports={isClassicsEnabled,loadClassics,findClassicPassages,themesFromQuestion,themesFromPositionFacts,citationOf,posKey,resetClassicsCacheForTests};
+module.exports={isClassicsEnabled,loadClassics,findClassicPassages,findStructuralPassages,themesFromQuestion,themesFromPositionFacts,citationOf,posKey,resetClassicsCacheForTests};

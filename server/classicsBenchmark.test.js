@@ -55,13 +55,14 @@ test('blind A/B order is reproducible from the seed and uses both orders',()=>{
  assert.ok(v.includes('OFF_A')&&v.includes('ON_A'));
 });
 
-test('benchmark dry run scores all 44 positions with 176 model calls and no key in the report',async()=>{
+test('benchmark dry run scores all 44 positions (3 calls each + 1 relevance call when classics are attached) with no key in the report',async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chessaz-classics-bench-'));
  const mdOutput=path.join(dir,'b.md'),jsonOutput=path.join(dir,'b.json');
  try{
   const r=await run({dryRun:true,movetimeMs:300,mdOutput,jsonOutput});
   assert.equal(r.meta.dryRun,true);
-  assert.equal(r.meta.modelCalls,176);
+  const withClassics=r.records.filter(x=>x.runs.ON.classics.length>0).length;
+  assert.equal(r.meta.modelCalls,44*3+withClassics);
   assert.equal(r.meta.maxModelCalls,176);
   assert.equal(r.meta.partial,false);
   assert.equal(r.meta.allSameEngineEvidence,true);
@@ -69,7 +70,8 @@ test('benchmark dry run scores all 44 positions with 176 model calls and no key 
   assert.equal(r.groups['book-control'].scored,4);
   for(const rec of r.records){
    assert.equal(rec.runs.OFF.classics.length,0,rec.id);
-   assert.ok(rec.runs.ON.answer.startsWith('DRY RUN ON'),rec.id);
+   assert.ok(rec.runs.ON.answer.startsWith(rec.runs.ON.classics.length?'DRY RUN ON':'DRY RUN OFF'),rec.id);
+   assert.equal(!!rec.relevance,rec.runs.ON.classics.length>0,rec.id);
    assert.ok(rec.scores&&rec.preferred,rec.id);
   }
   const md=fs.readFileSync(mdOutput,'utf8');

@@ -6,7 +6,7 @@ const {build}=require('./knowledge/buildChessFundamentals');
 const {build:buildAlekhine}=require('./knowledge/buildAlekhineBestGames');
 const {serialize}=require('./scripts/buildClassicsKnowledge.js');
 const {THEME_IDS}=require('./knowledge/classicsThemes');
-const {isClassicsEnabled,loadClassics,findClassicPassages,themesFromQuestion,themesFromPositionFacts,resetClassicsCacheForTests}=require('./coachClassics');
+const {isClassicsEnabled,loadClassics,findClassicPassages,findStructuralPassages,themesFromQuestion,themesFromPositionFacts,resetClassicsCacheForTests}=require('./coachClassics');
 
 const FILE=path.join(__dirname,'knowledge','classics','capablanca-chess-fundamentals.json');
 const ALEKHINE_FILE=path.join(__dirname,'knowledge','classics','alekhine-best-games-1908-1923.json');
@@ -207,4 +207,48 @@ test('QA regressions: exact-game priority, opposition endgame, opening noise, si
  const bothG5=findClassicPassages({fen:ruy.fen(),question:'Capablanca Alekhine Ruy Lopez',limit:10});
  assert.ok(bothG5.some(h=>h.bookId==='capablanca-chess-fundamentals'));
  assert.ok(bothG5.some(h=>h.bookId==='alekhine-best-games-1908-1923'));
+});
+
+test('structural retrieval: attaches a game only for the exact position, a similar pawn structure or the same endgame material',()=>{
+ resetClassicsCacheForTests();
+ const bench=JSON.parse(fs.readFileSync(path.join(__dirname,'knowledge','benchmarks','classics-benchmark-v1.json'),'utf8'));
+ const pos=id=>bench.positions.find(p=>p.id===id);
+ const hits=id=>findStructuralPassages({fen:pos(id).fen,question:pos(id).question,limit:2,maxChars:650});
+
+ // Benchmark v1 baseline: theme tags returned Game 54 for 10 of 40 new positions and 63% irrelevant middlegame hits.
+ const usage=new Map();
+ for(const p of bench.positions.filter(p=>p.group==='new'))for(const h of hits(p.id)){const k=h.bookId+':'+h.unitId;usage.set(k,(usage.get(k)||0)+1);}
+ assert.ok(Math.max(...usage.values())<=4,'no single game may dominate retrieval: '+JSON.stringify([...usage]));
+ assert.equal(usage.get('alekhine-best-games-1908-1923:g54')||0,0);
+
+ // No similar structure in the books: attach nothing instead of a theme-tag match.
+ assert.deepEqual(hits('n16-english-attack'),[]);
+
+ // Isolated queen's pawn: a Queen's Gambit IQP game with the same structure.
+ const iqp=hits('n01-iqp-white');
+ assert.ok(iqp.length>=1);
+ for(const h of iqp){assert.equal(h.match.kind,'pawn-structure');assert.ok(h.match.similarity>=0.75);assert.ok(h.reasons.includes('similar pawn structure'));}
+ assert.ok(iqp.some(h=>/Queen's Gambit/i.test(h.opening||h.citation)));
+
+ // Colours reversed: Black's IQP finds a White-IQP game.
+ assert.ok(hits('n02-iqp-black').some(h=>h.match.coloursReversed===true));
+
+ // Maroczy Bind finds the Maroczy Bind game; Carlsbad (old QA case 02) finds Queen's Gambit games, not Queen's/King's Indian.
+ assert.equal(hits('n03-maroczy')[0].unitId,'g76');
+
+ // Endings: only the same piece material, never a middlegame.
+ for(const id of ['n31-lucena','n36-outside-passer','n37-hold-black','n40-two-vs-one']){
+  const h=hits(id);
+  assert.ok(h.length>=1,id);
+  assert.ok(h.every(x=>x.match.kind==='endgame-material'),id);
+ }
+ assert.ok(hits('n37-hold-black').every(h=>h.bookId==='capablanca-chess-fundamentals'));
+
+ // Exact book positions keep priority, including plies known only at unit level (Game 89 before 20.Bxh7+).
+ for(const id of ['c01-alekhine-g97','c02-alekhine-g89','c03-alekhine-g55','c04-capablanca-e59']){
+  const h=hits(id);
+  assert.equal(h[0].match.kind,'exact-position',id);
+  assert.equal(h[0].unitId,pos(id).bookRef?.gameNumber?'g'+pos(id).bookRef.gameNumber:'e59',id);
+ }
+ assert.deepEqual(findStructuralPassages({}),[]);
 });

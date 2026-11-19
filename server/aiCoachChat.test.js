@@ -205,6 +205,8 @@ test('classics retrieval stays OFF by default; ON connects Alekhine alongside St
  assert.ok(Array.isArray(seen[2].evidence.classicsKnowledge)&&seen[2].evidence.classicsKnowledge.length>=1);
  assert.equal(seen[2].evidence.classicsKnowledge[0].bookId,'alekhine-best-games-1908-1923');
  assert.equal(seen[2].evidence.classicsKnowledge[0].unitId,'g97');
+ assert.equal(seen[2].evidence.classicsKnowledge[0].match.kind,'exact-position');
+ assert.ok(seen[2].instructions.includes('never carry concrete moves, squares, threats or tactics from the historical game'));
  assert.ok(seen[2].instructions.includes('evidence.classicsKnowledge contains verified excerpts'));
  assert.ok(seen[2].instructions.includes('clearly distinguish historical commentary from objective engine evaluation'));
  assert.ok(seen[2].instructions.includes('superseded by Stockfish 19'));
@@ -244,4 +246,14 @@ test('classics retrieval stays OFF by default; ON connects Alekhine alongside St
   globalThis.fetch=origFetch;
   await new Promise(r=>envServer.close(r));
  }
+});
+
+test('classics ON attaches nothing when the books hold no similar structure (no theme-tag filler)',async()=>{
+ const fen='r2q1rk1/3nbppp/p2pbn2/1p2p3/4P1P1/1NN1BP2/PPPQ3P/2KR1B1R w - - 0 12'; // Najdorf English Attack, benchmark n16
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:[lineFixture(['g5'])]})};
+ const seen=[];
+ const fetchImpl=async(_url,options)=>{const body=JSON.parse(options.body);seen.push({evidence:JSON.parse(body.input).evidence,instructions:body.instructions});return verifiedReply();};
+ await groundedChat(null,{fen,message:'How should White conduct the kingside pawn storm here?',language:'en',side:'white'},{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true,classicsEnabled:true});
+ assert.equal(Object.hasOwn(seen[0].evidence,'classicsKnowledge'),false);
+ assert.equal(seen[0].instructions.includes('evidence.classicsKnowledge'),false);
 });
