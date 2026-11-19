@@ -227,7 +227,7 @@ test('structural retrieval: attaches a game only for the exact position, a simil
  // Isolated queen's pawn: a Queen's Gambit IQP game with the same structure.
  const iqp=hits('n01-iqp-white');
  assert.ok(iqp.length>=1);
- for(const h of iqp){assert.equal(h.match.kind,'pawn-structure');assert.ok(h.match.similarity>=0.75);assert.ok(h.reasons.includes('similar pawn structure'));}
+ for(const h of iqp){assert.equal(h.match.kind,'pawn-structure');assert.ok(h.match.similarity>=0.85);assert.ok(h.reasons.includes('similar pawn structure'));}
  assert.ok(iqp.some(h=>/Queen's Gambit/i.test(h.opening||h.citation)));
 
  // Colours reversed: Black's IQP finds a White-IQP game.

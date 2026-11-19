@@ -243,7 +243,7 @@ function findClassicPassages({fen=null,themes=[],question='',limit=DEFAULT_LIMIT
 // Game 54 returned for 10 of 40 positions). Here a passage is attached only when the book
 // contains this exact position, a middlegame with a similar pawn structure, or an ending with
 // the same pieces. Otherwise nothing is attached.
-const STRUCTURE_MIN_SIMILARITY=0.75;  // Jaccard over coloured pawn squares (middlegames)
+const STRUCTURE_MIN_SIMILARITY=0.85;  // Jaccard over coloured pawn squares (middlegames); 0.75–0.84 matches were mostly judged irrelevant (run 44452256147)
 const STRUCTURE_MIN_PAWNS=8;          // fewer pawns: pawn overlap is not a meaningful structure signal
 const ENDGAME_MIN_SCORE=0.6;
 
