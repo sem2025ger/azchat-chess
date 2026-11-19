@@ -206,6 +206,14 @@ test('classics retrieval stays OFF by default; ON connects Alekhine alongside St
  assert.equal(seen[2].evidence.classicsKnowledge[0].bookId,'alekhine-best-games-1908-1923');
  assert.equal(seen[2].evidence.classicsKnowledge[0].unitId,'g97');
  assert.ok(seen[2].instructions.includes('evidence.classicsKnowledge contains verified excerpts'));
+ assert.ok(seen[2].instructions.includes('clearly distinguish historical commentary from objective engine evaluation'));
+ assert.ok(seen[2].instructions.includes('superseded by Stockfish 19'));
+ assert.ok(seen[2].instructions.includes('Stockfish candidateLines, positionFacts and legalMoves'));
+ // When positionFactsEnabled is false, classics instruction must not reference absent positionFacts.
+ await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:false,classicsEnabled:true});
+ assert.equal(Object.hasOwn(seen[3].evidence,'positionFacts'),false);
+ assert.ok(seen[3].instructions.includes('Stockfish candidateLines and legalMoves'));
+ assert.equal(seen[3].instructions.includes('Stockfish candidateLines, positionFacts and legalMoves'),false);
  assert.ok(Buffer.byteLength(JSON.stringify(seen[2].evidence),'utf8')<16*1024);
  assert.equal(JSON.stringify(on).includes('classicsKnowledge'),false);
  assert.equal(off.engineVerified,true);
