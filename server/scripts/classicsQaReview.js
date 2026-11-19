@@ -47,12 +47,12 @@ function buildCases(){
    question:'Как белым использовать преимущество коня против плохого слона в этой пешечной структуре?'},
   {id:'04-ruy-center',theme:'Positional / bishop pair',lang:'tr',side:'white',
    name:'Ruy Lopez Exchange (open center)',
-   fen:fromMoves('e4 e5 Nf3 Nc6 Bb5 a6 Bxc6 dxc6 d4 exd4 Qxd4 Qxd4 Nxd4 Bd7 Nc3 O-O-O Be3'),
+   fen:fromMoves('e4 e5 Nf3 Nc6 Bb5 a6 Bxc6 dxc6 d4 exd4 Qxd4 Qxd4 Nxd4 Bd7 Nc3 O-O-O'),
    question:'Bu konumda beyazın merkez kontrolü ve uzun vadeli stratejik planı nedir?'},
-  {id:'05-alekhine-g97',theme:'Dynamic initiative',lang:'en',side:'white',
+  {id:'05-alekhine-g97',theme:'Dynamic initiative',lang:'en',side:'black',
    name:'Alekhine–Sämisch 1923 (Game 97, after 20.Nd5!!)',
    fen:loadAlekhineFen(97,39),
-   question:'How does White press the initiative after the queen sacrifice here?'},
+   question:'White has just played 20.Nd5. What are White\'s threats, and can Black defend?'},
   {id:'06-prophylaxis',theme:'Prophylaxis / defence',lang:'en',side:'black',
    name:'French Advance defensive counterplay',
    fen:fromMoves('e4 e6 d4 d5 e5 c5 c3 Nc6 Nf3 Qb6 Bd3 Bd7 O-O cxd4 cxd4 Nxd4 Nxd4 Qxd4 Nc3 a6 Re1'),
@@ -71,7 +71,7 @@ function buildCases(){
    question:'Який план гри і чи є тут ідеї для комбінації або жертви?'},
   {id:'10-dragon-exch',theme:'Sacrifices',lang:'en',side:'black',
    name:'Sicilian Dragon Rxc3 exchange sacrifice motif',
-   fen:fromMoves('e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6 Be3 Bg7 f3 O-O Qd2 Nc6 Bc4 Bd7 O-O-O Rc8 Bb3 Ne5 h4 Nc4 Bxc4 Rxc4'),
+   fen:fromMoves('e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 g6 Be3 Bg7 f3 O-O Qd2 Nc6 Bc4 Bd7 O-O-O Rc8 Bb3 Ne5 h4 Nc4 Bxc4 Rxc4 g4'),
    question:'Is an exchange sacrifice on c3 justified here to gain initiative and dark-square play?'},
   {id:'11-capa-e59',theme:'Endgames (Rook)',lang:'en',side:'white',
    name:'Capablanca Chess Fundamentals Ex. 59 Rook Ending',
@@ -80,7 +80,7 @@ function buildCases(){
   {id:'12-opposition',theme:'Endgames (K+P Opposition)',lang:'de',side:'white',
    name:'Pure King and Pawn Opposition Endgame',
    fen:'4k3/8/8/4P3/4K3/8/8/8 w - - 0 1',
-   question:'Wie gewinnt Weiß dieses Bauernendspiel mit der Opposition und aktivem König?'}
+   question:'Kann Weiß dieses Bauernendspiel gewinnen? Erkläre es mit der Opposition und dem aktiven König.'}
  ];
 }
 

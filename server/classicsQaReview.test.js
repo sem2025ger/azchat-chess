@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {validateFen}=require('chess.js');
+const {validateFen,Chess}=require('chess.js');
 const {buildCases,run,MAX_MODEL_CALLS}=require('./scripts/classicsQaReview');
 
 test('classics QA review defines exactly 12 legal positions across all six languages',()=>{
@@ -34,4 +34,15 @@ test('classics QA review dry run produces sanitized 12-position OFF/ON report wi
   assert.equal(md.includes('DRY_RUN_NOT_A_KEY'),false,'never write key placeholder to report');
   assert.equal(md.includes('Bearer '),false,'never write auth headers to report');
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+test('every classics QA question is about the side to move and does not presuppose a false result',()=>{
+ for(const tc of buildCases()){
+  const turn=new Chess(tc.fen).turn()==='w'?'white':'black';
+  assert.equal(tc.side,turn,`${tc.id}: question about ${tc.side}, but ${turn} is to move`);
+ }
+ const dragon=buildCases().find(c=>c.id==='10-dragon-exch');
+ assert.ok(new Chess(dragon.fen).moves().includes('Rxc3'),'the asked exchange sacrifice must be legal now');
+ const kp=buildCases().find(c=>c.id==='12-opposition');
+ assert.doesNotMatch(kp.question,/^Wie gewinnt/,'the K+P position is a draw; the question must not assume a win');
 });
