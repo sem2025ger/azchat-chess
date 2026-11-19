@@ -3,6 +3,14 @@ name: Position Facts V1 QA review (manual only)
 on:
   workflow_dispatch:
     inputs:
+      review_mode:
+        description: QA review mode (position-facts default, or classics on feat/classics-knowledge-alekhine)
+        required: false
+        type: choice
+        default: position-facts
+        options:
+          - position-facts
+          - classics
       model:
         description: OpenAI coach model
         required: true
@@ -58,18 +66,29 @@ jobs:
         timeout-minutes: 25
         env:
           OPENAI_API_KEY: ${{ secrets.QA_OPENAI_API_KEY }}
+          REVIEW_MODE: ${{ inputs.review_mode || 'position-facts' }}
           POSITION_FACTS_REVIEW_MODEL: ${{ inputs.model }}
           POSITION_FACTS_REVIEW_MOVETIME_MS: ${{ inputs.movetime_ms }}
+          CLASSICS_QA_REVIEW_MODEL: ${{ inputs.model }}
+          CLASSICS_QA_REVIEW_MOVETIME_MS: ${{ inputs.movetime_ms }}
           NODE_NO_WARNINGS: '1'
         shell: bash
         run: |
           set -euo pipefail
           umask 077
           # Inputs are data: passed only as environment variables, never shell-evaluated.
-          node scripts/positionFactsReview.js
+          if [[ "$REVIEW_MODE" == "classics" ]]; then
+            if [[ "${GITHUB_REF_NAME:-}" != "feat/classics-knowledge-alekhine" ]]; then
+              echo '::error::Classics QA mode is restricted to branch feat/classics-knowledge-alekhine.'
+              exit 1
+            fi
+            node scripts/classicsQaReview.js
+          else
+            node scripts/positionFactsReview.js
+          fi
 
       - name: Upload Markdown report
-        if: always()
+        if: always() && (inputs.review_mode || 'position-facts') != 'classics'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: position-facts-review
@@ -77,12 +96,27 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Upload Classics QA report artifacts
+        if: always() && inputs.review_mode == 'classics'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: classics-qa-review
+          path: |
+            server/classics-qa-review.md
+            server/classics-qa-review.json
+          if-no-files-found: warn
+          retention-days: 14
+
       - name: Publish review summary
         if: always()
+        env:
+          REVIEW_MODE: ${{ inputs.review_mode || 'position-facts' }}
         shell: bash
         run: |
-          if [[ -f position-facts-review.md ]]; then
+          if [[ "$REVIEW_MODE" == "classics" && -f classics-qa-review.md ]]; then
+            cat classics-qa-review.md >> "$GITHUB_STEP_SUMMARY"
+          elif [[ -f position-facts-review.md ]]; then
             cat position-facts-review.md >> "$GITHUB_STEP_SUMMARY"
           else
-            echo 'Position Facts review report not produced; check the job logs (no key values logged).' >> "$GITHUB_STEP_SUMMARY"
+            echo 'QA review report not produced; check the job logs (no key values logged).' >> "$GITHUB_STEP_SUMMARY"
           fi
