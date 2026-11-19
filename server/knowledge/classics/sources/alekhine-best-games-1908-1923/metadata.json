@@ -1,0 +1,49 @@
+{
+ "bookId": "alekhine-best-games-1908-1923",
+ "title": "My Best Games of Chess 1908-1923",
+ "author": "Alexander Alekhine",
+ "firstPublished": 1927,
+ "sourceEdition": {
+  "publisher": "David McKay Company, Inc., New York (Tartan Books reprint)",
+  "arrangement": "Published by arrangement with G. Bell & Sons, Ltd., London",
+  "firstPublishedUK": 1927,
+  "firstAmericanEdition": 1965,
+  "reprintInspected": "March 1972 / October 1972 printing",
+  "translators": [
+   "Julius du Mont (1881-1956)",
+   "Maurice Edward Goldstein (1901-1966)"
+  ],
+  "totalPdfPages": 292,
+  "pdfParts": [
+   "alekhine-1-60.pdf (60 pages: cover, front matter i-xii, Part I title, Games 1-15 start, book pp. 1-42)",
+   "alekhine-61-120.pdf (60 pages: book pp. 43-102, Games 16-38 start)",
+   "alekhine-121-180.pdf (60 pages: book pp. 103-162, Game 38 end - Game 64 start)",
+   "alekhine-181-240.pdf (60 pages: book pp. 163-222, Game 64 cont. - Game 84)",
+   "alekhine-241-292.pdf (52 pages: book pp. 223-267, Game 84 end - Game 100, Indexes, back cover)"
+  ]
+ },
+ "rights": {
+  "authorDeathYear": 1946,
+  "authorPublicDomainEU": true,
+  "translatorLastDeathYear": 1966,
+  "translatorPublicDomainEUYear": 2037,
+  "status": "factual_chess_data_and_original_chessaz_summaries_only",
+  "summary": "Alexander Alekhine died in 1946 (author copyright expired in EU/Germany on 2016-12-31 under UrhG § 64). However, this English edition was translated from the French manuscripts by J. du Mont (d. 1956) and M. E. Goldstein (d. 1966), so the English translation prose remains protected in Germany/EU until 2036-12-31 (UrhG §§ 3, 64, 65) and the McKay 1965/1972 edition bears an All Rights Reserved notice. Therefore zero verbatim book prose or OCR dumps are retained; only non-copyrightable factual chess data (PGN, SAN mainline moves, validated variation trees, diagram/key FENs, event/player/opening/result metadata) and freshly authored ChessAZ technical coaching summaries are stored."
+ },
+ "totalPdfPages": 292,
+ "frontMatter": {
+  "summaryOfResultsPages": { "from": "vi", "to": "vii" },
+  "contentsPages": { "from": "ix", "to": "xii" },
+  "tournamentRecordTotals": { "played": 406, "won": 235, "drawn": 119, "lost": 51 },
+  "matchRecordTotals": { "played": 38, "won": 23, "drawn": 8, "lost": 7 },
+  "note": "In the printed Summary of Results (p. vii), Tournaments Won (235) + Drawn (119) + Lost (51) sums to 405 while Played is printed as 406 (1922 London reports 15 played: 8 won, 7 drawn; 1923 Margate 7: 3,3,1; 1923 Carlsbad 17: 9,5,3; 1924 New York 20: 6,12,2; etc.)."
+ },
+ "frontMatterErrata": [
+  {
+   "gameNumber": 1,
+   "kind": "index_page_reference_and_summary_arithmetic",
+   "bookPage": "vi-vii",
+   "note": "Summary of Results (p. vii) prints Tournaments Played=406 while Won(235)+Drawn(119)+Lost(51)=405; Index of Openings (p. 265) lists Queen's Gambit Declined twice on p. 50/185 and Ruy Lopez p. 48 twice."
+  }
+ ]
+}
