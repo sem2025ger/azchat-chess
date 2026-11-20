@@ -68,6 +68,32 @@ test('flag on: explicit archive game requests never start an engine search',asyn
  assert.equal(engine.calls.length,0);assert.equal(response.archiveOnly,true);assert.ok(!('engineError'in response));
 });
 
+test('without OpenAI, archive fallback never contradicts server Stockfish evidence in any language',async()=>{
+ for(const language of ['de','en','az','tr','uk','ua','ru']){
+  const engine=fakeEngine(async()=>serverAnalysis);
+  const response=await groundedChat(index,{...query,language},{engine,fetchImpl:()=>{throw Error('provider must not be called');}});
+  assert.equal(engine.calls[0].value,fen);
+  assert.equal(response.position,fen);
+  assert.equal(response.generated,false);
+  assert.equal(response.providerStatus,'not_configured');
+  assert.equal(response.engineVerified,true);
+  assert.equal(response.answer.includes('Stockfish'),false,language+' fallback leaves engine availability to the engine status');
+  assert.equal(response.engineLines.length,2);
+  for(const line of response.engineLines){const board=new Chess(response.position);for(const san of line.moves)assert.ok(board.move(san,{strict:true}));}
+ }
+});
+
+test('without OpenAI, missing, empty and failed engine results stay explicitly unverified',async()=>{
+ for(const engine of [null,fakeEngine(async()=>({...serverAnalysis,lines:[]})),fakeEngine(async()=>{throw Object.assign(Error('timeout'),{code:'engine_timeout'});})]){
+  const response=await groundedChat(index,query,{engine});
+  assert.equal(response.generated,false);
+  assert.equal(response.providerStatus,'not_configured');
+  assert.equal(response.engineVerified,false);
+  assert.equal(response.engineLines,undefined);
+  if(engine)assert.ok(['engine_unavailable','engine_timeout'].includes(response.engineError));
+ }
+});
+
 test('flag on: the request abort signal is passed to the engine',async()=>{
  const engine=fakeEngine(async()=>serverAnalysis),abort=new AbortController();
  await groundedChat(index,query,{openaiApiKey:'k',fetchImpl:capture().fetchImpl,engine,signal:abort.signal});

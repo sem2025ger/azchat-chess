@@ -6,12 +6,12 @@ const {positionFacts}=require('./coachPositionFacts');
 const {lookupCoachBibliography}=require('./coachKnowledge');
 
 const fallback={
- de:(total)=>'In dieser Stellung wurden '+total+' öffentliche Partien gefunden. Du kannst die Beispiele unten in der Analyse öffnen. Eine Stockfish-Bewertung liegt hier nicht vor.',
- en:(total)=>'Found '+total+' public games in this position. Open the examples below in Analysis. No Stockfish evaluation is available in this chat.',
- ru:(total)=>'В этой позиции найдено '+total+' публичных партий. Открой примеры ниже в разделе анализа. Оценка Stockfish в этом чате пока недоступна.',
- az:(total)=>'Bu mövqedə '+total+' açıq partiya tapıldı. Nümunələri aşağıda təhlildə aç. Bu çatda Stockfish qiymətləndirməsi hələ yoxdur.',
- tr:(total)=>'Bu konumda '+total+' herkese açık parti bulundu. Örnekleri aşağıda analizde açabilirsin. Bu sohbette Stockfish değerlendirmesi henüz yok.',
- uk:(total)=>'У цій позиції знайдено '+total+' відкритих партій. Переглянь приклади нижче в аналізі. Оцінка Stockfish у чаті поки недоступна.'
+ de:(total)=>'In dieser Stellung wurden '+total+' öffentliche Partien gefunden. Du kannst die Beispiele unten in der Analyse öffnen.',
+ en:(total)=>'Found '+total+' public games in this position. Open the examples below in Analysis.',
+ ru:(total)=>'В этой позиции найдено '+total+' публичных партий. Открой примеры ниже в разделе анализа.',
+ az:(total)=>'Bu mövqedə '+total+' açıq partiya tapıldı. Nümunələri aşağıda təhlildə aç.',
+ tr:(total)=>'Bu konumda '+total+' herkese açık parti bulundu. Örnekleri aşağıda analizde açabilirsin.',
+ uk:(total)=>'У цій позиції знайдено '+total+' відкритих партій. Переглянь приклади нижче в аналізі.'
 };
 function normalizeLanguage(language){return language==='ua'?'uk':language;}
 const gameHeadings={
