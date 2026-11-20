@@ -16,6 +16,14 @@ const fallback={
  tr:(total)=>'Bu konumda '+total+' herkese açık parti bulundu. Örnekleri aşağıda analizde açabilirsin.',
  uk:(total)=>'У цій позиції знайдено '+total+' відкритих партій. Переглянь приклади нижче в аналізі.'
 };
+const engineFallback={
+ de:'Die KI-Erklärung ist vorübergehend nicht verfügbar. Die von Stockfish geprüften Varianten stehen unten.',
+ en:'The AI explanation is temporarily unavailable. The verified Stockfish lines are shown below.',
+ ru:'ИИ пока не смог подготовить объяснение. Ниже доступны проверенные варианты Stockfish.',
+ az:'Süni intellekt izahı hazırda əlçatan deyil. Stockfish-in yoxladığı variantlar aşağıdadır.',
+ tr:'Yapay zekâ açıklaması şu anda kullanılamıyor. Stockfish tarafından doğrulanan varyantlar aşağıda.',
+ uk:'ШІ поки не зміг підготувати пояснення. Нижче доступні перевірені варіанти Stockfish.'
+};
 function normalizeLanguage(language){return language==='ua'?'uk':language;}
 const gameHeadings={
  de:'In Partien kamen folgende Fortsetzungen vor:',
@@ -132,6 +140,7 @@ function boundRestrictionEvidence(evidence){
 
 // The browser waits 60 s; the server answers within this budget, engine time included.
 const CHAT_DEADLINE_MS=55000,PLAN_CALL_MAX_MS=30000,ANSWER_CALL_MAX_MS=25000,FALLBACK_RESERVE_MS=15000;
+const OPTIONAL_ARCHIVE_TIMEOUT_MS=4000;
 function logProviderFailure(log,mode,error,model,elapsedMs){
  // Only the reason and timings: never the key, prompt, question or model text.
  try{log(JSON.stringify({event:'coach_chat_provider_failed',mode,reason:String(error?.reason||error?.code||'unknown').slice(0,80),model,elapsedMs,...(Number.isFinite(error?.outputTokens)?{outputTokens:error.outputTokens}:{})}));}catch{/* Logging never breaks a reply. */}
@@ -142,9 +151,15 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
  let result=null,analysis=null,engineError=null;
  const engineRun=engine&&!requested?engine.analyze(query.fen,{signal}).then(value=>{analysis=value.lines.length?value:null;if(!analysis)engineError='engine_unavailable';},e=>{engineError=e.code||'engine_unavailable';}):null;
  // Search rechecks both players' opt-outs. Never query private/personal games.
- if(index?.status==='ready')try{result=await index.search({fen:query.fen,side:query.side,scope:'all',sort:'strongest',limit:requested??5});}catch{ /* General teaching can continue without archive claims. */ }
+ if(index?.status==='ready'){
+  const archiveTimeout=!requested&&openaiApiKey?AbortSignal.timeout(OPTIONAL_ARCHIVE_TIMEOUT_MS):null;
+  const archiveSignal=signal&&archiveTimeout?AbortSignal.any([signal,archiveTimeout]):signal??archiveTimeout;
+  try{result=await index.search({fen:query.fen,side:query.side,scope:'all',sort:'strongest',limit:requested??5,signal:archiveSignal});}catch{ /* General teaching can continue without archive claims. */ }
+ }
+ signal?.throwIfAborted();
  if(!result&&!openaiApiKey)throw Object.assign(Error('index_unavailable'),{code:index?.status==='warming'?'index_warming':'index_unavailable'});
  if(engineRun)await engineRun;
+ signal?.throwIfAborted();
  const games=result?publicChatGames(result,query.fen,requested??5):[],language=normalizeLanguage(query.language);
  const clientLines=legalCandidateLines(query.candidateLines,query.fen)||[];
  const currentFacts=positionFactsEnabled?positionFacts(query.fen):null;
@@ -158,7 +173,7 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
   ...(knowledgeCatalogEnabled&&lookupCoachBibliography(query.message)?{coachBibliography:lookupCoachBibliography(query.message)}:{})};
  boundRestrictionEvidence(evidence);
  const archiveOnly=!!requested&&!!result;
- let answer,planDemonstration=null,lineLessons=null,planFallback=false;
+ let answer,planDemonstration=null,lineLessons=null,planFallback=false,providerUnavailable=false;
  if(archiveOnly)answer=gameHeadings[language];
  else if(openaiApiKey){
   // Only a server-recomputed line can be linked to an illustrated lesson.
@@ -178,13 +193,20 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
   }
   if(!result){
    const budget=Math.min(ANSWER_CALL_MAX_MS,remaining()-1000);
-   if(budget<3000){logProviderFailure(log,'answer',{reason:'deadline'},openaiModel,0);throw Object.assign(Error('provider_unavailable'),{code:'provider_unavailable',reason:'deadline'});}
-   result=await ask('answer',budget);
+   try{
+    if(budget<3000){logProviderFailure(log,'answer',{reason:'deadline'},openaiModel,0);throw Object.assign(Error('provider_unavailable'),{code:'provider_unavailable',reason:'deadline'});}
+    result=await ask('answer',budget);
+   }catch(error){
+    if(signal?.aborted||error?.code!=='provider_unavailable'||!analysis)throw error;
+    providerUnavailable=true;
+    result=engineFallback[language];
+   }
   }
   if(typeof result==='string')answer=result;
   else {answer=result.answer;planDemonstration=result.planDemonstration||null;lineLessons=result.lineLessons||null;}
  }else answer=fallback[language](result.total||0);
- return {answer,generated:archiveOnly||!!openaiApiKey,provider:archiveOnly?null:openaiApiKey?'openai':null,providerStatus:archiveOnly?'archive':openaiApiKey?'ready':'not_configured',
+ const generated=archiveOnly||!!openaiApiKey&&!providerUnavailable;
+ return {answer,generated,provider:generated&&!archiveOnly?'openai':null,providerStatus:archiveOnly?'archive':providerUnavailable?'unavailable':openaiApiKey?'ready':'not_configured',
   source:result?'public-archive':'none',archiveAvailable:!!result,engineVerified:!!analysis,candidateLines:clientLines,
   ...(planDemonstration?{planDemonstration}:{}),...(lineLessons?{lineLessons}:{}),...(planFallback?{planFallback:true}:{}),
   ...(engine&&!requested?(analysis?{engineLines:serverEngineLines(analysis)}:{engineError}):{}),position:query.fen,matched:result?.total??null,archiveOnly,games:archiveOnly?games.map(game=>{const board=new Chess();board.loadPgn(game.pgn);const moves=board.history();return {...game,moves:moves.slice(0,30),continuation:moves.slice(game.ply,game.ply+6)};}):openaiApiKey?[]:games};

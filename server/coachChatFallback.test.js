@@ -3,8 +3,10 @@
 // real reason and replaced by one ordinary answer, never shown as "coach unavailable".
 const test=require('node:test');
 const assert=require('node:assert/strict');
+const {setTimeout:delay}=require('node:timers/promises');
 const {generateAnswer}=require('./aiCoachOpenAI');
 const {groundedChat,CHAT_DEADLINE_MS}=require('./aiCoachChat');
+const {PositionIndex}=require('./positionIndex');
 
 const fen='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
 const planQuery={message:'Оцени позицию и предложи план игры за белых.',fen,side:'any',language:'ru'};
@@ -62,11 +64,34 @@ test('a successful lesson is returned without a fallback call',async()=>{
  assert.deepEqual(sink.lines,[]);
 });
 
-test('if the fallback also fails the player gets provider_unavailable and both failures are logged',async()=>{
+test('if the fallback also fails, Chessy returns only verified engine lines and logs both failures',async()=>{
  const {fetchImpl,calls}=provider({plan:async()=>{throw timeoutError();},answer:async()=>new Response('{}',{status:502})}),sink=capture();
- await assert.rejects(groundedChat(null,planQuery,{...flags,fetchImpl,log:sink.log}),e=>e.code==='provider_unavailable');
+ const result=await groundedChat(null,planQuery,{...flags,fetchImpl,log:sink.log});
+ assert.deepEqual([result.generated,result.provider,result.providerStatus,result.engineVerified],[false,null,'unavailable',true]);
+ assert.equal(result.position,fen);
+ assert.deepEqual(result.engineLines.map(line=>line.moves[0]),['d3','c3']);
+ assert.equal(result.planDemonstration,undefined);
+ assert.equal(result.lineLessons,undefined);
+ assert.match(result.answer,/ИИ.*Stockfish/);
  assert.deepEqual(calls.map(c=>c.mode),['plan','answer']);
  assert.deepEqual(sink.events().map(e=>[e.mode,e.reason]),[['plan','timeout'],['answer','http_502']]);
+});
+
+test('a slow optional archive read is aborted and chat continues without archive claims',async()=>{
+ let searchSignal;
+ const index=new PositionIndex({page:async()=>[],hidden:async signal=>{
+  if(signal){searchSignal=signal;await delay(15000,null,{signal});}
+  return new Set();
+ }},{log(){}});
+ await index.start();
+ const {fetchImpl,calls}=provider({plan:async()=>reply(lesson)});
+ const result=await groundedChat(index,planQuery,{...flags,fetchImpl});
+ assert.equal(searchSignal?.reason?.name,'TimeoutError');
+ assert.equal(result.archiveAvailable,false);
+ assert.equal(result.matched,null);
+ assert.equal(JSON.parse(calls[0].body.input).evidence.archiveAvailable,false);
+ assert.equal(result.generated,true);
+ assert.equal(result.engineVerified,true);
 });
 
 test('log lines contain no key, question, instructions or model text',async()=>{
@@ -93,9 +118,11 @@ test('the chat deadline bounds both calls and leaves time for the fallback',asyn
  const out=await groundedChat(null,planQuery,{...flags,fetchImpl,now,log:()=>{}});
  assert.equal(out.planFallback,true);
  assert.equal(calls.length,2);
- // Out of time before the fallback: fail fast with a logged deadline instead of hanging.
+ // Out of time before the fallback: return the verified lines without another request.
  clock=0;const late=provider({plan:async()=>{clock+=CHAT_DEADLINE_MS;throw timeoutError();}}),sink=capture();
- await assert.rejects(groundedChat(null,planQuery,{...flags,fetchImpl:late.fetchImpl,now,log:sink.log}),e=>e.code==='provider_unavailable');
+ const partial=await groundedChat(null,planQuery,{...flags,fetchImpl:late.fetchImpl,now,log:sink.log});
+ assert.equal(partial.providerStatus,'unavailable');
+ assert.equal(partial.generated,false);
  assert.deepEqual(late.calls.map(c=>c.mode),['plan']);
  assert.deepEqual(sink.events().map(e=>[e.mode,e.reason]),[['plan','timeout'],['answer','deadline']]);
 });

@@ -94,7 +94,8 @@ class PositionIndex {
   if(rssAfter>MAX_RSS_BYTES){this.log(JSON.stringify({...this.metrics,event:'position_index_memory_limit'}));throw Error('index_memory_limit');}
   this.status='ready';this.log(JSON.stringify(this.metrics));
  }
- async verified(key){
+ async verified(key,signal){
+  signal?.throwIfAborted();
   // Cache by the FULL key, never by hash. Snapshot data is immutable until restart;
   // privacy is deliberately re-read after this cache on EVERY search.
   if(this.verifiedCache.has(key))return this.verifiedCache.get(key);
@@ -108,16 +109,17 @@ class PositionIndex {
     if(found.nextMove){if(!moveIds.has(found.nextMove)){moveIds.set(found.nextMove,moveNames.length);moveNames.push(found.nextMove);}moveId=moveIds.get(found.nextMove);}
     games[count]=gameIdx;plies[count]=this.ply[i];moves[count++]=moveId;
    }
-   if((i-start)%32===31)await yieldTurn();
+   if((i-start)%32===31){await yieldTurn();signal?.throwIfAborted();}
   }
   const matches={gameIdx:games.slice(0,count),ply:plies.slice(0,count),moves:moves.slice(0,count),moveNames};
   if(count<=20000){if(this.verifiedCache.size>=4)this.verifiedCache.delete(this.verifiedCache.keys().next().value);this.verifiedCache.set(key,matches);}
   return matches;
  }
- async search({fen,side='any',fideId=null,limit=10,scope='all',sort='newest'}){
+ async search({fen,side='any',fideId=null,limit=10,scope='all',sort='newest',signal}){
   if(this.status!=='ready')throw Object.assign(Error(),{code:this.status==='warming'?'index_warming':'index_unavailable'});
   const started=this.clock(),key=normalizedPositionKey(fen),turn=key.split(' ')[1]==='w'?'white':'black';
-  const matches=await this.verified(key),[hidden,nrw]=await Promise.all([this.source.hidden(),this.source.nrw?this.source.nrw():new Set()]),rows=[],fallbackRows=[];
+  const matches=await this.verified(key,signal),[hidden,nrw]=await Promise.all([this.source.hidden(signal),this.source.nrw?this.source.nrw(signal):new Set()]),rows=[],fallbackRows=[];
+  signal?.throwIfAborted();
   const inScope=game=>scope!=='nrw'||(side==='any'?[game.white_fide_id,game.black_fide_id]:[game[side+'_fide_id']]).some(id=>nrw.has(String(id)));
   const playerStats=fideId?{total:0,firstWhite:[],replyE4:[],replyD4:[]}:null;
   if(playerStats){const counts=[new Map(),new Map(),new Map()];for(const game of this.games){if(hiddenGame(game,hidden))continue;const white=String(game.white_fide_id)===fideId,black=String(game.black_fide_id)===fideId;if(!white&&!black)continue;playerStats.total++;const moves=game.prefix.split(' ');const at=white?0:moves[0]==='e4'?1:moves[0]==='d4'?2:-1,move=white?moves[0]:moves[1];if(at>=0&&move)counts[at].set(move,(counts[at].get(move)||0)+1);}for(const [i,k]of ['firstWhite','replyE4','replyD4'].entries())playerStats[k]=[...counts[i]].map(([move,count])=>({move,count})).sort((a,b)=>b.count-a.count||a.move.localeCompare(b.move)).slice(0,3);}
@@ -141,12 +143,12 @@ class PositionIndex {
 }
 
 function supabasePositionSource(client){
- const checked=async query=>{const {data,error}=await query.abortSignal(AbortSignal.timeout(15000));if(error)throw Error('storage_unavailable');return data||[];};
+ const checked=async (query,signal)=>{const timeout=AbortSignal.timeout(15000);const {data,error}=await query.abortSignal(signal?AbortSignal.any([signal,timeout]):timeout);if(error)throw Error('storage_unavailable');return data||[];};
  return {
   async page(cursor,limit){let q=client.from('spieler_broadcast_games').select('id,pgn,game_date,white_name,black_name,white_fide_id,black_fide_id,event,source_url,license_url').order('id').limit(limit);if(cursor)q=q.gt('id',cursor);return checked(q);},
   async ratings(){const map=new Map();for(let offset=0;;offset+=500){const rows=await checked(client.from('spieler_players').select('fide_id,fide_rating').order('fide_id').range(offset,offset+499));for(const row of rows)if(Number.isFinite(row.fide_rating))map.set(String(row.fide_id),row.fide_rating);if(rows.length<500)return map;}},
-  async nrw(){const ids=new Set();for(let offset=0;;offset+=500){const rows=await checked(client.from('spieler_claims').select('fide_id,clubs_nrw!inner(published)').eq('status','verified').eq('clubs_nrw.published',true).order('fide_id').range(offset,offset+499));for(const row of rows)ids.add(String(row.fide_id));if(rows.length<500)return ids;}},
-  async hidden(){const hidden=new Set();for(let offset=0;;offset+=500){const rows=await checked(client.from('spieler_opt_out').select('fide_id').in('status',['hidden_pending_review','approved']).order('fide_id').range(offset,offset+499));for(const row of rows)hidden.add(String(row.fide_id));if(rows.length<500)return hidden;}}
+  async nrw(signal){const ids=new Set();for(let offset=0;;offset+=500){signal?.throwIfAborted();const rows=await checked(client.from('spieler_claims').select('fide_id,clubs_nrw!inner(published)').eq('status','verified').eq('clubs_nrw.published',true).order('fide_id').range(offset,offset+499),signal);for(const row of rows)ids.add(String(row.fide_id));if(rows.length<500)return ids;}},
+  async hidden(signal){const hidden=new Set();for(let offset=0;;offset+=500){signal?.throwIfAborted();const rows=await checked(client.from('spieler_opt_out').select('fide_id').in('status',['hidden_pending_review','approved']).order('fide_id').range(offset,offset+499),signal);for(const row of rows)hidden.add(String(row.fide_id));if(rows.length<500)return hidden;}}
  };
 }
 module.exports={MAX_INDEXED_PLIES,MAX_RSS_BYTES,PositionIndex,normalizedPositionKey,positionHash,verifyPosition,hashRange,supabasePositionSource,sanTokens};
