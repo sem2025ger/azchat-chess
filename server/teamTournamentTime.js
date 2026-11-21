@@ -30,7 +30,7 @@ function berlinLocalToIso(value) {
 function validateEventTimes(start, deadline, now = Date.now()) {
   const startsAt = berlinLocalToIso(start);
   const deadlineAt = berlinLocalToIso(deadline);
-  if (Date.parse(deadlineAt) <= now || Date.parse(deadlineAt) >= Date.parse(startsAt)) {
+  if ((now !== null && Date.parse(deadlineAt) <= now) || Date.parse(deadlineAt) >= Date.parse(startsAt)) {
     throw new RangeError('invalid_time');
   }
   return { starts_at: startsAt, registration_deadline: deadlineAt };

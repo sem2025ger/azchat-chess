@@ -4,7 +4,7 @@ const express = require('express');
 const { randomBytes, createHash } = require('node:crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { RESULTS, bergerSchedule, calculateTable } = require('./teamRoundRobin');
-const { validateEventTimes } = require('./teamTournamentTime');
+const { berlinLocalToIso, validateEventTimes } = require('./teamTournamentTime');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RULES = {
@@ -69,9 +69,11 @@ function makeClient(env, key, factory, token) {
 
 async function readQuery(query) {
   const { data, error } = await query.abortSignal(AbortSignal.timeout(8000));
+  if (error?.code === 'P0001' && error.message === 'invalid_time') fail(400, 'invalid_time');
   if (error?.code === 'P0001' && [
     'event_full', 'invalid_invite', 'lineup_incomplete', 'player_already_registered', 'no_previous_lineup',
-    'create_limit',
+    'create_limit', 'idempotency_conflict', 'revision_closed', 'revision_incomplete', 'revision_missing',
+    'round_time_locked', 'round_time_order',
   ].includes(error.message)) fail(error.message === 'no_previous_lineup' ? 404 : 409, error.message);
   if (error) fail(...(RESPONSE_ERRORS[error.code] ?? [503, 'temporarily_unavailable']));
   return data;
@@ -202,6 +204,9 @@ function installTeamTournaments(app, {
   async function snapshot(client, tournament, workspace) {
     const data = await rpc(client, 'team_tournament_snapshot', { p_id: tournament, p_workspace: workspace });
     if (!data) fail(404, 'not_found');
+    for (const round of data.rounds) {
+      if (!m3Enabled || round.starts_at == null) delete round.starts_at;
+    }
     return data;
   }
   function withStandings(data) {
@@ -304,14 +309,20 @@ function installTeamTournaments(app, {
   // commit or roll back together. Local wall times are checked again server-side.
   router.post('/self-service', wrap(async (req, res) => {
     requireM3();
-    fields(req.body, ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams']);
+    fields(req.body, ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams',
+      'round_interval_minutes', 'client_request_id']);
+    const requestId = req.body.client_request_id == null ? null : uuid(req.body.client_request_id);
+    const interval = req.body.round_interval_minutes == null
+      ? null : integer(req.body.round_interval_minutes, 10, 10080);
     const name = label(req.body.name, 120);
     const boardCount = integer(req.body.boards_per_team ?? 4, 1, 16);
     const minimum = integer(req.body.min_teams ?? 2, 2, 16);
     const maximum = integer(req.body.max_teams ?? 4, minimum, 16);
     let times;
     try {
-      times = validateEventTimes(req.body.start_time, req.body.registration_deadline, now());
+      // A replay can outlive its deadline. For keyed requests, SQL checks
+      // the deadline only if the request has never been committed.
+      times = validateEventTimes(req.body.start_time, req.body.registration_deadline, requestId ? null : now());
     } catch { fail(400, 'invalid_time'); }
     const input = {
       p_actor: req.tournamentActor,
@@ -321,6 +332,9 @@ function installTeamTournaments(app, {
       p_registration_deadline: times.registration_deadline,
       p_min_teams: minimum,
       p_max_teams: maximum,
+      ...(requestId !== null || interval !== null
+        ? { p_round_interval_minutes: interval, p_client_request_id: requestId }
+        : {}),
     };
     // Allowlisted organizers always use the original, unlimited function.
     // Everyone else may create only with the open flag, within the SQL-enforced limit.
@@ -371,7 +385,7 @@ function installTeamTournaments(app, {
   }));
   for (const [route, action] of [
     ['previous', 'copy_previous'], ['consent', 'consent'],
-    ['submit', 'submit'], ['withdraw', 'withdraw'],
+    ['submit', 'submit'], ['submit-revision', 'submit_revision'], ['withdraw', 'withdraw'],
   ]) {
     router.post('/:tournament/lineup/' + route, wrap(async (req, res) => {
       requireM3();
@@ -380,6 +394,19 @@ function installTeamTournaments(app, {
       res.json(await m3command(req, action, input));
     }));
   }
+
+  router.post('/:tournament/rounds/:round/time', wrap(async (req, res) => {
+    requireM3();
+    fields(req.body, ['start_time']);
+    if (!/^(?:[1-9]|1[0-5])$/.test(req.params.round)) fail(400, 'invalid_input');
+    let startsAt;
+    try { startsAt = berlinLocalToIso(req.body.start_time); }
+    catch { fail(400, 'invalid_time'); }
+    res.json(await rpc(commandClient, 'team_tournament_m3_set_round_time', {
+      p_actor: req.tournamentActor, p_id: req.tournamentId,
+      p_round_no: Number(req.params.round), p_starts_at: startsAt,
+    }));
+  }));
 
   router.get('/:tournament/self-service', wrap(async (req, res) => {
     requireM3();
@@ -396,7 +423,7 @@ function installTeamTournaments(app, {
       .select('id,name').eq('tournament_id', req.tournamentId).order('seed').limit(16));
     const [entries, roles] = await Promise.all([
       readQuery(client.from('team_tournament_m3_entries')
-        .select('id,club_name,captain_id,submitted_at').eq('tournament_id', req.tournamentId).limit(16)),
+        .select('id,club_name,captain_id,submitted_at,revision_pending').eq('tournament_id', req.tournamentId).limit(16)),
       readQuery(client.from('team_tournament_roles')
         .select('role,team_id').eq('tournament_id', req.tournamentId)
         .eq('user_id', req.tournamentActor).limit(3)),
@@ -407,9 +434,13 @@ function installTeamTournaments(app, {
       ...entries.map(entry => entry.id), ...ownRows.map(row => row.entry_id)])];
     const lineups = rosterIds.length ? await readQuery(client.from('team_tournament_m3_lineups')
       .select('entry_id,board_no,player_id,consented_at').in('entry_id', rosterIds).order('board_no').limit(256)) : [];
-    const playerIds = [...new Set(lineups.map(row => row.player_id))];
+    const revisionIds = entries.filter(entry => entry.revision_pending).map(entry => entry.id);
+    const revisionLineups = revisionIds.length && event.status === 'registration'
+      ? await readQuery(client.from('team_tournament_m3_revision_lineups')
+        .select('entry_id,board_no,player_id,consented_at').in('entry_id', revisionIds).order('board_no').limit(256)) : [];
+    const playerIds = [...new Set([...lineups, ...revisionLineups].map(row => row.player_id))];
     const profiles = playerIds.length ? await readQuery(client.from('profiles')
-      .select('id,username').in('id', playerIds).limit(256)) : [];
+      .select('id,username').in('id', playerIds).limit(playerIds.length)) : [];
     // Staff can see all reports, other authenticated callers only board rows
     // their JWT may read under m3_board_reader RLS.
     const matches = event.status === 'published' || event.status === 'finished'
@@ -423,7 +454,7 @@ function installTeamTournaments(app, {
       .select('match_id,board_no,side,result,kind').in('match_id', matchIds).limit(512)) : [];
     res.json({ ...event, ...config, board_count: ruleset?.board_count ?? 4,
       teams, remaining_spots: Math.max(0, config.max_teams - teams.length),
-      entries, roles, lineups, profiles, matches, states, reports });
+      entries, roles, lineups, revision_lineups: revisionLineups, profiles, matches, states, reports });
   }));
 
   router.post('/:tournament/teams', wrap(async (req, res) => {
