@@ -180,8 +180,10 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
       try {
         await server.listen();
         await setWidth(390);
-        await cdp('Page.navigate', { url: server.resolvedUrls.local[0] + 'team-online-fixture' });
-        await wait('typeof window.fixtureSelect === "function" && !!document.querySelector("[data-mobile-app-nav]")');
+        const url = new URL('team-online-fixture', server.resolvedUrls.local[0]);
+        await cdp('Page.navigate', { url: url.href });
+        await wait('location.href === ' + JSON.stringify(url.href) +
+          ' && typeof window.fixtureSelect === "function" && !!document.querySelector("[data-mobile-app-nav]")');
         await evaluate('document.fonts.ready');
         const themes = tournaments ? await evaluate('window.fixtureThemes') : ['Soft Graphite'];
         for (const [lang, spieltagLabel] of Object.entries(langs)) {
