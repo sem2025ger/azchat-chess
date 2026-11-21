@@ -7,6 +7,7 @@ const {lineFacts,lineMechanisms,settlement}=require('./coachLineFacts');
 const {lookupCoachBibliography}=require('./coachKnowledge');
 const {selectStrategyKnowledge}=require('./coachStrategyKnowledge');
 const {isPlanRequest}=require('./coachPlanDemo');
+const {findStructuralPassages}=require('./coachClassics');
 
 const fallback={
  de:(total)=>'In dieser Stellung wurden '+total+' öffentliche Partien gefunden. Du kannst die Beispiele unten in der Analyse öffnen.',
@@ -145,7 +146,7 @@ function logProviderFailure(log,mode,error,model,elapsedMs){
  // Only the reason and timings: never the key, prompt, question or model text.
  try{log(JSON.stringify({event:'coach_chat_provider_failed',mode,reason:String(error?.reason||error?.code||'unknown').slice(0,80),model,elapsedMs,...(Number.isFinite(error?.outputTokens)?{outputTokens:error.outputTokens}:{})}));}catch{/* Logging never breaks a reply. */}
 }
-async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null,positionFactsEnabled=false,knowledgeCatalogEnabled=false,strategyKnowledgeEnabled=false,planDemoEnabled=false,planReasoning='low',now=Date.now,log=console.warn}={}){
+async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-sol',fetchImpl=fetch,signal,engine=null,positionFactsEnabled=false,knowledgeCatalogEnabled=false,classicsEnabled=false,strategyKnowledgeEnabled=false,planDemoEnabled=false,planReasoning='low',now=Date.now,log=console.warn}={}){
  const startedAt=now();
  const requested=gameRequest(query.message);
  let result=null,analysis=null,engineError=null;
@@ -164,13 +165,22 @@ async function groundedChat(index,query,{openaiApiKey=null,openaiModel='gpt-6-so
  const clientLines=legalCandidateLines(query.candidateLines,query.fen)||[];
  const currentFacts=positionFactsEnabled?positionFacts(query.fen):null;
  const strategyKnowledge=positionFactsEnabled&&strategyKnowledgeEnabled&&currentFacts?selectStrategyKnowledge(currentFacts):null;
+ // Attached only for this exact book position, a similar middlegame pawn structure or the same
+ // endgame material; otherwise nothing (theme tags alone attached mostly irrelevant games).
+ const classicPassages=classicsEnabled?findStructuralPassages({
+  fen:query.fen,
+  question:query.message,
+  limit:2,
+  maxChars:650
+ }).map(({bookId,unitId,citation,reasons,match,opening,eco,text})=>({bookId,unitId,citation,reasons,match,...(opening?{opening}:{}),...(eco?{eco}:{}),text})):[];
  const evidence={archiveAvailable:!!result,matched:result?.total??null,
   ...(analysis?{candidateLines:positionFactsEnabled?withLineEndFacts(serverEngineLines(analysis),query.fen):serverEngineLines(analysis),candidateOrigin:'server_stockfish_19',engine:{name:analysis.engine,budgetMs:analysis.budget.movetimeMs,perspective:'white'}}:{candidateLines:clientLines,candidateOrigin:'untrusted_client_legality_checked'}),
   nextMoves:(result?.nextMoves||[]).slice(0,8).map(x=>({move:x.move,count:x.count})),
   games:games.map(({white,black,result,date,ply,pgn})=>{const board=new Chess();board.loadPgn(pgn);return {white,black,result,date,hasPgn:true,matchedPly:ply,continuation:board.history().slice(ply,ply+6)};}),
   ...(positionFactsEnabled?{positionFacts:currentFacts}:{}),
   ...(strategyKnowledge?{strategyKnowledge}:{}),
-  ...(knowledgeCatalogEnabled&&lookupCoachBibliography(query.message)?{coachBibliography:lookupCoachBibliography(query.message)}:{})};
+  ...(knowledgeCatalogEnabled&&lookupCoachBibliography(query.message)?{coachBibliography:lookupCoachBibliography(query.message)}:{}),
+  ...(classicPassages.length?{classicsKnowledge:classicPassages}:{})};
  boundRestrictionEvidence(evidence);
  const archiveOnly=!!requested&&!!result;
  let answer,planDemonstration=null,lineLessons=null,planFallback=false,providerUnavailable=false;
