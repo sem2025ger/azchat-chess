@@ -29,7 +29,7 @@ export type TournamentBoard = {
 };
 export type Pairing<T> = { home_team_id: string; away_team_id: string; boards: T[] };
 export type TournamentMatch = Pairing<TournamentBoard> & { id: string; round_no: number };
-export type TournamentRound = { round_no: number; bye_team_id: string | null };
+export type TournamentRound = { round_no: number; bye_team_id: string | null; starts_at?: string | null };
 export type TournamentPreview = {
   ruleset_version: number;
   rounds: (TournamentRound & { matches: Pairing<Pick<TournamentBoard, 'board_no' | 'home_white'>>[] })[];
@@ -111,6 +111,7 @@ export function createTournamentApi(base: string, token?: string, fetchImpl: typ
 export type MyTournamentBoard = {
   tournament_id: string;
   tournament_name: string;
+  starts_at?: string | null;
   match_id: string;
   round_no: number;
   board_no: number;
@@ -122,7 +123,7 @@ export type MyTournamentBoard = {
   opponent_report: BoardResult | null;
   opponent_kind: 'game' | 'forfeit' | null;
 };
-export type M3TeamEntry = { id: string; club_name: string; captain_id: string; submitted_at: string | null };
+export type M3TeamEntry = { id: string; club_name: string; captain_id: string; submitted_at: string | null; revision_pending?: boolean };
 export type M3Lineup = { entry_id: string; board_no: number; player_id: string; consented_at: string | null };
 export type M3Event = {
   id: string; name: string; status: TournamentStatus | 'cancelled';
@@ -130,7 +131,7 @@ export type M3Event = {
   starts_at: string; registration_deadline: string; min_teams: number; max_teams: number;
   teams: { id: string; name: string }[]; remaining_spots: number;
   entries?: M3TeamEntry[]; roles?: { role: TournamentRole; team_id: string | null }[];
-  lineups?: M3Lineup[]; published_lineups?: { entry_id: string; board_no: number; username: string | null }[];
+  lineups?: M3Lineup[]; revision_lineups?: M3Lineup[]; published_lineups?: { entry_id: string; board_no: number; username: string | null }[];
   profiles?: { id: string; username: string }[];
   matches?: { id: string; round_no: number; home_team_id: string; away_team_id: string }[];
   states?: { match_id: string; board_no: number; status: string }[];
@@ -143,6 +144,8 @@ export type M3EventInput = {
   boards_per_team: number;
   min_teams: number;
   max_teams: number;
+  round_interval_minutes?: number;
+  client_request_id?: string;
 };
 export function createTournamentM3Api(base: string, token: string, fetchImpl: typeof fetch = fetch) {
   if (!token) throw new TournamentError('authentication_required');
@@ -191,7 +194,9 @@ export function createTournamentM3Api(base: string, token: string, fetchImpl: ty
       request(at(event) + '/redeem', signal, { token: tokenValue }),
     lineup: (event: string, players: string[], signal: AbortSignal) =>
       request(at(event) + '/lineup', signal, { players: players.map(tournamentId) }),
-    lineupAction: (event: string, action: 'previous' | 'submit' | 'withdraw', signal: AbortSignal) =>
+    setRoundTime: (event: string, round: number, start_time: string, signal: AbortSignal) =>
+      request(at(event) + '/rounds/' + round + '/time', signal, { start_time }),
+    lineupAction: (event: string, action: 'previous' | 'submit' | 'submit-revision' | 'withdraw', signal: AbortSignal) =>
       request(at(event) + '/lineup/' + action, signal, {}),
     consent: (event: string, entry: string, signal: AbortSignal) =>
       request(at(event) + '/lineup/consent', signal, { entry_id: tournamentId(entry) }),
@@ -215,6 +220,7 @@ export type AiOrganizerDraft = {
   boards_per_team: number | null;
   min_teams: number | null;
   max_teams: number | null;
+  round_interval_minutes?: number | null;
 };
 export type AiOrganizerMessage = { role: 'user' | 'assistant'; text: string };
 export type AiOrganizerPlan = {
