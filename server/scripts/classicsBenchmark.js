@@ -346,9 +346,11 @@ async function run({dryRun=process.env.CLASSICS_BENCHMARK_DRY_RUN==='1',model=pr
     if(stopReason)error='not_run';
     else try{
      const r=await groundedChat(null,{message:p.question,fen:p.fen,side:p.side,language:p.language},{openaiApiKey:key,openaiModel:model,engine,positionFactsEnabled:true,classicsEnabled,fetchImpl:capture});
-     answer=r.answer;
-     if(!r.engineVerified)error='engine_not_verified';
-     noteResult(true);
+     // Stockfish-only fallback is useful in Chessy but is not an AI provider result.
+     // Never score a degraded fallback as successful historical/model evidence.
+     if(!r.engineVerified){error='engine_not_verified';noteResult(false);}
+     else if(r.providerStatus!=='ready'||!r.generated){error='provider_unavailable';noteResult(false);}
+     else{answer=r.answer;noteResult(true);}
     }catch(e){error=String(e?.code||'provider_or_engine_error').replace(/[^a-z0-9_-]/gi,'').slice(0,80);noteResult(false);}
     rec.runs[label]={answer,error,latencyMs:Math.round(performance.now()-t),origin:submitted?.candidateOrigin||'not_submitted',
      classics:(submitted?.classicsKnowledge||[]).map(c=>({bookId:c.bookId,unitId:c.unitId,citation:c.citation,reasons:c.reasons,opening:c.opening||null,text:c.text}))};
