@@ -1,6 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {Chess}=require('chess.js');
 const {run,loadBenchmark,validateBenchmark,deterministicChecks,sanTokens,blindOrders,THEMES,LANGUAGES}=require('./scripts/classicsBenchmark');
 
 test('classics benchmark v1: 40 new + 4 book-control positions pass every validity rule',()=>{
@@ -86,8 +87,11 @@ test('benchmark aborts after two consecutive provider failures and reports PARTI
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'chessaz-classics-bench-'));
  let calls=0;
  const failing=async()=>{calls++;return new Response('{}',{status:500});};
+ // This test exercises the provider-failure budget, not Stockfish time-to-depth.
+ // Return legal deterministic SAN so stricter real-engine depth gates remain intact.
+ const syntheticEngine={analyze:async fen=>({engine:'stockfish-19-lite',budget:{movetimeMs:200},lines:[{sanPv:[new Chess(fen).moves()[0]],scoreKind:'cp',scoreWhite:0,depth:12}]}),close:()=>{}};
  try{
-  const r=await run({dryRun:false,apiKey:'test-not-a-key',movetimeMs:200,concurrency:4,fetchImpl:failing,mdOutput:path.join(dir,'b.md'),jsonOutput:path.join(dir,'b.json')});
+  const r=await run({dryRun:false,apiKey:'test-not-a-key',movetimeMs:200,concurrency:4,fetchImpl:failing,engineOverride:syntheticEngine,mdOutput:path.join(dir,'b.md'),jsonOutput:path.join(dir,'b.json')});
   assert.equal(r.meta.partial,true);
   assert.match(r.meta.partialReason,/2 consecutive provider failures/);
   assert.ok(calls<=5,`at most one in-flight call per worker plus one, got ${calls}`);

@@ -305,7 +305,7 @@ async function run({dryRun=process.env.CLASSICS_BENCHMARK_DRY_RUN==='1',model=pr
  judgeModel=process.env.CLASSICS_BENCHMARK_JUDGE_MODEL||process.env.CLASSICS_BENCHMARK_MODEL||'gpt-6-sol',
  movetimeMs=Number(process.env.CLASSICS_BENCHMARK_MOVETIME_MS||'900'),seed=Number(process.env.CLASSICS_BENCHMARK_SEED||DEFAULT_SEED),
  concurrency=4,mdOutput=MD_OUTPUT,jsonOutput=JSON_OUTPUT,benchmarkFile=BENCHMARK_FILE,apiKey=process.env.OPENAI_API_KEY,
- fetchImpl=null,log=()=>{}}={}){
+ fetchImpl=null,engineOverride=null,log=()=>{}}={}){
  if(!Number.isInteger(movetimeMs)||movetimeMs<100||movetimeMs>5000)throw Error('invalid_movetime_ms');
  if(!MODEL_RE.test(model)||!MODEL_RE.test(judgeModel))throw Error('invalid_model_name');
  if(!Number.isInteger(seed))throw Error('invalid_seed');
@@ -325,7 +325,7 @@ async function run({dryRun=process.env.CLASSICS_BENCHMARK_DRY_RUN==='1',model=pr
   return baseFetch(url,options);
  };
  const noteResult=ok=>{if(ok)consecutiveFailures=0;else if(++consecutiveFailures>=2&&!dryRun)stopReason=stopReason||'aborted after 2 consecutive provider failures';};
- const engine=dryRun?stubEngine(movetimeMs):createCoachEngine({movetimeMs,log:()=>{}});
+ const engine=engineOverride||(dryRun?stubEngine(movetimeMs):createCoachEngine({movetimeMs,log:()=>{}}));
  const startedAt=new Date().toISOString();
  try{
   const t0=performance.now();
