@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),express=require('express');
 const {Chess}=require('chess.js');
 const {validChatQuery,groundedChat,gameRequest}=require('./aiCoachChat');
-const {installAiCoach}=require('./aiCoach');
+const {installAiCoach,installAiCoachFromEnv}=require('./aiCoach');
 const fen=new Chess().fen();
 const query={message:'Find games in this position',fen,side:'white',language:'ru'};
 test('chat validates all request fields and languages',()=>{
@@ -154,6 +154,45 @@ test('V1.1 Steinitz: replay server PV and expose only verified endpoint facts to
  assert.ok(!observed[0].instructions.includes('endFacts'));
 });
 
+test('Italian owner QA: line facts reach the model only, with the sacrifice, fork and check rules',async()=>{
+ const ITALIAN='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const lines=[['d3 Nf6 Nc3 h6 h3 a6 O-O O-O a3 d6',12],['Nc3 Nf6 d3 h6 Bb3 a5 Nxe5 Nxe5 d4 Bd6',10],['c3 Nf6 d4 exd4 cxd4 Bb4+ Bd2 Nxe4 Bxb4 Nxb4',8]]
+  .map(([moves,score])=>({...lineFixture(moves.split(' ')),scoreWhite:score,depth:16}));
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines})};
+ const q={fen:ITALIAN,message:'Оцени позицию, объясни три лучших продолжения',language:'ru',side:'any'};
+ const observed=[];
+ const fetchImpl=async(_url,options)=>{
+  const payload=JSON.parse(options.body);
+  observed.push({evidence:JSON.parse(payload.input).evidence,instructions:payload.instructions});
+  return verifiedReply();
+ };
+ const off=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:false});
+ const on=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true});
+ const [d3,nc3,c3]=observed[1].evidence.candidateLines.map(line=>line.endFacts);
+ assert.equal(d3.materialVsEval.matchesEval,true);
+ assert.deepEqual(nc3.materialVsEval,{startWhite:0,endWhite:-2,evalWhite:0.1,matchesEval:false});
+ assert.equal(nc3.doubleAttacks[0].move,'8. d4');
+ assert.deepEqual(nc3.doubleAttacks[0].targets.map(t=>t.square+' '+t.piece),['c5 bishop','e5 knight']);
+ assert.deepEqual(c3.checks,[{ply:6,move:'6... Bb4+',side:'black',legalReplies:7,checkmate:false,materialGainForCheckingSide:1}]);
+ assert.equal(c3.materialVsEval.matchesEval,false);
+ assert.ok(!observed[1].instructions.includes('which may be temporary or lasting'));
+ assert.equal(nc3.unsettled,true);
+ assert.ok(observed[1].instructions.includes('give no plan or material conclusion for that line'));
+ assert.ok(observed[1].instructions.includes('Say that material is regained only when the supplied moves of that line or its verified continuation show the recapture.'));
+ assert.ok(observed[1].instructions.includes('never present a legal move that is not in the supplied line'));
+ assert.ok(observed[1].instructions.includes('A listed fork is an attack, not a capture'));
+ assert.ok(observed[1].instructions.includes('Never claim a fork, double attack or pin that is not listed.'));
+ assert.ok(observed[1].instructions.includes('zero material gain does not make a check a mere tempo move'));
+ // Removed rules: no categorical ban on lasting imbalances, no gain+matchesEval gate for checks.
+ assert.ok(!observed[1].instructions.includes('never as a lasting loss or gain of material'));
+ assert.ok(!observed[1].instructions.includes('only when that gain is positive and materialVsEval.matchesEval is true'));
+ assert.equal(observed[0].evidence.candidateLines.some(line=>line.endFacts),false);
+ assert.ok(!observed[0].instructions.includes('materialVsEval'));
+ for(const key of ['endFacts','materialVsEval','doubleAttacks','materialGainForCheckingSide'])
+  assert.equal(JSON.stringify(on).includes(key),false,key+' never reaches the browser');
+ assert.equal(JSON.stringify(off.engineLines),JSON.stringify(on.engineLines));
+});
+
 test('V1.1 malformed SAN cannot crash chat, and cannot get endFacts',async()=>{
  const q={fen:STEINITZ_FEN,message:'Какой план здесь у белых?',language:'ru',side:'any'};
  const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},
@@ -180,6 +219,158 @@ test('V1.1 three independent 10-ply PVs keep model evidence under 16KB',async()=
    assert.equal(evidence.candidateLines.length,3);
    for(const line of evidence.candidateLines)assert.equal(line.endFacts.plies,10);
    assert.ok(Buffer.byteLength(JSON.stringify(evidence),'utf8')<16*1024);
+   for(const line of evidence.candidateLines){
+    const mechanisms=line.endFacts.moveMechanisms||{};
+    const denied=mechanisms.deniedSquares||[],labels=mechanisms.strategyLabels||[];
+    assert.equal(denied.length,labels.length,'no orphaned restriction attribution after bounding');
+    for(const e of denied)assert.ok(labels.some(x=>x.move===e.move&&x.square===e.square));
+   }
    return verifiedReply();
   }});
+});
+
+test('Chessy White/Black plan requests: same FEN to the engine and identical model evidence',async()=>{
+ const ITALIAN='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const lines=[['d3 Nf6 Nc3 h6 h3 a6 O-O O-O a3 d6',12],['Nc3 Nf6 d3 h6 Bb3 a5 Nxe5 Nxe5 d4 Bd6',10],['c3 Nf6 d4 exd4 cxd4 Bb4+ Bd2 Nxe4 Bxb4 Nxb4',8]]
+  .map(([moves,score])=>({...lineFixture(moves.split(' ')),scoreWhite:score,depth:16}));
+ const analysed=[],seen=[];
+ const engine={analyze:async fen=>{analysed.push(fen);return {engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines};}};
+ const fetchImpl=async(_url,options)=>{const input=JSON.parse(JSON.parse(options.body).input);seen.push(input);return verifiedReply();};
+ const replies=[];
+ for(const message of ['Оцени позицию и предложи план игры за белых.','Оцени позицию и предложи план игры за чёрных.'])
+  replies.push(await groundedChat(null,{fen:ITALIAN,message,language:'ru',side:'any'},{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true}));
+ assert.deepEqual(analysed,[ITALIAN,ITALIAN]);
+ assert.deepEqual(seen.map(input=>input.question),['Оцени позицию и предложи план игры за белых.','Оцени позицию и предложи план игры за чёрных.']);
+ for(const key of ['position','sideToMove','archiveFilterSide','legalMoves','evidence'])
+  assert.equal(JSON.stringify(seen[0][key]),JSON.stringify(seen[1][key]),key+' does not depend on the requested side');
+ assert.equal(seen[0].sideToMove,'w');
+ assert.deepEqual(seen[0].evidence.candidateLines.map(line=>line.scoreWhite),[12,10,8]);
+ assert.equal(JSON.stringify(replies[0].engineLines),JSON.stringify(replies[1].engineLines));
+});
+
+test('1.f3 e5 2.g4: a server mate line reaches the model as a verified checkmate',async()=>{
+ const FOOLS='rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2';
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines:[{sanPv:['Qh4#'],scoreKind:'mate',scoreWhite:-1,depth:245,wdlWhite:[0,0,1000]}]})};
+ let observed=null;
+ const reply=await groundedChat(null,{fen:FOOLS,message:'Оцени позицию и предложи план игры за чёрных.',language:'ru',side:'any'},{openaiApiKey:'synthetic',engine,positionFactsEnabled:true,
+  fetchImpl:async(_url,options)=>{const payload=JSON.parse(options.body);observed={evidence:JSON.parse(payload.input).evidence,instructions:payload.instructions};return verifiedReply();}});
+ const facts=observed.evidence.candidateLines[0].endFacts;
+ assert.deepEqual(facts.checks,[{ply:1,move:'2... Qh4#',side:'black',legalReplies:0,checkmate:true,materialGainForCheckingSide:0}]);
+ assert.equal(facts.materialVsEval.matchesEval,null);
+ assert.ok(observed.instructions.includes('A check with checkmate true is a verified checkmate: state it first and plainly as mate, never as a check that gains time.'));
+ assert.equal(JSON.stringify(reply).includes('checkmate'),false,'line facts never reach the browser');
+});
+
+test('settled continuation facts replace the endpoint while preserving lineEndFacts and original PV',async()=>{
+ const fen='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const moves='Nc3 Nf6 d3 h6 Bb3 a5 Nxe5 Nxe5 d4 Bd6'.split(' ');
+ const continuation={moves:['dxe5','Bxe5'],evalWhite:-0.1,depth:16,settled:true};
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:6000},lines:[{...lineFixture(moves),scoreWhite:10,continuation,unsettled:false}]})};
+ const reply=await groundedChat(null,{fen,message:'Оцени позицию',language:'ru',side:'any'},{engine,openaiApiKey:'synthetic',positionFactsEnabled:true,fetchImpl:async(_url,options)=>{
+  const line=JSON.parse(JSON.parse(options.body).input).evidence.candidateLines[0];
+  assert.deepEqual(line.moves,moves);assert.deepEqual(line.continuation,continuation);
+  assert.equal(line.lineEndFacts.materialVsEval.endWhite,-2);
+  assert.equal(line.lineEndFacts.unsettled,true);
+  assert.equal(line.endFacts.materialVsEval.endWhite,0);
+  assert.equal(line.endFacts.materialVsEval.evalWhite,-0.1);
+  assert.equal(line.endFacts.materialVsEval.matchesEval,true);
+  assert.equal(line.endFacts.unsettled,false);assert.equal(line.endFacts.plies,12);
+  return verifiedReply();
+ }});
+ assert.deepEqual(reply.engineLines[0].moves,moves);assert.deepEqual(reply.engineLines[0].continuation,continuation);
+ assert.ok(!JSON.stringify(reply).includes('endFacts'));
+});
+
+test('classics retrieval stays OFF by default; ON connects Alekhine alongside Stockfish 19',async()=>{
+ const alekhineFen='r1br3k/2qn1Ppp/pp1p4/3N4/2PNP3/1P4b1/PB4PP/3R1R1K b - - 2 20';
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:[lineFixture(['Be5'])]})};
+ const q={fen:alekhineFen,message:'Какой стратегический план и идеи жертвы здесь у белых?',language:'ru',side:'any'};
+ const seen=[];
+ const fetchImpl=async(_url,options)=>{
+  const body=JSON.parse(options.body);
+  seen.push({evidence:JSON.parse(body.input).evidence,instructions:body.instructions});
+  return verifiedReply();
+ };
+ const off=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true});
+ const offExplicit=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true,classicsEnabled:false});
+ const on=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true,classicsEnabled:true});
+ assert.equal(JSON.stringify(seen[0].evidence),JSON.stringify(seen[1].evidence));
+ assert.equal(seen[0].instructions,seen[1].instructions);
+ assert.equal(Object.hasOwn(seen[0].evidence,'classicsKnowledge'),false);
+ assert.equal(seen[2].evidence.candidateOrigin,'server_stockfish_19');
+ assert.equal(seen[2].evidence.engine.name,'stockfish-19-lite');
+ assert.ok(Array.isArray(seen[2].evidence.classicsKnowledge)&&seen[2].evidence.classicsKnowledge.length>=1);
+ assert.equal(seen[2].evidence.classicsKnowledge[0].bookId,'alekhine-best-games-1908-1923');
+ assert.equal(seen[2].evidence.classicsKnowledge[0].unitId,'g97');
+ assert.equal(seen[2].evidence.classicsKnowledge[0].match.kind,'exact-position');
+ assert.ok(seen[2].instructions.includes('never carry concrete moves, squares, threats or tactics from the historical game'));
+ assert.ok(seen[2].instructions.includes('evidence.classicsKnowledge contains verified excerpts'));
+ assert.ok(seen[2].instructions.includes('clearly distinguish historical commentary from objective engine evaluation'));
+ assert.ok(seen[2].instructions.includes('superseded by Stockfish 19'));
+ assert.ok(seen[2].instructions.includes('Stockfish candidateLines, positionFacts and legalMoves'));
+ // When positionFactsEnabled is false, classics instruction must not reference absent positionFacts.
+ await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:false,classicsEnabled:true});
+ assert.equal(Object.hasOwn(seen[3].evidence,'positionFacts'),false);
+ assert.ok(seen[3].instructions.includes('Stockfish candidateLines and legalMoves'));
+ assert.equal(seen[3].instructions.includes('Stockfish candidateLines, positionFacts and legalMoves'),false);
+ assert.ok(Buffer.byteLength(JSON.stringify(seen[2].evidence),'utf8')<16*1024);
+ assert.equal(JSON.stringify(on).includes('classicsKnowledge'),false);
+ assert.equal(off.engineVerified,true);
+ assert.equal(on.engineVerified,true);
+
+ const app=express(),origFetch=globalThis.fetch;
+ let envSawClassics=false;
+ globalThis.fetch=async(url,options)=>{
+  if(String(url)==='https://api.openai.com/v1/responses'){
+   const ev=JSON.parse(JSON.parse(options.body).input).evidence;
+   envSawClassics=Array.isArray(ev.classicsKnowledge)&&ev.classicsKnowledge.some(c=>c.bookId==='alekhine-best-games-1908-1923');
+   return verifiedReply();
+  }
+  return origFetch(url,options);
+ };
+ installAiCoachFromEnv(app,async()=>({id:'fixture'}),{status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})},{
+  AI_COACH_ENABLED:'true',AI_COACH_CLASSICS_ENABLED:'true',OPENAI_API_KEY:'synthetic'
+ });
+ const envServer=app.listen(0,'127.0.0.1');
+ await new Promise(r=>envServer.once('listening',r));
+ try{
+  const res=await origFetch('http://127.0.0.1:'+envServer.address().port+'/api/ai-coach/chat',{
+   method:'POST',headers:{Authorization:'Bearer ok','Content-Type':'application/json'},body:JSON.stringify(q)
+  });
+  assert.equal(res.status,200);
+  assert.equal(envSawClassics,true);
+ }finally{
+  globalThis.fetch=origFetch;
+  await new Promise(r=>envServer.close(r));
+ }
+});
+
+test('classics ON attaches nothing when the books hold no similar structure (no theme-tag filler)',async()=>{
+ const fen='r2q1rk1/3nbppp/p2pbn2/1p2p3/4P1P1/1NN1BP2/PPPQ3P/2KR1B1R w - - 0 12'; // Najdorf English Attack, benchmark n16
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:[lineFixture(['g5'])]})};
+ const seen=[];
+ const fetchImpl=async(_url,options)=>{const body=JSON.parse(options.body);seen.push({evidence:JSON.parse(body.input).evidence,instructions:body.instructions});return verifiedReply();};
+ await groundedChat(null,{fen,message:'How should White conduct the kingside pawn storm here?',language:'en',side:'white'},{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true,classicsEnabled:true});
+ assert.equal(Object.hasOwn(seen[0].evidence,'classicsKnowledge'),false);
+ assert.equal(seen[0].instructions.includes('evidence.classicsKnowledge'),false);
+});
+
+
+test('Capablanca endgame passage reaches Chessy model only when classics are enabled',async()=>{
+ const fen='8/7R/8/2k2P2/1p6/3r4/5PKP/8 w - - 0 1'; // Chess Fundamentals, Example 59
+ const q={fen,message:'Explain the rook endgame plan for White',language:'en',side:'white'};
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:[lineFixture(['f6'])]})};
+ const seen=[];
+ const fetchImpl=async(_url,options)=>{
+  const body=JSON.parse(options.body);
+  seen.push({evidence:JSON.parse(body.input).evidence,instructions:body.instructions});
+  return verifiedReply();
+ };
+ await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,classicsEnabled:false});
+ const on=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,classicsEnabled:true});
+ assert.equal(Object.hasOwn(seen[0].evidence,'classicsKnowledge'),false);
+ assert.equal(seen[1].evidence.candidateOrigin,'server_stockfish_19');
+ assert.ok(seen[1].evidence.classicsKnowledge?.some(h=>h.bookId==='capablanca-chess-fundamentals'&&h.unitId==='e59'&&h.match.kind==='exact-position'));
+ assert.ok(seen[1].instructions.includes('historical commentary from objective engine evaluation'));
+ assert.equal(Object.hasOwn(on,'classicsKnowledge'),false,'internal book passages must not leak in public API response');
 });

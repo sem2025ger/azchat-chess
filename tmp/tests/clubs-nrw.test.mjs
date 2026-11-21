@@ -34,6 +34,40 @@ test('all NRW flags off preserves the main routing and navigation entry points',
     current=current.replace(next,previous);
    }
   }
+  // World Chat is a separate, default-off route. Assert the *exact* approved
+  // additions before comparing the otherwise unchanged disabled-route baseline.
+  const worldChatAdditions = {
+    'src/App.tsx': [
+      "const WorldChatScreen = lazy(routeLoaders.worldChat);\n",
+      "                    {import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <Route path=\"world-chat\" element={<WorldChatScreen />} />}\n",
+    ],
+    [layoutPath]: [
+      "            {import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <NavItem to=\"/world-chat\" icon={<MessageSquare size={20} />} label={t('world.title')} themeColor=\"theme-violet\" />}\n",
+    ],
+    'src/routeLoaders.ts': [
+      "  worldChat: cacheImport(() => import('./screens/WorldChatScreen')),\n",
+      "  '/world-chat': routeLoaders.worldChat,\n",
+    ],
+  };
+  for (const addition of worldChatAdditions[path] ?? []) {
+    assert.equal(current.split(addition).length, 2, 'Expected one flag-gated World Chat addition: ' + path);
+    current = current.replace(addition, '');
+  }
+  if(path==='scripts/buildQaPreview.mjs'){
+   const consolidatedPreviewGuard = [
+    "if(branch==='qa/chessaz-consolidated-20261121'&&(\n",
+    " process.env.VERCEL_ENV!=='preview'||\n",
+    " process.env.VITE_SERVER_URL!=='https://chessaz-m3-qa-api.onrender.com'||\n",
+    " process.env.VITE_SUPABASE_URL!=='https://iukmpcytsuofqhxsumbu.supabase.co'||\n",
+    " !process.env.VITE_SUPABASE_ANON_KEY\n",
+    ")){\n",
+    " console.error('The consolidated ChessAZ build requires the dedicated Preview API and Supabase configuration.');\n",
+    " process.exit(1);\n",
+    "}\n",
+   ].join('');
+   assert.equal(current.split(consolidatedPreviewGuard).length, 2);
+   current=current.replace(consolidatedPreviewGuard,'');
+  }
   const expected=execFileSync('git',['show',(path===layoutPath?layoutBaseline:baseline)+':tmp/'+path],{encoding:'utf8'});
   assert.equal(current,path===layoutPath?expected.replace(tournamentGate,spieltagGate):expected,path);
  }
@@ -73,7 +107,7 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  // Reverse only the explicitly approved, default-off Home feature additions.
  // Any other change to routing, flags, layout or the play button still fails.
  const unifiedCardChanges=[
-  ["      {homeUnifiedCard && (\n        <style>{`\n          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,700&display=swap');\n\n          @media (min-width: 1280px) {\n            .home-screen-root .home-unified-card .home-unified-slogan {\n              display: flex;\n              align-items: center;\n              justify-content: center;\n              gap: 9px;\n              font-family: 'Cormorant Garamond', Georgia, serif;\n              font-size: clamp(28px, 2.53vw, 36px);\n              font-weight: 700;\n              font-style: italic;\n              line-height: 1.15;\n              letter-spacing: 0.02em;\n              overflow: visible;\n              text-overflow: clip;\n              text-shadow: none;\n              margin-bottom: 6px;\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-part {\n              display: inline-flex;\n              align-items: center;\n              gap: 9px;\n              flex: none;\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-word {\n              background: linear-gradient(180deg, #f4f6f8 0%, #cfd5db 50%, #9aa3ac 100%);\n              background-clip: text;\n              -webkit-background-clip: text;\n              -webkit-text-fill-color: transparent;\n              color: transparent;\n              text-shadow: none;\n              filter: drop-shadow(0 0 5px rgba(220,228,235,0.18));\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-diamond {\n              display: inline-block;\n              width: 7px;\n              height: 7px;\n              flex: 0 0 7px;\n              transform: rotate(45deg);\n              background: linear-gradient(135deg, #eef1f4, #8d969f);\n            }\n          }\n        `}</style>\n      )}\n",""],
+  ["      {homeUnifiedCard && (\n        <style>{`\n          @import url('/fonts/home/cormorant-garamond-700-italic.css');\n\n          @media (min-width: 1280px) {\n            .home-screen-root .home-unified-card .home-unified-slogan {\n              display: flex;\n              align-items: center;\n              justify-content: center;\n              gap: 9px;\n              font-family: 'Cormorant Garamond', Georgia, serif;\n              font-size: clamp(28px, 2.53vw, 36px);\n              font-weight: 700;\n              font-style: italic;\n              line-height: 1.15;\n              letter-spacing: 0.02em;\n              overflow: visible;\n              text-overflow: clip;\n              text-shadow: none;\n              margin-bottom: 6px;\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-part {\n              display: inline-flex;\n              align-items: center;\n              gap: 9px;\n              flex: none;\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-word {\n              background: linear-gradient(180deg, #f4f6f8 0%, #cfd5db 50%, #9aa3ac 100%);\n              background-clip: text;\n              -webkit-background-clip: text;\n              -webkit-text-fill-color: transparent;\n              color: transparent;\n              text-shadow: none;\n              filter: drop-shadow(0 0 5px rgba(220,228,235,0.18));\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-diamond {\n              display: inline-block;\n              width: 7px;\n              height: 7px;\n              flex: 0 0 7px;\n              transform: rotate(45deg);\n              background: linear-gradient(135deg, #eef1f4, #8d969f);\n            }\n          }\n        `}</style>\n      )}\n",""],
   ["  const homeUnifiedCard = import.meta.env.VITE_HOME_UNIFIED_CARD === 'true';\n",""],
   ["          .home-screen-root .desktop-home-arena.home-unified-card {\n            background:\n              radial-gradient(120% 70% at 30% 0%, rgba(205,215,230,0.07) 0%, rgba(205,215,230,0) 55%),\n              linear-gradient(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%);\n          }\n",""],
   ["className={`desktop-home-slogan","className=\"desktop-home-slogan"],

@@ -2,8 +2,9 @@
 
 Full texts of public-domain chess classics, with moves in modern notation, positions and
 strategic themes, so the coach can quote a classic passage that fits the current position or
-question. Retrieval: `server/coachClassics.js`. It is behind `AI_COACH_CLASSICS_ENABLED` (off by
-default) and is not yet wired into the chat.
+question. Retrieval: `server/coachClassics.js`. It is wired into Chessy's grounded chat and
+position-analysis pipeline (`aiCoach.js`, `aiCoachChat.js`, `aiCoachOpenAI.js`) behind
+`AI_COACH_CLASSICS_ENABLED` (off by default).
 
 ## Rules for adding a book
 
@@ -23,7 +24,7 @@ default) and is not yet wired into the chat.
 | Steinitz, *The Modern Chess Instructor* (1889) | Needed: 1889 Putnam edition | Steinitz died 1900 | Waiting for source file |
 | Philidor, *Analyse du jeu des échecs* (1749/1777) | Needed: French original or an early English edition | Philidor died 1795 | Waiting for source file |
 | Lasker, *Lehrbuch des Schachspiels* (1926) | Needed: German original | Lasker died 1941. The 1927 English translation has its own rights. | Waiting for source file |
-| Alekhine, games collections in the original language | Needed: Russian or German original | Alekhine died 1946. The rights to the English translations have not been checked. | Waiting for source file |
+| Alekhine, *My Best Games of Chess 1908–1923* (1927) | David McKay / Tartan Books reprint (trans. J. du Mont, d. 1956 & M. E. Goldstein, d. 1966) | Alekhine died 1946 (original PD in EU). English translation protected until 31 Dec 2036 (§§ 3, 64, 65 UrhG). Zero verbatim translation prose committed: factual PGN/SAN/FEN data, metadata, errata and fresh ChessAZ coaching summaries only. | Done (100 games, 292 PDF pp.) |
 
 The build environment can only reach GitHub. archive.org and gutenberg.org are blocked there, so
 the owner has to supply other sources as files.
@@ -53,10 +54,27 @@ the owner has to supply other sources as files.
    passage (`classicsThemes.js`). Each position also gets a material signature, so that a rook
    ending on the board finds the rook-ending chapter.
 
+## Alekhine, *My Best Games of Chess 1908–1923*: how the record is made
+
+1. Source batches `sources/alekhine-best-games-1908-1923/metadata.json` and `batch-01.json`..`batch-10.json`
+   cover all 292 pages (`i–xii`, `1–267`, cover & indexes) and all 100 games (`g1`–`g100`).
+2. Copyright compliance: because the J. du Mont (1881–1956) and M. E. Goldstein (1901–1966)
+   English translation remains under copyright until Dec 31, 2036, no verbatim translated prose,
+   `originalText`, raw OCR, or PDF scans are stored in the repository. Only factual chess data
+   (moves, variations, FENs, metadata, errata) and fresh technical ChessAZ coaching summaries are
+   retained, enforced automatically by `assertNoVerbatimCopyrightFields` in `buildAlekhineBestGames.js`.
+3. Every mainline move (7,060 across all 100 complete games), variation move (3,390 across 499
+   variations — 10,450 validated moves total), and diagram FEN (295 diagrams) is replayed and
+   verified with `chess.js`, yielding 11,344 generated FENs (9,811 unique FENs) indexed by 4-part
+   normalized `positionKeys` (excluding printer-erratum plates).
+4. All 48 verified book/diagram/score/arithmetic errata are recorded explicitly in `errata` with
+   descriptive strings; Games 10 and 21 are re-verified against the scanned pages and replay to
+   completion (113 and 91 plies).
+
 Rebuild after changing the builder or the source files:
 
 ```
 cd server
-node scripts/buildClassicsKnowledge.js          # writes capablanca-chess-fundamentals.json
+node scripts/buildClassicsKnowledge.js          # writes capablanca-chess-fundamentals.json & alekhine-best-games-1908-1923.json
 node scripts/buildClassicsKnowledge.js --check  # what the test enforces
 ```

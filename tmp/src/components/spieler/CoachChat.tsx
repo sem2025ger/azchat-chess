@@ -1,5 +1,5 @@
-import {useCallback,useEffect,useId,useRef,useState,type FormEvent} from 'react';
-import {Mic,Send,MessageSquare,Square,Volume2,Copy,Trash2} from 'lucide-react';
+import {useCallback,useEffect,useId,useLayoutEffect,useRef,useState,type FormEvent} from 'react';
+import {Mic,Send,MessageSquare,Square,Volume2,Copy,Check,Trash2,Maximize2,Minimize2} from 'lucide-react';
 import {useNavigate} from 'react-router-dom';
 import {Chess} from 'chess.js';
 import {StockfishEngine} from '../../utils/StockfishEngine';
@@ -19,9 +19,33 @@ import {readCoachSpeech,createCoachPlayback} from '../../services/coachSpeech';
 import './CoachChat.css';
 import { startBoundedAudioRecording, type AudioCapture } from '../../utils/audioCapture';
 type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string;moves?:string[];continuation?:string[]};
-type CandidateLine={moves:string[];score?:EngineScore};
-type Reply={answer:string;games:ResultGame[];generated:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLines?:unknown;engineVerified?:boolean;position?:string};
-type ChatItem={role:'user'|'assistant';text:string;games?:ResultGame[];generated?:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLinked?:boolean;engineServer?:boolean};
+type Continuation={moves:string[];evalWhite:number|null;depth:number;settled:boolean};
+type CandidateLine={moves:string[];score?:EngineScore;unsettled?:boolean;continuation?:Continuation};
+// The server answers within 55 s (engine + lesson + one fallback answer); wait a little longer.
+const CHAT_TIMEOUT_MS=60000;
+const replayMoves=(line:CandidateLine)=>[...line.moves,...(line.continuation?.moves||[])];
+// Extend only FEN-bound server lines. Local browser hints never gain provenance.
+function verifiedContinuations(value:unknown,fen:string):CandidateLine[]|null{
+ const lines=serverEngineLines(value,fen);if(!lines||!Array.isArray(value))return null;
+ try{return lines.map((line,i)=>{
+  const {continuation:c,unsettled}=value[i];
+  if(unsettled!==undefined&&typeof unsettled!=='boolean')throw Error('unsettled');
+  const base={...line,...(unsettled!==undefined?{unsettled}:{})};if(c===undefined)return base;
+  if(!c||!Array.isArray(c.moves)||c.moves.length<1||c.moves.length>6||
+   typeof c.settled!=='boolean'||!Number.isInteger(c.depth)||c.depth<1||c.depth>245||
+   !(c.evalWhite===null||typeof c.evalWhite==='number'&&Number.isFinite(c.evalWhite)&&Math.abs(c.evalWhite)<=1000))throw Error('continuation');
+  const board=new Chess(fen);for(const san of line.moves)board.move(san,{strict:true});
+  const moves=c.moves.map((san:unknown)=>{if(typeof san!=='string'||san.length>16)throw Error('continuation');return board.move(san,{strict:true}).san;});
+  return {...base,continuation:{moves,evalWhite:c.evalWhite,depth:c.depth,settled:c.settled}};
+ });}catch{return null;}
+}
+type Reply={answer:string;games:ResultGame[];generated:boolean;providerStatus?:string;lineLessons?:{lineId:string;intro:string;conclusion:string}[];planDemonstration?:{lineId:string;intro:string;conclusion:string};archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLines?:unknown;engineVerified?:boolean;engineError?:string;position?:string};
+type PlanDemo={lineIndex:number;intro:string;conclusion:string};
+type ChatItem={role:'user'|'assistant';text:string;planDemo?:PlanDemo;lineLessons?:PlanDemo[];games?:ResultGame[];generated?:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLinked?:boolean;engineServer?:boolean;engineUnavailable?:boolean;engineFallback?:boolean};
+function lessonForLine(item:ChatItem,line:number):PlanDemo|undefined{
+ if(item.candidateLines?.[line]?.unsettled)return undefined;
+ return item.lineLessons?.find(lesson=>lesson.lineIndex===line)||(item.planDemo?.lineIndex===line?item.planDemo:undefined);
+}
 type Clip={url:string;item:number;autoplay:boolean};
 type Props={fen:string;side:'white'|'black'|'any';token:string;accountId?:string;onVariationPreview?:(moves:string[],ply:number)=>void};
 type SavedChat={context:string;open:boolean;draft:string;items:ChatItem[];voiceReplies:boolean;scrollTop:number;expanded?:number[]};
@@ -41,13 +65,32 @@ function restoredChat(accountId:string,context:string,fen:string){
   if(m.archiveOnly!==undefined&&typeof m.archiveOnly!=='boolean')return true;
   if(m.engineLinked!==undefined&&typeof m.engineLinked!=='boolean')return true;
   if(m.engineServer!==undefined&&typeof m.engineServer!=='boolean')return true;
+  if(m.engineUnavailable!==undefined&&typeof m.engineUnavailable!=='boolean')return true;
+  if(m.engineFallback!==undefined&&(m.engineFallback!==true||m.role!=='assistant'||m.generated!==false||m.engineServer!==true))return true;
+  if(m.planDemo!==undefined){
+   const d=m.planDemo;
+   if(!m.engineServer||!m.engineLinked||!d||!Number.isInteger(d.lineIndex)||d.lineIndex<0||d.lineIndex>=3||
+    typeof d.intro!=='string'||d.intro.length<2||d.intro.length>700||
+    typeof d.conclusion!=='string'||d.conclusion.length<2||d.conclusion.length>450||
+    m.text!==d.intro+'\n'+d.conclusion)return true;
+  }
   if(m.candidateLines!==undefined&&(!Array.isArray(m.candidateLines)||m.candidateLines.length>3||m.candidateLines.some(l=>!l||!Array.isArray(l.moves)||l.moves.length>10||l.moves.some(move=>typeof move!=='string'||move.length>16))))return true;
   // Scores belong only to server-verified lines; those are re-validated from the exact FEN.
   if(m.engineServer){
-   if(m.engineLinked!==true||!m.candidateLines?.length)return true;
-   const again=serverEngineLines(m.candidateLines.map(l=>({moves:l.moves,scoreKind:l.score?.kind,scoreWhite:l.score?.white})),fen);
-   if(!again||JSON.stringify(again)!==JSON.stringify(m.candidateLines.map(l=>({moves:l.moves,score:l.score}))))return true;
-  }else if(m.candidateLines?.some(l=>l.score!==undefined))return true;
+   if(m.engineLinked!==true||!m.candidateLines?.length||m.planDemo&&(m.planDemo.lineIndex>=m.candidateLines.length||m.candidateLines[m.planDemo.lineIndex].unsettled===true))return true;
+   const again=verifiedContinuations(m.candidateLines.map(l=>({moves:l.moves,scoreKind:l.score?.kind,scoreWhite:l.score?.white,...(l.unsettled!==undefined?{unsettled:l.unsettled}:{}),...(l.continuation?{continuation:l.continuation}:{})})),fen);
+   if(!again||JSON.stringify(again)!==JSON.stringify(m.candidateLines.map(l=>({moves:l.moves,score:l.score,...(l.unsettled!==undefined?{unsettled:l.unsettled}:{}),...(l.continuation?{continuation:l.continuation}:{})}))))return true;
+  }else if(m.candidateLines?.some(l=>l.score!==undefined||l.continuation!==undefined||l.unsettled!==undefined))return true;
+  if(m.lineLessons!==undefined){
+   if(!m.planDemo||!m.engineServer||!Array.isArray(m.lineLessons)||m.lineLessons.length>3)return true;
+   const indices=new Set();
+   for(const lesson of m.lineLessons){
+    if(!lesson||!Number.isInteger(lesson.lineIndex)||lesson.lineIndex<0||lesson.lineIndex>=(m.candidateLines?.length||0)||indices.has(lesson.lineIndex)||m.candidateLines?.[lesson.lineIndex]?.unsettled||typeof lesson.intro!=='string'||lesson.intro.length<2||lesson.intro.length>700||typeof lesson.conclusion!=='string'||lesson.conclusion.length<2||lesson.conclusion.length>450)return true;
+    indices.add(lesson.lineIndex);
+   }
+   const primary=m.lineLessons.find(lesson=>lesson.lineIndex===m.planDemo!.lineIndex);
+   if(!primary||primary.intro!==m.planDemo.intro||primary.conclusion!==m.planDemo.conclusion)return true;
+  }
   if(m.games===undefined)return false;
   if(!Array.isArray(m.games)||m.games.length>20)return true;
   return m.games.some(g=>!g||typeof g.id!=='string'||typeof g.white!=='string'||typeof g.black!=='string'||typeof g.pgn!=='string'||!Number.isInteger(g.ply)||g.ply<0||(g.moves!==undefined&&(!Array.isArray(g.moves)||g.moves.length>30||g.moves.some(move=>typeof move!=='string'||move.length>16)))||(g.continuation!==undefined&&(!Array.isArray(g.continuation)||g.continuation.length>6||g.continuation.some(move=>typeof move!=='string'||move.length>16))));
@@ -68,11 +111,28 @@ async function checked(response:Response){
  if(!response.ok){let code='unavailable';try{code=(await response.json()).code||code;}catch{/* Proxy errors use the localized fallback. */}throw Error(code);}
  return response;
 }
+function CoachCopyButton({text,label,copiedLabel,onStart,onError}:{text:string;label:string;copiedLabel:string;onStart:()=>void;onError:()=>void}){
+ const [copied,setCopied]=useState(false),operation=useRef(0),timer=useRef<ReturnType<typeof setTimeout>|null>(null);
+ useEffect(()=>()=>{operation.current++;if(timer.current!==null)clearTimeout(timer.current);},[]);
+ async function copy(){
+  onStart();
+  const current=++operation.current;
+  if(timer.current!==null){clearTimeout(timer.current);timer.current=null;}
+  setCopied(false);
+  try{
+   await navigator.clipboard.writeText(text);
+   if(operation.current!==current)return;
+   setCopied(true);
+   timer.current=setTimeout(()=>{timer.current=null;setCopied(false);},2000);
+  }catch{if(operation.current===current)onError();}
+ }
+ return <button type="button" className="coach-chat-copy" onClick={()=>void copy()} aria-label={copied?copiedLabel:label} title={copied?copiedLabel:label}>{copied?<Check size={15} aria-hidden="true"/>:<Copy size={15} aria-hidden="true"/>}<span role={copied?"status":undefined} aria-live="polite">{copied?copiedLabel:label}</span></button>;
+}
 export default function CoachChat(props:Props){
  return <CoachConversation key={JSON.stringify([props.accountId,props.fen,props.side])} {...props}/>;
 }
 function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}:Props){
- const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId();
+ const {language}=useLanguage(),navigate=useNavigate(),lang=openingPrepLanguage(language),t=coachChatCopy[lang],inputId=useId(),panelId=useId();
  const chessyEnabled=import.meta.env.VITE_CHESSY_ENABLED==='true',chessy=chessyCopy[lang],inputRef=useRef<HTMLInputElement>(null);
  const context=JSON.stringify([fen,side]);
  const [storageRevision]=useState(positionSearchRevision);
@@ -81,6 +141,8 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
  const [saved]=useState(()=>token&&accountId!=='guest'?restoredChat(accountId,context,fen):null);
  const [open,setOpen]=useState(saved?.open??false),[draft,setDraft]=useState(saved?.draft??''),[items,setItems]=useState<ChatItem[]>(saved?.items??[]),[busy,setBusy]=useState<'chat'|'transcribe'|'microphone'|null>(null),[error,setError]=useState(''),[recording,setRecording]=useState(false),[voiceReplies,setVoiceReplies]=useState(saved?.voiceReplies??false),[speechBusy,setSpeechBusy]=useState<number|null>(null),[clip,setClip]=useState<Clip|null>(null),[scrollTop,setScrollTop]=useState(saved?.scrollTop??0),[speechError,setSpeechError]=useState(''),[speechPlaying,setSpeechPlaying]=useState(false),[expanded,setExpanded]=useState<number[]>(saved?.expanded??[]);
  const [preview,setPreview]=useState<{item:number;line:number;ply:number}|null>(null);
+ const [readingExpanded,setReadingExpanded]=useState(false);
+ const [readingBounds,setReadingBounds]=useState<{left:number;top:number;width:number;height:number}|null>(null);
  // Keep one bounded background analysis per exact FEN; never start a second
  // worker for a question while an analysis of that FEN is still running.
  const engineCacheRef=useRef<{fen:string;depth:number;lines:CandidateLine[]}|null>(null);
@@ -130,6 +192,31 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
   return()=>{clearTimeout(timer);engineJobRef.current?.cancel();engineJobRef.current=null;};
  },[open,token,fen]);
  const sectionRef=useRef<HTMLElement>(null),request=useRef<AbortController|null>(null),busyRef=useRef(false),voicePreference=useRef(saved?.voiceReplies??false),restoredScroll=useRef<number|null>(saved?.scrollTop??null),speechRequest=useRef<AbortController|null>(null),recorder=useRef<AudioCapture|null>(null),epoch=useRef(0),clipUrl=useRef<string|null>(null),audioRef=useRef<HTMLAudioElement|null>(null),listRef=useRef<HTMLDivElement>(null);
+ // Enlarge only into the space to the right of the study board. The existing
+ // conversation stays mounted, including draft, requests and variation replay.
+ useLayoutEffect(()=>{
+  if(!open||!readingExpanded)return;
+  const section=sectionRef.current,workspace=section?.closest('.spieler-position-workspace');
+  const rail=section?.closest('.global-position-right-rail');
+  const board=workspace?.querySelector('.preparation-shared-board');
+  if(!rail||!board)return;
+  const route=section?.closest('[data-route-scroll]');
+  let frame=0;
+  const measure=()=>{
+   if(!window.matchMedia('(min-width: 1101px)').matches){setReadingExpanded(false);return;}
+   const railBox=rail.getBoundingClientRect(),boardBox=board.getBoundingClientRect();
+   const left=Math.max(railBox.left,boardBox.right+8),top=Math.max(12,(route?.getBoundingClientRect().top??0)+8);
+   const width=window.innerWidth-left-12,height=window.innerHeight-top-12;
+   if(width<240||height<240){setReadingExpanded(false);return;}
+   setReadingBounds(previous=>previous&&previous.left===left&&previous.top===top&&previous.width===width&&previous.height===height?previous:{left,top,width,height});
+  };
+  const schedule=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(measure);};
+  const escape=(event:KeyboardEvent)=>{if(event.key==='Escape'&&!event.defaultPrevented){event.preventDefault();setReadingExpanded(false);}};
+  measure();
+  const observer=new ResizeObserver(schedule);observer.observe(rail);observer.observe(board);
+  window.addEventListener('resize',schedule);document.addEventListener('scroll',schedule,true);document.addEventListener('keydown',escape);
+  return()=>{cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener('resize',schedule);document.removeEventListener('scroll',schedule,true);document.removeEventListener('keydown',escape);};
+ },[open,readingExpanded]);
  const playback=useRef<ReturnType<typeof createCoachPlayback>>(null),speechCache=useRef(new Map<string,Blob>());
  const stopSpeech=useCallback(()=>{speechRequest.current?.abort();speechRequest.current=null;playback.current?.stop();playback.current=null;setSpeechPlaying(false);setSpeechError('');audioRef.current?.pause();if(clipUrl.current)URL.revokeObjectURL(clipUrl.current);clipUrl.current=null;setClip(null);setSpeechBusy(null);},[]);
  const cancel=useCallback(()=>{
@@ -149,6 +236,16 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
   if(code==='transcript_too_long'||code==='payload_too_large')return t.tooLong;
   return t.unavailable;
  }
+ function shownLesson(m:ChatItem,item:number){return lessonForLine(m,preview?.item===item?preview.line:m.planDemo?.lineIndex??-1);}
+ function readFullLesson(m:ChatItem,item:number){
+  if(!m.planDemo)return m.text;
+  const lesson=shownLesson(m,item);if(!lesson)return m.candidateLines?.[preview?.item===item?preview.line:m.planDemo.lineIndex]?.unsettled?chessy.unsettledLine:chessy.noLineLesson;
+  const line=m.candidateLines?.[lesson.lineIndex],moves=line?.moves;
+  if(!moves?.length)return m.text;
+  const start=(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0);
+  const full=[lesson.intro,formatNumberedMoves(moves,start),...(line?.continuation?[chessy.stockfishContinuation+': '+formatNumberedMoves(line.continuation.moves,start+moves.length)]:[]),lesson.conclusion].join('\n');
+  return full.length<=1200?full:lesson.intro+'\n'+lesson.conclusion;
+ }
  async function speak(text:string,item:number){
   stopSpeech();const abort=new AbortController();speechRequest.current=abort;setSpeechBusy(item);setSpeechError('');
   const cacheKey=lang+':'+text;
@@ -165,18 +262,21 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
   }catch(e){player?.stop();if(playback.current===player)playback.current=null;if(!abort.signal.aborted){const code=e instanceof Error?e.message:'';setSpeechError(code==='speech_timeout'||(e instanceof DOMException&&e.name==='TimeoutError')?t.speechTimeout:code==='speech_too_long'?t.speechTooLong:code==='rate_limit'?t.rate:code==='provider_not_configured'?t.notConfigured:t.speechUnavailable);setSpeechPlaying(false);}}
   finally{if(!abort.signal.aborted)setSpeechBusy(null);}
  }
- async function send(event:FormEvent){
-  event.preventDefault();const message=draft.trim();if(message.length<2||!token||busyRef.current||recorder.current)return;
+ function send(event:FormEvent){event.preventDefault();void ask(draft.trim(),true);}
+ // One chat workflow for typed questions and the Chessy plan buttons. A button
+ // question leaves the user's unsent draft untouched; FEN and side are unchanged.
+ async function ask(message:string,fromDraft:boolean){
+  if(message.length<2||!token||busyRef.current||recorder.current)return;
   busyRef.current=true;
   stopSpeech();const abort=new AbortController();request.current?.abort();request.current=abort;const previous=items.slice(-58);
-  setBusy('chat');setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);setPreview(null);onVariationPreview?.([], -1);
+  setBusy('chat');if(fromDraft)setDraft('');setError('');setItems([...previous,{role:'user',text:message}]);setExpanded([]);setPreview(null);onVariationPreview?.([], -1);
   try{
    const requested=archiveCount(message);
    const analysisLines=requested===null?await analyzeWithStockfish():[];
    if(abort.signal.aborted)return;
    let data:Reply,legacyBackend=false;
    if(requested!==null){const records=await createPositionSearchApi(import.meta.env.VITE_SERVER_URL||'').search({fen,side,fideId:'',scope:'all',sort:'strongest',limit:requested},token,abort.signal);const archive=records.games.map(g=>verifiedArchiveGame(g,fen)).filter((g):g is ResultGame=>g!==null).slice(0,requested);data={answer:archive.length?archiveHeadings[lang]:t.unavailable,games:archive,generated:true,archiveOnly:archive.length>0};}
-   else{const payload={message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text})),...(analysisLines.length?{candidateLines:analysisLines}:{})};const opts={method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store' as const,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token}};
+   else{const payload={message,fen,side,language:lang,history:previous.filter(item=>!item.engineFallback).slice(-8).map(({role,text})=>({role,text})),...(analysisLines.length?{candidateLines:analysisLines}:{})};const opts={method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(CHAT_TIMEOUT_MS)]),cache:'no-store' as const,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token}};
     let response=await fetch(apiUrl('chat'),{...opts,body:JSON.stringify(payload)});
     // The isolated QA backend may still run the older API. Do not break chat before its QA rollout.
     if(response.status===400&&'candidateLines'in payload){const failure=await response.clone().json().catch(()=>null);if(failure?.code==='invalid_query'){legacyBackend=true;response=await fetch(apiUrl('chat'),{...opts,body:JSON.stringify({...payload,candidateLines:undefined})});}}
@@ -188,9 +288,39 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
     // verified lines but they cannot be shown, the AI explained other moves: fail closed
     // and keep the provenance warning on the local lines.
     const serverClaimed=requested===null&&!data.archiveOnly&&data.engineVerified===true;
-    const serverLines=serverClaimed&&data.position===fen?serverEngineLines(data.engineLines,fen):null;
-    setItems([...previous,{role:'user',text:message},{role:'assistant',text:data.answer,games:requested!==null?data.games.slice(0,20):[],generated:data.generated,archiveOnly:data.archiveOnly===true,candidateLines:serverLines??(!data.archiveOnly?analysisLines:[]),engineLinked:serverLines?true:!serverClaimed&&!legacyBackend&&analysisLines.length>0&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines),...(serverLines?{engineServer:true}:{})}]);if(voicePreference.current&&!data.archiveOnly)void speak(data.answer,previous.length+1);}
-  }catch(e){if(!abort.signal.aborted){setError(describe(e));setDraft(message);setItems(previous);}}
+    const serverLines=serverClaimed&&data.position===fen?verifiedContinuations(data.engineLines,fen):null;
+    const engineFallback=data.generated===false&&data.providerStatus==='unavailable';
+    if(engineFallback&&!serverLines)throw Error('api');
+    const incoming=data.planDemonstration;
+    const lineIndex=typeof incoming?.lineId==='string'&&/^L[1-3]$/.test(incoming.lineId)?Number(incoming.lineId.slice(1))-1:-1;
+    const planDemo:PlanDemo|null=import.meta.env.VITE_CHESSY_PLAN_DEMO_ENABLED==='true'&&serverLines&&lineIndex>=0&&lineIndex<serverLines.length&&serverLines[lineIndex].unsettled!==true&&
+     typeof incoming?.intro==='string'&&incoming.intro.length>=2&&incoming.intro.length<=700&&
+     typeof incoming.conclusion==='string'&&incoming.conclusion.length>=2&&incoming.conclusion.length<=450&&
+     data.answer===incoming.intro+'\n'+incoming.conclusion
+     ?{lineIndex,intro:incoming.intro,conclusion:incoming.conclusion}:null;
+    const lineLessons:PlanDemo[]=[];
+    if(planDemo&&serverLines&&Array.isArray(data.lineLessons)&&data.lineLessons.length<=3){
+     const seen=new Set();
+     for(const lesson of data.lineLessons){
+      const index=typeof lesson?.lineId==='string'&&/^L[1-3]$/.test(lesson.lineId)?Number(lesson.lineId.slice(1))-1:-1;
+      if(index<0||index>=serverLines.length||serverLines[index].unsettled||seen.has(index)||typeof lesson.intro!=='string'||lesson.intro.length<2||lesson.intro.length>700||typeof lesson.conclusion!=='string'||lesson.conclusion.length<2||lesson.conclusion.length>450)throw Error('api');
+      seen.add(index);lineLessons.push({lineIndex:index,intro:lesson.intro,conclusion:lesson.conclusion});
+     }
+     const primary=lineLessons.find(l=>l.lineIndex===planDemo.lineIndex);
+     if(!primary||primary.intro!==planDemo.intro||primary.conclusion!==planDemo.conclusion)throw Error('api');
+    }
+    const responseItem:ChatItem={role:'assistant',text:data.answer,games:requested!==null?data.games.slice(0,20):[],generated:data.generated,
+     archiveOnly:data.archiveOnly===true,candidateLines:serverLines??(!data.archiveOnly?analysisLines:[]),
+     engineLinked:serverLines?true:!serverClaimed&&!legacyBackend&&analysisLines.length>0&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines),
+     ...(serverLines?{engineServer:true}:{}),...(engineFallback?{engineFallback:true}:{}),...(planDemo?{planDemo}:{}),...(lineLessons.length?{lineLessons}:{}),...(data.engineError?{engineUnavailable:true}:{})};
+    setItems([...previous,{role:'user',text:message},responseItem]);
+    if(planDemo&&serverLines){
+     // First show the original position. Each arrow advances this verified variation.
+     setPreview({item:previous.length+1,line:planDemo.lineIndex,ply:0});
+     onVariationPreview?.(replayMoves(serverLines[planDemo.lineIndex]),0);
+    }
+    if(voicePreference.current&&!data.archiveOnly&&!engineFallback)void speak(readFullLesson(responseItem,previous.length+1),previous.length+1);}
+  }catch(e){if(!abort.signal.aborted){setError(describe(e));if(fromDraft)setDraft(message);setItems(previous);}}
   finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}
  }
  async function toggleVoice(){
@@ -224,19 +354,31 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    if(epoch.current===currentEpoch){busyRef.current=false;setBusy(null);setError(e instanceof DOMException&&e.name==='NotAllowedError'?t.micDenied:t.micUnavailable);}
   }
  }
+ function continuationView(line:CandidateLine){
+  if(!line.continuation)return line.unsettled?<span className="coach-chat-unsettled" role="status">{chessy.unsettledLine}</span>:null;
+  const start=(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0)+line.moves.length;
+  return <span className="coach-chat-continuation" style={{display:'block',borderTop:'1px solid currentColor',marginTop:4,paddingTop:4}}><strong>{chessy.stockfishContinuation}: </strong>{formatNumberedMoves(line.continuation.moves,start)}</span>;
+ }
  const chessyState=recording?'listening':busy?'thinking':speechPlaying?'speaking':items.length?'ready':'idle';
  if(import.meta.env.VITE_AI_COACH_ENABLED!=='true')return null;
  return <section ref={sectionRef} className={chessyEnabled?'coach-chat chessy-enabled':'coach-chat'} aria-label={t.title}>
-  {(headerTarget?createPortal(<button type="button" className="coach-chat-toggle" aria-label={t.title} aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}>{chessyEnabled?<ChessyAvatar state={chessyState} compact/>:<MessageSquare size={16}/>}<span>{chessyEnabled?chessy.name:t.askChat}</span></button>,headerTarget):<button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setOpen(value=>!value);}}>{chessyEnabled?<ChessyAvatar state={chessyState} compact/>:<MessageSquare size={16}/>}<span>{chessyEnabled?chessy.name:t.title}</span></button>)}
+  {(headerTarget?createPortal(<button type="button" className="coach-chat-toggle" aria-label={t.title} aria-expanded={open} onClick={()=>{if(open)cancel();setReadingExpanded(false);setOpen(value=>!value);}}>{chessyEnabled?<ChessyAvatar state={chessyState} compact/>:<MessageSquare size={16}/>}<span>{chessyEnabled?chessy.name:t.askChat}</span></button>,headerTarget):<button type="button" className="coach-chat-toggle" aria-expanded={open} onClick={()=>{if(open)cancel();setReadingExpanded(false);setOpen(value=>!value);}}>{chessyEnabled?<ChessyAvatar state={chessyState} compact/>:<MessageSquare size={16}/>}<span>{chessyEnabled?chessy.name:t.title}</span></button>)}
 
-  {open&&<div className="coach-chat-panel">
+  {open&&<div id={panelId} className={'coach-chat-panel'+(readingExpanded?' coach-chat-panel--expanded':'')} style={readingExpanded&&readingBounds?readingBounds:undefined}>
    {chessyEnabled&&<div className="chessy-intro"><ChessyAvatar state={chessyState}/><div><strong>{chessy.name} · AI Coach</strong><p role="status">{chessy[chessyState]}</p></div></div>}
-   <div className="coach-chat-actions"><button type="button" disabled={!items.length||!!busy||recording} onClick={()=>{if(!window.confirm(t.clearConfirm))return;cancel();setItems([]);setDraft('');setExpanded([]);setPreview(null);onVariationPreview?.([], -1);setScrollTop(0);setError('');}}><Trash2 size={15}/>{t.clearChat}</button></div>
+   <div className="coach-chat-actions"><button type="button" className="coach-chat-expand" aria-expanded={readingExpanded} aria-controls={panelId} title={readingExpanded?t.restoreChat:t.expandChat} onClick={()=>setReadingExpanded(value=>!value)}>{readingExpanded?<Minimize2 size={15} aria-hidden="true"/>:<Maximize2 size={15} aria-hidden="true"/>}{readingExpanded?t.restoreChat:t.expandChat}</button><button type="button" disabled={!items.length||!!busy||recording} onClick={()=>{if(!window.confirm(t.clearConfirm))return;cancel();setItems([]);setDraft('');setExpanded([]);setPreview(null);onVariationPreview?.([], -1);setScrollTop(0);setError('');}}><Trash2 size={15}/>{t.clearChat}</button></div>
    <div ref={listRef} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="coach-chat-history" role="log" aria-live="polite" aria-relevant="additions text">
-    {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p className={m.archiveOnly?'coach-chat-archive-heading':undefined}>{m.text}</p>{m.role==='assistant'&&<>
-     {!m.generated&&<small className="coach-chat-notice">{t.fallback}</small>}
-     <div className="coach-chat-message-actions"><button type="button" className="coach-chat-copy" onClick={()=>void navigator.clipboard.writeText(m.text).catch(()=>setError(t.unavailable))} aria-label={t.copyAnswer} title={t.copyAnswer}><Copy size={15}/>{t.copyAnswer}</button><button type="button" className="coach-chat-listen" disabled={!token||!!busy||recording||speechBusy!==null} onClick={()=>void speak(m.text,i)}><Volume2 size={14}/>{t.listen}</button></div>
-    </>}{m.role==='assistant'&&!m.archiveOnly&&!!m.candidateLines?.length&&<div className="coach-chat-study"><small className="coach-chat-engine-source">Stockfish 19{m.engineServer?' · '+t.engineServer:''}</small><div className="coach-chat-study-choices">{m.candidateLines.map((line,j)=><button type="button" key={j} aria-pressed={preview?.item===i&&preview.line===j} onClick={()=>{setPreview({item:i,line:j,ply:0});onVariationPreview?.(line.moves,0);}}>{t.variant} {j+1}{line.score&&<> · <span className="coach-chat-eval">{formatEngineScore(line.score)}</span></>} · {formatNumberedMoves(line.moves,(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0))}</button>)}</div>{m.engineServer&&<small className="coach-chat-notice coach-chat-eval-note">{t.evalPerspective}</small>}{!m.engineLinked&&<small className="coach-chat-notice coach-chat-engine-unlinked">{t.engineNotLinked}</small>}{preview?.item===i&&<div className="coach-chat-study-nav"><button type="button" aria-label={t.prevMove} disabled={preview.ply===0} onClick={()=>{const ply=preview.ply-1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>←</button><span>{preview.ply} / {m.candidateLines[preview.line].moves.length}</span><button type="button" aria-label={t.nextMove} disabled={preview.ply===m.candidateLines[preview.line].moves.length} onClick={()=>{const ply=preview.ply+1;setPreview({...preview,ply});onVariationPreview?.(m.candidateLines![preview.line].moves,ply);}}>→</button><button type="button" onClick={()=>{setPreview(null);onVariationPreview?.([], -1);}}>{t.returnPosition}</button></div>}</div>}{m.role==='assistant'&&!m.archiveOnly&&!m.candidateLines?.length&&<small className="coach-chat-notice">{t.engineUnavailable}</small>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{t.gameNumber} {j+1}</span><span>{formatNumberedMoves(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6)),g.ply)||"—"}</span></summary><div className="coach-chat-variation-full"><div className="coach-chat-variation-rule" aria-hidden="true"/><p>{formatNumberedMoves((g.moves||[]).slice(0,30))}</p><button type="button" onClick={()=>void navigator.clipboard.writeText(formatNumberedMoves((g.moves||[]).slice(0,30))).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}</div>)}
+    {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p className={m.archiveOnly?'coach-chat-archive-heading':undefined}>{m.planDemo?(shownLesson(m,i)?.intro??(m.candidateLines?.[preview?.item===i?preview.line:m.planDemo.lineIndex]?.unsettled?chessy.unsettledLine:chessy.noLineLesson)):m.text}</p>{m.role==='assistant'&&<>
+     {!m.generated&&!m.engineFallback&&<small className="coach-chat-notice">{t.notConfigured}</small>}{m.engineUnavailable&&<small className="coach-chat-notice">{t.engineUnavailable}</small>}
+
+    </>}{m.role==='assistant'&&!m.archiveOnly&&!!m.candidateLines?.length&&<div className="coach-chat-study"><small className="coach-chat-engine-source">Stockfish 19{m.engineServer?' · '+t.engineServer:''}</small><div className="coach-chat-study-choices">
+       {m.planDemo?<>
+        {m.candidateLines.map((line,j)=>j===m.planDemo!.lineIndex?<button type="button" className="coach-chat-plan-primary" key={j} aria-pressed={preview?.item===i&&preview.line===j} onClick={()=>{stopSpeech();setPreview({item:i,line:j,ply:0});onVariationPreview?.(replayMoves(line),0);}}><strong>{t.planReplay}</strong>{line.score&&<> · <span className="coach-chat-eval">{formatEngineScore(line.score)}</span></>} · {formatNumberedMoves(line.moves,(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0))}{continuationView(line)}</button>:null)}
+        {m.candidateLines.length>1&&<details className="coach-chat-plan-alternatives"><summary>{t.planAlternatives}</summary>
+         {m.candidateLines.map((line,j)=>j!==m.planDemo!.lineIndex?<button type="button" key={j} aria-pressed={preview?.item===i&&preview.line===j} onClick={()=>{stopSpeech();setPreview({item:i,line:j,ply:0});onVariationPreview?.(replayMoves(line),0);}}>{t.variant} {j+1}{line.score&&<> · <span className="coach-chat-eval">{formatEngineScore(line.score)}</span></>} · {formatNumberedMoves(line.moves,(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0))}{continuationView(line)}</button>:null)}
+        </details>}
+       </>:m.candidateLines.map((line,j)=><button type="button" key={j} aria-pressed={preview?.item===i&&preview.line===j} onClick={()=>{stopSpeech();setPreview({item:i,line:j,ply:0});onVariationPreview?.(replayMoves(line),0);}}>{t.variant} {j+1}{line.score&&<> · <span className="coach-chat-eval">{formatEngineScore(line.score)}</span></>} · {formatNumberedMoves(line.moves,(Number(fen.split(' ')[5])-1)*2+(fen.split(' ')[1]==='b'?1:0))}{continuationView(line)}</button>)}
+      </div>{m.engineServer&&<small className="coach-chat-notice coach-chat-eval-note">{t.evalPerspective}</small>}{!m.engineLinked&&<small className="coach-chat-notice coach-chat-engine-unlinked">{t.engineNotLinked}</small>}{preview?.item===i&&<div className="coach-chat-study-nav"><button type="button" aria-label={t.prevMove} disabled={preview.ply===0} onClick={()=>{const ply=preview.ply-1;setPreview({...preview,ply});onVariationPreview?.(replayMoves(m.candidateLines![preview.line]),ply);}}>←</button><span>{m.candidateLines[preview.line].continuation&&preview.ply>=m.candidateLines[preview.line].moves.length&&<strong className="coach-chat-continuation-boundary">{chessy.stockfishContinuation} · </strong>}{preview.ply} / {replayMoves(m.candidateLines[preview.line]).length}</span><button type="button" aria-label={t.nextMove} disabled={preview.ply===replayMoves(m.candidateLines[preview.line]).length} onClick={()=>{const ply=preview.ply+1;setPreview({...preview,ply});onVariationPreview?.(replayMoves(m.candidateLines![preview.line]),ply);}}>→</button><button type="button" onClick={()=>{setPreview(null);onVariationPreview?.([], -1);}}>{t.returnPosition}</button></div>}</div>}{m.role==='assistant'&&m.planDemo&&shownLesson(m,i)&&<p data-lesson-line={shownLesson(m,i)!.lineIndex} className="coach-chat-plan-conclusion"><strong>{t.planOutcome} {shownLesson(m,i)!.lineIndex+1}: </strong>{shownLesson(m,i)!.conclusion}</p>}{m.role==='assistant'&&!m.archiveOnly&&!m.engineUnavailable&&!m.candidateLines?.length&&<small className="coach-chat-notice">{t.engineUnavailable}</small>}{m.archiveOnly&&!!m.games?.length&&<ol className="coach-chat-variations">{m.games.map((g,j)=><li key={g.id}><details open={j<3}><summary><span>{t.gameNumber} {j+1}</span><span>{formatNumberedMoves(g.continuation||(g.moves||[]).slice(g.ply,Math.min(30,g.ply+6)),g.ply)||"—"}</span></summary><div className="coach-chat-variation-full"><div className="coach-chat-variation-rule" aria-hidden="true"/><p>{formatNumberedMoves((g.moves||[]).slice(0,30))}</p><button type="button" onClick={()=>void navigator.clipboard.writeText(formatNumberedMoves((g.moves||[]).slice(0,30))).catch(()=>setError(t.unavailable))}><Copy size={14}/>{t.copyAnswer}</button><button type="button" onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze}</button></div></details></li>)}</ol>}{m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games"><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{g.white} – {g.black} · {t.analyze}</button>)}</details>}{!m.archiveOnly&&!!m.games?.length&&<details className="coach-chat-games" open={expanded.includes(i)} onToggle={e=>{const isOpen=e.currentTarget.open;setExpanded(previous=>previous.includes(i)===isOpen?previous:isOpen?[...previous,i]:previous.filter(value=>value!==i));}}><summary>{t.games} · {m.games.length}</summary>{m.games.map(g=><button type="button" key={g.id} onClick={()=>navigate(openSpielerAnalysis(g.pgn,undefined,g.ply))}>{t.analyze} · {g.white} – {g.black}</button>)}</details>}{m.role==='assistant'&&<div className="coach-chat-message-actions"><CoachCopyButton key={readFullLesson(m,i)} text={readFullLesson(m,i)} label={t.copyAnswer} copiedLabel={t.copiedAnswer} onStart={()=>setError(previous=>Object.values(coachChatCopy).some(copy=>copy.copyFailed===previous)?'':previous)} onError={()=>setError(t.copyFailed)}/><button type="button" className="coach-chat-listen" disabled={!token||!!busy||recording||speechBusy!==null} onClick={()=>void speak(readFullLesson(m,i),i)}><Volume2 size={14}/>{t.listen}</button></div>}</div>)}
     {busy&&<p role="status">{busy==='transcribe'?t.transcribing:busy==='microphone'?t.voice:t.busy}</p>}
    </div>
    {recording&&<p role="status" className="coach-chat-notice">{t.recording}</p>}
@@ -245,7 +387,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    {!token&&<p className="coach-chat-error" role="status">{t.auth}</p>}
    {error&&<p className="coach-chat-error" role="alert">{error}</p>}
    {speechError&&<p className="coach-chat-error coach-chat-speech-error" role="alert">{speechError}</p>}
-   {chessyEnabled&&<div className="chessy-prompts" aria-label={chessy.promptsLabel}><span className="chessy-prompts-label">{chessy.promptsLabel}</span>{chessy.prompts.map(question=><button key={question} type="button" disabled={!token||!!busy||recording} onClick={()=>{setDraft(question);inputRef.current?.focus();}}>{question}</button>)}</div>}
+   {chessyEnabled&&<div className="chessy-prompts" role="group" aria-label={chessy.planQuestion}><span className="chessy-prompts-label">{chessy.planQuestion}</span>{(['white','black'] as const).map(planSide=><button key={planSide} type="button" disabled={!token||!!busy||recording} onClick={()=>void ask(chessy.planRequest[planSide],false)}>{planSide==='white'?chessy.forWhite:chessy.forBlack}</button>)}</div>}
    <label className="coach-chat-voice-option"><input type="checkbox" checked={voiceReplies} disabled={!token} onChange={e=>{voicePreference.current=e.target.checked;setVoiceReplies(e.target.checked);if(!e.target.checked)stopSpeech();}}/>{t.autoVoice}</label>
    <form className="coach-chat-compose" onSubmit={send}>
     <label className="sr-only" htmlFor={inputId}>{t.placeholder}</label>
@@ -255,7 +397,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    </form>
 
 
-   <button type="button" className="coach-chat-collapse-bottom" onClick={()=>{cancel();setOpen(false);}}>{t.closeChat} ↑</button>
+   <button type="button" className="coach-chat-collapse-bottom" onClick={()=>{cancel();setReadingExpanded(false);setOpen(false);}}>{t.closeChat} ↑</button>
   </div>}
  </section>;
 }
