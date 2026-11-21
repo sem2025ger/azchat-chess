@@ -509,6 +509,9 @@ BEGIN
   IF current_start IS NULL OR clock_timestamp() >= current_start THEN
     RAISE EXCEPTION 'round_time_locked' USING ERRCODE = 'P0001';
   END IF;
+  IF p_starts_at <= clock_timestamp() THEN
+    RAISE EXCEPTION 'round_time_past' USING ERRCODE = 'P0001';
+  END IF;
   IF EXISTS (
     SELECT 1 FROM public.team_tournament_rounds
     WHERE tournament_id = p_id AND (

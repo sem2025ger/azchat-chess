@@ -73,7 +73,7 @@ async function readQuery(query) {
   if (error?.code === 'P0001' && [
     'event_full', 'invalid_invite', 'lineup_incomplete', 'player_already_registered', 'no_previous_lineup',
     'create_limit', 'idempotency_conflict', 'revision_closed', 'revision_incomplete', 'revision_missing',
-    'round_time_locked', 'round_time_order',
+    'round_time_locked', 'round_time_order', 'round_time_past',
   ].includes(error.message)) fail(error.message === 'no_previous_lineup' ? 404 : 409, error.message);
   if (error) fail(...(RESPONSE_ERRORS[error.code] ?? [503, 'temporarily_unavailable']));
   return data;

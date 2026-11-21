@@ -152,6 +152,7 @@ const labels = {
   m3SaveRoundTime: ['Rundenzeit speichern', 'Save round time', 'Tur vaxtını yadda saxla', 'Tur saatini kaydet', 'Зберегти час туру', 'Сохранить время тура'],
   m3RoundTimeLocked: ['Die Rundenzeit kann nicht mehr geändert werden.', 'This round time can no longer be changed.', 'Bu turun vaxtı artıq dəyişdirilə bilməz.', 'Bu turun saati artık değiştirilemez.', 'Час цього туру вже не можна змінити.', 'Время этого тура уже нельзя изменить.'],
   m3RoundTimeOrder: ['Die Runden müssen in zeitlicher Reihenfolge bleiben.', 'Each round must start after the previous round.', 'Hər tur əvvəlki turdan sonra başlamalıdır.', 'Her tur bir önceki turdan sonra başlamalıdır.', 'Кожен тур має починатися після попереднього.', 'Каждый тур должен начинаться после предыдущего.'],
+  m3RoundTimePast: ['Wähle eine Startzeit in der Zukunft.', 'Choose a start time in the future.', 'Başlanğıc üçün gələcək bir vaxt seçin.', 'Gelecekte bir başlangıç saati seçin.', 'Виберіть час початку в майбутньому.', 'Выберите время начала в будущем.'],
   m3OfficialLineup: ['Eingereichte Aufstellung (offiziell)', 'Submitted lineup (official)', 'Təqdim edilmiş heyət (rəsmi)', 'Gönderilen kadro (resmî)', 'Поданий склад (офіційний)', 'Поданный состав (официальный)'],
   m3RevisionDraft: ['Entwurfsänderungen noch nicht eingereicht', 'Draft changes not yet submitted', 'Qaralama dəyişiklikləri hələ təqdim edilməyib', 'Taslak değişiklikleri henüz gönderilmedi', 'Зміни в чернетці ще не подано', 'Изменения в черновике ещё не поданы'],
   m3SubmitRevision: ['Geänderte Aufstellung einreichen', 'Submit revision', 'Dəyişdirilmiş heyəti təqdim et', 'Kadro değişikliklerini gönder', 'Подати змінений склад', 'Подать изменённый состав'],
@@ -205,6 +206,7 @@ export function tournamentErrorMessage(code: string, tr: TournamentCopy) {
   if (code === 'idempotency_conflict') return tr('m3RequestConflict');
   if (code === 'round_time_locked') return tr('m3RoundTimeLocked');
   if (code === 'round_time_order') return tr('m3RoundTimeOrder');
+  if (code === 'round_time_past') return tr('m3RoundTimePast');
   if (code === 'revision_closed') return tr('m3RevisionClosed');
   if (code === 'revision_missing') return tr('m3RevisionMissing');
   if (code === 'lineup_incomplete' || code === 'revision_incomplete') return tr('m3LineupIncomplete');

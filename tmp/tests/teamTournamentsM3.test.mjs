@@ -334,6 +334,7 @@ test('M3 organizer form and board results use six existing locale translations w
         ['revision_missing', 'm3RevisionMissing'],
         ['round_time_order', 'm3RoundTimeOrder'],
         ['round_time_locked', 'm3RoundTimeLocked'],
+        ['round_time_past', 'm3RoundTimePast'],
         ['idempotency_conflict', 'm3RequestConflict'],
       ]) {
         assert.equal(tournamentErrorMessage(code, tr), tr(label), language + ': ' + code);

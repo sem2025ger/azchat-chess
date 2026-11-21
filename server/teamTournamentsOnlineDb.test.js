@@ -153,6 +153,19 @@ test('M3 online foundation on isolated PostgreSQL', {
     await assert.rejects(edit(owner, id, 1, at(1)), conflict('round_time_locked'));
   });
 
+  await t.test('organizer cannot move an unstarted round into the past and its stored time stays unchanged', async () => {
+    const { id } = await create('Past round time');
+    const entries = await register(id);
+    await expire(id);
+    await tick(id, entries);
+
+    const past = new Date(Date.now() - 60_000).toISOString();
+    await assert.rejects(edit(owner, id, 1, past), conflict('round_time_past'));
+    const { rows: [round] } = await pool.query(
+      'SELECT starts_at FROM public.team_tournament_rounds WHERE tournament_id=$1 AND round_no=1', [id]);
+    assert.equal(round.starts_at.toISOString(), start);
+  });
+
   await t.test('revision protects the place, preserves consent by player, and replaces only after consent', async () => {
     const { id } = await create('Full event');
     const [entry, second] = await register(id);
