@@ -1,0 +1,2 @@
+# Source files are kept byte-for-byte; their SHA-256 is checked by the builders.
+*.txt -text

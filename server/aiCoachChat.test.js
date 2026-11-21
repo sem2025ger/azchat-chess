@@ -2,7 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),express=require('express');
 const {Chess}=require('chess.js');
 const {validChatQuery,groundedChat,gameRequest}=require('./aiCoachChat');
-const {installAiCoach}=require('./aiCoach');
+const {installAiCoach,installAiCoachFromEnv}=require('./aiCoach');
 const fen=new Chess().fen();
 const query={message:'Find games in this position',fen,side:'white',language:'ru'};
 test('chat validates all request fields and languages',()=>{
@@ -279,4 +279,98 @@ test('settled continuation facts replace the endpoint while preserving lineEndFa
  }});
  assert.deepEqual(reply.engineLines[0].moves,moves);assert.deepEqual(reply.engineLines[0].continuation,continuation);
  assert.ok(!JSON.stringify(reply).includes('endFacts'));
+});
+
+test('classics retrieval stays OFF by default; ON connects Alekhine alongside Stockfish 19',async()=>{
+ const alekhineFen='r1br3k/2qn1Ppp/pp1p4/3N4/2PNP3/1P4b1/PB4PP/3R1R1K b - - 2 20';
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:[lineFixture(['Be5'])]})};
+ const q={fen:alekhineFen,message:'Какой стратегический план и идеи жертвы здесь у белых?',language:'ru',side:'any'};
+ const seen=[];
+ const fetchImpl=async(_url,options)=>{
+  const body=JSON.parse(options.body);
+  seen.push({evidence:JSON.parse(body.input).evidence,instructions:body.instructions});
+  return verifiedReply();
+ };
+ const off=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true});
+ const offExplicit=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true,classicsEnabled:false});
+ const on=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true,classicsEnabled:true});
+ assert.equal(JSON.stringify(seen[0].evidence),JSON.stringify(seen[1].evidence));
+ assert.equal(seen[0].instructions,seen[1].instructions);
+ assert.equal(Object.hasOwn(seen[0].evidence,'classicsKnowledge'),false);
+ assert.equal(seen[2].evidence.candidateOrigin,'server_stockfish_19');
+ assert.equal(seen[2].evidence.engine.name,'stockfish-19-lite');
+ assert.ok(Array.isArray(seen[2].evidence.classicsKnowledge)&&seen[2].evidence.classicsKnowledge.length>=1);
+ assert.equal(seen[2].evidence.classicsKnowledge[0].bookId,'alekhine-best-games-1908-1923');
+ assert.equal(seen[2].evidence.classicsKnowledge[0].unitId,'g97');
+ assert.equal(seen[2].evidence.classicsKnowledge[0].match.kind,'exact-position');
+ assert.ok(seen[2].instructions.includes('never carry concrete moves, squares, threats or tactics from the historical game'));
+ assert.ok(seen[2].instructions.includes('evidence.classicsKnowledge contains verified excerpts'));
+ assert.ok(seen[2].instructions.includes('clearly distinguish historical commentary from objective engine evaluation'));
+ assert.ok(seen[2].instructions.includes('superseded by Stockfish 19'));
+ assert.ok(seen[2].instructions.includes('Stockfish candidateLines, positionFacts and legalMoves'));
+ // When positionFactsEnabled is false, classics instruction must not reference absent positionFacts.
+ await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:false,classicsEnabled:true});
+ assert.equal(Object.hasOwn(seen[3].evidence,'positionFacts'),false);
+ assert.ok(seen[3].instructions.includes('Stockfish candidateLines and legalMoves'));
+ assert.equal(seen[3].instructions.includes('Stockfish candidateLines, positionFacts and legalMoves'),false);
+ assert.ok(Buffer.byteLength(JSON.stringify(seen[2].evidence),'utf8')<16*1024);
+ assert.equal(JSON.stringify(on).includes('classicsKnowledge'),false);
+ assert.equal(off.engineVerified,true);
+ assert.equal(on.engineVerified,true);
+
+ const app=express(),origFetch=globalThis.fetch;
+ let envSawClassics=false;
+ globalThis.fetch=async(url,options)=>{
+  if(String(url)==='https://api.openai.com/v1/responses'){
+   const ev=JSON.parse(JSON.parse(options.body).input).evidence;
+   envSawClassics=Array.isArray(ev.classicsKnowledge)&&ev.classicsKnowledge.some(c=>c.bookId==='alekhine-best-games-1908-1923');
+   return verifiedReply();
+  }
+  return origFetch(url,options);
+ };
+ installAiCoachFromEnv(app,async()=>({id:'fixture'}),{status:'ready',search:async()=>({total:0,games:[],nextMoves:[]})},{
+  AI_COACH_ENABLED:'true',AI_COACH_CLASSICS_ENABLED:'true',OPENAI_API_KEY:'synthetic'
+ });
+ const envServer=app.listen(0,'127.0.0.1');
+ await new Promise(r=>envServer.once('listening',r));
+ try{
+  const res=await origFetch('http://127.0.0.1:'+envServer.address().port+'/api/ai-coach/chat',{
+   method:'POST',headers:{Authorization:'Bearer ok','Content-Type':'application/json'},body:JSON.stringify(q)
+  });
+  assert.equal(res.status,200);
+  assert.equal(envSawClassics,true);
+ }finally{
+  globalThis.fetch=origFetch;
+  await new Promise(r=>envServer.close(r));
+ }
+});
+
+test('classics ON attaches nothing when the books hold no similar structure (no theme-tag filler)',async()=>{
+ const fen='r2q1rk1/3nbppp/p2pbn2/1p2p3/4P1P1/1NN1BP2/PPPQ3P/2KR1B1R w - - 0 12'; // Najdorf English Attack, benchmark n16
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:[lineFixture(['g5'])]})};
+ const seen=[];
+ const fetchImpl=async(_url,options)=>{const body=JSON.parse(options.body);seen.push({evidence:JSON.parse(body.input).evidence,instructions:body.instructions});return verifiedReply();};
+ await groundedChat(null,{fen,message:'How should White conduct the kingside pawn storm here?',language:'en',side:'white'},{openaiApiKey:'synthetic',engine,fetchImpl,positionFactsEnabled:true,classicsEnabled:true});
+ assert.equal(Object.hasOwn(seen[0].evidence,'classicsKnowledge'),false);
+ assert.equal(seen[0].instructions.includes('evidence.classicsKnowledge'),false);
+});
+
+
+test('Capablanca endgame passage reaches Chessy model only when classics are enabled',async()=>{
+ const fen='8/7R/8/2k2P2/1p6/3r4/5PKP/8 w - - 0 1'; // Chess Fundamentals, Example 59
+ const q={fen,message:'Explain the rook endgame plan for White',language:'en',side:'white'};
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:[lineFixture(['f6'])]})};
+ const seen=[];
+ const fetchImpl=async(_url,options)=>{
+  const body=JSON.parse(options.body);
+  seen.push({evidence:JSON.parse(body.input).evidence,instructions:body.instructions});
+  return verifiedReply();
+ };
+ await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,classicsEnabled:false});
+ const on=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,classicsEnabled:true});
+ assert.equal(Object.hasOwn(seen[0].evidence,'classicsKnowledge'),false);
+ assert.equal(seen[1].evidence.candidateOrigin,'server_stockfish_19');
+ assert.ok(seen[1].evidence.classicsKnowledge?.some(h=>h.bookId==='capablanca-chess-fundamentals'&&h.unitId==='e59'&&h.match.kind==='exact-position'));
+ assert.ok(seen[1].instructions.includes('historical commentary from objective engine evaluation'));
+ assert.equal(Object.hasOwn(on,'classicsKnowledge'),false,'internal book passages must not leak in public API response');
 });
