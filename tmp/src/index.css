@@ -1947,6 +1947,13 @@ aside .site-nav-link{min-height:58px;padding:10px 14px;border-radius:12px}
 .site-nav-subtitle{display:block;margin-top:3px;font:400 .705rem/1.35 Inter,system-ui,sans-serif;color:#a9a59c;letter-spacing:0;text-transform:none}
 aside nav{padding-top:20px!important}
 [data-mobile-app-nav] .site-nav-link .site-nav-label{font-size:.75rem;line-height:1.2;text-align:center;white-space:normal}
+[data-mobile-app-nav][data-spieltag-enabled] .site-nav-link{flex-basis:auto;min-width:44px}
+[data-mobile-app-nav][data-spieltag-enabled] .site-nav-link .site-nav-label{
+  max-width:100%;font-size:.6rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+@media(min-width:390px){
+  [data-mobile-app-nav][data-spieltag-enabled] .site-nav-link{flex-shrink:0}
+}
 [data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:58px;gap:4px}
 /* Equal navigation rows leave room for every desktop destination at 720 px. */
 aside .site-nav-link{height:54px;min-height:54px;padding:7px 14px;align-items:flex-start}

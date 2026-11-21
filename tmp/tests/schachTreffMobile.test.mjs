@@ -19,7 +19,13 @@ test('mobile navigation preserves its routes and interactions with the approved 
   const baseline = execFileSync('git', ['show', '4af51e5:tmp/src/components/Layout.tsx'], {encoding:'utf8'}).replace(/\r\n/g, '\n');
   const current = read('../src/components/Layout.tsx');
   const nav = source => source.split('<nav data-mobile-app-nav')[1].split('</nav>')[0];
-  assert.equal(nav(current).replace('label="Schach-Treff"', "label={t('nav.chat')}"), nav(baseline));
+  const withSpieltag = nav(current);
+  const flagAttribute = ' data-spieltag-enabled={showSpieltag || undefined}';
+  const spieltagLink = /        \{showSpieltag && <MobileNavItem to="\/spieltag"[^\n]*\n[^\n]*\/>\}\n/;
+  assert.ok(withSpieltag.includes(flagAttribute));
+  assert.match(withSpieltag, spieltagLink);
+  assert.equal(withSpieltag.replace(flagAttribute, '').replace(spieltagLink, '')
+    .replace('label="Schach-Treff"', "label={t('nav.chat')}"), nav(baseline));
   const mobileNavItem = source => source.split('function MobileNavItem')[1].split('function SidebarGermanyFlag')[0];
   const newLabel='site-nav-label text-[0.75rem] font-semibold normal-case tracking-normal';
   assert.ok(mobileNavItem(current).includes(newLabel));

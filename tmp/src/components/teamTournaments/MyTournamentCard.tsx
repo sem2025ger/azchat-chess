@@ -5,6 +5,7 @@ import {
   createTournamentM3Api, type MyTournamentBoard, type BoardResult,
 } from '../../services/teamTournaments';
 import { tournamentCopy } from './copy';
+import { RoundStartTime } from './TeamTournamentViews';
 
 type HomeState = { board: MyTournamentBoard | null; error: boolean; loadedVersion: number };
 
@@ -81,6 +82,7 @@ function PlayerTournamentCard({ token }: { token: string }) {
     {state.error && <p role="alert" className="text-xs mt-1">{tr('reportError')}</p>}
     {board && <>
       <p className="text-xs mt-1">{board.tournament_name} · {tr('round')} {board.round_no} · {tr('board')} {board.board_no}</p>
+      {board.starts_at && <RoundStartTime startsAt={board.starts_at} tr={tr} />}
       <p className="text-sm mt-1">{tr('opponent')} {board.opponent} · {tr('myColor')}: {board.side === 'white' ? tr('white') : tr('black')}</p>
       {board.status === 'confirmed' || board.confirmed ? <p role="status" className="text-xs mt-2">{tr('confirmedResult')}</p> :
         board.status === 'disputed' ? <p role="alert" className="text-xs mt-2">{tr('disputed')}</p> :

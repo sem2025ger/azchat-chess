@@ -147,6 +147,18 @@ const labels = {
   createLimitError: ['Du hast bereits 2 laufende Turniere. Beende eines, um ein neues anzulegen.', 'You already run 2 tournaments. Finish one to create another.', 'Artıq 2 aktiv turniriniz var. Yenisini yaratmaq üçün birini bitirin.', 'Zaten 2 aktif turnuvanız var. Yenisi için birini bitirin.', 'У вас уже 2 активні турніри. Завершіть один, щоб створити новий.', 'У вас уже 2 активных турнира. Завершите один, чтобы создать новый.'],
   createHubIntro: ['Mannschaftsturniere für Vereine: Turnier anlegen, Mannschaften einladen, online spielen.', 'Team tournaments for clubs: create a tournament, invite teams, play online.', 'Klublar üçün komanda turnirləri: turnir yaradın, komandaları dəvət edin, onlayn oynayın.', 'Kulüpler için takım turnuvaları: turnuva oluşturun, takımları davet edin, çevrimiçi oynayın.', 'Командні турніри для клубів: створіть турнір, запросіть команди, грайте онлайн.', 'Командные турниры для клубов: создайте турнир, пригласите команды, играйте онлайн.'],
   createHubManualHint: ['Drei Felder – fertig. Alles Weitere wird automatisch vorbereitet.', 'Three fields — done. Everything else is prepared automatically.', 'Üç sahə – hazır. Qalanı avtomatik hazırlanır.', 'Üç alan – tamam. Gerisi otomatik hazırlanır.', 'Три поля — і готово. Решту підготуємо автоматично.', 'Три поля — и готово. Остальное подготовим автоматически.'],
+  m3RoundInterval: ['Rundenabstand in Minuten (optional)', 'Minutes between rounds (optional)', 'Turlar arası dəqiqə (istəyə bağlı)', 'Turlar arası süre, dakika (isteğe bağlı)', 'Хвилин між турами (необов’язково)', 'Минут между турами (необязательно)'],
+  m3RoundTime: ['Rundenbeginn (Berlin)', 'Round starts (Berlin time)', 'Turun başlanğıcı (Berlin vaxtı)', 'Tur başlangıcı (Berlin saati)', 'Початок туру (час Берліна)', 'Начало тура (время Берлина)'],
+  m3SaveRoundTime: ['Rundenzeit speichern', 'Save round time', 'Tur vaxtını yadda saxla', 'Tur saatini kaydet', 'Зберегти час туру', 'Сохранить время тура'],
+  m3RoundTimeLocked: ['Die Rundenzeit kann nicht mehr geändert werden.', 'This round time can no longer be changed.', 'Bu turun vaxtı artıq dəyişdirilə bilməz.', 'Bu turun saati artık değiştirilemez.', 'Час цього туру вже не можна змінити.', 'Время этого тура уже нельзя изменить.'],
+  m3RoundTimeOrder: ['Die Runden müssen in zeitlicher Reihenfolge bleiben.', 'Each round must start after the previous round.', 'Hər tur əvvəlki turdan sonra başlamalıdır.', 'Her tur bir önceki turdan sonra başlamalıdır.', 'Кожен тур має починатися після попереднього.', 'Каждый тур должен начинаться после предыдущего.'],
+  m3RoundTimePast: ['Wähle eine Startzeit in der Zukunft.', 'Choose a start time in the future.', 'Başlanğıc üçün gələcək bir vaxt seçin.', 'Gelecekte bir başlangıç saati seçin.', 'Виберіть час початку в майбутньому.', 'Выберите время начала в будущем.'],
+  m3OfficialLineup: ['Eingereichte Aufstellung (offiziell)', 'Submitted lineup (official)', 'Təqdim edilmiş heyət (rəsmi)', 'Gönderilen kadro (resmî)', 'Поданий склад (офіційний)', 'Поданный состав (официальный)'],
+  m3RevisionDraft: ['Entwurfsänderungen noch nicht eingereicht', 'Draft changes not yet submitted', 'Qaralama dəyişiklikləri hələ təqdim edilməyib', 'Taslak değişiklikleri henüz gönderilmedi', 'Зміни в чернетці ще не подано', 'Изменения в черновике ещё не поданы'],
+  m3SubmitRevision: ['Geänderte Aufstellung einreichen', 'Submit revision', 'Dəyişdirilmiş heyəti təqdim et', 'Kadro değişikliklerini gönder', 'Подати змінений склад', 'Подать изменённый состав'],
+  m3RevisionClosed: ['Die Anmeldefrist ist abgelaufen. Die offizielle Aufstellung bleibt bestehen.', 'Registration has closed. The official lineup stands.', 'Qeydiyyat bitib. Rəsmi heyət qüvvədədir.', 'Kayıt kapandı. Resmî kadro geçerli.', 'Реєстрацію закрито. Офіційний склад залишається чинним.', 'Регистрация закрыта. Официальный состав остаётся в силе.'],
+  m3RevisionMissing: ['Kein gespeicherter Änderungsentwurf vorhanden.', 'No saved lineup revision to submit.', 'Təqdim etmək üçün saxlanılmış heyət dəyişikliyi yoxdur.', 'Gönderilebilecek kayıtlı kadro değişikliği yok.', 'Немає збережених змін складу для подання.', 'Нет сохранённых изменений состава для подачи.'],
+  m3RequestConflict: ['Die Erstellungsanfrage wurde bereits mit anderen Angaben verwendet.', 'This creation request was already used with different details.', 'Bu yaratma sorğusu artıq fərqli məlumatlarla istifadə edilib.', 'Bu oluşturma isteği daha önce farklı bilgilerle kullanıldı.', 'Цей запит на створення вже використано з іншими даними.', 'Этот запрос на создание уже использован с другими данными.'],
   createHubMore: ['Weitere Einstellungen', 'More settings', 'Əlavə ayarlar', 'Diğer ayarlar', 'Додаткові налаштування', 'Дополнительные настройки'],
   createHubAutoInfo: ['Anmeldefrist wird automatisch vorgeschlagen.', 'Registration deadline will be suggested automatically.', 'Qeydiyyat müddəti avtomatik təklif ediləcək.', 'Kayıt son tarihi otomatik önerilecek.', 'Кінцевий термін реєстрації буде запропоновано автоматично.', 'Срок регистрации будет предложен автоматически.'],
   createHubDeadlineAuto: ['Anmeldeschluss:', 'Registration closes:', 'Qeydiyyat bitir:', 'Kayıt bitişi:', 'Реєстрація до:', 'Регистрация до:'],
@@ -191,7 +203,13 @@ export const tournamentCopy = (language: Language): TournamentCopy => key => lab
 export function tournamentErrorMessage(code: string, tr: TournamentCopy) {
   if (code === 'event_full') return tr('m3Full');
   if (code === 'invalid_invite') return tr('m3InvalidInvite');
-  if (code === 'lineup_incomplete') return tr('m3LineupIncomplete');
+  if (code === 'idempotency_conflict') return tr('m3RequestConflict');
+  if (code === 'round_time_locked') return tr('m3RoundTimeLocked');
+  if (code === 'round_time_order') return tr('m3RoundTimeOrder');
+  if (code === 'round_time_past') return tr('m3RoundTimePast');
+  if (code === 'revision_closed') return tr('m3RevisionClosed');
+  if (code === 'revision_missing') return tr('m3RevisionMissing');
+  if (code === 'lineup_incomplete' || code === 'revision_incomplete') return tr('m3LineupIncomplete');
   if (code === 'player_already_registered') return tr('m3DuplicatePlayer');
   if (code === 'no_previous_lineup') return tr('m3NoPrevious');
   if (code === 'create_limit') return tr('createLimitError');

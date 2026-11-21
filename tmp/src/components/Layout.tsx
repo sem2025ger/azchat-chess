@@ -3,7 +3,7 @@ import { Suspense, useEffect, useLayoutEffect, useRef, useSyncExternalStore } fr
 import nightEarthAnimation from '../assets/night-earth-rotation.mp4';
 import nightEarthStill from '../assets/night-earth-still.webp';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Home, Grid, MessageSquare, User, Settings, Circle, MapPin } from 'lucide-react';
+import { Home, Grid, MessageSquare, User, Settings, Circle, MapPin, CalendarDays } from 'lucide-react';
 import { premiumInterfaceThemes } from '../lib/interfaceThemes';
 import { useThemeContext } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -29,6 +29,8 @@ const languageActiveClass: Record<Language, string> = {
 export default function Layout() {
   const location = useLocation();
   const desktop = useDesktop();
+  const showSpieltag = import.meta.env.VITE_SPIELTAG_ENABLED === 'true' ||
+    import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true';
   const routeScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => scheduleNavigationPreload(location.pathname), [location.pathname]);
   // The scroll container stays mounted across routes. Do not preserve the Analysis
@@ -108,7 +110,7 @@ export default function Layout() {
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
             <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
             {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" themeColor="theme-gold" bronzeLabel />}
-            {desktop && (import.meta.env.VITE_SPIELTAG_ENABLED === 'true' || import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true') && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
+            {desktop && showSpieltag && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
             {desktop && import.meta.env.VITE_SPIELER_V1_ENABLED === 'true' && <NavItem to="/spieler" icon={<User size={20} />} label={t("nav.spieler")} themeColor="theme-blue" />}
           </nav>
@@ -160,10 +162,12 @@ export default function Layout() {
       </aside>
 
       {/* Mobile Bottom Navigation - Visible only on Small Screens */}
-      <nav data-mobile-app-nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
+      <nav data-mobile-app-nav data-spieltag-enabled={showSpieltag || undefined} className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} premiumHome />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} accent="analysis" />
         <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" accent="chat" />
+        {showSpieltag && <MobileNavItem to="/spieltag" icon={<CalendarDays size={20} />}
+          label={t('nav.spieltag')} accent="settings" />}
         <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} accent="profile" />
         <MobileNavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} accent="settings" />
       </nav>

@@ -6,12 +6,14 @@ import { useLanguage } from '../../context/LanguageContext';
 import { startBoundedAudioRecording, type AudioCapture } from '../../utils/audioCapture';
 
 type DraftKey = keyof AiOrganizerDraft;
-const draftFields: DraftKey[] = ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams'];
+const draftFields: DraftKey[] = ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams', 'round_interval_minutes'];
 const emptyDraft = (): AiOrganizerDraft => ({
   name: null, start_time: null, registration_deadline: null,
-  boards_per_team: null, min_teams: null, max_teams: null,
+  boards_per_team: null, min_teams: null, max_teams: null, round_interval_minutes: null,
 });
-function fieldValid(key: DraftKey, value: string | number | null, draft: AiOrganizerDraft): boolean {
+function fieldValid(key: DraftKey, value: AiOrganizerDraft[DraftKey], draft: AiOrganizerDraft): boolean {
+  if (key === 'round_interval_minutes') return value == null ||
+    (Number.isInteger(value) && Number(value) >= 10 && Number(value) <= 10080);
   if (key === 'name') return typeof value === 'string' && value.trim().length > 0 && value.length <= 120;
   if (key === 'start_time' || key === 'registration_deadline')
     return typeof value === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(value);
@@ -167,6 +169,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
   const labelFor: Record<DraftKey, string> = {
     name: tr('name'), start_time: tr('m3Start'), registration_deadline: tr('m3Deadline'),
     boards_per_team: tr('boards'), min_teams: tr('m3MinTeams'), max_teams: tr('m3MaxTeams'),
+    round_interval_minutes: tr('m3RoundInterval'),
   };
   return <section className="ai-organizer" aria-label={tr('aiOrganizerTitle')}>
     <header className="ai-organizer-header">
@@ -202,14 +205,15 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
         <div className="ai-organizer-fields">
           {draftFields.map(key => {
             const missing = !fieldValid(key, draft[key], draft);
-            const numeric = key === 'boards_per_team' || key === 'min_teams' || key === 'max_teams';
+            const interval = key === 'round_interval_minutes';
+            const numeric = interval || key === 'boards_per_team' || key === 'min_teams' || key === 'max_teams';
             return <label key={key} className={missing ? 'ai-organizer-field-missing' : ''}>
               <span>{labelFor[key]}{missing && <small> · {tr('aiOrganizerMissing')}</small>}</span>
-              <input name={key} value={draft[key] ?? ''} required
+              <input name={key} value={draft[key] ?? ''} required={!interval}
                 type={numeric ? 'number' : key === 'name' ? 'text' : 'datetime-local'}
                 maxLength={key === 'name' ? 120 : undefined}
-                min={numeric ? key === 'boards_per_team' ? 1 : 2 : undefined}
-                max={numeric ? 16 : undefined}
+                min={interval ? 10 : numeric ? key === 'boards_per_team' ? 1 : 2 : undefined}
+                max={interval ? 10080 : numeric ? 16 : undefined}
                 onChange={event => update(key,
                   (numeric ? event.target.value === '' ? null : Number(event.target.value) :
                     event.target.value || null) as never)} />

@@ -6,6 +6,7 @@ import {existsSync} from 'node:fs';
 import {mkdtemp,readFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
+import {checkOnlineTeamTournaments} from './teamTournamentsOnline.browser.mjs';
 import {checkTournamentAuth} from './teamTournamentsAuth.browser.mjs';
 // SpielerScreen cannot be mounted without its own auth fixture: validate its existing copy map here.
 const playerCopySource=await readFile(new URL('../src/screens/SpielerScreen.tsx',import.meta.url),'utf8');
@@ -195,6 +196,10 @@ try{
  await checkTournamentAuth({cdp,evaluate,wait,click});
  assert.equal(exceptions.length,0,exceptions.join('\n'));
  console.log('PASS tournament invite browser: password sign-in, signup confirmation, email-link sign-in, invitation redemption and foreign return rejection');
+ await checkOnlineTeamTournaments({cdp,evaluate,wait,click});
+ assert.equal(exceptions.length,0,exceptions.join('\n'));
+ console.log('PASS Bochum Cup browser: both flag paths, 390px by six languages and 15 themes, dated and undated schedule/my-board, roster revision and idempotent manual/AI create');
+
 }finally{
  try{ws?.close();}catch{}chrome?.kill('SIGKILL');await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});clearTimeout(deadline);
 }

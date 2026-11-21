@@ -56,6 +56,7 @@ async function withAiComponent(component, check, api = {}) {
           "  if (!(index in state)) state[index] = typeof initial === 'function' ? initial() : initial;",
           "  return [state[index], next => { state[index] = typeof next === 'function' ? next(state[index]) : next; }];",
           '};',
+          'export const useCallback = fn => fn;',
           'export const useRef = initial => useState({ current: initial })[0];',
           'export const useEffect = (fn, deps) => {',
           ' const index = cursor++;',
@@ -147,6 +148,11 @@ test('missing draft fields highlighted; cannot create before completion', async 
 });
 test('Use this draft fills existing M3 form; Create triggers existing submit', async () => {
   const OriginalInput = globalThis.HTMLInputElement;
+  const OriginalFormData = globalThis.FormData;
+  globalThis.FormData = class {
+    constructor(form) { this.fields = form.fields; }
+    entries() { return Object.entries(this.fields).map(([key, input]) => [key, input.value]); }
+  };
   class MockInput { value = ''; }
   globalThis.HTMLInputElement = MockInput;
   try {
@@ -160,8 +166,8 @@ test('Use this draft fills existing M3 form; Create triggers existing submit', a
       assert.ok(form);
       const fields = Object.fromEntries(Object.keys(draft).map(key => [key, new MockInput()]));
       let submitted = 0;
-      const elementForm = { elements: { namedItem: name => fields[name] }, requestSubmit() { submitted++; } };
-      form.props.ref.current = elementForm;
+      const elementForm = { fields, elements: { namedItem: name => fields[name] }, requestSubmit() { submitted++; } };
+      form.props.ref(elementForm);
       embedded.props.onApply(draft);
       for (const [key, value] of Object.entries(draft)) assert.equal(fields[key].value, String(value));
       embedded.props.onCreate({ ...draft, max_teams: 6 });
@@ -169,7 +175,10 @@ test('Use this draft fills existing M3 form; Create triggers existing submit', a
       assert.equal(submitted, 1);
       assert.equal(render().type, 'section');
     });
-  } finally { globalThis.HTMLInputElement = OriginalInput; }
+  } finally {
+    globalThis.HTMLInputElement = OriginalInput;
+    globalThis.FormData = OriginalFormData;
+  }
 });
 
 

@@ -7,7 +7,8 @@ const { AUDIO_TYPES, transcribeAudio } = require('./aiCoachOpenAI');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LANGUAGES = ['de', 'en', 'az', 'tr', 'ua', 'ru'];
-const FIELDS = ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams'];
+const REQUIRED_FIELDS = ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams'];
+const FIELDS = [...REQUIRED_FIELDS, 'round_interval_minutes'];
 const DEFAULT_OPENAI_MODEL = 'gpt-6-sol'; // Same default as the existing AI Coach.
 const validModel = model => typeof model === 'string' && /^gpt-[a-z0-9.-]{2,64}$/.test(model);
 const QUESTIONS = {
@@ -69,6 +70,7 @@ function normaliseDraft(source, now, language) {
   const draft = emptyDraft();
   draft.name = typeof source.name === 'string' ? source.name.trim().slice(0, 120).replace(/[\x00-\x1f\x7f]/g, '') || null : null;
   draft.boards_per_team = source.boards_per_team == null ? 4 : boundedInt(source.boards_per_team, 1, 16);
+  draft.round_interval_minutes = boundedInt(source.round_interval_minutes, 10, 10080);
   draft.min_teams = source.min_teams == null ? 2 : boundedInt(source.min_teams, 2, 16);
   draft.max_teams = source.max_teams == null ? 4 : boundedInt(source.max_teams, draft.min_teams || 2, 16);
   let startIso = null;
@@ -87,7 +89,7 @@ function normaliseDraft(source, now, language) {
     if (Date.parse(berlinLocalToIso(source.registration_deadline)) > now)
       draft.registration_deadline = source.registration_deadline;
   } catch { /* Do not trust model time strings. */ }
-  const missing = FIELDS.filter(field => draft[field] === null);
+  const missing = REQUIRED_FIELDS.filter(field => draft[field] === null);
   let question = null;
   if (missing.length) {
     const key = ['start_time', 'registration_deadline', 'name', 'boards_per_team',
@@ -162,6 +164,7 @@ async function generatePlan(value, memory, {
     'Never invent an unstated tournament start time. Missing start date or clock time means start_time null.',
     'If registration deadline is unstated, choose 60 minutes before start and mention that default in assistant_text.',
     'Default boards_per_team 4, min_teams 2, max_teams 4. Use stated name or propose a concise one.',
+    'Set round_interval_minutes only when the user gives an interval of 10–10080 minutes (convert hours/days to minutes). Otherwise return null and never ask for it.',
     'Use prior tournament rules only when the user requests something like "as last time".',
     'Return one brief question ONLY if a required field cannot be determined; otherwise question null.',
     'Use exact format YYYY-MM-DDTHH:MM for Berlin-local dates. No HTML, markdown or URLs.',
@@ -174,8 +177,9 @@ async function generatePlan(value, memory, {
         registration_deadline: { type: ['string', 'null'] },
         boards_per_team: { type: ['integer', 'null'] }, min_teams: { type: ['integer', 'null'] },
         max_teams: { type: ['integer', 'null'] },
+        round_interval_minutes: { type: ['integer', 'null'] },
       } },
-      missing: { type: 'array', items: { type: 'string', enum: FIELDS } },
+      missing: { type: 'array', items: { type: 'string', enum: REQUIRED_FIELDS } },
       question: { type: ['string', 'null'] }, assistant_text: { type: 'string' },
     },
   };
@@ -202,7 +206,7 @@ async function generatePlan(value, memory, {
   const json = JSON.parse(texts[0].text);
   if (!only(json, ['draft', 'missing', 'question', 'assistant_text']) ||
       !only(json.draft, FIELDS) || !FIELDS.every(field => Object.hasOwn(json.draft, field)) ||
-      !Array.isArray(json.missing) || !json.missing.every(field => FIELDS.includes(field)) ||
+      !Array.isArray(json.missing) || !json.missing.every(field => REQUIRED_FIELDS.includes(field)) ||
       typeof json.assistant_text !== 'string' || json.assistant_text.length > 2000 ||
       !(json.question === null || typeof json.question === 'string'))
     throw failure(502, 'provider_unavailable');

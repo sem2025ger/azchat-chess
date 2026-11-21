@@ -5,6 +5,7 @@ import {
   type TournamentRules, type TournamentTeam,
 } from '../../services/teamTournaments';
 import type { TournamentCopy } from './copy';
+import { useLanguage } from '../../context/LanguageContext';
 
 const resultLabel = {
   '1-0': 'whiteWins', '0-1': 'blackWins', '1/2-1/2': 'draw',
@@ -87,6 +88,15 @@ function BoardEditor({ match, board, tr, busy, onResult }: {
   </form>;
 }
 
+export function RoundStartTime({ startsAt, tr }: { startsAt?: string | null; tr: TournamentCopy }) {
+  const { language } = useLanguage();
+  if (!startsAt) return null;
+  const label = new Date(startsAt).toLocaleString(language === 'ua' ? 'uk-UA' : language, {
+    timeZone: 'Europe/Berlin', dateStyle: 'medium', timeStyle: 'short',
+  });
+  return <p>{tr('m3RoundTime')} · <time dateTime={startsAt}>{label}</time></p>;
+}
+
 export function TournamentRounds({ event, tr, names, captainId, activeRound, busy, onResult }: Display & {
   event: Tournament; captainId?: string | null; activeRound?: number | null; busy: boolean; onResult?: ResultHandler;
 }) {
@@ -107,6 +117,7 @@ export function TournamentRounds({ event, tr, names, captainId, activeRound, bus
           {event.rounds.map(r => <option value={r.round_no} key={r.round_no}>{tr('round')} {r.round_no}</option>)}
         </select>
       </label>
+      {round.starts_at && <RoundStartTime startsAt={round.starts_at} tr={tr} />}
       {round.bye_team_id && (captainId == null || captainId === round.bye_team_id) &&
         <p>{names[round.bye_team_id]} · {tr('bye')}</p>}
       {matches.map(match => {
