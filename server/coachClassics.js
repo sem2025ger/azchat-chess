@@ -77,6 +77,9 @@ function loadClassics(){
    const unitThemeSet=expandThemes(unit.themes);
    const unitPosKeys=new Set(Array.isArray(unit.positionKeys)?unit.positionKeys:[]);
    if(unit.startFen)unitPosKeys.add(posKey(unit.startFen));
+   // Capablanca stores its legal main line as {startFen,moves}, not as Alekhine's array.
+   // Index its intermediate positions as well as diagrams so exact book matches are retrievable.
+   if(!Array.isArray(unit.positionKeys))for(const k of mainlinePlyKeys(unit))unitPosKeys.add(k);
    if(Array.isArray(unit.diagrams))for(const d of unit.diagrams)if(d.fen&&!d.printerErratum)unitPosKeys.add(posKey(d.fen));
    for(const k of unitPosKeys)posKeyFreq.set(k,(posKeyFreq.get(k)||0)+1);
    const metaHaystack=[book.author,book.title,unit.title,unit.opening,unit.eco,unit.white,unit.black,unit.event,unit.site,unit.year].filter(Boolean).join(' ').toLowerCase();
@@ -281,10 +284,12 @@ function structureSimilarity(q,k){
 // level (Capablanca start/diagrams, Alekhine plies outside every chunk's key list) go to the chunk
 // whose main-line ply range covers them, else to the unit's first chunk.
 function mainlinePlyKeys(unit){
- if(!unit.startFen||!Array.isArray(unit.mainline))return [];
+ const moves=Array.isArray(unit.mainline)?unit.mainline:unit.mainline?.moves;
+ const startFen=Array.isArray(unit.mainline)?unit.startFen:unit.mainline?.startFen;
+ if(!startFen||!Array.isArray(moves))return [];
  try{
-  const board=new Chess(unit.startFen),keys=[posKey(board.fen())];
-  for(const san of unit.mainline){board.move(san,{strict:true});keys.push(posKey(board.fen()));}
+  const board=new Chess(startFen),keys=[posKey(board.fen())];
+  for(const san of moves){board.move(san,{strict:true});keys.push(posKey(board.fen()));}
   return keys;
  }catch{return [];}
 }

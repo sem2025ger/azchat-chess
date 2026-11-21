@@ -257,3 +257,23 @@ test('classics ON attaches nothing when the books hold no similar structure (no 
  assert.equal(Object.hasOwn(seen[0].evidence,'classicsKnowledge'),false);
  assert.equal(seen[0].instructions.includes('evidence.classicsKnowledge'),false);
 });
+
+
+test('Capablanca endgame passage reaches Chessy model only when classics are enabled',async()=>{
+ const fen='8/7R/8/2k2P2/1p6/3r4/5PKP/8 w - - 0 1'; // Chess Fundamentals, Example 59
+ const q={fen,message:'Explain the rook endgame plan for White',language:'en',side:'white'};
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:[lineFixture(['f6'])]})};
+ const seen=[];
+ const fetchImpl=async(_url,options)=>{
+  const body=JSON.parse(options.body);
+  seen.push({evidence:JSON.parse(body.input).evidence,instructions:body.instructions});
+  return verifiedReply();
+ };
+ await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,classicsEnabled:false});
+ const on=await groundedChat(null,q,{openaiApiKey:'synthetic',engine,fetchImpl,classicsEnabled:true});
+ assert.equal(Object.hasOwn(seen[0].evidence,'classicsKnowledge'),false);
+ assert.equal(seen[1].evidence.candidateOrigin,'server_stockfish_19');
+ assert.ok(seen[1].evidence.classicsKnowledge?.some(h=>h.bookId==='capablanca-chess-fundamentals'&&h.unitId==='e59'&&h.match.kind==='exact-position'));
+ assert.ok(seen[1].instructions.includes('historical commentary from objective engine evaluation'));
+ assert.equal(Object.hasOwn(on,'classicsKnowledge'),false,'internal book passages must not leak in public API response');
+});
