@@ -260,7 +260,7 @@ test('Capablanca non-diagram game plies are indexed as exact book positions',()=
  assert.ok(unit?.mainline?.moves?.length>=23);
  const board=new Chess(unit.mainline.startFen);
  for(const san of unit.mainline.moves.slice(0,23))board.move(san,{strict:true});
- const normalized=fen=>fen.split(/\\s+/).slice(0,4).join(' ');
+ const normalized=fen=>fen.split(/\s+/).slice(0,4).join(' ');
  assert.ok(!unit.diagrams.some(d=>normalized(d.fen)===normalized(board.fen())),'control position must not be a diagram');
  const hits=findStructuralPassages({fen:board.fen(),question:'What is the positional plan?',limit:2});
  assert.ok(hits.some(h=>h.bookId==='capablanca-chess-fundamentals'&&h.unitId==='g1'&&h.match.kind==='exact-position'),
