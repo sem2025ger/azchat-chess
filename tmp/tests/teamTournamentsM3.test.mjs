@@ -48,6 +48,7 @@ async function withM3Component(name, api, check) {
           export const createTournamentApi = () => api;
           export const useAuth = () => ({ session: { access_token: 'fixture-token', user: { id: '${event}' } } });
           export const useLanguage = () => ({ language: 'en' });
+          export const useCallback = fn => fn;
           export const useRef = initial => useState({ current: initial })[0];
           export function useState(initial) {
             const i = cursor++;
@@ -184,6 +185,42 @@ test('M3 captain sees the highest-priority reason the lineup cannot be submitted
   });
 });
 
+test('captain sees the official lineup separately while a complete revision awaits submission', async () => {
+  const tr = (await import('../src/components/teamTournaments/copy.ts')).tournamentCopy('en');
+  const rows = (ids) => ids.map((player_id, index) => ({
+    entry_id: 'entry', player_id, board_no: index + 1, consented_at: '2026-12-01T16:00:00Z',
+  }));
+  const calls = [];
+  const api = {
+    event: async () => ({
+      id: event, name: 'Bochum fixture', status: 'registration', board_count: 2,
+      starts_at: new Date(Date.now() + 7200000).toISOString(),
+      registration_deadline: new Date(Date.now() + 3600000).toISOString(),
+      remaining_spots: 0, max_teams: 2, teams: [],
+      entries: [{ id: 'entry', captain_id: event, club_name: 'North', submitted_at: '2026-12-01T16:00:00Z', revision_pending: true }],
+      profiles: [{ id: 'old', username: 'Official player' }, { id: 'new', username: 'Draft player' }],
+      lineups: rows(['old', event]),
+      revision_lineups: rows([event, 'new']),
+    }),
+    lineupAction: async (_, action) => { calls.push(action); },
+  };
+  await withM3Component('TeamTournamentsM3Panel', api, async ({ M3EventPanel }, hooks) => {
+    const render = () => hooks.render(() => M3EventPanel({ tr, id: event, token: 'fixture-token', userId: event }));
+    render();
+    hooks.runEffects();
+    await new Promise(setImmediate);
+    const panel = render();
+    const html = renderToStaticMarkup(panel);
+    assert.match(html, /Submitted lineup \(official\)<\/p><ol[^>]*><li>Official player/);
+    assert.match(html, /Draft changes not yet submitted<\/p><ol[^>]*>.*Draft player/);
+    const submit = findElement(panel, element => element.type === 'button' && element.props.children === tr('m3SubmitRevision'));
+    assert.equal(submit.props.disabled, false);
+    submit.props.onClick();
+    await new Promise(setImmediate);
+    assert.deepEqual(calls, ['submit-revision']);
+  });
+});
+
 test('M3 availability refers to teams in every locale', async () => {
   const { tournamentCopy } = await import('../src/components/teamTournaments/copy.ts');
   for (const [language, teamLabel] of Object.entries({
@@ -292,11 +329,18 @@ test('M3 organizer form and board results use six existing locale translations w
         ['lineup_incomplete', 'm3LineupIncomplete'],
         ['player_already_registered', 'm3DuplicatePlayer'],
         ['no_previous_lineup', 'm3NoPrevious'],
+        ['revision_incomplete', 'm3LineupIncomplete'],
+        ['revision_closed', 'm3RevisionClosed'],
+        ['revision_missing', 'm3RevisionMissing'],
+        ['round_time_order', 'm3RoundTimeOrder'],
+        ['round_time_locked', 'm3RoundTimeLocked'],
+        ['idempotency_conflict', 'm3RequestConflict'],
       ]) {
         assert.equal(tournamentErrorMessage(code, tr), tr(label), language + ': ' + code);
       }
       for (const key of ['m3Pending','m3Reported','m3Confirmed','m3DisputedStatus',
-        'm3Forfeit','m3Played','m3MoveUp','m3MoveDown','m3RemovePlayer','m3LineupCount','m3DraftNotSaved']) {
+        'm3Forfeit','m3Played','m3MoveUp','m3MoveDown','m3RemovePlayer','m3LineupCount','m3DraftNotSaved',
+        'm3RoundInterval','m3RoundTime','m3SaveRoundTime','m3OfficialLineup','m3RevisionDraft','m3SubmitRevision']) {
         assert.ok(tr(key), language + ': ' + key);
       }
       const html = renderToStaticMarkup(createElement(M3Create, {
@@ -307,6 +351,7 @@ test('M3 organizer form and board results use six existing locale translations w
       assert.match(html, /name="min_teams"[^>]*value="2"/);
       assert.match(html, /name="max_teams"[^>]*value="4"/);
       assert.match(html, /type="datetime-local"/);
+      assert.match(html, /<input(?=[^>]*name="round_interval_minutes")(?=[^>]*min="10")(?=[^>]*max="10080")[^>]*>/);
       for (const [status, label] of [
         [undefined, 'm3Pending'], ['pending', 'm3Pending'],
         ['reported', 'm3Reported'], ['confirmed', 'm3Confirmed'], ['disputed', 'm3DisputedStatus'],

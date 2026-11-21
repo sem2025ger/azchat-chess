@@ -10,7 +10,7 @@ const actor = randomUUID();
 const now = Date.parse('2026-11-10T10:00:00Z');
 const sample = {
   name: 'NRW Team Cup', start_time: '2026-12-20T15:00', registration_deadline: null,
-  boards_per_team: 4, min_teams: 2, max_teams: 6,
+  boards_per_team: 4, min_teams: 2, max_teams: 6, round_interval_minutes: null,
 };
 function provider(body = sample, overrides = {}) {
   return async (_url, request) => {
@@ -357,4 +357,19 @@ test('cancellation reaches the OpenAI request and frees the per-user plan slot',
   await rejected;
   await aborted;
   assert.equal((await post()).status, 200);
+});
+
+test('round interval is optional in every language and bounded when given', async () => {
+  for (const language of ['de', 'en', 'az', 'tr', 'ua', 'ru']) {
+    for (const value of [undefined, null, 9, 10081, 10.5, 10, 90, 10080]) {
+      const { draft, missing, question, ready } = normaliseDraft({ ...sample, round_interval_minutes: value }, now, language);
+      assert.equal(draft.round_interval_minutes, [10, 90, 10080].includes(value) ? value : null);
+      assert.deepEqual(missing, []);
+      assert.equal(question, null);
+      assert.equal(ready, true);
+    }
+  }
+  const result = await generatePlan({ language: 'en', messages: [{ role: 'user', text: 'Rounds every 90 minutes' }] }, [],
+    { openaiApiKey: 'mock-key', now, fetchImpl: provider({ ...sample, round_interval_minutes: 90 }) });
+  assert.equal(result.draft.round_interval_minutes, 90);
 });

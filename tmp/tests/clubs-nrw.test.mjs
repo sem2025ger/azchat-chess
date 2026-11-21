@@ -15,6 +15,16 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  const tournamentGate="("+spieltagGate+" || import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true')";
  for(const path of ['src/App.tsx',layoutPath,'src/routeLoaders.ts','scripts/buildQaPreview.mjs']){
   let current=readFileSync(path,'utf8');
+  if(path===layoutPath){
+   const sharedGate = "  const showSpieltag = " + spieltagGate + " ||\n    import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true';\n";
+   const mobileLink = '        {showSpieltag && <MobileNavItem to="/spieltag" icon={<CalendarDays size={20} />}\n' +
+     "          label={t('nav.spieltag')} accent=\"settings\" />}\n";
+   assert.ok(current.includes(sharedGate) && current.includes(mobileLink));
+   current = current.replace(sharedGate, '').replace(mobileLink, '')
+     .replace('MapPin, CalendarDays', 'MapPin')
+     .replace(' data-spieltag-enabled={showSpieltag || undefined}', '')
+     .replace('desktop && showSpieltag', 'desktop && ' + tournamentGate);
+  }
   if(path==='src/App.tsx'||path===layoutPath){
    // With tournaments off, only the original Spieltag gate controls this entry.
    assert.ok(current.includes(tournamentGate),path);

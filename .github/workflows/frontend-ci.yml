@@ -73,6 +73,17 @@ jobs:
 
       - name: Spieltag browser regression (synthetic private team)
         run: dbus-run-session -- node tests/spieltag.browser.mjs
+        env:
+          SPIELTAG_CAPTURE: ${{ runner.temp }}/bochum-cup
+
+      - name: Bochum Cup desktop and mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: bochum-cup-browser-screenshots
+          path: ${{ runner.temp }}/bochum-cup
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: MULTIVERSE browser regression (flag ON build in an isolated outDir; dist stays flag OFF)
         run: |
