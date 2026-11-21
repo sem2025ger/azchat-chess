@@ -1949,7 +1949,10 @@ aside nav{padding-top:20px!important}
 [data-mobile-app-nav] .site-nav-link .site-nav-label{font-size:.75rem;line-height:1.2;text-align:center;white-space:normal}
 [data-mobile-app-nav][data-spieltag-enabled] .site-nav-link{flex-basis:auto;min-width:44px}
 [data-mobile-app-nav][data-spieltag-enabled] .site-nav-link .site-nav-label{
-  max-width:100%;font-size:.625rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  max-width:100%;font-size:.6rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+@media(min-width:390px){
+  [data-mobile-app-nav][data-spieltag-enabled] .site-nav-link{flex-shrink:0}
 }
 [data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:58px;gap:4px}
 /* Equal navigation rows leave room for every desktop destination at 720 px. */
