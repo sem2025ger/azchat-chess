@@ -43,11 +43,12 @@ export async function checkCoachChat({captureRoot}={}){
  let serverLines=null;
  app.post('/api/ai-coach/chat',express.json({limit:'16kb'}),(req,res,next)=>{
   if(mode==='server-shallow')return res.json({answer:'Shallow engine analysis was refused.',generated:true,games:[],engineVerified:false,engineError:'engine_shallow',candidateLines:req.body.candidateLines||[],position:req.body.fen});
-  if(!['server-lines','server-lines-malformed','server-lines-other-fen','server-lines-no-provider'].includes(mode))return next();
+  if(!['server-lines','server-lines-malformed','server-lines-other-fen','server-lines-no-provider','server-lines-provider-outage'].includes(mode))return next();
   const board=new Chess(req.body.fen),first=board.moves()[0];board.move(first);const reply=board.moves()[0];
   const second=new Chess(req.body.fen).moves()[1];
   serverLines=[{id:'L1',moves:[first,reply],scoreKind:'cp',scoreWhite:43,depth:15,wdlWhite:[95,902,3]},{id:'L2',moves:[second],scoreKind:'mate',scoreWhite:-2,depth:15,wdlWhite:[0,0,1000]}];
-  return res.json({answer:'Server-grounded explanation.',generated:mode!=='server-lines-no-provider',games:[],engineVerified:true,candidateLines:req.body.candidateLines||[],
+  const outage=mode==='server-lines-provider-outage';
+  return res.json({answer:outage?'ИИ пока не смог подготовить объяснение. Ниже доступны проверенные варианты Stockfish.':'Server-grounded explanation.',generated:!outage&&mode!=='server-lines-no-provider',providerStatus:outage?'unavailable':undefined,games:[],engineVerified:true,candidateLines:req.body.candidateLines||[],
    position:mode==='server-lines-other-fen'?new Chess().fen():req.body.fen,
    engineLines:mode==='server-lines-malformed'?[{...serverLines[0],moves:['Ke8']}]:serverLines});
  });
@@ -57,7 +58,7 @@ export async function checkCoachChat({captureRoot}={}){
    const transcription=url.endsWith('transcriptions');assert.equal(url,transcription?'https://api.openai.com/v1/audio/transcriptions':'https://api.openai.com/v1/responses');
    if(transcription){assert.ok(options.body.get('file').size>16);calls.push({kind:'transcribe',language:options.body.get('language')});if(mode==='hold-transcribe')await new Promise(r=>release=r);return Response.json({text:'How should I develop my pieces?'});}
    const body=JSON.parse(options.body),input=JSON.parse(body.input);calls.push({kind:'chat',body:input,instructions:body.instructions});if(mode==='hold-chat')await new Promise(r=>release=r);if(mode==='error')return new Response('SECRET provider error',{status:401});
-   return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Fixture answer: '+input.question})}]}]});
+   return Response.json({status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify({answer:'Fixture answer: '+input.question+'\nThe practical plan and opponent response are preserved on screen.'})}]}]});
   }});
  api=app.listen(0,'127.0.0.1');await new Promise(r=>api.once('listening',r));
  cacheDir=await mkdtemp(join(tmpdir(),'chessaz-chat-vite-'));
@@ -78,6 +79,7 @@ export async function checkCoachChat({captureRoot}={}){
   const t=coachChatCopy[lang==='ua'?'uk':lang];clock+=61000;await evaluate('window.language('+JSON.stringify(lang)+');window.setToken('+JSON.stringify('synthetic-'+width+'-'+lang)+');window.setAccount('+JSON.stringify('account-'+width+'-'+lang)+')');await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(t.title));if(!await evaluate('!!document.querySelector(".coach-chat-panel")'))await click(t.title);
   await fill('Study the centre');await click(t.send);await wait('document.querySelector(".coach-chat-message.assistant")');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'fit '+lang+' '+width);assert.ok(!(await evaluate('document.body.innerText')).includes(t.privacy));assert.equal(calls.at(-1).body.position,new Chess().fen());assert.equal(calls.at(-1).body.history.length,0);
   const text=await evaluate('document.querySelector(".coach-chat-message.assistant > p").textContent'),beforeCopy=calls.length;
+  assert.equal(text,'Fixture answer: Study the centre\nThe practical plan and opponent response are preserved on screen.','model text must reach the browser verbatim, including the second paragraph, in every language and width');
   assert.equal(await evaluate('document.querySelector(".coach-chat-copy [role=status]")===null'),true,'idle copy control is not an active status '+lang);
   await click(t.copyAnswer);
   await wait('document.querySelector(".coach-chat-copy")?.getAttribute("aria-label")==='+JSON.stringify(t.copiedAnswer));
@@ -150,6 +152,12 @@ export async function checkCoachChat({captureRoot}={}){
  assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").disabled'),false,'composer remains usable');
  await evaluate('window.language("ru")');
  await wait('document.querySelector(".coach-chat-toggle").textContent==='+JSON.stringify(coachChatCopy.ru.title));
+ mode='server-lines-provider-outage';await fill('Show the position during a provider outage');await click(t.send);
+ const lastAnswer='[...document.querySelectorAll(".coach-chat-message.assistant")].at(-1)';
+ await wait(lastAnswer+'?.querySelector("p")?.textContent.includes("ИИ пока не смог")');
+ assert.equal(await evaluate(lastAnswer+'?.querySelectorAll(".coach-chat-study-choices button").length'),2);
+ assert.ok(!(await evaluate(lastAnswer+'.textContent')).includes(t.notConfigured));
+ assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").disabled'),false);
  mode='error';await fill('Preserve my question');await click(t.send);await wait('document.querySelector("[role=alert]")');assert.equal(await evaluate('document.querySelector(".coach-chat-compose input").value'),'Preserve my question');assert.ok(!(await evaluate('document.body.innerText')).includes('SECRET'));mode='ready';
  clock+=61000;await click(t.voice);await wait('document.querySelector("[aria-pressed=true]")');await new Promise(r=>setTimeout(r,350));await evaluate('(()=>{const b=document.querySelector("[aria-pressed=true]");b.click();b.click();})()');await wait('document.querySelector(".coach-chat-compose input").value==="How should I develop my pieces?"');assert.equal(calls.at(-1).kind,'transcribe');assert.equal(calls.at(-1).language,'ru');assert.ok(await evaluate('window.streams.at(-1).getTracks().every(t=>t.readyState==="ended")'));
  await click(t.send);await wait('document.querySelector("audio")?.readyState>=2');assert.ok(await evaluate('document.querySelector("audio").duration>0'));assert.equal(calls.at(-1).kind,'speech');if(captureRoot){await mkdir(captureRoot,{recursive:true});const shot=await cdp('Page.captureScreenshot',{format:'png'});await writeFile(join(captureRoot,'coach-chat-voice-ru.png'),Buffer.from(shot.data,'base64'));}await click(t.stopSpeaking);await wait('!document.querySelector("audio")');

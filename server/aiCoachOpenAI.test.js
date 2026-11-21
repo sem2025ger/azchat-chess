@@ -313,3 +313,24 @@ test('Chessy analysis model: assessment, perspective and evidence rules are sent
   assert.match(rules,/If no candidateLines are supplied, still give a useful strategic assessment and plan/);
  }
 });
+
+
+test('restriction grounding instruction matches approved sentences exactly when move mechanisms exist',async()=>{
+ const italian='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const moves=['d3','Nf6','Nc3','h6','h3'];
+ const mechanisms=require('./coachLineFacts').lineMechanisms(italian,moves);
+ assert.ok(mechanisms.deniedSquares.some(e=>e.square==='g4'));
+ const evidence={candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:900},
+  candidateLines:[{id:'L1',moves,endFacts:{moveMechanisms:mechanisms}}]};
+ const exact="deniedSquares proves only that the move now covers a square an opponent knight, bishop, rook or queen could previously reach with a legal non-capturing move; it does not prove that moving there is now illegal or losing. Chessy may say that the move \"takes square X away from piece P\" in this strategic sense, and call it restriction, a concept from Nimzowitsch's Mein System (1925), only when a matching strategyLabels entry derives from deniedSquares. Do not claim the opponent intended that square, that restriction was the move's only purpose, or quote any book or cite any page.";
+ let instructions='';
+ await generateAnswer({...query,fen:italian},evidence,{apiKey:key,fetchImpl:async(_url,options)=>{
+  const body=JSON.parse(options.body);
+  instructions=body.instructions;
+  assert.deepEqual(JSON.parse(body.input).evidence,evidence);
+  return answerResponse();
+ }});
+ assert.equal(instructions.includes(exact),true);
+ assert.equal(instructions.split(exact).length-1,1);
+ assert.equal(instructions.includes('Do not claim the opponent intended that square'),true);
+});

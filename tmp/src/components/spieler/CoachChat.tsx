@@ -21,6 +21,8 @@ import { startBoundedAudioRecording, type AudioCapture } from '../../utils/audio
 type ResultGame={id:string;white:string;black:string;result:string;ply:number;pgn:string;moves?:string[];continuation?:string[]};
 type Continuation={moves:string[];evalWhite:number|null;depth:number;settled:boolean};
 type CandidateLine={moves:string[];score?:EngineScore;unsettled?:boolean;continuation?:Continuation};
+// The server answers within 55 s (engine + lesson + one fallback answer); wait a little longer.
+const CHAT_TIMEOUT_MS=60000;
 const replayMoves=(line:CandidateLine)=>[...line.moves,...(line.continuation?.moves||[])];
 // Extend only FEN-bound server lines. Local browser hints never gain provenance.
 function verifiedContinuations(value:unknown,fen:string):CandidateLine[]|null{
@@ -37,9 +39,9 @@ function verifiedContinuations(value:unknown,fen:string):CandidateLine[]|null{
   return {...base,continuation:{moves,evalWhite:c.evalWhite,depth:c.depth,settled:c.settled}};
  });}catch{return null;}
 }
-type Reply={answer:string;games:ResultGame[];generated:boolean;lineLessons?:{lineId:string;intro:string;conclusion:string}[];planDemonstration?:{lineId:string;intro:string;conclusion:string};archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLines?:unknown;engineVerified?:boolean;engineError?:string;position?:string};
+type Reply={answer:string;games:ResultGame[];generated:boolean;providerStatus?:string;lineLessons?:{lineId:string;intro:string;conclusion:string}[];planDemonstration?:{lineId:string;intro:string;conclusion:string};archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLines?:unknown;engineVerified?:boolean;engineError?:string;position?:string};
 type PlanDemo={lineIndex:number;intro:string;conclusion:string};
-type ChatItem={role:'user'|'assistant';text:string;planDemo?:PlanDemo;lineLessons?:PlanDemo[];games?:ResultGame[];generated?:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLinked?:boolean;engineServer?:boolean;engineUnavailable?:boolean};
+type ChatItem={role:'user'|'assistant';text:string;planDemo?:PlanDemo;lineLessons?:PlanDemo[];games?:ResultGame[];generated?:boolean;archiveOnly?:boolean;candidateLines?:CandidateLine[];engineLinked?:boolean;engineServer?:boolean;engineUnavailable?:boolean;engineFallback?:boolean};
 function lessonForLine(item:ChatItem,line:number):PlanDemo|undefined{
  if(item.candidateLines?.[line]?.unsettled)return undefined;
  return item.lineLessons?.find(lesson=>lesson.lineIndex===line)||(item.planDemo?.lineIndex===line?item.planDemo:undefined);
@@ -64,6 +66,7 @@ function restoredChat(accountId:string,context:string,fen:string){
   if(m.engineLinked!==undefined&&typeof m.engineLinked!=='boolean')return true;
   if(m.engineServer!==undefined&&typeof m.engineServer!=='boolean')return true;
   if(m.engineUnavailable!==undefined&&typeof m.engineUnavailable!=='boolean')return true;
+  if(m.engineFallback!==undefined&&(m.engineFallback!==true||m.role!=='assistant'||m.generated!==false||m.engineServer!==true))return true;
   if(m.planDemo!==undefined){
    const d=m.planDemo;
    if(!m.engineServer||!m.engineLinked||!d||!Number.isInteger(d.lineIndex)||d.lineIndex<0||d.lineIndex>=3||
@@ -273,7 +276,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    if(abort.signal.aborted)return;
    let data:Reply,legacyBackend=false;
    if(requested!==null){const records=await createPositionSearchApi(import.meta.env.VITE_SERVER_URL||'').search({fen,side,fideId:'',scope:'all',sort:'strongest',limit:requested},token,abort.signal);const archive=records.games.map(g=>verifiedArchiveGame(g,fen)).filter((g):g is ResultGame=>g!==null).slice(0,requested);data={answer:archive.length?archiveHeadings[lang]:t.unavailable,games:archive,generated:true,archiveOnly:archive.length>0};}
-   else{const payload={message,fen,side,language:lang,history:previous.slice(-8).map(({role,text})=>({role,text})),...(analysisLines.length?{candidateLines:analysisLines}:{})};const opts={method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(30000)]),cache:'no-store' as const,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token}};
+   else{const payload={message,fen,side,language:lang,history:previous.filter(item=>!item.engineFallback).slice(-8).map(({role,text})=>({role,text})),...(analysisLines.length?{candidateLines:analysisLines}:{})};const opts={method:'POST',signal:AbortSignal.any([abort.signal,AbortSignal.timeout(CHAT_TIMEOUT_MS)]),cache:'no-store' as const,headers:{'Content-Type':'application/json',Authorization:'Bearer '+token}};
     let response=await fetch(apiUrl('chat'),{...opts,body:JSON.stringify(payload)});
     // The isolated QA backend may still run the older API. Do not break chat before its QA rollout.
     if(response.status===400&&'candidateLines'in payload){const failure=await response.clone().json().catch(()=>null);if(failure?.code==='invalid_query'){legacyBackend=true;response=await fetch(apiUrl('chat'),{...opts,body:JSON.stringify({...payload,candidateLines:undefined})});}}
@@ -286,6 +289,8 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
     // and keep the provenance warning on the local lines.
     const serverClaimed=requested===null&&!data.archiveOnly&&data.engineVerified===true;
     const serverLines=serverClaimed&&data.position===fen?verifiedContinuations(data.engineLines,fen):null;
+    const engineFallback=data.generated===false&&data.providerStatus==='unavailable';
+    if(engineFallback&&!serverLines)throw Error('api');
     const incoming=data.planDemonstration;
     const lineIndex=typeof incoming?.lineId==='string'&&/^L[1-3]$/.test(incoming.lineId)?Number(incoming.lineId.slice(1))-1:-1;
     const planDemo:PlanDemo|null=import.meta.env.VITE_CHESSY_PLAN_DEMO_ENABLED==='true'&&serverLines&&lineIndex>=0&&lineIndex<serverLines.length&&serverLines[lineIndex].unsettled!==true&&
@@ -307,14 +312,14 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
     const responseItem:ChatItem={role:'assistant',text:data.answer,games:requested!==null?data.games.slice(0,20):[],generated:data.generated,
      archiveOnly:data.archiveOnly===true,candidateLines:serverLines??(!data.archiveOnly?analysisLines:[]),
      engineLinked:serverLines?true:!serverClaimed&&!legacyBackend&&analysisLines.length>0&&JSON.stringify(data.candidateLines)===JSON.stringify(analysisLines),
-     ...(serverLines?{engineServer:true}:{}),...(planDemo?{planDemo}:{}),...(lineLessons.length?{lineLessons}:{}),...(data.engineError?{engineUnavailable:true}:{})};
+     ...(serverLines?{engineServer:true}:{}),...(engineFallback?{engineFallback:true}:{}),...(planDemo?{planDemo}:{}),...(lineLessons.length?{lineLessons}:{}),...(data.engineError?{engineUnavailable:true}:{})};
     setItems([...previous,{role:'user',text:message},responseItem]);
     if(planDemo&&serverLines){
      // First show the original position. Each arrow advances this verified variation.
      setPreview({item:previous.length+1,line:planDemo.lineIndex,ply:0});
      onVariationPreview?.(replayMoves(serverLines[planDemo.lineIndex]),0);
     }
-    if(voicePreference.current&&!data.archiveOnly)void speak(readFullLesson(responseItem,previous.length+1),previous.length+1);}
+    if(voicePreference.current&&!data.archiveOnly&&!engineFallback)void speak(readFullLesson(responseItem,previous.length+1),previous.length+1);}
   }catch(e){if(!abort.signal.aborted){setError(describe(e));if(fromDraft)setDraft(message);setItems(previous);}}
   finally{if(!abort.signal.aborted){busyRef.current=false;setBusy(null);}}
  }
@@ -364,7 +369,7 @@ function CoachConversation({fen,side,token,accountId='guest',onVariationPreview}
    <div className="coach-chat-actions"><button type="button" className="coach-chat-expand" aria-expanded={readingExpanded} aria-controls={panelId} title={readingExpanded?t.restoreChat:t.expandChat} onClick={()=>setReadingExpanded(value=>!value)}>{readingExpanded?<Minimize2 size={15} aria-hidden="true"/>:<Maximize2 size={15} aria-hidden="true"/>}{readingExpanded?t.restoreChat:t.expandChat}</button><button type="button" disabled={!items.length||!!busy||recording} onClick={()=>{if(!window.confirm(t.clearConfirm))return;cancel();setItems([]);setDraft('');setExpanded([]);setPreview(null);onVariationPreview?.([], -1);setScrollTop(0);setError('');}}><Trash2 size={15}/>{t.clearChat}</button></div>
    <div ref={listRef} onScroll={e=>setScrollTop(e.currentTarget.scrollTop)} className="coach-chat-history" role="log" aria-live="polite" aria-relevant="additions text">
     {items.map((m,i)=><div key={i} className={'coach-chat-message '+m.role}><p className={m.archiveOnly?'coach-chat-archive-heading':undefined}>{m.planDemo?(shownLesson(m,i)?.intro??(m.candidateLines?.[preview?.item===i?preview.line:m.planDemo.lineIndex]?.unsettled?chessy.unsettledLine:chessy.noLineLesson)):m.text}</p>{m.role==='assistant'&&<>
-     {!m.generated&&<small className="coach-chat-notice">{t.notConfigured}</small>}{m.engineUnavailable&&<small className="coach-chat-notice">{t.engineUnavailable}</small>}
+     {!m.generated&&!m.engineFallback&&<small className="coach-chat-notice">{t.notConfigured}</small>}{m.engineUnavailable&&<small className="coach-chat-notice">{t.engineUnavailable}</small>}
      
     </>}{m.role==='assistant'&&!m.archiveOnly&&!!m.candidateLines?.length&&<div className="coach-chat-study"><small className="coach-chat-engine-source">Stockfish 19{m.engineServer?' · '+t.engineServer:''}</small><div className="coach-chat-study-choices">
        {m.planDemo?<>
