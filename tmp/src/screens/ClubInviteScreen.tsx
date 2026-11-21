@@ -33,7 +33,14 @@ export default function ClubInviteScreen() {
       } else if (typeof data === 'string' && roomId.test(data)) {
         // The /chat screen mounts after the server has granted membership.
         // SPA navigation avoids a second document load and its visible flash.
-        navigate('/chat?' + new URLSearchParams({ club: data }), { replace: true });
+        // Members can see their newly joined private club through RLS.
+        // The founding Schach-Treff has its own canonical route, not ?club=.
+        void supabase.from('chess_clubs').select('slug').eq('id', data).maybeSingle().then(({ data: joined, error: lookupError }) => {
+          if (!active) return;
+          if (lookupError || !joined) { fail(''); return; }
+          navigate(joined.slug === 'chessaz-deutsch'
+            ? '/chat' : '/chat?' + new URLSearchParams({ club: data }), { replace: true });
+        }, () => fail(''));
       } else {
         fail('');
       }
