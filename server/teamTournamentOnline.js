@@ -5,6 +5,9 @@ const { randomUUID } = require('node:crypto');
 const TIME_CONTROLS = ['1+0', '3+0', '3+2', '5+0', '10+0', '15+10'];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const prefix = 'team_tournament_online_';
+// A ready player who stays disconnected this long loses the ready flag; the
+// no-show rule then decides the board. Covers page reloads and short drops.
+const PRESENCE_GRACE_MS = 20_000;
 
 function createTeamTournamentOnline({
   io, client, durableEnabled, durableGames, reservePlayers, startRoom, announceRoom, hasRoom,
@@ -13,6 +16,42 @@ function createTeamTournamentOnline({
   let warned = false;
   let flight;
   let nextTick = 0;
+  // userId -> first tick time the ready player was seen without a connected socket.
+  // In memory only: after a restart every absent player gets a fresh grace period.
+  const offlineSince = new Map();
+
+  function connectedUsers() {
+    const users = new Set();
+    for (const socket of io.sockets.sockets.values()) if (socket.connected) users.add(socket.data?.userId);
+    return users;
+  }
+
+  // Readiness counts only while connected. Without this a board where one player
+  // pressed Play and then dropped stays 'scheduled' forever (both flags set, but
+  // never startable and never a no-show).
+  async function sweepPresence(scheduled) {
+    const online = connectedUsers();
+    const readyPlayers = new Set();
+    for (const board of scheduled) {
+      if (board.white_ready_at) readyPlayers.add(board.white_id);
+      if (board.black_ready_at) readyPlayers.add(board.black_id);
+    }
+    for (const user of offlineSince.keys()) if (!readyPlayers.has(user) || online.has(user)) offlineSince.delete(user);
+    for (const user of readyPlayers) {
+      if (online.has(user)) continue;
+      const since = offlineSince.get(user);
+      if (since === undefined) { offlineSince.set(user, now()); continue; }
+      if (now() - since < PRESENCE_GRACE_MS) continue;
+      try {
+        const cleared = await command('unready', { p_actor: user });
+        offlineSince.delete(user);
+        (cleared ?? []).forEach(notify);
+        if (cleared?.length) log({ code: 'TOURNAMENT_ONLINE_READY_EXPIRED' });
+      } catch {
+        log({ code: 'TOURNAMENT_ONLINE_UNREADY_RETRY' });
+      }
+    }
+  }
 
   function status() {
     const durable = durableEnabled && durableGames.ready();
@@ -132,6 +171,7 @@ function createTeamTournamentOnline({
         }
       }
     }
+    await sweepPresence(await list('scheduled'));
     const forfeits = await command('forfeit_due', { p_now: new Date(now()).toISOString() });
     forfeits.forEach(notify);
     for (const board of await list('scheduled', true)) {
@@ -152,4 +192,4 @@ function createTeamTournamentOnline({
   return { status, register, tick };
 }
 
-module.exports = { createTeamTournamentOnline, TIME_CONTROLS };
+module.exports = { createTeamTournamentOnline, TIME_CONTROLS, PRESENCE_GRACE_MS };

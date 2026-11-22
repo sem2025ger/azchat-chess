@@ -596,12 +596,43 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $$
   CROSS JOIN LATERAL (SELECT private.team_tournament_online_deadline(b.match_id,b.board_no) AS value) deadline;
 $$;
 
+-- Readiness counts only while the player is connected. The game server calls this
+-- after a player has been offline past the reconnect grace; the no-show rule then decides.
+-- Only the actor's own flag on 'scheduled' boards is cleared, never a starting or live board.
+CREATE FUNCTION public.team_tournament_online_unready(p_actor uuid,p_match uuid DEFAULT NULL,p_board smallint DEFAULT NULL)
+RETURNS SETOF public.team_tournament_m3_online_boards
+LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$
+DECLARE
+  target record;
+  board public.team_tournament_m3_online_boards%ROWTYPE;
+BEGIN
+  IF p_actor IS NULL OR (p_match IS NULL) <> (p_board IS NULL) THEN
+    RAISE EXCEPTION 'invalid_input' USING ERRCODE = '22023';
+  END IF;
+  FOR target IN SELECT b.match_id,b.board_no FROM public.team_tournament_m3_online_boards b
+    WHERE b.status = 'scheduled' AND (p_match IS NULL OR (b.match_id = p_match AND b.board_no = p_board))
+      AND ((b.white_id = p_actor AND b.white_ready_at IS NOT NULL)
+        OR (b.black_id = p_actor AND b.black_ready_at IS NOT NULL))
+    ORDER BY b.tournament_id,b.match_id,b.board_no
+  LOOP
+    board := private.team_tournament_online_lock(target.match_id,target.board_no);
+    IF board.status IS DISTINCT FROM 'scheduled' THEN CONTINUE; END IF;
+    UPDATE public.team_tournament_m3_online_boards SET
+      white_ready_at = CASE WHEN white_id = p_actor THEN NULL ELSE white_ready_at END,
+      black_ready_at = CASE WHEN black_id = p_actor THEN NULL ELSE black_ready_at END
+      WHERE match_id = target.match_id AND board_no = target.board_no RETURNING * INTO board;
+    RETURN NEXT board;
+  END LOOP;
+END;
+$$;
+
 REVOKE ALL ON FUNCTION
   private.team_tournament_online_lock(uuid,smallint),
   private.team_tournament_online_deadline(uuid,smallint),
   private.team_tournament_online_transition_room(uuid,boolean,timestamptz),
   private.team_tournament_online_confirm(uuid,smallint,text,text,uuid),
   public.team_tournament_online_ready(uuid,uuid,smallint),
+  public.team_tournament_online_unready(uuid,uuid,smallint),
   public.team_tournament_online_claim_start(uuid,smallint,uuid),
   public.team_tournament_online_mark_live(uuid),
   public.team_tournament_online_release_start(uuid,timestamptz),
@@ -615,6 +646,7 @@ GRANT EXECUTE ON FUNCTION
   private.team_tournament_online_transition_room(uuid,boolean,timestamptz),
   private.team_tournament_online_confirm(uuid,smallint,text,text,uuid),
   public.team_tournament_online_ready(uuid,uuid,smallint),
+  public.team_tournament_online_unready(uuid,uuid,smallint),
   public.team_tournament_online_claim_start(uuid,smallint,uuid),
   public.team_tournament_online_mark_live(uuid),
   public.team_tournament_online_release_start(uuid,timestamptz),

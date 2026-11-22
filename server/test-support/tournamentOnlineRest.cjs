@@ -9,6 +9,7 @@ const inputs = {
   team_tournament_online_release_start: ['p_room_id', 'p_claimed_at'],
   team_tournament_online_record_result: ['p_room_id', 'p_result', 'p_match_row_id'],
   team_tournament_online_forfeit_due: ['p_now'],
+  team_tournament_online_unready: ['p_actor', 'p_match', 'p_board'],
   team_tournament_online_my_board: ['p_actor', 'p_tournament'],
 };
 
@@ -45,7 +46,7 @@ async function tournamentOnlineRest(db) {
     if (!fields) throw new Error('Unexpected fixture RPC ' + name);
     const params = fields.map(field => req.body[field] ?? null);
     const call = 'public.' + name + '(' + params.map((_, index) => '$' + (index + 1)).join(',') + ')';
-    if (name === 'team_tournament_online_forfeit_due') return (await conn.query('SELECT * FROM ' + call, params)).rows;
+    if (['team_tournament_online_forfeit_due', 'team_tournament_online_unready'].includes(name)) return (await conn.query('SELECT * FROM ' + call, params)).rows;
     return (await conn.query('SELECT ' + call + ' AS value', params)).rows[0].value;
   }));
   app.get(routes + '/team_tournament_m3_online_boards', handle(async (req, conn) => {

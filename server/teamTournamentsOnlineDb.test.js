@@ -479,6 +479,48 @@ test('M3 online foundation on isolated PostgreSQL', {
     await pool.query('DELETE FROM public.durable_games WHERE room_id=$1',[room]);
   });
 
+  await t.test('unready clears only the actor’s flag on scheduled boards; the remaining ready player wins the no-show', async () => {
+    const { id } = await createsOnline('Online presence',randomUUID());
+    const entries = await register(id,2);
+    await expire(id); await tick(id,entries);
+    await setRound(id,1,iso(-60_000));
+    const [first,second] = await boardsFor(id);
+    const unready = (actor, b) => transaction('service_role', null, async client => (await client.query(
+      'SELECT * FROM public.team_tournament_online_unready($1,$2,$3)',
+      b ? [actor,b.match_id,b.board_no] : [actor,null,null])).rows);
+    await assert.rejects(transaction('service_role', null, client => client.query(
+      'SELECT * FROM public.team_tournament_online_unready($1,$2,NULL)',[first.white_id,first.match_id])), { code:'22023' });
+
+    await ready(first.white_id,first); await ready(first.black_id,first);
+    assert.deepEqual(await unready(first.black_id,second),[]); // Not this player's board: untouched.
+    const [cleared] = await unready(first.white_id);
+    assert.equal(cleared.white_ready_at,null);
+    assert.ok(cleared.black_ready_at);
+    assert.equal(cleared.status,'scheduled');
+    assert.deepEqual(await unready(first.white_id),[]); // Idempotent.
+    assert.equal((await claim(first)).code,'not_ready');
+
+    await ready(second.white_id,second); await ready(second.black_id,second);
+    const started = await claim(second);
+    assert.equal(started.status,'starting');
+    assert.deepEqual(await unready(second.white_id),[]); // Never a starting/live board.
+    const kept = (await boardsFor(id)).find(b => b.board_no === second.board_no);
+    assert.ok(kept.white_ready_at && kept.black_ready_at);
+    assert.equal(kept.status,'starting');
+
+    await setRound(id,1,iso(-310_000));
+    const noShow = (await due()).find(b => b.match_id === first.match_id && b.board_no === first.board_no);
+    assert.equal(noShow?.result,'-/+');
+    const { rows: [official] } = await pool.query(
+      'SELECT source,confirmed,result FROM public.team_tournament_board_results WHERE match_id=$1 AND board_no=$2',
+      [first.match_id,first.board_no]);
+    assert.deepEqual(official,{ source:'no_show',confirmed:true,result:'-/+' });
+    assert.equal((await online('release_start',[started.room_id,started.claimed_at])).status,'scheduled');
+    // Leave no startable board behind for the socket test that reuses these fixture players.
+    assert.equal((await unready(second.white_id,second)).length,1);
+    assert.equal((await unready(second.black_id,second)).length,1);
+  });
+
   await t.test('real clients ready up, busy player waits, stale claim recovers, durable resignation reaches the table in one tick', async test => {
     const { once } = require('node:events');
     const { io: connect } = require('socket.io-client');
@@ -573,5 +615,87 @@ test('M3 online foundation on isolated PostgreSQL', {
     assert.equal(read.status,200);
     assert.equal(body.boards[0].result,'1-0');
     assert.deepEqual(body.boards[0].score,{ home:0,away:1 });
+
+    // Presence: readiness counts only while the player is connected.
+    const { PRESENCE_GRACE_MS } = require('./teamTournamentOnline');
+    // Date.now is mocked ahead by `elapsed`; PostgreSQL uses its real clock.
+    const real = delta => new Date(realTime() + delta).toISOString();
+    const tickOnce = async () => { elapsed += 5001; await runtime.tournamentOnline.tick(); };
+    white.disconnect(); black.disconnect();
+    await until(() => ![...runtime.io.sockets.sockets.values()].some(s => s.connected));
+    runtime.setTokenVerifier(async token => players.includes(token) ? { id:token } : null);
+    const join = async player => {
+      const socket = connect(url,{ transports:['websocket'], auth:{ accessToken:player }, reconnection:false });
+      clients.push(socket);
+      await watch(socket,'connect');
+      return socket;
+    };
+
+    // (c) Both flags survived a lost start while both players are gone (restart-like):
+    // the tick clears them after the grace period and the no-show rule ends the board.
+    const staleNow = await readBoard(stale.board_no);
+    assert.ok(staleNow.white_ready_at && staleNow.black_ready_at);
+    assert.equal(staleNow.status,'scheduled');
+    await tickOnce();
+    await delay(100);
+    elapsed += PRESENCE_GRACE_MS;
+    await tickOnce();
+    await until(async () => { const b = await readBoard(stale.board_no); return !b.white_ready_at && !b.black_ready_at; });
+    await setRound(id,1,real(-310_000));
+    await tickOnce();
+    await until(async () => (await readBoard(stale.board_no)).status === 'forfeit');
+    assert.equal((await readBoard(stale.board_no)).result,'-/-');
+
+    const { id: second } = await createsOnline('Socket presence',randomUUID());
+    const secondEntries = await register(second,2);
+    await expire(second); await tick(second,secondEntries);
+    await setRound(second,1,real(-30_000));
+    const [kept,dropped] = await boardsFor(second);
+    const pick = async number => (await boardsFor(second)).find(b => b.board_no === number);
+    const readyUp = (socket, b) => socket.timeout(3000).emitWithAck('tournament_board_ready',{ matchId:b.match_id,boardNo:b.board_no });
+
+    // (b) A reconnect within the grace keeps the flag and the game starts normally.
+    const firstWhite = await join(kept.white_id);
+    assert.deepEqual(await readyUp(firstWhite,kept),{ ok:true });
+    firstWhite.disconnect();
+    await tickOnce();
+    await delay(100);
+    const returning = await join(kept.white_id);
+    const keptBlack = await join(kept.black_id);
+    const keptStart = Promise.all([watch(returning,'match_found'),watch(keptBlack,'match_found')]);
+    elapsed += PRESENCE_GRACE_MS;
+    await tickOnce();
+    await delay(100);
+    assert.ok((await pick(kept.board_no)).white_ready_at);
+    assert.deepEqual(await readyUp(keptBlack,kept),{ ok:true });
+    const [keptWhiteStart] = await keptStart;
+    assert.equal(keptWhiteStart.color,'w');
+    await until(async () => (await pick(kept.board_no)).status === 'live');
+
+    // (a) A ready player who drops loses the flag after the grace; the opponent who is
+    // present and ready wins the no-show instead of the board freezing forever.
+    const leaver = await join(dropped.white_id);
+    assert.deepEqual(await readyUp(leaver,dropped),{ ok:true });
+    leaver.disconnect();
+    const stayer = await join(dropped.black_id);
+    assert.deepEqual(await readyUp(stayer,dropped),{ ok:true });
+    await delay(100);
+    const frozen = await pick(dropped.board_no);
+    assert.ok(frozen.white_ready_at && frozen.black_ready_at);
+    assert.equal(frozen.status,'scheduled');
+    await tickOnce();
+    await delay(100);
+    assert.ok((await pick(dropped.board_no)).white_ready_at, 'grace period not yet over');
+    elapsed += PRESENCE_GRACE_MS;
+    await tickOnce();
+    await until(async () => { const b = await pick(dropped.board_no); return !b.white_ready_at && b.black_ready_at; });
+    // (d) The player in a live game is never touched.
+    const live = await pick(kept.board_no);
+    assert.equal(live.status,'live');
+    assert.ok(live.white_ready_at && live.black_ready_at);
+    await setRound(second,1,real(-310_000));
+    await tickOnce();
+    await until(async () => (await pick(dropped.board_no)).status === 'forfeit');
+    assert.equal((await pick(dropped.board_no)).result,'-/+');
   });
 });

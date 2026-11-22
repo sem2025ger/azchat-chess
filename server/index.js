@@ -1315,6 +1315,7 @@ module.exports = {
   rejectGameAction,
   getActivePlayerActionContext,
   durableGames,
+  tournamentOnline,
   startClubChallengeGame,
   recoveryReady,
   lobbyPresence,
