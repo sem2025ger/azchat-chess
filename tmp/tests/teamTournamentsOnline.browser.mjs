@@ -21,7 +21,7 @@ import { M3Create, M3EventPanel } from '/src/components/teamTournaments/TeamTour
 import { TournamentRounds } from '/src/components/teamTournaments/TeamTournamentViews.tsx';
 import MyTournamentCard from '/src/components/teamTournaments/MyTournamentCard.tsx';
 import { tournamentCopy } from '/src/components/teamTournaments/copy.ts';
-import { TournamentOnlineBanner } from '/src/components/teamTournaments/TournamentOnlinePlay.tsx';
+import { TournamentOnlineBanner } from '/src/components/teamTournaments/TournamentOnlineViews.tsx';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const captain = '22222222-2222-4222-8222-222222222222';

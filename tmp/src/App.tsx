@@ -5,7 +5,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import Layout from './components/Layout';
-import { TournamentOnlineBanner } from './components/teamTournaments/TournamentOnlinePlay';
+import { TournamentOnlineBanner } from './components/teamTournaments/TournamentOnlineViews';
 import MaintenancePage from './components/MaintenancePage';
 const ClubInviteScreen = lazy(() => import('./screens/ClubInviteScreen'));
 import { routeLoaders } from './routeLoaders';

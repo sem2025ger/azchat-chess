@@ -8,7 +8,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Link } from 'react-router-dom';
 import { AiOrganizerPanel } from './AiOrganizerPanel';
 import { CreateHubBlock } from './CreateHubBlock';
-import { OrganizerOnlineBoard, TournamentOnlineCards } from './TournamentOnlinePlay';
+import { OrganizerOnlineBoard, TournamentOnlineCards } from './TournamentOnlineViews';
 import { RoundStartTime } from './TeamTournamentViews';
 import { berlinDateTime, berlinDateTimeToIso } from '../../services/spieltag';
 

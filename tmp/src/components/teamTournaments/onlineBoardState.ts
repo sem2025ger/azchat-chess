@@ -1,5 +1,11 @@
 import type { OnlineBoard, StaffOnlineBoard } from '../../services/teamTournaments';
 
+export const stateLabels = {
+  scheduled: 'onlineScheduled', waiting: 'onlineWaiting', starting: 'onlineStarting',
+  live: 'onlineLive', finished: 'onlineFinished', forfeit: 'onlineForfeit',
+  previous: 'onlinePrevious', closed: 'onlineClosed', play: 'onlineReady',
+} as const;
+
 export function onlineBoardState(board: OnlineBoard, now: number) {
   if (board.status !== 'scheduled') return board.status;
   if (now < Date.parse(board.starts_at)) return 'scheduled';

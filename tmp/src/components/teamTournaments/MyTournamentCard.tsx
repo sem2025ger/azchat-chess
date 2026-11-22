@@ -5,7 +5,7 @@ import {
   createTournamentM3Api, type MyTournamentBoard, type BoardResult,
 } from '../../services/teamTournaments';
 import { tournamentCopy } from './copy';
-import { TournamentOnlineCards } from './TournamentOnlinePlay';
+import { TournamentOnlineCards } from './TournamentOnlineViews';
 import { RoundStartTime } from './TeamTournamentViews';
 
 type HomeState = { board: MyTournamentBoard | null; error: boolean; loadedVersion: number };

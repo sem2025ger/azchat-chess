@@ -26,7 +26,7 @@ test('all NRW flags off preserves the main routing and navigation entry points',
      .replace('desktop && showSpieltag', 'desktop && ' + tournamentGate);
   }
   if(path==='src/App.tsx'){
-   const bannerImport = "import { TournamentOnlineBanner } from './components/teamTournaments/TournamentOnlinePlay';\n";
+   const bannerImport = "import { TournamentOnlineBanner } from './components/teamTournaments/TournamentOnlineViews';\n";
    const flagGatedBanner = "                {import.meta.env.VITE_TEAM_TOURNAMENTS_ONLINE_PLAY === 'true' && <TournamentOnlineBanner />}\n";
    assert.ok(current.includes(bannerImport) && current.includes(flagGatedBanner));
    current=current.replace(bannerImport,'').replace(flagGatedBanner,'');

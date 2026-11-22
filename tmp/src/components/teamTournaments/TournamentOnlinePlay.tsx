@@ -3,17 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSocket } from '../../context/SocketContext';
-import { createTournamentM3Api, type OnlineBoard, type StaffOnlineBoard } from '../../services/teamTournaments';
+import { createTournamentM3Api, type OnlineBoard } from '../../services/teamTournaments';
 import { gamePath, ROOM_ID } from '../schachTreff/challengeRouting';
 import { tournamentCopy, type TournamentCopy } from './copy';
 import { RoundStartTime } from './TeamTournamentViews';
-import { onlineBoardState, onlineCountdown, staffOnlineBoardState } from './onlineBoardState';
-
-const stateLabels = {
-  scheduled: 'onlineScheduled', waiting: 'onlineWaiting', starting: 'onlineStarting',
-  live: 'onlineLive', finished: 'onlineFinished', forfeit: 'onlineForfeit',
-  previous: 'onlinePrevious', closed: 'onlineClosed', play: 'onlineReady',
-} as const;
+import { onlineBoardState, onlineCountdown, stateLabels } from './onlineBoardState';
 
 function useOnlineBoards(token: string | undefined, connected: boolean, event?: string) {
   const { socket } = useSocket();
@@ -140,9 +134,4 @@ export function TournamentOnlineBanner() {
     <p role="status" className="text-sm">{tr('onlineBanner')}</p>
     <PlayButton key={boardKey} board={board} tr={tr} onReady={() => setPressed(boardKey ?? null)} />
   </aside>;
-}
-
-export function OrganizerOnlineBoard({ board, tr }: { board: StaffOnlineBoard; tr: TournamentCopy }) {
-  const state = staffOnlineBoardState(board);
-  return <p data-organizer-online-board={state}>{tr(stateLabels[state])}</p>;
 }
