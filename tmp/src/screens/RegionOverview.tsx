@@ -102,6 +102,24 @@ const NRW_EXTERNAL_URLS = {
   clubFinder: 'https://www.schachbund.de/vereinsfinder.html',
  },
  liveBroadcasts: 'https://lichess.org/broadcast',
+ newsSources: {
+  statewide: [
+   {name:'Schachbund NRW',url:'https://schach-nrw.de/'},
+   {name:'Schachjugend NRW',url:'https://www.sjnrw.de/news/news.html'},
+   {name:'Schulschach NRW',url:'https://schulschach-nrw.org/news'},
+   {name:'DSB · Landesmeldungen',url:'https://www.schachbund.de/nachrichten-der-lv.html'},
+   {name:'Schach-Bundesliga',url:'https://www.schachbundesliga.de/'},
+   {name:'ChessBase',url:'https://de.chessbase.com/'},
+  ],
+  regional: [
+   {name:'Ruhrgebiet',url:'https://svr-schach.de/'},
+   {name:'Niederrhein',url:'https://www.nsv1901.de/'},
+   {name:'Mittelrhein · Ergebnisse',url:'https://ergebnisportal.sv-mittelrhein.de/'},
+   {name:'Ostwestfalen-Lippe',url:'https://schachverband-owl.de/'},
+   {name:'Münsterland',url:'https://www.svmuensterland.de/'},
+   {name:'Südwestfalen',url:'https://schach-swf.de/'},
+  ],
+ },
 } as const;
 const eventTime=(value:string,language:string)=>new Intl.DateTimeFormat(({en:'en-GB',de:'de-DE',az:'az-AZ',tr:'tr-TR',ua:'uk-UA',ru:'ru-RU'} as Record<string,string>)[language]||'de-DE',{
  dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Berlin',
@@ -259,22 +277,8 @@ function useClubNews(enabled:boolean){
 
 
 const NRW_NEWS_SOURCE_GROUPS = [
- {title:'Landesverband & Fachmedien',sources:[
-  {name:'Schachbund NRW',url:'https://schach-nrw.de/'},
-  {name:'Schachjugend NRW',url:'https://www.sjnrw.de/news/news.html'},
-  {name:'Schulschach NRW',url:'https://schulschach-nrw.org/turniere'},
-  {name:'DSB · Landesmeldungen',url:'https://www.schachbund.de/nachrichten-der-lv.html'},
-  {name:'Schach-Bundesliga',url:'https://www.schachbundesliga.de/'},
-  {name:'ChessBase',url:'https://de.chessbase.com/'},
- ]},
- {title:'Regionale Schachverbände',sources:[
-  {name:'Ruhrgebiet',url:'https://svr-schach.de/'},
-  {name:'Niederrhein',url:'https://www.nsv1901.de/'},
-  {name:'Mittelrhein · Ergebnisse',url:'https://ergebnisportal.sv-mittelrhein.de/'},
-  {name:'Ostwestfalen-Lippe',url:'https://schachverband-owl.de/'},
-  {name:'Münsterland',url:'https://www.svmuensterland.de/'},
-  {name:'Südwestfalen',url:'https://schach-swf.de/'},
- ]},
+ {title:'Landesverband & Fachmedien',sources:NRW_EXTERNAL_URLS.newsSources.statewide},
+ {title:'Regionale Schachverbände',sources:NRW_EXTERNAL_URLS.newsSources.regional},
 ] as const;
 
 function NrwNewsSources({tr}:{tr:(value:string)=>string}){
