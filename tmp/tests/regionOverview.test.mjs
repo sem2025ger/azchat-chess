@@ -34,7 +34,8 @@ test('NRW static external destinations are defined once in the shared config',()
  const end=region.indexOf('} as const;',start);
  assert.ok(start>=0&&end>start);
  const config=region.slice(start,end);
- assert.equal((config.match(/https:\/\//g)||[]).length,6,'five official sources and the existing live route destination');
+ assert.equal((config.match(/https:\/\//g)||[]).length,18,'five official destinations, the existing live route, and twelve NRW news sources');
+ assert.match(config,/newsSources:/,'NRW source URLs belong to the existing shared config');
  assert.doesNotMatch(region.slice(0,start)+region.slice(end),/['"]https:\/\//);
 });
 
