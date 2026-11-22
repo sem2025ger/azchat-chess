@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import {
-  createTournamentM3Api, createTournamentApi,
+  createTournamentM3Api, createTournamentApi, tournamentTimeControls, type TournamentTimeControl,
   type M3Event, type M3EventInput, type M3TeamEntry, type Tournament, type BoardResult, type AiOrganizerDraft,
 } from '../../services/teamTournaments';
 import { tournamentErrorMessage, type TournamentCopy } from './copy';
@@ -8,6 +8,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { Link } from 'react-router-dom';
 import { AiOrganizerPanel } from './AiOrganizerPanel';
 import { CreateHubBlock } from './CreateHubBlock';
+import { OrganizerOnlineBoard, TournamentOnlineCards } from './TournamentOnlinePlay';
 import { RoundStartTime } from './TeamTournamentViews';
 import { berlinDateTime, berlinDateTimeToIso } from '../../services/spieltag';
 
@@ -75,6 +76,7 @@ export function M3Create({ tr, token, onCreated, legacy, limited = false }: {
   const formRef = useRef<HTMLFormElement>(null);
   const [initialRequestId] = useState(() => crypto.randomUUID());
   const request = useRef({ id: initialRequestId, fields: '' });
+  const online = import.meta.env.VITE_TEAM_TOURNAMENTS_ONLINE_PLAY === 'true';
   const aiEnabled = import.meta.env.VITE_AI_ORGANIZER_ENABLED === 'true';
   const attachForm = useCallback((form: HTMLFormElement | null) => {
     formRef.current = form;
@@ -95,10 +97,15 @@ export function M3Create({ tr, token, onCreated, legacy, limited = false }: {
   function applyAiDraft(draft: AiOrganizerDraft) {
     const form = formRef.current;
     if (!form) return;
-    const values = { ...draft, round_interval_minutes: draft.round_interval_minutes ?? null };
+    const values = { ...draft, round_interval_minutes: draft.round_interval_minutes ?? (online ? 15 : null) };
     for (const [key, value] of Object.entries(values)) {
       const field = form.elements.namedItem(key);
       if (field instanceof HTMLInputElement) field.value = value === null ? '' : String(value);
+      if (online && key === 'time_control' && field instanceof HTMLSelectElement) field.value = String(value ?? '5+0');
+    }
+    if (online && !Object.hasOwn(values, 'time_control')) {
+      const control = form.elements.namedItem('time_control');
+      if (control instanceof HTMLSelectElement) control.value = '5+0';
     }
     trackForm(new FormData(form));
     setManualDeadline(draft.registration_deadline ?? '');
@@ -134,6 +141,8 @@ export function M3Create({ tr, token, onCreated, legacy, limited = false }: {
       max_teams: Number(data.get('max_teams') ?? 4),
       ...(interval ? { round_interval_minutes: Number(interval) } : {}),
       client_request_id: trackForm(data),
+      ...(online ? { play_mode: 'online', time_control: data.get('time_control') as TournamentTimeControl,
+        no_show_minutes: Number(data.get('no_show_minutes') ?? 5) } : {}),
     };
     if (aiEnabled && !input.registration_deadline) {
       formRef.current?.querySelector('details')?.setAttribute('open', '');
@@ -152,8 +161,20 @@ export function M3Create({ tr, token, onCreated, legacy, limited = false }: {
   }
 
   const trackChange = (event: FormEvent<HTMLFormElement>) => trackForm(new FormData(event.currentTarget));
-  const intervalField = <label>{tr('m3RoundInterval')}
-    <input name="round_interval_minutes" type="number" min="10" max="10080" className="w-full min-h-11" />
+  const intervalField = <label>{tr(online ? 'onlineInterval' : 'm3RoundInterval')}
+    <input name="round_interval_minutes" type="number" min="10" max="10080" className="w-full min-h-11"
+      required={online} defaultValue={online ? 15 : undefined} />
+  </label>;
+  const formatFields = online && <>
+    <p>{tr('onlineMode')}</p>
+    <label>{tr('onlineTimeControl')}
+      <select name="time_control" defaultValue="5+0" className="w-full min-h-11">
+        {tournamentTimeControls.map(control => <option key={control} value={control}>{control}</option>)}
+      </select>
+    </label>
+  </>;
+  const noShowField = online && <label>{tr('onlineNoShowMinutes')}
+    <input name="no_show_minutes" type="number" min="1" max="30" defaultValue="5" required className="w-full min-h-11" />
   </label>;
 
   if (!aiEnabled) return <section className="section-card">
@@ -167,7 +188,9 @@ export function M3Create({ tr, token, onCreated, legacy, limited = false }: {
         <label>{tr('m3MinTeams')}<input name="min_teams" type="number" min="2" max="16" defaultValue="2" required className="w-full min-h-11" /></label>
         <label>{tr('m3MaxTeams')}<input name="max_teams" type="number" min="2" max="16" defaultValue="4" required className="w-full min-h-11" /></label>
       </div>
+      {formatFields}
       {intervalField}
+      {online && <details><summary>{tr('createHubMore')}</summary>{noShowField}</details>}
       {error && <p role="alert">{error}</p>}
       <button type="submit" className="min-h-11" disabled={busy}>{tr('m3Create')}</button>
     </form>
@@ -196,10 +219,12 @@ export function M3Create({ tr, token, onCreated, legacy, limited = false }: {
           <label>{tr('m3MaxTeams')}
             <input name="max_teams" type="number" min="2" max="16" defaultValue="4" required />
           </label>
+          {formatFields}
+          {online && intervalField}
           <details className="team-create-extra">
             <summary>{tr('createHubMore')}</summary>
             <div className="team-create-extra-fields">
-              {intervalField}
+              {online ? noShowField : intervalField}
               <label>{tr('boards')}
                 <input name="boards_per_team" type="number" min="1" max="16" defaultValue="4" required />
               </label>
@@ -359,6 +384,29 @@ export function M3EventPanel({ tr, id, token, userId, ownUsername, onUpdated }: 
     });
     return () => controller.abort();
   }, [id, token, userId, version]);
+
+  const onlineEvent = import.meta.env.VITE_TEAM_TOURNAMENTS_ONLINE_PLAY === 'true' && event?.play_mode === 'online';
+  const watchOnline = onlineEvent && event?.status === 'published' && Boolean(published);
+  useEffect(() => {
+    if (!watchOnline || !token) return;
+    const controller = new AbortController();
+    const events = createTournamentM3Api(import.meta.env.VITE_SERVER_URL, token);
+    const workspace = createTournamentApi(import.meta.env.VITE_SERVER_URL, token);
+    let running = false;
+    const timer = window.setInterval(async () => {
+      if (running) return;
+      running = true;
+      try {
+        const [data, full] = await Promise.all([events.event(id, controller.signal), workspace.workspace(id, controller.signal)]);
+        if (!controller.signal.aborted) {
+          setEvent(current => current?.id === id ? { ...current, online_boards: data.online_boards, states: data.states, status: data.status } : current);
+          setPublished(full);
+        }
+      } catch { /* Keep the latest verified board states until the next refresh. */ }
+      finally { running = false; }
+    }, 5000);
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, [id, token, watchOnline]);
 
   const api = token ? createTournamentM3Api(import.meta.env.VITE_SERVER_URL, token) : null;
   function reload() { setVersion(v => v + 1); onUpdated?.(); }
@@ -528,6 +576,8 @@ export function M3EventPanel({ tr, id, token, userId, ownUsername, onUpdated }: 
       </div>
       {!canSubmit && (!myEntry.submitted_at || editingOfficial) && <p role="status">{submitHint}</p>}
     </section>}
+    {onlineEvent && (event.status === 'published' || event.status === 'finished') &&
+      <TournamentOnlineCards key={id + ':' + userId} event={id} />}
     {published && (staff || !!myEntry) && api && <section className="mt-4 grid gap-3">
       {organizer && published.rounds.some(round => round.starts_at && Date.parse(round.starts_at) > Date.now()) &&
         <div className="grid gap-2">
@@ -550,6 +600,8 @@ export function M3EventPanel({ tr, id, token, userId, ownUsername, onUpdated }: 
         <RoundStartTime startsAt={published.rounds.find(round => round.round_no === match.round_no)?.starts_at} tr={tr} />
         {match.boards.map(board => {
           const state=event.states?.find(row=>row.match_id===match.id && row.board_no===board.board_no);
+          const onlineBoard = onlineEvent && event.online_boards?.find(row =>
+            row.match_id === match.id && row.board_no === board.board_no);
           const reported=(event.reports??[]).filter(row=>row.match_id===match.id && row.board_no===board.board_no);
           const homePlayer=(event.lineups??[]).find(row=>row.entry_id===match.home_team_id&&row.board_no===board.board_no);
           const awayPlayer=(event.lineups??[]).find(row=>row.entry_id===match.away_team_id&&row.board_no===board.board_no);
@@ -563,7 +615,8 @@ export function M3EventPanel({ tr, id, token, userId, ownUsername, onUpdated }: 
             {reported.map(report => <p key={report.side}>
               {report.side === 'white' ? tr('white') : tr('black')}: {report.result} ({report.kind === 'forfeit' ? tr('m3Forfeit') : tr('m3Played')})
             </p>)}
-            {isOwnTeam && !board.confirmed && <div className="flex flex-wrap gap-2">
+            {onlineBoard && <OrganizerOnlineBoard board={onlineBoard} tr={tr} />}
+            {!onlineEvent && isOwnTeam && !board.confirmed && <div className="flex flex-wrap gap-2">
               {(['1-0','1/2-1/2','0-1'] as const).map(result=><button type="button" key={result}
                 className="min-h-11" disabled={busy} onClick={()=>void mutate(signal=>
                   api.boardAction(id,match.id,board.board_no,'report',result,null,signal))}>{result}</button>)}

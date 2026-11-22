@@ -147,6 +147,28 @@ const labels = {
   createLimitError: ['Du hast bereits 2 laufende Turniere. Beende eines, um ein neues anzulegen.', 'You already run 2 tournaments. Finish one to create another.', 'Artıq 2 aktiv turniriniz var. Yenisini yaratmaq üçün birini bitirin.', 'Zaten 2 aktif turnuvanız var. Yenisi için birini bitirin.', 'У вас уже 2 активні турніри. Завершіть один, щоб створити новий.', 'У вас уже 2 активных турнира. Завершите один, чтобы создать новый.'],
   createHubIntro: ['Mannschaftsturniere für Vereine: Turnier anlegen, Mannschaften einladen, online spielen.', 'Team tournaments for clubs: create a tournament, invite teams, play online.', 'Klublar üçün komanda turnirləri: turnir yaradın, komandaları dəvət edin, onlayn oynayın.', 'Kulüpler için takım turnuvaları: turnuva oluşturun, takımları davet edin, çevrimiçi oynayın.', 'Командні турніри для клубів: створіть турнір, запросіть команди, грайте онлайн.', 'Командные турниры для клубов: создайте турнир, пригласите команды, играйте онлайн.'],
   createHubManualHint: ['Drei Felder – fertig. Alles Weitere wird automatisch vorbereitet.', 'Three fields — done. Everything else is prepared automatically.', 'Üç sahə – hazır. Qalanı avtomatik hazırlanır.', 'Üç alan – tamam. Gerisi otomatik hazırlanır.', 'Три поля — і готово. Решту підготуємо автоматично.', 'Три поля — и готово. Остальное подготовим автоматически.'],
+  onlineMode: ['Online-Partien', 'Online games', 'Onlayn oyunlar', 'Çevrimiçi oyunlar', 'Онлайн-партії', 'Онлайн-партии'],
+  onlineTimeControl: ['Bedenkzeit', 'Time control', 'Vaxt nəzarəti', 'Zaman kontrolü', 'Контроль часу', 'Контроль времени'],
+  onlineNoShowMinutes: ['Wartezeit bei Nichterscheinen (Minuten)', 'No-show grace period (minutes)', 'Gəlmədikdə gözləmə müddəti (dəqiqə)', 'Gelmeme durumunda bekleme (dakika)', 'Час очікування в разі неявки (хвилини)', 'Время ожидания при неявке (минуты)'],
+  onlineInterval: ['Rundenabstand (Minuten)', 'Minutes between rounds', 'Turlar arası dəqiqə', 'Turlar arası süre (dakika)', 'Хвилин між турами', 'Минут между турами'],
+  onlineScheduled: ['Geplant', 'Scheduled', 'Planlaşdırılıb', 'Planlandı', 'Заплановано', 'Запланировано'],
+  onlineWaiting: ['Warten auf den Gegner', 'Waiting for opponent', 'Rəqib gözlənilir', 'Rakip bekleniyor', 'Очікуємо суперника', 'Ожидаем соперника'],
+  onlineStarting: ['Die Partie startet', 'Game starting', 'Oyun başlayır', 'Oyun başlıyor', 'Партія починається', 'Партия начинается'],
+  onlineLive: ['Partie läuft', 'In progress', 'Oyun gedir', 'Oyun sürüyor', 'Партія триває', 'Партия идёт'],
+  onlineFinished: ['Beendet', 'Finished', 'Bitib', 'Tamamlandı', 'Завершено', 'Завершено'],
+  onlineForfeit: ['Ergebnis wegen Nichterscheinens', 'No-show result', 'Gəlməmə nəticəsi', 'Gelmeme sonucu', 'Результат через неявку', 'Результат по неявке'],
+  onlinePrevious: ['Der Gegner beendet noch die vorige Partie.', 'Opponent is finishing the previous game.', 'Rəqib əvvəlki oyunu bitirir.', 'Rakip önceki oyununu bitiriyor.', 'Суперник завершує попередню партію.', 'Соперник заканчивает предыдущую партию.'],
+  onlineReady: ['Die Runde hat begonnen', 'Round has started', 'Tur başlayıb', 'Tur başladı', 'Тур розпочався', 'Тур начался'],
+  onlineClosed: ['Die Wartezeit ist abgelaufen.', 'The grace period has ended.', 'Gözləmə müddəti bitib.', 'Bekleme süresi sona erdi.', 'Час очікування минув.', 'Время ожидания истекло.'],
+  onlineStartsIn: ['Rundenbeginn in', 'Round starts in', 'Turun başlanmasına', 'Turun başlamasına', 'До початку туру', 'До начала тура'],
+  onlineReadyBy: ['Wartezeit endet in', 'Grace period ends in', 'Gözləmə müddətinin bitməsinə', 'Bekleme süresinin bitmesine', 'До кінця часу очікування', 'До конца времени ожидания'],
+  onlinePlay: ['Spielen', 'Play', 'Oyna', 'Oyna', 'Грати', 'Играть'],
+  onlineOpen: ['Zur Partie', 'Open game', 'Oyuna keç', 'Oyuna git', 'Відкрити партію', 'Открыть партию'],
+  onlineScore: ['Mannschaftsstand (Heim – Gast)', 'Match score (home – away)', 'Matçın hesabı (ev – qonaq)', 'Maç skoru (ev – deplasman)', 'Рахунок матчу (господарі – гості)', 'Счёт матча (хозяева – гости)'],
+  onlineBanner: ['Deine Runde hat begonnen', 'Your round has started', 'Turunuz başlayıb', 'Turunuz başladı', 'Ваш тур розпочався', 'Ваш тур начался'],
+  onlineUnavailable: ['Onlinespiel ist vorübergehend nicht verfügbar.', 'Online play is temporarily unavailable.', 'Onlayn oyun müvəqqəti əlçatan deyil.', 'Çevrimiçi oyun geçici olarak kullanılamıyor.', 'Онлайн-гра тимчасово недоступна.', 'Онлайн-игра временно недоступна.'],
+  onlineReadyError: ['Bereitschaft konnte nicht gespeichert werden. Versuche es erneut.', 'Could not mark you ready. Try again.', 'Hazırlığı qeyd etmək olmadı. Yenidən cəhd edin.', 'Hazır durumunuz kaydedilemedi. Tekrar deneyin.', 'Не вдалося підтвердити готовність. Спробуйте ще раз.', 'Не удалось подтвердить готовность. Попробуйте ещё раз.'],
+  onlineAutomaticResult: ['Das Ergebnis wird nach der Online-Partie automatisch erfasst.', 'The result is recorded automatically after the online game.', 'Onlayn oyundan sonra nəticə avtomatik qeydə alınır.', 'Sonuç çevrimiçi oyundan sonra otomatik kaydedilir.', 'Результат онлайн-партії записується автоматично.', 'Результат онлайн-партии записывается автоматически.'],
   m3RoundInterval: ['Rundenabstand in Minuten (optional)', 'Minutes between rounds (optional)', 'Turlar arası dəqiqə (istəyə bağlı)', 'Turlar arası süre, dakika (isteğe bağlı)', 'Хвилин між турами (необов’язково)', 'Минут между турами (необязательно)'],
   m3RoundTime: ['Rundenbeginn (Berlin)', 'Round starts (Berlin time)', 'Turun başlanğıcı (Berlin vaxtı)', 'Tur başlangıcı (Berlin saati)', 'Початок туру (час Берліна)', 'Начало тура (время Берлина)'],
   m3SaveRoundTime: ['Rundenzeit speichern', 'Save round time', 'Tur vaxtını yadda saxla', 'Tur saatini kaydet', 'Зберегти час туру', 'Сохранить время тура'],
@@ -204,6 +226,7 @@ export function tournamentErrorMessage(code: string, tr: TournamentCopy) {
   if (code === 'event_full') return tr('m3Full');
   if (code === 'invalid_invite') return tr('m3InvalidInvite');
   if (code === 'idempotency_conflict') return tr('m3RequestConflict');
+  if (code === 'online_mode') return tr('onlineAutomaticResult');
   if (code === 'round_time_locked') return tr('m3RoundTimeLocked');
   if (code === 'round_time_order') return tr('m3RoundTimeOrder');
   if (code === 'round_time_past') return tr('m3RoundTimePast');

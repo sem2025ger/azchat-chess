@@ -5,6 +5,7 @@ import {
   createTournamentM3Api, type MyTournamentBoard, type BoardResult,
 } from '../../services/teamTournaments';
 import { tournamentCopy } from './copy';
+import { TournamentOnlineCards } from './TournamentOnlinePlay';
 import { RoundStartTime } from './TeamTournamentViews';
 
 type HomeState = { board: MyTournamentBoard | null; error: boolean; loadedVersion: number };
@@ -26,9 +27,13 @@ function resultFor(side: 'white' | 'black', choice: 'win' | 'draw' | 'loss'): Bo
 export default function MyTournamentCard() {
   const { session } = useAuth();
   // Do not reuse one player's board when the signed-in account changes.
-  return session?.access_token
+  const reported = session?.access_token
     ? <PlayerTournamentCard key={session.user.id} token={session.access_token} />
     : null;
+  if (import.meta.env.VITE_TEAM_TOURNAMENTS_ONLINE_PLAY === 'true' && session?.access_token) {
+    return <><TournamentOnlineCards key={session.user.id} />{reported}</>;
+  }
+  return reported;
 }
 
 function PlayerTournamentCard({ token }: { token: string }) {

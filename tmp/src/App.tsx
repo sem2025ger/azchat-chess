@@ -5,6 +5,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import Layout from './components/Layout';
+import { TournamentOnlineBanner } from './components/teamTournaments/TournamentOnlinePlay';
 import MaintenancePage from './components/MaintenancePage';
 const ClubInviteScreen = lazy(() => import('./screens/ClubInviteScreen'));
 import { routeLoaders } from './routeLoaders';
@@ -37,6 +38,7 @@ function App() {
         <AuthProvider>
           <SocketProvider>
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                {import.meta.env.VITE_TEAM_TOURNAMENTS_ONLINE_PLAY === 'true' && <TournamentOnlineBanner />}
                 <Routes>
                   <Route path="/" element={<Layout />}>
                     <Route index element={<HomeScreen />} />
