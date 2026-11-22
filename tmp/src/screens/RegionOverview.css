@@ -153,6 +153,23 @@
 .nrw-overview .nrw-news .nrw-items a svg{margin-top:2px;color:#D2C3AF}
 .nrw-overview .nrw-news .nrw-muted{margin:0}
 .nrw-news-links{margin-top:8px}
+
+/* Verified NRW news sources stay separate from the live Bochum headlines. */
+.nrw-shell .nrw-news-sources{margin-top:16px;padding-top:14px;border-top:1px solid #ffffff20}
+.nrw-shell .nrw-news-source-note{margin:0 0 12px;color:#B9BDC0;font-size:.75rem;line-height:1.5}
+.nrw-shell .nrw-news-source-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
+.nrw-shell .nrw-news-source-group{min-width:0}
+.nrw-shell .nrw-news-source-group h3{margin:0 0 8px;color:#D6C4A8;font-size:.75rem;font-weight:650;line-height:1.4}
+.nrw-shell .nrw-news-source-list{display:flex;align-content:start;flex-wrap:wrap;gap:7px;max-height:148px;overflow-y:auto;overscroll-behavior:contain;scrollbar-color:#806B51 #202326}
+.nrw-shell .nrw-news-source-link{display:inline-flex;align-items:center;gap:5px;min-height:36px;max-width:100%;padding:6px 9px;border:1px solid #B8916A40;border-radius:8px;background:#242629;color:#E6D7C1;font-size:.75rem;line-height:1.4;text-decoration:none;overflow-wrap:anywhere}
+.nrw-shell .nrw-news-source-link svg{flex-shrink:0;width:13px;height:13px}
+.nrw-shell .nrw-news-source-link:hover,.nrw-shell .nrw-news-source-link:focus-visible{border-color:#C4A57C;background:#303033;text-decoration:underline}
+.nrw-shell .nrw-news-source-link:focus-visible{outline:2px solid #D6C4A8;outline-offset:2px}
+@media(max-width:767px){
+ .nrw-shell .nrw-news-source-groups{grid-template-columns:minmax(0,1fr)}
+ .nrw-shell .nrw-news-source-list{max-height:none;overflow:visible}
+ .nrw-shell .nrw-news-source-link{min-height:44px}
+}
 @media(max-width:1023px){
  .nrw-overview .nrw-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
