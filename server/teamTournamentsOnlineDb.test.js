@@ -18,6 +18,7 @@ const migrations = [
   '20261106034400_team_tournaments_m3_foundation.sql',
   '20261111030000_team_tournaments_open_create.sql',
   '20261122230000_team_tournaments_online_foundation.sql',
+  '20261122233000_team_tournaments_online_play.sql',
 ];
 const commandSql = 'SELECT public.team_tournament_m3_command($1,$2,$3,$4) AS data';
 const tickSql = 'SELECT public.team_tournament_m3_tick($1,$2) AS data';
@@ -44,7 +45,8 @@ test('M3 online foundation on isolated PostgreSQL', {
   await pool.query(`INSERT INTO public.profiles(id,username)
     SELECT id, 'fixture_' || ordinality FROM unnest($1::uuid[]) WITH ORDINALITY AS actors(id,ordinality)`,
   [[owner, member, otherMember, stranger, ...players]]);
-  for (const migration of migrations.slice(0, -1)) {
+  assert.deepEqual(migrations, [...migrations].sort(), 'migration timestamps follow Supabase order');
+  for (const migration of migrations.slice(0, -2)) {
     await pool.query(readFileSync(join(__dirname, '../supabase/migrations', migration), 'utf8'));
   }
   await pool.query('INSERT INTO public.team_tournament_organizers(user_id) VALUES($1)', [owner]);
@@ -88,10 +90,10 @@ test('M3 online foundation on isolated PostgreSQL', {
   // Verify forward-only behavior with a tournament already on the old schema.
   const { id: legacy } = await service('SELECT public.team_tournament_m3_create($1,$2,$3,$4,$5,$6,$7) AS data',
     [owner, 'Existing tournament', rules, start, deadline, 2, 3]);
-  await pool.query(readFileSync(join(__dirname, '../supabase/migrations', migrations.at(-1)), 'utf8'));
+  await pool.query(readFileSync(join(__dirname, '../supabase/migrations', migrations.at(-2)), 'utf8'));
   const reportedKey = randomUUID();
   const existingReported = await create('Reported request before online migration',15,reportedKey);
-  await pool.query(readFileSync(join(__dirname, '../supabase/migrations/20261122090000_team_tournaments_online_play.sql'), 'utf8'));
+  await pool.query(readFileSync(join(__dirname, '../supabase/migrations', migrations.at(-1)), 'utf8'));
   assert.equal((await create('Reported request before online migration',15,reportedKey)).id,existingReported.id);
 
 
@@ -451,10 +453,14 @@ test('M3 online foundation on isolated PostgreSQL', {
       ['start',room,randomUUID(),randomUUID(),1,0,randomUUID(),state]);
     assert.equal((await online('mark_live',[room])).status,'live');
     await setRound(id,1,iso(-1_300_000));
-    await setRound(id,2,iso(-400_000));
+    await setRound(id,2,iso(-500_000));
+    await setRound(id,3,iso(-400_000));
+    const later = boards.find(b => b.round_no === 3 && b.board_no === 1);
     const freePlayer = [next.white_id,next.black_id].find(player => ![prior.white_id,prior.black_id].includes(player));
     assert.equal((await online('my_board',[freePlayer,id]))[0].deadline,null);
-    assert.equal((await due()).filter(b => b.match_id === next.match_id && b.board_no === next.board_no).length,0);
+    const during = await due();
+    assert.equal(during.some(b => b.match_id === next.match_id && b.board_no === next.board_no),false);
+    assert.equal(during.some(b => b.match_id === later.match_id && b.board_no === later.board_no),false);
 
     const ended = iso(-10_000);
     const { rows: [game] } = await pool.query(`INSERT INTO public.matches

@@ -330,28 +330,27 @@ BEGIN
 END;
 $$;
 
--- Use the latest prior board separately for each player, including byes.
--- Suspend the deadline while either player is starting or playing a prior game.
+-- Resolve the previous playing round separately for each player, including
+-- byes and rounds that overlap while an earlier game is still being played.
 CREATE FUNCTION private.team_tournament_online_deadline(p_match uuid, p_board smallint)
 RETURNS timestamptz LANGUAGE sql STABLE SECURITY INVOKER SET search_path = '' AS $$
-  SELECT CASE WHEN previous_white.status IN ('starting','live')
-    OR previous_black.status IN ('starting','live') THEN NULL
+  SELECT CASE WHEN previous_white.playing OR previous_black.playing THEN NULL
     ELSE greatest(r.starts_at, previous_white.finished_at, previous_black.finished_at)
       + make_interval(mins => c.no_show_minutes) END
   FROM public.team_tournament_m3_online_boards b
   JOIN public.team_tournament_rounds r USING (tournament_id,round_no)
   JOIN public.team_tournament_m3_config c USING (tournament_id)
   LEFT JOIN LATERAL (
-    SELECT prev.status,prev.finished_at FROM public.team_tournament_m3_online_boards prev
+    SELECT bool_or(prev.status IN ('starting','live')) AS playing,max(prev.finished_at) AS finished_at
+    FROM public.team_tournament_m3_online_boards prev
     WHERE prev.tournament_id = b.tournament_id AND prev.round_no < b.round_no
       AND b.white_id IN (prev.white_id,prev.black_id)
-    ORDER BY prev.round_no DESC LIMIT 1
   ) previous_white ON true
   LEFT JOIN LATERAL (
-    SELECT prev.status,prev.finished_at FROM public.team_tournament_m3_online_boards prev
+    SELECT bool_or(prev.status IN ('starting','live')) AS playing,max(prev.finished_at) AS finished_at
+    FROM public.team_tournament_m3_online_boards prev
     WHERE prev.tournament_id = b.tournament_id AND prev.round_no < b.round_no
       AND b.black_id IN (prev.white_id,prev.black_id)
-    ORDER BY prev.round_no DESC LIMIT 1
   ) previous_black ON true
   WHERE b.match_id = p_match AND b.board_no = p_board;
 $$;
