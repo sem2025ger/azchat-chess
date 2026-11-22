@@ -94,9 +94,9 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      return {
       width:innerWidth,documentWidth:document.documentElement.scrollWidth,
       cards:[...root.querySelectorAll('.nrw-grid>.nrw-card')].map(bounds),
-      official:links('.nrw-official-links a'),headlines:links('.nrw-news .nrw-items a'),actions:links('.nrw-header .nrw-links a'),
+      official:links('.nrw-official-links a'),headlines:links('.nrw-news .nrw-items a'),sources:links('.nrw-news-sources a'),actions:links('.nrw-header .nrw-links a'),
       removed:root.querySelectorAll('.nrw-header-top,.nrw-kicker,.nrw-region-code,.nrw-signin,.section-info,.nrw-count,.nrw-footer,.nrw-chat-rail,select,details,[href="/spieltag"],[href^="/profile"],[href^="/clubs-nrw"],[href="/region/nrw/turniere"],[href="/region/nrw/ligen"],[href="/region/nrw/vereine"],iframe').length,
-      newsLinks:links('.nrw-news-links a').map(a=>a.href),gradient:style.backgroundImage,contrast,
+      newsLinks:links('.nrw-news-links a').map(a=>a.href),sourceGroups:root.querySelectorAll('.nrw-news-source-group h3').length,gradient:style.backgroundImage,contrast,
       subtitle:[subtitle.fontSize,subtitle.fontWeight,subtitle.color,subtitle.maxWidth,subtitle.marginTop,subtitle.marginBottom],
       dbReads:window.nrwDbReads||0,
      };
@@ -132,7 +132,12 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      assert.equal(metric.headlines.length,3,'three headlines visible without interaction');
      assert.deepEqual(metric.headlines.map(link=>link.href),[0,1,2].map(index=>'https://example.org/news-'+index));
      assert.ok(metric.headlines.every(link=>link.text.includes(newsSource[lang])),'all headlines keep their localized source');
-     for(const link of [...metric.official,...metric.headlines]){
+     assert.equal(metric.sourceGroups,2,'two compact NRW source categories');
+     assert.equal(metric.sources.length,12,'six NRW-wide sources and six regional federations');
+     assert.equal(new Set(metric.sources.map(link=>link.href)).size,12,'source directory has no duplicate URLs');
+     assert.ok(metric.sources.some(link=>link.href==='https://schach-nrw.de/'),'state federation is linked');
+     assert.ok(metric.sources.some(link=>link.href==='https://www.sjnrw.de/news/news.html'),'youth federation is linked');
+     for(const link of [...metric.official,...metric.headlines,...metric.sources]){
       assert.equal(link.target,'_blank');assert.equal(link.rel,'noopener noreferrer');assert.ok(link.icon);
       assert.ok(link.x>=0&&link.right<=width+1,'external link fits: '+link.href);
      }
@@ -157,6 +162,7 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    await evaluate("document.querySelector('.nrw-news a[href=\"/region/nrw/news\"]').click()");await wait("document.querySelector('.nrw-grid--detail .nrw-card--news')");
    await wait("document.querySelectorAll('.nrw-card--news .nrw-items a').length===5");
    assert.equal(await evaluate("document.querySelectorAll('.nrw-card').length"),1,'news details route retains one focused panel');
+   assert.equal(await evaluate("document.querySelectorAll('.nrw-news-sources a').length"),12,'news detail retains official NRW sources');
    assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'news details overflow');
    for(const section of ['turniere','ligen','vereine','live']){
     await evaluate('window.fixtureNavigate('+JSON.stringify('/region/nrw/'+section)+')');await wait('document.querySelector('+JSON.stringify('.nrw-grid--detail .nrw-card--'+section)+')');
