@@ -66,6 +66,12 @@ const regionText: Record<string,Record<'en'|'de'|'az'|'tr'|'ua'|'ru',string>> = 
  "Öffentliche Übertragungen bei Lichess": { en:"Public broadcasts on Lichess", de:"Öffentliche Übertragungen bei Lichess", az:"Lichess-də açıq yayımlar", tr:"Lichess'teki herkese açık yayınlar", ua:"Відкриті трансляції на Lichess", ru:"Открытые трансляции на Lichess" },
  "Lichess-Übersicht ist weltweit und nicht nach NRW gefiltert.": { en:"Lichess listings are worldwide and are not NRW-filtered.", de:"Lichess-Übersicht ist weltweit und nicht nach NRW gefiltert.", az:"Lichess siyahısı qlobaldır və NRW-yə görə süzülmür.", tr:"Lichess listesi küreseldir, NRW filtresi yoktur.", ua:"Список Lichess міжнародний і не фільтрується за NRW.", ru:"Список Lichess глобальный и не фильтруется по NRW." },
  "Schach-Treff Deutschland": { en:"Schach-Treff Germany", de:"Schach-Treff Deutschland", az:"Schach-Treff Almaniya", tr:"Schach-Treff Almanya", ua:"Schach-Treff Німеччина", ru:"Schach-Treff Германия" },
+
+ "Schach-Nachrichten aus NRW": {de:"Schach-Nachrichten aus NRW",en:"Chess news from NRW",az:"NRW şahmat xəbərləri",tr:"NRW satranç haberleri",ua:"Шахові новини NRW",ru:"Шахматные новости NRW"},
+ "NRW-Quellen": {de:"Nachrichtenquellen für NRW",en:"NRW news sources",az:"NRW xəbər mənbələri",tr:"NRW haber kaynakları",ua:"Джерела новин NRW",ru:"Источники новостей NRW"},
+ "Weitere NRW-Meldungen direkt bei den Herausgebern lesen. Die Meldungen oben kommen aus Bochum.": {de:"Weitere NRW-Meldungen direkt bei den Herausgebern lesen. Die Meldungen oben kommen aus Bochum.",en:"More NRW news is available from the publishers. Headlines above come from Bochum.",az:"Digər NRW xəbərlərini birbaşa mənbələrdən oxuyun. Yuxarıdakı xəbərlər Bochum-dandır.",tr:"Diğer NRW haberlerini doğrudan kaynaklardan okuyun. Üstteki haberler Bochum'dan.",ua:"Інші новини NRW читайте безпосередньо в джерелах. Заголовки вище — з Бохума.",ru:"Другие новости NRW — непосредственно у первоисточников. Выше опубликованы новости Бохума."},
+ "Landesverband & Fachmedien": {de:"Landesverband & Fachmedien",en:"State federation & chess media",az:"Əyalət federasiyası və şahmat mediası",tr:"Eyalet federasyonu ve satranç medyası",ua:"Федерація землі та шахові медіа",ru:"Федерация земли и шахматные СМИ"},
+ "Regionale Schachverbände": {de:"Regionale Schachverbände",en:"Regional chess federations",az:"Regional şahmat federasiyaları",tr:"Bölgesel satranç federasyonları",ua:"Регіональні шахові федерації",ru:"Региональные шахматные федерации"},
  "MP": { en:"Match pts", de:"MP", az:"Matç xalı", tr:"Maç puanı", ua:"Матч. очки", ru:"Матч. очки" },
 };
 
@@ -185,7 +191,7 @@ function RegionDetails(){
   turniere:<>{loading?<p className="nrw-muted" role="status">{tr('Termine werden geladen …')}</p>:!user?<><p className="nrw-muted">{tr('Turnierkalender nach Anmeldung verfügbar.')}</p>{signIn('turniere')}</>:sectionFailures.turniere?unavailable:events.length?<ul className="nrw-items">{events.slice(0,40).map(e=><li key={e.id}><time dateTime={e.starts_at}>{eventTime(e.starts_at,language)}</time><strong>{e.title}</strong><small>{clubName(e.club_id)}{e.venue?' · '+e.venue:''}</small></li>)}</ul>:<p className="nrw-muted">{tr('Keine bestätigten kommenden Termine eingetragen.')}</p>}</>,
   ligen:<>{loading?<p className="nrw-muted" role="status">{tr('Tabellen werden geladen …')}</p>:!user?<><p className="nrw-muted">{tr('Vereinsliga-Daten nach Anmeldung verfügbar.')}</p>{signIn('ligen')}</>:sectionFailures.ligen?unavailable:featuredLeagues.length?<ul className="nrw-items">{featuredLeagues.slice(0,40).map(r=><li key={r.id}><span className="nrw-league-meta">{r.season} · {r.league}</span><strong>{r.place}. {r.team}</strong><small>{clubName(r.club_id)}</small><span className="nrw-score">{r.match_points} {tr('MP')}<span> · {r.played} {tr('Spiele')}</span></span></li>)}</ul>:<p className="nrw-muted">{tr('Noch keine Tabellen eingetragen.')}</p>}<details className="section-info"><summary>{tr('Datenquelle')}</summary><small className="nrw-source">{tr('Von Vereinen gepflegt · keine offizielle Live-Tabelle.')}</small></details>{import.meta.env.VITE_SPIELTAG_ENABLED==='true'&&<Link className="nrw-inline" to="/spieltag">{tr('Mein Spieltag')} <ArrowUpRight aria-hidden="true" size={14}/></Link>}</>,
   vereine:<><label className="nrw-select">{tr('Stadt')} <select value={city} onChange={e=>setCity(e.target.value)}><option value="">{tr('Alle Städte in NRW')}</option>{cities.map(c=><option key={c}>{c}</option>)}</select></label>{loading?<p className="nrw-muted" role="status">{tr('Vereine werden geladen …')}</p>:sectionFailures.vereine?unavailable:visibleClubs.length?<ul className="nrw-items">{visibleClubs.slice(0,100).map(c=><li key={c.id}><Link to={'/clubs-nrw/'+encodeURIComponent(c.slug)}><strong>{c.name}</strong><small>{c.city}</small></Link></li>)}</ul>:<p className="nrw-muted">{tr('Keine veröffentlichten Vereine für diese Auswahl.')}</p>}{detail==='vereine'&&<Link className="nrw-inline" to="/clubs-nrw">{tr('Alle Vereine')} <ArrowUpRight aria-hidden="true" size={14}/></Link>}</>,
-  news:<>{newsLoading?<p className="nrw-muted" role="status">{tr('Nachrichten werden geladen …')}</p>:news.length?<ul className="nrw-items">{news.map(n=><li key={n.url}><ExternalLink href={n.url}><span><strong>{n.title}</strong><small>{tr('Schachbezirk Bochum · externe Quelle')}</small></span></ExternalLink></li>)}</ul>:<p className="nrw-muted">{tr(newsError?'Nachrichten derzeit nicht verfügbar.':'Keine aktuellen Meldungen verfügbar.')}</p>}<details className="section-info"><summary>{tr('Info')}</summary><small className="nrw-source">{tr('Aktuell angebunden: Schachbezirk Bochum (NRW). Keine bundesweiten Meldungen.')}</small></details></>,
+  news:<>{newsLoading?<p className="nrw-muted" role="status">{tr('Nachrichten werden geladen …')}</p>:news.length?<ul className="nrw-items">{news.map(n=><li key={n.url}><ExternalLink href={n.url}><span><strong>{n.title}</strong><small>{tr('Schachbezirk Bochum · externe Quelle')}</small></span></ExternalLink></li>)}</ul>:<p className="nrw-muted">{tr(newsError?'Nachrichten derzeit nicht verfügbar.':'Keine aktuellen Meldungen verfügbar.')}</p>}<details className="section-info"><summary>{tr('Info')}</summary><small className="nrw-source">{tr('Aktuell angebunden: Schachbezirk Bochum (NRW). Keine bundesweiten Meldungen.')}</small></details><NrwNewsSources tr={tr}/></>,
   live:<><p className="nrw-muted">{tr('Derzeit keine für NRW verifizierte Live-Übertragung eingebunden.')}</p><ExternalLink className="nrw-inline" href={NRW_EXTERNAL_URLS.liveBroadcasts}>{tr('Öffentliche Übertragungen bei Lichess')}</ExternalLink><details className="section-info"><summary>{tr('Info')}</summary><small className="nrw-source">{tr('Lichess-Übersicht ist weltweit und nicht nach NRW gefiltert.')}</small></details></>,
 
  };
@@ -251,6 +257,40 @@ function useClubNews(enabled:boolean){
  return {news,newsLoading,newsError};
 }
 
+
+const NRW_NEWS_SOURCE_GROUPS = [
+ {title:'Landesverband & Fachmedien',sources:[
+  {name:'Schachbund NRW',url:'https://schach-nrw.de/'},
+  {name:'Schachjugend NRW',url:'https://www.sjnrw.de/news/news.html'},
+  {name:'Schulschach NRW',url:'https://schulschach-nrw.org/turniere'},
+  {name:'DSB · Landesmeldungen',url:'https://www.schachbund.de/nachrichten-der-lv.html'},
+  {name:'Schach-Bundesliga',url:'https://www.schachbundesliga.de/'},
+  {name:'ChessBase',url:'https://de.chessbase.com/'},
+ ]},
+ {title:'Regionale Schachverbände',sources:[
+  {name:'Ruhrgebiet',url:'https://svr-schach.de/'},
+  {name:'Niederrhein',url:'https://www.nsv1901.de/'},
+  {name:'Mittelrhein · Ergebnisse',url:'https://ergebnisportal.sv-mittelrhein.de/'},
+  {name:'Ostwestfalen-Lippe',url:'https://schachverband-owl.de/'},
+  {name:'Münsterland',url:'https://www.svmuensterland.de/'},
+  {name:'Südwestfalen',url:'https://schach-swf.de/'},
+ ]},
+] as const;
+
+function NrwNewsSources({tr}:{tr:(value:string)=>string}){
+ return <div className="nrw-news-sources" aria-label={tr('NRW-Quellen')}>
+  <p className="nrw-news-source-note">{tr('Weitere NRW-Meldungen direkt bei den Herausgebern lesen. Die Meldungen oben kommen aus Bochum.')}</p>
+  <div className="nrw-news-source-groups">
+   {NRW_NEWS_SOURCE_GROUPS.map(group=><section key={group.title} className="nrw-news-source-group">
+    <h3>{tr(group.title)}</h3>
+    <div className="nrw-news-source-list">
+     {group.sources.map(({name,url})=><ExternalLink key={url} href={url} className="nrw-news-source-link">{name}</ExternalLink>)}
+    </div>
+   </section>)}
+  </div>
+ </div>;
+}
+
 const officialCards = [
  {section:'turniere',Icon:CalendarDays,description:'Offizieller NRW-Turnierkalender des Deutschen Schachbunds.',
   links:[{label:'NRW-Kalender öffnen',href:NRW_EXTERNAL_URLS.official.calendar}],linkStyle:'nrw-calendar-link'},
@@ -294,12 +334,13 @@ function NrwLanding(){
   </div>
 
   <section className="nrw-news" aria-labelledby="nrw-club-news">
-   <h2 id="nrw-club-news"><Newspaper aria-hidden="true" size={18}/>{tr('Nachrichten aus den Vereinen')}</h2>
+   <h2 id="nrw-club-news"><Newspaper aria-hidden="true" size={18}/>{tr('Schach-Nachrichten aus NRW')}</h2>
    {news.length>0?<ul className="nrw-items">
     {news.slice(0,3).map(({title,url})=><li key={url}>
      <ExternalLink href={url}><span><strong>{title}</strong><small>{tr('Schachbezirk Bochum · externe Quelle')}</small></span></ExternalLink>
     </li>)}
    </ul>:<p role="status" className="nrw-muted">{tr(newsLoading?'Nachrichten werden geladen …':newsError?'Nachrichten derzeit nicht verfügbar.':'Keine aktuellen Meldungen verfügbar.')}</p>}
+   <NrwNewsSources tr={tr}/>
    <div className="nrw-news-links">
     <Link to="/region/nrw/news">{tr('Alle Nachrichten')}<ArrowRight aria-hidden="true" size={15}/></Link>
     <Link to="/region/nrw/live">{tr('Live-Übertragungen')}<ArrowRight aria-hidden="true" size={15}/></Link>
