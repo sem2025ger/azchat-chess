@@ -39,11 +39,11 @@ export async function checkCoachChat({captureRoot}={}){
  // Simulate the backend with AI_COACH_SERVER_ENGINE_ENABLED=true: its own verified lines in engineLines.
  let serverLines=null;
  app.post('/api/ai-coach/chat',express.json({limit:'16kb'}),(req,res,next)=>{
-  if(!['server-lines','server-lines-malformed','server-lines-other-fen'].includes(mode))return next();
+  if(!['server-lines','server-lines-malformed','server-lines-other-fen','server-lines-no-provider'].includes(mode))return next();
   const board=new Chess(req.body.fen),first=board.moves()[0];board.move(first);const reply=board.moves()[0];
   const second=new Chess(req.body.fen).moves()[1];
   serverLines=[{id:'L1',moves:[first,reply],scoreKind:'cp',scoreWhite:43,depth:15,wdlWhite:[95,902,3]},{id:'L2',moves:[second],scoreKind:'mate',scoreWhite:-2,depth:15,wdlWhite:[0,0,1000]}];
-  return res.json({answer:'Server-grounded explanation.',generated:true,games:[],engineVerified:true,candidateLines:req.body.candidateLines||[],
+  return res.json({answer:'Server-grounded explanation.',generated:mode!=='server-lines-no-provider',games:[],engineVerified:true,candidateLines:req.body.candidateLines||[],
    position:mode==='server-lines-other-fen'?new Chess().fen():req.body.fen,
    engineLines:mode==='server-lines-malformed'?[{...serverLines[0],moves:['Ke8']}]:serverLines});
  });
@@ -240,6 +240,24 @@ export async function checkCoachChat({captureRoot}={}){
   assert.equal(await evaluate(last+'.querySelector(".coach-chat-eval")'),null,bad+': never rendered as server-verified');
   assert.equal(await evaluate(last+'.querySelector(".coach-chat-engine-source").textContent'),'Stockfish 19',bad);
   assert.ok(await evaluate('!!'+last+'.querySelector(".coach-chat-engine-unlinked")'),bad+': provenance warning kept');
+ }
+ // No OpenAI key does not mean Stockfish is unavailable or that only archive data exist.
+ const noProviderCopy={de:'OpenAI ist auf diesem Server noch nicht eingerichtet.',en:'OpenAI is not configured on this server yet.',az:'Bu serverdə OpenAI hələ qurulmayıb.',tr:'OpenAI bu sunucuda henüz yapılandırılmadı.',ua:'OpenAI ще не налаштований на цьому сервері.',ru:'OpenAI пока не настроен на этом сервере.'};
+ for(const lang of ['de','en','az','tr','ua','ru']){
+  const tl=coachChatCopy[lang==='ua'?'uk':lang];mode='server-lines-no-provider';clock+=61000;
+  await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+  await evaluate('window.language('+JSON.stringify(lang)+');window.setToken("synthetic-no-provider-'+lang+'");window.setAccount("no-provider-'+lang+'")');
+  await wait('document.querySelector(".coach-chat-toggle")?.textContent==='+JSON.stringify(tl.title));
+  if(!await evaluate('!!document.querySelector(".coach-chat-panel")'))await click(tl.title);
+  await fill('Explain this position');await click(tl.send);
+  await wait('document.querySelector(".coach-chat-message.assistant .coach-chat-study")');
+  const message=await evaluate('document.querySelector(".coach-chat-message.assistant").innerText');
+  assert.ok(message.includes(noProviderCopy[lang]),'clear unconfigured provider state '+lang);
+  assert.ok(!message.includes(tl.engineUnavailable),'do not deny displayed Stockfish analysis '+lang);
+  assert.equal(await evaluate('document.querySelector(".coach-chat-engine-source").textContent'),'Stockfish 19 · '+tl.engineServer,lang);
+  assert.equal(await evaluate('document.querySelectorAll(".coach-chat-eval").length'),2,lang);
+  assert.equal(await evaluate('!!document.querySelector(".coach-chat-engine-unlinked")'),false,lang);
+  assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'fallback fits desktop '+lang);
  }
  mode='ready';
 assert.deepEqual(exceptions,[]);console.log('PASS CoachChat: real HTTP router, real MediaRecorder with Chromium fake microphone, multipart provider adapter, actual loopback WebSocket/WAV playback, six locales at 390/1280, bounded context, auth/error handling, denied/late permissions, close cleanup, stale board cancellation, analysis round-trip restoration, scroll/draft preservation, token rotation, account isolation, logout cleanup and actual workspace colour propagation. OpenAI responses are synthetic; no hosted credentials or external API calls.');
