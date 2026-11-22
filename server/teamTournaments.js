@@ -73,7 +73,7 @@ async function readQuery(query) {
   if (error?.code === 'P0001' && [
     'event_full', 'invalid_invite', 'lineup_incomplete', 'player_already_registered', 'no_previous_lineup',
     'create_limit', 'idempotency_conflict', 'revision_closed', 'revision_incomplete', 'revision_missing',
-    'round_time_locked', 'round_time_order', 'round_time_past',
+    'round_time_locked', 'round_time_order', 'round_time_past', 'online_mode', 'online_result_conflict',
   ].includes(error.message)) fail(error.message === 'no_previous_lineup' ? 404 : 409, error.message);
   if (error) fail(...(RESPONSE_ERRORS[error.code] ?? [503, 'temporarily_unavailable']));
   return data;
@@ -129,7 +129,7 @@ async function listTournaments(client, actor, commandClient, openCreate = false)
 
 function installTeamTournaments(app, {
   enabled = false, m3Enabled = false, openCreate = false, verifyToken = async () => null,
-  clientForToken, publicClient, commandClient, now = Date.now,
+  clientForToken, publicClient, commandClient, now = Date.now, onlineStatus,
 } = {}) {
   const router = express();
   const requireM3 = () => { if (!m3Enabled) fail(404, 'feature_disabled'); };
@@ -223,6 +223,27 @@ function installTeamTournaments(app, {
       .select('id,username').ilike('username', input + '%').order('username').limit(10));
     res.json({ users: data });
   }));
+  router.get('/online/status', (req, res) => res.json(onlineStatus?.() ?? { online_play: false, durable: false }));
+  if (onlineStatus) {
+    router.get('/online/my-board', wrap(async (req, res) => {
+      requireM3();
+      await authenticate(req);
+      const tournament = req.query.tournament == null ? null : uuid(req.query.tournament);
+      const status = onlineStatus();
+      if (!status.online_play) fail(404, 'feature_disabled');
+      const rows = await rpc(commandClient, 'team_tournament_online_my_board', {
+        p_actor: req.tournamentActor, p_tournament: tournament,
+      });
+      const boards = rows.map(({ rules, boards: matchBoards, home_team_id, away_team_id, ...board }) => {
+        const teams = [{ id: home_team_id, seed: 1 }, { id: away_team_id, seed: 2 }];
+        const match = { id: board.match_id, home_team_id, away_team_id, boards: matchBoards };
+        const [score] = calculateTable(teams, [match], rules).matches;
+        const { home_board_points: home, away_board_points: away } = score;
+        return { ...board, score: { home, away } };
+      });
+      res.json({ boards, durable: status.durable });
+    }));
+  }
   router.get('/my-board', wrap(async (req, res) => {
     requireM3();
     await authenticate(req);
@@ -310,10 +331,17 @@ function installTeamTournaments(app, {
   router.post('/self-service', wrap(async (req, res) => {
     requireM3();
     fields(req.body, ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams',
-      'round_interval_minutes', 'client_request_id']);
+      'round_interval_minutes', 'client_request_id', ...(onlineStatus ? ['play_mode', 'time_control', 'no_show_minutes'] : [])]);
+    const online = req.body.play_mode != null;
+    if ((!online && (req.body.time_control != null || req.body.no_show_minutes != null)) ||
+      (online && (req.body.play_mode !== 'online' || !require('./teamTournamentOnline').TIME_CONTROLS.includes(req.body.time_control)))) {
+      fail(400, 'invalid_input');
+    }
+    if (online && !onlineStatus().durable) fail(503, 'storage_unavailable');
     const requestId = req.body.client_request_id == null ? null : uuid(req.body.client_request_id);
     const interval = req.body.round_interval_minutes == null
       ? null : integer(req.body.round_interval_minutes, 10, 10080);
+    if (online && interval === null) fail(400, 'invalid_input');
     const name = label(req.body.name, 120);
     const boardCount = integer(req.body.boards_per_team ?? 4, 1, 16);
     const minimum = integer(req.body.min_teams ?? 2, 2, 16);
@@ -335,6 +363,8 @@ function installTeamTournaments(app, {
       ...(requestId !== null || interval !== null
         ? { p_round_interval_minutes: interval, p_client_request_id: requestId }
         : {}),
+      ...(online ? { p_play_mode: 'online', p_time_control: req.body.time_control,
+        p_no_show_minutes: integer(req.body.no_show_minutes ?? 5, 1, 30) } : {}),
     };
     // Allowlisted organizers always use the original, unlimited function.
     // Everyone else may create only with the open flag, within the SQL-enforced limit.
@@ -413,7 +443,8 @@ function installTeamTournaments(app, {
     const client = req.tournamentClient;
     const [config, event, ruleset] = await Promise.all([
       readQuery(client.from('team_tournament_m3_config').select(
-        'starts_at,registration_deadline,min_teams,max_teams').eq('tournament_id', req.tournamentId).maybeSingle()),
+        'starts_at,registration_deadline,min_teams,max_teams' + (onlineStatus ? ',play_mode' : ''))
+        .eq('tournament_id', req.tournamentId).maybeSingle()),
       readQuery(client.from('team_tournaments').select('id,name,status').eq('id', req.tournamentId).maybeSingle()),
       readQuery(client.from('team_tournament_rulesets')
         .select('board_count').eq('tournament_id', req.tournamentId).maybeSingle()),
@@ -452,7 +483,19 @@ function installTeamTournaments(app, {
       .select('match_id,board_no,status').in('match_id', matchIds).limit(256)) : [];
     const reports = matchIds.length ? await readQuery(client.from('team_tournament_m3_board_reports')
       .select('match_id,board_no,side,result,kind').in('match_id', matchIds).limit(512)) : [];
+    let onlineBoards;
+    if (config.play_mode === 'online') {
+      onlineBoards = [];
+      for (let offset = 0; ; offset += 200) {
+        const rows = await readQuery(client.from('team_tournament_m3_online_boards')
+          .select('match_id,board_no,status,white_ready_at,black_ready_at')
+          .eq('tournament_id', req.tournamentId).order('match_id').order('board_no').range(offset, offset + 199));
+        onlineBoards.push(...rows);
+        if (rows.length < 200) break;
+      }
+    }
     res.json({ ...event, ...config, board_count: ruleset?.board_count ?? 4,
+      ...(onlineBoards ? { online_boards: onlineBoards } : {}),
       teams, remaining_spots: Math.max(0, config.max_teams - teams.length),
       entries, roles, lineups, revision_lineups: revisionLineups, profiles, matches, states, reports });
   }));
@@ -545,9 +588,10 @@ function installTeamTournaments(app, {
     res.status(error.status).json({ code: error.code });
   });
   app.use('/api/team-tournaments', router);
+  return tickDueEvents;
 }
 
-function installTeamTournamentsFromEnv(app, verifyToken, env = process.env, factory = createClient) {
+function installTeamTournamentsFromEnv(app, verifyToken, env = process.env, factory = createClient, onlineStatus) {
   const enabled = env.TEAM_TOURNAMENTS_ENABLED === 'true';
   const publicKey = env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY;
   const serviceKey = env.SUPABASE_SERVICE_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
@@ -555,6 +599,7 @@ function installTeamTournamentsFromEnv(app, verifyToken, env = process.env, fact
   return installTeamTournaments(app, {
     enabled, m3Enabled: env.TEAM_TOURNAMENTS_M3_ENABLED === 'true', verifyToken,
     openCreate: env.TEAM_TOURNAMENTS_OPEN_CREATE === 'true',
+    onlineStatus,
     publicClient: configured ? makeClient(env, publicKey, factory) : null,
     clientForToken: configured ? token => makeClient(env, publicKey, factory, token) : null,
     commandClient: configured && serviceKey ? makeClient(env, serviceKey, factory) : null,
