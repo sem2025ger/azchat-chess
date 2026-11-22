@@ -198,7 +198,7 @@ try{
  console.log('PASS tournament invite browser: password sign-in, signup confirmation, email-link sign-in, invitation redemption and foreign return rejection');
  await checkOnlineTeamTournaments({cdp,evaluate,wait,click});
  assert.equal(exceptions.length,0,exceptions.join('\n'));
- console.log('PASS Bochum Cup browser: both flag paths, 390px by six languages and 15 themes, dated and undated schedule/my-board, roster revision and idempotent manual/AI create');
+ console.log('PASS Bochum Cup browser: online card, banner and staff states in six locales at 390/1366px, ready and game routing, both flag paths, 390px by six languages and 15 themes, dated and undated schedule/my-board, roster revision and idempotent manual/AI create');
 
 }finally{
  try{ws?.close();}catch{}chrome?.kill('SIGKILL');await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});clearTimeout(deadline);

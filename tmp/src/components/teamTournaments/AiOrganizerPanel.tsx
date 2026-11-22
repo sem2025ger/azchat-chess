@@ -1,17 +1,20 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Mic, Send, Square } from 'lucide-react';
-import { createAiOrganizerApi, type AiOrganizerDraft, type AiOrganizerMessage, type AiOrganizerLanguage } from '../../services/teamTournaments';
+import { tournamentTimeControls, type TournamentTimeControl, createAiOrganizerApi, type AiOrganizerDraft, type AiOrganizerMessage, type AiOrganizerLanguage } from '../../services/teamTournaments';
 import { tournamentErrorMessage, type TournamentCopy } from './copy';
 import { useLanguage } from '../../context/LanguageContext';
 import { startBoundedAudioRecording, type AudioCapture } from '../../utils/audioCapture';
 
 type DraftKey = keyof AiOrganizerDraft;
+const online = import.meta.env.VITE_TEAM_TOURNAMENTS_ONLINE_PLAY === 'true';
 const draftFields: DraftKey[] = ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams', 'round_interval_minutes'];
+if (online) draftFields.push('time_control');
 const emptyDraft = (): AiOrganizerDraft => ({
   name: null, start_time: null, registration_deadline: null,
   boards_per_team: null, min_teams: null, max_teams: null, round_interval_minutes: null,
 });
 function fieldValid(key: DraftKey, value: AiOrganizerDraft[DraftKey], draft: AiOrganizerDraft): boolean {
+  if (key === 'time_control') return value == null || tournamentTimeControls.includes(value as TournamentTimeControl);
   if (key === 'round_interval_minutes') return value == null ||
     (Number.isInteger(value) && Number(value) >= 10 && Number(value) <= 10080);
   if (key === 'name') return typeof value === 'string' && value.trim().length > 0 && value.length <= 120;
@@ -169,7 +172,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
   const labelFor: Record<DraftKey, string> = {
     name: tr('name'), start_time: tr('m3Start'), registration_deadline: tr('m3Deadline'),
     boards_per_team: tr('boards'), min_teams: tr('m3MinTeams'), max_teams: tr('m3MaxTeams'),
-    round_interval_minutes: tr('m3RoundInterval'),
+    round_interval_minutes: tr('m3RoundInterval'), time_control: tr('onlineTimeControl'),
   };
   return <section className="ai-organizer" aria-label={tr('aiOrganizerTitle')}>
     <header className="ai-organizer-header">
@@ -207,6 +210,13 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
             const missing = !fieldValid(key, draft[key], draft);
             const interval = key === 'round_interval_minutes';
             const numeric = interval || key === 'boards_per_team' || key === 'min_teams' || key === 'max_teams';
+            if (key === 'time_control') return <label key={key}>
+              <span>{labelFor[key]}</span>
+              <select value={draft.time_control ?? '5+0'} name={key}
+                onChange={event => update(key, event.target.value as TournamentTimeControl)}>
+                {tournamentTimeControls.map(control => <option key={control} value={control}>{control}</option>)}
+              </select>
+            </label>;
             return <label key={key} className={missing ? 'ai-organizer-field-missing' : ''}>
               <span>{labelFor[key]}{missing && <small> · {tr('aiOrganizerMissing')}</small>}</span>
               <input name={key} value={draft[key] ?? ''} required={!interval}

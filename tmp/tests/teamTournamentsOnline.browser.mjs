@@ -21,6 +21,7 @@ import { M3Create, M3EventPanel } from '/src/components/teamTournaments/TeamTour
 import { TournamentRounds } from '/src/components/teamTournaments/TeamTournamentViews.tsx';
 import MyTournamentCard from '/src/components/teamTournaments/MyTournamentCard.tsx';
 import { tournamentCopy } from '/src/components/teamTournaments/copy.ts';
+import { TournamentOnlineBanner } from '/src/components/teamTournaments/TournamentOnlineViews.tsx';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const captain = '22222222-2222-4222-8222-222222222222';
@@ -44,6 +45,25 @@ const event = {
   revision_lineups: [captain, away].map((player_id, index) => ({ entry_id: home, player_id, board_no: index + 1, consented_at: start })),
 };
 const official = { standings: [], matches: [] };
+const control = '5+0';
+const online = import.meta.env.VITE_TEAM_TOURNAMENTS_ONLINE_PLAY === 'true';
+const onlineStates = ['scheduled','scheduled','live','finished','forfeit'];
+const onlineRows = onlineStates.map((status, i) => ({
+  match_id: match.id, board_no: i + 1, status, white_ready_at: i === 1 ? start : null, black_ready_at: null,
+}));
+const now = Date.now();
+const onlineStart = new Date(now - 60_000).toISOString();
+const readyBy = new Date(now + 240_000).toISOString();
+const onlineEvent = { ...event, status: 'published', starts_at: onlineStart, play_mode: 'online',
+  roles: [{ role: 'organizer' }], online_boards: onlineRows };
+const onlineWorkspace = {
+  ...onlineEvent, rounds: [{ round_no:1, starts_at:onlineStart, bye_team_id:null }],
+  matches: [{ ...match, boards:onlineRows.map(row => ({ board_no:row.board_no, home_white:true,
+    result: row.status === 'finished' ? '1-0' : row.status === 'forfeit' ? '-/-' : 'pending',
+    confirmed: ['finished','forfeit'].includes(row.status), revision:0 })) }],
+};
+window.fixtureOnlinePhase = 'play';
+window.fixtureOnlineRequests = 0;
 const draft = {
   name: 'AI Bochum Cup', start_time: '2031-12-20T15:00', registration_deadline: '2031-12-20T14:00',
   boards_per_team: 4, min_teams: 2, max_teams: 4, round_interval_minutes: 90,
@@ -60,6 +80,16 @@ window.fetch = async (input, options) => {
     window.fixtureCreates.push(JSON.parse(options.body));
     return Response.json({ code: 'temporarily_unavailable' }, { status: 503 });
   }
+  if (url.pathname.endsWith('/online/my-board')) {
+    window.fixtureOnlineRequests++;
+    const phase = window.fixtureOnlinePhase;
+    return Response.json({ durable:true, boards:[{ ...board, status:phase === 'finished' ? 'finished' : 'scheduled',
+      starts_at: phase === 'scheduled' ? new Date(now + 60_000).toISOString() : onlineStart,
+      deadline: phase === 'previous' ? null : readyBy, ready: phase === 'waiting', time_control:control,
+      result: phase === 'finished' ? '1-0' : 'pending', score: { home:phase === 'finished' ? 2 : 1,away:1 } }] });
+  }
+  if (online && url.pathname.endsWith('/workspace')) return Response.json(onlineWorkspace);
+  if (online && url.pathname.endsWith('/self-service')) return Response.json(onlineEvent);
   if (url.pathname.endsWith('/my-board')) {
     const value = { ...board };
     if (window.fixtureUndated) delete value.starts_at;
@@ -77,10 +107,14 @@ function Showcase() {
   window.fixtureNav = navigate;
   window.fixtureSelect = (locale, theme) => flushSync(() => { setLanguage(locale); setBackground(theme); });
   window.fixtureSelection = [language, background];
+  window.fixtureWords = tr;
   window.fixtureThemes = ['Void Black','Deep Space','Velvet Gold','Champagne Light','Coffee Brown','Walnut Dark',
     'Emerald Night','Royal Blue','Royal Violet','Obsidian Gold', ...premiumInterfaceThemes.map(theme => theme.id)];
   const mode = new URLSearchParams(search).get('mode');
   if (mode === 'create') return <M3Create token="fixture-token" tr={tr} onCreated={() => {}} />;
+  if (mode === 'play-online') return <div className="section-page team-tournament-page">
+    <M3EventPanel id={id} token="fixture-token" userId={captain} ownUsername="NorthCaptain" tr={tr} />
+  </div>;
   if (mode === 'lineup') return <M3EventPanel id={id} token="fixture-token" userId={captain} ownUsername="NorthCaptain" tr={tr} />;
   if (mode === 'myboard' || mode === 'undated-board') {
     window.fixtureUndated = mode === 'undated-board';
@@ -95,7 +129,9 @@ function Showcase() {
 }
 localStorage.setItem('app-language', 'en');
 createRoot(document.getElementById('root')).render(<ThemeProvider><LanguageProvider><MemoryRouter initialEntries={['/spieltag']}>
-  <Routes><Route element={<Layout/>}><Route path="/spieltag" element={<Showcase />} /></Route></Routes>
+  {online && <TournamentOnlineBanner />}
+  <Routes><Route element={<Layout/>}><Route path="/spieltag" element={<Showcase />} />
+    <Route path="/play" element={<p data-online-test-game>{away}</p>} /></Route></Routes>
 </MemoryRouter></LanguageProvider></ThemeProvider>);
 `;
 
@@ -105,11 +141,38 @@ const plugin = {
   resolveId(id) {
     if (id === entry) return id;
     if (/(?:^|\/)context\/AuthContext(?:\.tsx)?$/.test(id)) return '\0team-online-auth';
+    if (/(?:^|\/)context\/SocketContext(?:\.tsx)?$/.test(id)) return '\0team-online-socket';
     if (/(?:^|\/)routeLoaders(?:\.ts)?$/.test(id)) return '\0team-online-preload';
   },
   load(id) {
     if (id === entry) return fixture;
     if (id === '\0team-online-auth') return "export const useAuth = () => ({ session: { access_token: 'fixture-token', user: { id: '22222222-2222-4222-8222-222222222222' } } });";
+    if (id === '\0team-online-socket') return `
+      const listeners = new Map();
+      const socket = {
+        connected:true, timeout:() => socket,
+        on(name, callback) {
+          if (!listeners.has(name)) listeners.set(name, new Set());
+          listeners.get(name).add(callback);
+        },
+        off(name, callback) { listeners.get(name)?.delete(callback); },
+        emit(name, payload, callback) {
+          window.fixtureReadyRequest = { name,payload };
+          window.fixtureOnlineUpdate('waiting');
+          callback(null, { ok:true });
+        },
+      };
+      window.fixtureOnlineUpdate = phase => {
+        window.fixtureOnlinePhase = phase;
+        for (const listener of listeners.get('tournament_board_status') ?? []) listener({});
+      };
+      window.fixtureMatchFound = () => {
+        for (const listener of listeners.get('match_found') ?? []) {
+          listener({ roomId:'44444444-4444-4444-8444-444444444444',color:'w',tournament:true });
+        }
+      };
+      export const useSocket = () => ({ socket,isConnected:true });
+    `;
     if (id === '\0team-online-preload') return 'export const prefetchRoute = () => {}; export const scheduleNavigationPreload = () => () => {};';
   },
   configureServer(server) {
@@ -163,10 +226,11 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
   })()`);
   const desktopLink = "document.querySelector('aside a[href=\"/spieltag\"]')";
   try {
-    for (const [spieltag, tournaments] of [[false, false], [true, false], [false, true]]) {
+    for (const [spieltag, tournaments, onlinePlay] of [[false, false, false], [true, false, false],
+      [false, true, false], [false, true, true]]) {
       const enabled = spieltag || tournaments;
       const server = await createServer({
-        configFile: false, envDir: false, cacheDir: join(cacheDir, String(spieltag) + tournaments),
+        configFile: false, envDir: false, cacheDir: join(cacheDir, String(spieltag) + tournaments + onlinePlay),
         plugins: [plugin, react()],
         server: { host: '127.0.0.1', port: 0, hmr: false },
         define: Object.fromEntries(Object.entries({
@@ -175,6 +239,7 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
           VITE_SPIELTAG_ENABLED: String(spieltag),
           VITE_TEAM_TOURNAMENTS_M3_ENABLED: String(tournaments),
           VITE_AI_ORGANIZER_ENABLED: String(tournaments),
+          VITE_TEAM_TOURNAMENTS_ONLINE_PLAY: String(onlinePlay),
         }).map(([key, value]) => ['import.meta.env.' + key, JSON.stringify(value)])),
       });
       try {
@@ -185,6 +250,80 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
         await wait('location.href === ' + JSON.stringify(url.href) +
           ' && typeof window.fixtureSelect === "function" && !!document.querySelector("[data-mobile-app-nav]")');
         await evaluate('document.fonts.ready');
+        if (onlinePlay) {
+          await navigate('play-online');
+          const testLayout = `(() => {
+            const boxes = [...document.querySelectorAll('[data-online-board],[data-online-round-banner],[data-organizer-online-board]')];
+            return document.documentElement.scrollWidth <= innerWidth && boxes.every(box => {
+              const span = box.getBoundingClientRect();
+              return span.left >= 0 && span.right <= innerWidth && box.scrollWidth <= box.clientWidth + 1;
+            });
+          })()`;
+          for (const width of [390,1366]) {
+            await setWidth(width);
+            for (const lang of Object.keys(langs)) {
+              await select(lang,'Soft Graphite');
+              await wait(`document.querySelector('[data-online-round-banner]')?.innerText.includes(window.fixtureWords('onlineBanner'))
+                && document.querySelector('[data-online-board="play"]')?.innerText.includes(window.fixtureWords('onlineScore'))
+                && document.querySelector('[data-organizer-online-board="live"]')?.innerText === window.fixtureWords('onlineLive')`);
+              assert.deepEqual(await evaluate(`[...document.querySelectorAll('[data-organizer-online-board]')].map(item =>
+                item.dataset.organizerOnlineBoard)`),['scheduled','waiting','live','finished','forfeit']);
+              assert.ok(await evaluate(testLayout),lang + ' @ ' + width);
+              await capture('online-play',lang,width);
+            }
+          }
+          await setWidth(390);
+          for (const theme of await evaluate('window.fixtureThemes')) {
+            await select('ru',theme);
+            assert.ok(await evaluate(testLayout),theme + ' @ 390');
+          }
+          await select('en','Soft Graphite');
+          const phase = async state => {
+            await evaluate('window.fixtureOnlineUpdate(' + JSON.stringify(state) + ')');
+            await wait('document.querySelector(' + JSON.stringify('[data-online-board="' + state + '"]') + ')');
+          };
+          await phase('scheduled');
+          await wait(`document.querySelector('[data-online-board]')?.innerText.includes('Round starts in')`);
+          await phase('previous');
+          await wait(`document.querySelector('[data-online-board]')?.innerText.includes('Opponent is finishing the previous game.')`);
+          await phase('finished');
+          await wait(`document.querySelector('[data-online-board]')?.innerText.includes('2 : 1')`);
+          await phase('play');
+          await evaluate(`document.querySelector('[data-online-round-banner] button').click()`);
+          await wait(`document.querySelector('[data-online-board="waiting"]')`);
+          assert.deepEqual(await evaluate('window.fixtureReadyRequest'), { name:'tournament_board_ready',
+            payload:{ matchId:'44444444-4444-4444-8444-444444444444',boardNo:1 } });
+          await evaluate('window.fixtureMatchFound()');
+          await wait(`document.querySelector('[data-online-test-game]')`);
+
+          await navigate('create');
+          await wait('document.querySelector(".team-create-manual-form")');
+          const settings = await evaluate(`(() => {
+            const form = document.querySelector('.team-create-manual-form');
+            return [form.elements.time_control.value, form.elements.round_interval_minutes.value,
+              form.elements.round_interval_minutes.required, form.elements.no_show_minutes.value];
+          })()`);
+          assert.deepEqual(settings,['5+0','15',true,'5']);
+          await fill('.team-create-manual-form [name="name"]','Online manual cup');
+          await fill('.team-create-manual-form [name="start_time"]','2031-12-20T15:00');
+          await evaluate('document.querySelector(".team-create-manual-form").requestSubmit()');
+          await wait('window.fixtureCreates.length === 1 && !document.querySelector(".team-create-primary").disabled');
+          await fill('.ai-organizer-composer input','Bochum Cup with 90 minutes between rounds');
+          await evaluate('document.querySelector(".ai-organizer-composer").requestSubmit()');
+          await wait('document.querySelector(".ai-organizer-draft [name=time_control]")?.value === "5+0"');
+          await evaluate('document.querySelector(".ai-organizer-primary").click()');
+          await wait('window.fixtureCreates.length === 2');
+          const [manual, ai] = await evaluate('window.fixtureCreates');
+          assert.equal(manual.play_mode,'online');
+          assert.equal(manual.time_control,'5+0');
+          assert.equal(manual.round_interval_minutes,15);
+          assert.equal(manual.no_show_minutes,5);
+          assert.equal(ai.time_control,'5+0');
+          assert.equal(ai.round_interval_minutes,90);
+          continue;
+        }
+        assert.equal(await evaluate('window.fixtureOnlineRequests'),0);
+        assert.equal(await evaluate('!!document.querySelector("[data-online-round-banner]")'),false);
         const themes = tournaments ? await evaluate('window.fixtureThemes') : ['Soft Graphite'];
         for (const [lang, spieltagLabel] of Object.entries(langs)) {
           for (const theme of themes) {

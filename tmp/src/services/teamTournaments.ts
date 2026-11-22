@@ -125,6 +125,19 @@ export type MyTournamentBoard = {
 };
 export type M3TeamEntry = { id: string; club_name: string; captain_id: string; submitted_at: string | null; revision_pending?: boolean };
 export type M3Lineup = { entry_id: string; board_no: number; player_id: string; consented_at: string | null };
+export const tournamentTimeControls = ['1+0', '3+0', '3+2', '5+0', '10+0', '15+10'] as const;
+export type TournamentTimeControl = typeof tournamentTimeControls[number];
+export type OnlineBoardStatus = 'scheduled' | 'starting' | 'live' | 'finished' | 'forfeit';
+export type OnlineBoard = {
+  tournament_id: string; tournament_name: string; match_id: string; round_no: number; board_no: number;
+  starts_at: string; status: OnlineBoardStatus; ready: boolean; deadline: string | null;
+  room_id: string | null; time_control: TournamentTimeControl; side: 'white' | 'black'; opponent: string;
+  result: BoardResult | 'pending'; score: { home: number; away: number };
+};
+export type StaffOnlineBoard = {
+  match_id: string; board_no: number; status: OnlineBoardStatus;
+  white_ready_at: string | null; black_ready_at: string | null;
+};
 export type M3Event = {
   id: string; name: string; status: TournamentStatus | 'cancelled';
   board_count: number;
@@ -133,6 +146,7 @@ export type M3Event = {
   entries?: M3TeamEntry[]; roles?: { role: TournamentRole; team_id: string | null }[];
   lineups?: M3Lineup[]; revision_lineups?: M3Lineup[]; published_lineups?: { entry_id: string; board_no: number; username: string | null }[];
   profiles?: { id: string; username: string }[];
+  play_mode?: 'reported' | 'online'; online_boards?: StaffOnlineBoard[];
   matches?: { id: string; round_no: number; home_team_id: string; away_team_id: string }[];
   states?: { match_id: string; board_no: number; status: string }[];
   reports?: { match_id: string; board_no: number; side: 'white' | 'black'; result: BoardResult; kind: string }[];
@@ -146,6 +160,7 @@ export type M3EventInput = {
   max_teams: number;
   round_interval_minutes?: number;
   client_request_id?: string;
+  play_mode?: 'online'; time_control?: TournamentTimeControl; no_show_minutes?: number;
 };
 export function createTournamentM3Api(base: string, token: string, fetchImpl: typeof fetch = fetch) {
   if (!token) throw new TournamentError('authentication_required');
@@ -176,6 +191,8 @@ export function createTournamentM3Api(base: string, token: string, fetchImpl: ty
     return at(event) + '/matches/' + tournamentId(match) + '/boards/' + board + '/m3';
   };
   return {
+    onlineBoards: (signal: AbortSignal, event?: string) => request<{ boards: OnlineBoard[]; durable: boolean }>(
+      '/online/my-board' + (event ? '?tournament=' + tournamentId(event) : ''), signal),
     myBoard: (signal: AbortSignal) => request<{ board: MyTournamentBoard | null }>('/my-board', signal),
     create: (input: M3EventInput, signal: AbortSignal) =>
       request<{ id: string; status: string }>('/self-service', signal, input),
@@ -221,6 +238,7 @@ export type AiOrganizerDraft = {
   min_teams: number | null;
   max_teams: number | null;
   round_interval_minutes?: number | null;
+  time_control?: TournamentTimeControl | null;
 };
 export type AiOrganizerMessage = { role: 'user' | 'assistant'; text: string };
 export type AiOrganizerPlan = {

@@ -148,3 +148,45 @@ test('M3 round editing and revision routes validate inputs, enforce flags and pr
     p_actor: captain, p_id: id, p_action: 'submit_revision', p_input: {},
   }]);
 });
+
+test('online status and create are gated, and disabled durable storage fails closed', async t => {
+  const actor = randomUUID();
+  const calls = [];
+  const commandClient = { rpc(name,args) {
+    calls.push({ name,args });
+    return { abortSignal: async () => ({ data:{ id:randomUUID() } }) };
+  } };
+  const app = express();
+  for (const [route, onlineStatus] of [
+    ['/off', undefined],
+    ['/disabled', () => ({ online_play:true,durable:false })],
+    ['/on', () => ({ online_play:true,durable:true })],
+  ]) {
+    const router = express();
+    installTeamTournaments(router,{ enabled:true,m3Enabled:true,now:() => Date.parse('2026-11-01'),
+      verifyToken:async () => ({id:actor}),commandClient,onlineStatus });
+    app.use(route, router);
+  }
+  const server = app.listen(0,'127.0.0.1');
+  await new Promise(resolve => server.once('listening',resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const base = route => 'http://127.0.0.1:' + server.address().port + route + '/api/team-tournaments';
+  const format = { play_mode:'online',time_control:'5+0',round_interval_minutes:15,no_show_minutes:5 };
+  const send = (route, overrides = {}) => fetch(base(route) + '/self-service',{
+    method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer valid' },
+    body:JSON.stringify({ name:'Bochum Cup',start_time:'2026-12-20T15:00',
+      registration_deadline:'2026-12-19T18:00',...format,...overrides }),
+  });
+  assert.deepEqual(await (await fetch(base('/off') + '/online/status')).json(),{ online_play:false,durable:false });
+  assert.deepEqual(await (await fetch(base('/disabled') + '/online/status')).json(),{ online_play:true,durable:false });
+  assert.equal((await send('/off')).status,400);
+  assert.equal((await send('/disabled')).status,503);
+  assert.equal((await send('/on',{ time_control:'30+0' })).status,400);
+  assert.equal((await send('/on',{ no_show_minutes:0 })).status,400);
+  assert.equal(calls.length,0);
+  assert.equal((await send('/on')).status,201);
+  assert.equal(calls[0].args.p_play_mode,'online');
+  assert.equal(calls[0].args.p_time_control,'5+0');
+  assert.equal(calls[0].args.p_no_show_minutes,5);
+  assert.equal(calls[0].args.p_round_interval_minutes,15);
+});

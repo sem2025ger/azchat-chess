@@ -118,7 +118,9 @@ if (process.env.CLUBS_NRW_ENABLED === 'true') app.get('/api/clubs-nrw/news', cre
 // Spieler reads/requests share the existing HTTP origin policy; no game wiring.
 require('./spieler').installSpielerFromEnv(app,verifyTokenProxy);
 require('./spieltag').installSpieltagFromEnv(app,verifyTokenProxy);
-require('./teamTournaments').installTeamTournamentsFromEnv(app,verifyTokenProxy);
+const tournamentOnlineEnabled = process.env.TEAM_TOURNAMENTS_ONLINE_PLAY === 'true';
+const publishDueTournaments = require('./teamTournaments').installTeamTournamentsFromEnv(app, verifyTokenProxy,
+  process.env, createClient, tournamentOnlineEnabled ? () => tournamentOnline.status() : undefined);
 require('./aiOrganizer').installAiOrganizerFromEnv(app,verifyTokenProxy);
 require('./vorbereitung').installVorbereitungFromEnv(app,verifyTokenProxy);
 const coachIndex=require('./positions').installPositionsFromEnv(app,verifyTokenProxy);
@@ -195,6 +197,13 @@ const durableGames = createDurableGames({
 // recovery must not hold volatile HTTP/socket startup behind a database timeout.
 const initialRecovery = durableGames.recover();
 const recoveryReady = durableEnabled ? initialRecovery : Promise.resolve();
+const tournamentOnline = tournamentOnlineEnabled
+  ? require('./teamTournamentOnline').createTeamTournamentOnline({
+    io, client: clubClient, durableEnabled, durableGames, reservePlayers: reserveTournamentPlayers,
+    startRoom: startTournamentRoom, announceRoom: announceTournamentRoom, hasRoom: id => activeRooms.has(id),
+    publishDue: publishDueTournaments,
+  })
+  : null;
 
 function getPlayerColor(room, socketId) {
   if (!room || !room.players) return null;
@@ -443,6 +452,8 @@ function reconnectPlayerToRoom(roomId, playerColor, newSocket) {
 // Watchdog timer: checks for clock timeouts on active games every 1 second
 function checkRoomTimeouts() {
   void durableGames.tick().catch(() => console.error(JSON.stringify({ code: 'DURABLE_TICK_FAILED' })));
+  if (tournamentOnline) void tournamentOnline.tick()
+    .catch(() => console.error(JSON.stringify({ code: 'TOURNAMENT_ONLINE_TICK_FAILED' })));
   const now = Date.now();
   for (const [roomId, room] of activeRooms.entries()) {
     if (room.durable) {
@@ -543,6 +554,40 @@ function getActivePlayerActionContext(socket, roomId, action) {
   return { room, playerColor };
 }
 
+function makePrivateRoom(socket, selectedTime, roomId, color) {
+  const [minutes, increment] = selectedTime.split('+').map(Number);
+  const initialTime = minutes * 60;
+  return {
+    roomId,
+    game: new Chess(),
+    isPrivate: true,
+    status: 'pending',
+    drawOfferBy: null,
+    startedAt: null,
+    timeControl: selectedTime,
+    initialTime,
+    increment,
+    initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    whiteTimeMs: initialTime * 1000,
+    blackTimeMs: initialTime * 1000,
+    lastMoveTimestamp: null,
+    persisted: false,
+    socketIds: new Set([socket.id]),
+    disconnects: {
+      w: { timer: null, disconnectedAt: null },
+      b: { timer: null, disconnectedAt: null },
+    },
+    userIds: {
+      w: color === 'w' ? socket.data.userId : null,
+      b: color === 'w' ? null : socket.data.userId,
+    },
+    players: {
+      w: color === 'w' ? socket.id : null,
+      b: color === 'w' ? null : socket.id,
+    },
+  };
+}
+
 function createPrivateRoom(socket, payload) {
     if (!socket.data?.limiter?.allow('lobby')) {
       socket.emit('rate_limit_exceeded', { action: 'create_private_room' });
@@ -574,40 +619,9 @@ function createPrivateRoom(socket, payload) {
       return;
     }
     const selectedTime = requestedTime ?? '10+0';
-    const [minutes, increment] = selectedTime.split('+').map(Number);
     const roomId = crypto.randomUUID();
-    const isWhite = Math.random() > 0.5;
-    const initialTime = minutes * 60;
-
-    const roomData = {
-      roomId,
-      game: new Chess(),
-      isPrivate: true,
-      status: 'pending',
-      drawOfferBy: null,
-      startedAt: null,
-      timeControl: selectedTime,
-      initialTime,
-      increment,
-      initialFen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
-      whiteTimeMs: initialTime * 1000,
-      blackTimeMs: initialTime * 1000,
-      lastMoveTimestamp: null,
-      persisted: false,
-      socketIds: new Set([socket.id]),
-      disconnects: {
-        w: { timer: null, disconnectedAt: null },
-        b: { timer: null, disconnectedAt: null },
-      },
-      userIds: {
-        w: isWhite ? socket.data.userId : null,
-        b: isWhite ? null : socket.data.userId,
-      },
-      players: {
-        w: isWhite ? socket.id : null,
-        b: isWhite ? null : socket.id,
-      },
-    };
+    const color = Math.random() > 0.5 ? 'w' : 'b';
+    const roomData = makePrivateRoom(socket, selectedTime, roomId, color);
 
     activeRooms.set(roomId, roomData);
     socketToRoom.set(socket.id, roomId);
@@ -617,6 +631,19 @@ function createPrivateRoom(socket, payload) {
     console.log(`Private match created: ${roomId} by ${socket.id}`);
     socket.emit('private_room_created', { roomId, timeControl: selectedTime });
   }
+
+function seatPrivateOpponent(roomData, socket, color) {
+  roomData.players[color] = socket.id;
+  if (!roomData.socketIds) roomData.socketIds = new Set();
+  roomData.socketIds.add(socket.id);
+  roomData.userIds[color] = socket.data.userId;
+  roomData.startedAt = new Date().toISOString();
+  roomData.status = 'active';
+  roomData.drawOfferBy = null;
+  roomData.whiteTimeMs = roomData.initialTime * 1000;
+  roomData.blackTimeMs = roomData.initialTime * 1000;
+  roomData.lastMoveTimestamp = Date.now();
+}
 
 async function joinPrivateRoom(socket, payload, limiterChecked = false) {
     try {
@@ -667,16 +694,7 @@ async function joinPrivateRoom(socket, payload, limiterChecked = false) {
       const emptyColor = roomData.players.w === null ? 'w' : 'b';
       const creatorSocketId = roomData.players[creatorColor];
 
-      roomData.players[emptyColor] = socket.id;
-      if (!roomData.socketIds) roomData.socketIds = new Set();
-      roomData.socketIds.add(socket.id);
-      roomData.userIds[emptyColor] = socket.data.userId;
-      roomData.startedAt = new Date().toISOString();
-      roomData.status = 'active';
-      roomData.drawOfferBy = null;
-      roomData.whiteTimeMs = roomData.initialTime * 1000;
-      roomData.blackTimeMs = roomData.initialTime * 1000;
-      roomData.lastMoveTimestamp = Date.now();
+      seatPrivateOpponent(roomData, socket, emptyColor);
 
       // Reserve both identities while creation is in flight. No start is announced
       // until the single database transition has been acknowledged.
@@ -736,10 +754,55 @@ async function startClubChallengeGame(creator, opponent, timeControl) {
       return roomId;
 }
 
+function reserveTournamentPlayers(whiteId, blackId, reservedRoomId) {
+  const players = [whiteId, blackId];
+  if ([...activeRooms.values()].some(room => room.roomId !== reservedRoomId && room.status !== 'ended'
+    && players.some(id => [room.userIds?.w, room.userIds?.b].includes(id)))) return null;
+  const sockets = [...io.sockets.sockets.values()].filter(socket => socket.connected && players.includes(socket.data.userId));
+  if (sockets.some(socket => socket.data.startingGame ||
+      (socketToRoom.has(socket.id) && socketToRoom.get(socket.id) !== reservedRoomId)) ||
+      waitingQueue.some(socket => players.includes(socket.data.userId))) return null;
+  const [white, black] = players.map(id => sockets.find(socket => socket.data.userId === id));
+  if (!white || !black) return null;
+  for (const socket of sockets) socket.data.startingGame = true;
+  return { white, black, release() { for (const socket of sockets) socket.data.startingGame = false; } };
+}
+
+async function startTournamentRoom(board, { white, black }) {
+  const roomId = board.room_id;
+  if (activeRooms.get(roomId)?.durable) return;
+  if (!white.connected || !black.connected || !durableEnabled || !durableGames.ready()) throw new Error('player_unavailable');
+  const room = makePrivateRoom(white, board.time_control, roomId, 'w');
+  seatPrivateOpponent(room, black, 'b');
+  await durableGames.start(room);
+  if (!room.durable) throw new Error('storage_unavailable');
+  for (const player of [white, black]) {
+    socketToRoom.set(player.id, roomId);
+    player.join(roomId);
+    setLobbyReady(player, false);
+  }
+  room.tournamentStartUnannounced = true;
+  activeRooms.set(roomId, room);
+  for (const color of ['w', 'b']) if (!io.sockets.sockets.get(room.players[color])?.connected) {
+    void durableGames.disconnect(roomId, color, room.players[color]);
+  }
+}
+
+function announceTournamentRoom(roomId) {
+  const room = activeRooms.get(roomId);
+  if (!room?.tournamentStartUnannounced || room.status !== 'active') return;
+  room.tournamentStartUnannounced = false;
+  for (const color of ['w', 'b']) {
+    io.to(room.players[color]).emit('match_found', { roomId, color, tournament: true });
+  }
+  io.to(roomId).emit('game_start', { whiteTime: room.initialTime, blackTime: room.initialTime });
+}
+
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
   socket.data = socket.data || {};
   socket.data.limiter = createSocketRateLimiter();
+  if (tournamentOnline) tournamentOnline.register(socket);
   registerClubChallenges(socket, { client: clubClient, io, allowedTimeControls: ALLOWED_TIME_CONTROLS,
     startGame: startClubChallengeGame,
   });
@@ -1252,6 +1315,7 @@ module.exports = {
   rejectGameAction,
   getActivePlayerActionContext,
   durableGames,
+  tournamentOnline,
   startClubChallengeGame,
   recoveryReady,
   lobbyPresence,
