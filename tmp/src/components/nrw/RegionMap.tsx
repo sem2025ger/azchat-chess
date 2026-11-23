@@ -5,11 +5,11 @@ type MapRegion = Exclude<NewsRegion, 'nrw' | 'bochum'>;
 
 // Hand-drawn schematic. Adjacent regions share border vertices.
 const regions = [
- { region: 'niederrhein', label: [67, 70], path: 'M45 35 64 32 80 43 96 42 101 57 118 69 109 85 93 87 86 103 68 105 55 93 41 93 33 76 20 71 21 55 34 51Z' },
- { region: 'muensterland', label: [142, 44], path: 'M80 43 89 30 107 25 117 13 139 19 153 10 173 21 192 18 200 29 202 44 185 54 181 68 162 64 152 74 118 69 101 57 96 42Z' },
- { region: 'owl', label: [231, 43], path: 'M192 18 210 21 225 15 235 20 254 16 265 28 282 33 274 48 281 59 266 63 254 75 239 71 222 61 202 44 200 29Z' },
- { region: 'ruhrgebiet', label: [134, 88], path: 'M118 69 152 74 162 64 181 68 178 81 191 91 181 100 157 106 133 105 116 120 98 115 86 103 93 87 109 85Z' },
- { region: 'mittelrhein', label: [103, 140], path: 'M86 103 98 115 116 120 133 105 157 106 152 122 139 132 145 145 128 151 119 164 99 161 89 169 72 154 57 151 64 137 54 129 68 105Z' },
+ { region: 'niederrhein', label: [62, 79], path: 'M45 35 64 32 80 43 96 42 101 57 118 69 109 85 93 87 86 103 68 105 55 93 41 93 33 76 20 71 21 55 34 51Z' },
+ { region: 'muensterland', label: [145, 51], path: 'M80 43 89 30 107 25 117 13 139 19 153 10 173 21 192 18 200 29 202 44 185 54 181 68 162 64 152 74 118 69 101 57 96 42Z' },
+ { region: 'owl', label: [238, 51], path: 'M192 18 210 21 225 15 235 20 254 16 265 28 282 33 274 48 281 59 266 63 254 75 239 71 222 61 202 44 200 29Z' },
+ { region: 'ruhrgebiet', label: [132, 96], path: 'M118 69 152 74 162 64 181 68 178 81 191 91 181 100 157 106 133 105 116 120 98 115 86 103 93 87 109 85Z' },
+ { region: 'mittelrhein', label: [101, 146], path: 'M86 103 98 115 116 120 133 105 157 106 152 122 139 132 145 145 128 151 119 164 99 161 89 169 72 154 57 151 64 137 54 129 68 105Z' },
  { region: 'suedwestfalen', label: [212, 136], path: 'M181 68 185 54 202 44 222 61 239 71 254 75 249 88 261 98 258 110 275 120 264 134 245 134 232 151 214 151 200 163 179 151 165 153 145 145 139 132 152 122 157 106 181 100 191 91 178 81Z' },
 ] as const satisfies readonly { region: MapRegion; label: readonly [number, number]; path: string }[];
 
@@ -55,11 +55,13 @@ export function RegionMap({ counts, selected, onSelect, tr, number }: Props) {
    </defs>
    {regions.map(({ region, label: [x, y], path }) => {
     const regionControl = control(region);
+    const lines = tr(`map.${region}`).split('\n');
+    const firstLineY = y - 10 - (lines.length - 1) * 13;
     return <g className="nrw-region-map-area" key={region} {...regionControl}>
      <title>{regionControl['aria-label']}</title>
      <path d={path} style={selected === region ? { fill: `url(#${glowId})` } : undefined}/>
-     <text className="nrw-region-map-name" x={x} y={y - 9} aria-hidden="true">
-      {region === 'owl' ? 'OWL' : tr(regionLabels[region])}
+     <text className="nrw-region-map-name" aria-hidden="true">
+      {lines.map((line, index) => <tspan key={line} x={x} y={firstLineY + index * 13}>{line}</tspan>)}
      </text>
      <rect className="nrw-region-map-count" x={x - 12} y={y - 6} width="24" height="16" rx="8" aria-hidden="true"/>
      <text className="nrw-region-map-count-text" x={x} y={y + 5} aria-hidden="true">

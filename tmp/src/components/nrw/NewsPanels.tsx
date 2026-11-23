@@ -92,7 +92,10 @@ export function NewsFeed({ state, language, tr, detail = false }: {
 
  return <section className={`nrw-news nrw-news-feed${detail ? ' nrw-card--news' : ''}`} aria-labelledby="nrw-club-news">
   <div className="nrw-news-heading">
-   <h2 id="nrw-club-news"><Newspaper size={19} aria-hidden="true"/>{tr('Schach-Nachrichten aus NRW')}</h2>
+   <h2 id="nrw-club-news">
+    <Newspaper size={22} aria-hidden="true"/>
+    <span>{tr('Schach-Nachrichten aus NRW')}</span>
+   </h2>
    {update && <time dateTime={updatedAt!}>{update}</time>}
   </div>
   <div className="nrw-news-content" id={listId}>

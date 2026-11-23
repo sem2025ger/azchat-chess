@@ -151,8 +151,17 @@
 .nrw-news-heading,.nrw-sources-heading{
  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;
 }
-.nrw-news-heading h2{
- display:flex;align-items:center;gap:8px;margin:0;color:#F1E6D4;font-size:20px;font-weight:700;line-height:1.25;
+#root .nrw-news-heading h2{
+ display:flex;align-items:center;gap:8px;min-width:0;margin:0;
+ font-family:'Bodoni Moda',Georgia,serif!important;
+ font-size:24px;font-weight:600;line-height:1.125;color:#C9AE87;
+}
+.nrw-news-heading h2 span{min-width:0;overflow-wrap:anywhere}
+@supports (background-clip:text){
+ .nrw-news-heading h2 span{
+  background-image:linear-gradient(100deg,#D9C3A2 0%,#B8996F 50%,#D9C3A2 100%);
+  background-clip:text;color:transparent;
+ }
 }
 .nrw-news-heading svg{color:#C9A46A}
 .nrw-news-heading time,.nrw-news-time,.nrw-news-disclosure{color:#A9ADB2;font-size:12px}
@@ -306,9 +315,7 @@
  fill:#3A3328;stroke:#E2C49A;stroke-width:1.5;filter:drop-shadow(0 0 2px #E2C49A44);
 }
 .nrw-region-map text{pointer-events:none;text-anchor:middle;font-weight:650}
-.nrw-region-map-name{fill:#F1E6D4;font-size:12.5px;transform-box:fill-box;transform-origin:center}
-.nrw-region-map-area[data-nrw-map-region="ruhrgebiet"] .nrw-region-map-name{transform:translateX(4px) scaleX(.9)}
-.nrw-region-map-area[data-nrw-map-region="suedwestfalen"] .nrw-region-map-name{transform:scaleX(.92)}
+.nrw-region-map-name{fill:#F1E6D4;font-size:12.5px}
 .nrw-region-map-area[aria-disabled="true"] .nrw-region-map-name{fill:#A9ADB2}
 .nrw-region-map-count{fill:#1F2124;stroke:#B8916A40;pointer-events:none}
 .nrw-region-map-count-text{fill:#F1E6D4;font-size:11px}

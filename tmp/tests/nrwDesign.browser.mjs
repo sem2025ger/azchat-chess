@@ -34,6 +34,14 @@ const directoryTitles = [
  'SV Günnigfeld 1922','SV Linden-Dahlhausen 1922','SV Wattenscheid 1930','Stadt Bochum',
 ];
 const localeIds = {de:'de-DE',en:'en-GB',az:'az-AZ',tr:'tr-TR',ua:'uk-UA',ru:'ru-RU'};
+const fullRegionNames = {
+ de:['Niederrhein','Münsterland','Ostwestfalen-Lippe','Ruhrgebiet','Mittelrhein','Südwestfalen'],
+ en:['Lower Rhine','Münsterland','East Westphalia-Lippe','Ruhr region','Middle Rhine','South Westphalia'],
+ az:['Aşağı Reyn','Münsterland','Şərqi Vestfaliya-Lippe','Rur bölgəsi','Orta Reyn','Cənubi Vestfaliya'],
+ tr:['Aşağı Ren','Münsterland','Doğu Vestfalya-Lippe','Ruhr Bölgesi','Orta Ren','Güney Vestfalya'],
+ ua:['Нижній Рейн','Мюнстерланд','Східна Вестфалія-Ліппе','Рурський регіон','Середній Рейн','Південна Вестфалія'],
+ ru:['Нижний Рейн','Мюнстерланд','Восточная Вестфалия-Липпе','Рурский регион','Средний Рейн','Южная Вестфалия'],
+};
 const sourceUrls = [
  'https://schach-nrw.de/', 'https://www.sjnrw.de/news/news.html', 'https://schulschach-nrw.org/news',
  'https://www.schachbund.de/nachrichten-der-lv.html', 'https://www.schachbundesliga.de/', 'https://de.chessbase.com/',
@@ -148,6 +156,17 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
       .reduce((a,x,i)=>a+x*[.2126,.7152,.0722][i],0);
      const colors=style.backgroundImage.match(/(?:rgb|color)\\([^)]*\\)/g)||[];
      const contrast=Math.min(...colors.map(color=>(luminance(color)+.05)/(luminance(getComputedStyle(root).backgroundColor)+.05)));
+     const feed=root.querySelector('.nrw-news-feed');
+     const heading=feed.querySelector('h2');
+     const headingCopy=heading.querySelector('span');
+     const headingStyle=getComputedStyle(heading), headingInk=getComputedStyle(headingCopy);
+     const updated=feed.querySelector('.nrw-news-heading time');
+     const headingRange=document.createRange();
+     headingRange.selectNodeContents(headingCopy);
+     const headingLines=[...headingRange.getClientRects()].map(rect=>({x:rect.x,right:rect.right}));
+     const feedBackground=luminance(getComputedStyle(feed).backgroundColor);
+     const headingStops=headingInk.backgroundImage.match(/rgb\\([^)]*\\)/g)||[];
+     const headingContrast=Math.min(...[headingStyle.color,...headingStops].map(color=>(luminance(color)+.05)/(feedBackground+.05)));
      const directory=root.querySelector('.nrw-bochum-directory');
      const directoryCards=links('${directorySelector}').map((link,index)=>{
       const card=directory.querySelectorAll('a')[index];
@@ -177,7 +196,12 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
       removed:root.querySelectorAll('.nrw-header-top,.nrw-kicker,.nrw-region-code,.nrw-signin,.section-info,.nrw-count,.nrw-footer,.nrw-chat-rail,select,details,[href="/spieltag"],[href^="/profile"],[href^="/clubs-nrw"],[href="/region/nrw/turniere"],[href="/region/nrw/ligen"],[href="/region/nrw/vereine"],iframe').length,
       newsLinks:links('.nrw-news-links a,.nrw-news-disclosure a').map(a=>a.href),
       sourceGroups:root.querySelectorAll('.nrw-news-source-groups h3').length,gradient:style.backgroundImage,contrast,
-      feed:bounds(root.querySelector('.nrw-news-feed')),bochum:bounds(root.querySelector('.nrw-bochum')),
+      feed:bounds(feed),
+      feedHeading:{font:headingStyle.fontFamily,size:headingStyle.fontSize,weight:headingStyle.fontWeight,
+       fallback:headingStyle.color,gradient:headingInk.backgroundImage,clip:headingInk.backgroundClip,
+       icon:[getComputedStyle(heading.querySelector('svg')).color,bounds(heading.querySelector('svg')).width],
+       contrast:headingContrast,lines:headingLines,box:bounds(heading),updated:bounds(updated)},
+      bochum:bounds(root.querySelector('.nrw-bochum')),
       badge:bounds(root.querySelector('.nrw-bochum-badge')),badgeText:root.querySelector('.nrw-bochum-badge').textContent,
       badgeMotion:getComputedStyle(root.querySelector('.nrw-bochum-badge')).animationName,
       badgeContrast:Math.min(...['#4E3D2D','#6B5540','#5E4F86','#6A5A92'].map(fill=>(luminance(getComputedStyle(root.querySelector('.nrw-bochum-badge')).color)+.05)/(luminance(fill)+.05))),
@@ -202,18 +226,29 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
         const style=getComputedStyle(path);
         return [style.stroke,style.strokeWidth];
        }),
-       nameSize:getComputedStyle(map.querySelector('.nrw-region-map-name')).fontSize,
        count:[...map.querySelectorAll('.nrw-region-map-count')].map(node=>[node.width.baseVal.value,node.height.baseVal.value]),
        countSize:getComputedStyle(map.querySelector('.nrw-region-map-count-text')).fontSize,
        dotRadius:map.querySelector('.nrw-region-map-dot').r.baseVal.value,
        ringRadius:map.querySelector('.nrw-region-map-ring')?.r.baseVal.value,
        hit:bounds(map.querySelector('.nrw-region-map-bochum-hit')),
-       labels:[...map.querySelectorAll('.nrw-region-map-area')].map(area=>({
-        region:area.dataset.nrwMapRegion,
-        name:bounds(area.querySelector('.nrw-region-map-name')),
-        count:bounds(area.querySelector('.nrw-region-map-count')),
-        path:bounds(area.querySelector('path')),
-       })),
+       labels:bounds(map).width?[...map.querySelectorAll('.nrw-region-map-area')].map(area=>{
+        const region=area.dataset.nrwMapRegion;
+        const name=area.querySelector('.nrw-region-map-name');
+        const path=area.querySelector('path');
+        const count=area.querySelector('.nrw-region-map-count');
+        const inverse=path.getScreenCTM().inverse();
+        const lines=[...name.querySelectorAll('tspan')];
+        const insideRegion=node=>{
+         const {x,y,right,bottom}=bounds(node);
+         return [x,(x+right)/2,right].every(px=>[y,(y+bottom)/2,bottom].every(py=>
+          path.isPointInFill(new DOMPoint(px,py).matrixTransform(inverse))));
+        };
+        return {region,name:bounds(name),count:bounds(count),path:bounds(path),
+         lines:lines.map(line=>line.textContent),fontSize:parseFloat(getComputedStyle(name).fontSize),
+         inside:lines.every(insideRegion),aria:area.getAttribute('aria-label'),title:area.querySelector('title').textContent,
+         chip:root.querySelector('[data-nrw-filter-region="'+region+'"]')?.firstChild.textContent};
+       }):[],
+       dot:bounds(map.querySelector('.nrw-region-map-dot')),
        pill:bounds(marker),
        marker:marker&&{color:getComputedStyle(marker).color,sheen:getComputedStyle(marker).animationName,
         gradientMatches:["backgroundImage","backgroundSize","backgroundClip"].every(key=>getComputedStyle(marker)[key]===getComputedStyle(badge)[key])},
@@ -315,6 +350,22 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      assert.ok(metric.dateTooltip,'absolute time tooltip');
      assert.equal(metric.rowHeight,52,'single-line headlines match the skeleton row height');
      assert.deepEqual(metric.categoryClasses,['landesverband','jugend_schule','region'].map(key=>'nrw-news-tag nrw-news-tag--'+key));
+     const heading=metric.feedHeading;
+     assert.match(heading.font,/Bodoni Moda.*Georgia/);
+     assert.equal(heading.size,'24px');
+     assert.equal(heading.weight,'600');
+     assert.equal(heading.fallback,'rgb(201, 174, 135)');
+     assert.equal(heading.gradient,'linear-gradient(100deg, rgb(217, 195, 162) 0%, rgb(184, 153, 111) 50%, rgb(217, 195, 162) 100%)');
+     assert.equal(heading.clip,'text');
+     assert.deepEqual(heading.icon,['rgb(201, 164, 106)',22]);
+     assert.ok(heading.contrast>=4.5,lang+' bronze feed heading contrast '+heading.contrast);
+     assert.ok(heading.lines.length&&heading.lines.every(line=>line.x>=metric.feed.x&&line.right<=metric.feed.right),
+      lang+' feed heading fits at '+width);
+     if(width===1440){
+      assert.equal(heading.lines.length,1,lang+' feed heading stays on one line');
+      assert.ok(heading.box.right<=heading.updated.x&&heading.box.y<heading.updated.bottom&&heading.updated.y<heading.box.bottom,
+       lang+' update stays next to the feed heading');
+     }
      if(width===390){
       assert.ok(metric.feed.bottom<=metric.bochum.y,'Bochum stacks below news');
       assert.ok(metric.activeTargets.every(rect=>rect.height>=44),'mobile buttons reach 44px');
@@ -333,7 +384,6 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
        assert.equal(metric.map.corners,4);
        assert.deepEqual(metric.map.panel,['12px','rgb(26, 28, 31)','12px 12px']);
        assert.deepEqual(metric.map.stroke,Array.from({length:6},()=>['rgba(184, 145, 106, 0.4)','1px']));
-       assert.equal(metric.map.nameSize,'12.5px');
        assert.deepEqual(metric.map.count,Array.from({length:6},()=>[24,16]));
        assert.equal(metric.map.countSize,'11px');
        assert.ok(metric.map.dotRadius>=5&&metric.map.ringRadius>=9);
@@ -341,10 +391,19 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
        assert.deepEqual(metric.map.marker,{color:'rgb(240, 223, 196)',sheen:'none',gradientMatches:true});
        if(width===1440){
         const overlaps=(a,b)=>a.x<b.right&&b.x<a.right&&a.y<b.bottom&&b.y<a.bottom;
-        const boxes=[{id:'bochum pill',rect:metric.map.pill}];
-        for(const {region,name,count,path} of metric.map.labels){
-         assert.ok(name.x>=path.x&&name.right<=path.right&&name.y>=path.y&&name.bottom<=path.bottom,
-          lang+' '+region+' name stays inside its path bounds '+JSON.stringify({name,path}));
+        const boxes=[{id:'Bochum pill',rect:metric.map.pill},{id:'Bochum dot',rect:metric.map.dot}];
+        for(const [index,label] of metric.map.labels.entries()){
+         const {region,name,count,path,lines,fontSize,inside,aria,title,chip}=label;
+         const fullName=fullRegionNames[lang][index];
+         assert.ok(aria.startsWith(fullName+' · '),lang+' '+region+' accessible full name');
+         assert.equal(title,aria,lang+' '+region+' full name tooltip');
+         if(region!=='mittelrhein')assert.equal(chip?.trim(),fullName,lang+' '+region+' full name filter');
+         assert.ok(lines.length>=1&&lines.length<=2&&lines.every(line=>line.trim()),lang+' '+region+' label lines');
+         assert.doesNotMatch(lines.join(' '),/…|\.\.\./);
+         assert.ok(fontSize>=10.5,lang+' '+region+' readable font size');
+         assert.ok(name.x>=path.x+2&&name.right<=path.right-2&&name.y>=path.y+2&&name.bottom<=path.bottom-2,
+          lang+' '+region+' name clears its path bounds by 2 px '+JSON.stringify({name,path}));
+         assert.ok(inside,lang+' '+region+' text lies inside the drawn region '+JSON.stringify({lines,name}));
          boxes.push({id:region+' name',rect:name},{id:region+' count',rect:count});
          if(region==='suedwestfalen'){
           assert.ok(!overlaps(metric.map.hit,name)&&!overlaps(metric.map.hit,count),lang+' Bochum hit area clears Südwestfalen');
@@ -355,7 +414,7 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
           assert.ok(!overlaps(box.rect,other.rect),lang+' overlapping map labels '+JSON.stringify([box,other]));
          }
         }
-        if(captureRoot&&['de','en'].includes(lang)){
+        if(captureRoot&&['de','en','ru','az'].includes(lang)){
          const clip=await evaluate(`(()=>{const r=document.querySelector('.nrw-region-map').getBoundingClientRect();
           return {x:r.x+scrollX,y:r.y+scrollY,width:r.width,height:r.height,scale:1};})()`);
          const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip});
