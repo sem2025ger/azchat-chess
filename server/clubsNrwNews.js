@@ -91,10 +91,29 @@ function decodeEntities(value) {
  });
 }
 
+const escapedArticlePath = /^\/%3f|%26amp%3b/i;
+function articleUrl(value, allowedHosts) {
+ const isAllowed = url => url && url.protocol === 'https:' && !url.username && !url.password && !url.port && allowedHosts.includes(url.hostname);
+ const original = URL.parse(decodeEntities(value.trim()));
+ if (!isAllowed(original)) return null;
+ if (!escapedArticlePath.test(original.pathname)) return original;
+
+ let path;
+ try {
+  path = decodeURIComponent(original.pathname).replace(/^\/\?/, '?').replace(/&amp;/gi, '&');
+ } catch {
+  return null;
+ }
+ const search = path.includes('?') ? original.search.replace(/^\?/, '&') : original.search;
+ const repaired = URL.parse(path + search, original.origin);
+ if (!isAllowed(repaired) || repaired.origin !== original.origin || escapedArticlePath.test(repaired.pathname)) return null;
+ return repaired.pathname === '/' && !repaired.search ? null : repaired;
+}
+
 function makeItem(fields, feed) {
  const title = Array.from(decodeEntities(decodeEntities(fields.title || '')).replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()).slice(0, 160).join('');
- const url = URL.parse(decodeEntities((fields.link || '').trim()));
- if (!title || !url || url.protocol !== 'https:' || url.username || url.password || url.port || !feed.allowedHosts.includes(url.hostname)) return null;
+ const url = articleUrl(fields.link || '', feed.allowedHosts);
+ if (!title || !url) return null;
  url.hash = '';
  const date = [fields.pubDate, fields.updated, fields.published].map(Date.parse).find(Number.isFinite);
  return {

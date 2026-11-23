@@ -61,7 +61,9 @@ The original free-text claim club is retained as `club_legacy` for migration saf
 
 `NRW_NEWS_FEEDS_ENABLED` defaults to off. Set it to the exact value `true` only on the approved QA deployment of `chessaz-deutsch-qa-api`, with `CLUBS_NRW_ENABLED=true`. The flag does not control frontend visibility. An unset or false flag preserves the previous `{"items":[{"title":"…","url":"…"}]}` response from `GET /api/clubs-nrw/news`. With aggregation enabled, items include source, region and publication metadata, and the response also includes `updatedAt` and `sourcesOk`. The latter counts feeds contributing eligible items before the global cap.
 
-The server uses a fixed HTTPS allowlist. It rejects redirects, allows 250,000 bytes and five seconds per feed, caches successful feeds for 15 minutes and retries unavailable or empty feeds after 60 seconds. The feed publishes up to five headlines per source and 30 overall, omitting dated items older than 120 days. No summaries or article content are displayed.
+The server uses a fixed HTTPS allowlist. It rejects redirects, allows 250,000 bytes and five seconds per feed, caches successful feeds (including empty results) for 15 minutes and retries failed feeds after 60 seconds. The feed publishes up to five headlines per source and 30 overall, omitting dated items older than 120 days. For legacy feed links with an escaped query in the path, the server restores the query and then verifies the destination against the same origin and allowlist. It discards invalid repairs without fetching article pages.
+
+The NRW preview can show a schematic region map with `VITE_NRW_REGION_MAP_ENABLED=true`. It is off by default. The map and filter chips share the same selection, and at widths of 640 pixels or less the chips provide all region controls.
 
 ### Verified public feeds (2026-11-23)
 
