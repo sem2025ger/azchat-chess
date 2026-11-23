@@ -102,18 +102,17 @@
  --nrw-heading-bronze-end:color-mix(in srgb,#9C7A56 92%,#E9D3A8);
  background:var(--nrw-overview-surface);
 }
-.nrw-overview .nrw-header{margin-bottom:24px}
+.nrw-overview .nrw-header{display:grid;gap:14px;margin-bottom:28px}
 .nrw-overview .nrw-header h1{
  width:fit-content;max-width:100%;margin:0;
  background-image:linear-gradient(110deg,var(--nrw-heading-bronze-start),#B8916A,#E9D3A8,#C9A574,var(--nrw-heading-bronze-end));
 }
 .nrw-overview .nrw-header p{
- max-width:640px;margin:12px 0 28px;color:#D8D3C8;font-size:17px;font-weight:400;line-height:1.5;
+ display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:10px;
+ max-width:640px;margin:0;color:#BFAE96;font-size:14px;font-weight:500;line-height:1.5;letter-spacing:.06em;
 }
-.nrw-overview .nrw-links{display:flex;align-items:stretch;gap:10px;margin:0}
-.nrw-overview .nrw-links a{
- display:flex;flex:0 1 282px;max-width:100%;justify-content:center;min-height:44px;
- padding:8px 12px;font-size:15px;font-weight:600;text-align:center;overflow-wrap:anywhere;
+.nrw-overview .nrw-header p::before{
+ content:"";width:24px;height:1px;background:#B8916A;
 }
 /* The landing cards and both news routes share the same links and typography. */
 .nrw-overview .nrw-grid{
@@ -138,11 +137,16 @@
 }
 .nrw-overview .nrw-official-links a:hover{background:#2A2B2F;border-color:#C9A46A}
 .nrw-overview a svg,.nrw-news-feed svg,.nrw-bochum svg,.nrw-news-sources svg{flex-shrink:0}
-.nrw-news-grid{display:flex;flex-wrap:wrap;align-items:stretch;gap:20px;margin-bottom:20px}
+.nrw-news-grid{display:flex;flex-wrap:wrap;align-items:start;gap:16px;margin-bottom:24px}
 .nrw-news-grid>.nrw-news-feed{flex:999 1 560px}
 .nrw-news-grid>.nrw-bochum{flex:1 1 340px}
-.nrw-news-feed{
- display:flex;flex-direction:column;gap:10px;padding:24px 24px 16px;
+.nrw-news-feed{display:flex;flex-direction:column;gap:12px;padding:24px 24px 16px}
+.nrw-news-content{display:grid;gap:8px;min-width:0}
+.nrw-news-lead{display:grid;gap:12px;min-width:0}
+@media(min-width:641px){
+ .nrw-news-feed:has(.nrw-region-map){gap:8px;padding-block:16px 8px}
+ .nrw-news-lead:has(.nrw-region-map):has(.nrw-news-featured){grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
+ .nrw-region-map+.nrw-news-featured{min-height:160px}
 }
 .nrw-news-heading,.nrw-sources-heading{
  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;
@@ -184,16 +188,26 @@
 .nrw-news-tag--region{background:#232C3B;color:#B3C8EC}
 .nrw-news-time{display:flex;align-items:center;justify-content:flex-end;gap:5px;line-height:1.25;text-align:right}
 .nrw-news-time time{max-width:12ch}
+.nrw-news-featured{
+ align-self:start;align-content:center;min-height:144px;padding:12px 16px;border:1px solid #FFFFFF14;
+ border-top:2px solid #B8916A80;border-radius:16px;background:#FFFFFF06;
+}
+.nrw-news-featured .nrw-news-headline{gap:8px}
+.nrw-news-featured .nrw-news-headline strong{color:#F1E6D4;font-size:18px;font-weight:650;line-height:1.35;-webkit-line-clamp:3}
+.nrw-news-featured>svg{color:#EAD9BF}
+.nrw-news-featured time{display:flex;flex-wrap:wrap;gap:0 8px;color:#A9ADB2;font-size:12px}
+.nrw-news-featured time span+span::before{content:'·';margin-right:8px}
 .nrw-news-controls{
  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 10px;
- margin-top:auto;padding-top:6px;border-top:1px solid #FFFFFF12;
+ padding-top:8px;border-top:1px solid #FFFFFF12;
 }
 .nrw-news-legend{display:flex;flex-wrap:wrap;gap:4px}
-.nrw-news-controls :is(a,button),.nrw-bochum-footer a,.nrw-news-disclosure a,.nrw-news-status a,.nrw-sources-heading button{
+.nrw-news-controls :is(a,button),.nrw-bochum-footer a,.nrw-news-disclosure a,.nrw-news-status a,.nrw-sources-heading button,.nrw-bochum-directory-toggle{
  display:inline-flex;align-items:center;gap:6px;min-height:44px;color:#EAD9BF;font-size:13px;font-weight:600;
+ padding:0 12px;border:1px solid #B8916A66;border-radius:10px;background:#1F2124;
 }
-.nrw-news-controls :is(a,button):hover,.nrw-bochum-footer a:hover,.nrw-news-disclosure a:hover,.nrw-news-status a:hover{
- text-decoration:underline;
+.nrw-news-controls :is(a,button):hover,.nrw-bochum-footer a:hover,.nrw-news-disclosure a:hover,.nrw-news-status a:hover,.nrw-sources-heading button:hover,.nrw-bochum-directory-toggle:hover{
+ background:#2A2B2F;border-color:#C9A46A;
 }
 .nrw-news-loading,.nrw-news-status{min-height:264px}
 .nrw-news-status{display:grid;place-content:center;text-align:center;justify-items:center;color:#A9ADB2;font-size:14px}
@@ -207,7 +221,7 @@
 @keyframes nrw-news-shimmer{to{background-position:0 0}}
 
 .nrw-bochum{
- display:flex;flex-direction:column;gap:14px;min-width:0;border-radius:16px;padding:24px 24px 16px;
+ display:flex;flex-direction:column;gap:8px;min-width:0;border-radius:16px;padding:24px 24px 16px;
  border:1px solid #B8916A59;background:linear-gradient(150deg,#252320 0%,#201F1F 55%,#1E1F22 100%);
  box-shadow:inset 0 0 0 1px #FFFFFF0D,0 18px 40px -28px #00000080;
 }
@@ -219,15 +233,17 @@
 .nrw-bochum-badge{
  display:inline-flex;justify-content:center;align-items:center;gap:10px;min-height:50px;padding:0 32px;
  border:1.5px solid transparent;border-radius:999px;
- background:linear-gradient(110deg,#4E3D2D 0%,#6B5540 24%,#5E4F86 42%,#6A5A92 50%,#5E4F86 58%,#6B5540 74%,#4E3D2D 100%) 100% 50%/240% 100% padding-box,
- linear-gradient(110deg,#8F7150 0%,#D8BE98 35%,#9C8CBF 58%,#C2A27B 100%) 0 0/100% 100% border-box;
  box-shadow:inset 0 1px 0 #FFFFFF2E,inset 0 -2px 0 #00000033,0 10px 24px -12px #000000CC,0 0 26px -8px #8A78B880;
  font:700 17px/1.2 'Bodoni Moda',Georgia,serif;text-transform:uppercase;letter-spacing:.18em;text-align:center;color:#F0DFC4;
+}
+.nrw-bochum-badge,.nrw-region-map-bochum-pill{
+ background:linear-gradient(110deg,#4E3D2D 0%,#6B5540 24%,#5E4F86 42%,#6A5A92 50%,#5E4F86 58%,#6B5540 74%,#4E3D2D 100%) 100% 50%/240% 100% padding-box,
+ linear-gradient(110deg,#8F7150 0%,#D8BE98 35%,#9C8CBF 58%,#C2A27B 100%) 0 0/100% 100% border-box;
  text-shadow:0 1px 1px #00000099;animation:nrw-bochum-sheen 6s ease-in-out infinite;
 }
 @keyframes nrw-bochum-sheen{50%{background-position:0 50%,0 0}}
 .nrw-bochum h2{
- margin:12px 0 6px;text-align:center;font:700 28px/1.15 'Bodoni Moda',Georgia,serif;color:#D9BF98;overflow-wrap:anywhere;
+ margin:8px 0 4px;text-align:center;font:700 28px/1.15 'Bodoni Moda',Georgia,serif;color:#D9BF98;overflow-wrap:anywhere;
 }
 #root .nrw-bochum h2{font-family:'Bodoni Moda',Georgia,serif!important}
 @supports ((background-clip:text) or (-webkit-background-clip:text)){
@@ -237,7 +253,7 @@
 }
 .nrw-bochum .nrw-news-tag{background:#2B2A28;color:#DCC6A5;border:1px solid #B8916A4D}
 .nrw-bochum .nrw-news-time{color:#B3B0AB}
-.nrw-bochum-directory{padding-top:12px;border-top:1px solid #FFFFFF14}
+.nrw-bochum-directory{padding-top:8px;border-top:1px solid #FFFFFF14}
 .nrw-bochum-directory h3{
  margin:0 0 8px;color:#D6C4A8;font-size:12px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;
 }
@@ -248,18 +264,77 @@
 .nrw-bochum-directory li{display:flex;min-width:0}
 .nrw-bochum-directory a{
  display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:44px;
- padding:10px 12px;border:1px solid #B8916A40;border-radius:10px;background:#FFFFFF06;color:#E6D7C1;
+ padding:8px 12px;border:1px solid #B8916A40;border-radius:10px;background:#FFFFFF06;color:#E6D7C1;
 }
 .nrw-bochum-directory a:hover{border-color:#C4A57C;background:#FFFFFF0D}
 .nrw-bochum-directory-copy{display:grid;gap:2px;min-width:0;overflow-wrap:anywhere}
 .nrw-bochum-directory-copy strong{color:#E6D7C1;font-size:13px;font-weight:600}
 .nrw-bochum-directory-copy span{color:#B3B0AB;font-size:12px;line-height:1.45}
 .nrw-bochum-directory svg{flex-shrink:0}
+.nrw-bochum-directory-toggle{margin-top:8px}
+.nrw-bochum-directory-toggle[aria-expanded="true"] svg{transform:rotate(180deg)}
+.nrw-bochum-directory-extra{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s ease}
+.nrw-bochum-directory-extra[data-expanded="true"]{grid-template-rows:1fr}
+.nrw-bochum-directory-extra>div{min-height:0;overflow:hidden}
+.nrw-bochum-directory-extra ul{padding-top:8px}
+.nrw-bochum-directory-extra a:focus-visible{outline-offset:-2px}
 .nrw-bochum-footer{
  display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:0 8px;
- margin-top:auto;padding-top:4px;border-top:1px solid #FFFFFF14;color:#A9ADB2;font-size:11px;
+ padding-top:8px;border-top:1px solid #FFFFFF14;color:#A9ADB2;font-size:11px;
 }
 .nrw-bochum-footer a{margin-left:auto;text-align:right}
+
+.nrw-region-map{
+ position:relative;display:grid;grid-template-rows:minmax(0,1fr);min-width:0;height:205px;
+ margin:0;padding:3px 7px;border:1px solid #B8916A40;border-radius:12px;
+ background:#1A1C1F radial-gradient(circle,#FFFFFF0F 1px,transparent 1px) 0 0/12px 12px;
+}
+.nrw-region-map svg{display:block;width:100%;height:100%;min-height:0}
+.nrw-region-map figcaption{position:absolute;right:12px;bottom:7px;color:#8F8A84;font-size:10px;line-height:1}
+.nrw-region-map-corner{position:absolute;width:10px;height:10px;border:0 solid #C9A46A99;pointer-events:none}
+.nrw-region-map-corner--tl{top:4px;left:4px;border-top-width:1.5px;border-left-width:1.5px;border-top-left-radius:5px}
+.nrw-region-map-corner--tr{top:4px;right:4px;border-top-width:1.5px;border-right-width:1.5px;border-top-right-radius:5px}
+.nrw-region-map-corner--bl{bottom:4px;left:4px;border-bottom-width:1.5px;border-left-width:1.5px;border-bottom-left-radius:5px}
+.nrw-region-map-corner--br{bottom:4px;right:4px;border-bottom-width:1.5px;border-right-width:1.5px;border-bottom-right-radius:5px}
+.nrw-region-map-area path{fill:#26282B;stroke:#B8916A66;stroke-width:1;vector-effect:non-scaling-stroke}
+.nrw-region-map-area[aria-disabled="false"]{cursor:pointer}
+.nrw-region-map-area[aria-disabled="false"] path{fill:#33363B}
+.nrw-region-map-area[aria-disabled="false"]:is(:hover,:focus-visible) path{
+ fill:#3A3328;stroke:#C9A46A;filter:drop-shadow(0 0 3px #C9A46A59);
+}
+.nrw-region-map-area[aria-pressed="true"] path{
+ fill:#3A3328;stroke:#E2C49A;stroke-width:1.5;filter:drop-shadow(0 0 2px #E2C49A44);
+}
+.nrw-region-map text{pointer-events:none;text-anchor:middle;font-weight:650}
+.nrw-region-map-name{fill:#F1E6D4;font-size:12.5px;transform-box:fill-box;transform-origin:center}
+.nrw-region-map-area[data-nrw-map-region="ruhrgebiet"] .nrw-region-map-name{transform:translateX(4px) scaleX(.9)}
+.nrw-region-map-area[data-nrw-map-region="suedwestfalen"] .nrw-region-map-name{transform:scaleX(.92)}
+.nrw-region-map-area[aria-disabled="true"] .nrw-region-map-name{fill:#A9ADB2}
+.nrw-region-map-count{fill:#1F2124;stroke:#B8916A40;pointer-events:none}
+.nrw-region-map-count-text{fill:#F1E6D4;font-size:11px}
+.nrw-region-map-bochum{cursor:pointer}
+.nrw-region-map-bochum[aria-disabled="true"]{pointer-events:none}
+.nrw-region-map-bochum-hit{fill:transparent}
+.nrw-region-map-bochum-label{pointer-events:none;overflow:visible}
+.nrw-region-map-bochum-pill{
+ display:inline-flex;align-items:center;height:20px;padding:0 7px;white-space:nowrap;
+ border:1px solid transparent;border-radius:999px;color:#F0DFC4;font-size:11px;font-weight:700;
+ letter-spacing:.04em;box-shadow:0 0 12px -4px #8A78B880;
+}
+.nrw-region-map-dot{fill:#D8BE98}
+.nrw-region-map-ring{fill:none;stroke:#D8BE9880;filter:drop-shadow(0 0 2px #D8BE9880)}
+.nrw-region-map-bochum:is(:hover,:focus-visible,[aria-pressed="true"]) .nrw-region-map-ring{
+ stroke:#E2C49A;stroke-width:1.5;
+}
+.nrw-region-map-pulse{
+ fill:none;stroke:#D8BE98;transform-box:fill-box;transform-origin:center;pointer-events:none;
+ animation:nrw-region-map-pulse 2.5s ease-out infinite;
+}
+.nrw-region-map-bochum[aria-disabled="true"] .nrw-region-map-pulse{display:none}
+@keyframes nrw-region-map-pulse{0%{opacity:.65;transform:scale(.8)}80%,100%{opacity:0;transform:scale(1.5)}}
+@media(max-width:640px){
+ .nrw-region-map,.nrw-news-lead:not(:has(.nrw-news-featured)){display:none}
+}
 
 .nrw-news-sources{margin-top:20px;padding:12px 24px 16px;scroll-margin-top:16px}
 .nrw-sources-heading h2{margin:0;color:#D6C4A8;font-size:15px;font-weight:700}
@@ -276,12 +351,12 @@
 .nrw-news-disclosure{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:0 12px;margin-top:8px}
 .nrw-shell :is(a,summary,select,button,input):focus-visible{outline:2px solid #E2C49A}
 @media(max-width:767px){
- .nrw-overview .nrw-header{margin-bottom:16px}
  .nrw-news-source-groups{grid-template-columns:minmax(0,1fr)}
  .nrw-news-source-link,.nrw-news-filters button{min-height:44px}
 }
 @media(prefers-reduced-motion:reduce){
- .nrw-news-skeleton span,.nrw-bochum-badge{animation:none}
+ .nrw-news-skeleton span,.nrw-bochum-badge,.nrw-region-map-pulse,.nrw-region-map-bochum-pill{animation:none}
+ .nrw-bochum-directory-extra{transition:none}
 }
 @media(prefers-contrast:more){
  .nrw-overview .nrw-header h1{background-image:none;-webkit-text-fill-color:currentColor;color:#EAE2D7}

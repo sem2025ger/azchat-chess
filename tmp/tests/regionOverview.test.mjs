@@ -59,10 +59,15 @@ test('NRW static external destinations are defined once in the shared config',()
  }
 });
 
-test('NRW links to national chat without embedding it and the chat retains its membership guard',()=>{
+test('NRW landing omits the preparation and chat header links while both routes remain available',()=>{
  const rail=read('src/components/schachTreff/NationwideChatRail.tsx');
+ const landing=region.slice(region.indexOf('function NrwLanding()'));
+ const header=landing.match(/<header className="nrw-header">([\s\S]*?)<\/header>/)?.[1];
+ assert.ok(header);
+ assert.doesNotMatch(header,/to="\/(vorbereitung|chat)"/);
+ assert.match(app,/<Route path="chat" element=\{<ChatScreen/);
+ assert.match(app,/<Route path="vorbereitung" element=\{<VorbereitungScreen/);
  assert.doesNotMatch(region,/NationwideChatRail/);
- assert.match(region,/<div className="nrw-links">[\s\S]*?to="\/vorbereitung"[\s\S]*?to="\/chat"/);
  assert.match(region,/to="\/chat"/);
  assert.match(rail,/NATIONAL_ROOM_SLUG = 'chessaz-deutsch'/);
  assert.match(rail,/\.eq\('club_id',id\)/);
@@ -128,12 +133,39 @@ test('NRW news times use the active language and an absolute Berlin date', async
  const { newsDateFormats, relativeNewsTime } = await import('../src/components/nrw/newsData.ts');
  const published = '2026-11-23T11:10:00.000Z';
  const now = Date.parse('2026-11-23T12:40:00.000Z');
- for (const [language, locale] of Object.entries({de:'de-DE',en:'en-GB',az:'az-AZ',tr:'tr-TR',ua:'uk-UA',ru:'ru-RU'})) {
+ for (const [language, locale] of Object.entries({de:'de-DE',en:'en-GB',tr:'tr-TR',ua:'uk-UA',ru:'ru-RU'})) {
   const formats = newsDateFormats(language);
   const intl = new Intl.RelativeTimeFormat(locale,{numeric:'auto'});
   assert.equal(relativeNewsTime(formats.relative,published,now),intl.format(-1,'hour'));
   assert.equal(relativeNewsTime(formats.relative,published,now+86_400_000),intl.format(-1,'day'));
   assert.equal(relativeNewsTime(formats.relative,published,now-80*60_000),intl.format(-10,'minute'));
   assert.equal(formats.clock.format(new Date(published)),'12:10');
+ }
+});
+
+test('NRW news uses Azerbaijani time words for past and future dates', async () => {
+ const { newsDateFormats, relativeNewsTime } = await import('../src/components/nrw/newsData.ts');
+ const { relative } = newsDateFormats('az');
+ const now = Date.parse('2026-11-23T10:59:35Z');
+ const minute = 60_000, hour = 60 * minute, day = 24 * hour;
+ const cases = [
+  [-30_000, 'indicə'], [30_000, 'indicə'], [-5 * minute, '5 dəqiqə əvvəl'],
+  [-10 * hour, '10 saat əvvəl'], [-day, 'dünən'], [-5 * day, '5 gün əvvəl'],
+  [5 * minute, '5 dəqiqə sonra'], [10 * hour, '10 saat sonra'], [day, '1 gün sonra'],
+ ];
+ for (const [offset, expected] of cases) {
+  assert.equal(relativeNewsTime(relative, new Date(now + offset).toISOString(), now), expected);
+ }
+});
+
+test('NRW Azerbaijani absolute dates and clocks use Berlin time with numeric dates year-round', async () => {
+ const { newsDateFormats } = await import('../src/components/nrw/newsData.ts');
+ const { clock, absolute } = newsDateFormats('az');
+ for (const [utc, date, time] of [
+  ['2026-11-23T10:59:35Z', '23.11.2026', '11:59'],
+  ['2026-07-09T22:05:00Z', '10.07.2026', '00:05'],
+ ]) {
+  assert.equal(absolute.format(new Date(utc)), `${date}, ${time}`);
+  assert.equal(clock.format(new Date(utc)), time);
  }
 });

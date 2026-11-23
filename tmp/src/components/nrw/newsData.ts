@@ -45,17 +45,52 @@ export const isDate = (value: unknown): value is string =>
 
 const locales = { de:'de-DE', en:'en-GB', az:'az-AZ', tr:'tr-TR', ua:'uk-UA', ru:'ru-RU' } as const;
 
+const berlinDateAndTime = new Intl.DateTimeFormat('de-DE', {
+ timeZone: 'Europe/Berlin',
+ day: '2-digit', month: '2-digit', year: 'numeric',
+ hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+});
+
+function formatAzerbaijaniDate(date: Date, clockOnly = false) {
+ const { day, month, year, hour, minute } = Object.fromEntries(
+  berlinDateAndTime.formatToParts(date).map(({ type, value }) => [type, value] as const),
+ );
+ const clock = `${hour}:${minute}`;
+ return clockOnly ? clock : `${day}.${month}.${year.padStart(4, '0')}, ${clock}`;
+}
+
+type NewsTimeUnit = 'minute' | 'hour' | 'day';
+type RelativeNewsFormatter = { format: (amount: number, unit: NewsTimeUnit) => string };
+
+const azerbaijaniTimeUnits = { minute: 'dəqiqə', hour: 'saat', day: 'gün' } as const;
+const azerbaijaniRelative: RelativeNewsFormatter = {
+ format(amount, unit) {
+  if (amount === 0) return 'indicə';
+  if (amount === -1 && unit === 'day') return 'dünən';
+  return `${Math.abs(amount)} ${azerbaijaniTimeUnits[unit]} ${amount < 0 ? 'əvvəl' : 'sonra'}`;
+ },
+};
+
 export function newsDateFormats(language: NewsLocale) {
  const locale = locales[language];
+ const number = new Intl.NumberFormat(locale);
+ if (language === 'az') {
+  return {
+   clock: { format: (date: Date) => formatAzerbaijaniDate(date, true) },
+   absolute: { format: formatAzerbaijaniDate },
+   relative: azerbaijaniRelative,
+   number,
+  };
+ }
  return {
   clock: new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' }),
   absolute: new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Berlin' }),
   relative: new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }),
-  number: new Intl.NumberFormat(locale),
+  number,
  };
 }
 
-export function relativeNewsTime(formatter: Intl.RelativeTimeFormat, value: string, now: number) {
+export function relativeNewsTime(formatter: RelativeNewsFormatter, value: string, now: number) {
  const minutes = (Date.parse(value) - now) / 60_000;
  if (Math.abs(minutes) < 60) return formatter.format(Math.trunc(minutes), 'minute');
  if (Math.abs(minutes) < 24 * 60) return formatter.format(Math.trunc(minutes / 60), 'hour');

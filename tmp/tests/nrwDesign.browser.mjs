@@ -41,7 +41,12 @@ const sourceUrls = [
  'https://schachverband-owl.de/', 'https://www.svmuensterland.de/', 'https://schach-swf.de/',
 ];
 
-export async function checkNRWDesign({root=process.cwd(),captureRoot,phase='after',verify=true}={}){
+export async function checkNRWDesign(options={}){
+ await checkLayout({...options,mapEnabled:true});
+ if(options.verify!==false)await checkLayout({...options,captureRoot:undefined,phase:'map-off',mapEnabled:false});
+}
+
+async function checkLayout({root=process.cwd(),captureRoot,phase='after',verify=true,mapEnabled}){
  const plugin=sectionsFixturePlugin(),load=plugin.load;
  plugin.load=id=>{
   let code=load(id);
@@ -55,15 +60,17 @@ export async function checkNRWDesign({root=process.cwd(),captureRoot,phase='afte
     window.nrwNewsRequests=(window.nrwNewsRequests||0)+1;
     if(window.nrwNewsDelay)await new Promise(resolve=>setTimeout(resolve,window.nrwNewsDelay));
     if(window.nrwNewsFailure)return new Response('fixture error',{status:503});
-    const updatedAt=new Date().toISOString();
-    const regions=['nrw','bochum','ruhrgebiet','nrw','bochum','bochum','ruhrgebiet','bochum'];
+    const now=Date.now();
+    const updatedAt=new Date(now).toISOString();
+    const regions=['nrw','bochum','ruhrgebiet','nrw','bochum','bochum','ruhrgebiet','bochum',
+     ...Array.from({length:19},(_,index)=>['niederrhein','owl','muensterland','suedwestfalen','nrw'][index%5])];
     const titles=['NRW-Pokal','Stadtmeisterschaft Bochum','Schach im Revier','Schulschach-Finale',
      'Blitzturnier in Bochum','Jugendturnier in Bochum','Ruhr-Liga','Vereinsabend in Bochum'];
     const items=window.nrwEmpty?[]:regions.map((region,index)=>({
-     title:titles[index],url:'https://example.org/news-'+index,
+     title:titles[index]||'QA Turnierbericht '+index,url:'https://example.org/news-'+index,
      source:region==='bochum'?'QA Schachbezirk Bochum':'QA NRW',shortName:region==='bochum'?'QA Bochum':'QA NRW',
      region,category:index===0?'landesverband':index===3?'jugend_schule':'region',
-     publishedAt:new Date(Date.now()-(90+index*60)*60_000).toISOString()
+     publishedAt:new Date(now-(index<5 ? 630+index*60 : index*1440+30)*60_000).toISOString()
     }));
     data=window.nrwLegacy
      ?{items:items.filter(x=>x.region==='bochum').map(({title,url})=>({title,url}))}
@@ -80,7 +87,8 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
   return code;
  };
  const server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-sections-vite-'+process.pid+'-nrw-'+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:Object.fromEntries([
-  ['VITE_SERVER_URL','https://sections-fixture.invalid'],...['VITE_SPIELER_V1_ENABLED','VITE_CLUBS_NRW_ENABLED','VITE_SPIELTAG_ENABLED','VITE_VORBEREITUNG_ENABLED','VITE_POSITION_SEARCH_ENABLED'].map(k=>[k,'true'])
+  ['VITE_SERVER_URL','https://sections-fixture.invalid'],...['VITE_SPIELER_V1_ENABLED','VITE_CLUBS_NRW_ENABLED','VITE_SPIELTAG_ENABLED','VITE_VORBEREITUNG_ENABLED','VITE_POSITION_SEARCH_ENABLED'].map(k=>[k,'true']),
+  ...(mapEnabled?[['VITE_NRW_REGION_MAP_ENABLED','true']]:[])
  ].map(([k,v])=>['import.meta.env.'+k,JSON.stringify(v)]))});
  let chrome,ws,profile;const pending=new Map(),exceptions=[],diagnostics=[],measurements=[];
  try{
@@ -102,14 +110,28 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
   if(captureRoot)await mkdir(captureRoot,{recursive:true});
   const capture=async name=>{if(captureRoot){const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(captureRoot,phase+'-'+name+'.png'),Buffer.from(shot.data,'base64'));}};
   const directorySelector='.nrw-bochum-directory a';
-  for(const [width,height] of [[1280,720],[1440,900],[1920,950],[390,844]]){
+  const viewports=mapEnabled?[[1280,720],[1440,900],[1920,950],[390,844]]:[[1440,900],[390,844]];
+  for(const [width,height] of viewports){
    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
    await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
-   await wait("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length===5");
+   await wait("document.querySelector('.nrw-news-feed .nrw-news-row')");
+   const mapControl=region=>`[data-nrw-map-region="${region}"]`;
+   const filterControl=region=>`[data-nrw-filter-region="${region}"]`;
+   const pressed=selector=>evaluate(`document.querySelector(${JSON.stringify(selector)}).getAttribute('aria-pressed')`);
+   const clickMap=async(region,target='.nrw-region-map-count')=>{
+    const selector=JSON.stringify(mapControl(region)+' '+target);
+    const {x,y}=await evaluate(`(()=>{const el=document.querySelector(${selector});
+     el.scrollIntoView({block:'center'});const r=el.getBoundingClientRect();
+     return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
+    await cdp('Input.dispatchMouseEvent',{type:'mousePressed',x,y,button:'left',clickCount:1});
+    await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',x,y,button:'left',clickCount:1});
+   };
    let germanDescriptions;
    for(const lang of (verify?['de','en','az','tr','ua','ru']:['de','ru'])){
     await evaluate('window.fixtureLanguage('+JSON.stringify(lang)+')');await evaluate('document.fonts.ready');await pause(60);
-    if(lang==='de'||lang==='ru')await capture('nrw-'+lang+'-'+width+'x'+height);
+    if(lang==='de'||lang==='ru'||lang==='az'&&[1440,390].includes(width)){
+     await capture('nrw-'+lang+'-'+width+'x'+height);
+    }
     const metric=await evaluate(`(()=> {
      const root=document.querySelector('.nrw-overview');
      const bounds=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
@@ -118,7 +140,8 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
       ...bounds(a),
      }));
      const title=root.querySelector('h1');
-     const style=getComputedStyle(title), subtitle=getComputedStyle(root.querySelector('.nrw-header p'));
+     const subtitleNode=root.querySelector('.nrw-header p');
+     const style=getComputedStyle(title), subtitle=getComputedStyle(subtitleNode), dash=getComputedStyle(subtitleNode,'::before');
      const canvas=document.createElement('canvas').getContext('2d');
      const rgb=value=>{canvas.clearRect(0,0,1,1);canvas.fillStyle=value;canvas.fillRect(0,0,1,1);return [...canvas.getImageData(0,0,1,1).data].slice(0,3);};
      const luminance=value=>rgb(value).map(x=>x/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4)
@@ -130,14 +153,27 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
       const card=directory.querySelectorAll('a')[index];
       const description=card.querySelector('.nrw-bochum-directory-copy span');
       return {...link,title:card.querySelector('strong').textContent,description:description.textContent,
+       inert:Boolean(card.closest('[inert]')),
        fits:card.scrollWidth<=card.clientWidth+1,
        contrast:(luminance(getComputedStyle(description).color)+.05)/(luminance('#302E2B')+.05)};
      });
+     const map=root.querySelector('.nrw-region-map');
+     const badge=root.querySelector('.nrw-bochum-badge');
+     const marker=map?.querySelector('.nrw-region-map-bochum-pill');
+     const featured=root.querySelector('.nrw-news-featured');
+     const featuredCopy=featured&&bounds(featured.querySelector('.nrw-news-headline'));
+     const filters=root.querySelector('.nrw-news-filters');
+     const largestGap=selector=>{
+      const panel=root.querySelector(selector);
+      const elements=[...panel.children].map(bounds);
+      return Math.max(elements[0].y-bounds(panel).y,bounds(panel).bottom-elements.at(-1).bottom,
+       ...elements.slice(1).map((rect,index)=>rect.y-elements[index].bottom));
+     };
      return {
       width:innerWidth,documentWidth:document.documentElement.scrollWidth,
       cards:[...root.querySelectorAll('.nrw-grid>.nrw-card')].map(bounds),
       cardBorders:[...root.querySelectorAll('.nrw-grid>.nrw-card')].map(card=>getComputedStyle(card).borderTopColor),
-      official:links('.nrw-official-links a'),headlines:links('.nrw-news-feed .nrw-news-row'),sources:links('.nrw-news-sources a'),actions:links('.nrw-header .nrw-links a'),
+      official:links('.nrw-official-links a'),headlines:links('.nrw-news-feed .nrw-news-row'),sources:links('.nrw-news-sources a'),actions:links('.nrw-header a'),
       removed:root.querySelectorAll('.nrw-header-top,.nrw-kicker,.nrw-region-code,.nrw-signin,.section-info,.nrw-count,.nrw-footer,.nrw-chat-rail,select,details,[href="/spieltag"],[href^="/profile"],[href^="/clubs-nrw"],[href="/region/nrw/turniere"],[href="/region/nrw/ligen"],[href="/region/nrw/vereine"],iframe').length,
       newsLinks:links('.nrw-news-links a,.nrw-news-disclosure a').map(a=>a.href),
       sourceGroups:root.querySelectorAll('.nrw-news-source-groups h3').length,gradient:style.backgroundImage,contrast,
@@ -155,13 +191,52 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
       directoryHeading:directory?.querySelector('h3').textContent,
       directoryColumns:directory&&getComputedStyle(directory.querySelector('ul')).gridTemplateColumns.split(' ').length,
       directoryBetweenNewsAndFooter:directory?.previousElementSibling?.matches('.nrw-news-rows')&&directory.nextElementSibling?.matches('.nrw-bochum-footer'),
-      time:root.querySelector('.nrw-news-row time').textContent.trim(),
+      directoryTransition:directory?.querySelector('.nrw-bochum-directory-extra')&&getComputedStyle(directory.querySelector('.nrw-bochum-directory-extra')).transitionDuration,
+      map:map&&{visible:getComputedStyle(map).display!=='none',height:bounds(map).height,
+       areaCount:map.querySelectorAll('.nrw-region-map-area').length,
+       aboveFilters:bounds(map).bottom<=bounds(filters).y+1,
+       pulse:getComputedStyle(map.querySelector('.nrw-region-map-pulse')).animationName,
+       corners:map.querySelectorAll('.nrw-region-map-corner[aria-hidden="true"]').length,
+       panel:[getComputedStyle(map).borderRadius,getComputedStyle(map).backgroundColor,getComputedStyle(map).backgroundSize],
+       stroke:[...map.querySelectorAll('.nrw-region-map-area path')].map(path=>{
+        const style=getComputedStyle(path);
+        return [style.stroke,style.strokeWidth];
+       }),
+       nameSize:getComputedStyle(map.querySelector('.nrw-region-map-name')).fontSize,
+       count:[...map.querySelectorAll('.nrw-region-map-count')].map(node=>[node.width.baseVal.value,node.height.baseVal.value]),
+       countSize:getComputedStyle(map.querySelector('.nrw-region-map-count-text')).fontSize,
+       dotRadius:map.querySelector('.nrw-region-map-dot').r.baseVal.value,
+       ringRadius:map.querySelector('.nrw-region-map-ring')?.r.baseVal.value,
+       hit:bounds(map.querySelector('.nrw-region-map-bochum-hit')),
+       labels:[...map.querySelectorAll('.nrw-region-map-area')].map(area=>({
+        region:area.dataset.nrwMapRegion,
+        name:bounds(area.querySelector('.nrw-region-map-name')),
+        count:bounds(area.querySelector('.nrw-region-map-count')),
+        path:bounds(area.querySelector('path')),
+       })),
+       pill:bounds(marker),
+       marker:marker&&{color:getComputedStyle(marker).color,sheen:getComputedStyle(marker).animationName,
+        gradientMatches:["backgroundImage","backgroundSize","backgroundClip"].every(key=>getComputedStyle(marker)[key]===getComputedStyle(badge)[key])},
+       contrast:(luminance(getComputedStyle(map.querySelector('.nrw-region-map-name')).fill)+.05)/(luminance('#33363B')+.05)},
+      featured:featured&&{...links('.nrw-news-featured')[0],dates:[...featured.querySelectorAll('time span')].map(span=>span.textContent),
+       gap:Math.max(featuredCopy.y-bounds(featured).y,bounds(featured).bottom-featuredCopy.bottom,
+        bounds(featured.parentElement).bottom-bounds(featured).bottom)},
+      largestGap:Math.max(largestGap('.nrw-news-feed'),largestGap('.nrw-bochum'),
+       ...(featured?[largestGap('.nrw-news-content')]:[])),
       dateTooltip:root.querySelector('.nrw-news-row time').title,
-      rowHeight:bounds(root.querySelector('.nrw-news-row')).height,
+      timeTexts:[...root.querySelectorAll('time')].map(time=>time.innerText.trim()),
+      absoluteDates:[...root.querySelectorAll('.nrw-news-row time')].map(time=>time.title),
+      bochumDay:root.querySelector('.nrw-bochum .nrw-news-row[href$="/news-5"] time').innerText,
+      updatedClock:root.querySelector('.nrw-news-heading time').innerText,
+      rowHeight:bounds(root.querySelector('.nrw-news-row[href$="/news-2"]')).height,
       categoryClasses:[...root.querySelectorAll('.nrw-news-legend .nrw-news-tag')].map(tag=>tag.className),
       activeTargets:[...root.querySelectorAll('.nrw-news-filters button,.nrw-sources-heading button')].map(bounds),
       requestCount:window.nrwNewsRequests,
-      subtitle:[subtitle.fontSize,subtitle.fontWeight,subtitle.color,subtitle.maxWidth,subtitle.marginTop,subtitle.marginBottom],
+      subtitle:{style:[subtitle.fontSize,subtitle.fontWeight,subtitle.letterSpacing,subtitle.color,subtitle.columnGap,subtitle.alignItems],
+       dash:[dash.width,dash.height,dash.backgroundColor],
+       contrast:(luminance(subtitle.color)+.05)/(luminance(getComputedStyle(root).backgroundColor)+.05),
+       titleGap:bounds(subtitleNode).y-bounds(title).bottom,
+       newsGap:bounds(root.querySelector('.nrw-news-grid')).y-bounds(subtitleNode).bottom},
       dbReads:window.nrwDbReads||0,
      };
     })()`);
@@ -194,12 +269,30 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      assert.equal(metric.removed,0,'legacy controls and metadata stay outside the overview');
      assert.equal(metric.dbReads,0,'landing never queries the database');
      assert.deepEqual(metric.official.map(link=>link.href),officialUrls);
-     assert.equal(metric.headlines.length,5,'five headlines visible without interaction');
-     assert.deepEqual(metric.headlines.map(link=>link.href),[0,1,2,3,4].map(index=>'https://example.org/news-'+index));
+     assert.equal(metric.headlines.length,8,'eight headlines including the featured story');
+     assert.deepEqual(metric.headlines.map(link=>link.href),Array.from({length:8},(_,index)=>'https://example.org/news-'+index));
+     assert.equal(metric.featured.href,metric.headlines[0].href);
+     const expectedRelative=lang==='az'?'10 saat əvvəl':
+      await evaluate(`new Intl.RelativeTimeFormat('${localeIds[lang]}',{numeric:'auto'}).format(-10,'hour')`);
+     assert.equal(metric.featured.dates[0],expectedRelative);
+     assert.equal(metric.featured.dates[1],metric.dateTooltip);
+     for(const time of metric.timeTexts)assert.doesNotMatch(time,/^[-+]\d/,lang+' visible time');
+     for(const absolute of metric.absoluteDates) {
+      assert.ok(absolute);
+      assert.doesNotMatch(absolute,/ M\d/,lang+' absolute date tooltip');
+      if(lang==='az')assert.match(absolute,/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
+     }
+     if(lang==='az'){
+      assert.equal(metric.bochumDay,'5 gün əvvəl');
+      assert.match(metric.updatedClock,/\b\d{2}:\d{2}\b/);
+      if(mapEnabled&&width===1440)console.log(`NRW AZ at 1440 px: ${[...metric.featured.dates,metric.bochumDay].join(' | ')}`);
+     }
      assert.deepEqual(metric.bochumRows.map(link=>link.href),[1,4,5].map(index=>'https://example.org/news-'+index));
      assert.equal(metric.directoryHeading,directoryHeadings[lang]);
      assert.ok(metric.directoryBetweenNewsAndFooter);
      assert.deepEqual(metric.directoryCards.map(card=>card.title),directoryTitles);
+     assert.deepEqual(metric.directoryCards.filter(card=>!card.inert).map(card=>card.title),directoryTitles.slice(0,3));
+     assert.equal(metric.directoryTransition,'0s');
      const descriptions=metric.directoryCards.map(card=>card.description);
      assert.ok(descriptions.every(description=>description.trim().length>0&&description.length<=70));
      if(lang==='de')germanDescriptions=descriptions;
@@ -219,7 +312,6 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      assert.ok(metric.bodoniLoaded,'self-hosted 700 weight loads');
      assert.ok(metric.badge.height>=50);
      assert.ok(Math.abs(metric.badge.x+metric.badge.width/2-metric.bochum.x-metric.bochum.width/2)<=2);
-     assert.equal(metric.time,await evaluate(`new Intl.RelativeTimeFormat('${localeIds[lang]}',{numeric:'auto'}).format(-1,'hour')`));
      assert.ok(metric.dateTooltip,'absolute time tooltip');
      assert.equal(metric.rowHeight,52,'single-line headlines match the skeleton row height');
      assert.deepEqual(metric.categoryClasses,['landesverband','jugend_schule','region'].map(key=>'nrw-news-tag nrw-news-tag--'+key));
@@ -230,25 +322,75 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
       assert.ok(metric.directoryCards.every(card=>card.height>=44),'mobile directory cards reach 44px');
      } else {
       assert.ok(metric.feed.right<=metric.bochum.x,'news sections are side by side');
-      assert.equal(metric.feed.height,metric.bochum.height,'news sections have equal desktop heights');
+     }
+     if(mapEnabled){
+      assert.equal(metric.map.visible,width>640);
+      assert.equal(metric.map.areaCount,6);
+      assert.equal(metric.map.pulse,'none');
+      assert.ok(metric.map.contrast>=4.5);
+      if(width>640){
+       assert.ok(metric.map.aboveFilters&&metric.map.height>=200);
+       assert.equal(metric.map.corners,4);
+       assert.deepEqual(metric.map.panel,['12px','rgb(26, 28, 31)','12px 12px']);
+       assert.deepEqual(metric.map.stroke,Array.from({length:6},()=>['rgba(184, 145, 106, 0.4)','1px']));
+       assert.equal(metric.map.nameSize,'12.5px');
+       assert.deepEqual(metric.map.count,Array.from({length:6},()=>[24,16]));
+       assert.equal(metric.map.countSize,'11px');
+       assert.ok(metric.map.dotRadius>=5&&metric.map.ringRadius>=9);
+       assert.ok(metric.map.hit.width>=32&&metric.map.hit.height>=24);
+       assert.deepEqual(metric.map.marker,{color:'rgb(240, 223, 196)',sheen:'none',gradientMatches:true});
+       if(width===1440){
+        const overlaps=(a,b)=>a.x<b.right&&b.x<a.right&&a.y<b.bottom&&b.y<a.bottom;
+        const boxes=[{id:'bochum pill',rect:metric.map.pill}];
+        for(const {region,name,count,path} of metric.map.labels){
+         assert.ok(name.x>=path.x&&name.right<=path.right&&name.y>=path.y&&name.bottom<=path.bottom,
+          lang+' '+region+' name stays inside its path bounds '+JSON.stringify({name,path}));
+         boxes.push({id:region+' name',rect:name},{id:region+' count',rect:count});
+         if(region==='suedwestfalen'){
+          assert.ok(!overlaps(metric.map.hit,name)&&!overlaps(metric.map.hit,count),lang+' Bochum hit area clears Südwestfalen');
+         }
+        }
+        for(const [index,box] of boxes.entries()){
+         for(const other of boxes.slice(index+1)){
+          assert.ok(!overlaps(box.rect,other.rect),lang+' overlapping map labels '+JSON.stringify([box,other]));
+         }
+        }
+        if(captureRoot&&['de','en'].includes(lang)){
+         const clip=await evaluate(`(()=>{const r=document.querySelector('.nrw-region-map').getBoundingClientRect();
+          return {x:r.x+scrollX,y:r.y+scrollY,width:r.width,height:r.height,scale:1};})()`);
+         const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip});
+         await writeFile(join(captureRoot,`nrw-map-${lang}-1440.png`),Buffer.from(shot.data,'base64'));
+        }
+        await clickMap('bochum','.nrw-region-map-bochum-pill');
+        assert.equal(await pressed(filterControl('bochum')),'true',lang+' Bochum pill selects Bochum');
+        await clickMap('suedwestfalen','.nrw-region-map-name');
+        assert.equal(await pressed(filterControl('suedwestfalen')),'true',lang+' Südwestfalen name selects Südwestfalen');
+        await evaluate(`document.activeElement.blur(); document.querySelector(${JSON.stringify(filterControl(''))}).click(); window.scrollTo(0,0)`);
+        await cdp('Input.dispatchMouseEvent',{type:'mouseMoved',x:0,y:0});
+       }
+      }
+     }else assert.equal(metric.map,null,'map is absent with no flag');
+     if(width===1440){
+      const balance={lang,mapEnabled,feed:metric.feed.height,bochum:metric.bochum.height};
+      assert.ok(Math.abs(metric.feed.bottom-metric.bochum.bottom)<=40,'desktop panel balance '+JSON.stringify(balance));
+      assert.ok(Math.max(metric.largestGap,metric.featured.gap)<=metric.rowHeight,'no blank gap larger than a row '+JSON.stringify(balance));
      }
      for(const link of [...metric.official,...metric.headlines,...metric.bochumRows,...metric.sources,...metric.directoryCards]){
       assert.equal(link.target,'_blank');assert.equal(link.rel,'noopener noreferrer');assert.ok(link.icon);
       assert.ok(link.x>=0&&link.right<=width+1,'external link fits: '+link.href);
      }
      assert.deepEqual(metric.newsLinks,['/region/nrw/news','/region/nrw/live']);
-     assert.deepEqual(metric.actions.map(link=>link.href),['/vorbereitung','/chat']);
-     assert.ok(metric.actions.every(link=>link.icon&&link.height>=44));
-     assert.equal(metric.actions[0].width,metric.actions[1].width,'equal top action widths');
-     assert.equal(metric.actions[0].height,metric.actions[1].height,'equal top action heights');
+     assert.deepEqual(metric.actions,[],'landing header contains no action links');
      assert.ok(metric.gradient.startsWith('linear-gradient')&&Number.isFinite(metric.contrast)&&metric.contrast>=4.5,'heading gradient contrast: '+JSON.stringify({gradient:metric.gradient,contrast:metric.contrast}));
-     assert.deepEqual(metric.subtitle,['17px','400','rgb(216, 211, 200)','640px','12px','28px']);
+     assert.deepEqual(metric.subtitle.style,['14px','500','0.84px','rgb(191, 174, 150)','10px','center']);
+     assert.deepEqual(metric.subtitle.dash,['24px','1px','rgb(184, 145, 106)']);
+     assert.ok(metric.subtitle.contrast>=4.5);
+     assert.ok(Math.abs(metric.subtitle.titleGap-14)<=2);
+     assert.ok(Math.abs(metric.subtitle.newsGap-28)<=2);
      if(width>=1280){
       assert.ok(metric.cards.every(card=>Math.abs(card.y-metric.cards[0].y)<1&&Math.abs(card.height-metric.cards[0].height)<1&&Math.abs(card.width-metric.cards[0].width)<1),'equal desktop cards');
-      assert.equal(metric.actions[0].y,metric.actions[1].y,'top actions share a row');
      }else{
       assert.ok(metric.cards.every((card,i)=>!i||card.y>=metric.cards[i-1].bottom),'mobile cards stack');
-      assert.ok(metric.actions[1].y>=metric.actions[0].bottom,'mobile actions wrap without clipping');
      }
     }
    }
@@ -256,6 +398,7 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    await evaluate("window.fixtureLanguage('de')");await pause(50);
    const click=async selector=>evaluate('document.querySelector('+JSON.stringify(selector)+').click()');
    const countRows=()=>evaluate("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length");
+   const visibleDirectory=()=>evaluate(`document.querySelectorAll('${directorySelector}:not([inert] a)').length`);
    if(captureRoot && [390,1440].includes(width)){
     const captureHeight=await evaluate("Math.ceil(document.querySelector('.nrw-overview').getBoundingClientRect().bottom+180)");
     await cdp('Emulation.setDeviceMetricsOverride',{width,height:captureHeight,deviceScaleFactor:1,mobile:width===390});
@@ -267,12 +410,63 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
     }
     await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
    }
+   assert.equal(await visibleDirectory(),3);
+   assert.equal(await evaluate("document.querySelector('.nrw-bochum-directory-toggle').textContent.trim()"),'Alle Seiten (8)');
+   assert.equal(await evaluate("document.querySelector('.nrw-bochum-directory-extra').getBoundingClientRect().height"),0);
+   await click('.nrw-bochum-directory-toggle');
+   assert.equal(await visibleDirectory(),8);
+   assert.equal(await evaluate("document.querySelector('.nrw-bochum-directory-toggle').getAttribute('aria-expanded')"),'true');
+   assert.equal(await evaluate("document.querySelector('.nrw-bochum-directory-toggle').textContent.trim()"),'Weniger anzeigen');
+   await click('.nrw-bochum-directory-toggle');
+   assert.equal(await visibleDirectory(),3);
+
    await click('.nrw-news-controls button');
-   assert.equal(await countRows(),8);
+   assert.equal(await countRows(),27);
    assert.equal(await evaluate("document.querySelector('.nrw-news-controls button').getAttribute('aria-expanded')"),'true');
    await click('.nrw-news-controls button');
-   assert.equal(await countRows(),5);
-   assert.deepEqual(await evaluate("[...document.querySelectorAll('.nrw-news-filters button')].map(button=>button.textContent.trim().replace(/ +/g,' '))"),['Alle 8','Nordrhein-Westfalen 2','Ruhrgebiet 2','Bochum 4']);
+   assert.equal(await countRows(),8);
+   assert.deepEqual(await evaluate("[...document.querySelectorAll('.nrw-news-filters button')].map(button=>button.textContent.trim().replace(/ +/g,' '))"),
+    ['Alle 27','Nordrhein-Westfalen 5','Ruhrgebiet 2','Niederrhein 4','Ostwestfalen-Lippe 4','Münsterland 4','Südwestfalen 4','Bochum 4']);
+   if(mapEnabled&&width===1440){
+    const pressMap=async(region,key,code)=>{
+     const selector=JSON.stringify(mapControl(region));
+     assert.ok(await evaluate(`(()=>{const el=document.querySelector(${selector});el.focus();return el===document.activeElement;})()`));
+     await cdp('Input.dispatchKeyEvent',{type:'keyDown',key,code});
+     await cdp('Input.dispatchKeyEvent',{type:'keyUp',key,code});
+    };
+    const featuredUrl=()=>evaluate("document.querySelector('.nrw-news-featured').href");
+    assert.equal(await evaluate(`document.querySelector('${mapControl('mittelrhein')}').getAttribute('aria-disabled')`),'true');
+    await clickMap('mittelrhein');
+    assert.equal(await pressed(filterControl('')),'true');
+    await clickMap('ruhrgebiet');
+    assert.equal(await countRows(),2);
+    assert.equal(await pressed(filterControl('ruhrgebiet')),'true');
+    assert.equal(await pressed(mapControl('ruhrgebiet')),'true');
+    assert.equal(await featuredUrl(),'https://example.org/news-2');
+    await pressMap('muensterland','Enter','Enter');
+    assert.equal(await pressed(filterControl('muensterland')),'true');
+    assert.equal(await featuredUrl(),'https://example.org/news-10');
+    await pressMap('niederrhein',' ','Space');
+    assert.equal(await pressed(filterControl('niederrhein')),'true');
+    await clickMap('bochum','.nrw-region-map-bochum-pill');
+    assert.equal(await pressed(filterControl('bochum')),'true');
+    assert.equal(await featuredUrl(),'https://example.org/news-1');
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.nrw-region-map-ring')).stroke"),'rgb(226, 196, 154)');
+    await click(filterControl(''));
+    await pressMap('bochum','Enter','Enter');
+    assert.equal(await pressed(filterControl('bochum')),'true');
+    await click(filterControl('owl'));
+    assert.equal(await pressed(mapControl('owl')),'true');
+    await click(filterControl(''));
+    assert.equal(await pressed(mapControl('owl')),'false');
+    assert.equal(await featuredUrl(),'https://example.org/news-0');
+    await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.nrw-region-map-pulse')).animationName"),'nrw-region-map-pulse');
+    assert.deepEqual(await evaluate("['.nrw-bochum-badge','.nrw-region-map-bochum-pill'].map(selector=>{const style=getComputedStyle(document.querySelector(selector));return [style.animationName,style.animationDuration,style.animationTimingFunction]})"),
+     Array.from({length:2},()=>['nrw-bochum-sheen','6s','ease-in-out']));
+    assert.notEqual(await evaluate("getComputedStyle(document.querySelector('.nrw-bochum-directory-extra')).transitionDuration"),'0s');
+    await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+   }
    await click('.nrw-news-filters button:last-child');
    assert.equal(await countRows(),4);
    assert.ok(await evaluate("[...document.querySelectorAll('.nrw-news-feed .nrw-news-row .nrw-news-tag')].every(tag=>tag.textContent==='QA Bochum')"));
@@ -285,17 +479,19 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
 
    await click('.nrw-news a[href="/region/nrw/news"]');
    await wait("document.querySelector('.nrw-grid--detail .nrw-card--news')");
-   await wait("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length===8");
+   await wait("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length===27");
    assert.equal(await evaluate("document.querySelector('.nrw-grid--detail').children.length"),1,'news details route retains one focused panel');
    assert.equal(await evaluate("document.querySelectorAll('.nrw-news-sources a').length"),4,'news detail retains official NRW sources');
-   await click('.nrw-news-filters:nth-of-type(3) button:nth-child(3)');
+   const categoryFilters='.nrw-news-filters:not(:has([data-nrw-filter-region]))';
+   await click(categoryFilters+' button:nth-child(3)');
    assert.equal(await countRows(),1,'category filter selects youth and schools');
+   assert.equal(await evaluate("document.querySelector('.nrw-news-featured').href"),'https://example.org/news-3');
    await evaluate("window.fixtureNavigate('/region/nrw/news?region=bochum')");
    await wait("document.querySelector('.nrw-news-filters button[aria-pressed=true]')?.textContent.includes('Bochum')");
-   await click('.nrw-news-filters:nth-of-type(3) button:first-child');
+   await click(categoryFilters+' button:first-child');
    assert.equal(await countRows(),4,'Bochum deep link preselects local news');
    await evaluate("window.fixtureNavigate('/region/nrw/news?region=invalid')");
-   await wait("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length===8");
+   await wait("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length===27");
    assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'news details overflow');
    for(const section of ['turniere','ligen','vereine','live']){
     await evaluate('window.fixtureNavigate('+JSON.stringify('/region/nrw/'+section)+')');await wait('document.querySelector('+JSON.stringify('.nrw-grid--detail .nrw-card--'+section)+')');
@@ -345,7 +541,7 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    await wait("document.querySelectorAll('.nrw-news-skeleton').length===5");
    assert.deepEqual(await evaluate("[...document.querySelectorAll('.nrw-news-skeleton')].map(row=>[row.getBoundingClientRect().height,getComputedStyle(row.firstElementChild).animationName])"),Array.from({length:5},()=>[52,'none']));
    await wait("document.querySelectorAll('.nrw-bochum .nrw-news-row').length===3");
-   assert.equal(await evaluate(`document.querySelectorAll('${directorySelector}').length`),directoryTitles.length,'directory also appears with the legacy feed');
+   assert.equal(await visibleDirectory(),3,'directory also appears with the legacy feed');
    assert.ok(await evaluate("document.querySelector('.nrw-bochum .nrw-news-tag').textContent.includes('Schachbezirk Bochum · externe Quelle')"));
    assert.equal(await evaluate("document.querySelectorAll('.nrw-news-row time').length"),0,'legacy items have no fabricated date');
    await evaluate("window.nrwLegacy=false;window.nrwNewsDelay=0;window.nrwEmpty=true");
@@ -363,7 +559,11 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    await evaluate("window.nrwEmpty=false;window.nrwFailure=true;window.fixtureNavigate('/region/invalid')");await wait("!document.querySelector('[data-region-overview]')");await evaluate("window.fixtureNavigate('/region/nrw/vereine')");await wait("document.querySelector('.nrw-error[role=alert]')");assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'failure state overflow');
   }
   if(captureRoot)await writeFile(join(captureRoot,phase+'-measurements.json'),JSON.stringify(measurements,null,2));
-  assert.equal(exceptions.length,0,JSON.stringify(exceptions));console.log(verify?'PASS NRW design: six locales; 1280px, 1440px, 1920px and 390px; Bochum directory, official links, contrast, filters, motion, and news states, legacy routes, guest, empty and error states':'Captured NRW baseline in DE and RU');
+  assert.equal(exceptions.length,0,JSON.stringify(exceptions));
+  if(verify){
+   const balance=measurements.find(m=>m.width===1440&&m.lang==='de');
+   console.log(`PASS NRW 1440 px DE: map ${balance.map?.height??'off'} px, feed ${balance.feed.height} px, Bochum ${balance.bochum.height} px`);
+  }else console.log('Captured NRW baseline in DE and RU');
  }finally{for(const p of pending.values())clearTimeout(p.timer);try{ws?.close();}catch{}chrome?.kill('SIGKILL');await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
 }
 if(process.argv[1]===fileURLToPath(import.meta.url))await checkNRWDesign({captureRoot:process.env.NRW_CAPTURE,phase:process.env.NRW_PHASE||'after',verify:process.env.NRW_PHASE!=='before'});

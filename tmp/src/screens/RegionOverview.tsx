@@ -1,7 +1,7 @@
 import { translateSectionCopy } from '../i18n/sectionCopy';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Radio, ShieldCheck, MapPin, Trophy, Users, MessageCircle, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Radio, ShieldCheck, MapPin, Trophy, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import '@fontsource/bodoni-moda/latin-600.css';
@@ -104,6 +104,10 @@ const regionText: Record<string,Record<'en'|'de'|'az'|'tr'|'ua'|'ru',string>> = 
  "Bochum": {"de": "Bochum", "en": "Bochum", "az": "Bochum", "tr": "Bochum", "ua": "Бохум", "ru": "Бохум"},
  "Zu den Quellen": {"de": "Zu den Quellen", "en": "View sources", "az": "Mənbələrə bax", "tr": "Kaynakları gör", "ua": "Переглянути джерела", "ru": "Смотреть источники"},
  "Weniger anzeigen": {"de": "Weniger anzeigen", "en": "Collapse", "az": "Daha az göstər", "tr": "Daha az göster", "ua": "Згорнути", "ru": "Свернуть"},
+ "Alle Seiten ({count})": {"de": "Alle Seiten ({count})", "en": "All websites ({count})", "az": "Bütün saytlar ({count})", "tr": "Tüm siteler ({count})", "ua": "Усі сайти ({count})", "ru": "Все сайты ({count})"},
+ "NRW-Regionenkarte": {"de": "NRW-Regionenkarte", "en": "Map of NRW regions", "az": "NRW bölgələrinin xəritəsi", "tr": "NRW bölgeleri haritası", "ua": "Карта регіонів NRW", "ru": "Карта регионов NRW"},
+ "Schematische Darstellung": {"de": "schematisch", "en": "schematic", "az": "sxematik", "tr": "şematik", "ua": "схематично", "ru": "схематично"},
+ "{region} · {count} Meldungen": {"de": "{region} · {count} Meldungen", "en": "{region} · {count} stories", "az": "{region} · {count} xəbər", "tr": "{region} · {count} haber", "ua": "{region} · новини ({count})", "ru": "{region} · новости ({count})"},
  "{count} weitere anzeigen": {"de": "{count} weitere anzeigen", "en": "Show {count} more", "az": "Daha {count} göstər", "tr": "{count} tane daha göster", "ua": "Показати ще {count}", "ru": "Показать ещё {count}"},
  "Alle Bochumer Nachrichten": {"de": "Alle Bochumer Nachrichten", "en": "All Bochum news", "az": "Bochumun bütün xəbərləri", "tr": "Tüm Bochum haberleri", "ua": "Усі новини Бохума", "ru": "Все новости Бохума"},
  "Hauptquellen": {"de": "Hauptquellen", "en": "Main sources", "az": "Əsas mənbələr", "tr": "Ana kaynaklar", "ua": "Основні джерела", "ru": "Основные источники"},
@@ -391,10 +395,6 @@ function NrwLanding(){
   <header className="nrw-header">
    <h1>{tr('Schach in Nordrhein-Westfalen')}</h1>
    <p>{tr('Turniere, Mannschaften, Vereine und News an einem Ort')}</p>
-   <div className="nrw-links">
-    {import.meta.env.VITE_VORBEREITUNG_ENABLED==='true'&&<Link to="/vorbereitung"><ShieldCheck aria-hidden="true" size={17}/>{tr('Vorbereitung')}</Link>}
-    <Link to="/chat"><MessageCircle aria-hidden="true" size={17}/>{tr('Schach-Treff Deutschland')}</Link>
-   </div>
   </header>
 
   <div className="nrw-news-grid">

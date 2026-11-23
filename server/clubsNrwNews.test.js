@@ -50,6 +50,29 @@ test('official RSS extracts only headline fields, validates the origin and suppo
  ]);
 });
 
+test('official RSS repairs the Münsterland article query without altering normal encoded URLs', () => {
+ const host = 'https://www.svmuensterland.de';
+ const feedSource = { ...feed, allowedHosts: ['www.svmuensterland.de'] };
+ const original = host + '/%3Fview%3Darticle%26amp%3Bid%3D341%3Af%C3%BCr-kurzentschlossene-2%26amp%3Bcatid%3D2';
+ const normal = host + '/news%20article/?id=3&amp;catid=2';
+ const items = parseOfficialFeed(rss(story(original), story(normal)), feedSource);
+ assert.deepEqual(items.map(item => item.url), [
+  host + '/?view=article&id=341:f%C3%BCr-kurzentschlossene-2&catid=2',
+  host + '/news%20article/?id=3&catid=2',
+ ]);
+});
+
+test('official RSS drops broken, empty or foreign destinations after attempted path repair', () => {
+ const xml = rss(
+  story('https://bochumersv02.de/%3Fid%3D%E0%A4'),
+  story('https://bochumersv02.de/%3F'),
+  story('https://bochumersv02.de/%2Fforeign.example/%26amp%3B'),
+  story('https://bochumersv02.de/%2Fvisitor@bochumersv02.de/%26amp%3B'),
+  story('https://bochumersv02.de/%2Fbochumersv02.de:1234/%26amp%3B'),
+ );
+ assert.deepEqual(parseOfficialFeed(xml, feed), []);
+});
+
 test('official Atom accepts alternate links, prefixed entries and published date fallback', () => {
  const xml = `<?xml version="1.0"?><a:feed xmlns:a="http://www.w3.org/2005/Atom">
   <a:entry><a:title>Bochum &#x2659;</a:title>
