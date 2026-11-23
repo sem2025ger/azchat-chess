@@ -186,7 +186,7 @@ function createAggregatedNewsHandler(fetcher, now) {
   due.forEach((feed, index) => {
    const result = results[index];
    const items = result.status === 'fulfilled' ? result.value : [];
-   records.set(feed.id, { until: checkedAt + (items.length ? CACHE_MS : RETRY_MS), items });
+   records.set(feed.id, { until: checkedAt + (result.status === 'rejected' ? RETRY_MS : CACHE_MS), items });
   });
   const cutoff = new Date(checkedAt - MAX_AGE_MS).toISOString();
   const available = [...records.values()].map(record => record.items.filter(item => !item.publishedAt || item.publishedAt >= cutoff));

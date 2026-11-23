@@ -116,6 +116,38 @@ test('one unavailable feed and one oversized feed are isolated and retry after o
  assert.equal(attempts.get(RSS_URL), 2);
 });
 
+test('a valid feed without usable items is cached for 15 minutes while a failed feed retries after one minute', async () => {
+ const emptyUrl = 'https://bochumersv02.de/feed/';
+ const failedUrl = 'https://svr-schach.de/feed';
+ const attempts = new Map();
+ let clock = now;
+ const handler = createNrwNewsHandler({ enabled: true, now: () => clock, fetcher: async url => {
+  const count = (attempts.get(url) || 0) + 1;
+  attempts.set(url, count);
+  if (url === failedUrl && count === 1) throw new Error('network');
+  const link = new URL('/headline', url).href;
+  return new Response(rss(url === emptyUrl ? story(link, '', '') : story(link)));
+ } });
+
+ const first = await reply(handler);
+ assert.ok(!first.items.some(item => item.sourceId === feed.id));
+ assert.deepEqual([attempts.get(emptyUrl), attempts.get(failedUrl)], [1, 1]);
+
+ clock = now + 59_999;
+ assert.equal(await reply(handler), first);
+ clock = now + 60_000;
+ await reply(handler);
+ assert.equal(attempts.get(failedUrl), 2);
+ assert.equal(attempts.get(emptyUrl), 1);
+
+ clock = now + 899_999;
+ await reply(handler);
+ assert.equal(attempts.get(emptyUrl), 1);
+ clock = now + 900_000;
+ await reply(handler);
+ assert.equal(attempts.get(emptyUrl), 2);
+} );
+
 test('merged output deduplicates canonical URLs, sorts, applies the age cutoff and enforces both caps', async () => {
  const handler = createNrwNewsHandler({ enabled: true, now: () => now, fetcher: async url => {
   const { origin } = new URL(url);
