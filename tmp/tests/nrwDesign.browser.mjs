@@ -18,24 +18,48 @@ const emptyNews = {
  de:'Keine aktuellen Meldungen verfügbar.',en:'No current news available.',az:'Hazırda xəbər yoxdur.',
  tr:'Güncel haber yok.',ua:'Немає актуальних новин.',ru:'Актуальных новостей нет.',
 };
-const newsSource = {
- de:'Schachbezirk Bochum · externe Quelle',en:'Bochum chess district · external source',
- az:'Bochum şahmat bölgəsi · xarici mənbə',tr:'Bochum satranç bölgesi · dış kaynak',
- ua:'Шаховий округ Бохум · зовнішнє джерело',ru:'Шахматный округ Бохума · внешний источник',
+const bochumTitles = {
+ de:'Schach in Bochum',en:'Chess in Bochum',az:'Bochumda şahmat',tr:"Bochum'da satranç",
+ ua:'Шахи в Бохумі',ru:'Шахматы в Бохуме',
 };
+const bochumBadges = {
+ de:'Unsere Stadt',en:'Our city',az:'Bizim şəhər',tr:'Bizim şehir',ua:'Наше місто',ru:'Наш город',
+};
+const localeIds = {de:'de-DE',en:'en-GB',az:'az-AZ',tr:'tr-TR',ua:'uk-UA',ru:'ru-RU'};
+const sourceUrls = [
+ 'https://schach-nrw.de/', 'https://www.sjnrw.de/news/news.html', 'https://schulschach-nrw.org/news',
+ 'https://www.schachbund.de/nachrichten-der-lv.html', 'https://www.schachbundesliga.de/', 'https://de.chessbase.com/',
+ 'https://svr-schach.de/', 'https://www.nsv1901.de/', 'https://ergebnisportal.sv-mittelrhein.de/',
+ 'https://schachverband-owl.de/', 'https://www.svmuensterland.de/', 'https://schach-swf.de/',
+];
 
 export async function checkNRWDesign({root=process.cwd(),captureRoot,phase='after',verify=true}={}){
  const plugin=sectionsFixturePlugin(),load=plugin.load;
  plugin.load=id=>{
   let code=load(id);
   if(id==='/__sections_fixture.tsx'){
+   code=["400","500","600","700"].map(weight=>`import '@fontsource/inter/${weight}.css';`).join('')+code;
    code=code.replace('import{LanguageProvider}', 'import{LanguageProvider,useLanguage}').replace('<LanguageProvider><MemoryRouter>', '<LanguageProvider><LanguageProbe/><MemoryRouter initialEntries={["/region/nrw"]}>').replace("<Route path='/region/:regionId' element={<NRW/>}/>","<Route path='/region/:regionId' element={<NRW/>}/><Route path='/region/:regionId/:section' element={<NRW/>}/>");
    code=code.replace("import NRW from", "import Clubs from '/src/screens/ClubsNRWScreen.tsx';import Profile from '/src/screens/ProfileScreen.tsx';import NRW from")
     .replace("<Route path='/region/:regionId' element={<NRW/>}/>", "<Route path='/clubs-nrw' element={<Clubs/>}/><Route path='/clubs-nrw/:slug' element={<Clubs/>}/><Route path='/profile' element={<Profile/>}/><Route path='/chat' element={<h1>Chat destination</h1>}/><Route path='/region/:regionId' element={<NRW/>}/>");
    code+=`function LanguageProbe(){const {setLanguage}=useLanguage();window.fixtureLanguage=setLanguage;return null;}`;
    code=code.replace("else if(path==='/api/clubs-nrw/news')data={items:[]};",`else if(path==='/api/clubs-nrw/news'){
+    window.nrwNewsRequests=(window.nrwNewsRequests||0)+1;
+    if(window.nrwNewsDelay)await new Promise(resolve=>setTimeout(resolve,window.nrwNewsDelay));
     if(window.nrwNewsFailure)return new Response('fixture error',{status:503});
-    data={items:window.nrwEmpty?[]:Array.from({length:5},(_,index)=>({title:'QA headline '+index,url:'https://example.org/news-'+index}))};
+    const updatedAt=new Date().toISOString();
+    const regions=['nrw','bochum','ruhrgebiet','nrw','bochum','bochum','ruhrgebiet','bochum'];
+    const titles=['NRW-Pokal','Stadtmeisterschaft Bochum','Schach im Revier','Schulschach-Finale',
+     'Blitzturnier in Bochum','Jugendturnier in Bochum','Ruhr-Liga','Vereinsabend in Bochum'];
+    const items=window.nrwEmpty?[]:regions.map((region,index)=>({
+     title:titles[index],url:'https://example.org/news-'+index,
+     source:region==='bochum'?'QA Schachbezirk Bochum':'QA NRW',shortName:region==='bochum'?'QA Bochum':'QA NRW',
+     region,category:index===0?'landesverband':index===3?'jugend_schule':'region',
+     publishedAt:new Date(Date.now()-(90+index*60)*60_000).toISOString()
+    }));
+    data=window.nrwLegacy
+     ?{items:items.filter(x=>x.region==='bochum').map(({title,url})=>({title,url}))}
+     :{items,updatedAt,sourcesOk:3};
    }`);
   }
   if(id==='\0sections-auth')return `export function useAuth(){return{user:window.nrwGuest?null:{id:'qa-user'},session:window.nrwGuest?null:{access_token:'nrw-fixture-only'},isLoading:false};}`;
@@ -69,10 +93,10 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
   await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   if(captureRoot)await mkdir(captureRoot,{recursive:true});
   const capture=async name=>{if(captureRoot){const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(captureRoot,phase+'-'+name+'.png'),Buffer.from(shot.data,'base64'));}};
-  for(const [width,height] of [[1280,720],[1920,950],[375,844]]){
-   await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===375});
+  for(const [width,height] of [[1280,720],[1440,900],[1920,950],[390,844]]){
+   await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
    await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
-   await wait("document.querySelectorAll('.nrw-news .nrw-items a').length===3");
+   await wait("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length===5");
    for(const lang of (verify?['de','en','az','tr','ua','ru']:['de','ru'])){
     await evaluate('window.fixtureLanguage('+JSON.stringify(lang)+')');await evaluate('document.fonts.ready');await pause(60);
     if(lang==='de'||lang==='ru')await capture('nrw-'+lang+'-'+width+'x'+height);
@@ -94,9 +118,27 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      return {
       width:innerWidth,documentWidth:document.documentElement.scrollWidth,
       cards:[...root.querySelectorAll('.nrw-grid>.nrw-card')].map(bounds),
-      official:links('.nrw-official-links a'),headlines:links('.nrw-news .nrw-items a'),sources:links('.nrw-news-sources a'),actions:links('.nrw-header .nrw-links a'),
+      cardBorders:[...root.querySelectorAll('.nrw-grid>.nrw-card')].map(card=>getComputedStyle(card).borderTopColor),
+      official:links('.nrw-official-links a'),headlines:links('.nrw-news-feed .nrw-news-row'),sources:links('.nrw-news-sources a'),actions:links('.nrw-header .nrw-links a'),
       removed:root.querySelectorAll('.nrw-header-top,.nrw-kicker,.nrw-region-code,.nrw-signin,.section-info,.nrw-count,.nrw-footer,.nrw-chat-rail,select,details,[href="/spieltag"],[href^="/profile"],[href^="/clubs-nrw"],[href="/region/nrw/turniere"],[href="/region/nrw/ligen"],[href="/region/nrw/vereine"],iframe').length,
-      newsLinks:links('.nrw-news-links a').map(a=>a.href),sourceGroups:root.querySelectorAll('.nrw-news-source-group h3').length,gradient:style.backgroundImage,contrast,
+      newsLinks:links('.nrw-news-links a,.nrw-news-disclosure a').map(a=>a.href),
+      sourceGroups:root.querySelectorAll('.nrw-news-source-groups h3').length,gradient:style.backgroundImage,contrast,
+      feed:bounds(root.querySelector('.nrw-news-feed')),bochum:bounds(root.querySelector('.nrw-bochum')),
+      badge:bounds(root.querySelector('.nrw-bochum-badge')),badgeText:root.querySelector('.nrw-bochum-badge').textContent,
+      badgeMotion:getComputedStyle(root.querySelector('.nrw-bochum-badge')).animationName,
+      badgeContrast:Math.min(...['#4E3D2D','#6B5540','#5E4F86','#6A5A92'].map(fill=>(luminance(getComputedStyle(root.querySelector('.nrw-bochum-badge')).color)+.05)/(luminance(fill)+.05))),
+      bochumBorder:getComputedStyle(root.querySelector('.nrw-bochum')).borderTopColor,
+      bochumFont:getComputedStyle(root.querySelector('.nrw-bochum h2')).fontFamily,
+      bodoniLoaded:[...document.fonts].some(font=>font.family.includes('Bodoni Moda')&&font.weight==='700'&&font.status==='loaded'),
+      bochumTitle:root.querySelector('.nrw-bochum h2').textContent,
+      bochumSubtitle:root.querySelector('.nrw-bochum > p')!==null,
+      bochumRows:links('.nrw-bochum .nrw-news-row'),
+      time:root.querySelector('.nrw-news-row time').textContent.trim(),
+      dateTooltip:root.querySelector('.nrw-news-row time').title,
+      rowHeight:bounds(root.querySelector('.nrw-news-row')).height,
+      categoryClasses:[...root.querySelectorAll('.nrw-news-legend .nrw-news-tag')].map(tag=>tag.className),
+      activeTargets:[...root.querySelectorAll('.nrw-news-filters button,.nrw-sources-heading button')].map(bounds),
+      requestCount:window.nrwNewsRequests,
       subtitle:[subtitle.fontSize,subtitle.fontWeight,subtitle.color,subtitle.maxWidth,subtitle.marginTop,subtitle.marginBottom],
       dbReads:window.nrwDbReads||0,
      };
@@ -120,24 +162,44 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
       assert.ok(bronzeLabels.filter(v=>v.metal).every(v=>v.gradient),'metallic gradient rendered');
       assert.ok(bronzeLabels.filter(v=>!v.metal).every(v=>!v.gradient),'other menu labels unchanged');
       const nrwHeadings=await evaluate(`(()=>[...document.querySelectorAll('.nrw-card-head h2')].map(el=>getComputedStyle(el).backgroundImage.includes('linear-gradient')))()`);
-      assert.ok(nrwHeadings.length===3 && nrwHeadings.every(Boolean),'three metallic NRW headings');
+      assert.ok(nrwHeadings.length===3 && nrwHeadings.every(value=>!value),'three solid headings in the approved cards');
      }
     }
     if(verify){
      assert.equal(metric.documentWidth,width,'no horizontal overflow '+lang);
      assert.equal(metric.cards.length,3,'three core panels');
+     assert.ok(metric.cardBorders.every(color=>color==='rgba(255, 255, 255, 0.08)'));
      assert.equal(metric.removed,0,'legacy controls and metadata stay outside the overview');
      assert.equal(metric.dbReads,0,'landing never queries the database');
      assert.deepEqual(metric.official.map(link=>link.href),officialUrls);
-     assert.equal(metric.headlines.length,3,'three headlines visible without interaction');
-     assert.deepEqual(metric.headlines.map(link=>link.href),[0,1,2].map(index=>'https://example.org/news-'+index));
-     assert.ok(metric.headlines.every(link=>link.text.includes(newsSource[lang])),'all headlines keep their localized source');
-     assert.equal(metric.sourceGroups,2,'two compact NRW source categories');
-     assert.equal(metric.sources.length,12,'six NRW-wide sources and six regional federations');
-     assert.equal(new Set(metric.sources.map(link=>link.href)).size,12,'source directory has no duplicate URLs');
-     assert.ok(metric.sources.some(link=>link.href==='https://schach-nrw.de/'),'state federation is linked');
-     assert.ok(metric.sources.some(link=>link.href==='https://www.sjnrw.de/news/news.html'),'youth federation is linked');
-     for(const link of [...metric.official,...metric.headlines,...metric.sources]){
+     assert.equal(metric.headlines.length,5,'five headlines visible without interaction');
+     assert.deepEqual(metric.headlines.map(link=>link.href),[0,1,2,3,4].map(index=>'https://example.org/news-'+index));
+     assert.deepEqual(metric.bochumRows.map(link=>link.href),[1,4,5].map(index=>'https://example.org/news-'+index));
+     assert.equal(metric.requestCount,1,'both cards share one request');
+     assert.equal(metric.sourceGroups,0,'secondary source groups are collapsed initially');
+     assert.deepEqual(metric.sources.map(link=>link.href),[0,1,2,5].map(index=>sourceUrls[index]));
+     assert.equal(metric.bochumTitle,bochumTitles[lang]);
+     assert.equal(metric.badgeText,bochumBadges[lang]);
+     assert.equal(metric.bochumSubtitle,false);
+     assert.equal(metric.badgeMotion,'none');
+     assert.ok(metric.badgeContrast>=4.5,JSON.stringify(metric.badgeContrast));
+     assert.equal(metric.bochumBorder,'rgba(184, 145, 106, 0.35)');
+     assert.match(metric.bochumFont,/Bodoni Moda/);
+     assert.ok(metric.bodoniLoaded,'self-hosted 700 weight loads');
+     assert.ok(metric.badge.height>=50);
+     assert.ok(Math.abs(metric.badge.x+metric.badge.width/2-metric.bochum.x-metric.bochum.width/2)<=2);
+     assert.equal(metric.time,await evaluate(`new Intl.RelativeTimeFormat('${localeIds[lang]}',{numeric:'auto'}).format(-1,'hour')`));
+     assert.ok(metric.dateTooltip,'absolute time tooltip');
+     assert.equal(metric.rowHeight,52,'single-line headlines match the skeleton row height');
+     assert.deepEqual(metric.categoryClasses,['landesverband','jugend_schule','region'].map(key=>'nrw-news-tag nrw-news-tag--'+key));
+     if(width===390){
+      assert.ok(metric.feed.bottom<=metric.bochum.y,'Bochum stacks below news');
+      assert.ok(metric.activeTargets.every(rect=>rect.height>=44),'mobile buttons reach 44px');
+     } else {
+      assert.ok(metric.feed.right<=metric.bochum.x,'news sections are side by side');
+      assert.equal(metric.feed.height,metric.bochum.height,'news sections have equal desktop heights');
+     }
+     for(const link of [...metric.official,...metric.headlines,...metric.bochumRows,...metric.sources]){
       assert.equal(link.target,'_blank');assert.equal(link.rel,'noopener noreferrer');assert.ok(link.icon);
       assert.ok(link.x>=0&&link.right<=width+1,'external link fits: '+link.href);
      }
@@ -159,10 +221,48 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    }
    if(!verify)continue;
    await evaluate("window.fixtureLanguage('de')");await pause(50);
-   await evaluate("document.querySelector('.nrw-news a[href=\"/region/nrw/news\"]').click()");await wait("document.querySelector('.nrw-grid--detail .nrw-card--news')");
-   await wait("document.querySelectorAll('.nrw-card--news .nrw-items a').length===5");
-   assert.equal(await evaluate("document.querySelectorAll('.nrw-card').length"),1,'news details route retains one focused panel');
-   assert.equal(await evaluate("document.querySelectorAll('.nrw-news-sources a').length"),12,'news detail retains official NRW sources');
+   const click=async selector=>evaluate('document.querySelector('+JSON.stringify(selector)+').click()');
+   const countRows=()=>evaluate("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length");
+   if(captureRoot && [390,1440].includes(width)){
+    const captureHeight=await evaluate("Math.ceil(document.querySelector('.nrw-overview').getBoundingClientRect().bottom+180)");
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height:captureHeight,deviceScaleFactor:1,mobile:width===390});
+    for(const [name,selector] of [['overview','.nrw-overview'],['bochum','.nrw-bochum']]){
+     const clip=await evaluate(`(()=>{const r=document.querySelector('${selector}').getBoundingClientRect();
+      return {x:r.x+scrollX,y:r.y+scrollY,width:r.width,height:r.height,scale:1};})()`);
+     const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip});
+     await writeFile(join(captureRoot,`nrw-${name}-${width}.png`),Buffer.from(shot.data,'base64'));
+    }
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
+   }
+   await click('.nrw-news-controls button');
+   assert.equal(await countRows(),8);
+   assert.equal(await evaluate("document.querySelector('.nrw-news-controls button').getAttribute('aria-expanded')"),'true');
+   await click('.nrw-news-controls button');
+   assert.equal(await countRows(),5);
+   assert.deepEqual(await evaluate("[...document.querySelectorAll('.nrw-news-filters button')].map(button=>button.textContent.trim().replace(/ +/g,' '))"),['Alle 8','Nordrhein-Westfalen 2','Ruhrgebiet 2','Bochum 4']);
+   await click('.nrw-news-filters button:last-child');
+   assert.equal(await countRows(),4);
+   assert.ok(await evaluate("[...document.querySelectorAll('.nrw-news-feed .nrw-news-row .nrw-news-tag')].every(tag=>tag.textContent==='QA Bochum')"));
+   assert.equal(await evaluate('window.nrwNewsRequests'),1,'filtering makes no network request');
+   await click('.nrw-sources-heading button');
+   assert.deepEqual(await evaluate("[...document.querySelectorAll('.nrw-news-sources a')].map(a=>a.href)"),sourceUrls);
+   assert.equal(await evaluate("document.querySelectorAll('.nrw-news-source-groups h3').length"),2);
+   await click('.nrw-sources-heading button');
+   assert.equal(await evaluate("document.querySelectorAll('.nrw-news-sources a').length"),4);
+
+   await click('.nrw-news a[href="/region/nrw/news"]');
+   await wait("document.querySelector('.nrw-grid--detail .nrw-card--news')");
+   await wait("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length===8");
+   assert.equal(await evaluate("document.querySelector('.nrw-grid--detail').children.length"),1,'news details route retains one focused panel');
+   assert.equal(await evaluate("document.querySelectorAll('.nrw-news-sources a').length"),4,'news detail retains official NRW sources');
+   await click('.nrw-news-filters:nth-of-type(3) button:nth-child(3)');
+   assert.equal(await countRows(),1,'category filter selects youth and schools');
+   await evaluate("window.fixtureNavigate('/region/nrw/news?region=bochum')");
+   await wait("document.querySelector('.nrw-news-filters button[aria-pressed=true]')?.textContent.includes('Bochum')");
+   await click('.nrw-news-filters:nth-of-type(3) button:first-child');
+   assert.equal(await countRows(),4,'Bochum deep link preselects local news');
+   await evaluate("window.fixtureNavigate('/region/nrw/news?region=invalid')");
+   await wait("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length===8");
    assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'news details overflow');
    for(const section of ['turniere','ligen','vereine','live']){
     await evaluate('window.fixtureNavigate('+JSON.stringify('/region/nrw/'+section)+')');await wait('document.querySelector('+JSON.stringify('.nrw-grid--detail .nrw-card--'+section)+')');
@@ -196,18 +296,26 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    await evaluate("window.nrwGuest=true;window.nrwEmpty=true;window.fixtureNavigate('/region/invalid')");
    await wait("!document.querySelector('[data-region-overview]')");
    await evaluate("window.fixtureNavigate('/region/nrw')");
-   await wait("document.querySelector('.nrw-news [role=status]')?.innerText.includes('Keine aktuellen Meldungen verfügbar.')");
+   await wait("document.querySelector('.nrw-news-status p')?.innerText.includes('Keine aktuellen Meldungen verfügbar.')");
    for(const [locale,phrase] of Object.entries(emptyNews)){
     await evaluate('window.fixtureLanguage('+JSON.stringify(locale)+')');
-    await wait("document.querySelector('.nrw-news [role=status]')?.innerText==="+JSON.stringify(phrase));
+    await wait("document.querySelector('.nrw-news-status p')?.innerText==="+JSON.stringify(phrase));
    }
    await evaluate("window.nrwGuest=false;window.fixtureLanguage('de');window.nrwNewsFailure=true;window.fixtureNavigate('/region/invalid')");
    await wait("!document.querySelector('[data-region-overview]')");
    await evaluate("window.fixtureNavigate('/region/nrw')");
-   await wait("document.querySelector('.nrw-news [role=status]')?.innerText==='Nachrichten derzeit nicht verfügbar.'");
+   await wait("document.querySelector('.nrw-news-status p')?.innerText==='Nachrichten derzeit nicht verfügbar.'");
    assert.equal(await evaluate("document.querySelectorAll('.nrw-news [role=status]').length"),1);
-   await evaluate("window.nrwNewsFailure=false");
-   if(width===375){
+   await evaluate("window.nrwNewsFailure=false;window.nrwEmpty=false;window.nrwLegacy=true;window.nrwNewsDelay=500;window.fixtureNavigate('/region/invalid')");
+   await wait("!document.querySelector('[data-region-overview]')");
+   await evaluate("window.fixtureNavigate('/region/nrw')");
+   await wait("document.querySelectorAll('.nrw-news-skeleton').length===5");
+   assert.deepEqual(await evaluate("[...document.querySelectorAll('.nrw-news-skeleton')].map(row=>[row.getBoundingClientRect().height,getComputedStyle(row.firstElementChild).animationName])"),Array.from({length:5},()=>[52,'none']));
+   await wait("document.querySelectorAll('.nrw-bochum .nrw-news-row').length===3");
+   assert.ok(await evaluate("document.querySelector('.nrw-bochum .nrw-news-tag').textContent.includes('Schachbezirk Bochum · externe Quelle')"));
+   assert.equal(await evaluate("document.querySelectorAll('.nrw-news-row time').length"),0,'legacy items have no fabricated date');
+   await evaluate("window.nrwLegacy=false;window.nrwNewsDelay=0;window.nrwEmpty=true");
+   if(width===390){
     await evaluate("window.fixtureNavigate('/')");
     await wait("document.querySelector('.home-screen-root a[href=\"/region/nrw\"]')?.getBoundingClientRect().height>=44");
     await evaluate("document.querySelector('.home-screen-root a[href=\"/region/nrw\"]').click()");
@@ -221,7 +329,7 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    await evaluate("window.nrwEmpty=false;window.nrwFailure=true;window.fixtureNavigate('/region/invalid')");await wait("!document.querySelector('[data-region-overview]')");await evaluate("window.fixtureNavigate('/region/nrw/vereine')");await wait("document.querySelector('.nrw-error[role=alert]')");assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'failure state overflow');
   }
   if(captureRoot)await writeFile(join(captureRoot,phase+'-measurements.json'),JSON.stringify(measurements,null,2));
-  assert.equal(exceptions.length,0,JSON.stringify(exceptions));console.log(verify?'PASS NRW design: six locales; 1280px, 1920px and 375px; official links, heading contrast, open news, legacy routes, guest, empty and error states':'Captured NRW baseline in DE and RU');
+  assert.equal(exceptions.length,0,JSON.stringify(exceptions));console.log(verify?'PASS NRW design: six locales; 1280px, 1440px, 1920px and 390px; official links, contrast, filters, motion, and news states, legacy routes, guest, empty and error states':'Captured NRW baseline in DE and RU');
  }finally{for(const p of pending.values())clearTimeout(p.timer);try{ws?.close();}catch{}chrome?.kill('SIGKILL');await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
 }
 if(process.argv[1]===fileURLToPath(import.meta.url))await checkNRWDesign({captureRoot:process.env.NRW_CAPTURE,phase:process.env.NRW_PHASE||'after',verify:process.env.NRW_PHASE!=='before'});

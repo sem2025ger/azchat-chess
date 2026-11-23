@@ -91,3 +91,29 @@ test('stored Lichess retry message translates on a later language switch and pre
  }
  assert.equal(translate(stored,'de'),stored);
 });
+
+test('NRW news only recognizes declared region and category keys', async () => {
+ const { regionLabels, categoryLabels, isRegion, isCategory } = await import('../src/components/nrw/newsData.ts');
+ assert.deepEqual(Object.keys(regionLabels), ['nrw','ruhrgebiet','niederrhein','mittelrhein','owl','muensterland','suedwestfalen','bochum']);
+ assert.ok(Object.keys(regionLabels).every(isRegion));
+ assert.deepEqual(Object.keys(categoryLabels), ['landesverband','jugend_schule','region']);
+ assert.ok(Object.keys(categoryLabels).every(isCategory));
+ for (const key of ['unknown','BOCHUM','__proto__','toString',null]) {
+  assert.equal(isRegion(key), false);
+  assert.equal(isCategory(key), false);
+ }
+});
+
+test('NRW news times use the active language and an absolute Berlin date', async () => {
+ const { newsDateFormats, relativeNewsTime } = await import('../src/components/nrw/newsData.ts');
+ const published = '2026-11-23T11:10:00.000Z';
+ const now = Date.parse('2026-11-23T12:40:00.000Z');
+ for (const [language, locale] of Object.entries({de:'de-DE',en:'en-GB',az:'az-AZ',tr:'tr-TR',ua:'uk-UA',ru:'ru-RU'})) {
+  const formats = newsDateFormats(language);
+  const intl = new Intl.RelativeTimeFormat(locale,{numeric:'auto'});
+  assert.equal(relativeNewsTime(formats.relative,published,now),intl.format(-1,'hour'));
+  assert.equal(relativeNewsTime(formats.relative,published,now+86_400_000),intl.format(-1,'day'));
+  assert.equal(relativeNewsTime(formats.relative,published,now-80*60_000),intl.format(-10,'minute'));
+  assert.equal(formats.clock.format(new Date(published)),'12:10');
+ }
+});
