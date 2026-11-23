@@ -6,7 +6,7 @@ const { Server } = require('socket.io');
 const { Chess } = require('chess.js');
 const crypto = require('crypto');
 const cors = require('cors');
-const { createNewsHandler } = require('./clubsNrwNews');
+const { createNrwNewsHandler } = require('./clubsNrwNews');
 const { createClient } = require('@supabase/supabase-js');
 const { createSocketAuthMiddleware } = require('./socketAuth');
 const { createMatchPersistenceFromEnv, persistRoomCompletedMatch } = require('./matchPersistence');
@@ -114,7 +114,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-if (process.env.CLUBS_NRW_ENABLED === 'true') app.get('/api/clubs-nrw/news', createNewsHandler());
+if (process.env.CLUBS_NRW_ENABLED === 'true') app.get('/api/clubs-nrw/news', createNrwNewsHandler({ enabled: process.env.NRW_NEWS_FEEDS_ENABLED === 'true' }));
 // Spieler reads/requests share the existing HTTP origin policy; no game wiring.
 require('./spieler').installSpielerFromEnv(app,verifyTokenProxy);
 require('./spieltag').installSpieltagFromEnv(app,verifyTokenProxy);
