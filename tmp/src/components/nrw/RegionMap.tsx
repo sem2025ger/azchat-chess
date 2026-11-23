@@ -45,6 +45,7 @@ export function RegionMap({ counts, selected, onSelect, tr, number }: Props) {
  };
 
  return <figure className="nrw-region-map">
+  {['tl', 'tr', 'bl', 'br'].map(corner => <span key={corner} className={`nrw-region-map-corner nrw-region-map-corner--${corner}`} aria-hidden="true"/>)}
   <svg viewBox="0 0 300 180" role="group" aria-label={tr('NRW-Regionenkarte')}>
    <defs>
     <radialGradient id={glowId} r="70%">
@@ -57,20 +58,23 @@ export function RegionMap({ counts, selected, onSelect, tr, number }: Props) {
     return <g className="nrw-region-map-area" key={region} {...regionControl}>
      <title>{regionControl['aria-label']}</title>
      <path d={path} style={selected === region ? { fill: `url(#${glowId})` } : undefined}/>
-     <text className="nrw-region-map-name" x={x} y={y - 8} aria-hidden="true">
+     <text className="nrw-region-map-name" x={x} y={y - 9} aria-hidden="true">
       {region === 'owl' ? 'OWL' : tr(regionLabels[region])}
      </text>
-     <rect className="nrw-region-map-count" x={x - 10} y={y - 5} width="20" height="14" rx="7" aria-hidden="true"/>
+     <rect className="nrw-region-map-count" x={x - 12} y={y - 6} width="24" height="16" rx="8" aria-hidden="true"/>
      <text className="nrw-region-map-count-text" x={x} y={y + 5} aria-hidden="true">
       {number.format(counts.get(region) ?? 0)}
      </text>
     </g>;
    })}
    <g className="nrw-region-map-bochum" {...control('bochum')}>
-    <rect x="148" y="86" width="43" height="16" rx="5" className="nrw-region-map-bochum-hit" aria-hidden="true"/>
-    <circle cx="155" cy="94" r="5" className="nrw-region-map-pulse" aria-hidden="true"/>
-    <circle cx="155" cy="94" r="3" className="nrw-region-map-dot" aria-hidden="true"/>
-    <text x="162" y="97" aria-hidden="true">{tr('Bochum')}</text>
+    <rect x="143" y="79" width="94" height="30" rx="6" className="nrw-region-map-bochum-hit" aria-hidden="true"/>
+    <circle cx="155" cy="94" r="9" className="nrw-region-map-ring" aria-hidden="true"/>
+    <circle cx="155" cy="94" r="9" className="nrw-region-map-pulse" aria-hidden="true"/>
+    <circle cx="155" cy="94" r="5" className="nrw-region-map-dot" aria-hidden="true"/>
+    <foreignObject x="168" y="84" width="69" height="20" className="nrw-region-map-bochum-label" aria-hidden="true">
+     <span className="nrw-region-map-bochum-pill">{tr('Bochum')}</span>
+    </foreignObject>
    </g>
   </svg>
   <figcaption>{tr('Schematische Darstellung')}</figcaption>

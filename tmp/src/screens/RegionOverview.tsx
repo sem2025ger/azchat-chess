@@ -1,7 +1,7 @@
 import { translateSectionCopy } from '../i18n/sectionCopy';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Radio, ShieldCheck, MapPin, Trophy, Users, MessageCircle, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Radio, ShieldCheck, MapPin, Trophy, Users, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import '@fontsource/bodoni-moda/latin-600.css';
@@ -395,10 +395,6 @@ function NrwLanding(){
   <header className="nrw-header">
    <h1>{tr('Schach in Nordrhein-Westfalen')}</h1>
    <p>{tr('Turniere, Mannschaften, Vereine und News an einem Ort')}</p>
-   <div className="nrw-links">
-    {import.meta.env.VITE_VORBEREITUNG_ENABLED==='true'&&<Link to="/vorbereitung"><ShieldCheck aria-hidden="true" size={17}/>{tr('Vorbereitung')}</Link>}
-    <Link to="/chat"><MessageCircle aria-hidden="true" size={17}/>{tr('Schach-Treff Deutschland')}</Link>
-   </div>
   </header>
 
   <div className="nrw-news-grid">

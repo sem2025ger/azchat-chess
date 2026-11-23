@@ -59,10 +59,15 @@ test('NRW static external destinations are defined once in the shared config',()
  }
 });
 
-test('NRW links to national chat without embedding it and the chat retains its membership guard',()=>{
+test('NRW landing omits the preparation and chat header links while both routes remain available',()=>{
  const rail=read('src/components/schachTreff/NationwideChatRail.tsx');
+ const landing=region.slice(region.indexOf('function NrwLanding()'));
+ const header=landing.match(/<header className="nrw-header">([\s\S]*?)<\/header>/)?.[1];
+ assert.ok(header);
+ assert.doesNotMatch(header,/to="\/(vorbereitung|chat)"/);
+ assert.match(app,/<Route path="chat" element=\{<ChatScreen/);
+ assert.match(app,/<Route path="vorbereitung" element=\{<VorbereitungScreen/);
  assert.doesNotMatch(region,/NationwideChatRail/);
- assert.match(region,/<div className="nrw-links">[\s\S]*?to="\/vorbereitung"[\s\S]*?to="\/chat"/);
  assert.match(region,/to="\/chat"/);
  assert.match(rail,/NATIONAL_ROOM_SLUG = 'chessaz-deutsch'/);
  assert.match(rail,/\.eq\('club_id',id\)/);
