@@ -60,7 +60,8 @@ async function checkLayout({root=process.cwd(),captureRoot,phase='after',verify=
     window.nrwNewsRequests=(window.nrwNewsRequests||0)+1;
     if(window.nrwNewsDelay)await new Promise(resolve=>setTimeout(resolve,window.nrwNewsDelay));
     if(window.nrwNewsFailure)return new Response('fixture error',{status:503});
-    const updatedAt=new Date().toISOString();
+    const now=Date.now();
+    const updatedAt=new Date(now).toISOString();
     const regions=['nrw','bochum','ruhrgebiet','nrw','bochum','bochum','ruhrgebiet','bochum',
      ...Array.from({length:19},(_,index)=>['niederrhein','owl','muensterland','suedwestfalen','nrw'][index%5])];
     const titles=['NRW-Pokal','Stadtmeisterschaft Bochum','Schach im Revier','Schulschach-Finale',
@@ -69,7 +70,7 @@ async function checkLayout({root=process.cwd(),captureRoot,phase='after',verify=
      title:titles[index]||'QA Turnierbericht '+index,url:'https://example.org/news-'+index,
      source:region==='bochum'?'QA Schachbezirk Bochum':'QA NRW',shortName:region==='bochum'?'QA Bochum':'QA NRW',
      region,category:index===0?'landesverband':index===3?'jugend_schule':'region',
-     publishedAt:new Date(Date.now()-(90+index*60)*60_000).toISOString()
+     publishedAt:new Date(now-(index<5 ? 630+index*60 : index*1440+30)*60_000).toISOString()
     }));
     data=window.nrwLegacy
      ?{items:items.filter(x=>x.region==='bochum').map(({title,url})=>({title,url}))}
@@ -117,7 +118,9 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    let germanDescriptions;
    for(const lang of (verify?['de','en','az','tr','ua','ru']:['de','ru'])){
     await evaluate('window.fixtureLanguage('+JSON.stringify(lang)+')');await evaluate('document.fonts.ready');await pause(60);
-    if(lang==='de'||lang==='ru')await capture('nrw-'+lang+'-'+width+'x'+height);
+    if(lang==='de'||lang==='ru'||lang==='az'&&[1440,390].includes(width)){
+     await capture('nrw-'+lang+'-'+width+'x'+height);
+    }
     const metric=await evaluate(`(()=> {
      const root=document.querySelector('.nrw-overview');
      const bounds=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:r.width,height:r.height};};
@@ -186,6 +189,10 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
       largestGap:Math.max(largestGap('.nrw-news-feed'),largestGap('.nrw-bochum'),
        ...(featured?[largestGap('.nrw-news-content')]:[])),
       dateTooltip:root.querySelector('.nrw-news-row time').title,
+      timeTexts:[...root.querySelectorAll('time')].map(time=>time.innerText.trim()),
+      absoluteDates:[...root.querySelectorAll('.nrw-news-row time')].map(time=>time.title),
+      bochumDay:root.querySelector('.nrw-bochum .nrw-news-row[href$="/news-5"] time').innerText,
+      updatedClock:root.querySelector('.nrw-news-heading time').innerText,
       rowHeight:bounds(root.querySelector('.nrw-news-row[href$="/news-2"]')).height,
       categoryClasses:[...root.querySelectorAll('.nrw-news-legend .nrw-news-tag')].map(tag=>tag.className),
       activeTargets:[...root.querySelectorAll('.nrw-news-filters button,.nrw-sources-heading button')].map(bounds),
@@ -226,8 +233,21 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      assert.equal(metric.headlines.length,8,'eight headlines including the featured story');
      assert.deepEqual(metric.headlines.map(link=>link.href),Array.from({length:8},(_,index)=>'https://example.org/news-'+index));
      assert.equal(metric.featured.href,metric.headlines[0].href);
-     assert.equal(metric.featured.dates[0],await evaluate(`new Intl.RelativeTimeFormat('${localeIds[lang]}',{numeric:'auto'}).format(-1,'hour')`));
+     const expectedRelative=lang==='az'?'10 saat əvvəl':
+      await evaluate(`new Intl.RelativeTimeFormat('${localeIds[lang]}',{numeric:'auto'}).format(-10,'hour')`);
+     assert.equal(metric.featured.dates[0],expectedRelative);
      assert.equal(metric.featured.dates[1],metric.dateTooltip);
+     for(const time of metric.timeTexts)assert.doesNotMatch(time,/^[-+]\d/,lang+' visible time');
+     for(const absolute of metric.absoluteDates) {
+      assert.ok(absolute);
+      assert.doesNotMatch(absolute,/ M\d/,lang+' absolute date tooltip');
+      if(lang==='az')assert.match(absolute,/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
+     }
+     if(lang==='az'){
+      assert.equal(metric.bochumDay,'5 gün əvvəl');
+      assert.match(metric.updatedClock,/\b\d{2}:\d{2}\b/);
+      if(mapEnabled&&width===1440)console.log(`NRW AZ at 1440 px: ${[...metric.featured.dates,metric.bochumDay].join(' | ')}`);
+     }
      assert.deepEqual(metric.bochumRows.map(link=>link.href),[1,4,5].map(index=>'https://example.org/news-'+index));
      assert.equal(metric.directoryHeading,directoryHeadings[lang]);
      assert.ok(metric.directoryBetweenNewsAndFooter);
