@@ -33,10 +33,30 @@ test('NRW static external destinations are defined once in the shared config',()
  const start=region.indexOf('const NRW_EXTERNAL_URLS = {');
  const end=region.indexOf('} as const;',start);
  assert.ok(start>=0&&end>start);
- const config=region.slice(start,end);
- assert.equal((config.match(/https:\/\//g)||[]).length,18,'five official destinations, the existing live route, and twelve NRW news sources');
- assert.match(config,/newsSources:/,'NRW source URLs belong to the existing shared config');
- assert.doesNotMatch(region.slice(0,start)+region.slice(end),/['"]https:\/\//);
+ const config=Function('return ('+region.slice(start+'const NRW_EXTERNAL_URLS = '.length,end+1)+')')();
+ const newsSources=Object.values(config.newsSources).flat();
+ assert.equal(Object.keys(config.official).length,5);
+ assert.ok(config.liveBroadcasts);
+ assert.equal(newsSources.length,12);
+ assert.doesNotMatch(region.slice(0,start)+region.slice(end),/['"]https?:\/\//);
+ assert.doesNotMatch(read('src/components/nrw/NewsPanels.tsx'),/['"]https?:\/\//);
+
+ const directory=config.bochumDirectory;
+ assert.equal(directory.length,8);
+ assert.equal(directory[0].url,'https://sbboblog.wordpress.com/die-vereine/');
+ assert.equal(directory.at(-1).name,'Stadt Bochum');
+ const clubNames=directory.slice(1,-1).map(({name})=>name);
+ assert.deepEqual(clubNames,[...clubNames].sort((a,b)=>a.localeCompare(b,'de')));
+ const hosts=directory.map(({url})=>new URL(url).hostname);
+ assert.equal(new Set(hosts).size,directory.length);
+ const newsSourceHosts=new Set(newsSources.map(({url})=>new URL(url).hostname));
+ assert.ok(hosts.every(host=>!newsSourceHosts.has(host)));
+ for(const {url,description} of directory){
+  const target=new URL(url);
+  assert.equal(target.protocol,'https:');
+  assert.doesNotMatch(target.pathname,/\/feed\/?$/i);
+  assert.ok(description.length>0&&description.length<=70);
+ }
 });
 
 test('NRW links to national chat without embedding it and the chat retains its membership guard',()=>{
@@ -90,4 +110,30 @@ test('stored Lichess retry message translates on a later language switch and pre
   assert.equal(translate('Zu viele Anfragen. Bitte warte eine Minute.',locale).includes('Zu viele Anfragen'),locale==='de');
  }
  assert.equal(translate(stored,'de'),stored);
+});
+
+test('NRW news only recognizes declared region and category keys', async () => {
+ const { regionLabels, categoryLabels, isRegion, isCategory } = await import('../src/components/nrw/newsData.ts');
+ assert.deepEqual(Object.keys(regionLabels), ['nrw','ruhrgebiet','niederrhein','mittelrhein','owl','muensterland','suedwestfalen','bochum']);
+ assert.ok(Object.keys(regionLabels).every(isRegion));
+ assert.deepEqual(Object.keys(categoryLabels), ['landesverband','jugend_schule','region']);
+ assert.ok(Object.keys(categoryLabels).every(isCategory));
+ for (const key of ['unknown','BOCHUM','__proto__','toString',null]) {
+  assert.equal(isRegion(key), false);
+  assert.equal(isCategory(key), false);
+ }
+});
+
+test('NRW news times use the active language and an absolute Berlin date', async () => {
+ const { newsDateFormats, relativeNewsTime } = await import('../src/components/nrw/newsData.ts');
+ const published = '2026-11-23T11:10:00.000Z';
+ const now = Date.parse('2026-11-23T12:40:00.000Z');
+ for (const [language, locale] of Object.entries({de:'de-DE',en:'en-GB',az:'az-AZ',tr:'tr-TR',ua:'uk-UA',ru:'ru-RU'})) {
+  const formats = newsDateFormats(language);
+  const intl = new Intl.RelativeTimeFormat(locale,{numeric:'auto'});
+  assert.equal(relativeNewsTime(formats.relative,published,now),intl.format(-1,'hour'));
+  assert.equal(relativeNewsTime(formats.relative,published,now+86_400_000),intl.format(-1,'day'));
+  assert.equal(relativeNewsTime(formats.relative,published,now-80*60_000),intl.format(-10,'minute'));
+  assert.equal(formats.clock.format(new Date(published)),'12:10');
+ }
 });

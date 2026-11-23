@@ -1,12 +1,18 @@
 import { translateSectionCopy } from '../i18n/sectionCopy';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, Radio, Newspaper, ShieldCheck, MapPin, Trophy, Users, MessageCircle, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Radio, ShieldCheck, MapPin, Trophy, Users, MessageCircle, MessageSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
+import '@fontsource/bodoni-moda/latin-600.css';
+import '@fontsource/bodoni-moda/latin-ext-600.css';
+import '@fontsource/bodoni-moda/latin-700.css';
+import '@fontsource/bodoni-moda/latin-ext-700.css';
 import './RegionOverview.css';
 import { useLanguage } from '../context/LanguageContext';
 import { useRegionalCopy } from '../i18n/regionalCopy';
+import { BochumNews, NewsFeed } from '../components/nrw/NewsPanels';
+import { isCategory, isDate, isRegion, type News, type NewsState } from '../components/nrw/newsData';
 const regionText: Record<string,Record<'en'|'de'|'az'|'tr'|'ua'|'ru',string>> = {
  "Turniere & Termine": {"de": "Turniere & Termine", "en": "Tournaments & dates", "az": "Turnirlər və tarixlər", "tr": "Turnuvalar ve tarihler", "ua": "Турніри та дати", "ru": "Турниры и даты"},
  "Ligen & Mannschaften": {"de": "Ligen & Mannschaften", "en": "Leagues & teams", "az": "Liqalar və komandalar", "tr": "Ligler ve takımlar", "ua": "Ліги та команди", "ru": "Лиги и команды"},
@@ -61,17 +67,49 @@ const regionText: Record<string,Record<'en'|'de'|'az'|'tr'|'ua'|'ru',string>> = 
  "Standort nicht ermittelt · Auswahl nach Stadt.": { en:"Location not detected · filter by city.", de:"Standort nicht ermittelt · Auswahl nach Stadt.", az:"Məkan müəyyən edilməyib · şəhərə görə seçin.", tr:"Konum algılanmadı · şehre göre seçin.", ua:"Місце не визначено · вибір за містом.", ru:"Местоположение не определено · выбор по городу." },
  "Nachrichten derzeit nicht verfügbar.": { en:"News currently unavailable.", de:"Nachrichten derzeit nicht verfügbar.", az:"Xəbərlər hazırda əlçatan deyil.", tr:"Haberler şu anda kullanılamıyor.", ua:"Новини наразі недоступні.", ru:"Новости сейчас недоступны." },
  "Schachbezirk Bochum · externe Quelle": { en:"Bochum chess district · external source", de:"Schachbezirk Bochum · externe Quelle", az:"Bochum şahmat bölgəsi · xarici mənbə", tr:"Bochum satranç bölgesi · dış kaynak", ua:"Шаховий округ Бохум · зовнішнє джерело", ru:"Шахматный округ Бохума · внешний источник" },
- "Aktuell angebunden: Schachbezirk Bochum (NRW). Keine bundesweiten Meldungen.": { en:"Currently connected: Bochum chess district (NRW). No nationwide news.", de:"Aktuell angebunden: Schachbezirk Bochum (NRW). Keine bundesweiten Meldungen.", az:"Hazırda Bochum şahmat bölgəsi (NRW) bağlıdır. Ümumölkə xəbərləri yoxdur.", tr:"Şu an Bochum satranç bölgesi (NRW) bağlı. Ülke geneli haber yok.", ua:"Підключено округ Бохум (NRW). Загальнонімецьких новин немає.", ru:"Подключён шахматный округ Бохума (NRW). Общегерманских новостей нет." },
  "Derzeit keine für NRW verifizierte Live-Übertragung eingebunden.": { en:"No verified NRW live broadcasts are connected yet.", de:"Derzeit keine für NRW verifizierte Live-Übertragung eingebunden.", az:"Hələ NRW üçün təsdiqlənmiş canlı yayım yoxdur.", tr:"Henüz doğrulanmış NRW canlı yayını bağlı değil.", ua:"Поки немає підтверджених трансляцій NRW.", ru:"Пока нет подтверждённых трансляций NRW." },
  "Öffentliche Übertragungen bei Lichess": { en:"Public broadcasts on Lichess", de:"Öffentliche Übertragungen bei Lichess", az:"Lichess-də açıq yayımlar", tr:"Lichess'teki herkese açık yayınlar", ua:"Відкриті трансляції на Lichess", ru:"Открытые трансляции на Lichess" },
  "Lichess-Übersicht ist weltweit und nicht nach NRW gefiltert.": { en:"Lichess listings are worldwide and are not NRW-filtered.", de:"Lichess-Übersicht ist weltweit und nicht nach NRW gefiltert.", az:"Lichess siyahısı qlobaldır və NRW-yə görə süzülmür.", tr:"Lichess listesi küreseldir, NRW filtresi yoktur.", ua:"Список Lichess міжнародний і не фільтрується за NRW.", ru:"Список Lichess глобальный и не фильтруется по NRW." },
  "Schach-Treff Deutschland": { en:"Schach-Treff Germany", de:"Schach-Treff Deutschland", az:"Schach-Treff Almaniya", tr:"Schach-Treff Almanya", ua:"Schach-Treff Німеччина", ru:"Schach-Treff Германия" },
 
  "Schach-Nachrichten aus NRW": {de:"Schach-Nachrichten aus NRW",en:"Chess news from NRW",az:"NRW şahmat xəbərləri",tr:"NRW satranç haberleri",ua:"Шахові новини NRW",ru:"Шахматные новости NRW"},
- "NRW-Quellen": {de:"Nachrichtenquellen für NRW",en:"NRW news sources",az:"NRW xəbər mənbələri",tr:"NRW haber kaynakları",ua:"Джерела новин NRW",ru:"Источники новостей NRW"},
- "Weitere NRW-Meldungen direkt bei den Herausgebern lesen. Die Meldungen oben kommen aus Bochum.": {de:"Weitere NRW-Meldungen direkt bei den Herausgebern lesen. Die Meldungen oben kommen aus Bochum.",en:"More NRW news is available from the publishers. Headlines above come from Bochum.",az:"Digər NRW xəbərlərini birbaşa mənbələrdən oxuyun. Yuxarıdakı xəbərlər Bochum-dandır.",tr:"Diğer NRW haberlerini doğrudan kaynaklardan okuyun. Üstteki haberler Bochum'dan.",ua:"Інші новини NRW читайте безпосередньо в джерелах. Заголовки вище — з Бохума.",ru:"Другие новости NRW — непосредственно у первоисточников. Выше опубликованы новости Бохума."},
  "Landesverband & Fachmedien": {de:"Landesverband & Fachmedien",en:"State federation & chess media",az:"Əyalət federasiyası və şahmat mediası",tr:"Eyalet federasyonu ve satranç medyası",ua:"Федерація землі та шахові медіа",ru:"Федерация земли и шахматные СМИ"},
  "Regionale Schachverbände": {de:"Regionale Schachverbände",en:"Regional chess federations",az:"Regional şahmat federasiyaları",tr:"Bölgesel satranç federasyonları",ua:"Регіональні шахові федерації",ru:"Региональные шахматные федерации"},
+ "Unsere Stadt": {"de": "Unsere Stadt", "en": "Our city", "az": "Bizim şəhər", "tr": "Bizim şehir", "ua": "Наше місто", "ru": "Наш город"},
+ "Schach in Bochum": {"de": "Schach in Bochum", "en": "Chess in Bochum", "az": "Bochumda şahmat", "tr": "Bochum'da satranç", "ua": "Шахи в Бохумі", "ru": "Шахматы в Бохуме"},
+ "Schachleben in Bochum": {"de": "Schachleben in Bochum", "en": "Chess life in Bochum", "az": "Bochumda şahmat həyatı", "tr": "Bochum'da satranç hayatı", "ua": "Шахове життя Бохума", "ru": "Шахматная жизнь Бохума"},
+ "15 Bezirksvereine mit Webseiten und Vorstandskontakten": {"de": "15 Bezirksvereine mit Webseiten und Vorstandskontakten", "en": "15 district clubs with websites and committee contacts", "az": "15 rayon klubu, saytları və rəhbərliyin əlaqə məlumatları", "tr": "15 bölge kulübünün siteleri ve yönetim iletişim bilgileri", "ua": "15 клубів округу, їхні сайти й контакти керівництва", "ru": "15 клубов округа, их сайты и контакты руководства"},
+ "Vereinsnews, Mannschaften und Spielabende": {"de": "Vereinsnews, Mannschaften und Spielabende", "en": "Club news, teams and chess evenings", "az": "Klub xəbərləri, komandalar və şahmat axşamları", "tr": "Kulüp haberleri, takımlar ve satranç akşamları", "ua": "Новини клубу, команди та шахові вечори", "ru": "Новости клуба, команды и шахматные вечера"},
+ "Turnierkalender, Vereinsabende und Spielberichte": {"de": "Turnierkalender, Vereinsabende und Spielberichte", "en": "Tournament calendar, club nights and match reports", "az": "Turnir təqvimi, klub axşamları və oyun hesabatları", "tr": "Turnuva takvimi, kulüp akşamları ve maç raporları", "ua": "Календар турнірів, клубні вечори та звіти про матчі", "ru": "Календарь турниров, клубные вечера и отчёты о матчах"},
+ "Offene Spielabende in Bochum-Weitmar": {"de": "Offene Spielabende in Bochum-Weitmar", "en": "Open chess evenings in Bochum-Weitmar", "az": "Bochum-Weitmarda açıq şahmat axşamları", "tr": "Bochum-Weitmar'da herkese açık satranç akşamları", "ua": "Відкриті шахові вечори в Бохумі-Вайтмарі", "ru": "Открытые шахматные вечера в Бохуме-Вайтмаре"},
+ "Stadtmeisterschaft, Vereinsturniere und Mannschaften": {"de": "Stadtmeisterschaft, Vereinsturniere und Mannschaften", "en": "City championship, club tournaments and teams", "az": "Şəhər çempionatı, klub turnirləri və komandalar", "tr": "Şehir şampiyonası, kulüp turnuvaları ve takımlar", "ua": "Чемпіонат міста, клубні турніри та команди", "ru": "Чемпионат города, клубные турниры и команды"},
+ "Offenes Jugendtraining freitags ab 17 Uhr": {"de": "Offenes Jugendtraining freitags ab 17 Uhr", "en": "Open youth training on Fridays from 5 pm", "az": "Cümə günləri saat 17:00-dan açıq gənclər məşqi", "tr": "Cuma günleri 17.00'den itibaren açık gençlik antrenmanı", "ua": "Відкриті тренування для молоді щоп’ятниці з 17:00", "ru": "Открытые тренировки для молодёжи по пятницам с 17:00"},
+ "Mannschaften, Spielpläne und Spielberichte": {"de": "Mannschaften, Spielpläne und Spielberichte", "en": "Teams, match schedules and match reports", "az": "Komandalar, oyun cədvəlləri və oyun hesabatları", "tr": "Takımlar, maç takvimleri ve maç raporları", "ua": "Команди, розклад матчів і звіти про ігри", "ru": "Команды, расписание матчей и отчёты об играх"},
+ "Städtischer Verweis auf Vereine mit Schachlokalen": {"de": "Städtischer Verweis auf Vereine mit Schachlokalen", "en": "City page pointing to clubs with chess venues", "az": "Şəhərin şahmat məkanı olan klublara keçidi", "tr": "Belediyeden oyun mekânı olan satranç kulüplerine bağlantı", "ua": "Посилання міста на клуби з приміщеннями для гри", "ru": "Городская ссылка на клубы с местами для игры в шахматы"},
+ "Stand {time} · {count} Quellen": {"de": "Stand {time} · {count} Quellen", "en": "Updated at {time} · {count} sources", "az": "Yenilənib {time} · {count} mənbə", "tr": "Güncelleme {time} · {count} kaynak", "ua": "Оновлено о {time} · джерел {count}", "ru": "Обновлено в {time} · источников {count}"},
+ "Nach Region filtern": {"de": "Nach Region filtern", "en": "Filter by region", "az": "Bölgə üzrə süzgəc", "tr": "Bölgeye göre filtrele", "ua": "Фільтр за регіоном", "ru": "Фильтр по региону"},
+ "Nach Kategorie filtern": {"de": "Nach Kategorie filtern", "en": "Filter by category", "az": "Kateqoriya üzrə süzgəc", "tr": "Kategoriye göre filtrele", "ua": "Фільтр за категорією", "ru": "Фильтр по категории"},
+ "Nachrichtenkategorien": {"de": "Nachrichtenkategorien", "en": "News categories", "az": "Xəbər kateqoriyaları", "tr": "Haber kategorileri", "ua": "Категорії новин", "ru": "Категории новостей"},
+ "Alle": {"de": "Alle", "en": "All", "az": "Hamısı", "tr": "Tümü", "ua": "Усі", "ru": "Все"},
+ "Landesverband": {"de": "Landesverband", "en": "State federation", "az": "Əyalət federasiyası", "tr": "Eyalet federasyonu", "ua": "Федерація землі", "ru": "Федерация земли"},
+ "Jugend & Schule": {"de": "Jugend & Schule", "en": "Youth & schools", "az": "Gənclər və məktəblər", "tr": "Gençlik ve okullar", "ua": "Молодь і школи", "ru": "Молодёжь и школы"},
+ "Regionen": {"de": "Regionen", "en": "Regions", "az": "Bölgələr", "tr": "Bölgeler", "ua": "Регіони", "ru": "Регионы"},
+ "Nordrhein-Westfalen": {"de": "Nordrhein-Westfalen", "en": "North Rhine-Westphalia", "az": "Şimali Reyn-Vestfaliya", "tr": "Kuzey Ren-Vestfalya", "ua": "Північний Рейн-Вестфалія", "ru": "Северный Рейн-Вестфалия"},
+ "Ruhrgebiet": {"de": "Ruhrgebiet", "en": "Ruhr region", "az": "Rur bölgəsi", "tr": "Ruhr Bölgesi", "ua": "Рурський регіон", "ru": "Рурский регион"},
+ "Niederrhein": {"de": "Niederrhein", "en": "Lower Rhine", "az": "Aşağı Reyn", "tr": "Aşağı Ren", "ua": "Нижній Рейн", "ru": "Нижний Рейн"},
+ "Mittelrhein": {"de": "Mittelrhein", "en": "Middle Rhine", "az": "Orta Reyn", "tr": "Orta Ren", "ua": "Середній Рейн", "ru": "Средний Рейн"},
+ "Ostwestfalen-Lippe": {"de": "Ostwestfalen-Lippe", "en": "East Westphalia-Lippe", "az": "Şərqi Vestfaliya-Lippe", "tr": "Doğu Vestfalya-Lippe", "ua": "Східна Вестфалія-Ліппе", "ru": "Восточная Вестфалия-Липпе"},
+ "Münsterland": {"de": "Münsterland", "en": "Münsterland", "az": "Münsterland", "tr": "Münsterland", "ua": "Мюнстерланд", "ru": "Мюнстерланд"},
+ "Südwestfalen": {"de": "Südwestfalen", "en": "South Westphalia", "az": "Cənubi Vestfaliya", "tr": "Güney Vestfalya", "ua": "Південна Вестфалія", "ru": "Южная Вестфалия"},
+ "Bochum": {"de": "Bochum", "en": "Bochum", "az": "Bochum", "tr": "Bochum", "ua": "Бохум", "ru": "Бохум"},
+ "Zu den Quellen": {"de": "Zu den Quellen", "en": "View sources", "az": "Mənbələrə bax", "tr": "Kaynakları gör", "ua": "Переглянути джерела", "ru": "Смотреть источники"},
+ "Weniger anzeigen": {"de": "Weniger anzeigen", "en": "Collapse", "az": "Daha az göstər", "tr": "Daha az göster", "ua": "Згорнути", "ru": "Свернуть"},
+ "{count} weitere anzeigen": {"de": "{count} weitere anzeigen", "en": "Show {count} more", "az": "Daha {count} göstər", "tr": "{count} tane daha göster", "ua": "Показати ще {count}", "ru": "Показать ещё {count}"},
+ "Alle Bochumer Nachrichten": {"de": "Alle Bochumer Nachrichten", "en": "All Bochum news", "az": "Bochumun bütün xəbərləri", "tr": "Tüm Bochum haberleri", "ua": "Усі новини Бохума", "ru": "Все новости Бохума"},
+ "Hauptquellen": {"de": "Hauptquellen", "en": "Main sources", "az": "Əsas mənbələr", "tr": "Ana kaynaklar", "ua": "Основні джерела", "ru": "Основные источники"},
+ "Alle Quellen ({count})": {"de": "Alle Quellen ({count})", "en": "All sources ({count})", "az": "Bütün mənbələr ({count})", "tr": "Tüm kaynaklar ({count})", "ua": "Усі джерела ({count})", "ru": "Все источники ({count})"},
+ "Quellen ausblenden": {"de": "Quellen ausblenden", "en": "Hide sources", "az": "Mənbələri gizlət", "tr": "Kaynakları gizle", "ua": "Приховати джерела", "ru": "Скрыть источники"},
+ "Schlagzeilen und Links aus öffentlichen RSS-Feeds der Organisationen. Vollständige Texte auf den Seiten der Quellen.": {"de": "Schlagzeilen und Links aus öffentlichen RSS-Feeds der Organisationen. Vollständige Texte auf den Seiten der Quellen.", "en": "Headlines and links from the organizations' public RSS feeds. Full text on the source website.", "az": "Başlıqlar və keçidlər təşkilatların açıq RSS lentlərindən götürülür. Tam mətnlər mənbələrin saytlarındadır.", "tr": "Başlıklar ve bağlantılar kuruluşların herkese açık RSS akışlarından alınır. Tam metinler kaynak sitelerindedir.", "ua": "Заголовки й посилання з відкритих RSS-стрічок організацій. Повні тексти на сайтах джерел.", "ru": "Заголовки и ссылки из открытых RSS-лент организаций. Полные тексты на сайтах источников."},
  "MP": { en:"Match pts", de:"MP", az:"Matç xalı", tr:"Maç puanı", ua:"Матч. очки", ru:"Матч. очки" },
 };
 
@@ -81,7 +119,6 @@ import '../styles/sections.css';
 type Club = { id:string; slug:string; name:string; city:string };
 type Event = { id:string;club_id:string;title:string;starts_at:string;venue:string|null };
 type League = { id:string;club_id:string;season:string;league:string;team:string;place:number;played:number;match_points:number };
-type News = { title:string;url:string };
 type Section = 'turniere'|'ligen'|'vereine'|'news'|'live';
 const sections: Section[] = ['turniere','ligen','vereine','news','live'];
 const sectionLabels: Record<Section,string> = {
@@ -102,6 +139,16 @@ const NRW_EXTERNAL_URLS = {
   clubFinder: 'https://www.schachbund.de/vereinsfinder.html',
  },
  liveBroadcasts: 'https://lichess.org/broadcast',
+ bochumDirectory: [
+  {name:'Schachbezirk Bochum',url:'https://sbboblog.wordpress.com/die-vereine/',description:'15 Bezirksvereine mit Webseiten und Vorstandskontakten'},
+  {name:'Bochumer Schachverein 02',url:'https://bochumersv02.de/',description:'Vereinsnews, Mannschaften und Spielabende'},
+  {name:'SC Gerthe 46 – Werne',url:'https://www.sc-gerthe-46werne.de/',description:'Turnierkalender, Vereinsabende und Spielberichte'},
+  {name:'SG Bochum 31',url:'https://sgbochum31.info/',description:'Offene Spielabende in Bochum-Weitmar'},
+  {name:'SV Günnigfeld 1922',url:'https://www.sv-guennigfeld1922.de/',description:'Stadtmeisterschaft, Vereinsturniere und Mannschaften'},
+  {name:'SV Linden-Dahlhausen 1922',url:'https://svlinden.de/',description:'Offenes Jugendtraining freitags ab 17 Uhr'},
+  {name:'SV Wattenscheid 1930',url:'https://www.schachverein-wattenscheid.de/',description:'Mannschaften, Spielpläne und Spielberichte'},
+  {name:'Stadt Bochum',url:'https://www.bochum.de/Referat-fuer-Sport-und-Bewegung/Private-Sondersport--und-Vereinsanlagen/Schachlokale-mit-Verein',description:'Städtischer Verweis auf Vereine mit Schachlokalen'},
+ ],
  newsSources: {
   statewide: [
    {name:'Schachbund NRW',url:'https://schach-nrw.de/'},
@@ -155,7 +202,7 @@ function RegionDetails(){
  const [sectionFailures,setSectionFailures]=useState({turniere:false,ligen:false,vereine:false});
  const validRegion=regionId==='nrw';
  const detail=section as Section;
- const {news,newsError,newsLoading}=useClubNews(validRegion&&detail==='news');
+ const newsState = useClubNews(validRegion && detail === 'news', tr('Schachbezirk Bochum · externe Quelle'));
  useEffect(()=>{
   if(!validRegion||detail==='news'||detail==='live')return;
   let active=true;
@@ -205,11 +252,10 @@ function RegionDetails(){
  const signIn=(target:Section)=><Link className="nrw-inline nrw-signin" to={'/profile?returnTo='+encodeURIComponent('/region/nrw/'+target)}>{tr('Anmelden')}<ArrowUpRight aria-hidden="true" size={15}/></Link>;
  if(!validRegion)return <section className="nrw-shell"><h1>{tr("Region nicht verfügbar")}</h1><p>{tr("Weitere Regionen werden erst nach der Freigabe ihrer Datenquellen aktiviert.")}</p><Link to="/chat">{tr("Zurück zu Schach-Treff")}</Link></section>;
  const unavailable=<p className="nrw-muted">{tr('Einige Vereinsangaben sind derzeit nicht verfügbar.')}</p>;
- const content:Record<Section,React.ReactNode>={
+ const content:Record<Exclude<Section, 'news'>,ReactNode>={
   turniere:<>{loading?<p className="nrw-muted" role="status">{tr('Termine werden geladen …')}</p>:!user?<><p className="nrw-muted">{tr('Turnierkalender nach Anmeldung verfügbar.')}</p>{signIn('turniere')}</>:sectionFailures.turniere?unavailable:events.length?<ul className="nrw-items">{events.slice(0,40).map(e=><li key={e.id}><time dateTime={e.starts_at}>{eventTime(e.starts_at,language)}</time><strong>{e.title}</strong><small>{clubName(e.club_id)}{e.venue?' · '+e.venue:''}</small></li>)}</ul>:<p className="nrw-muted">{tr('Keine bestätigten kommenden Termine eingetragen.')}</p>}</>,
   ligen:<>{loading?<p className="nrw-muted" role="status">{tr('Tabellen werden geladen …')}</p>:!user?<><p className="nrw-muted">{tr('Vereinsliga-Daten nach Anmeldung verfügbar.')}</p>{signIn('ligen')}</>:sectionFailures.ligen?unavailable:featuredLeagues.length?<ul className="nrw-items">{featuredLeagues.slice(0,40).map(r=><li key={r.id}><span className="nrw-league-meta">{r.season} · {r.league}</span><strong>{r.place}. {r.team}</strong><small>{clubName(r.club_id)}</small><span className="nrw-score">{r.match_points} {tr('MP')}<span> · {r.played} {tr('Spiele')}</span></span></li>)}</ul>:<p className="nrw-muted">{tr('Noch keine Tabellen eingetragen.')}</p>}<details className="section-info"><summary>{tr('Datenquelle')}</summary><small className="nrw-source">{tr('Von Vereinen gepflegt · keine offizielle Live-Tabelle.')}</small></details>{import.meta.env.VITE_SPIELTAG_ENABLED==='true'&&<Link className="nrw-inline" to="/spieltag">{tr('Mein Spieltag')} <ArrowUpRight aria-hidden="true" size={14}/></Link>}</>,
   vereine:<><label className="nrw-select">{tr('Stadt')} <select value={city} onChange={e=>setCity(e.target.value)}><option value="">{tr('Alle Städte in NRW')}</option>{cities.map(c=><option key={c}>{c}</option>)}</select></label>{loading?<p className="nrw-muted" role="status">{tr('Vereine werden geladen …')}</p>:sectionFailures.vereine?unavailable:visibleClubs.length?<ul className="nrw-items">{visibleClubs.slice(0,100).map(c=><li key={c.id}><Link to={'/clubs-nrw/'+encodeURIComponent(c.slug)}><strong>{c.name}</strong><small>{c.city}</small></Link></li>)}</ul>:<p className="nrw-muted">{tr('Keine veröffentlichten Vereine für diese Auswahl.')}</p>}{detail==='vereine'&&<Link className="nrw-inline" to="/clubs-nrw">{tr('Alle Vereine')} <ArrowUpRight aria-hidden="true" size={14}/></Link>}</>,
-  news:<>{newsLoading?<p className="nrw-muted" role="status">{tr('Nachrichten werden geladen …')}</p>:news.length?<ul className="nrw-items">{news.map(n=><li key={n.url}><ExternalLink href={n.url}><span><strong>{n.title}</strong><small>{tr('Schachbezirk Bochum · externe Quelle')}</small></span></ExternalLink></li>)}</ul>:<p className="nrw-muted">{tr(newsError?'Nachrichten derzeit nicht verfügbar.':'Keine aktuellen Meldungen verfügbar.')}</p>}<details className="section-info"><summary>{tr('Info')}</summary><small className="nrw-source">{tr('Aktuell angebunden: Schachbezirk Bochum (NRW). Keine bundesweiten Meldungen.')}</small></details><NrwNewsSources tr={tr}/></>,
   live:<><p className="nrw-muted">{tr('Derzeit keine für NRW verifizierte Live-Übertragung eingebunden.')}</p><ExternalLink className="nrw-inline" href={NRW_EXTERNAL_URLS.liveBroadcasts}>{tr('Öffentliche Übertragungen bei Lichess')}</ExternalLink><details className="section-info"><summary>{tr('Info')}</summary><small className="nrw-source">{tr('Lichess-Übersicht ist weltweit und nicht nach NRW gefiltert.')}</small></details></>,
 
  };
@@ -227,9 +273,10 @@ function RegionDetails(){
     {detail==='turniere'&&<Tile section="turniere" icon={<CalendarDays size={19}/>} count={events.length?String(events.length):undefined}>{content.turniere}</Tile>}
     {detail==='ligen'&&<Tile section="ligen" icon={<Trophy size={19}/>} count={featuredLeagues.length?String(featuredLeagues.length):undefined}>{content.ligen}</Tile>}
     {detail==='vereine'&&<Tile section="vereine" icon={<Users size={19}/>} count={visibleClubs.length?String(visibleClubs.length):undefined}>{content.vereine}</Tile>}
-    {detail==='news'&&<Tile section="news" icon={<Newspaper size={19}/>} count={news.length?String(news.length):undefined}>{content.news}</Tile>}
+    {detail==='news'&&<NewsFeed state={newsState} language={language} tr={tr} detail/>}
     {detail==='live'&&<Tile section="live" icon={<Radio size={19}/>}>{content.live}</Tile>}
    </div>
+     {detail==='news'&&<NrwNewsSources tr={tr}/>}
      <footer className="nrw-footer"><span>{tr('Vereinsangaben aus NRW · von Vereinen gepflegt.')}</span><Link to="/chat"><MessageSquare size={16} aria-hidden="true"/>{tr('Schach-Treff Deutschland')}<ArrowUpRight size={14} aria-hidden="true"/></Link></footer>
    </div>
  </div>;
@@ -242,77 +289,103 @@ function ExternalLink({href,children,className}:{href:string;children:ReactNode;
  </a>;
 }
 
-function useClubNews(enabled:boolean){
- const [news,setNews]=useState<News[]>([]);
- const [newsLoading,setNewsLoading]=useState(enabled&&Boolean(server));
- const [newsError,setNewsError]=useState(enabled&&!server);
+function useClubNews(enabled: boolean, legacyName: string): NewsState {
+ const [payload, setPayload] = useState<{ news: News[]; updatedAt: string | null; sourcesOk: number | null; now: number }>(
+  () => ({ news: [], updatedAt: null, sourcesOk: null, now: Date.now() }),
+ );
+ const [newsLoading, setNewsLoading] = useState(enabled && Boolean(server));
+ const [newsError, setNewsError] = useState(enabled && !server);
 
- useEffect(()=>{
-  if(!enabled||!server)return;
-  let active=true;
-  const abort=new AbortController();
-  void fetch(server+'/api/clubs-nrw/news',{
-   signal:AbortSignal.any([abort.signal,AbortSignal.timeout(12000)]),headers:{Accept:'application/json'},
-  }).then(async response=>{
-   if(!response.ok)throw new Error('Club news unavailable');
-   const data=await response.json();
-   if(!active)return;
-   const items:News[]=[];
-   const urls=new Set<string>();
-   for(const item of Array.isArray(data?.items)?data.items:[]){
-    const url=httpsLink(item?.url);
-    if(!url||urls.has(url)||typeof item?.title!=='string'||!item.title.trim())continue;
+ useEffect(() => {
+  if (!enabled || !server) return;
+  const abort = new AbortController();
+  void fetch(server + '/api/clubs-nrw/news', {
+   signal: AbortSignal.any([abort.signal, AbortSignal.timeout(12000)]),
+   headers: { Accept: 'application/json' },
+  }).then(async response => {
+   if (!response.ok) throw new Error('Club news unavailable');
+   const data = await response.json();
+   if (abort.signal.aborted) return;
+   const news: News[] = [];
+   const urls = new Set<string>();
+   const aggregated = isDate(data?.updatedAt);
+   for (const item of Array.isArray(data?.items) ? data.items : []) {
+    const url = httpsLink(item?.url);
+    if (!url || urls.has(url) || typeof item?.title !== 'string' || !item.title.trim()) continue;
+    if (aggregated && (!isRegion(item.region) || !isCategory(item.category)
+     || typeof item.source !== 'string' || typeof item.shortName !== 'string')) continue;
     urls.add(url);
-    items.push({title:item.title,url});
-    if(items.length===12)break;
+    news.push({
+     title: item.title, url, source: aggregated ? item.source : '', shortName: aggregated ? item.shortName : '',
+     region: aggregated ? item.region : 'bochum', category: aggregated ? item.category : 'region',
+     publishedAt: isDate(item.publishedAt) ? item.publishedAt : null,
+    });
+    if (news.length === 30) break;
    }
-   setNews(items);
-  }).catch(()=>{if(active)setNewsError(true);})
-    .finally(()=>{if(active)setNewsLoading(false);});
-  return ()=>{active=false;abort.abort();};
- },[enabled]);
+   setPayload({
+    news, updatedAt: aggregated ? data.updatedAt : null,
+    sourcesOk: Number.isSafeInteger(data?.sourcesOk) && data.sourcesOk >= 0 ? data.sourcesOk : null,
+    now: Date.now(),
+   });
+  }).catch(() => { if (!abort.signal.aborted) setNewsError(true); })
+    .finally(() => { if (!abort.signal.aborted) setNewsLoading(false); });
+  return () => abort.abort();
+ }, [enabled]);
 
- return {news,newsLoading,newsError};
+ const news = payload.updatedAt ? payload.news : payload.news.map(item => ({ ...item, source: legacyName, shortName: legacyName }));
+ return { ...payload, news, newsLoading, newsError };
 }
-
 
 const NRW_NEWS_SOURCE_GROUPS = [
  {title:'Landesverband & Fachmedien',sources:NRW_EXTERNAL_URLS.newsSources.statewide},
  {title:'Regionale Schachverbände',sources:NRW_EXTERNAL_URLS.newsSources.regional},
 ] as const;
+const keySources = NRW_EXTERNAL_URLS.newsSources.statewide.filter(({name}) =>
+ ['Schachbund NRW', 'Schachjugend NRW', 'Schulschach NRW', 'ChessBase'].includes(name),
+);
+const sourceCount = NRW_NEWS_SOURCE_GROUPS.reduce((count, group) => count + group.sources.length, 0);
 
 function NrwNewsSources({tr}:{tr:(value:string)=>string}){
- return <div className="nrw-news-sources" aria-label={tr('NRW-Quellen')}>
-  <p className="nrw-news-source-note">{tr('Weitere NRW-Meldungen direkt bei den Herausgebern lesen. Die Meldungen oben kommen aus Bochum.')}</p>
-  <div className="nrw-news-source-groups">
-   {NRW_NEWS_SOURCE_GROUPS.map(group=><section key={group.title} className="nrw-news-source-group">
+ const [expanded, setExpanded] = useState(false);
+ return <section className="nrw-news-sources" id="nrw-main-sources" aria-labelledby="nrw-sources-title">
+  <div className="nrw-sources-heading">
+   <h2 id="nrw-sources-title">{tr('Hauptquellen')}</h2>
+   <button type="button" aria-expanded={expanded} aria-controls="nrw-source-directory" onClick={() => setExpanded(!expanded)}>
+    {expanded ? tr('Quellen ausblenden') : tr('Alle Quellen ({count})').replace('{count}', String(sourceCount))}
+    <ChevronDown size={15} aria-hidden="true"/>
+   </button>
+  </div>
+  {expanded ? <div className="nrw-news-source-groups" id="nrw-source-directory">
+   {NRW_NEWS_SOURCE_GROUPS.map(group => <div key={group.title}>
     <h3>{tr(group.title)}</h3>
     <div className="nrw-news-source-list">
-     {group.sources.map(({name,url})=><ExternalLink key={url} href={url} className="nrw-news-source-link">{name}</ExternalLink>)}
+     {group.sources.map(({name,url}) => <ExternalLink key={url} href={url} className="nrw-news-source-link">{name}</ExternalLink>)}
     </div>
-   </section>)}
-  </div>
- </div>;
+   </div>)}
+  </div> : <div className="nrw-news-source-list" id="nrw-source-directory">
+   {keySources.map(({name,url}) => <ExternalLink key={url} href={url} className="nrw-news-source-link">{name}</ExternalLink>)}
+  </div>}
+ </section>;
 }
 
 const officialCards = [
  {section:'turniere',Icon:CalendarDays,description:'Offizieller NRW-Turnierkalender des Deutschen Schachbunds.',
-  links:[{label:'NRW-Kalender öffnen',href:NRW_EXTERNAL_URLS.official.calendar}],linkStyle:'nrw-calendar-link'},
- {section:'ligen',Icon:Trophy,description:'Tabellen und Spielergebnisse auf den offiziellen Portalen.',linkStyle:undefined,
+  links:[{label:'NRW-Kalender öffnen',href:NRW_EXTERNAL_URLS.official.calendar}]},
+ {section:'ligen',Icon:Trophy,description:'Tabellen und Spielergebnisse auf den offiziellen Portalen.',
   links:[
    {label:'Schach-Bundesliga',href:NRW_EXTERNAL_URLS.official.bundesliga},
    {label:'NRW-Ligen',href:NRW_EXTERNAL_URLS.official.nrwLeagues},
    {label:'Ruhr-Ligen',href:NRW_EXTERNAL_URLS.official.ruhrLeagues},
   ]},
  {section:'vereine',Icon:Users,description:'Verein in der Nähe finden. Trainingszeiten und Kontakte stehen auf der Vereinswebsite.',
-  links:[{label:'Verein finden',href:NRW_EXTERNAL_URLS.official.clubFinder}],linkStyle:'nrw-club-finder-link'},
+  links:[{label:'Verein finden',href:NRW_EXTERNAL_URLS.official.clubFinder}]},
 ] as const;
 
 function NrwLanding(){
  const {language}=useLanguage();
  const regional=useRegionalCopy();
  const tr=(value:string)=>regionText[value]?.[language]||regional(value);
- const {news,newsLoading,newsError}=useClubNews(true);
+ const newsState = useClubNews(true, tr('Schachbezirk Bochum · externe Quelle'));
 
  return <div className="nrw-shell nrw-overview" lang={language==='ua'?'uk':language} data-region-overview="nrw">
   <header className="nrw-header">
@@ -324,32 +397,29 @@ function NrwLanding(){
    </div>
   </header>
 
+  <div className="nrw-news-grid">
+   <NewsFeed state={newsState} language={language} tr={tr}/>
+   <BochumNews state={newsState} language={language} tr={tr} directory={NRW_EXTERNAL_URLS.bochumDirectory}/>
+  </div>
+
   <div className="nrw-grid">
-   {officialCards.map(({section,Icon,description,links,linkStyle})=><section key={section} className="nrw-card" aria-labelledby={'nrw-'+section}>
+   {officialCards.map(({section,Icon,description,links})=><section key={section} className="nrw-card" aria-labelledby={'nrw-'+section}>
     <div className="nrw-card-head">
      <Icon aria-hidden="true" size={19} className="nrw-card-icon"/>
      <h2 id={'nrw-'+section}>{tr(sectionLabels[section])}</h2>
     </div>
     <p className="nrw-card-subtitle">{tr(description)}</p>
     <div className="nrw-official-links">
-     {links.map(({label,href})=><ExternalLink key={href} href={href} className={linkStyle}>{tr(label)}</ExternalLink>)}
+     {links.map(({label,href})=><ExternalLink key={href} href={href}>{tr(label)}</ExternalLink>)}
     </div>
    </section>)}
   </div>
 
-  <section className="nrw-news" aria-labelledby="nrw-club-news">
-   <h2 id="nrw-club-news"><Newspaper aria-hidden="true" size={18}/>{tr('Schach-Nachrichten aus NRW')}</h2>
-   {news.length>0?<ul className="nrw-items">
-    {news.slice(0,3).map(({title,url})=><li key={url}>
-     <ExternalLink href={url}><span><strong>{title}</strong><small>{tr('Schachbezirk Bochum · externe Quelle')}</small></span></ExternalLink>
-    </li>)}
-   </ul>:<p role="status" className="nrw-muted">{tr(newsLoading?'Nachrichten werden geladen …':newsError?'Nachrichten derzeit nicht verfügbar.':'Keine aktuellen Meldungen verfügbar.')}</p>}
-   <NrwNewsSources tr={tr}/>
-   <div className="nrw-news-links">
-    <Link to="/region/nrw/news">{tr('Alle Nachrichten')}<ArrowRight aria-hidden="true" size={15}/></Link>
-    <Link to="/region/nrw/live">{tr('Live-Übertragungen')}<ArrowRight aria-hidden="true" size={15}/></Link>
-   </div>
-  </section>
+  <NrwNewsSources tr={tr}/>
+  <footer className="nrw-news-disclosure">
+   <span>{tr('Schlagzeilen und Links aus öffentlichen RSS-Feeds der Organisationen. Vollständige Texte auf den Seiten der Quellen.')}</span>
+   <Link to="/region/nrw/live">{tr('Live-Übertragungen')}<ArrowRight aria-hidden="true" size={15}/></Link>
+  </footer>
  </div>;
 }
 

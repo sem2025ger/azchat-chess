@@ -10,7 +10,7 @@ Branch `feat/clubs-nrw-v1`, stacked on `feat/spieler-v1` (PR #127). No productio
 - `clubs_nrw_roles` role assignments must be administered by a verified site owner/service role and are not writable by browser users. Owner/moderator/admin may edit calendar rows; owner/admin only may enter or edit league table rows. No automated results and no game-based rankings.
 - Optional `clubs_nrw_room_links` link to preexisting **closed**, `kind='room'` PR #126 club rooms. A room link requires the editor to be both an NRW club editor and a moderator/admin of the actual closed room. Only real members may read the link; never create rooms, invites, or grant room access through this module. The SQL checks the `kind` property dynamically so main without PR #126 fails closed.
 - `clubs_nrw_duels` only allows `proposed` and `withdrawn`. There are no game IDs, active statuses, matchmaking, move or Socket.IO endpoints. Do NOT enable game launch until durable-game acceptance gate for PR #126 passes.
-- RSS news fetches ONLY `https://sbboblog.wordpress.com/feed/`; backend enforces fixed-origin, 5s abort, 15m cache, 8 items max, and title+HTTPS link only; no full article caching. Failure returns an empty list with external-link fallback. No arbitrary URL proxy.
+- The default RSS response reads only the Bochum district feed and returns up to eight titles and HTTPS links. The optional aggregate and its source list are described below.
 - Source list: https://ergebnisdienst.svr-schach.de/index.php/vereine?saison=0&view=vereinsliste. Official news: https://sbboblog.wordpress.com/. Club address/training updates require club confirmation.
 
 ## Gates and dependencies
@@ -56,3 +56,29 @@ Merge order is **PR #127 → PR #128, both with Squash and merge only**. PR #128
 Apply all three #127 Spieler migrations, then `20261026224500_clubs_nrw_v1.sql`, then `20261027001000_spieler_clubs_nrw_fk.sql`. `server/clubsNrwSpielerDb.test.js` exercises that exact order on isolated PostgreSQL, including published/unknown/unpublished clubs, legacy privacy, verified club display and preserved RPC ACLs. Server CI also runs for the stacked base branch.
 
 The original free-text claim club is retained as `club_legacy` for migration safety and is never displayed as an unverified public association. The selected NRW club ID is nullable and must reference the curated `clubs_nrw` directory. Existing claims are not automatically matched to clubs by their legacy text.
+
+## NRW news feeds
+
+`NRW_NEWS_FEEDS_ENABLED` defaults to off. Set it to the exact value `true` only on the approved QA deployment of `chessaz-deutsch-qa-api`, with `CLUBS_NRW_ENABLED=true`. The flag does not control frontend visibility. An unset or false flag preserves the previous `{"items":[{"title":"…","url":"…"}]}` response from `GET /api/clubs-nrw/news`. With aggregation enabled, items include source, region and publication metadata, and the response also includes `updatedAt` and `sourcesOk`. The latter counts feeds contributing eligible items before the global cap.
+
+The server uses a fixed HTTPS allowlist. It rejects redirects, allows 250,000 bytes and five seconds per feed, caches successful feeds for 15 minutes and retries unavailable or empty feeds after 60 seconds. The feed publishes up to five headlines per source and 30 overall, omitting dated items older than 120 days. No summaries or article content are displayed.
+
+### Verified public feeds (2026-11-23)
+
+| Source | Feed or exclusion |
+| --- | --- |
+| Schachbund NRW | <https://schach-nrw.de/feed/> |
+| Schachjugend NRW | <https://sjnrw.de/?format=feed&type=atom> |
+| Schulschach NRW | No advertised feed on the homepage. Standard `/feed/` returned HTTP 404. |
+| Schachverband Ruhrgebiet | <https://svr-schach.de/feed> |
+| Niederrheinischer Schachverband 1901 | <https://www.nsv1901.de/feed/> |
+| Schachverband Mittelrhein | <https://sv-mittelrhein.de/feed>. Verified RSS. The feed had no articles from the last 120 days during discovery. |
+| Schachverband Ostwestfalen-Lippe | <https://schachverband-owl.de/feed/> |
+| Schachverband Münsterland | <https://www.svmuensterland.de/?format=feed&type=rss> |
+| Schachverband Südwestfalen | <https://schach-swf.de/index.php?format=feed&type=rss> |
+| Schachbezirk Bochum | <https://sbboblog.wordpress.com/feed/> |
+| Bochumer Schachverein 02 | <https://bochumersv02.de/feed/> |
+| Schachgesellschaft Bochum 1931 | No website recorded in the published NRW club directory. |
+| ChessBase, Schach-Bundesliga, DSB | Source-directory links only, outside the NRW feed scope. |
+
+The two Bochum clubs above match the published QA directory and the repository seed for `city = 'Bochum'`. Discover feeds only via the official homepage’s RSS/Atom alternate link or the standard WordPress `/feed/` path. Verify that the selected URL serves RSS/Atom entries directly. Webpage articles and access-restricted sources are excluded. Runtime fetches use only the verified URLs in code.
