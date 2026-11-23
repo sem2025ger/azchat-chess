@@ -88,6 +88,16 @@ test('eight merged screens have complete six-language copy for fixed labels and 
   assert.ok(initializer,name);const copy=Function('return ('+initializer+')')();maps[name]=copy;
   for(const [key,entry] of Object.entries(copy))for(const locale of ['de','en','az','tr','ua','ru'])assert.ok(typeof entry[locale]==='string'&&entry[locale].trim(),`${name}: ${key}: ${locale}`);
  }
+ const mapRegions=['niederrhein','muensterland','owl','ruhrgebiet','mittelrhein','suedwestfalen'];
+ for(const region of mapRegions){
+  const copy=maps.regionText['map.'+region];
+  assert.ok(copy,'missing map copy: '+region);
+  for(const label of Object.values(copy)){
+   assert.doesNotMatch(label,/…|\.\.\./);
+   const lines=label.split('\n');
+   assert.ok(lines.length<=2&&lines.every(line=>line.trim()),region+' has invalid map label lines');
+  }
+ }
  const checks={
   playerUiCopy:['Profil','Partien','Verein —','Dieses Profil ist deinem Konto zugeordnet.','Anfrage eingegangen. Die Identität wird vor einer Zuordnung geprüft.'],
   chatUiText:['Mitglied','Chat ist momentan nicht verfügbar.','Beitritt nicht möglich. Bitte erneut versuchen.','Nachricht konnte nicht gesendet werden.'],
