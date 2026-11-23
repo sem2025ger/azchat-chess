@@ -110,7 +110,12 @@ export function NewsFeed({ state, language, tr, detail = false }: {
  </section>;
 }
 
-export function BochumNews({ state, language, tr }: { state: NewsState; language: NewsLocale; tr: Copy }) {
+export function BochumNews({ state, language, tr, directory }: {
+ state: NewsState;
+ language: NewsLocale;
+ tr: Copy;
+ directory: readonly { name: string; url: string; description: string }[];
+}) {
  const items = state.news.filter(item => item.region === 'bochum');
  const sources = Array.from(new Set(items.map(item => item.source)));
 
@@ -120,6 +125,20 @@ export function BochumNews({ state, language, tr }: { state: NewsState; language
   </div>
   <h2 id="nrw-bochum-title">{tr('Schach in Bochum')}</h2>
   {items.length > 0 && <NewsRows items={items.slice(0, 3)} formats={newsDateFormats(language)} now={state.now}/>}
+  <section className="nrw-bochum-directory" aria-labelledby="nrw-bochum-directory-title">
+   <h3 id="nrw-bochum-directory-title">{tr('Schachleben in Bochum')}</h3>
+   <ul>
+    {directory.map(({ name, url, description }) => <li key={url}>
+     <a href={url} target="_blank" rel="noopener noreferrer">
+      <span className="nrw-bochum-directory-copy">
+       <strong>{name}</strong>
+       <span>{tr(description)}</span>
+      </span>
+      <ArrowUpRight size={14} aria-hidden="true"/>
+     </a>
+    </li>)}
+   </ul>
+  </section>
   <div className="nrw-bochum-footer">
    {sources.length > 0 && <span>{new Intl.ListFormat(language === 'ua' ? 'uk' : language).format(sources)}</span>}
    <Link to="/region/nrw/news?region=bochum">{tr('Alle Bochumer Nachrichten')}<ArrowRight size={15} aria-hidden="true"/></Link>

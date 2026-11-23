@@ -77,6 +77,15 @@ const regionText: Record<string,Record<'en'|'de'|'az'|'tr'|'ua'|'ru',string>> = 
  "Regionale Schachverbände": {de:"Regionale Schachverbände",en:"Regional chess federations",az:"Regional şahmat federasiyaları",tr:"Bölgesel satranç federasyonları",ua:"Регіональні шахові федерації",ru:"Региональные шахматные федерации"},
  "Unsere Stadt": {"de": "Unsere Stadt", "en": "Our city", "az": "Bizim şəhər", "tr": "Bizim şehir", "ua": "Наше місто", "ru": "Наш город"},
  "Schach in Bochum": {"de": "Schach in Bochum", "en": "Chess in Bochum", "az": "Bochumda şahmat", "tr": "Bochum'da satranç", "ua": "Шахи в Бохумі", "ru": "Шахматы в Бохуме"},
+ "Schachleben in Bochum": {"de": "Schachleben in Bochum", "en": "Chess life in Bochum", "az": "Bochumda şahmat həyatı", "tr": "Bochum'da satranç hayatı", "ua": "Шахове життя Бохума", "ru": "Шахматная жизнь Бохума"},
+ "15 Bezirksvereine mit Webseiten und Vorstandskontakten": {"de": "15 Bezirksvereine mit Webseiten und Vorstandskontakten", "en": "15 district clubs with websites and committee contacts", "az": "15 rayon klubu, saytları və rəhbərliyin əlaqə məlumatları", "tr": "15 bölge kulübünün siteleri ve yönetim iletişim bilgileri", "ua": "15 клубів округу, їхні сайти й контакти керівництва", "ru": "15 клубов округа, их сайты и контакты руководства"},
+ "Vereinsnews, Mannschaften und Spielabende": {"de": "Vereinsnews, Mannschaften und Spielabende", "en": "Club news, teams and chess evenings", "az": "Klub xəbərləri, komandalar və şahmat axşamları", "tr": "Kulüp haberleri, takımlar ve satranç akşamları", "ua": "Новини клубу, команди та шахові вечори", "ru": "Новости клуба, команды и шахматные вечера"},
+ "Turnierkalender, Vereinsabende und Spielberichte": {"de": "Turnierkalender, Vereinsabende und Spielberichte", "en": "Tournament calendar, club nights and match reports", "az": "Turnir təqvimi, klub axşamları və oyun hesabatları", "tr": "Turnuva takvimi, kulüp akşamları ve maç raporları", "ua": "Календар турнірів, клубні вечори та звіти про матчі", "ru": "Календарь турниров, клубные вечера и отчёты о матчах"},
+ "Offene Spielabende in Bochum-Weitmar": {"de": "Offene Spielabende in Bochum-Weitmar", "en": "Open chess evenings in Bochum-Weitmar", "az": "Bochum-Weitmarda açıq şahmat axşamları", "tr": "Bochum-Weitmar'da herkese açık satranç akşamları", "ua": "Відкриті шахові вечори в Бохумі-Вайтмарі", "ru": "Открытые шахматные вечера в Бохуме-Вайтмаре"},
+ "Stadtmeisterschaft, Vereinsturniere und Mannschaften": {"de": "Stadtmeisterschaft, Vereinsturniere und Mannschaften", "en": "City championship, club tournaments and teams", "az": "Şəhər çempionatı, klub turnirləri və komandalar", "tr": "Şehir şampiyonası, kulüp turnuvaları ve takımlar", "ua": "Чемпіонат міста, клубні турніри та команди", "ru": "Чемпионат города, клубные турниры и команды"},
+ "Offenes Jugendtraining freitags ab 17 Uhr": {"de": "Offenes Jugendtraining freitags ab 17 Uhr", "en": "Open youth training on Fridays from 5 pm", "az": "Cümə günləri saat 17:00-dan açıq gənclər məşqi", "tr": "Cuma günleri 17.00'den itibaren açık gençlik antrenmanı", "ua": "Відкриті тренування для молоді щоп’ятниці з 17:00", "ru": "Открытые тренировки для молодёжи по пятницам с 17:00"},
+ "Mannschaften, Spielpläne und Spielberichte": {"de": "Mannschaften, Spielpläne und Spielberichte", "en": "Teams, match schedules and match reports", "az": "Komandalar, oyun cədvəlləri və oyun hesabatları", "tr": "Takımlar, maç takvimleri ve maç raporları", "ua": "Команди, розклад матчів і звіти про ігри", "ru": "Команды, расписание матчей и отчёты об играх"},
+ "Städtischer Verweis auf Vereine mit Schachlokalen": {"de": "Städtischer Verweis auf Vereine mit Schachlokalen", "en": "City page pointing to clubs with chess venues", "az": "Şəhərin şahmat məkanı olan klublara keçidi", "tr": "Belediyeden oyun mekânı olan satranç kulüplerine bağlantı", "ua": "Посилання міста на клуби з приміщеннями для гри", "ru": "Городская ссылка на клубы с местами для игры в шахматы"},
  "Stand {time} · {count} Quellen": {"de": "Stand {time} · {count} Quellen", "en": "Updated at {time} · {count} sources", "az": "Yenilənib {time} · {count} mənbə", "tr": "Güncelleme {time} · {count} kaynak", "ua": "Оновлено о {time} · джерел {count}", "ru": "Обновлено в {time} · источников {count}"},
  "Nach Region filtern": {"de": "Nach Region filtern", "en": "Filter by region", "az": "Bölgə üzrə süzgəc", "tr": "Bölgeye göre filtrele", "ua": "Фільтр за регіоном", "ru": "Фильтр по региону"},
  "Nach Kategorie filtern": {"de": "Nach Kategorie filtern", "en": "Filter by category", "az": "Kateqoriya üzrə süzgəc", "tr": "Kategoriye göre filtrele", "ua": "Фільтр за категорією", "ru": "Фильтр по категории"},
@@ -130,6 +139,16 @@ const NRW_EXTERNAL_URLS = {
   clubFinder: 'https://www.schachbund.de/vereinsfinder.html',
  },
  liveBroadcasts: 'https://lichess.org/broadcast',
+ bochumDirectory: [
+  {name:'Schachbezirk Bochum',url:'https://sbboblog.wordpress.com/die-vereine/',description:'15 Bezirksvereine mit Webseiten und Vorstandskontakten'},
+  {name:'Bochumer Schachverein 02',url:'https://bochumersv02.de/',description:'Vereinsnews, Mannschaften und Spielabende'},
+  {name:'SC Gerthe 46 – Werne',url:'https://www.sc-gerthe-46werne.de/',description:'Turnierkalender, Vereinsabende und Spielberichte'},
+  {name:'SG Bochum 31',url:'https://sgbochum31.info/',description:'Offene Spielabende in Bochum-Weitmar'},
+  {name:'SV Günnigfeld 1922',url:'https://www.sv-guennigfeld1922.de/',description:'Stadtmeisterschaft, Vereinsturniere und Mannschaften'},
+  {name:'SV Linden-Dahlhausen 1922',url:'https://svlinden.de/',description:'Offenes Jugendtraining freitags ab 17 Uhr'},
+  {name:'SV Wattenscheid 1930',url:'https://www.schachverein-wattenscheid.de/',description:'Mannschaften, Spielpläne und Spielberichte'},
+  {name:'Stadt Bochum',url:'https://www.bochum.de/Referat-fuer-Sport-und-Bewegung/Private-Sondersport--und-Vereinsanlagen/Schachlokale-mit-Verein',description:'Städtischer Verweis auf Vereine mit Schachlokalen'},
+ ],
  newsSources: {
   statewide: [
    {name:'Schachbund NRW',url:'https://schach-nrw.de/'},
@@ -380,7 +399,7 @@ function NrwLanding(){
 
   <div className="nrw-news-grid">
    <NewsFeed state={newsState} language={language} tr={tr}/>
-   <BochumNews state={newsState} language={language} tr={tr}/>
+   <BochumNews state={newsState} language={language} tr={tr} directory={NRW_EXTERNAL_URLS.bochumDirectory}/>
   </div>
 
   <div className="nrw-grid">

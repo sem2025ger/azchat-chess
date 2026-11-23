@@ -25,6 +25,14 @@ const bochumTitles = {
 const bochumBadges = {
  de:'Unsere Stadt',en:'Our city',az:'Bizim şəhər',tr:'Bizim şehir',ua:'Наше місто',ru:'Наш город',
 };
+const directoryHeadings = {
+ de:'Schachleben in Bochum',en:'Chess life in Bochum',az:'Bochumda şahmat həyatı',
+ tr:"Bochum'da satranç hayatı",ua:'Шахове життя Бохума',ru:'Шахматная жизнь Бохума',
+};
+const directoryTitles = [
+ 'Schachbezirk Bochum','Bochumer Schachverein 02','SC Gerthe 46 – Werne','SG Bochum 31',
+ 'SV Günnigfeld 1922','SV Linden-Dahlhausen 1922','SV Wattenscheid 1930','Stadt Bochum',
+];
 const localeIds = {de:'de-DE',en:'en-GB',az:'az-AZ',tr:'tr-TR',ua:'uk-UA',ru:'ru-RU'};
 const sourceUrls = [
  'https://schach-nrw.de/', 'https://www.sjnrw.de/news/news.html', 'https://schulschach-nrw.org/news',
@@ -93,10 +101,12 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
   await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   if(captureRoot)await mkdir(captureRoot,{recursive:true});
   const capture=async name=>{if(captureRoot){const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(captureRoot,phase+'-'+name+'.png'),Buffer.from(shot.data,'base64'));}};
+  const directorySelector='.nrw-bochum-directory a';
   for(const [width,height] of [[1280,720],[1440,900],[1920,950],[390,844]]){
    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
    await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
    await wait("document.querySelectorAll('.nrw-news-feed .nrw-news-row').length===5");
+   let germanDescriptions;
    for(const lang of (verify?['de','en','az','tr','ua','ru']:['de','ru'])){
     await evaluate('window.fixtureLanguage('+JSON.stringify(lang)+')');await evaluate('document.fonts.ready');await pause(60);
     if(lang==='de'||lang==='ru')await capture('nrw-'+lang+'-'+width+'x'+height);
@@ -115,6 +125,14 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
       .reduce((a,x,i)=>a+x*[.2126,.7152,.0722][i],0);
      const colors=style.backgroundImage.match(/(?:rgb|color)\\([^)]*\\)/g)||[];
      const contrast=Math.min(...colors.map(color=>(luminance(color)+.05)/(luminance(getComputedStyle(root).backgroundColor)+.05)));
+     const directory=root.querySelector('.nrw-bochum-directory');
+     const directoryCards=links('${directorySelector}').map((link,index)=>{
+      const card=directory.querySelectorAll('a')[index];
+      const description=card.querySelector('.nrw-bochum-directory-copy span');
+      return {...link,title:card.querySelector('strong').textContent,description:description.textContent,
+       fits:card.scrollWidth<=card.clientWidth+1,
+       contrast:(luminance(getComputedStyle(description).color)+.05)/(luminance('#302E2B')+.05)};
+     });
      return {
       width:innerWidth,documentWidth:document.documentElement.scrollWidth,
       cards:[...root.querySelectorAll('.nrw-grid>.nrw-card')].map(bounds),
@@ -133,6 +151,10 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
       bochumTitle:root.querySelector('.nrw-bochum h2').textContent,
       bochumSubtitle:root.querySelector('.nrw-bochum > p')!==null,
       bochumRows:links('.nrw-bochum .nrw-news-row'),
+      directoryCards,
+      directoryHeading:directory?.querySelector('h3').textContent,
+      directoryColumns:directory&&getComputedStyle(directory.querySelector('ul')).gridTemplateColumns.split(' ').length,
+      directoryBetweenNewsAndFooter:directory?.previousElementSibling?.matches('.nrw-news-rows')&&directory.nextElementSibling?.matches('.nrw-bochum-footer'),
       time:root.querySelector('.nrw-news-row time').textContent.trim(),
       dateTooltip:root.querySelector('.nrw-news-row time').title,
       rowHeight:bounds(root.querySelector('.nrw-news-row')).height,
@@ -175,6 +197,15 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      assert.equal(metric.headlines.length,5,'five headlines visible without interaction');
      assert.deepEqual(metric.headlines.map(link=>link.href),[0,1,2,3,4].map(index=>'https://example.org/news-'+index));
      assert.deepEqual(metric.bochumRows.map(link=>link.href),[1,4,5].map(index=>'https://example.org/news-'+index));
+     assert.equal(metric.directoryHeading,directoryHeadings[lang]);
+     assert.ok(metric.directoryBetweenNewsAndFooter);
+     assert.deepEqual(metric.directoryCards.map(card=>card.title),directoryTitles);
+     const descriptions=metric.directoryCards.map(card=>card.description);
+     assert.ok(descriptions.every(description=>description.trim().length>0&&description.length<=70));
+     if(lang==='de')germanDescriptions=descriptions;
+     else assert.ok(descriptions.every((description,index)=>description!==germanDescriptions[index]),'directory descriptions are translated');
+     assert.ok(metric.directoryCards.every(card=>card.fits&&card.contrast>=4.5));
+     assert.ok(metric.directoryCards.every(card=>metric.bochumRows.every(row=>row.href!==card.href)));
      assert.equal(metric.requestCount,1,'both cards share one request');
      assert.equal(metric.sourceGroups,0,'secondary source groups are collapsed initially');
      assert.deepEqual(metric.sources.map(link=>link.href),[0,1,2,5].map(index=>sourceUrls[index]));
@@ -195,11 +226,13 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      if(width===390){
       assert.ok(metric.feed.bottom<=metric.bochum.y,'Bochum stacks below news');
       assert.ok(metric.activeTargets.every(rect=>rect.height>=44),'mobile buttons reach 44px');
+      assert.equal(metric.directoryColumns,1);
+      assert.ok(metric.directoryCards.every(card=>card.height>=44),'mobile directory cards reach 44px');
      } else {
       assert.ok(metric.feed.right<=metric.bochum.x,'news sections are side by side');
       assert.equal(metric.feed.height,metric.bochum.height,'news sections have equal desktop heights');
      }
-     for(const link of [...metric.official,...metric.headlines,...metric.bochumRows,...metric.sources]){
+     for(const link of [...metric.official,...metric.headlines,...metric.bochumRows,...metric.sources,...metric.directoryCards]){
       assert.equal(link.target,'_blank');assert.equal(link.rel,'noopener noreferrer');assert.ok(link.icon);
       assert.ok(link.x>=0&&link.right<=width+1,'external link fits: '+link.href);
      }
@@ -312,6 +345,7 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    await wait("document.querySelectorAll('.nrw-news-skeleton').length===5");
    assert.deepEqual(await evaluate("[...document.querySelectorAll('.nrw-news-skeleton')].map(row=>[row.getBoundingClientRect().height,getComputedStyle(row.firstElementChild).animationName])"),Array.from({length:5},()=>[52,'none']));
    await wait("document.querySelectorAll('.nrw-bochum .nrw-news-row').length===3");
+   assert.equal(await evaluate(`document.querySelectorAll('${directorySelector}').length`),directoryTitles.length,'directory also appears with the legacy feed');
    assert.ok(await evaluate("document.querySelector('.nrw-bochum .nrw-news-tag').textContent.includes('Schachbezirk Bochum · externe Quelle')"));
    assert.equal(await evaluate("document.querySelectorAll('.nrw-news-row time').length"),0,'legacy items have no fabricated date');
    await evaluate("window.nrwLegacy=false;window.nrwNewsDelay=0;window.nrwEmpty=true");
@@ -329,7 +363,7 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    await evaluate("window.nrwEmpty=false;window.nrwFailure=true;window.fixtureNavigate('/region/invalid')");await wait("!document.querySelector('[data-region-overview]')");await evaluate("window.fixtureNavigate('/region/nrw/vereine')");await wait("document.querySelector('.nrw-error[role=alert]')");assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+1'),'failure state overflow');
   }
   if(captureRoot)await writeFile(join(captureRoot,phase+'-measurements.json'),JSON.stringify(measurements,null,2));
-  assert.equal(exceptions.length,0,JSON.stringify(exceptions));console.log(verify?'PASS NRW design: six locales; 1280px, 1440px, 1920px and 390px; official links, contrast, filters, motion, and news states, legacy routes, guest, empty and error states':'Captured NRW baseline in DE and RU');
+  assert.equal(exceptions.length,0,JSON.stringify(exceptions));console.log(verify?'PASS NRW design: six locales; 1280px, 1440px, 1920px and 390px; Bochum directory, official links, contrast, filters, motion, and news states, legacy routes, guest, empty and error states':'Captured NRW baseline in DE and RU');
  }finally{for(const p of pending.values())clearTimeout(p.timer);try{ws?.close();}catch{}chrome?.kill('SIGKILL');await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
 }
 if(process.argv[1]===fileURLToPath(import.meta.url))await checkNRWDesign({captureRoot:process.env.NRW_CAPTURE,phase:process.env.NRW_PHASE||'after',verify:process.env.NRW_PHASE!=='before'});

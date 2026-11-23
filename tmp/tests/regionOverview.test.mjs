@@ -33,10 +33,30 @@ test('NRW static external destinations are defined once in the shared config',()
  const start=region.indexOf('const NRW_EXTERNAL_URLS = {');
  const end=region.indexOf('} as const;',start);
  assert.ok(start>=0&&end>start);
- const config=region.slice(start,end);
- assert.equal((config.match(/https:\/\//g)||[]).length,18,'five official destinations, the existing live route, and twelve NRW news sources');
- assert.match(config,/newsSources:/,'NRW source URLs belong to the existing shared config');
- assert.doesNotMatch(region.slice(0,start)+region.slice(end),/['"]https:\/\//);
+ const config=Function('return ('+region.slice(start+'const NRW_EXTERNAL_URLS = '.length,end+1)+')')();
+ const newsSources=Object.values(config.newsSources).flat();
+ assert.equal(Object.keys(config.official).length,5);
+ assert.ok(config.liveBroadcasts);
+ assert.equal(newsSources.length,12);
+ assert.doesNotMatch(region.slice(0,start)+region.slice(end),/['"]https?:\/\//);
+ assert.doesNotMatch(read('src/components/nrw/NewsPanels.tsx'),/['"]https?:\/\//);
+
+ const directory=config.bochumDirectory;
+ assert.equal(directory.length,8);
+ assert.equal(directory[0].url,'https://sbboblog.wordpress.com/die-vereine/');
+ assert.equal(directory.at(-1).name,'Stadt Bochum');
+ const clubNames=directory.slice(1,-1).map(({name})=>name);
+ assert.deepEqual(clubNames,[...clubNames].sort((a,b)=>a.localeCompare(b,'de')));
+ const hosts=directory.map(({url})=>new URL(url).hostname);
+ assert.equal(new Set(hosts).size,directory.length);
+ const newsSourceHosts=new Set(newsSources.map(({url})=>new URL(url).hostname));
+ assert.ok(hosts.every(host=>!newsSourceHosts.has(host)));
+ for(const {url,description} of directory){
+  const target=new URL(url);
+  assert.equal(target.protocol,'https:');
+  assert.doesNotMatch(target.pathname,/\/feed\/?$/i);
+  assert.ok(description.length>0&&description.length<=70);
+ }
 });
 
 test('NRW links to national chat without embedding it and the chat retains its membership guard',()=>{
