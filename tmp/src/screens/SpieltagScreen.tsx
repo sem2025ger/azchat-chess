@@ -56,7 +56,22 @@ function SpieltagTabs() {
   </>;
 }
 
+function SpieltagLaunchScreen() {
+  const { language, t } = useLanguage();
+  const tr = tournamentCopy(language);
+
+  return <section className="spieltag-page section-page">
+    <header><h1>{t('nav.spieltag')}</h1></header>
+    <section className="section-card spieltag-controls">
+      <h2>{tr('individualTournaments')}</h2>
+      <p>{tr('individualTournamentsInDevelopment')}</p>
+    </section>
+    <p>{tr('teamTournamentsComingSoon')}</p>
+  </section>;
+}
+
 export default function SpieltagScreen() {
+  if (import.meta.env.VITE_SPIELTAG_LAUNCH_PREVIEW === 'true') return <SpieltagLaunchScreen />;
   return tournamentsEnabled(import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED) ? <SpieltagTabs /> : <SpieltagWorkspaceScreen />;
 }
 

@@ -3,6 +3,9 @@ import type { Language } from '../../translations';
 const columns: Record<Language, number> = { de: 0, en: 1, az: 2, tr: 3, ua: 4, ru: 5 };
 const labels = {
   tab: ['Turniere', 'Tournaments', 'Turnirlər', 'Turnuvalar', 'Турніри', 'Турниры'],
+  individualTournaments: ['Einzelturniere', 'Individual tournaments', 'Fərdi turnirlər', 'Bireysel turnuvalar', 'Індивідуальні турніри', 'Личные турниры'],
+  individualTournamentsInDevelopment: ['Turniere nach Schweizer System sind in Entwicklung.', 'Swiss-system tournaments are in development.', 'İsveçrə sistemi üzrə turnirlər hazırlanır.', 'İsviçre sistemi turnuvaları geliştiriliyor.', 'Турніри за швейцарською системою в розробці.', 'Турниры по швейцарской системе в разработке.'],
+  teamTournamentsComingSoon: ['Mannschaftsturniere – demnächst', 'Team tournaments are coming soon', 'Komanda turnirləri tezliklə', 'Takım turnuvaları yakında', 'Командні турніри — незабаром', 'Командные турниры — скоро'],
   workspace: ['Meine Mannschaft', 'My team', 'Komandam', 'Takımım', 'Моя команда', 'Моя команда'],
   loading: ['Wird geladen …', 'Loading…', 'Yüklənir…', 'Yükleniyor…', 'Завантаження…', 'Загрузка…'],
   empty: ['Noch keine Turniere verfügbar.', 'No tournaments available yet.', 'Hələ turnir yoxdur.', 'Henüz turnuva yok.', 'Турнірів поки немає.', 'Турниров пока нет.'],
