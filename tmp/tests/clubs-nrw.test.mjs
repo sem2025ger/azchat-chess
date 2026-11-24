@@ -50,6 +50,25 @@ test('all NRW flags off preserves the main routing and navigation entry points',
     current=current.replace(next,previous);
    }
   }
+  // World Chat is a separate, default-off route. Assert the *exact* approved
+  // additions before comparing the otherwise unchanged disabled-route baseline.
+  const worldChatAdditions = {
+    'src/App.tsx': [
+      "const WorldChatScreen = lazy(routeLoaders.worldChat);\n",
+      "                    {import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <Route path=\"world-chat\" element={<WorldChatScreen />} />}\n",
+    ],
+    [layoutPath]: [
+      "            {import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <NavItem to=\"/world-chat\" icon={<MessageSquare size={20} />} label={t('world.title')} themeColor=\"theme-violet\" />}\n",
+    ],
+    'src/routeLoaders.ts': [
+      "  worldChat: cacheImport(() => import('./screens/WorldChatScreen')),\n",
+      "  '/world-chat': routeLoaders.worldChat,\n",
+    ],
+  };
+  for (const addition of worldChatAdditions[path] ?? []) {
+    assert.equal(current.split(addition).length, 2, 'Expected one flag-gated World Chat addition: ' + path);
+    current = current.replace(addition, '');
+  }
   const expected=execFileSync('git',['show',(path===layoutPath?layoutBaseline:baseline)+':tmp/'+path],{encoding:'utf8'});
   assert.equal(current,path===layoutPath?expected.replace(tournamentGate,spieltagGate):expected,path);
  }
