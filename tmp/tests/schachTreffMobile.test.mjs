@@ -22,9 +22,11 @@ test('mobile navigation preserves its routes and interactions with the approved 
   const withSpieltag = nav(current);
   const flagAttribute = ' data-spieltag-enabled={showSpieltag || undefined}';
   const spieltagLink = /        \{showSpieltag && <MobileNavItem to="\/spieltag"[^\n]*\n[^\n]*\/>\}\n/;
+  const nrwPreviewLink = /        \{import\.meta\.env\.VITE_SPIELTAG_LAUNCH_PREVIEW === 'true' && import\.meta\.env\.VITE_CLUBS_NRW_ENABLED === 'true' &&\n[^\n]*to="\/region\/nrw"[^\n]*\/>\}\n/;
   assert.ok(withSpieltag.includes(flagAttribute));
   assert.match(withSpieltag, spieltagLink);
-  assert.equal(withSpieltag.replace(flagAttribute, '').replace(spieltagLink, '')
+  assert.match(withSpieltag, nrwPreviewLink);
+  assert.equal(withSpieltag.replace(flagAttribute, '').replace(spieltagLink, '').replace(nrwPreviewLink, '')
     .replace('label="Schach-Treff"', "label={t('nav.chat')}"), nav(baseline));
   const mobileNavItem = source => source.split('function MobileNavItem')[1].split('function SidebarGermanyFlag')[0];
   const newLabel='site-nav-label text-[0.75rem] font-semibold normal-case tracking-normal';

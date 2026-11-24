@@ -34,6 +34,7 @@ function NrwOverviewLink() {
   return import.meta.env.VITE_CLUBS_NRW_ENABLED==='true' ? <Link to="/region/nrw">{tr('NRW-Übersicht')}</Link> : null;
 }
 const TeamTournamentsTab = lazy(() => import('../components/teamTournaments/TeamTournamentsTab'));
+const IndividualTournamentCreate = lazy(() => import('../components/teamTournaments/IndividualTournamentCreate'));
 
 function SpieltagTabs() {
   const { language } = useLanguage();
@@ -56,7 +57,21 @@ function SpieltagTabs() {
   </>;
 }
 
+function SpieltagLaunchScreen() {
+  const { language, t } = useLanguage();
+  const tr = tournamentCopy(language);
+
+  return <section className="spieltag-page section-page">
+    <header><h1>{t('nav.spieltag')}</h1></header>
+    <Suspense fallback={<p role="status">{tr('loading')}</p>}>
+      <IndividualTournamentCreate />
+    </Suspense>
+    <aside className="section-card spieltag-coming-soon">{tr('teamTournamentsComingSoon')}</aside>
+  </section>;
+}
+
 export default function SpieltagScreen() {
+  if (import.meta.env.VITE_SPIELTAG_LAUNCH_PREVIEW === 'true') return <SpieltagLaunchScreen />;
   return tournamentsEnabled(import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED) ? <SpieltagTabs /> : <SpieltagWorkspaceScreen />;
 }
 

@@ -274,3 +274,35 @@ test('create_limit maps to a specific message in all six locales', async () => {
     assert.notEqual(tr('createLimitError'), tr('unavailable'));
   }
 });
+
+test('individual chat shows only player fields and saves only after explicit confirmation', async () => {
+  const individual = { name: 'Solo Cup', start_time: draft.start_time, max_players: 16 };
+  await withAiComponent('AiOrganizerPanel', async ({ AiOrganizerPanel }, hooks) => {
+    const tr = tournamentCopy('en');
+    let saved;
+    const render = () => hooks.render(() => AiOrganizerPanel({
+      tr, kind: 'individual', token: 'fixture-token', onApply() {},
+      onCreate(value) { saved = value; }, creating: false,
+    }));
+    render();
+    hooks.runEffects();
+    findElement(render(), item => item.type === 'button' && item.props.className === 'ai-organizer-example')
+      .props.onClick();
+    assert.equal(findElement(render(), item => item.props.placeholder === tr('aiOrganizerPrompt')).props.value,
+      tr('individualAiExample'));
+    findElement(render(), item => item.type === 'form').props.onSubmit({ preventDefault() {} });
+    await new Promise(setImmediate);
+    const view = render();
+    assert.equal(findElement(view, item => item.props.name === 'max_teams'), null);
+    assert.equal(findElement(view, item => item.props.name === 'max_players').props.value, 16);
+    assert.equal(saved, undefined);
+    const save = findElement(view, item => item.type === 'button' && item.props.children === tr('individualSave'));
+    assert.equal(save.props.disabled, false);
+    save.props.onClick();
+    assert.equal(saved.max_players, 16);
+  }, {
+    async planIndividual() {
+      return { draft: individual, missing: [], question: null, assistant_text: 'Review the draft.', ready: true };
+    },
+  });
+});

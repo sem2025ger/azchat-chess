@@ -1,19 +1,21 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Mic, Send, Square } from 'lucide-react';
-import { tournamentTimeControls, type TournamentTimeControl, createAiOrganizerApi, type AiOrganizerDraft, type AiOrganizerMessage, type AiOrganizerLanguage } from '../../services/teamTournaments';
+import { tournamentTimeControls, type TournamentTimeControl, createAiOrganizerApi, type AiOrganizerDraft, type IndividualOrganizerDraft, type AiOrganizerMessage, type AiOrganizerLanguage } from '../../services/teamTournaments';
 import { tournamentErrorMessage, type TournamentCopy } from './copy';
 import { useLanguage } from '../../context/LanguageContext';
 import { startBoundedAudioRecording, type AudioCapture } from '../../utils/audioCapture';
 
-type DraftKey = keyof AiOrganizerDraft;
+type Draft = AiOrganizerDraft & Partial<IndividualOrganizerDraft>;
+type DraftKey = keyof Draft;
+const individualFields: DraftKey[] = ['name', 'start_time', 'max_players'];
 const online = import.meta.env.VITE_TEAM_TOURNAMENTS_ONLINE_PLAY === 'true';
-const draftFields: DraftKey[] = ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams', 'round_interval_minutes'];
-if (online) draftFields.push('time_control');
-const emptyDraft = (): AiOrganizerDraft => ({
+const teamFields: DraftKey[] = ['name', 'start_time', 'registration_deadline', 'boards_per_team', 'min_teams', 'max_teams', 'round_interval_minutes'];
+if (online) teamFields.push('time_control');
+const emptyDraft = (): Draft => ({
   name: null, start_time: null, registration_deadline: null,
   boards_per_team: null, min_teams: null, max_teams: null, round_interval_minutes: null,
 });
-function fieldValid(key: DraftKey, value: AiOrganizerDraft[DraftKey], draft: AiOrganizerDraft): boolean {
+function fieldValid(key: DraftKey, value: Draft[DraftKey], draft: Draft): boolean {
   if (key === 'time_control') return value == null || tournamentTimeControls.includes(value as TournamentTimeControl);
   if (key === 'round_interval_minutes') return value == null ||
     (Number.isInteger(value) && Number(value) >= 10 && Number(value) <= 10080);
@@ -21,6 +23,7 @@ function fieldValid(key: DraftKey, value: AiOrganizerDraft[DraftKey], draft: AiO
   if (key === 'start_time' || key === 'registration_deadline')
     return typeof value === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(value);
   if (!Number.isInteger(value)) return false;
+  if (key === 'max_players') return Number(value) >= 2 && Number(value) <= 128;
   if (key === 'boards_per_team') return Number(value) >= 1 && Number(value) <= 16;
   if (key === 'min_teams') return Number(value) >= 2 && Number(value) <= 16;
   return Number(value) >= (draft.min_teams ?? 2) && Number(value) <= 16;
@@ -37,13 +40,18 @@ function errors(failure: unknown, tr: TournamentCopy) {
     return tournamentErrorMessage(code, tr);
   return tr('aiOrganizerUnavailable');
 }
-export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
+export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating, kind = 'team' }: {
   tr: TournamentCopy;
   token: string;
-  onApply: (draft: AiOrganizerDraft) => void;
-  onCreate: (draft: AiOrganizerDraft) => void;
+  onApply: (draft: Draft) => void;
+  onCreate: (draft: Draft) => void;
   creating: boolean;
+  kind?: 'team' | 'individual';
 }) {
+  const individual = kind === 'individual';
+  const draftFields = individual ? individualFields : teamFields;
+  const example = tr(individual ? 'individualAiExample' : 'aiOrganizerExample');
+  const title = tr(individual ? 'individualAiTitle' : 'aiOrganizerTitle');
   const { language } = useLanguage();
   const lang = language as AiOrganizerLanguage;
   const inputId = useId();
@@ -53,8 +61,8 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
   const generation = useRef(0);
   const [typed, setTyped] = useState('');
   const [history, setHistory] = useState<AiOrganizerMessage[]>([]);
-  const [draft, setDraft] = useState<AiOrganizerDraft>(emptyDraft);
-  const [overrides, setOverrides] = useState<Partial<AiOrganizerDraft>>({});
+  const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const [overrides, setOverrides] = useState<Partial<Draft>>({});
   const [hasDraft, setHasDraft] = useState(false);
   const [busy, setBusy] = useState<'plan' | 'recording' | 'transcribe' | null>(null);
   const [level, setLevel] = useState(0);
@@ -63,6 +71,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
   const [visible, setVisible] = useState(0);
   const ready = hasDraft && draftFields.every(key => fieldValid(key, draft[key], draft));
   const last = history.at(-1);
+
   useEffect(() => {
     generation.current++;
     request.current?.abort(); request.current = null;
@@ -74,7 +83,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
       request.current?.abort(); request.current = null;
       recorder.current?.cancel(); recorder.current = null;
     };
-  }, [token]);
+  }, [token, kind]);
   useEffect(() => {
     if (last?.role !== 'assistant') { setVisible(0); return; }
     setVisible(0);
@@ -91,7 +100,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
     if (list) list.scrollTop = list.scrollHeight;
   }, [history, visible, hasDraft, busy]);
 
-  function update<K extends DraftKey>(field: K, value: AiOrganizerDraft[K]) {
+  function update<K extends DraftKey>(field: K, value: Draft[K]) {
     setDraft(previous => ({ ...previous, [field]: value }));
     setOverrides(previous => ({ ...previous, [field]: value }));
   }
@@ -105,10 +114,12 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
     request.current = controller;
     setHistory(turns); setTyped(''); setBusy('plan'); setError('');
     try {
-      const response = await createAiOrganizerApi(import.meta.env.VITE_SERVER_URL, token)
-        .plan(lang, turns, Object.keys(overrides).length ? overrides : undefined, controller.signal);
+      const api = createAiOrganizerApi(import.meta.env.VITE_SERVER_URL, token);
+      const edits = Object.keys(overrides).length ? overrides : undefined;
+      const response = individual ? await api.planIndividual(lang, turns, edits, controller.signal) :
+        await api.plan(lang, turns, edits, controller.signal);
       if (controller.signal.aborted || generation.current !== currentGeneration) return;
-      setDraft(response.draft);
+      setDraft({ ...emptyDraft(), ...response.draft });
       setHasDraft(true);
       const answer = (response.assistant_text + (response.question ? '\n' + response.question : '')).trim();
       setHistory(old => [...old, { role: 'assistant' as const, text: answer }].slice(-12));
@@ -144,7 +155,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
           const controller = new AbortController();
           request.current = controller; setBusy('transcribe');
           void createAiOrganizerApi(import.meta.env.VITE_SERVER_URL, token)
-            .transcribe(lang, audio, controller.signal).then(result => {
+            .transcribe(lang, audio, controller.signal, kind).then(result => {
               if (!controller.signal.aborted && generation.current === currentGeneration) {
                 setTyped(result.text.slice(0, 1000));
               }
@@ -173,11 +184,12 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
     name: tr('name'), start_time: tr('m3Start'), registration_deadline: tr('m3Deadline'),
     boards_per_team: tr('boards'), min_teams: tr('m3MinTeams'), max_teams: tr('m3MaxTeams'),
     round_interval_minutes: tr('m3RoundInterval'), time_control: tr('onlineTimeControl'),
+    max_players: tr('individualMaxPlayers'),
   };
-  return <section className="ai-organizer" aria-label={tr('aiOrganizerTitle')}>
+  return <section className="ai-organizer" aria-label={title}>
     <header className="ai-organizer-header">
       <div className="ai-organizer-brand">
-        <h3>{tr('aiOrganizerTitle')}
+        <h3>{title}
           {/* The AI disclosure stays: visible badge plus its full sentence for assistive tech. */}
           <span className="ai-organizer-badge" title={tr('aiOrganizerDisclosure')}>
             AI<span className="sr-only"> · {tr('aiOrganizerDisclosure')}</span>
@@ -185,16 +197,20 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
         </h3>
         <small>chessaz.de</small>
       </div>
-      <p>{tr('aiOrganizerHint')}</p>
-      <p className="ai-organizer-steps">{tr('aiOrganizerSteps')}</p>
+      <p>{tr(individual ? 'individualAiHint' : 'aiOrganizerHint')}</p>
+      {!individual && <p className="ai-organizer-steps">{tr('aiOrganizerSteps')}</p>}
     </header>
-    <div ref={historyRef} className="ai-organizer-history" role="log" aria-label={tr('aiOrganizerTitle')} aria-live="polite" aria-relevant="additions text">
+    <div ref={historyRef} className="ai-organizer-history" role="log" aria-label={title} aria-live="polite" aria-relevant="additions text">
       {!history.length && <>
-        <p className="ai-organizer-intro">{tr('aiOrganizerEmpty')}</p>
+        <p className="ai-organizer-intro">{tr(individual ? 'individualAiPrompt' : 'aiOrganizerEmpty')}</p>
         <button type="button" className="ai-organizer-example" disabled={!!busy || creating}
-          onClick={() => { setTyped(tr('aiOrganizerExample')); setError(''); }}>
+          onClick={() => {
+            if (individual) setTyped(example);
+            else setTyped(tr('aiOrganizerExample'));
+            setError('');
+          }}>
           <span>{tr('aiOrganizerTryExample')}</span>
-          <q>{tr('aiOrganizerExample')}</q>
+          <q>{example}</q>
         </button>
       </>}
       {history.map((turn, index) => <div key={index}
@@ -209,7 +225,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
           {draftFields.map(key => {
             const missing = !fieldValid(key, draft[key], draft);
             const interval = key === 'round_interval_minutes';
-            const numeric = interval || key === 'boards_per_team' || key === 'min_teams' || key === 'max_teams';
+            const numeric = interval || key === 'boards_per_team' || key === 'min_teams' || key === 'max_teams' || key === 'max_players';
             if (key === 'time_control') return <label key={key}>
               <span>{labelFor[key]}</span>
               <select value={draft.time_control ?? '5+0'} name={key}
@@ -223,7 +239,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
                 type={numeric ? 'number' : key === 'name' ? 'text' : 'datetime-local'}
                 maxLength={key === 'name' ? 120 : undefined}
                 min={interval ? 10 : numeric ? key === 'boards_per_team' ? 1 : 2 : undefined}
-                max={interval ? 10080 : numeric ? 16 : undefined}
+                max={interval ? 10080 : key === 'max_players' ? 128 : numeric ? 16 : undefined}
                 onChange={event => update(key,
                   (numeric ? event.target.value === '' ? null : Number(event.target.value) :
                     event.target.value || null) as never)} />
@@ -237,7 +253,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating }: {
             {tr('aiOrganizerApply')}
           </button>
           <button type="button" className="ai-organizer-primary" disabled={!ready || !!busy || creating}
-            onClick={() => onCreate(draft)}>{tr('aiOrganizerCreate')}</button>
+            onClick={() => onCreate(draft)}>{tr(individual ? 'individualSave' : 'aiOrganizerCreate')}</button>
         </div>
       </article>}
     </div>
