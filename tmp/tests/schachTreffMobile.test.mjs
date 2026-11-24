@@ -7,11 +7,22 @@ test('legacy community keeps the approved non-chat tabs and message composer', (
   const baseline = execFileSync('git', ['show', '4af51e5:tmp/src/screens/ChessAZCommunityScreen.tsx'], {encoding:'utf8'}).replace(/\r\n/g, '\n');
   const current = read('../src/screens/ChessAZCommunityScreen.tsx');
   const nonChatTabs = source => source.split('<div id="club-panel-tournaments"')[1];
-  assert.equal(nonChatTabs(current), nonChatTabs(baseline));
+  let legacyWithoutWorld = nonChatTabs(current);
+  // Match the approved World-only labels, then reverse them before the
+  // byte-for-byte historical Schach-Treff regression comparison.
+  for (const [world, original] of [
+    ["{worldChat ? siteT('world.aboutText') : (club.description || t.subtitle)}", "{club.description || t.subtitle}"],
+    ["{worldChat ? siteT('world.international') : 'Deutsch'}", 'Deutsch'],
+    ["{worldChat ? siteT('world.title') : 'ChessAZ Deutsch'}", 'ChessAZ Deutsch'],
+  ]) {
+    assert.equal(legacyWithoutWorld.split(world).length, 2, 'World-only addition: ' + world);
+    legacyWithoutWorld = legacyWithoutWorld.replace(world, original);
+  }
+  assert.equal(legacyWithoutWorld, nonChatTabs(baseline));
   const composer = source => source.split('<form onSubmit={sendMessage}')[1].split('</form>')[0];
   assert.equal(composer(current), composer(baseline));
   assert.match(current, /: supabase.from\('chess_club_messages'\).select\('id,author_id,body,created_at'\)/);
-  assert.match(current, /return desktop \? <SchachTreffDesktop \/> : <LegacyCommunityScreen \/>/);
+  assert.match(current, /return desktop \? <SchachTreffDesktop \/> : <LegacyCommunityScreen worldChat=\{worldChat\} \/>/);
   assert.match(read('../src/components/schachTreff/useDesktop.ts'), /\(min-width: 1024px\)/);
   for (const width of [360,390,430,768]) assert.equal(width >= 1024, false);
 });

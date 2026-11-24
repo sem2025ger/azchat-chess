@@ -47,7 +47,7 @@ export default function HomeScreen() {
     <div className="flex flex-col min-h-full xl:h-full w-full xl:overflow-hidden items-center justify-start xl:justify-center bg-transparent transition-all relative home-screen-root">
       {homeUnifiedCard && (
         <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,700&display=swap');
+          @import url('/fonts/home/cormorant-garamond-700-italic.css');
 
           @media (min-width: 1280px) {
             .home-screen-root .home-unified-card .home-unified-slogan {

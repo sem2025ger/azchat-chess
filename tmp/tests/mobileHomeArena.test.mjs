@@ -57,3 +57,16 @@ test('Chess Arena keeps its default surface and overrides it only for the unifie
   assert.ok(desktopStyles > home.lastIndexOf('@media (max-width:', overrides[0].index));
   assert.doesNotMatch(home.match(/className=\{`mobile-home-arena[^\n]+/)[0], /\bbg-/);
 });
+
+test('unified Arena uses locally hosted Cormorant Garamond with all original font subsets', () => {
+  assert.match(home, /@import url\('\/fonts\/home\/cormorant-garamond-700-italic\.css'\)/);
+  assert.doesNotMatch(home, /fonts\.(googleapis|gstatic)\.com/);
+  const fontCss = fs.readFileSync(new URL('../public/fonts/home/cormorant-garamond-700-italic.css', import.meta.url), 'utf8');
+  const sources = [...fontCss.matchAll(/url\(([^)]+)\)/g)].map(([, path]) => path);
+  assert.equal(sources.length, 5);
+  for (const path of sources) {
+    assert.match(path, /^\/fonts\/home\/[a-z0-9-]+\.woff2$/);
+    const bytes = fs.readFileSync(new URL(`../public${path}`, import.meta.url));
+    assert.equal(bytes.toString('ascii', 0, 4), 'wOF2');
+  }
+});

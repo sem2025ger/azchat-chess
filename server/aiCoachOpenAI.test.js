@@ -21,6 +21,98 @@ function speechSocket({failed=false,oversized=false,expectedScript}={}){return(u
 };}
 async function serve(options,check){const app=express();installAiCoach(app,{enabled:true,index:readyIndex,verifyToken:async t=>t==='ok'||t==='rotated'?{id:'same-user'}:null,...options});const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));try{await check('http://127.0.0.1:'+server.address().port+'/api/ai-coach');}finally{await new Promise(r=>server.close(r));}}
 const post=(url,body,token='ok',type='application/json')=>fetch(url,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':type},body:type==='application/json'?JSON.stringify(body):body});
+
+test('tactical focus keeps legal checks available without promoting unanalysed moves, in six locales and both evidence paths',async()=>{
+ const fen='rnbqkbnr/pppp1ppp/8/4p3/3QP3/5N2/PPP2PPP/RNB1KB1R b KQkq - 0 5';
+ const lines=[{moves:['f6','Be3','Ne7']},{moves:['Bd6','Be3','Ne7']}];
+ for(const line of lines){const board=new Chess(fen);for(const san of line.moves)assert.ok(board.move(san,{strict:true}));}
+ const check=new Chess(fen);check.move('Bb4+');assert.ok(check.moves().includes('Qxb4'));
+ for(const language of ['de','en','az','tr','uk','ru'])for(const server of [false,true]){
+  const evidence={candidateLines:lines,candidateOrigin:server?'server_stockfish_19':'untrusted_client_legality_checked',...(server?{engine:{name:'stockfish-19-lite',budgetMs:900}}:{})};
+  let calls=0;
+  await generateAnswer({...query,fen,language,message:'Explain only the verified tactical threats.'},evidence,{apiKey:key,fetchImpl:async(_url,options)=>{
+   calls++;const body=JSON.parse(options.body),input=JSON.parse(body.input),rules=body.instructions;
+   assert.equal(input.position,fen);assert.equal(input.sideToMove,'b');
+   assert.ok(input.legalMoves.includes('Bb4+'),'legal check stays available for explicit legality questions');
+   assert.deepEqual(input.evidence,evidence,'no invented, filtered or reordered engine evidence');
+   assert.match(rules,new RegExp('Reply in '+language+' using'));
+   assert.match(rules,/legalMoves and legalMoveDetails establish legality, not tactical value/);
+   assert.match(rules,/Do not enumerate unselected legal checks/);
+   assert.match(rules,/unless the user explicitly asks about that move/);
+   assert.match(rules,/none is demonstrated by the supplied lines, not that no tactics exist/);
+   return answerResponse();
+  }});
+  assert.equal(calls,1,'one bounded provider request, no speculative analysis requests');
+ }
+});
+
+test('line presentation covers three available variations with grounded assessments and concise plans',async()=>{
+ const evidence={candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:900},candidateLines:[{id:'L1',moves:['e4','e5','Nf3'],scoreKind:'cp',scoreWhite:5,depth:7},{id:'L2',moves:['d4','d5'],scoreKind:'cp',scoreWhite:0,depth:7}]};
+ await generateAnswer(query,evidence,{apiKey:key,fetchImpl:async(_url,options)=>{
+  const body=JSON.parse(options.body),input=JSON.parse(body.input);
+  assert.deepEqual(input.evidence,evidence);
+  assert.match(body.instructions,/candidateLines\[0\] is the main line in the supplied ordering/);
+  assert.match(body.instructions,/Explain all three supplied lines/);
+  assert.match(body.instructions,/If fewer than three lines are supplied, explain only those available/);
+  assert.match(body.instructions,/moves, its supplied evaluation, a supported positional reason and a practical plan/);
+  assert.match(body.instructions,/Name the moving side naturally/);
+  assert.match(body.instructions,/Do not append routine disclaimers/);
+  assert.match(body.instructions,/Never use a fixed move count/);
+  assert.match(body.instructions,/do not apply facts for its final position to an earlier cutoff/);
+  return answerResponse();
+ }});
+});
+
+test('three server lines retain their own exact endpoint facts and White-perspective score units',async()=>{
+ const moves=[['e4','e5','Nf3'],['d4','d5','c4'],['Nf3','d5','g3']];
+ const scores=[0,5,-12];
+ const engine={analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:moves.map((sanPv,i)=>({sanPv,scoreKind:'cp',scoreWhite:scores[i],depth:7}))})};
+ const reply=await groundedChat(readyIndex,query,{engine,positionFactsEnabled:true,openaiApiKey:key,fetchImpl:async(_url,options)=>{
+  const body=JSON.parse(options.body),input=JSON.parse(body.input),lines=input.evidence.candidateLines;
+  assert.equal(lines.length,3);
+  for(let i=0;i<3;i++){
+   const board=new Chess(query.fen);for(const san of moves[i])board.move(san,{strict:true});
+   assert.equal(lines[i].id,'L'+(i+1));assert.deepEqual(lines[i].moves,moves[i]);
+   assert.equal(lines[i].scoreWhite,scores[i]);assert.equal(lines[i].endFacts.fen,board.fen());
+   assert.deepEqual(lines[i].endFacts.material,require('./coachPositionFacts').positionFacts(board.fen()).material);
+  }
+  assert.match(body.instructions,/scoreWhite is in centipawns/);
+  assert.match(body.instructions,/divide by 100/);
+  assert.match(body.instructions,/0\.00 or \+0\.05/);
+  assert.match(body.instructions,/plans must follow the supplied position facts/);
+  assert.match(body.instructions,/The engine evaluation is not proof of its positional cause/);
+  assert.match(body.instructions,/Return JSON with exactly one string property answer, between 2 and 1200 characters/);
+  return answerResponse();
+ }});
+ assert.equal(reply.engineLines.length,3);assert.equal(reply.engineVerified,true);
+});
+
+test('a limited engine result never grows synthetic extra lines to meet the three-line presentation rule',async()=>{
+ for(const count of [0,1,2]){
+  const available=[['e4','e5'],['d4','d5']].slice(0,count);
+  const reply=await groundedChat(readyIndex,query,{openaiApiKey:key,engine:{analyze:async()=>({engine:'stockfish-19-lite',budget:{movetimeMs:900},lines:available.map(sanPv=>({sanPv,scoreKind:'cp',scoreWhite:0,depth:7}))})},fetchImpl:async(_url,options)=>{
+   const body=JSON.parse(options.body),input=JSON.parse(body.input);
+   assert.equal(input.evidence.candidateLines.length,count);
+   assert.match(body.instructions,/If fewer than three lines are supplied, explain only those available/);
+   return answerResponse();
+  }});
+  assert.equal(reply.engineLines?.length??0,count);
+ }
+});
+
+test('tactical focus preserves checks, legal evasions and terminal position evidence',async()=>{
+ const checked=new Chess('rnbqkbnr/pppp1ppp/8/4p3/3QP3/5N2/PPP2PPP/RNB1KB1R b KQkq - 0 5');checked.move('Bb4+');
+ const mate=new Chess();for(const move of ['f3','e5','g4','Qh4#'])mate.move(move);
+ for(const board of [checked,mate])await generateAnswer({...query,fen:board.fen()}, {candidateLines:[]},{apiKey:key,fetchImpl:async(_url,options)=>{
+  const body=JSON.parse(options.body),input=JSON.parse(body.input);
+  assert.equal(input.positionStatus.inCheck,true);
+  assert.equal(input.positionStatus.checkmate,board.isCheckmate());
+  assert.deepEqual(input.legalMoves,board.moves());
+  assert.match(body.instructions,/In check, discuss legal evasions first; respect terminal positions/);
+  return answerResponse();
+ }});
+});
+
 test('OpenAI exact model, nonstored Responses, schema, bounded history and legal FEN context',async()=>{
  let calls=0;const answer=await generateAnswer(query,{archiveAvailable:false},{apiKey:key,model:'gpt-6-sol',fetchImpl:async(url,options)=>{
   calls++;assert.equal(url,'https://api.openai.com/v1/responses');assert.equal(options.redirect,'error');assert.equal(options.headers.Authorization,'Bearer '+key);assert.ok(options.signal);
@@ -147,7 +239,7 @@ test('position facts instruction is appended exactly once in both model paths an
   await generateAnswer(query,{...base,positionFacts:facts},{apiKey:key,fetchImpl});
   assert.equal(instructionBodies[1].startsWith(instructionBodies[0]+'\n'),true,'ON only appends one line');
   const suffix=instructionBodies[1].slice(instructionBodies[0].length+1);
-  assert.equal(suffix,"evidence.positionFacts was computed deterministically by the ChessAZ server. Mention a pawn-structure, file, outpost, hanging-piece or king-safety feature only if it is listed in positionFacts, and use its exact squares. Never assert such a feature that is not listed. The hanging section is static (no pins or tactics); for tactics rely on candidateLines. Call a pawn blockaded only if it is listed in pawns.blockaded; an own piece in front of a pawn is not a blockade. Each candidate line may include endFacts: verified pawn structure, material and king data for the position at the END of that line. When you describe the structure after a line (doubled, isolated, passed or blockaded pawns, pawn islands, king shelter), use only that line's endFacts. Never infer the pawn structure after captures yourself. Call a bishop bad, a square a hole/weak square, a wing a pawn majority, or a structure a minority attack only if the server lists it (strategy.bishops[].bad, strategy.holes, majorities, strategy.minorityAttack). If a hole is listed in strategy.holesPawnCanOccupy, say that the defender can still occupy it with that pawn advance.",'ON instruction must equal exactly the approved grounding rule');
+  assert.equal(suffix,"evidence.positionFacts was computed deterministically by the ChessAZ server. Mention a pawn-structure, file, outpost, hanging-piece or king-safety feature only if it is listed in positionFacts, and use its exact squares. Never assert such a feature that is not listed. The hanging section is static (no pins or tactics); for tactics rely on candidateLines. Call a pawn blockaded only if it is listed in pawns.blockaded; an own piece in front of a pawn is not a blockade. Each candidate line may include endFacts: verified pawn structure, material and king data for the position at the END of that line. When you describe the structure after a line (doubled, isolated, passed or blockaded pawns, pawn islands, king shelter), use only that line's endFacts. Never infer the pawn structure after captures yourself. Call a bishop bad, a square a hole/weak square, a wing a pawn majority, or a structure a minority attack only if the server lists it (strategy.bishops[].bad, strategy.holes, majorities, strategy.minorityAttack). If a hole is listed in strategy.holesPawnCanOccupy, say that the defender can still occupy it with that pawn advance. endFacts may also describe the moves of that line. endFacts.materialVsEval is a diagnostic comparison of the material balance at the line end (White perspective, pawn units: pawn 1, knight 3, bishop 3, rook 5, queen 9) with the engine evaluation; it does not show how play continues after the line. A line may contain a separate server-verified continuation {moves, evalWhite, depth, settled}. Describe the result after that continuation, naming its moves as the engine's continuation, never as part of the original PV. endFacts then describes the position after the continuation; lineEndFacts preserves the original endpoint. continuation.source=root_pv means the retained tail of the same depth-gated root calculation, not a fresh evaluation of the final position. If endFacts.unsettled is true, say the exchange is unfinished in the shown line and give no plan or material conclusion for that line. Compensation may be named only when endFacts.unsettled is false and materialVsEval.matchesEval is false (a material/evaluation gap of at least one pawn); never invent its mechanism. Say that material is regained only when the supplied moves of that line or its verified continuation show the recapture. Never invent a later capture or recapture, and never present a legal move that is not in the supplied line or continuation as engine evidence. endFacts.doubleAttacks lists verified double attacks (forks): the moved piece attacks two or more enemy pieces that are the king, more valuable or undefended. A listed fork is an attack, not a capture: say that a target is won only when the supplied moves capture it. When a listed double attack explains the line, name the attacking piece and both targets with their squares. Never claim a fork, double attack or pin that is not listed. endFacts.checks lists every check of the line with its number of legal replies, checkmate, and materialGainForCheckingSide: the material change from just before that check to the end of the whole line, which includes later exchanges and is not caused by the check alone. A check with checkmate true is a verified checkmate: state it first and plainly as mate, never as a check that gains time. For any other check, describe the purpose that the supplied moves show; zero material gain does not make a check a mere tempo move, and do not credit an earlier check with material won later in the line unless the moves show the connection.",'ON instruction must equal exactly the approved grounding rule');
   assert.ok(suffix.includes('Never infer the pawn structure after captures yourself.'));
   assert.equal(suffix.split('evidence.positionFacts was computed deterministically').length-1,1);
   assert.equal(suffix.split("Call a pawn blockaded only if it is listed in pawns.blockaded; an own piece in front of a pawn is not a blockade.").length-1,1);
@@ -201,4 +293,44 @@ test('invalid coach response maps to safe HTTP 503 provider_unavailable',async()
   assert.deepEqual(await response.json(),{code:'provider_unavailable'});
   assert.equal(response.headers.get('cache-control'),'no-store');
  });
+});
+
+test('Chessy analysis model: assessment, perspective and evidence rules are sent once in both model paths',async()=>{
+ for(const useServerEngine of [false,true]){
+  const evidence=useServerEngine?{candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:900},candidateLines:[]}:{candidateOrigin:'untrusted_client_legality_checked',candidateLines:[]};
+  let rules='';
+  await generateAnswer(query,evidence,{apiKey:key,fetchImpl:async(_url,options)=>{rules=JSON.parse(options.body).instructions;return answerResponse();}});
+  assert.equal(rules.split('act as a professional analyst, not a narrator of engine moves').length-1,1);
+  assert.match(rules,/the objective evaluation; the positional factors that justify it/);
+  assert.match(rules,/how the supplied candidateLines support or challenge that plan/);
+  assert.match(rules,/a verified mate, a forcing sequence or an immediate threat outranks long-term planning/);
+  assert.match(rules,/that side sets only the perspective of the plan/);
+  assert.match(rules,/never shift, soften or reinterpret a score in favour of the requested side/);
+  assert.match(rules,/If the requested side is not to move, say that the opponent moves first/);
+  assert.match(rules,/must not be presented as engine-confirmed/);
+  assert.match(rules,/do not describe Stockfish as infallible/);
+  assert.match(rules,/An equal evaluation does not imply equal material/);
+  assert.match(rules,/If no candidateLines are supplied, still give a useful strategic assessment and plan/);
+ }
+});
+
+
+test('restriction grounding instruction matches approved sentences exactly when move mechanisms exist',async()=>{
+ const italian='r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4';
+ const moves=['d3','Nf6','Nc3','h6','h3'];
+ const mechanisms=require('./coachLineFacts').lineMechanisms(italian,moves);
+ assert.ok(mechanisms.deniedSquares.some(e=>e.square==='g4'));
+ const evidence={candidateOrigin:'server_stockfish_19',engine:{name:'stockfish-19-lite',budgetMs:900},
+  candidateLines:[{id:'L1',moves,endFacts:{moveMechanisms:mechanisms}}]};
+ const exact="deniedSquares proves only that the move now covers a square an opponent knight, bishop, rook or queen could previously reach with a legal non-capturing move; it does not prove that moving there is now illegal or losing. Chessy may say that the move \"takes square X away from piece P\" in this strategic sense, and call it restriction, a concept from Nimzowitsch's Mein System (1925), only when a matching strategyLabels entry derives from deniedSquares. Do not claim the opponent intended that square, that restriction was the move's only purpose, or quote any book or cite any page.";
+ let instructions='';
+ await generateAnswer({...query,fen:italian},evidence,{apiKey:key,fetchImpl:async(_url,options)=>{
+  const body=JSON.parse(options.body);
+  instructions=body.instructions;
+  assert.deepEqual(JSON.parse(body.input).evidence,evidence);
+  return answerResponse();
+ }});
+ assert.equal(instructions.includes(exact),true);
+ assert.equal(instructions.split(exact).length-1,1);
+ assert.equal(instructions.includes('Do not claim the opponent intended that square'),true);
 });

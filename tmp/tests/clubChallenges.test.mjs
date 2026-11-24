@@ -32,7 +32,8 @@ test('actual challenge cards render only permitted actions and German lifecycle 
 
 test('legacy mobile community keeps challenge bodies as text', () => {
   const source = readFileSync(new URL('../src/screens/ChessAZCommunityScreen.tsx', import.meta.url), 'utf8');
-  const legacy = source.split('function LegacyCommunityScreen() {')[1];
+  const legacy = source.split('function LegacyCommunityScreen({ worldChat = false }: { worldChat?: boolean }) {')[1];
+  assert.ok(legacy, 'shared Schach/World legacy screen must exist');
   assert.match(legacy, /<p className="whitespace-pre-wrap break-words text-sm">\{moderationEnabled && item.deleted_at \? schach.deleted : item.body\}<\/p>/);
   assert.doesNotMatch(legacy, /ChallengeProvider|ChallengeMessage|ChallengeButton/);
 });

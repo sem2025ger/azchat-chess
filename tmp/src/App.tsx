@@ -15,6 +15,7 @@ const HomeScreen = lazy(routeLoaders.home);
 const PlayRoute = lazy(routeLoaders.play);
 const GameRoute = lazy(routeLoaders.game);
 const ChatScreen = lazy(routeLoaders.chat);
+const WorldChatScreen = lazy(routeLoaders.worldChat);
 const ProfileScreen = lazy(routeLoaders.profile);
 const SettingsScreen = lazy(routeLoaders.settings);
 const UpdatePasswordScreen = lazy(routeLoaders.updatePassword);
@@ -46,6 +47,7 @@ function App() {
                     <Route path="play" element={<PlayRoute />} />
                     <Route path="game" element={<GameRoute />} />
                     <Route path="chat" element={<ChatScreen />} />
+                    {import.meta.env.VITE_WORLD_CHAT_ENABLED === 'true' && import.meta.env.VITE_SCHACH_TREFF_V2 === 'true' && <Route path="world-chat" element={<WorldChatScreen />} />}
                     <Route path="schach-treff/einladung/:token" element={<ClubInviteScreen />} />
                     <Route path="profile" element={<ProfileScreen />} />
                     <Route path="settings" element={<SettingsScreen />} />

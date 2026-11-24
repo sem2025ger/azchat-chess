@@ -126,6 +126,9 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
      }
     }
     if(width===1366||width===1920&&height===880||width===390){
+     // Pixel identity requires both compared builds to finish local font loading.
+     // Keep the exact-image assertion and its approved visual normalization unchanged.
+     await evaluate('document.fonts.ready');await pause(100);
      // Normalize the approved 1px frame change and piece-picker entry only.
      if(width===390) await evaluate(`(() => {
        const piece = document.querySelectorAll('.settings-mobile-view .settings-mobile-card button')[1];

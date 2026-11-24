@@ -2,6 +2,15 @@ import {spawnSync} from 'node:child_process';
 import {isIsolatedQaPreviewBranch} from './qaPreviewBranch.mjs';
 
 const branch=process.env.VERCEL_GIT_COMMIT_REF;
+if(branch==='qa/chessaz-consolidated-20261121'&&(
+ process.env.VERCEL_ENV!=='preview'||
+ process.env.VITE_SERVER_URL!=='https://chessaz-m3-qa-api.onrender.com'||
+ process.env.VITE_SUPABASE_URL!=='https://iukmpcytsuofqhxsumbu.supabase.co'||
+ !process.env.VITE_SUPABASE_ANON_KEY
+)){
+ console.error('The consolidated ChessAZ build requires the dedicated Preview API and Supabase configuration.');
+ process.exit(1);
+}
 if(isIsolatedQaPreviewBranch(branch)){
  const qa={
   VITE_MAINTENANCE_MODE:'false',
