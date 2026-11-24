@@ -373,3 +373,37 @@ test('round interval is optional in every language and bounded when given', asyn
     { openaiApiKey: 'mock-key', now, fetchImpl: provider({ ...sample, round_interval_minutes: 90 }) });
   assert.equal(result.draft.round_interval_minutes, 90);
 });
+
+test('individual planning uses player fields, skips team storage and retains the account budget', async t => {
+  const solo = { name: 'Individual Cup', start_time: sample.start_time, max_players: 16 };
+  const capture = [];
+  const service = await serve(t, {
+    m3Enabled: false, individualEnabled: true, commandClient: null, fetchImpl: provider(solo, { capture }),
+  });
+  const input = { language: 'en', messages: [{ role: 'user', text: 'Plan a cup for 16 players' }] };
+  assert.equal((await service.post('/plan', input)).status, 404);
+  assert.equal((await service.post('/plan?kind=individual', input, 'expired')).status, 401);
+  assert.equal((await service.post('/plan?kind=individual', { ...input, draft: { max_teams: 16 } })).status, 400);
+  const first = await service.post('/plan?kind=individual', { ...input, draft: { max_players: 32 } });
+  assert.equal(first.status, 200);
+  assert.equal(first.body.ready, true);
+  assert.deepEqual(first.body.draft, { ...solo, max_players: 32 });
+  assert.deepEqual(capture[0].text.format.schema.properties.draft.required, ['name', 'start_time', 'max_players']);
+  assert.deepEqual(JSON.parse(capture[0].input).past_tournaments, []);
+  for (let i = 0; i < 4; i++) assert.equal((await service.post('/plan?kind=individual', input)).status, 200);
+  assert.equal((await service.post('/plan?kind=individual', input)).body.code, 'daily_limit');
+});
+
+test('individual mode rejects past times, ambiguous Berlin times and invalid capacity', async () => {
+  const input = { language: 'ru', messages: [{ role: 'user', text: 'Сделай турнир' }] };
+  for (const start_time of ['2026-11-09T15:00', '2027-10-31T02:30']) {
+    const plan = await generatePlan(input, [], {
+      individual: true, now, openaiApiKey: 'mock-key',
+      fetchImpl: provider({ name: 'Cup', start_time, max_players: 129 }),
+    });
+    assert.equal(plan.ready, false);
+    assert.deepEqual(plan.missing, ['start_time', 'max_players']);
+    assert.equal(plan.draft.start_time, null);
+    assert.equal(plan.draft.max_players, null);
+  }
+});

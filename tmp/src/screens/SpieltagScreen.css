@@ -17,3 +17,5 @@
 @media(max-width:600px){.spieltag-workspace .spieltag-boards{grid-template-columns:minmax(0,1fr)}}
 .spieltag-controls .spieltag-actions button{flex:1 1 0;min-width:0;font-size:0.75rem;padding:8px 6px}
 @media(max-width:600px){.spieltag-controls{gap:10px}.spieltag-boards li{gap:6px;padding:10px}}
+
+.spieltag-page .spieltag-coming-soon { padding: .7rem .9rem; font-size: .875rem; color: #c6b58e; }

@@ -34,6 +34,7 @@ function NrwOverviewLink() {
   return import.meta.env.VITE_CLUBS_NRW_ENABLED==='true' ? <Link to="/region/nrw">{tr('NRW-Übersicht')}</Link> : null;
 }
 const TeamTournamentsTab = lazy(() => import('../components/teamTournaments/TeamTournamentsTab'));
+const IndividualTournamentCreate = lazy(() => import('../components/teamTournaments/IndividualTournamentCreate'));
 
 function SpieltagTabs() {
   const { language } = useLanguage();
@@ -62,11 +63,10 @@ function SpieltagLaunchScreen() {
 
   return <section className="spieltag-page section-page">
     <header><h1>{t('nav.spieltag')}</h1></header>
-    <section className="section-card spieltag-controls">
-      <h2>{tr('individualTournaments')}</h2>
-      <p>{tr('individualTournamentsInDevelopment')}</p>
-    </section>
-    <p>{tr('teamTournamentsComingSoon')}</p>
+    <Suspense fallback={<p role="status">{tr('loading')}</p>}>
+      <IndividualTournamentCreate />
+    </Suspense>
+    <aside className="section-card spieltag-coming-soon">{tr('teamTournamentsComingSoon')}</aside>
   </section>;
 }
 
