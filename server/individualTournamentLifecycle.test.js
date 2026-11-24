@@ -139,4 +139,8 @@ test('published event closes registration and completes its rounds through the s
   }
   assert.equal((await request(owner,event)).body.status,'finished');
   assert.deepEqual(logs,[]);
+  await db.pool.query('delete from auth.users where id=$1',[owner]);
+  assert.equal((await request(null,event)).status,404);
+  const tally = await db.pool.query('select count(*)::int as count from public.individual_tournament_pairings where event_id=$1',[event]);
+  assert.equal(tally.rows[0].count,0);
 });

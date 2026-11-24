@@ -24,8 +24,8 @@ create table public.individual_tournament_pairings (
   black_no smallint,
   result text check (result in ('1-0','0-1','1/2-1/2','bye')),
   primary key (event_id, round_no, board_no),
-  foreign key (event_id, white_no) references public.individual_tournament_players(event_id, player_no),
-  foreign key (event_id, black_no) references public.individual_tournament_players(event_id, player_no),
+  foreign key (event_id, white_no) references public.individual_tournament_players(event_id, player_no) on delete cascade,
+  foreign key (event_id, black_no) references public.individual_tournament_players(event_id, player_no) on delete cascade,
   check (white_no is distinct from black_no),
   check ((black_no is null) = (result is not distinct from 'bye'))
 );

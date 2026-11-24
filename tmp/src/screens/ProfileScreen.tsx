@@ -49,6 +49,8 @@ export default function ProfileScreen() {
     spieltag: import.meta.env.VITE_SPIELTAG_ENABLED === 'true',
     preparation: import.meta.env.VITE_VORBEREITUNG_ENABLED === 'true',
     tournaments: tournamentsEnabled(import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED),
+    individual: import.meta.env.VITE_SPIELTAG_LAUNCH_PREVIEW === 'true' &&
+      import.meta.env.VITE_INDIVIDUAL_TOURNAMENTS_LIVE_ENABLED === 'true',
   });
   const mobileReturnTo = requestedReturn === '/play' || requestedReturn?.startsWith('/play?room=') || requestedReturn?.startsWith('/play?invite=1&tc=')
     ? requestedReturn

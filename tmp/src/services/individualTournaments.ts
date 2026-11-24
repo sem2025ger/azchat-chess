@@ -76,15 +76,21 @@ export type EventCommand =
 
 export function createIndividualEventsApi(token?: string) {
   async function request<T>(id: string, signal: AbortSignal, command?: EventCommand): Promise<T> {
-    const origin = import.meta.env.VITE_SERVER_URL?.replace(/\/+$/, '');
-    if (!origin) throw new TournamentError('temporarily_unavailable');
+    let origin: URL;
+    try { origin = new URL(import.meta.env.VITE_SERVER_URL); }
+    catch { throw new TournamentError('configuration'); }
+    if (origin.username || origin.password || (origin.protocol !== 'https:' &&
+        !(origin.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname)))) {
+      throw new TournamentError('configuration');
+    }
     const timeout = abortWithTimeout(signal, 12000);
     try {
       const headers = new Headers();
       if (token) headers.set('Authorization', 'Bearer ' + token);
       if (command) headers.set('Content-Type', 'application/json');
-      const response = await fetch(origin + '/api/individual-tournaments' + (id ? '/' + encodeURIComponent(id) : ''), {
-        headers, signal: timeout.signal,
+      const url = new URL('/api/individual-tournaments' + (id ? '/' + encodeURIComponent(id) : ''), origin);
+      const response = await fetch(url, {
+        headers, signal: timeout.signal, cache: 'no-store', redirect: 'error',
         ...(command ? { method: 'POST', body: JSON.stringify(command) } : {}),
       });
       if (!response.ok) {
