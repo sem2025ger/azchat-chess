@@ -11,6 +11,11 @@ const POSITION_FACTS_INSTRUCTION='evidence.positionFacts was computed determinis
 
 const BIBLIOGRAPHY_INSTRUCTION='evidence.coachBibliography contains only a server-owned bibliographic catalogue: titles, authors, publication metadata and provenance types. It contains NO book pages, original annotations, verified positions or full book analyses. Use it only to answer questions about listed books, and distinguish original authorship from later editors. NEVER quote or paraphrase alleged book passages, cite a page, claim you read/ingested a book, or attribute a positional idea, variation or game to these books solely from this catalogue. For any chess move, line or evaluation rely on position, legalMoves and the verified evidence instead. The catalogue is not permission to train on copyrighted editions.';
 
+function classicsInstruction(hasPositionFacts){
+ const ground=hasPositionFacts?'Stockfish candidateLines, positionFacts and legalMoves':'Stockfish candidateLines and legalMoves';
+ return 'evidence.classicsKnowledge contains verified excerpts and structured coaching summaries of historical classical commentary and annotated master games (including Alexander Alekhine, 1927, and José Raúl Capablanca, 1921), matched by position, material, opening or strategic theme. Use these ideas and master examples only when genuinely relevant to the current position in the learner\'s language, and you may cite their author, game and citation from evidence.classicsKnowledge even when not listing public archive games. Always clearly distinguish historical commentary from objective engine evaluation: attribute historical notes to their author/game, recognize that classical annotations may be tactically superseded by Stockfish 19, and never present historical commentary as engine-verified truth. Always rely strictly on '+ground+' for concrete move legality, objective evaluation and tactical verification in the current position; never invent moves, citations or unverified quotations. Each classicsKnowledge item has match.kind: exact-position (the book discusses this very position), pawn-structure (a different game with a similar pawn structure; coloursReversed means White and Black are swapped) or endgame-material (an ending with the same pieces). For pawn-structure and endgame-material items transfer only the strategic plan or technique and say it comes from a similar structure; never carry concrete moves, squares, threats or tactics from the historical game over to the current position. If an item does not help answer the question, ignore it.';
+}
+
 // Check actual streamed bytes, including when Content-Length is absent or false.
 async function readBytes(response,limit){
  if(!response.ok||Number(response.headers.get('content-length')||0)>limit){await response.body?.cancel().catch(()=>{});throw providerError();}
@@ -60,7 +65,7 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
   'Do not claim a move is illegal if it appears in legalMoves. Explain uncertainty and offer the analysis board for engine verification.',
   'No links, HTML or markdown. Return JSON with exactly one string property answer, between 2 and 1200 characters.'
  ].join('\n'):null;
- const instructions=(serverEngine?serverInstructions:legacyInstructions)+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'');
+ const instructions=(serverEngine?serverInstructions:legacyInstructions)+(evidence.positionFacts?'\n'+POSITION_FACTS_INSTRUCTION:'')+(evidence.coachBibliography?'\n'+BIBLIOGRAPHY_INSTRUCTION:'')+(evidence.classicsKnowledge?'\n'+classicsInstruction(!!evidence.positionFacts):'');
  const response=await fetchImpl('https://api.openai.com/v1/responses',{
   method:'POST',redirect:'error',signal:requestSignal(signal),headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},
   body:JSON.stringify({model,store:false,instructions,reasoning:{effort:'low'},max_output_tokens:1800,

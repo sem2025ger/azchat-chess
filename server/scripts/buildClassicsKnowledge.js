@@ -6,22 +6,31 @@
 const fs=require('fs');
 const path=require('path');
 const {build}=require('../knowledge/buildChessFundamentals');
+const {build:buildAlekhine}=require('../knowledge/buildAlekhineBestGames');
 
-const OUTPUTS=[{file:path.join(__dirname,'..','knowledge','classics','capablanca-chess-fundamentals.json'),build}];
+const OUTPUTS=[
+ {file:path.join(__dirname,'..','knowledge','classics','capablanca-chess-fundamentals.json'),build},
+ {file:path.join(__dirname,'..','knowledge','classics','alekhine-best-games-1908-1923.json'),build:buildAlekhine}
+];
 
 function serialize(record){return JSON.stringify(record,null,1)+'\n';}
 
-let stale=0;
-for(const {file,build:make} of OUTPUTS){
- const next=serialize(make());
- const current=fs.existsSync(file)?fs.readFileSync(file,'utf8'):null;
- if(process.argv.includes('--check')){
-  if(current!==next){console.error(`stale: ${path.relative(process.cwd(),file)}`);stale++;}
-  continue;
+if(require.main===module){
+ let stale=0;
+ for(const {file,build:make} of OUTPUTS){
+  const next=serialize(make());
+  const current=fs.existsSync(file)?fs.readFileSync(file,'utf8'):null;
+  if(process.argv.includes('--check')){
+   if(current!==next){console.error(`stale: ${path.relative(process.cwd(),file)}`);stale++;}
+   continue;
+  }
+  fs.writeFileSync(file,next);
+  const r=JSON.parse(next);
+  const detail=r.notation
+   ?`moves converted ${r.notation.conversion.resolved}/${r.notation.conversion.tokens}`
+   :`${r.stats.totalValidatedMoves} validated moves, ${r.stats.uniqueGeneratedFens} unique FENs`;
+  console.log(`${path.basename(file)}: ${r.units.length} units, ${detail}`);
  }
- fs.writeFileSync(file,next);
- const r=JSON.parse(next);
- console.log(`${path.basename(file)}: ${r.units.length} units, moves converted ${r.notation.conversion.resolved}/${r.notation.conversion.tokens}`);
+ if(stale)process.exit(1);
 }
-if(stale)process.exit(1);
-module.exports={serialize};
+module.exports={serialize,OUTPUTS};
