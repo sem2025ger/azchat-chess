@@ -46,7 +46,7 @@ async function verifySupabaseToken(accessToken) {
     if (error || !data || !data.user || !data.user.id) {
       return null;
     }
-    return { id: data.user.id, email: data.user.email };
+    return { id: data.user.id, email: data.user.email, is_anonymous: data.user.is_anonymous };
   } catch {
     return null;
   }
@@ -122,6 +122,11 @@ const tournamentOnlineEnabled = process.env.TEAM_TOURNAMENTS_ONLINE_PLAY === 'tr
 const publishDueTournaments = require('./teamTournaments').installTeamTournamentsFromEnv(app, verifyTokenProxy,
   process.env, createClient, tournamentOnlineEnabled ? () => tournamentOnline.status() : undefined);
 require('./aiOrganizer').installAiOrganizerFromEnv(app,verifyTokenProxy);
+const advanceIndividualTournaments = process.env.INDIVIDUAL_TOURNAMENTS_LIVE_ENABLED === 'true'
+  ? require('./individualTournaments').installIndividualTournaments(app, {
+    client: clubClient, verifyToken: verifyTokenProxy,
+    logError: code => console.warn('[individual-tournaments]', code),
+  }) : null;
 require('./vorbereitung').installVorbereitungFromEnv(app,verifyTokenProxy);
 const coachIndex=require('./positions').installPositionsFromEnv(app,verifyTokenProxy);
 require('./aiCoach').installAiCoachFromEnv(app,verifyTokenProxy,coachIndex);
@@ -1291,6 +1296,12 @@ app.use(monitoring.expressErrorHandler);
 if (require.main === module) {
   recoveryReady.then(() => server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    if (advanceIndividualTournaments) {
+      void advanceIndividualTournaments();
+      const timer = setInterval(advanceIndividualTournaments, 5000);
+      timer.unref();
+      server.once('close', () => clearInterval(timer));
+    }
   }));
 }
 

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { individualTournamentInput, listIndividualTournaments, saveIndividualTournament,
-  type IndividualTournament } from '../../services/individualTournaments';
+  createIndividualEventsApi, liveIndividualEvents, type IndividualTournament } from '../../services/individualTournaments';
 import type { IndividualOrganizerDraft } from '../../services/teamTournaments';
 import { AiOrganizerPanel } from './AiOrganizerPanel';
-import { tournamentCopy, tournamentErrorMessage } from './copy';
+import { tournamentCopy } from './copy';
+import { IndividualEventList, IndividualEventView, individualEventError } from './IndividualTournamentEvents';
 
 const emptyDraft: IndividualOrganizerDraft = { name: '', start_time: '', max_players: null };
 const signIn = '/profile?returnTo=%2Fspieltag';
@@ -26,6 +27,8 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
   const tr = tournamentCopy(language);
   const manualLabel = tr('createHubManual');
   const aiLabel = tr('individualAiTitle');
+  const [params, setParams] = useSearchParams();
+  const [published, setPublished] = useState<string | null>(null);
   const [mode, setMode] = useState<'manual' | 'ai'>('manual');
   const [draft, setDraft] = useState(emptyDraft);
   const [records, setRecords] = useState<IndividualTournament[]>([]);
@@ -33,7 +36,7 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
   const [loading, setLoading] = useState(Boolean(organizerId));
   const [reload, setReload] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<unknown>(null);
   const [saved, setSaved] = useState(false);
   const [aiSession, setAiSession] = useState(0);
   const request = useRef<AbortController | null>(null);
@@ -60,26 +63,32 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
     return () => controller.abort();
   }, [organizerId, reload]);
 
-  async function save(input: IndividualOrganizerDraft, source: 'manual' | 'ai') {
+  async function save(input: IndividualOrganizerDraft, source: 'manual' | 'ai', publish = false) {
     if (!organizerId || request.current) return;
     const controller = new AbortController();
     request.current = controller;
     setBusy(true);
     setSaved(false);
-    setError('');
+    setError(null);
+    setPublished(null);
     try {
       const values = individualTournamentInput(input);
       const fingerprint = JSON.stringify(values);
       if (retry.current?.fingerprint !== fingerprint) retry.current = { fingerprint, id: crypto.randomUUID() };
-      const row = await saveIndividualTournament(retry.current.id, organizerId, values, controller.signal);
+      const row = publish
+        ? await createIndividualEventsApi(token).command(retry.current.id, { action: 'publish', input: values }, controller.signal)
+        : await saveIndividualTournament(retry.current.id, organizerId, values, controller.signal);
       if (controller.signal.aborted) return;
       setRecords(items => [row, ...items.filter(item => item.id !== row.id)].slice(0, 50));
       if (source === 'manual') setDraft(emptyDraft);
       else setAiSession(value => value + 1);
       retry.current = null;
-      setSaved(true);
+      if (publish) {
+        setPublished(row.id);
+        setParams({ individual: row.id });
+      } else setSaved(true);
     } catch (failure) {
-      if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'temporarily_unavailable');
+      if (!controller.signal.aborted) setError(failure);
     } finally {
       if (request.current === controller) request.current = null;
       if (!controller.signal.aborted) setBusy(false);
@@ -88,8 +97,35 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
 
   function saveManual(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void save(draft, 'manual');
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    void save(draft, 'manual', liveIndividualEvents && submitter?.getAttribute('value') === 'publish');
   }
+
+  async function publishSaved(id: string) {
+    if (!token || request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
+    setBusy(true);
+    setError(null);
+    try {
+      await createIndividualEventsApi(token).command(id, { action: 'publish', input: {} }, controller.signal);
+      if (!controller.signal.aborted) {
+        setPublished(id);
+        setParams({ individual: id });
+      }
+    } catch (failure) {
+      if (!controller.signal.aborted) setError(failure);
+    } finally {
+      if (request.current === controller) request.current = null;
+      if (!controller.signal.aborted) setBusy(false);
+    }
+  }
+
+  const selected = params.get('individual');
+  if (liveIndividualEvents && selected) return <>
+    {published === selected && <p role="status">{tr('individualPublished')}</p>}
+    <IndividualEventView key={selected} id={selected} token={token} format={dateFormat} tr={tr} />
+  </>;
 
   return <section className="team-tournament-page team-create-hub" aria-label={tr('individualTournaments')}>
     <h2>{tr('individualTournaments')}</h2>
@@ -116,6 +152,10 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
                 onChange={event => setDraft({ ...draft, max_players: event.target.value ? event.target.valueAsNumber : null })} />
             </label>
             <button type="submit" disabled={busy || !token} className="team-create-primary">{tr('individualSave')}</button>
+            {liveIndividualEvents && <>
+              <p>{tr('individualPublishHint')}</p>
+              <button type="submit" value="publish" disabled={busy || !token}>{tr('individualPublish')}</button>
+            </>}
           </form>
         </div>
       </section>
@@ -125,7 +165,9 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
           setMode('manual');
         }} onCreate={value => void save({
           name: value.name, start_time: value.start_time, max_players: value.max_players ?? null,
-        }, 'ai')} /> : <div className="ai-organizer">
+        }, 'ai')} onPublish={liveIndividualEvents ? value => void save({
+          name: value.name, start_time: value.start_time, max_players: value.max_players ?? null,
+        }, 'ai', true) : undefined} /> : <div className="ai-organizer">
           <header className="ai-organizer-header">
             <h3>{aiLabel}</h3>
             <p>{tr('individualAiHint')}</p>
@@ -133,7 +175,7 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
         </div>}
       </section>
     </div>
-    {error && <p role="alert">{error === 'invalid_time' ? tr('individualInvalidStart') : tournamentErrorMessage(error, tr)}</p>}
+    {error != null && <p role="alert">{individualEventError(error, tr)}</p>}
     {saved && <p role="status">{tr('individualSaved')}</p>}
     {token &&
       <section className="section-card">
@@ -149,8 +191,13 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
             <strong>{item.name}</strong>
             <time dateTime={item.starts_at}>{dateFormat.format(new Date(item.starts_at))}</time>
             <span>{tr('individualMaxPlayers')} {item.max_players}</span>
+            {liveIndividualEvents && Date.parse(item.starts_at) > Date.now() &&
+              <button type="button" disabled={busy} onClick={() => void publishSaved(item.id)}>
+                {tr('individualPublish')}
+              </button>}
           </li>)}
         </ul>
       </section>}
+    {liveIndividualEvents && <IndividualEventList token={token} format={dateFormat} tr={tr} />}
   </section>;
 }
