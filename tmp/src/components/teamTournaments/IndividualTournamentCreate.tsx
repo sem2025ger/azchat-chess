@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { individualTournamentInput, listIndividualTournaments, saveIndividualTournament,
@@ -180,10 +179,6 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
         </div>}
       </section>
     </div>
-    <aside className="individual-create-soon" aria-label={tr('teamTournamentsComingSoon')}>
-      <Users size={18} aria-hidden="true" />
-      <span>{tr('teamTournamentsComingSoon')}</span>
-    </aside>
     {error != null && <p role="alert">{individualEventError(error, tr)}</p>}
     {saved && <p role="status">{tr('individualSaved')}</p>}
     {token &&

@@ -95,7 +95,7 @@ export async function checkIndividualLaunchLayout({cdp,evaluate,wait}) {
       for(const lang of ['de','en','az','tr','ua','ru']){
         const tr=tournamentCopy(lang);
         await evaluate('window.fixtureLocale('+JSON.stringify(lang)+')');
-        await wait("document.querySelector('.spieltag-launch > header p')?.textContent==="+JSON.stringify(tr('individualIntro')));
+        await wait("document.querySelector('.spieltag-launch > header h1')?.textContent==="+JSON.stringify(tr('individualIntro')));
         for(const [width,height] of [[1440,900],[1280,720],[390,844]]){
           await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
           await evaluate("document.querySelector('[data-route-scroll]')?.scrollTo(0,0);window.scrollTo(0,0);");
@@ -115,14 +115,24 @@ export async function checkIndividualLaunchLayout({cdp,evaluate,wait}) {
               note:note?.textContent,noteInside:!!note?.closest('.team-create-manual'),
               noteOutside:[...document.querySelectorAll('.spieltag-launch p')].some(p=>p.textContent===note?.textContent&&!p.closest('.team-create-manual')),
               guestHref:note?.querySelector('a')?.getAttribute('href')??null,
-              teaser: grid?.nextElementSibling?.classList.contains('individual-create-soon'),
-              teaserText:grid?.nextElementSibling?.textContent,
+              teaser: !!q('.spieltag-launch-heading > .individual-create-soon') && !grid?.nextElementSibling?.classList.contains('individual-create-soon'),
+              teaserText:q('.spieltag-launch-heading > .individual-create-soon')?.textContent,
+              teaserBox:box('.spieltag-launch-heading > .individual-create-soon'),
+              headerBox:box('.spieltag-launch-heading h1'),
+              headingSize:parseFloat(getComputedStyle(q('.spieltag-launch-heading h1')).fontSize),
+              headingText:q('.spieltag-launch-heading h1')?.textContent,
+              oldBrand:!!q('.team-create-ai .ai-organizer-brand small'),
+              badgeSize:q('.team-create-ai .ai-organizer-badge')?parseFloat(getComputedStyle(q('.team-create-ai .ai-organizer-badge')).fontSize):null,
               titleStyles:[style('.team-create-manual h3'),style('.team-create-ai h3')]};
           })()`);
           const tag=lang+'/'+(signed?'member':'guest')+'/'+width+'x'+height;
           const inside=r=>r && r.height>0 && r.top>=0 && r.bottom<=m.innerHeight+0.01;
           const pass=m.h1===1 && m.hiddenH2 && m.noteInside && !m.noteOutside && m.teaser &&
-            m.teaserText===tr('teamTournamentsComingSoon') && m.note===tr(signed?'individualPrivate':'createHubSignIn') &&
+            m.headingText===tr('individualIntro') && m.headingSize>=18 &&
+            m.teaserText===tr('teamTournamentsComingSoon') && m.teaserBox.bottom<=m.manual.top &&
+            (width===390 || m.teaserBox.left>=m.headerBox.right-1) &&
+            !m.oldBrand && (!signed || m.badgeSize>=12) &&
+            m.note===tr(signed?'individualPrivate':'createHubSignIn') &&
             (signed?m.guestHref===null:m.guestHref==='/profile?returnTo=%2Fspieltag') &&
             JSON.stringify(m.titleStyles[0])===JSON.stringify(m.titleStyles[1]) &&
             m.scrollWidth<=m.innerWidth+1 &&

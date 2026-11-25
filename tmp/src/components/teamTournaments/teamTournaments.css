@@ -504,13 +504,9 @@
 .individual-create-hub .team-create-ai .ai-organizer-history { padding: .75rem 1rem; gap: .6rem; min-height: 8rem; max-height: min(40vh, 23rem); }
 .individual-create-hub .ai-organizer-intro { margin: 0; }
 .individual-create-hub .ai-organizer-composer { padding: .65rem; }
-.individual-create-hub .individual-create-soon {
-  display: flex; align-items: center; gap: .65rem; min-height: 48px;
-  margin-block: .75rem; padding: .6rem 1rem; border: 1px solid rgba(164,141,111,.28);
-  border-radius: 10px; color: #b9b6b4; background: #ffffff03; font-size: .875rem;
+.individual-create-hub .ai-organizer-badge {
+  font-size: .78rem; padding: .16rem .5rem; vertical-align: .08em;
 }
-.individual-create-hub .individual-create-soon svg { flex: none; color: #d7bd8b; }
-.individual-create-hub .individual-create-soon span { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 840px) {
   .individual-create-hub .team-create-hub-grid { gap: .65rem; }
   .individual-create-hub .team-create-ai .ai-organizer-history { max-height: 55vh; }
