@@ -54,8 +54,8 @@ export async function checkIndividualTournament({cdp,evaluate,wait,click}) {
     server = await createServer({
       configFile:false, envDir:false, cacheDir, plugins:[{
         name:'individual-fixture',enforce:'pre',
-        resolveId(name){if(name===moduleId)return name;if(/(?:^|\\/)supabase(?:\\.ts)?$/.test(name))return '\\0individual-supabase';},
-        load(name){if(name===moduleId)return fixture;if(name==='\\0individual-supabase')return 'export const supabase = {};';},
+        resolveId(name){if(name===moduleId)return name;if(name.replace(/\\.ts$/, '').split('/').pop()==='supabase')return 'virtual:individual-supabase';},,
+        load(name){if(name===moduleId)return fixture;if(name==='virtual:individual-supabase')return 'export const supabase = {};';},,
         configureServer(s){s.middlewares.use(async(req,res,next)=>{
           if(req.url!=='/individual-fixture')return next();
           res.setHeader('content-type','text/html');
