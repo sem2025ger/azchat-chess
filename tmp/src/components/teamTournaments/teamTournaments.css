@@ -488,3 +488,30 @@
   .individual-event-standings :is(th,td) { font-size: .8rem; padding-inline: .25rem; }
   .individual-pair { gap: .35rem; }
 }
+
+/* Spieltag individual creation only. Keep the shared team hub unchanged. */
+.individual-create-hub .team-create-hub-grid { gap: .875rem; }
+.individual-create-hub .team-create-manual .team-create-block-body { padding: 1rem; gap: .65rem; }
+.individual-create-hub .team-create-manual header { gap: .25rem; padding-bottom: .65rem; }
+.individual-create-hub .team-create-manual h3,
+.individual-create-hub .team-create-ai .ai-organizer-header h3 { margin: 0; font-size: 1.15rem; font-weight: 700; color: #f1e9db; }
+.individual-create-hub .team-create-manual header .individual-create-private-note { margin: 0; color: #b9b6b4; font-size: .78rem; line-height: 1.4; }
+.individual-create-hub .team-create-manual-form { gap: .6rem; }
+.individual-create-hub .team-create-manual-form label { gap: .25rem; line-height: 1.4; }
+.individual-create-hub .team-create-manual-form .individual-create-publish-note { margin: 0; font-size: .8rem; line-height: 1.45; color: #b8b4ab; }
+.individual-create-hub .team-create-ai .ai-organizer-header { padding: 1rem 1rem .65rem; gap: .25rem; }
+.individual-create-hub .ai-organizer-brand { gap: .2rem; }
+.individual-create-hub .team-create-ai .ai-organizer-history { padding: .75rem 1rem; gap: .6rem; min-height: 8rem; max-height: min(40vh, 23rem); }
+.individual-create-hub .ai-organizer-intro { margin: 0; }
+.individual-create-hub .ai-organizer-composer { padding: .65rem; }
+.individual-create-hub .individual-create-soon {
+  display: flex; align-items: center; gap: .65rem; min-height: 48px;
+  margin-block: .75rem; padding: .6rem 1rem; border: 1px solid rgba(164,141,111,.28);
+  border-radius: 10px; color: #b9b6b4; background: #ffffff03; font-size: .875rem;
+}
+.individual-create-hub .individual-create-soon svg { flex: none; color: #d7bd8b; }
+.individual-create-hub .individual-create-soon span { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 840px) {
+  .individual-create-hub .team-create-hub-grid { gap: .65rem; }
+  .individual-create-hub .team-create-ai .ai-organizer-history { max-height: 55vh; }
+}

@@ -61,12 +61,11 @@ function SpieltagLaunchScreen() {
   const { language, t } = useLanguage();
   const tr = tournamentCopy(language);
 
-  return <section className="spieltag-page section-page">
-    <header><h1>{t('nav.spieltag')}</h1></header>
+  return <section className="spieltag-page section-page spieltag-launch">
+    <header><h1>{t('nav.spieltag')}</h1><p>{tr('individualIntro')}</p></header>
     <Suspense fallback={<p role="status">{tr('loading')}</p>}>
       <IndividualTournamentCreate />
     </Suspense>
-    <aside className="section-card spieltag-coming-soon">{tr('teamTournamentsComingSoon')}</aside>
   </section>;
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { individualTournamentInput, listIndividualTournaments, saveIndividualTournament,
@@ -129,9 +130,8 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
     <IndividualEventView key={selected} id={selected} token={token} format={dateFormat} tr={tr} />
   </>;
 
-  return <section className="team-tournament-page team-create-hub" aria-label={tr('individualTournaments')}>
-    <h2>{tr('individualTournaments')}</h2>
-    <p>{token ? tr('individualPrivate') : <Link to={signIn}>{tr('createHubSignIn')}</Link>}</p>
+  return <section className="team-tournament-page team-create-hub individual-create-hub" aria-label={tr('individualTournaments')}>
+    <h2 className="sr-only">{tr('individualTournaments')}</h2>
     <div className="team-create-mobile-switch" role="group" aria-label={tr('createHubChoose')}>
       <button type="button" aria-pressed={mode === 'manual'} onClick={() => setMode('manual')}>{manualLabel}</button>
       <button type="button" aria-pressed={mode === 'ai'} onClick={() => setMode('ai')}>{aiLabel}</button>
@@ -139,7 +139,10 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
     <div className="team-create-hub-grid" data-mobile-mode={mode}>
       <section className="team-create-block team-create-manual" aria-label={manualLabel}>
         <div className="team-create-block-body">
-          <header><h3>{manualLabel}</h3></header>
+          <header>
+            <h3>{manualLabel}</h3>
+            <p className="individual-create-private-note">{token ? tr('individualPrivate') : <Link to={signIn}>{tr('createHubSignIn')}</Link>}</p>
+          </header>
           <form className="team-create-manual-form" onSubmit={saveManual}>
             <label>{tr('name')}
               <input name="name" required maxLength={120} value={draft.name ?? ''} disabled={busy || !token}
@@ -155,7 +158,7 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
             </label>
             <button type="submit" disabled={busy || !token} className="team-create-primary">{tr('individualSave')}</button>
             {liveIndividualEvents && <>
-              <p>{tr('individualPublishHint')}</p>
+              <p className="individual-create-publish-note">{tr('individualPublishHint')}</p>
               <button type="submit" value="publish" disabled={busy || !token}>{tr('individualPublish')}</button>
             </>}
           </form>
@@ -177,6 +180,10 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
         </div>}
       </section>
     </div>
+    <aside className="individual-create-soon" aria-label={tr('teamTournamentsComingSoon')}>
+      <Users size={18} aria-hidden="true" />
+      <span>{tr('teamTournamentsComingSoon')}</span>
+    </aside>
     {error != null && <p role="alert">{individualEventError(error, tr)}</p>}
     {saved && <p role="status">{tr('individualSaved')}</p>}
     {token &&

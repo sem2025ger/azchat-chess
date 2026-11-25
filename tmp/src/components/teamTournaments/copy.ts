@@ -2,6 +2,7 @@ import type { Language } from '../../translations';
 
 const columns: Record<Language, number> = { de: 0, en: 1, az: 2, tr: 3, ua: 4, ru: 5 };
 const labels = {
+  individualIntro: ["Einzelturniere erstellen und verwalten – manuell oder mit Neo.","Create and manage individual tournaments — manually or with Neo.","Fərdi turnirlər yaradın və onları idarə edin — əl ilə və ya Neo ilə.","Bireysel turnuvalar oluşturun ve yönetin — elle veya Neo ile.","Створюйте індивідуальні турніри й керуйте ними — вручну або з Neo.","Создавайте личные турниры и управляйте ими — вручную или с Neo."],
   individualParticipants: ["Teilnehmer","Participants","İştirakçılar","Katılımcılar","Учасники","Участники"],
   individualJoined: ["Du bist angemeldet.","You are registered.","Qeydiyyatdan keçmisiniz.","Kaydınız yapıldı.","Ви зареєстровані.","Вы зарегистрированы."],
   individualStandings: ["Punktetabelle","Standings","Turnir cədvəli","Puan tablosu","Турнірна таблиця","Турнирная таблица"],
