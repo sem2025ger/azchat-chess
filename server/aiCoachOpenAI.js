@@ -78,10 +78,11 @@ async function generateAnswer({message,fen,side,language,history=[]},evidence,{a
  if(typeof value.answer!=='string'||value.answer.trim().length<2||value.answer.length>1200||/https?:\/\/|<[^>]*>/.test(value.answer)||/[^\p{Script=Latin}\p{Script=Cyrillic}\p{Script=Common}\p{Script=Inherited}]/u.test(value.answer)||/["»]\s*\}|"answer"\s*:/.test(value.answer))throw providerError();
  return value.answer.trim();
 }
-async function transcribeAudio(bytes,type,language,{apiKey,fetchImpl=fetch,signal}={}){
+async function transcribeAudio(bytes,type,language,{apiKey,fetchImpl=fetch,signal,prompt}={}){
  requireKey(apiKey);
  if(!Buffer.isBuffer(bytes)||bytes.length<16||bytes.length>MAX_AUDIO_BYTES||!AUDIO_TYPES.has(type))throw providerError('invalid_audio');
  const form=new FormData();form.set('model','gpt-transcribe');form.set('language',language);form.set('file',new Blob([bytes],{type}),'question.'+AUDIO_TYPES.get(type));
+ if(typeof prompt==='string'&&prompt.trim())form.set('prompt',prompt);
  const data=await readJson(await fetchImpl('https://api.openai.com/v1/audio/transcriptions',{
   method:'POST',redirect:'error',signal:requestSignal(signal),headers:{Authorization:'Bearer '+apiKey},body:form
  }));
