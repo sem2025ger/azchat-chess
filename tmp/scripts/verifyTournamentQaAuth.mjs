@@ -2,7 +2,7 @@
 // The public anon key is expected here; service-role/secret keys are forbidden.
 const qaUrl = 'https://iukmpcytsuofqhxsumbu.supabase.co';
 const qaServer = 'https://chessaz-deutsch-qa-api.onrender.com';
-const knownBranches = new Set(['feat/neo-individual-tournament-lifecycle-20261124','feat/individual-tournament-ui-20261125']);
+const knownBranches = new Set(['feat/neo-individual-tournament-lifecycle-20261124','feat/individual-tournament-ui-20261125','feat/spieltag-launch-ui-polish-20261125']);
 
 export async function verifyTournamentQaAuth(env, fetchImpl = fetch) {
   if (env.VERCEL_ENV !== 'preview' ||
