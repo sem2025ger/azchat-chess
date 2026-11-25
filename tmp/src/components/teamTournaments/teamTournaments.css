@@ -439,3 +439,52 @@
 @media (prefers-reduced-motion: reduce) {
   .team-tournament-refresh:disabled svg, .team-create-expand svg { animation: none; transition: none; }
 }
+
+
+/* Individual tournaments: reuse the section cards and existing tournament palette. */
+.individual-event-view { display: grid; gap: 1rem; min-width: 0; }
+.individual-event-view > *, .individual-event-list { min-width: 0; }
+.individual-event-back { justify-self: start; }
+.individual-event-header, .individual-event-controls, .individual-event-standings, .individual-event-rounds { display: grid; gap: .75rem; }
+.individual-event-header h2 { margin: 0; font-size: clamp(1.3rem, 2.5vw, 1.8rem); overflow-wrap: anywhere; }
+.individual-event-status { width: fit-content; max-width: 100%; border: 1px solid currentColor; border-radius: 999px; padding: .22rem .65rem; font-size: .78rem; line-height: 1.35; overflow-wrap: anywhere; }
+.individual-event-status[data-status="registration"], .individual-event-status[data-status="playing"] { color: #e5c992; }
+.individual-event-status[data-status="finished"] { color: #a8d5b5; }
+.individual-event-status[data-status="pairing_blocked"], .individual-event-status[data-status="cancelled"] { color: #ffbfa8; }
+.individual-event-metrics { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%, 9rem),1fr)); gap: .6rem; }
+.individual-event-metrics > div { display: grid; gap: .35rem; min-width: 0; padding: .8rem; border: 1px solid #ffffff24; border-radius: 10px; background: #ffffff05; }
+.individual-event-metrics > div > span, .individual-event-note, .individual-pair-player > span, .individual-pair-board { font-size: .8rem; opacity: .82; }
+.individual-event-metrics strong, .individual-event-metrics time { font-weight: 650; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.individual-event-header progress { width: 100%; height: .5rem; accent-color: #d7bd8b; }
+.individual-event-controls form { max-width: 30rem; }
+.individual-event-controls > button { justify-self: start; }
+.individual-event-view .individual-event-controls button, .individual-event-view .individual-result-form button { min-height: 44px; white-space: normal; }
+.individual-event-roster, .individual-event-cards { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit,minmax(min(100%, 14rem),1fr)); }
+.individual-event-roster li { padding: .6rem; border: 1px solid #ffffff24; border-radius: 8px; overflow-wrap: anywhere; }
+.individual-event-cards li { min-width: 0; }
+.individual-event-card { display: grid; gap: .55rem; min-width: 0; padding: .9rem; height: 100%; box-sizing: border-box; border: 1px solid #ffffff24; border-radius: 12px; background: #ffffff05; overflow-wrap: anywhere; }
+.team-tournament-page a.individual-event-card { text-decoration: none; color: inherit; }
+.individual-event-card:hover, .individual-event-card:focus-visible { border-color: #d7bd8b; }
+.individual-event-card strong { font-size: 1.05rem; }
+.individual-event-card time, .individual-event-card > span:last-child { font-size: .85rem; }
+.individual-event-standings .team-tournament-table { margin: 0; }
+.individual-event-standings th, .individual-event-standings td { overflow-wrap: anywhere; }
+.individual-event-standings td { font-variant-numeric: tabular-nums; }
+.individual-event-standings :is(th,td):not(:nth-child(2)) { text-align: center; }
+.individual-event-rounds details { border: 1px solid #ffffff24; border-radius: 10px; padding: .55rem .8rem; min-width: 0; }
+.individual-event-rounds summary { font-weight: 650; }
+.individual-event-rounds .team-tournament-list { margin: 0; }
+.individual-pair { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); gap: .5rem; align-items: center; min-width: 0; }
+.individual-pair-board { grid-column: 1 / -1; }
+.individual-pair-player { display: grid; gap: .2rem; min-width: 0; overflow-wrap: anywhere; }
+.individual-pair-player:last-child { text-align: end; }
+.individual-pair-score { font-variant-numeric: tabular-nums; border: 1px solid #ffffff24; border-radius: 8px; padding: .4rem .55rem; white-space: nowrap; }
+.individual-result-form select { width: auto; max-width: 100%; min-width: 6rem; }
+@media (max-width: 600px) {
+  .individual-event-view { gap: .65rem; }
+  .individual-event-metrics { grid-template-columns: minmax(0,1fr); }
+  .individual-result-form { display: grid; grid-template-columns: minmax(0,1fr); }
+  .individual-result-form select, .individual-event-view .individual-result-form button { width: 100%; }
+  .individual-event-standings :is(th,td) { font-size: .8rem; padding-inline: .25rem; }
+  .individual-pair { gap: .35rem; }
+}

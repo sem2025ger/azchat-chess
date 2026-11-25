@@ -2,6 +2,14 @@ import type { Language } from '../../translations';
 
 const columns: Record<Language, number> = { de: 0, en: 1, az: 2, tr: 3, ua: 4, ru: 5 };
 const labels = {
+  individualParticipants: ["Teilnehmer","Participants","İştirakçılar","Katılımcılar","Учасники","Участники"],
+  individualJoined: ["Du bist angemeldet.","You are registered.","Qeydiyyatdan keçmisiniz.","Kaydınız yapıldı.","Ви зареєстровані.","Вы зарегистрированы."],
+  individualStandings: ["Punktetabelle","Standings","Turnir cədvəli","Puan tablosu","Турнірна таблиця","Турнирная таблица"],
+  individualPoints: ["Punkte","Points","Xal","Puan","Очки","Очки"],
+  individualGames: ["Partien","Games","Partiyalar","Partiler","Партії","Партии"],
+  individualPointsOnly: ["Sortierung nur nach Punkten. Bei Gleichstand wird derselbe Platz vergeben; spielfrei zählt als ein Punkt, nicht als gespielte Partie.","Ranked by points only. Equal scores share a rank; a bye earns one point but is not a played game.","Yalnız xala görə sıralanır. Bərabər xal eyni yer deməkdir; rəqibsiz tur bir xal verir, oynanmış partiya sayılmır.","Yalnız puana göre sıralanır. Eşit puanlar aynı sırayı paylaşır; bay bir puan kazandırır, oynanmış parti sayılmaz.","Місця визначаються лише за очками. За рівності очок місце спільне; пропуск туру дає одне очко, але не рахується зіграною партією.","Места определяются только по очкам. При равенстве очков место общее; тур без соперника даёт одно очко, но не считается сыгранной партией."],
+  individualMyEvents: ["Meine Turniere","My tournaments","Turnirlərim","Turnuvalarım","Мої турніри","Мои турниры"],
+  individualView: ["Turnier öffnen","Open tournament","Turniri aç","Turnuvayı aç","Відкрити турнір","Открыть турнир"],
   tab: ['Turniere', 'Tournaments', 'Turnirlər', 'Turnuvalar', 'Турніри', 'Турниры'],
   individualTournaments: ['Einzelturniere', 'Individual tournaments', 'Fərdi turnirlər', 'Bireysel turnuvalar', 'Індивідуальні турніри', 'Личные турниры'],
   individualMaxPlayers: ['Maximale Spielerzahl', 'Maximum players', 'Maksimum oyunçu sayı', 'En fazla oyuncu', 'Максимум гравців', 'Максимум игроков'],

@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { individualTournamentInput, listIndividualTournaments, saveIndividualTournament,
-  createIndividualEventsApi, liveIndividualEvents, type IndividualTournament } from '../../services/individualTournaments';
+  createIndividualEventsApi, liveIndividualEvents, type IndividualTournament, type EventSummary } from '../../services/individualTournaments';
 import type { IndividualOrganizerDraft } from '../../services/teamTournaments';
 import { AiOrganizerPanel } from './AiOrganizerPanel';
 import { tournamentCopy } from './copy';
@@ -32,6 +32,7 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
   const [mode, setMode] = useState<'manual' | 'ai'>('manual');
   const [draft, setDraft] = useState(emptyDraft);
   const [records, setRecords] = useState<IndividualTournament[]>([]);
+  const [publishedEvents, setPublishedEvents] = useState<EventSummary[]>([]);
   const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(Boolean(organizerId));
   const [reload, setReload] = useState(0);
@@ -121,6 +122,7 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
     }
   }
 
+  const publishedById = new Map(publishedEvents.map(event => [event.id,event]));
   const selected = params.get('individual');
   if (liveIndividualEvents && selected) return <>
     {published === selected && <p role="status">{tr('individualPublished')}</p>}
@@ -179,7 +181,7 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
     {saved && <p role="status">{tr('individualSaved')}</p>}
     {token &&
       <section className="section-card">
-        <h3>{tr('individualMine')}</h3>
+        <h3>{tr(liveIndividualEvents ? 'individualMyEvents' : 'individualMine')}</h3>
         {loading && <p role="status">{tr('loading')}</p>}
         {loadError && <>
           <p role="alert">{tr('unavailable')}</p>
@@ -191,13 +193,14 @@ function IndividualWorkspace({ organizerId, token }: { organizerId?: string; tok
             <strong>{item.name}</strong>
             <time dateTime={item.starts_at}>{dateFormat.format(new Date(item.starts_at))}</time>
             <span>{tr('individualMaxPlayers')} {item.max_players}</span>
-            {liveIndividualEvents && Date.parse(item.starts_at) > Date.now() &&
-              <button type="button" disabled={busy} onClick={() => void publishSaved(item.id)}>
+            {liveIndividualEvents && (publishedById.has(item.id) ?
+              <Link to={'?individual=' + item.id}>{tr('individualView')}</Link> :
+              Date.parse(item.starts_at) > Date.now() && <button type="button" disabled={busy} onClick={() => void publishSaved(item.id)}>
                 {tr('individualPublish')}
-              </button>}
+              </button>)}
           </li>)}
         </ul>
       </section>}
-    {liveIndividualEvents && <IndividualEventList token={token} format={dateFormat} tr={tr} />}
+    {liveIndividualEvents && <IndividualEventList token={token} format={dateFormat} tr={tr} onEvents={setPublishedEvents} />}
   </section>;
 }

@@ -53,6 +53,23 @@ test('all NRW flags off preserves the main routing and navigation entry points',
     current=current.replace(next,previous);
    }
   }
+  if(path==='scripts/buildQaPreview.mjs'){
+   // Permit only the QA-only Auth preflight. Its separate tests assert that
+   // production/local builds skip it and rejected credentials fail closed.
+   const authImport = "import {verifyTournamentQaAuth} from './verifyTournamentQaAuth.mjs';\n";
+   const authPreflight = [
+    'try {',
+    " if(await verifyTournamentQaAuth(process.env)) console.log('QA Preview: Supabase Auth public key verified.');",
+    '}catch(error){',
+    ' console.error(error.message);',
+    ' process.exit(1);',
+    '}',
+   ].join('\n')+'\n';
+   for(const fragment of [authImport,authPreflight]){
+    assert.equal(current.split(fragment).length,2,'QA Auth preflight fragment must appear exactly once');
+    current=current.replace(fragment,'');
+   }
+  }
   const expected=execFileSync('git',['show',(path===layoutPath?layoutBaseline:baseline)+':tmp/'+path],{encoding:'utf8'});
   assert.equal(current,path===layoutPath?expected.replace(tournamentGate,spieltagGate):expected,path);
  }

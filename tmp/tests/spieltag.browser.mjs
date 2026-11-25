@@ -8,6 +8,7 @@ import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 import {checkOnlineTeamTournaments} from './teamTournamentsOnline.browser.mjs';
 import {checkTournamentAuth} from './teamTournamentsAuth.browser.mjs';
+import {checkIndividualTournament} from './individualTournament.browser.mjs';
 // SpielerScreen cannot be mounted without its own auth fixture: validate its existing copy map here.
 const playerCopySource=await readFile(new URL('../src/screens/SpielerScreen.tsx',import.meta.url),'utf8');
 const playerCopyLine=playerCopySource.split('\n').find(line=>line.startsWith('const playerUiCopy: '));
@@ -199,6 +200,9 @@ try{
  await checkOnlineTeamTournaments({cdp,evaluate,wait,click});
  assert.equal(exceptions.length,0,exceptions.join('\n'));
  console.log('PASS Bochum Cup browser: online card, banner and staff states in six locales at 390/1366px, ready and game routing, both flag paths, 390px by six languages and 15 themes, dated and undated schedule/my-board, roster revision and idempotent manual/AI create');
+ await checkIndividualTournament({cdp,evaluate,wait,click});
+ assert.equal(exceptions.length,0,exceptions.join('\n'));
+ console.log('PASS individual tournament browser: six locales, mobile/desktop, standings, colors, organizer-only result entry and final score');
 
 }finally{
  try{ws?.close();}catch{}chrome?.kill('SIGKILL');await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});clearTimeout(deadline);
