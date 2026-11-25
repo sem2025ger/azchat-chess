@@ -505,7 +505,7 @@
 .individual-create-hub .ai-organizer-intro { margin: 0; }
 .individual-create-hub .ai-organizer-composer { padding: .65rem; }
 .individual-create-hub .ai-organizer-badge {
-  font-size: .78rem; padding: .16rem .5rem; vertical-align: .08em;
+  font-size: .9rem; padding: .2rem .62rem; line-height: 1.15; vertical-align: .06em;
 }
 @media (max-width: 840px) {
   .individual-create-hub .team-create-hub-grid { gap: .65rem; }

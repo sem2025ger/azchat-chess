@@ -121,6 +121,11 @@ export async function checkIndividualLaunchLayout({cdp,evaluate,wait}) {
               headerBox:box('.spieltag-launch-heading h1'),
               headingSize:parseFloat(getComputedStyle(q('.spieltag-launch-heading h1')).fontSize),
               headingText:q('.spieltag-launch-heading h1')?.textContent,
+              neoAccentText:q('.spieltag-neo-accent')?.textContent,
+              neoAccentCount:document.querySelectorAll('.spieltag-neo-accent').length,
+              neoAccentSize:q('.spieltag-neo-accent')?parseFloat(getComputedStyle(q('.spieltag-neo-accent')).fontSize):0,
+              neoAccentGradient:q('.spieltag-neo-accent')?getComputedStyle(q('.spieltag-neo-accent')).backgroundImage:'',
+              headingGradient:getComputedStyle(q('.spieltag-launch-heading h1')).backgroundImage,
               oldBrand:!!q('.team-create-ai .ai-organizer-brand small'),
               badgeSize:q('.team-create-ai .ai-organizer-badge')?parseFloat(getComputedStyle(q('.team-create-ai .ai-organizer-badge')).fontSize):null,
               titleStyles:[style('.team-create-manual h3'),style('.team-create-ai h3')]};
@@ -129,9 +134,12 @@ export async function checkIndividualLaunchLayout({cdp,evaluate,wait}) {
           const inside=r=>r && r.height>0 && r.top>=0 && r.bottom<=m.innerHeight+0.01;
           const pass=m.h1===1 && m.hiddenH2 && m.noteInside && !m.noteOutside && m.teaser &&
             m.headingText===tr('individualIntro') && m.headingSize>=18 &&
+            m.neoAccentCount===1 && m.neoAccentText==='Neo' &&
+            m.neoAccentSize>=m.headingSize*1.1 && m.neoAccentSize<=m.headingSize*1.15 &&
+            m.neoAccentGradient.includes('linear-gradient') && m.neoAccentGradient!==m.headingGradient &&
             m.teaserText===tr('teamTournamentsComingSoon') && m.teaserBox.bottom<=m.manual.top &&
             (width===390 || m.teaserBox.left>=m.headerBox.right-1) &&
-            !m.oldBrand && (!signed || m.badgeSize>=12) &&
+            !m.oldBrand && (!signed || m.badgeSize>=14) &&
             m.note===tr(signed?'individualPrivate':'createHubSignIn') &&
             (signed?m.guestHref===null:m.guestHref==='/profile?returnTo=%2Fspieltag') &&
             JSON.stringify(m.titleStyles[0])===JSON.stringify(m.titleStyles[1]) &&

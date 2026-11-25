@@ -66,7 +66,9 @@ function SpieltagLaunchScreen() {
 
   return <section className="spieltag-page section-page spieltag-launch">
     {detail ? <h1 className="sr-only">{t('nav.spieltag')}</h1> : <header className="spieltag-launch-heading">
-      <h1>{tr('individualIntro')}</h1>
+      <h1>{tr('individualIntro').split(/(Neo)/).map((part, index) =>
+        part === 'Neo' ? <span key={index} className="spieltag-neo-accent">{part}</span> : part
+      )}</h1>
       <aside className="individual-create-soon" aria-label={tr('teamTournamentsComingSoon')}>
         <Users size={16} aria-hidden="true" />
         <span>{tr('teamTournamentsComingSoon')}</span>
