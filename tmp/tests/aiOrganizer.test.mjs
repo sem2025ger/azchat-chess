@@ -306,3 +306,17 @@ test('individual chat shows only player fields and saves only after explicit con
     },
   });
 });
+
+
+test('individual tournament sign-in returns only to the validated event path when enabled', async () => {
+  const { nrwAuthReturnTarget } = await import('../src/lib/nrwAuthReturn.ts');
+  const flags = { clubs: false, spieltag: false, preparation: false, individual: true };
+  const target = '/spieltag?individual=11111111-1111-4111-8111-111111111111';
+  assert.equal(nrwAuthReturnTarget(target, flags), target);
+  assert.equal(nrwAuthReturnTarget('/spieltag', flags), '/spieltag');
+  assert.equal(nrwAuthReturnTarget(target, { ...flags, individual: false }), null);
+  for (const path of [target + '&redirect=/profile', '//example.test' + target,
+    '/spieltag?individual=bad', target + '\n']) {
+    assert.equal(nrwAuthReturnTarget(path, flags), null);
+  }
+});

@@ -407,3 +407,37 @@ test('individual mode rejects past times, ambiguous Berlin times and invalid cap
     assert.equal(plan.draft.max_players, null);
   }
 });
+
+
+test('individual voice supplies ChessAZ vocabulary in all six languages without altering team transcription', async t => {
+  const calls = [];
+  const service = await serve(t, {
+    individualEnabled: true,
+    fetchImpl: async (url, request) => {
+      assert.equal(url, 'https://api.openai.com/v1/audio/transcriptions');
+      calls.push({ language: request.body.get('language'), prompt: request.body.get('prompt') });
+      return Response.json({ text: 'ChessAZ Rapid Cup' });
+    },
+  });
+  // Individual requests are limited to five per actor per day. Use a second service for the sixth.
+  const other = await serve(t, { individualEnabled: true, fetchImpl: async (url, request) => {
+    assert.equal(url, 'https://api.openai.com/v1/audio/transcriptions');
+    calls.push({ language: request.body.get('language'), prompt: request.body.get('prompt') });
+    return Response.json({ text: 'ChessAZ Rapid Cup' });
+  } });
+  const voice = async (target, language, individual) => {
+    const response = await fetch(target.url + '/transcribe?language=' + language + (individual ? '&kind=individual' : ''), {
+      method: 'POST', headers: { Authorization: 'Bearer valid', 'Content-Type': 'audio/webm' }, body: Buffer.alloc(100),
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { text: 'ChessAZ Rapid Cup' });
+  };
+  for (const [index, language] of ['de', 'en', 'az', 'tr', 'ua', 'ru'].entries()) {
+    await voice(index === 5 ? other : service, language, true);
+    assert.equal(calls[index].language, language === 'ua' ? 'uk' : language);
+    assert.match(calls[index].prompt, /ChessAZ/);
+    assert.match(calls[index].prompt, /Do not insert/);
+  }
+  await voice(service, 'ru', false);
+  assert.equal(calls[6].prompt, null);
+});

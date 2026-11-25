@@ -366,7 +366,9 @@ function installAiOrganizer(app, {
       const text = await transcribeAudio(req.body,
         (req.get('content-type') || '').split(';')[0].trim().toLowerCase(),
         language === 'ua' ? 'uk' : language,
-        { apiKey: openaiApiKey, fetchImpl, signal: controller.signal });
+        { apiKey: openaiApiKey, fetchImpl, signal: controller.signal,
+          ...(req.aiIndividual ? { prompt: 'Chess tournament dictation. The platform name is ChessAZ (chessaz.de); its assistant is Neo. Preserve spoken names, dates, times and player counts. Do not insert names or words that were not spoken.' } : {}),
+        });
       res.json({ text });
     } catch (error) {
       const code = error.code === 'invalid_audio' ? 'invalid_audio' :

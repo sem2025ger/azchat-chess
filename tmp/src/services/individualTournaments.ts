@@ -57,3 +57,52 @@ export async function saveIndividualTournament(
     timeout.cancel();
   }
 }
+
+export const liveIndividualEvents = import.meta.env.VITE_INDIVIDUAL_TOURNAMENTS_LIVE_ENABLED === 'true';
+export type EventStatus = 'registration' | 'playing' | 'finished' | 'cancelled' | 'pairing_blocked';
+export type EventSummary = IndividualTournament & { status: EventStatus };
+export type Result = '1-0' | '1/2-1/2' | '0-1';
+export type Pair = { round_no: number; board_no: number; white_no: number; black_no: number | null;
+  result: Result | 'bye' | null };
+export type EventDetail = EventSummary & {
+  round_no: number; round_limit: number | null; organizer: boolean; joined: boolean;
+  players: { no: number; name: string }[]; pairs: Pair[];
+};
+export type EventCommand =
+  { action: 'publish'; input: TournamentInput | Record<string, never> } |
+  { action: 'join'; input: { name: string } } |
+  { action: 'leave' | 'cancel'; input: Record<string, never> } |
+  { action: 'result'; input: Pick<Pair, 'round_no' | 'board_no'> & { result: Result } };
+
+export function createIndividualEventsApi(token?: string) {
+  async function request<T>(id: string, signal: AbortSignal, command?: EventCommand): Promise<T> {
+    let origin: URL;
+    try { origin = new URL(import.meta.env.VITE_SERVER_URL); }
+    catch { throw new TournamentError('configuration'); }
+    if (origin.username || origin.password || (origin.protocol !== 'https:' &&
+        !(origin.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname)))) {
+      throw new TournamentError('configuration');
+    }
+    const timeout = abortWithTimeout(signal, 12000);
+    try {
+      const headers = new Headers();
+      if (token) headers.set('Authorization', 'Bearer ' + token);
+      if (command) headers.set('Content-Type', 'application/json');
+      const url = new URL('/api/individual-tournaments' + (id ? '/' + encodeURIComponent(id) : ''), origin);
+      const response = await fetch(url, {
+        headers, signal: timeout.signal, cache: 'no-store', redirect: 'error',
+        ...(command ? { method: 'POST', body: JSON.stringify(command) } : {}),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new TournamentError(body?.code ?? 'temporarily_unavailable');
+      }
+      return await response.json() as T;
+    } finally { timeout.cancel(); }
+  }
+  return {
+    list: (signal: AbortSignal) => request<EventSummary[]>('', signal),
+    detail: (id: string, signal: AbortSignal) => request<EventDetail>(id, signal),
+    command: (id: string, command: EventCommand, signal: AbortSignal) => request<EventDetail>(id, signal, command),
+  };
+}

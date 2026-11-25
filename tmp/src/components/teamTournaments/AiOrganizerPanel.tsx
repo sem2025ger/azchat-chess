@@ -40,12 +40,13 @@ function errors(failure: unknown, tr: TournamentCopy) {
     return tournamentErrorMessage(code, tr);
   return tr('aiOrganizerUnavailable');
 }
-export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating, kind = 'team' }: {
+export function AiOrganizerPanel({ tr, token, onApply, onCreate, onPublish, creating, kind = 'team' }: {
   tr: TournamentCopy;
   token: string;
   onApply: (draft: Draft) => void;
   onCreate: (draft: Draft) => void;
   creating: boolean;
+  onPublish?: (draft: Draft) => void;
   kind?: 'team' | 'individual';
 }) {
   const individual = kind === 'individual';
@@ -248,12 +249,17 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, creating, kind 
         </div>
         {ready ? <p className="ai-organizer-status">{tr('aiOrganizerReady')}</p> :
           <p className="ai-organizer-status">{tr('aiOrganizerFillMissing')}</p>}
+        {onPublish && ready && <p>{tr('individualPublishHint')}</p>}
         <div className="ai-organizer-draft-actions">
           <button type="button" disabled={!ready || !!busy || creating} onClick={() => onApply(draft)}>
             {tr('aiOrganizerApply')}
           </button>
           <button type="button" className="ai-organizer-primary" disabled={!ready || !!busy || creating}
             onClick={() => onCreate(draft)}>{tr(individual ? 'individualSave' : 'aiOrganizerCreate')}</button>
+          {onPublish && <button type="button" className="ai-organizer-primary"
+            disabled={!ready || !!busy || creating} onClick={() => onPublish(draft)}>
+            {tr('individualPublish')}
+          </button>}
         </div>
       </article>}
     </div>
