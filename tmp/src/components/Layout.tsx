@@ -87,8 +87,8 @@ export default function Layout() {
                 <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.72rem] xl:leading-[1.8rem] tracking-tight not-italic leading-none whitespace-nowrap text-center xl:text-left">
                   <span className="sidebar-brand-silver"><span className="xl:text-[1.08em]">Ch</span>essaz.</span><span className="sidebar-brand-de inline-block xl:text-[1.06em]">de</span>
                 </span>
-                <span className="relative hidden xl:block h-[62px] w-[31px] shrink-0 -translate-x-[2px] -translate-y-[6px]" aria-hidden="true">
-                  <img src="/brand/sidebar-king.svg" alt="" width="31" height="62" className="absolute inset-0 h-full w-full object-fill" />
+                <span className="relative hidden xl:block h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]" aria-hidden="true">
+                  <img src="/brand/sidebar-king.svg" alt="" width="28" height="56" className="absolute inset-0 h-full w-full object-fill" />
                   <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
                 </span>
               </div>
@@ -96,7 +96,7 @@ export default function Layout() {
                 role="img"
                 aria-label="Germany • Azerbaijan"
                 title="Germany • Azerbaijan"
-                className="mt-6 hidden xl:flex items-center justify-center gap-[9px] w-fit xl:ml-[4px] min-h-[58px] xl:-translate-x-[2px] xl:origin-center xl:scale-[0.96] px-[10px] py-[7px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
+                className="mt-6 hidden xl:flex items-center justify-center gap-[9px] w-fit xl:ml-[12px] min-h-[58px] xl:-translate-x-[2px] xl:origin-center xl:scale-[0.96] px-[9px] py-[6px] rounded-full border border-transparent bg-[linear-gradient(120deg,#20242D_0%,#0B0F14_42%,#111827_76%,#161C27_100%),linear-gradient(135deg,rgba(220,196,151,0.56)_0%,rgba(231,232,234,0.38)_46%,rgba(126,133,147,0.4)_100%)] [background-origin:border-box] [background-clip:padding-box,border-box] shadow-[0_8px_18px_-10px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(245,238,222,0.07),inset_0_-1px_0_rgba(120,141,173,0.06)] select-none pointer-events-none shrink-0"
               >
                 <SidebarGermanyFlag />
                 <NightEarthGlobe />
@@ -166,8 +166,6 @@ export default function Layout() {
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} premiumHome />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} accent="analysis" />
         <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" accent="chat" />
-        {import.meta.env.VITE_SPIELTAG_LAUNCH_PREVIEW === 'true' && import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' &&
-          <MobileNavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" accent="settings" />}
         {showSpieltag && <MobileNavItem to="/spieltag" icon={<CalendarDays size={20} />}
           label={t('nav.spieltag')} accent="settings" />}
         <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} accent="profile" />
@@ -275,12 +273,12 @@ function SidebarGermanyFlag() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="46"
-      height="31"
+      width="39"
+      height="26"
       viewBox="0 0 5 3"
       preserveAspectRatio="none"
       aria-hidden="true"
-      className="w-[46px] h-[31px] rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
+      className="w-[39px] h-[26px] rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
     >
       <rect width="5" height="3" y="0" x="0" fill="#0B0C10" />
       <rect width="5" height="2" y="1" x="0" fill="#D00" />
@@ -293,11 +291,11 @@ function SidebarAzerbaijanFlag() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="46"
-      height="31"
+      width="39"
+      height="26"
       viewBox="150 0 900 600"
       aria-hidden="true"
-      className="w-[46px] h-[31px] rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
+      className="w-[39px] h-[26px] rounded-[6px] shrink-0 ring-1 ring-[#F4DC9C]/[0.26] shadow-[0_4px_10px_rgba(0,0,0,0.75)]"
     >
       <rect width="1200" height="200" fill="#00b5e2" />
       <rect width="1200" height="200" y="200" fill="#ef3340" />

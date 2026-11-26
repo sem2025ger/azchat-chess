@@ -110,6 +110,30 @@ try {
     return { top: first.top, width: last.right - first.left, height: last.bottom - first.top };
   })()`);
   const homeField = await fieldBounds('.home-board-frame');
+  const homePolish = await evaluate(`(() => {
+    const outer = document.querySelector('.home-board-frame');
+    const field = outer.querySelector('.aspect-square.border');
+    const first = field.querySelector('[data-square="a8"]').getBoundingClientRect();
+    const bounds = field.getBoundingClientRect();
+    const title = document.querySelector('.desktop-home-arena h1:not(.chess-arena-reference-title)');
+    const range = document.createRange();
+    range.selectNodeContents(title);
+    const wordmark = range.getBoundingClientRect();
+    const button = document.querySelector('.desktop-home-play').getBoundingClientRect();
+    const card = title.closest('.desktop-home-arena').getBoundingClientRect();
+    const style = getComputedStyle(field);
+    return { outerOutline: getComputedStyle(outer).outlineStyle,
+      rimWidth: style.borderTopWidth, rimColor: style.borderTopColor,
+      radius: style.borderTopLeftRadius, inset: first.left - bounds.left,
+      titleWidth: wordmark.width, buttonWidth: button.width,
+      titleFits: wordmark.left >= card.left && wordmark.right <= card.right };
+  })()`);
+  assert.equal(homePolish.outerOutline, 'none');
+  assert.equal(homePolish.rimWidth, '1px');
+  assert.equal(homePolish.rimColor, 'rgba(174, 126, 100, 0.9)');
+  assert.equal(homePolish.radius, '0px');
+  assert.ok(Math.abs(homePolish.inset - 1) < 0.5, JSON.stringify(homePolish));
+  assert.ok(homePolish.titleWidth > homePolish.buttonWidth && homePolish.titleFits, JSON.stringify(homePolish));
   assert.deepEqual(await evaluate(`(() => {
     const arena = document.querySelector('.desktop-home-arena');
     const style = getComputedStyle(arena);
@@ -168,6 +192,27 @@ try {
       !document.querySelector('.desktop-analysis-player-top') &&
       !document.querySelector('.desktop-analysis-review-player-bottom');
   })()`), 'The thin border and coordinate rails must remain without generic player labels');
+  // Flip is a view-only operation: board coordinates reverse, pieces remain on the same squares.
+  const flipState = () => evaluate(`(() => {
+    const board = document.querySelector('.desktop-analysis-main-board');
+    const button = document.querySelector('[data-desktop-board-flip]');
+    const grid = [...board.querySelectorAll('[data-square]:not([data-piece-square])')];
+    const pieces = [...board.querySelectorAll('[data-piece-square]')].map(p => [p.dataset.pieceSquare, p.querySelector('img')?.getAttribute('src')]).sort();
+    const field = board.querySelector('.aspect-square.border').getBoundingClientRect();
+    return {first:grid[0]?.dataset.square,last:grid.at(-1)?.dataset.square,pieces,pressed:button.getAttribute('aria-pressed'),visible:button.getBoundingClientRect().height>=36,field:[field.x,field.y,field.width,field.height]};
+  })()`);
+  const beforeFlip = await flipState();
+  assert.ok(beforeFlip.visible && beforeFlip.pressed === 'false' && beforeFlip.first === 'a8' && beforeFlip.last === 'h1');
+  await evaluate("document.querySelector('[data-desktop-board-flip]').click()");
+  await waitFor("document.querySelector('[data-desktop-board-flip]').getAttribute('aria-pressed') === 'true'");
+  const afterFlip = await flipState();
+  assert.equal(afterFlip.first, 'h1');
+  assert.equal(afterFlip.last, 'a8');
+  assert.deepEqual(afterFlip.pieces, beforeFlip.pieces);
+  assert.deepEqual(afterFlip.field, beforeFlip.field);
+  await evaluate("document.querySelector('[data-desktop-board-flip]').click()");
+  await waitFor("document.querySelector('[data-desktop-board-flip]').getAttribute('aria-pressed') === 'false'");
+  assert.deepEqual(await flipState(), beforeFlip);
   // Check the compact layout separately: both routes must agree on the playing field,
   // and the thin panel border must align with the playing field rather than its coordinate gutters.
   for (const [width, height] of [[1194, 800], [1106, 768], [1366, 768]]) {
@@ -189,6 +234,7 @@ try {
         compactCaptionVisible:caption && getComputedStyle(caption).display!=='none',
         genericPlayersVisible:!!document.querySelector('.desktop-analysis-player-top, .desktop-analysis-review-player-bottom'),
         controlCount:controls.filter(button=>button.getBoundingClientRect().height>=36).length,
+        flipVisible:document.querySelector('[data-desktop-board-flip]').getBoundingClientRect().height>=36,
       };
     })()`);
     for (const dimension of ['top', 'width', 'height']) {
@@ -199,6 +245,47 @@ try {
       width + 'px analysis border must align with field: ' + JSON.stringify(chrome));
     assert.ok(!chrome.compactCaptionVisible && !chrome.genericPlayersVisible, 'Empty Analysis shows no generic Black/White labels');
     assert.equal(chrome.controlCount, 4, 'All four move navigation controls remain visible');
+    assert.ok(chrome.flipVisible, 'Desktop flip stays visible in compact layouts');
+  }
+  // Mobile-only Home and shared navigation geometry; preserve existing desktop checks above.
+  for (const [width,height] of [[320,740],[390,844],[430,932]]) {
+    await cdp('Emulation.setDeviceMetricsOverride', {mobile:true,width,height,deviceScaleFactor:1});
+    await cdp('Page.navigate',{url:base+'/'});
+    await waitFor("!!document.querySelector('.home-board:not(.home-board-frame) [data-square]')");
+    await evaluate('document.fonts.ready');
+    const geometry = await evaluate(`(() => {
+      const r = el => el.getBoundingClientRect();
+      const brand = document.querySelector('.chess-arena-reference-title');
+      const board = document.querySelector('.home-board:not(.home-board-frame)');
+      const play = document.querySelector('.home-board-column a[href="/play"]');
+      const nav = document.querySelector('[data-mobile-app-nav]');
+      const items = [...nav.querySelectorAll('.site-nav-link')];
+      const labels = items.map(a=>r(a.querySelector('.site-nav-label')));
+      const header = brand.closest('.mobile-home-arena');
+      const king = r(brand.querySelector('img'));
+      const kingTransform = new DOMMatrixReadOnly(getComputedStyle(brand.querySelector('span[aria-hidden=true]')).transform);
+      const nrw = header.querySelector('a[href="/region/nrw"]');
+      return {brand:brand.getAttribute('aria-label'), king:king.width, kingX:kingTransform.m41, kingY:kingTransform.m42,
+        kingTop:king.top-r(header).top, kingBottom:r(header).bottom-king.bottom,
+        homeNRWHidden:!nrw||nrw.getClientRects().length===0,
+        controlGap:r(play.closest('nav')).top-r(board).bottom,
+        headerHeight:r(brand.closest('.mobile-home-arena')).height,
+        boardWidth:r(board).width,boardHeight:r(board).height,
+        boardGap:r(board).top-r(brand.closest('.mobile-home-arena')).bottom,
+        playGap:r(nav).top-r(play).bottom,
+        navCount:items.length, noNRW:!nav.querySelector('a[href="/region/nrw"]'),
+        minTarget:Math.min(...items.map(a=>r(a).width)),
+        minIcon:Math.min(...items.map(a=>r(a.querySelector('svg')).width)),
+        minLabelGap:Math.min(...labels.slice(1).map((label,i)=>label.left-labels[i].right))};
+    })()`);
+    assert.equal(geometry.brand,'Chessaz.de');
+    assert.equal(geometry.king,28);
+    assert.ok(geometry.homeNRWHidden && geometry.kingTop>=12 && geometry.kingBottom>=12 && geometry.kingX===-4 && geometry.kingY===-4 && Math.abs(geometry.kingBottom-geometry.kingTop-8)<=3,JSON.stringify(geometry));
+    assert.ok(geometry.controlGap>=16 && geometry.controlGap<=24,JSON.stringify(geometry));
+    assert.ok(geometry.headerHeight<=120 && geometry.boardGap>=8 && geometry.boardGap<=21,JSON.stringify(geometry));
+    assert.ok(geometry.boardWidth>=width-20 && Math.abs(geometry.boardWidth-geometry.boardHeight)<1.5,JSON.stringify(geometry));
+    assert.ok(geometry.playGap>=8 && geometry.noNRW,JSON.stringify(geometry));
+    assert.ok([5,6].includes(geometry.navCount) && geometry.minTarget>=44 && geometry.minIcon>=20 && geometry.minLabelGap>=4,JSON.stringify(geometry));
   }
   // These are diagnostics, not an artificial guarantee of zero-millisecond navigation.
   // Regression gate: the board must render on both navigation attempts.

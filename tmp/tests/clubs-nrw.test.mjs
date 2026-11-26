@@ -19,11 +19,9 @@ test('all NRW flags off preserves the main routing and navigation entry points',
    const sharedGate = "  const showSpieltag = " + spieltagGate + " ||\n    import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true';\n";
    const mobileLink = '        {showSpieltag && <MobileNavItem to="/spieltag" icon={<CalendarDays size={20} />}\n' +
      "          label={t('nav.spieltag')} accent=\"settings\" />}\n";
-   const mobileNrwPreviewLink = "        {import.meta.env.VITE_SPIELTAG_LAUNCH_PREVIEW === 'true' && import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' &&\n" +
-     '          <MobileNavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" accent="settings" />}\n';
    assert.ok(current.includes(sharedGate) && current.includes(mobileLink));
-   assert.ok(current.includes(mobileNrwPreviewLink));
-   current = current.replace(sharedGate, '').replace(mobileLink, '').replace(mobileNrwPreviewLink, '')
+   assert.doesNotMatch(current, /<MobileNavItem to="\/region\/nrw"/);
+   current = current.replace(sharedGate, '').replace(mobileLink, '')
      .replace('MapPin, CalendarDays', 'MapPin')
      .replace(' data-spieltag-enabled={showSpieltag || undefined}', '')
      .replace('desktop && showSpieltag', 'desktop && ' + tournamentGate);
@@ -48,6 +46,16 @@ test('all NRW flags off preserves the main routing and navigation entry points',
    const approvedChatClass = "          to === '/chat' && \"site-nav-link--schach-treff\",\n";
    assert.equal(current.split(approvedChatClass).length,2,'approved chat-only CSS hook occurs exactly once');
    current=current.replace(approvedChatClass,'');
+   // Owner-approved flag sizes and capsule spacing only; keep all routing comparisons exact.
+   for(const [next,previous,count] of [["gap-[9px] w-fit xl:ml-[12px] min-h-[58px] xl:-translate-x-[2px] xl:origin-center xl:scale-[0.96] px-[9px] py-[6px]","gap-[9px] w-fit xl:ml-[4px] min-h-[58px] xl:-translate-x-[2px] xl:origin-center xl:scale-[0.96] px-[10px] py-[7px]",1],["width=\"39\"\n      height=\"26\"","width=\"46\"\n      height=\"31\"",2],["w-[39px] h-[26px]","w-[46px] h-[31px]",2]]){
+    assert.equal(current.split(next).length,count+1,'approved flag styling occurrence count');
+    current=current.split(next).join(previous);
+   }
+   // Owner-approved desktop king dimensions only; preserve the exact remaining baseline.
+   for (const [next, previous] of [["h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]","h-[62px] w-[31px] shrink-0 -translate-x-[2px] -translate-y-[6px]"],["src=\"/brand/sidebar-king.svg\" alt=\"\" width=\"28\" height=\"56\"","src=\"/brand/sidebar-king.svg\" alt=\"\" width=\"31\" height=\"62\""]]) {
+    assert.equal(current.split(next).length,2,'approved king sizing occurs exactly once');
+    current=current.replace(next,previous);
+   }
    // Allow only the separately reviewed 240px desktop sidebar geometry change (PR #219).
    // All route entries and feature-flagged links must remain byte-for-byte identical.
    for(const [next, previous] of [
@@ -102,22 +110,15 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  const disabledStart=disabledHome.indexOf(m3Start);
  const disabledFinish=disabledHome.indexOf(m3End,disabledStart);
  const withoutM3=disabledHome.slice(0,disabledStart)+disabledHome.slice(disabledFinish+m3End.length);
- // The king is an approved, mobile-only visual addition (PR #195).
- // Remove only its exact markup before comparing all disabled NRW/M3 Home code.
- const approvedMobileKing = [
-  '              <span className="relative inline-block h-0 w-0 align-baseline" aria-hidden="true">',
-  '                <span className="absolute bottom-[0px] left-[11px] h-[44px] w-[22px]">',
-  '                  <img src="/brand/sidebar-king.svg" alt="" width="22" height="44" className="absolute inset-0 h-full w-full object-fill" />',
-  '                  <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />',
-  '                </span>',
-  '              </span>',
- ].join(String.fromCharCode(10)) + String.fromCharCode(10);
- assert.equal(withoutM3.split(approvedMobileKing).length,2,'approved mobile king appears exactly once');
- let homeSource=withoutM3.replace(approvedMobileKing,'');
+ // Owner-approved mobile brand replacement; normalize only the exact heading.
+ const approvedMobileBrand = "            <h1 className=\"chess-arena-reference-title md:hidden\" aria-label=\"Chessaz.de\">\n              <span className=\"font-black tracking-tight not-italic leading-none whitespace-nowrap\">\n                <span className=\"sidebar-brand-silver\"><span className=\"text-[1.08em]\">Ch</span>essaz.</span><span className=\"sidebar-brand-de inline-block text-[1.06em]\">de</span>\n              </span>\n              <span className=\"relative h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]\" aria-hidden=\"true\">\n                <img src=\"/brand/sidebar-king.svg\" alt=\"\" width=\"28\" height=\"56\" className=\"absolute inset-0 h-full w-full object-fill\" />\n                <span className=\"sidebar-king-sheen pointer-events-none absolute inset-0\" />\n              </span>\n            </h1>";
+ const originalMobileHeading = "            <h1 className=\"chess-arena-reference-title md:hidden text-[2.2rem] text-center leading-[0.95] tracking-[-0.03em]\">\n              Chess Arena\n            </h1>";
+ assert.equal(withoutM3.split(approvedMobileBrand).length,2,'approved mobile brand appears exactly once');
+ let homeSource=withoutM3.replace(approvedMobileBrand,originalMobileHeading);
  // Reverse only the explicitly approved, default-off Home feature additions.
  // Any other change to routing, flags, layout or the play button still fails.
  const unifiedCardChanges=[
-  ["      {homeUnifiedCard && (\n        <style>{`\n          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,700&display=swap');\n\n          @media (min-width: 1280px) {\n            .home-screen-root .home-unified-card .home-unified-slogan {\n              display: flex;\n              align-items: center;\n              justify-content: center;\n              gap: 9px;\n              font-family: 'Cormorant Garamond', Georgia, serif;\n              font-size: clamp(28px, 2.53vw, 36px);\n              font-weight: 700;\n              font-style: italic;\n              line-height: 1.15;\n              letter-spacing: 0.02em;\n              overflow: visible;\n              text-overflow: clip;\n              text-shadow: none;\n              margin-bottom: 6px;\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-part {\n              display: inline-flex;\n              align-items: center;\n              gap: 9px;\n              flex: none;\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-word {\n              background: linear-gradient(180deg, #f4f6f8 0%, #cfd5db 50%, #9aa3ac 100%);\n              background-clip: text;\n              -webkit-background-clip: text;\n              -webkit-text-fill-color: transparent;\n              color: transparent;\n              text-shadow: none;\n              filter: drop-shadow(0 0 5px rgba(220,228,235,0.18));\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-diamond {\n              display: inline-block;\n              width: 7px;\n              height: 7px;\n              flex: 0 0 7px;\n              transform: rotate(45deg);\n              background: linear-gradient(135deg, #eef1f4, #8d969f);\n            }\n          }\n        `}</style>\n      )}\n",""],
+  ["      {homeUnifiedCard && (\n        <style>{`\n          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,700&display=swap');\n\n          @media (min-width: 1280px) {\n            .home-screen-root .home-unified-card .home-unified-slogan {\n              display: flex;\n              align-items: center;\n              justify-content: center;\n              gap: 9px;\n              font-family: 'Cormorant Garamond', Georgia, serif;\n              font-size: clamp(28px, 2.53vw, 36px);\n              font-weight: 700;\n              font-style: italic;\n              line-height: 1.15;\n              letter-spacing: 0.02em;\n              overflow: visible;\n              text-overflow: clip;\n              text-shadow: none;\n              margin-bottom: 6px;\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-part {\n              display: inline-flex;\n              align-items: center;\n              gap: 9px;\n              flex: none;\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-word {\n              background: linear-gradient(180deg, #f4f6f8 0%, #cfd5db 50%, #9aa3ac 100%);\n              background-clip: text;\n              -webkit-background-clip: text;\n              -webkit-text-fill-color: transparent;\n              color: transparent;\n              text-shadow: none;\n              filter: drop-shadow(0 0 5px rgba(220,228,235,0.18));\n            }\n            .home-screen-root .home-unified-card .home-unified-slogan-diamond {\n              display: inline-block;\n              width: 6px;\n              height: 6px;\n              flex: 0 0 6px;\n              transform: rotate(45deg);\n              background: linear-gradient(135deg, #e9d1a1, rgb(var(--chessaz-bronze-frame)));\n            }\n          }\n        `}</style>\n      )}\n",""],
   ["  const homeUnifiedCard = import.meta.env.VITE_HOME_UNIFIED_CARD === 'true';\n",""],
   ["          .home-screen-root .desktop-home-arena.home-unified-card {\n            background:\n              radial-gradient(120% 70% at 30% 0%, rgba(205,215,230,0.07) 0%, rgba(205,215,230,0) 55%),\n              linear-gradient(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%);\n          }\n",""],
   ["className={`desktop-home-slogan","className=\"desktop-home-slogan"],
@@ -126,7 +127,9 @@ test('all NRW flags off preserves the main routing and navigation entry points',
   ["${homeUnifiedCard ? \" home-unified-card\" : \"\"}`}","\""],
   ["          {homeUnifiedCard && (\n            <span className=\"desktop-home-slogan-text home-unified-slogan hidden\">\n              {t('home.slogan').split(/\\s*[•·]\\s*/u).map((part, index) => (\n                <span key={part + index} className=\"home-unified-slogan-part\">\n                  {index > 0 && <span className=\"home-unified-slogan-diamond\" aria-hidden=\"true\" />}\n                  <span className=\"home-unified-slogan-word\">{part}</span>\n                </span>\n              ))}\n            </span>\n          )}\n\n",""],
  ];
+ // Owner-approved desktop wordmark tracking (PR #257); preserve the exact baseline elsewhere.
  const approvedHomePieceChanges = [
+  ["            letter-spacing: 0.015em;\n            -webkit-text-stroke: 0.35px", "            letter-spacing: -0.045em;\n            -webkit-text-stroke: 0.35px"],
   ["  const homeChessComPieces = import.meta.env.VITE_HOME_CHESSCOM_PIECES === 'true';\n", ""],
   ["        /* Desktop Home only: restrained Chess.com-like white and graphite pieces. */\n        @media (min-width: 1280px) {\n          .home-screen-root .home-board img[data-home-chesscom-piece=\"w\"] {\n            filter: contrast(.8) brightness(1.08) !important;\n          }\n          .home-screen-root .home-board img[data-home-chesscom-piece=\"b\"][alt=\"bP\"] {\n            filter: grayscale(1) contrast(.42) brightness(.61) brightness(1.10) !important;\n          }\n", ""],
   ["          /* Match non-pawn black figures to the existing satin graphite pawns.\n             Preserve the original piece paths and highlights; never affect CBURNETT. */\n          .home-screen-root .home-board img[data-home-graphite-set=\"classic\"] {\n            filter: grayscale(1) contrast(.83) brightness(.90) drop-shadow(0 -1px 1px rgba(250,250,245,.12)) drop-shadow(0 2px 3px rgba(0,0,0,.34)) !important;\n          }\n          .home-screen-root .home-board img[data-home-graphite-set=\"neo\"],\n          .home-screen-root .home-board img[data-home-graphite-set=\"tournament\"] {\n            filter: grayscale(1) contrast(1.02) brightness(.90) drop-shadow(0 -1px 1px rgba(250,250,245,.12)) drop-shadow(0 2px 3px rgba(0,0,0,.34)) !important;\n          }\n        }\n", ""],

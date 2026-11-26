@@ -615,8 +615,9 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
    await evaluate("window.nrwLegacy=false;window.nrwNewsDelay=0;window.nrwEmpty=true");
    if(width===390){
     await evaluate("window.fixtureNavigate('/')");
-    await wait("document.querySelector('.home-screen-root a[href=\"/region/nrw\"]')?.getBoundingClientRect().height>=44");
-    await evaluate("document.querySelector('.home-screen-root a[href=\"/region/nrw\"]').click()");
+     await wait("document.querySelector('.home-screen-root')");
+     assert.equal(await evaluate(`[...document.querySelectorAll('.home-screen-root a[href="/region/nrw"]')].filter(a=>a.getClientRects().length>0).length`),0,'NRW entry is intentionally hidden on mobile Home');
+     await evaluate("window.fixtureNavigate('/region/nrw')");
     await wait("document.querySelector('[data-region-overview]')");
    }
    for(const [section,phrase] of [['turniere','Keine bestätigten kommenden Termine'],['ligen','Noch keine Tabellen'],['vereine','Keine veröffentlichten Vereine'],['news','Keine aktuellen Meldungen'],['live','Derzeit keine für NRW']]){

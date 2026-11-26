@@ -170,12 +170,13 @@ try {
     assert.ok(Math.abs(bounds.board.width - bounds.board.height) < 1, 'Board frame must stay square');
     assert.ok(Math.abs(bounds.grid.width - bounds.grid.height) < 1, 'Actual square grid must stay square');
     assert.equal(bounds.rows, 2, 'Both line slots are visible without expansion');
-    assert.ok(bounds.lineFontSize >= 21 && bounds.lineWeight >= 900, 'PV moves remain large and bold');
-    assert.ok(bounds.lineBounds.every(row => row.height <= 47), 'Engine rows remain compact');
+    assert.ok(bounds.lineFontSize >= 17.9 && bounds.lineFontSize <= 18.1 && bounds.lineWeight >= 900, 'PV moves remain bold at the approved compact size');
+    assert.ok(bounds.lineBounds.every(row => row.height >= 44 && row.height <= 45.5), 'Engine rows remain compact');
     assert.ok(bounds.lineBounds.every(row => row.top >= bounds.details.top && row.bottom <= bounds.details.bottom + 1), 'Both complete rows fit inside the analysis panel');
     assert.equal(bounds.labelSize, bounds.tabSize, 'Engine label matches tab typography');
     assert.ok(bounds.details.top >= bounds.header.bottom - 1 && bounds.board.top >= bounds.details.bottom - 1, 'Two engine rows sit between header and board');
     assert.ok(bounds.controls.every(button=>button.width >= 44 && button.height >= 44), 'Five controls keep 44px touch targets');
+    assert.ok(bounds.moves.top - bounds.board.bottom >= 12 && bounds.moves.top - bounds.board.bottom <= 16, 'Board and controls retain a 14px gap: ' + JSON.stringify(bounds));
     if (height > width) {
       assert.ok(bounds.moves.top >= 0 && bounds.moves.bottom <= bounds.dock.top && bounds.details.bottom <= bounds.board.top,
         'Board, navigation and two lines must fit together above the dock in portrait: ' + JSON.stringify(bounds));
@@ -208,7 +209,7 @@ try {
   console.log('PASS real Stockfish 19 UCI identity: ' + realEngineIdentity);
   console.log('PASS real Stockfish worker and two visible PV lines');
   await waitFor("document.querySelectorAll('.mobile-analysis-figurine').length > 0 && [...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0)");
-  assert.ok(await evaluate("[...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0 && Math.abs(img.getBoundingClientRect().width - 33) < 0.5)"), 'Figurines load from existing assets at fixed readable size');
+  assert.ok(await evaluate("[...document.querySelectorAll('.mobile-analysis-figurine')].every(img => img.complete && img.naturalWidth > 0 && Math.abs(img.getBoundingClientRect().width - 28) < 0.5)"), 'Figurines load from existing assets at fixed readable size');
   assert.ok(await evaluate("!document.querySelector('.mobile-analysis-lines-heading') && getComputedStyle(document.querySelector('#mobile-analysis-details .sr-only')).position === 'absolute'"), 'Engine variant heading consumes no visible row');
   await capture('analysis-mobile-new');
   await evaluate("document.querySelector('.desktop-analysis-main-board [data-square=e2]').click()");

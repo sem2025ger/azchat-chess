@@ -122,7 +122,7 @@ test('desktop sidebar and Chess Arena polish preserve the existing globe animati
   assert.match(layout, /aria-label="Chessaz\.de"/);
   assert.match(layout, /src="\/brand\/sidebar-king\.svg"/);
   assert.ok(layout.includes('h-[54px] w-[54px]'));
-  assert.ok(layout.includes('w-[46px] h-[31px]'));
+  assert.equal(layout.split('w-[39px] h-[26px]').length - 1, 2);
   assert.match(layout, /autoPlay muted loop playsInline/);
   assert.doesNotMatch(layout, /playbackRate/);
   assert.match(home, /#D9D6CF 39%/);

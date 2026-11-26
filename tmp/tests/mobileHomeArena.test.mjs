@@ -5,10 +5,17 @@ import fs from 'node:fs';
 const home = fs.readFileSync(new URL('../src/screens/HomeScreen.tsx', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
 
-test('mobile Chess Arena retains its approved title and board dimensions', () => {
-  assert.match(home, /className="chess-arena-reference-title md:hidden/);
-  assert.match(home, /Chess Arena\s*<span className="relative inline-block h-0 w-0 align-baseline"/);
-  assert.match(home, /src="\/brand\/sidebar-king\.svg"/);
+test('mobile Home uses the desktop brand and compact layout without changing desktop Arena', () => {
+  assert.match(home, /className="chess-arena-reference-title md:hidden" aria-label="Chessaz\.de"/);
+  assert.match(home, /sidebar-brand-silver"><span className="text-\[1\.08em\]">Ch<\/span>essaz\.<\/span>/);
+  assert.match(home, /sidebar-brand-de inline-block text-\[1\.06em\]">de<\/span>/);
+  assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="28" height="56"/);
+  assert.ok(css.includes('gap: 20px;\n    padding-bottom: 12px;'));
+  assert.ok(css.includes('border-radius: 16px;\n    padding: 16px 10px;'));
+  assert.ok(css.includes('max-width: calc(100% - 4px) !important;'));
+  assert.ok(css.includes('.home-screen-root .mobile-home-arena > a[href="/region/nrw"] {\n    display: none;'));
+  assert.ok(css.includes('.home-screen-root .home-board-column .home-board + nav {\n    margin-top: 20px;'));
+  assert.ok(css.includes('max-width:calc(100% - 8px);font-size:.75rem;'));
   assert.match(home, /sidebar-king-sheen pointer-events-none absolute inset-0/);
   assert.match(home, /Chess<span className="text-chess-active"> Arena<\/span>/);
   assert.match(home, /data-mobile-home-stack/);
@@ -34,8 +41,8 @@ test('unified desktop Arena is default-off, preserves the mobile layout and keep
   assert.match(home, /margin-bottom: 6px/);
   assert.match(home, /#f4f6f8 0%, #cfd5db 50%, #9aa3ac 100%/);
   assert.match(home, /filter: drop-shadow\(0 0 5px rgba\(220,228,235,0\.18\)\)/);
-  assert.match(home, /width: 7px;\s*height: 7px;\s*flex: 0 0 7px/);
-  assert.match(home, /linear-gradient\(135deg, #eef1f4, #8d969f\)/);
+  assert.match(home, /width: 6px;\s*height: 6px;\s*flex: 0 0 6px/);
+  assert.match(home, /linear-gradient\(135deg, #e9d1a1, rgb\(var\(--chessaz-bronze-frame\)\)\)/);
   assert.match(home, /@media \(min-width: 1280px\) \{[\s\S]*?\.desktop-home-arena\.home-unified-card \{\s*background:\s*radial-gradient\(120% 70% at 30% 0%, rgba\(205,215,230,0\.07\) 0%, rgba\(205,215,230,0\) 55%\),\s*linear-gradient\(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%\);\s*\}/);
   assert.match(home, /className="hidden md:flex mobile-home-play desktop-home-play/);
   assert.match(home, /\{t\('home\.playChessNow'\)\}/);
