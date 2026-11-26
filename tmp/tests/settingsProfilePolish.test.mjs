@@ -1,5 +1,5 @@
 // Real Chromium geometry and pixel-diff regression. Requires npm ci, git and Chromium.
-// Owner-reviewed reference: 8a2f0f2. Both mobile screens must be pixel-identical. Synthetic authenticated Supabase session only.
+// Owner-reviewed reference: 8a2f0f2. Mobile route content must remain pixel-identical apart from approved changes. Shared mobile navigation is tested separately.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {spawn,execFileSync} from 'node:child_process';
@@ -76,6 +76,13 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
   await cdp('Page.addScriptToEvaluateOnNewDocument',{source:"localStorage.setItem('app-language','ru');document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}';document.head.appendChild(s)});"});
   const capture=process.env.SECTIONS_CAPTURE;if(capture)await mkdir(capture,{recursive:true});
   const results={before:{},after:{}};let baselineMobile,baselineProfileMobile;
+  let baselineNavTop;
+  const captureRoute = async () => {
+   const top = await evaluate("document.querySelector('[data-mobile-app-nav]').getBoundingClientRect().top");
+   if(baselineNavTop===undefined)baselineNavTop=top;
+   assert.equal(top,baselineNavTop,'shared navigation must not move the route boundary');
+   return (await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false,clip:{x:0,y:0,width:390,height:Math.floor(top),scale:1}})).data;
+  };
   for(const phase of ['before','after']){
    const root=phase==='before'?oldRoot:process.cwd();
    server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-polish-cache-'+process.pid+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[fixturePlugin(),react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:{'import.meta.env.VITE_SERVER_URL':JSON.stringify('https://fixture.invalid')}});
@@ -137,7 +144,7 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
        }
        return true;
      })()`);
-     const image=(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
+     const image=width===390?await captureRoute():(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
      if(capture)await writeFile(join(capture,phase+'-settings-'+width+'x'+height+'.png'),Buffer.from(image,'base64'));
      if(width===390){if(phase==='before')baselineMobile=image;else assert.equal(image,baselineMobile,'mobile Settings differs outside the approved piece picker and frames');}
     }
@@ -153,7 +160,7 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
       if(width>=1024){assert.ok(profile.scroll<=1,'Profile scrolled '+JSON.stringify(profile));assert.ok(profile.bottom<=height,'Profile clipped '+JSON.stringify(profile));assert.ok(profile.bottomFree>=16&&profile.bottomFree<=40,'Profile bottom margin '+JSON.stringify(profile));assert.ok(Math.abs(profile.identityHeight-profile.ratingHeight)<=2&&Math.abs(profile.nextHeight-profile.performanceHeight)<=2,'Profile paired heights '+JSON.stringify(profile));assert.ok(profile.rowGap1>=0&&profile.rowGap1<=16&&profile.rowGap2>=0&&profile.rowGap2<=16,'Profile rows gaps '+JSON.stringify(profile));}
      }
      if(width===390){
-      const image=(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
+      const image=await captureRoute();
       if(phase==='before') baselineProfileMobile=image;
       else assert.equal(image,baselineProfileMobile,'mobile Profile differs from 8a2f0f2');
       if(capture) await writeFile(join(capture,phase+'-profile-390.png'),Buffer.from(image,'base64'));

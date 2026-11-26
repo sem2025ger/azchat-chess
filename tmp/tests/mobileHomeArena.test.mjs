@@ -5,10 +5,15 @@ import fs from 'node:fs';
 const home = fs.readFileSync(new URL('../src/screens/HomeScreen.tsx', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
 
-test('mobile Chess Arena retains its approved title and board dimensions', () => {
-  assert.match(home, /className="chess-arena-reference-title md:hidden/);
-  assert.match(home, /Chess Arena\s*<span className="relative inline-block h-0 w-0 align-baseline"/);
-  assert.match(home, /src="\/brand\/sidebar-king\.svg"/);
+test('mobile Home uses the desktop brand and compact layout without changing desktop Arena', () => {
+  assert.match(home, /className="chess-arena-reference-title md:hidden" aria-label="Chessaz\.de"/);
+  assert.match(home, /sidebar-brand-silver"><span className="text-\[1\.08em\]">Ch<\/span>essaz\.<\/span>/);
+  assert.match(home, /sidebar-brand-de inline-block text-\[1\.06em\]">de<\/span>/);
+  assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="28" height="56"/);
+  assert.ok(css.includes('gap: 12px;\n    padding-bottom: 12px;'));
+  assert.ok(css.includes('border-radius: 16px;\n    padding: 6px 10px 2px;'));
+  assert.ok(css.includes('max-width: calc(100% - 4px) !important;'));
+  assert.ok(css.includes('max-width:calc(100% - 8px);font-size:.75rem;'));
   assert.match(home, /sidebar-king-sheen pointer-events-none absolute inset-0/);
   assert.match(home, /Chess<span className="text-chess-active"> Arena<\/span>/);
   assert.match(home, /data-mobile-home-stack/);

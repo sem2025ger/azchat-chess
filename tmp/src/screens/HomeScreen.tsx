@@ -480,13 +480,13 @@ export default function HomeScreen() {
             <h1 className="hidden md:block text-[2.2rem] md:text-[2.5rem] xl:text-[2.9rem] font-black text-glow-cycle leading-[0.95] tracking-[-0.03em] italic">
               Chess<span className="text-chess-active"> Arena</span>
             </h1>
-            <h1 className="chess-arena-reference-title md:hidden text-[2.2rem] text-center leading-[0.95] tracking-[-0.03em]">
-              Chess Arena
-              <span className="relative inline-block h-0 w-0 align-baseline" aria-hidden="true">
-                <span className="absolute bottom-[0px] left-[11px] h-[44px] w-[22px]">
-                  <img src="/brand/sidebar-king.svg" alt="" width="22" height="44" className="absolute inset-0 h-full w-full object-fill" />
-                  <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
-                </span>
+            <h1 className="chess-arena-reference-title md:hidden" aria-label="Chessaz.de">
+              <span className="font-black tracking-tight not-italic leading-none whitespace-nowrap">
+                <span className="sidebar-brand-silver"><span className="text-[1.08em]">Ch</span>essaz.</span><span className="sidebar-brand-de inline-block text-[1.06em]">de</span>
+              </span>
+              <span className="relative h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]" aria-hidden="true">
+                <img src="/brand/sidebar-king.svg" alt="" width="28" height="56" className="absolute inset-0 h-full w-full object-fill" />
+                <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
               </span>
             </h1>
           </div>

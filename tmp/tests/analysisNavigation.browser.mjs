@@ -247,6 +247,37 @@ try {
     assert.equal(chrome.controlCount, 4, 'All four move navigation controls remain visible');
     assert.ok(chrome.flipVisible, 'Desktop flip stays visible in compact layouts');
   }
+  // Mobile-only Home and shared navigation geometry; preserve existing desktop checks above.
+  for (const [width,height] of [[320,740],[390,844],[430,932]]) {
+    await cdp('Emulation.setDeviceMetricsOverride', {mobile:true,width,height,deviceScaleFactor:1});
+    await cdp('Page.navigate',{url:base+'/'});
+    await waitFor("!!document.querySelector('.home-board:not(.home-board-frame) [data-square]')");
+    await evaluate('document.fonts.ready');
+    const geometry = await evaluate(`(() => {
+      const r = el => el.getBoundingClientRect();
+      const brand = document.querySelector('.chess-arena-reference-title');
+      const board = document.querySelector('.home-board:not(.home-board-frame)');
+      const play = document.querySelector('.home-board-column a[href="/play"]');
+      const nav = document.querySelector('[data-mobile-app-nav]');
+      const items = [...nav.querySelectorAll('.site-nav-link')];
+      const labels = items.map(a=>r(a.querySelector('.site-nav-label')));
+      return {brand:brand.getAttribute('aria-label'), king:r(brand.querySelector('img')).width,
+        headerHeight:r(brand.closest('.mobile-home-arena')).height,
+        boardWidth:r(board).width,boardHeight:r(board).height,
+        boardGap:r(board).top-r(brand.closest('.mobile-home-arena')).bottom,
+        playGap:r(nav).top-r(play).bottom,
+        navCount:items.length, noNRW:!nav.querySelector('a[href="/region/nrw"]'),
+        minTarget:Math.min(...items.map(a=>r(a).width)),
+        minIcon:Math.min(...items.map(a=>r(a.querySelector('svg')).width)),
+        minLabelGap:Math.min(...labels.slice(1).map((label,i)=>label.left-labels[i].right))};
+    })()`);
+    assert.equal(geometry.brand,'Chessaz.de');
+    assert.equal(geometry.king,28);
+    assert.ok(geometry.headerHeight<=120 && geometry.boardGap>=8 && geometry.boardGap<=20,JSON.stringify(geometry));
+    assert.ok(geometry.boardWidth>=width-20 && Math.abs(geometry.boardWidth-geometry.boardHeight)<1.5,JSON.stringify(geometry));
+    assert.ok(geometry.playGap>=8 && geometry.noNRW,JSON.stringify(geometry));
+    assert.ok([5,6].includes(geometry.navCount) && geometry.minTarget>=44 && geometry.minIcon>=20 && geometry.minLabelGap>=4,JSON.stringify(geometry));
+  }
   // These are diagnostics, not an artificial guarantee of zero-millisecond navigation.
   // Regression gate: the board must render on both navigation attempts.
   assert.ok(cold.ms < 5_000 && warm.ms < 5_000, 'Analysis route failed to paint within 5 seconds');

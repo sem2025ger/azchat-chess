@@ -673,18 +673,31 @@
 }
 
 
-/* Approved metallic-gold Chess Arena heading, only on mobile. */
+/* Compact mobile Home: reuse the desktop silver wordmark and king. */
 @media (max-width: 767px) {
+  .home-screen-root [data-mobile-home-stack] {
+    gap: 12px;
+    padding-bottom: 12px;
+  }
+  .home-screen-root [data-mobile-home-stack] .mobile-home-arena {
+    border-radius: 16px;
+    padding: 6px 10px 2px;
+  }
   .mobile-home-arena .chess-arena-reference-title {
-    font-family: Georgia, "Times New Roman", serif;
-    font-weight: 700;
-    font-style: normal;
-    background: linear-gradient(180deg,#fff3d0 0%,#f6df9d 22%,#d9a64f 53%,#ffe6a9 76%,#bd8739 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: #edc879;
-    filter: drop-shadow(0 2px 1px rgba(0,0,0,.63)) drop-shadow(0 0 5px rgba(214,158,67,.14));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    font-family: inherit;
+    font-size: 1.72rem;
+    line-height: 1.8rem;
+    background: none;
+  }
+  .home-screen-root .mobile-home-arena > a[href="/region/nrw"] {
+    margin-top: 0;
+  }
+  .home-screen-root .home-board-column {
+    max-width: calc(100% - 4px) !important;
   }
 }
 
@@ -1948,7 +1961,8 @@ aside .site-nav-link{min-height:58px;padding:10px 14px;border-radius:12px}
 aside nav{padding-top:20px!important}
 /* Equal-width mobile touch targets; wrap long localized labels instead of clipping. */
 [data-mobile-app-nav] .site-nav-link{flex:1 1 0%;min-width:44px}
-[data-mobile-app-nav] .site-nav-link .site-nav-label{max-width:100%;font-size:.75rem;line-height:1.2;text-align:center;white-space:normal;overflow-wrap:anywhere}
+[data-mobile-app-nav] .site-nav-link .site-nav-label{max-width:calc(100% - 8px);font-size:.75rem;line-height:1.2;text-align:center;white-space:normal;overflow-wrap:anywhere}
+[data-mobile-app-nav]{gap:2px}
 [data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:58px;gap:4px}
 /* Equal navigation rows leave room for every desktop destination at 720 px. */
 aside .site-nav-link{height:54px;min-height:54px;padding:7px 14px;align-items:flex-start}
