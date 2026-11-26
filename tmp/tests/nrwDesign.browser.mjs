@@ -286,9 +286,13 @@ export const supabase={from(table){window.nrwDbReads=(window.nrwDbReads||0)+1;le
      if(width===1280){assert.ok(navMetrics.length>=5,'desktop menu mounted');
       assert.ok(navMetrics.every(v=>Math.abs(v.topGap-v.bottomGap)<=2),'vertical center: '+JSON.stringify(navMetrics));
       assert.ok(navMetrics.every(v=>Math.abs(v.iconCenter-v.labelCenter)<=2),'icon-label center: '+JSON.stringify(navMetrics));
-      assert.ok(navMetrics.every(v=>!v.wrap&&!v.clipped&&v.fontSize>=15&&v.fontSize<=16&&v.weight>=500&&v.weight<=600),'readable one-line navigation: '+JSON.stringify(navMetrics));
+      assert.ok(navMetrics.every(v=>!v.wrap&&!v.clipped&&(v.name==='Schach-Treff'?v.fontSize===18:v.fontSize>=15&&v.fontSize<=16)&&v.weight>=500&&v.weight<=600),'readable one-line navigation: '+JSON.stringify(navMetrics));
       assert.ok(new Set(navMetrics.map(v=>Math.round(v.height))).size===1,'equal menu heights');
       assert.equal(navMetrics.find(v=>v.name==='Schach-Treff')?.name,'Schach-Treff','no subtitle');
+       const chatAccent=await evaluate(`(()=>{const link=document.querySelector('aside .site-nav-link--schach-treff'),icon=link?.querySelector('.schach-treff-chat-icon'),path=icon?.querySelector('path'),label=link?.querySelector('.site-nav-label');return {count:document.querySelectorAll('.schach-treff-chat-icon').length,fill:path?getComputedStyle(path).fill:'',stops:icon?.querySelectorAll('linearGradient stop').length??0,fits:!!label&&label.getBoundingClientRect().right<=link.getBoundingClientRect().right-20};})()`);
+       assert.equal(chatAccent.count,1,'chat accent is exclusive to desktop Schach-Treff');
+       assert.ok(chatAccent.fill.includes('sidebar-chat-metal-fill')&&chatAccent.stops===4,'metallic chat bubble interior rendered');
+       assert.ok(chatAccent.fits,'enlarged Schach-Treff label stays clear of the active indicator');
       const bronzeLabels=await evaluate(`(()=>{const labels=[...document.querySelectorAll('aside .site-nav-label')].filter(e=>e.getClientRects().length);return labels.map(el=>({label:el.textContent,metal:el.classList.contains('site-nav-label--bronze'),gradient:getComputedStyle(el).backgroundImage.includes('linear-gradient')}));})()`);
       assert.deepEqual(bronzeLabels.filter(v=>v.metal).map(v=>v.label).sort(),['NRW – Schach','Schach-Treff'],'only NRW and Schach-Treff receive bronze lettering');
       assert.ok(bronzeLabels.filter(v=>v.metal).every(v=>v.gradient),'metallic gradient rendered');
