@@ -25,7 +25,10 @@ test('mobile navigation preserves its routes and interactions with the approved 
   assert.ok(withSpieltag.includes(flagAttribute));
   assert.match(withSpieltag, spieltagLink);
   assert.doesNotMatch(withSpieltag, /to="\/region\/nrw"/);
-  assert.equal(withSpieltag.replace(flagAttribute, '').replace(spieltagLink, '')
+  const settingsWhenOff = "        {!showSpieltag && <MobileNavItem to=\"/settings\" icon={<Settings size={20} />} label={t('nav.settings')} accent=\"settings\" />}";
+  const previousSettings = "        <MobileNavItem to=\"/settings\" icon={<Settings size={20} />} label={t('nav.settings')} accent=\"settings\" />";
+  assert.equal(withSpieltag.split(settingsWhenOff).length, 2);
+  assert.equal(withSpieltag.replace(flagAttribute, '').replace(spieltagLink, '').replace(settingsWhenOff, previousSettings)
     .replace('label="Schach-Treff"', "label={t('nav.chat')}"), nav(baseline));
   const mobileNavItem = source => source.split('function MobileNavItem')[1].split('function SidebarGermanyFlag')[0];
   const newLabel='site-nav-label text-[0.75rem] font-semibold normal-case tracking-normal';

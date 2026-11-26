@@ -1,7 +1,7 @@
 import { displayPlayerName } from '../utils/displayPlayerName';
 import { useState, useEffect } from 'react';
 import MobilePlayerPassport from '../components/profile/MobilePlayerPassport';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Target, Swords, Zap, Activity, Calendar, MapPin, LogOut, Loader2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -389,6 +389,9 @@ export default function ProfileScreen() {
                 </>
               )}
             </form>
+            <Link to="/settings" className="md:hidden flex min-h-[44px] items-center justify-center mt-2 rounded-lg text-sm font-semibold text-chess-gold underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-chess-gold" data-guest-settings>
+              {t('nav.settings')}
+            </Link>
           </div>
         </div>
       </div>

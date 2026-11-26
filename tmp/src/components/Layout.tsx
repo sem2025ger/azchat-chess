@@ -169,7 +169,7 @@ export default function Layout() {
         {showSpieltag && <MobileNavItem to="/spieltag" icon={<CalendarDays size={20} />}
           label={t('nav.spieltag')} accent="settings" />}
         <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} accent="profile" />
-        <MobileNavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} accent="settings" />
+        {!showSpieltag && <MobileNavItem to="/settings" icon={<Settings size={20} />} label={t('nav.settings')} accent="settings" />}
       </nav>
 
       {/* Main Content Area */}

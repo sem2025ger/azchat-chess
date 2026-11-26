@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import ChessBoard from '../components/ChessBoard';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import MyTournamentCard from '../components/teamTournaments/MyTournamentCard';
@@ -132,33 +132,10 @@ export default function HomeScreen() {
             font-weight: 800 !important;
           }
         }
-        /* Chess Arena: mobile-only, understated obsidian-gold architectural frame.
-           Keep the approved golden wordmark and the exact board dimensions. */
+        /* Mobile Home: the brand is unframed; desktop Arena stays unchanged. */
         @media (max-width: 767px) {
           .home-screen-root [data-mobile-home-stack] {
             padding-top: 12px;
-          }
-          .home-screen-root .mobile-home-arena {
-            border: 1px solid rgba(221, 184, 110, .5);
-            border-bottom: 1px solid rgba(221, 184, 110, .3);
-            border-radius: 24px;
-            box-shadow: 0 15px 28px -18px rgba(0,0,0,.85),
-              0 0 0 1px rgba(176, 142, 85, .11),
-              inset 0 1px 0 rgba(255, 234, 182, .17),
-              inset 0 -1px 0 rgba(255, 220, 155, .04);
-          }
-          .home-screen-root .mobile-home-arena::before {
-            inset: 5px; border-radius: 19px; opacity: 1; animation: none;
-            border: 1px solid rgba(207, 171, 105, .23);
-            box-shadow: inset 0 0 14px rgba(203, 168, 103, .035);
-          }
-          .home-screen-root .mobile-home-arena::after {
-            inset: -1px; border-radius: 25px; opacity: 1; animation: none;
-            border: 1px solid transparent;
-            background:
-              linear-gradient(90deg, transparent, rgba(247,213,151,.76), transparent) top 11px center / 38% 1px no-repeat,
-              linear-gradient(90deg, transparent, rgba(166,140,212,.34), transparent) bottom 10px center / 30% 1px no-repeat;
-            box-shadow: none;
           }
         }
         /* Home-only black CBURNETT artwork retains a discreet shadow without
@@ -400,7 +377,7 @@ export default function HomeScreen() {
         }
         @media (max-width: 767px) {
           .home-screen-root .board-container {
-            max-width: calc(100vw - 8px) !important;
+            max-width: calc(100vw - 4px) !important;
           }
           /* On mobile Home, render black pieces with their original SVG colors,
              exactly as on Analysis. Preserve the existing desktop filter. */
@@ -511,6 +488,13 @@ export default function HomeScreen() {
             <span className="relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
           </Link>
         </div>
+        <Link to="/chat" className="mobile-home-chat md:hidden flex w-full min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl border border-chess-gold/25 bg-neutral-900/80 px-2 py-1 text-chess-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chess-gold">
+          <MessageSquare size={22} aria-hidden="true" className="shrink-0" />
+          <span className="flex min-w-0 flex-col text-center leading-tight">
+            <span className="text-sm font-semibold">Schach-Treff</span>
+            <span className="text-xs text-neutral-300">{t('home.schachTreffSubtitle')}</span>
+          </span>
+        </Link>
       </div>
     </div>
     </div>

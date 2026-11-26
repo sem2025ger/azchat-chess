@@ -14,6 +14,9 @@ import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Layout from '/src/components/Layout.tsx';
+import HomeScreen from '/src/screens/HomeScreen.tsx';
+import ProfileScreen from '/src/screens/ProfileScreen.tsx';
+import SettingsScreen from '/src/screens/SettingsScreen.tsx';
 import { LanguageProvider, useLanguage } from '/src/context/LanguageContext.tsx';
 import { ThemeProvider, useThemeContext } from '/src/context/ThemeContext.tsx';
 import { premiumInterfaceThemes } from '/src/lib/interfaceThemes.ts';
@@ -127,11 +130,24 @@ function Showcase() {
         matches: [match], official, provisional: official }} />
   </section>;
 }
+function HomeFixtureControls() {
+  const navigate = useNavigate();
+  const { setLanguage } = useLanguage();
+  window.fixtureHomeNav = path => flushSync(() => navigate(path));
+  window.fixtureHomeLanguage = locale => flushSync(() => setLanguage(locale));
+  return null;
+}
 localStorage.setItem('app-language', 'en');
 createRoot(document.getElementById('root')).render(<ThemeProvider><LanguageProvider><MemoryRouter initialEntries={['/spieltag']}>
+  <HomeFixtureControls />
   {online && <TournamentOnlineBanner />}
   <Routes><Route element={<Layout/>}><Route path="/spieltag" element={<Showcase />} />
-    <Route path="/play" element={<p data-online-test-game>{away}</p>} /></Route></Routes>
+    <Route path="/play" element={<p data-online-test-game>{away}</p>} />
+    <Route path="/home" element={<HomeScreen />} />
+    <Route path="/profile" element={<ProfileScreen />} />
+    <Route path="/settings" element={<SettingsScreen />} />
+    <Route path="/chat" element={<p data-home-fixture-chat>Schach-Treff</p>} />
+  </Route></Routes>
 </MemoryRouter></LanguageProvider></ThemeProvider>);
 `;
 
@@ -142,11 +158,29 @@ const plugin = {
     if (id === entry) return id;
     if (/(?:^|\/)context\/AuthContext(?:\.tsx)?$/.test(id)) return '\0team-online-auth';
     if (/(?:^|\/)context\/SocketContext(?:\.tsx)?$/.test(id)) return '\0team-online-socket';
+    if (/(?:^|\/)services\/supabase(?:\.ts)?$/.test(id)) return '\0team-online-profile-db';
     if (/(?:^|\/)routeLoaders(?:\.ts)?$/.test(id)) return '\0team-online-preload';
   },
   load(id) {
     if (id === entry) return fixture;
-    if (id === '\0team-online-auth') return "export const useAuth = () => ({ session: { access_token: 'fixture-token', user: { id: '22222222-2222-4222-8222-222222222222' } } });";
+    if (id === '\0team-online-auth') return `
+      const user = { id: '22222222-2222-4222-8222-222222222222' };
+      const session = { access_token: 'fixture-token', user };
+      const profile = { username: 'QA Player' };
+      const signOut = async () => {};
+      export const useAuth = () => window.fixtureHomeMode === 'guest'
+        ? { session: null, user: null, isLoading: false, signOut }
+        : window.fixtureHomeMode === 'signed-in'
+          ? { session, user, profile, isLoading: false, signOut }
+          : { session };
+    `;
+    if (id === '\0team-online-profile-db') return `
+      export const supabase = { from() {
+        const q = { select: () => q, or: () => q, order: () => q, limit: () => q,
+          then: (resolve, reject) => Promise.resolve({ data: [], error: null }).then(resolve, reject) };
+        return q;
+      } };
+    `;
     if (id === '\0team-online-socket') return `
       const listeners = new Map();
       const socket = {
@@ -251,6 +285,69 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
         await wait('location.href === ' + JSON.stringify(url.href) +
           ' && typeof window.fixtureSelect === "function" && !!document.querySelector("[data-mobile-app-nav]")');
         await evaluate('document.fonts.ready');
+        if (!tournaments) {
+          // Real Home, Profile and Settings, synthetic auth only. Exercise both flag states.
+          await evaluate("window.fixtureHomeMode='guest';window.fixtureHomeNav('/home')");
+          await wait("!!document.querySelector('.mobile-home-chat')");
+          const state = enabled ? 'on' : 'off';
+          const expected = enabled ? ['/home','/game','/chat','/spieltag','/profile'] : ['/home','/game','/chat','/profile','/settings'];
+          for (const [width,height] of [[360,640],[390,844],[430,932]]) {
+            await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});
+            for (const zoom of [100,125]) {
+              await evaluate("document.documentElement.style.fontSize='"+zoom+"%'");
+              for (const locale of Object.keys(langs)) {
+                await evaluate("window.fixtureHomeLanguage("+JSON.stringify(locale)+")");
+                await evaluate('document.fonts.ready');
+                const context = state+' '+locale+' '+width+' '+zoom+'%';
+                const metrics = await navMetrics();
+                assert.deepEqual(metrics.links.map(link=>link.path),expected,context);
+                assert.ok(Math.abs((metrics.links[2].left+metrics.links[2].right)/2-width/2)<=2,context+' centered chat');
+                for (const [i,link] of metrics.links.entries()) {
+                  const rows=Object.values(link.lineText);
+                  const fullLabel=rows.join('')===link.label&&(rows.length===1||(link.label==='Schach-Treff'&&JSON.stringify(rows)===JSON.stringify(['Schach-','Treff'])));
+                  assert.ok(link.left>=metrics.left&&link.right<=metrics.right&&link.lines>=1&&link.lines<=2&&!link.hidden&&fullLabel&&link.textOverflow==='clip'&&link.overflowWrap==='normal'&&link.textLeft>=link.left-1&&link.textRight<=link.right+1&&link.right-link.left>=44&&link.height>=44&&(i===0||link.left>=metrics.links[i-1].right-1),context+' '+JSON.stringify(link));
+                }
+                const geometry = await evaluate("(()=>{const root=document.querySelector('.home-screen-root'),title=root.querySelector('.chess-arena-reference-title'),word=title.firstElementChild,king=title.lastElementChild,letter=word.querySelector('.sidebar-brand-de'),arena=title.closest('.mobile-home-arena'),board=root.querySelector('.home-board:not(.home-board-frame)'),card=root.querySelector('.mobile-home-chat'),nav=document.querySelector('[data-mobile-app-nav]'),chat=nav.querySelector('a[href=\"/chat\"]'),r=e=>e.getBoundingClientRect(),center=e=>(r(e).left+r(e).right)/2,s=getComputedStyle(arena);return{titleCenter:center(word),kingGap:Math.max(0,r(king).left-r(letter).right),plaque:s.borderTopWidth!=='0px'||s.outlineStyle!=='none'||s.backgroundImage!=='none'||s.backgroundColor!=='rgba(0, 0, 0, 0)'||s.boxShadow!=='none',boardWidth:r(board).width,boardHeight:r(board).height,boardLeft:r(board).left,boardRight:innerWidth-r(board).right,cardCenter:center(card),cardWidth:r(card).width,cardHeight:r(card).height,cardBottom:r(card).bottom,navTop:r(nav).top,href:card.getAttribute('href'),subtitle:card.querySelector('span span:last-child').textContent,highlight:getComputedStyle(chat).color,overflow:document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight||[...document.querySelectorAll('main,main div')].some(e=>e.clientHeight>0&&/auto|scroll/.test(getComputedStyle(e).overflowY)&&e.scrollHeight>e.clientHeight+1)}})()");
+                assert.ok(!geometry.plaque&&Math.abs(geometry.titleCenter-width/2)<=2&&geometry.kingGap<=2,context+' brand '+JSON.stringify(geometry));
+                assert.ok(geometry.boardWidth>=width-4&&Math.abs(geometry.boardWidth-geometry.boardHeight)<=1&&geometry.boardLeft>=-1&&geometry.boardLeft<=2&&geometry.boardRight>=-1&&geometry.boardRight<=2,context+' board '+JSON.stringify(geometry));
+                assert.ok(Math.abs(geometry.cardCenter-width/2)<=2&&geometry.cardWidth>=width-4&&geometry.cardHeight>=44&&geometry.cardBottom<=geometry.navTop+1&&geometry.href==='/chat'&&!geometry.overflow,context+' card '+JSON.stringify(geometry));
+                assert.equal(geometry.subtitle,{de:'Gemeinschaftschat und Vereine',en:'Community chat and clubs',az:'Ümumi çat və klublar',tr:'Genel sohbet ve kulüpler',ua:'Загальний чат і клуби',ru:'Общий чат и клубы'}[locale],context);
+                assert.equal(geometry.highlight,'rgb(231, 196, 127)',context+' gold chat');
+                if(width===390&&zoom===125&&locale==='ru'){
+                  await capture('mobile-home-'+state,locale,width);
+                  await capture('mobile-nav-'+state,locale,width);
+                }
+              }
+            }
+          }
+          await cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+          await evaluate("window.fixtureHomeLanguage('ru');document.documentElement.style.fontSize='125%'");
+          await evaluate("document.querySelector('.mobile-home-chat').click()");
+          await wait("!!document.querySelector('[data-home-fixture-chat]')");
+          assert.equal(await evaluate("document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]').getAttribute('aria-current')"),'page');
+          assert.notEqual(await evaluate("getComputedStyle(document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]')).color"),'rgb(231, 196, 127)');
+          await evaluate("window.fixtureHomeNav('/profile')");
+          await wait("!!document.querySelector('[data-guest-settings]')");
+          for(const [locale,word] of Object.entries({ru:'Настройки',de:'Einstellungen',en:'Settings',az:'Ayarlar',tr:'Ayarlar',ua:'Налаштування'})){
+            await evaluate("window.fixtureHomeLanguage("+JSON.stringify(locale)+")");
+            const guest=await evaluate("(()=>{const a=document.querySelector('[data-guest-settings]'),r=a.getBoundingClientRect();return{text:a.textContent.trim(),height:r.height,href:a.getAttribute('href'),visible:r.bottom<=document.querySelector('[data-mobile-app-nav]').getBoundingClientRect().top}})()");
+            assert.equal(guest.text,word);
+            assert.ok(guest.height>=44&&guest.href==='/settings'&&guest.visible,JSON.stringify(guest));
+          }
+          await evaluate("window.fixtureHomeLanguage('ru')");
+          await capture('mobile-guest-profile-'+state,'ru',390);
+          await evaluate("document.querySelector('[data-guest-settings]').click()");
+          await wait("!!document.querySelector('.settings-mobile-view')");
+          await evaluate("window.fixtureHomeMode='signed-in';window.fixtureHomeNav('/profile')");
+          await wait("!!document.querySelector('button[aria-label=\"Меню профиля\"]')");
+          await evaluate("document.querySelector('button[aria-label=\"Меню профиля\"]').click()");
+          await wait("!!document.querySelector('[role=menuitem]')");
+          await evaluate("[...document.querySelectorAll('[role=menuitem]')].find(e=>e.textContent.trim()==='Настройки').click()");
+          await wait("!!document.querySelector('.settings-mobile-view')");
+          await evaluate("window.fixtureHomeMode=undefined;window.fixtureHomeNav('/spieltag');document.documentElement.style.fontSize=''");
+          await wait("document.body.innerText.includes('Bochum Cup')");
+          console.log('PASS mobile Home/nav/Profile flag '+state+': 3 widths, 2 root font sizes, 6 locales');
+        }
         if (onlinePlay) {
           await navigate('play-online');
           const testLayout = `(() => {
@@ -333,7 +430,7 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
             const { width, hasFlag, left, right, links } = await navMetrics();
             const context = '390px / ' + lang + ' / ' + theme;
             const paths = ['/home', '/game', '/chat', '/profile', '/settings'];
-            if (enabled) paths.splice(3, 0, '/spieltag');
+            if (enabled) paths.splice(3, 2, '/spieltag', '/profile');
             assert.equal(width, 390, context);
             assert.equal(hasFlag, enabled, context);
             assert.deepEqual(links.map(link => link.path), paths, context);
