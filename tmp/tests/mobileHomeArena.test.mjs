@@ -7,7 +7,7 @@ const css = fs.readFileSync(new URL('../src/index.css', import.meta.url), 'utf8'
 
 test('mobile Home uses the desktop brand and compact layout without changing desktop Arena', () => {
   assert.match(home, /className="chess-arena-reference-title md:hidden" aria-label="Chessaz\.de"/);
-  assert.match(home, /mobile-home-brand-name">Chessaz<\/span><span className="mobile-home-brand-domain">\.de<\/span>/);
+  assert.match(home, /mobile-home-brand-name">Chessaz<\/span><span className="mobile-home-brand-domain"><span className="mobile-home-brand-dot">\.<\/span>de<\/span>/);
   assert.doesNotMatch(home, /mobile-home-slogan/);
   assert.doesNotMatch(css, /mobile-home-slogan/);
   assert.ok(home.includes("t('home.slogan')"));
@@ -15,8 +15,8 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="38" height="76"/);
   assert.ok(css.includes('justify-content: safe center;\n    gap: 16px;\n    padding: 0 2px;'));
   assert.ok(css.includes("font-size: clamp(44px, 14.5vw, 56px);"));
-  assert.match(css, /\.mobile-home-brand-domain\s*\{\s*color: #A28C77;/);
-  assert.ok(css.includes('linear-gradient(110deg, #70645C, #A28C77 48%, #817168)'));
+  assert.match(css, /\.mobile-home-brand-domain\s*\{\s*color: #A09283;/);
+  assert.ok(css.includes('linear-gradient(110deg, #77716C, #A09283 48%, #827B74)'));
   assert.match(css, /\.home-screen-root \.mobile-home-king\s*\{\s*width: \.67857143em;\s*height: 1\.35714286em;\s*margin-left: -\.015em;\s*transform: translateY\(-\.11em\);/);
   assert.match(css, /\.home-screen-root \[data-mobile-home-stack\] \.mobile-home-arena\s*\{\s*border: 0 !important;\s*outline: none;\s*background: none;/);
   assert.ok(css.includes('width: min(100%, max(0px, calc(100cqh - 180px)));\n    max-width: 100% !important;'));
@@ -29,6 +29,8 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.match(navLabel, /white-space:nowrap;overflow:visible;text-overflow:clip/);
   assert.doesNotMatch(navLabel, /overflow-wrap:anywhere|text-overflow:ellipsis/);
   assert.match(css, /font-size: calc\(clamp\(9px, 2\.4vw, \.75rem\) \+ 1px\);\s*font-weight: 700;\s*color: #C6CDD5/);
+  assert.match(css, /\.mobile-home-brand-dot\s*\{\s*font-size: \.8em;\s*margin-right: -\.045em;/);
+  assert.match(home, /mobile-home-wordmark-sheen" aria-hidden="true">Chessaz<span className="mobile-home-brand-dot">\.<\/span>de<\/span>/);
   assert.match(home, /sidebar-king-sheen pointer-events-none absolute inset-0/);
   assert.match(home, /Chess<span className="text-chess-active"> Arena<\/span>/);
   assert.match(home, /data-mobile-home-stack/);
@@ -36,14 +38,14 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.doesNotMatch(home, /\.home-screen-root \.mobile-home-arena::(?:before|after)/);
   assert.match(css, /\.home-screen-root \.mobile-home-arena::before,\s*\.home-screen-root \.mobile-home-arena::after\s*\{\s*display: none;/);
   assert.match(css, /\[data-mobile-app-nav\] \.site-nav-link\{flex:1 1 0;min-width:44px/);
-  assert.ok(css.includes('linear-gradient(145deg, #282D34, #14171C 58%, #222830)'));
+  assert.ok(css.includes('linear-gradient(145deg, #23272B, #14171C 58%, #29343F)'));
   assert.ok(css.includes('inset 0 0 0 1px rgba(126,137,150,.48)'));
   assert.ok(css.includes('inset 0 -3px 0 #9BAABA'));
   assert.ok(css.includes('[data-mobile-app-nav] .site-nav-link>div>svg:first-child{width:17px;height:17px}'));
   assert.ok(css.includes('animation: chessazMobileBronzeWave 5s linear 0s 1 both'));
   assert.ok(css.includes('animation: chessazMobileBronzeWave 1s linear 4.8s 1 both'));
-  assert.match(css, /\.mobile-home-wordmark::after\s*\{[^}]*#30343B 50%[^}]*background-size: 300% 100%[^}]*\}/);
-  assert.match(css, /prefers-reduced-motion: reduce\) \{\s*\.home-screen-root \.mobile-home-wordmark::after,\s*\.home-screen-root \.mobile-home-arena \.sidebar-king-sheen \{ animation: none; opacity: 0; \}/);
+  assert.match(css, /\.mobile-home-wordmark-sheen\s*\{[^}]*#30343B 50%[^}]*background-size: 300% 100%[^}]*\}/);
+  assert.match(css, /prefers-reduced-motion: reduce\) \{\s*\.home-screen-root \.mobile-home-wordmark-sheen,\s*\.home-screen-root \.mobile-home-arena \.sidebar-king-sheen \{ animation: none; opacity: 0; \}/);
   assert.doesNotMatch(home, /mobile-home-chat|schachTreffSubtitle|<Link to="\/chat"/);
   assert.match(home, /max-w-\[320px\]/);
   assert.match(home, /<MobileHomeBoard \/>/);
@@ -93,6 +95,8 @@ test('mobile Schach-Treff uses its own knight bubble, without a decorative dot',
   assert.match(layout, /<svg data-mobile-schach-treff-icon width="20" height="20"/);
   assert.match(layout, /to !== '\/chat' && <Circle/);
   assert.match(layout, /<NavItem to="\/chat" icon=\{<MessageSquare/);
+  assert.match(layout, /id="mobile-chat-titanium"/);
+  assert.match(css, /linear-gradient\(115deg, transparent 27%, #29343F 43%, #66717C 50%, #29343F 57%, transparent 73%\)/);
   assert.match(css, /animation: chessazMobileChatSheen 8s ease-in-out infinite/);
   assert.match(css, /prefers-reduced-motion: reduce\) \{\s*\[data-mobile-app-nav\] \.site-nav-link\[href="\/chat"\]::before \{ animation: none; opacity: 0; \}/);
 });

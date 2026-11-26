@@ -242,8 +242,9 @@ const mobileActiveAccent = {
 function MobileSchachTreffIcon() {
   return (
     <svg data-mobile-schach-treff-icon width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-      <path d="M7 3.5h10a4 4 0 0 1 4 4v7a4 4 0 0 1-4 4h-6l-5 3v-3.1a4 4 0 0 1-3-3.9v-7a4 4 0 0 1 4-4Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-      <path d="M8 16v-1.6c0-1.6 1.5-2.7 3.2-4l-2 .4-1.3-.9 2.3-3.1.3-1.6 1.6 1.1c3.1-.1 4.8 2.1 4.8 5.3v4.4H8Z" fill="currentColor" />
+      <defs><linearGradient id="mobile-chat-titanium" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#66717C" /><stop offset="100%" stopColor="#929BA4" /></linearGradient></defs>
+      <path d="M7 3.5h10a4 4 0 0 1 4 4v7a4 4 0 0 1-4 4h-6l-5 3v-3.1a4 4 0 0 1-3-3.9v-7a4 4 0 0 1 4-4Z" stroke="url(#mobile-chat-titanium)" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M8 16v-1.6c0-1.6 1.5-2.7 3.2-4l-2 .4-1.3-.9 2.3-3.1.3-1.6 1.6 1.1c3.1-.1 4.8 2.1 4.8 5.3v4.4H8Z" fill="url(#mobile-chat-titanium)" />
     </svg>
   );
 }

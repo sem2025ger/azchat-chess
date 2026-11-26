@@ -720,11 +720,15 @@
     color: #F2EEE3;
   }
   .home-screen-root .mobile-home-brand-domain {
-    color: #A28C77;
+    color: #A09283;
+  }
+  .home-screen-root .mobile-home-brand-dot {
+    font-size: .8em;
+    margin-right: -.045em;
   }
   @supports ((background-clip: text) or (-webkit-background-clip: text)) {
     .home-screen-root .mobile-home-brand-domain {
-      background-image: linear-gradient(110deg, #70645C, #A28C77 48%, #817168);
+      background-image: linear-gradient(110deg, #77716C, #A09283 48%, #827B74);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -737,8 +741,8 @@
     transform: translateY(-.11em);
   }
   /* A single transparent metal band over the selectable static wordmark. */
-  .home-screen-root .mobile-home-wordmark::after {
-    content: "Chessaz.de" / "";
+  .home-screen-root .mobile-home-wordmark-sheen {
+    user-select: none;
     position: absolute;
     inset: 0;
     font: inherit;
@@ -773,7 +777,7 @@
   }
 }
 @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
-  .home-screen-root .mobile-home-wordmark::after {
+  .home-screen-root .mobile-home-wordmark-sheen {
     animation: chessazMobileBronzeWave 5s linear 0s 1 both;
   }
   .home-screen-root .mobile-home-arena .sidebar-king-sheen {
@@ -786,7 +790,7 @@
   }
 }
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
-  .home-screen-root .mobile-home-wordmark::after,
+  .home-screen-root .mobile-home-wordmark-sheen,
   .home-screen-root .mobile-home-arena .sidebar-king-sheen { animation: none; opacity: 0; }
 }
 @media (max-width: 767px) and (max-height: 580px) {
@@ -2063,7 +2067,7 @@ aside nav{padding-top:20px!important}
     isolation: isolate;
     overflow: hidden;
     color: #838B95;
-    background: linear-gradient(145deg, #282D34, #14171C 58%, #222830);
+    background: linear-gradient(145deg, #23272B, #14171C 58%, #29343F);
     box-shadow: inset 0 0 0 1px rgba(126,137,150,.48), inset 0 1px 0 rgba(192,202,214,.14);
   }
   [data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"] {
@@ -2078,13 +2082,21 @@ aside nav{padding-top:20px!important}
     color: #C6CDD5;
   }
   [data-mobile-app-nav] .site-nav-link[href="/chat"] > div > svg:first-child { width: 20px; height: 20px; }
+  [data-mobile-app-nav] [data-mobile-schach-treff-icon] stop:first-child { stop-color: #66717C; }
+  [data-mobile-app-nav] [data-mobile-schach-treff-icon] stop:last-child { stop-color: #929BA4; }
+  [data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"] [data-mobile-schach-treff-icon] stop:first-child { stop-color: #929BA4; }
+  [data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"] [data-mobile-schach-treff-icon] stop:last-child { stop-color: #B4BEC9; }
+  @media (forced-colors: active) {
+    [data-mobile-app-nav] [data-mobile-schach-treff-icon] > path:first-of-type { stroke: currentColor; }
+    [data-mobile-app-nav] [data-mobile-schach-treff-icon] > path:last-of-type { fill: currentColor; }
+  }
   [data-mobile-app-nav] .site-nav-link[href="/chat"]::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background: linear-gradient(115deg, transparent 27%, #424A55 43%, #858F9B 50%, #424A55 57%, transparent 73%);
+    background: linear-gradient(115deg, transparent 27%, #29343F 43%, #66717C 50%, #29343F 57%, transparent 73%);
     transform: translate3d(-110%, 0, 0);
     opacity: 0;
   }

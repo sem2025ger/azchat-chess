@@ -264,7 +264,7 @@ try {
       const header = brand.closest('.mobile-home-arena');
       const king = r(brand.querySelector('img'));
       const domain=brand.querySelector('.mobile-home-brand-domain'), range=document.createRange();
-      range.setStart(domain.firstChild,domain.textContent.length-1);range.setEnd(domain.firstChild,domain.textContent.length);
+      range.setStart(domain.lastChild,domain.lastChild.length-1);range.setEnd(domain.lastChild,domain.lastChild.length);
       const kingGap=king.left-range.getBoundingClientRect().right;
       const wordFont=parseFloat(getComputedStyle(brand).fontSize);
       const nrw = header.querySelector('a[href="/region/nrw"]');
