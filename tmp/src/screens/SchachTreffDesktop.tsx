@@ -347,12 +347,12 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
           onRevoked={() => setInviteRevision(value => value + 1)} />}
         {dmChat && <p className="st2-note st2-dm-note">{block.blocked ? copy2.blockedNote : copy2.directChat}</p>}
         {dmOpen.error && (v2Enabled ? <Toast message={dmOpen.error} closeLabel={t.close} onClose={dmOpen.clear} /> : <p role="alert">{dmOpen.error}</p>)}
-        <form className="st-composer" onSubmit={send}>
+        <form className="st-composer" onSubmit={send} autoComplete={mobileV2 ? 'off' : undefined}>
           {/* Desktop: Seek sits in the header (general chat and club rooms) so the input stays wide. The compact
               mobile room view (hideRooms) keeps its approved composer layout. DMs challenge the partner here. */}
           {!mobileV2 && (v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} disabled={iBlocked} /> : isClub && hideRooms ? <SeekButton /> : null) : <ChallengeButton composer />)}
           {v2Enabled && <PositionTrigger label={copy2.sendPosition} disabled={iBlocked} onClick={() => setComposer({ fen: DEFAULT_POSITION, root: null })} />}
-          <input aria-label={t.placeholder} placeholder={iBlocked ? copy2.composerBlocked : hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required={!v2Enabled} disabled={iBlocked} />
+          <input aria-label={t.placeholder} name={mobileV2 ? 'chat-message' : undefined} autoComplete={mobileV2 ? 'off' : undefined} inputMode={mobileV2 ? 'text' : undefined} enterKeyHint={mobileV2 ? 'send' : undefined} placeholder={iBlocked ? copy2.composerBlocked : hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required={!v2Enabled} disabled={iBlocked} />
           <button className="st-send" disabled={busy || iBlocked || !body.trim()}>{t.send}</button>
         </form>
       </section>
