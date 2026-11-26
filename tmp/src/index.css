@@ -699,7 +699,7 @@
     justify-content: center;
     position: relative;
     width: max-content;
-    min-height: 1.2142857em;
+    min-height: 1.28571429em;
     margin-inline: auto;
     gap: 0;
     font-family: 'Bodoni Moda', Georgia, serif;
@@ -720,15 +720,11 @@
     color: #F2EEE3;
   }
   .home-screen-root .mobile-home-brand-domain {
-    background-image: linear-gradient(110deg, #CDB089, #A88350 50%, #7A5D3A);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: #A88350;
+    color: #9C8267;
   }
   .home-screen-root .mobile-home-king {
-    width: .60714286em;
-    height: 1.2142857em;
+    width: .64285714em;
+    height: 1.28571429em;
     margin-left: 0;
     transform: translateY(-.07em);
   }
@@ -741,8 +737,8 @@
     letter-spacing: inherit;
     white-space: nowrap;
     pointer-events: none;
-    background-image: linear-gradient(110deg, transparent 32%, #2A2622 41%, #6E5233 47%, #D6B27A 50%, #6E5233 53%, #2A2622 59%, transparent 68%);
-    background-size: 300% 100%;
+    background-image: linear-gradient(110deg, transparent 36%, rgba(77, 73, 69, .48) 43%, rgba(52, 49, 46, .8) 50%, rgba(77, 73, 69, .48) 57%, transparent 64%);
+    background-size: 200% 100%;
     background-position: 100% 50%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -751,8 +747,8 @@
   }
   /* Reuse the mask, not the desktop king's looping animation. */
   .home-screen-root .mobile-home-arena .sidebar-king-sheen {
-    background-image: linear-gradient(110deg, transparent 32%, #2A2622 41%, #6E5233 47%, #D6B27A 50%, #6E5233 53%, #2A2622 59%, transparent 68%);
-    background-size: 300% 100%;
+    background-image: linear-gradient(110deg, transparent 36%, rgba(77, 73, 69, .48) 43%, rgba(52, 49, 46, .8) 50%, rgba(77, 73, 69, .48) 57%, transparent 64%);
+    background-size: 200% 100%;
     background-position: 100% 50%;
     opacity: 0;
     animation: none;
@@ -770,10 +766,10 @@
 }
 @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
   .home-screen-root .mobile-home-wordmark::after {
-    animation: chessazMobileBronzeWave 1.7s ease-in-out 0s 1 both;
+    animation: chessazMobileBronzeWave 5s linear 0s 1 both;
   }
   .home-screen-root .mobile-home-arena .sidebar-king-sheen {
-    animation: chessazMobileBronzeWave .7s ease-in-out 1s 1 both;
+    animation: chessazMobileBronzeWave 1s linear 4.8s 1 both;
   }
   @keyframes chessazMobileBronzeWave {
     0% { background-position: 100% 50%; opacity: 0; }
@@ -2058,11 +2054,12 @@ aside nav{padding-top:20px!important}
     position: relative;
     isolation: isolate;
     overflow: hidden;
-    color: #C9A26A;
+    color: #9C8267;
     background: linear-gradient(145deg, #2A2622, #17130F 58%, #3A2B1C);
     box-shadow: inset 0 0 0 1px rgba(168,131,80,.45), inset 0 1px 0 rgba(230,211,176,.16);
   }
   [data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"] {
+    color: #F6DCAC;
     box-shadow: inset 0 0 0 1px rgba(201,162,106,.9), inset 0 1px 0 rgba(230,211,176,.24), inset 0 -3px 0 #C9A26A;
   }
   [data-mobile-app-nav] .site-nav-link[href="/chat"] .site-nav-label {

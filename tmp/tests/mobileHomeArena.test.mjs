@@ -12,11 +12,11 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.doesNotMatch(css, /mobile-home-slogan/);
   assert.ok(home.includes("t('home.slogan')"));
   assert.ok(home.includes("@fontsource/bodoni-moda/700.css"));
-  assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="34" height="68"/);
+  assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="36" height="72"/);
   assert.ok(css.includes('justify-content: safe center;\n    gap: 16px;\n    padding: 0 2px;'));
   assert.ok(css.includes("font-size: clamp(44px, 14.5vw, 56px);"));
-  assert.ok(css.includes('linear-gradient(110deg, #CDB089, #A88350 50%, #7A5D3A)'));
-  assert.match(css, /\.home-screen-root \.mobile-home-king\s*\{\s*width: \.60714286em;\s*height: 1\.2142857em;\s*margin-left: 0;\s*transform: translateY\(-\.07em\);/);
+  assert.match(css, /\.mobile-home-brand-domain\s*\{\s*color: #9C8267;/);
+  assert.match(css, /\.home-screen-root \.mobile-home-king\s*\{\s*width: \.64285714em;\s*height: 1\.28571429em;\s*margin-left: 0;\s*transform: translateY\(-\.07em\);/);
   assert.match(css, /\.home-screen-root \[data-mobile-home-stack\] \.mobile-home-arena\s*\{\s*border: 0 !important;\s*outline: none;\s*background: none;/);
   assert.ok(css.includes('width: min(100%, max(0px, calc(100cqh - 180px)));\n    max-width: 100% !important;'));
   assert.ok(home.includes('max-width: calc(100vw - 4px) !important;'));
@@ -39,8 +39,9 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.ok(css.includes('inset 0 0 0 1px rgba(168,131,80,.45)'));
   assert.ok(css.includes('inset 0 -3px 0 #C9A26A'));
   assert.ok(css.includes('[data-mobile-app-nav] .site-nav-link>div>svg:first-child{width:17px;height:17px}'));
-  assert.ok(css.includes('animation: chessazMobileBronzeWave 1.7s ease-in-out 0s 1 both'));
-  assert.ok(css.includes('animation: chessazMobileBronzeWave .7s ease-in-out 1s 1 both'));
+  assert.ok(css.includes('animation: chessazMobileBronzeWave 5s linear 0s 1 both'));
+  assert.ok(css.includes('animation: chessazMobileBronzeWave 1s linear 4.8s 1 both'));
+  assert.match(css, /\.mobile-home-wordmark::after\s*\{[^}]*rgba\(52, 49, 46, \.8\)[^}]*\}/);
   assert.match(css, /prefers-reduced-motion: reduce\) \{\s*\.home-screen-root \.mobile-home-wordmark::after,\s*\.home-screen-root \.mobile-home-arena \.sidebar-king-sheen \{ animation: none; opacity: 0; \}/);
   assert.doesNotMatch(home, /mobile-home-chat|schachTreffSubtitle|<Link to="\/chat"/);
   assert.match(home, /max-w-\[320px\]/);

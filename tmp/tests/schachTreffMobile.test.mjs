@@ -28,12 +28,15 @@ test('mobile navigation preserves its routes and interactions with the approved 
   const settingsWhenOff = "        {!showSpieltag && <MobileNavItem to=\"/settings\" icon={<Settings size={20} />} label={t('nav.settings')} accent=\"settings\" />}";
   const previousSettings = "        <MobileNavItem to=\"/settings\" icon={<Settings size={20} />} label={t('nav.settings')} accent=\"settings\" />";
   assert.equal(withSpieltag.split(settingsWhenOff).length, 2);
-  assert.equal(withSpieltag.replace(flagAttribute, '').replace(spieltagLink, '').replace(settingsWhenOff, previousSettings)
+  assert.equal(withSpieltag.split('<MobileSchachTreffIcon />').length,2,'one approved mobile chat icon');
+  assert.equal(withSpieltag.replace('<MobileSchachTreffIcon />','<MessageSquare size={20} />').replace(flagAttribute, '').replace(spieltagLink, '').replace(settingsWhenOff, previousSettings)
     .replace('label="Schach-Treff"', "label={t('nav.chat')}"), nav(baseline));
   const mobileNavItem = source => source.split('function MobileNavItem')[1].split('function SidebarGermanyFlag')[0];
   const newLabel='site-nav-label text-[0.75rem] font-semibold normal-case tracking-normal';
   assert.ok(mobileNavItem(current).includes(newLabel));
-  assert.equal(mobileNavItem(current).replace(newLabel,'text-[0.5rem] font-black uppercase tracking-widest'), mobileNavItem(baseline));
+  const chatDot="{to !== '/chat' && <Circle size={4} className=\"absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-current fill-current\" />}";
+  assert.equal(mobileNavItem(current).split(chatDot).length,2,'only decorative chat dot removed');
+  assert.equal(mobileNavItem(current).replace(chatDot,"<Circle size={4} className=\"absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-current fill-current\" />").replace(newLabel,'text-[0.5rem] font-black uppercase tracking-widest'), mobileNavItem(baseline));
 });
 test('desktop names are stored usernames without suffix stripping or pseudonyms', () => {
   const current = read('../src/screens/SchachTreffDesktop.tsx');
