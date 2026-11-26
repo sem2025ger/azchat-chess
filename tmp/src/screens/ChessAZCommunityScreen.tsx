@@ -108,8 +108,19 @@ function MobileV2Viewport() {
       const editing = active instanceof HTMLInputElement && !!current.querySelector('.st-composer')?.contains(active);
       if (!editing || lastWidth !== window.innerWidth || !fullHeight) fullHeight = height;
       lastWidth = window.innerWidth;
-      current.toggleAttribute('data-st-keyboard', editing && Math.max(fullHeight, window.innerHeight) - height >= 120);
-      root.style.setProperty('--st-visible-height', height + 'px');
+      const keyboard = editing && Math.max(fullHeight, window.innerHeight) - height >= 120;
+      const nextHeight = height + 'px';
+      const layoutChanged = current.hasAttribute('data-st-keyboard') !== keyboard ||
+        root.style.getPropertyValue('--st-visible-height') !== nextHeight;
+      if (layoutChanged) {
+        const feed = current.querySelector<HTMLElement>('.st-messages');
+        // The old layout is still in place. Preserve readers' scroll position,
+        // but follow the newest message if they were already near the bottom.
+        const follow = feed && feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
+        current.toggleAttribute('data-st-keyboard', keyboard);
+        root.style.setProperty('--st-visible-height', nextHeight);
+        if (feed && follow) feed.scrollTop = feed.scrollHeight;
+      }
       const route = current.closest('[data-route-scroll]');
       if (route?.scrollTop) route.scrollTop = 0;
       if (document.scrollingElement?.scrollTop) window.scrollTo(0, 0);
