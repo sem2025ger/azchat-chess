@@ -382,7 +382,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
 function MobileSheet({ title, closeLabel, onClose, children }: { title: ReactNode; closeLabel: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => { dialog?.close(); }; }, []);
-  return <dialog ref={ref} className="st-mobile-sheet" aria-labelledby="st-mobile-sheet-title" onCancel={onClose} onClose={onClose}>
+  return <dialog ref={ref} className="st-mobile-sheet" aria-labelledby="st-mobile-sheet-title" onCancel={onClose} onClose={event => { if (!event.currentTarget.open) onClose(); }}>
     <div className="st-mobile-sheet-head"><h2 id="st-mobile-sheet-title">{title}</h2><button type="button" aria-label={closeLabel} onClick={onClose}><X size={20} aria-hidden="true" /></button></div>
     {children}
   </dialog>;

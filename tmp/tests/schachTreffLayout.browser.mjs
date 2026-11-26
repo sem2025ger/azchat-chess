@@ -6,7 +6,8 @@ import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 
 const fixture=`import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{MemoryRouter,BrowserRouter,Routes,Route}from'react-router-dom';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Chat from'/src/screens/ChessAZCommunityScreen.tsx';import Invite from'/src/screens/ClubInviteScreen.tsx';import Layout from'/src/components/Layout.tsx';import{ClubUnreadProvider}from'/src/components/schachTreff/unread.tsx';import{ThemeProvider}from'/src/context/ThemeContext.tsx';localStorage.setItem('app-language','ru');function Probe(){const {setLanguage}=useLanguage();window.setFixtureLanguage=setLanguage;return null}createRoot(document.getElementById('root')).render(<LanguageProvider>{import.meta.env.VITE_SCHACH_TREFF_MODERATION_ENABLED==='true'?<ThemeProvider><ClubUnreadProvider userId={new URLSearchParams(location.search).has('guest')?undefined:'11111111-1111-4111-8111-111111111111'}><BrowserRouter><Probe/><Routes><Route element={<Layout/>}><Route path='/chat' element={<Chat/>}/></Route></Routes></BrowserRouter></ClubUnreadProvider></ThemeProvider>:location.pathname==='/room-fixture'?<MemoryRouter><Probe/><Chat/></MemoryRouter>:<BrowserRouter><Probe/><Routes><Route path='/schach-treff/einladung/:token' element={<Invite/>}/><Route path='/chat' element={<Chat/>}/></Routes></BrowserRouter>}</LanguageProvider>);`;
-const db=`const uid='11111111-1111-4111-8111-111111111111', room='22222222-2222-4222-8222-222222222222', guest='33333333-3333-4333-8333-333333333333';
+const db=`const uid='11111111-1111-4111-8111-111111111111', room='22222222-2222-4222-8222-222222222222', guest='33333333-3333-4333-8333-333333333333', dm='44444444-4444-4444-8444-444444444444';
+const mobileFixture = new URLSearchParams(location.search).has('mobileFixture');
 const feed = Array.from({length:28}, (_, index) => ({
   id:'message-'+index, author_id:index===20 ? uid : index>=21 && index<=24 || index>=26 ? guest : index%2 ? uid : guest,
   body:['Добро пожаловать в Schach-Treff!','Кто хочет сыграть тренировочную партию?','Я буду онлайн после восьми.','Отлично, давайте обсудим дебют после партии.'][index%4],
@@ -16,7 +17,7 @@ const counts = { [uid]: 4, [room]: 2 };
 window.fixtureKeepBadges = true;
 const reports = [{message_id:'message-25',body:'Сообщение, на которое пожаловались',kind:'text',hidden:true,reasons:['spam','abuse','other']}];
 export const supabase = {
-  channel(){const channel={on(){return channel},subscribe(){return channel},presenceState(){return {}},track(){return Promise.resolve('ok')}};return channel},removeChannel(){return Promise.resolve()},
+  channel(){const channel={on(){return channel},subscribe(callback){if(mobileFixture)callback?.('SUBSCRIBED');return channel},presenceState(){return mobileFixture ? {[guest]:[{}]} : {}},track(){return Promise.resolve('ok')}};return channel},removeChannel(){return Promise.resolve()},
   rpc(name, payload) {
     const ok = data => Promise.resolve({data,error:null});
     if(name==='get_club_unread_counts') return ok(Object.entries(counts).map(([id,count])=>({club_id:id,is_general:id===uid,unread_count:count})));
@@ -77,26 +78,58 @@ export const supabase = {
           rows=filters.get('kind')==='room'||filters.get('id')===room
             ? [{id:room,name:'Schachverein',kind:'room',is_open:false,slug:'room-schachverein'},...(new URLSearchParams(location.search).has('duplicate') ? [{id:guest,name:'Schachverein'}] : [])]
             : [{id:uid,name:'ChessAZ Deutsch',kind:'community',is_open:true,slug:'chessaz-deutsch'}];
+          if(mobileFixture && (filters.get('kind')==='dm' || filters.get('id')===dm)) rows=[{id:dm,name:'Direct message',kind:'dm',dm_key:uid+':'+guest}];
           if(columns==='pinned_body,pinned_by' && filters.get('id')===room) rows=[{pinned_by:guest,pinned_body:('В пятницу тренировка по эндшпилю. Присоединяйтесь к разбору партий. ').repeat(6)}];
         } else if(table==='chess_club_members') {
           const params=new URLSearchParams(location.search);
           rows=[{user_id:uid,role:params.get('role') || (params.has('club')?'admin':'member')},{user_id:guest,role:'member'}];
         } else if(table==='profiles') {
           rows=[{id:uid,username:'Sofia'},{id:guest,username:'Maksim'}];
-        } else if(table==='chess_club_messages') rows=feed.slice().reverse();
+        } else if(table==='chess_club_messages') rows=columns==='parent_id' ? [] : feed.slice().reverse();
         else if(table==='chess_club_challenges') rows=[{
           id:'challenge-26',message_id:'message-26',created_by:guest,target_user_id:uid,
           time_control:'3+2',status:'open',expires_at:'2099-12-31T23:59:59Z',room_id:null
         }];
+        if(mobileFixture && table==='chess_club_challenges') rows.push(...['cancelled','expired','accepted'].map((status,index)=>({id:'status-'+status,message_id:'message-'+(23+index),created_by:guest,target_user_id:uid,time_control:'5+0',status,expires_at:'2099-12-31T23:59:59Z',room_id:null}))); 
         return Promise.resolve({data:single?(rows[0]||null):rows,error:null}).then(resolve,reject);
       }
     };return q;
   }
 };`;
-const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user:new URLSearchParams(location.search).has('guest')?null:user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!/^\/(?:room-fixture(?:\?|$)|schach-treff\/einladung\/|chat(?:\?|$))/.test(req.url))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
+const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user:new URLSearchParams(location.search).has('guest')?null:user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!/^\/(?:room-fixture(?:\?|$)|schach-treff\/einladung\/|chat(?:\?|$))/.test(req.url))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<html><head><title>ChessAZ</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
 export async function checkRoomLayout(moderation = false, polish = false){
  const server=await createServer({configFile:false,define:{'import.meta.env.VITE_SCHACH_TREFF_V2':JSON.stringify(polish?'true':'false'),'import.meta.env.VITE_CLUBS_NRW_ENABLED':JSON.stringify(polish?'true':'false'),'import.meta.env.VITE_SCHACH_TREFF_MODERATION_ENABLED':JSON.stringify(moderation?'true':'false')},cacheDir:join(tmpdir(),'room-vite-'+process.pid),optimizeDeps:{noDiscovery:true,include:['react','react-dom/client','react-router-dom','lucide-react']},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}}});let chrome,ws,profile;const pending=new Map();
  try{await server.listen();const bin=process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(existsSync);assert.ok(bin,'Chromium required for Schach-Treff layout');profile=await mkdtemp(join(tmpdir(),'schach-rooms-'));chrome=spawn(bin,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--remote-allow-origins=*','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});let stderr='';chrome.stderr.on('data',c=>stderr=(stderr+c).slice(-4000));const pause=ms=>new Promise(r=>setTimeout(r,ms));let port;for(let i=0;i<600;i++){if(chrome.exitCode!==null)throw Error(stderr);try{port=Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]);if(port)break}catch{}await pause(50)}assert.ok(port,stderr);const targets=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();ws=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await new Promise((r,j)=>{ws.addEventListener('open',r,{once:true});ws.addEventListener('error',j,{once:true})});let seq=0;ws.addEventListener('message',({data})=>{const m=JSON.parse(data),p=pending.get(m.id);if(p){pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result)}});const cdp=(method,params={})=>new Promise((resolve,reject)=>{const id=++seq,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},20000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}))});const evaluate=async expression=>{let x=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(x.exceptionDetails)throw Error(JSON.stringify(x.exceptionDetails));return x.result.value};const wait=async expression=>{for(let i=0;i<240;i++){if(await evaluate('Boolean('+expression+')'))return;await pause(50)}throw Error('Fixture did not load '+expression)};await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Page.bringToFront');await cdp('Emulation.setFocusEmulationEnabled',{enabled:true});if(process.env.SECTIONS_CAPTURE)await mkdir(process.env.SECTIONS_CAPTURE,{recursive:true});
+ if (moderation && polish) {
+   const root=server.resolvedUrls.local[0], base=root+'chat?mobileFixture=1&role=member&polish=1';
+   const capture=async name=>{if(process.env.SECTIONS_CAPTURE){const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-mobile-v2-'+name+'.png'),Buffer.from(shot.data,'base64'));}};
+   const click=async selector=>{await wait(`document.querySelector(${JSON.stringify(selector)})`);await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);};
+   const closeSheet=async()=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await wait("!document.querySelector('dialog[open]')");};
+   const fitsSheet=async(width,height)=>{const box=await evaluate(`(()=>{const d=document.querySelector('dialog[open]'),r=d.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,scroll:d.scrollWidth,client:d.clientWidth}})()`);assert.ok(box.left>=-1&&box.right<=width+1&&box.top>=-1&&box.bottom<=height+1&&box.scroll<=box.client+1,JSON.stringify(box));};
+   for(const width of [360,390,430]){const height=844;await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});await cdp('Page.navigate',{url:base});await wait("document.querySelector('.st-mobile-play:not(:disabled)')&&document.querySelector('.st-composer')");
+     for(const zoom of [100,125]){await evaluate(`document.documentElement.style.fontSize=17*${zoom}/100+'px'`);
+       for(const lang of ['de','en','ua','az','tr','ru']){await evaluate(`window.setFixtureLanguage('${lang}')`);await wait(`document.documentElement.lang==='${lang==='ua'?'uk':lang}'`);await evaluate('document.fonts.ready');
+         const geometry=await evaluate(`(()=>{const f=document.querySelector('.st-messages'),c=document.querySelector('.st-composer'),nav=document.querySelector('[data-mobile-app-nav]'),labels=[...nav.querySelectorAll('.site-nav-label')];return {legacy:!!document.querySelector('.st-mobile-legacy,.st-mobile-community,.st-mobile-directory,.st-mobile-members'),menu:[...document.querySelectorAll('.st-mobile-v2 button,.st-mobile-v2 summary')].filter(e=>e.getClientRects().length&&e.textContent.trim()==='⋯').length,feed:f.clientHeight,overflow:f.scrollWidth-f.clientWidth,composerOverflow:c.scrollWidth-c.clientWidth,composerBottom:c.getBoundingClientRect().bottom,navTop:nav.getBoundingClientRect().top,doc:document.documentElement.scrollWidth,title:document.title,labels:labels.map(e=>({whiteSpace:getComputedStyle(e).whiteSpace,overflowWrap:getComputedStyle(e).overflowWrap,overflow:getComputedStyle(e).overflow,top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height,lineHeight:parseFloat(getComputedStyle(e).lineHeight),text:e.textContent}))}})()`);
+         assert.ok(!geometry.legacy&&geometry.menu===1&&geometry.feed>0&&geometry.overflow<=1&&geometry.composerOverflow<=1&&geometry.composerBottom<=geometry.navTop+1&&geometry.doc<=width+1&&geometry.title!=='tmp',lang+' '+zoom+' '+width+' '+JSON.stringify(geometry));
+         assert.ok(geometry.labels.every(l=>l.whiteSpace==='nowrap'&&l.overflowWrap!=='anywhere'&&l.overflow==='hidden'&&l.height<=l.lineHeight+1)&&geometry.labels.some(l=>l.text==='Schach-Treff'),JSON.stringify(geometry.labels));
+         const take=width===390&&zoom===125&&lang==='ru';if(take){await capture('chat');await capture('bottom-nav');}
+         await click('.st-mobile-room-trigger');await wait("document.querySelector('.st-mobile-sheet[open] .st-room-list>a')");await fitsSheet(width,height);if(take)await capture('rooms');await closeSheet();
+         await click('.st-mobile-play');await wait("document.querySelector('.st-mobile-challenge[open]')");await fitsSheet(width,height);
+         const challenge=await evaluate(`(()=>{const d=document.querySelector('.st-mobile-challenge[open]'),[a,b]=d.querySelectorAll('.st-mobile-challenge-kind button'),p=d.querySelector('.st-mobile-primary'),s=d.querySelector('.st-mobile-secondary');return {open:a.getAttribute('aria-pressed')==='true',separate:b.getBoundingClientRect().top>=a.getBoundingClientRect().bottom,colors:getComputedStyle(p).backgroundColor!==getComputedStyle(s).backgroundColor,targets:[...d.querySelectorAll('button')].every(e=>e.getBoundingClientRect().height>=44),opponents:!!d.querySelector('.st-mobile-opponents')}})()`);
+         assert.ok(challenge.open&&challenge.separate&&challenge.colors&&challenge.targets&&!challenge.opponents,JSON.stringify(challenge));if(take)await capture('challenge-open');
+         await click('.st-mobile-challenge-kind button:nth-of-type(2)');await wait("document.querySelector('.st-mobile-opponents button')");await click('.st-mobile-opponents button');await fitsSheet(width,height);if(take)await capture('challenge-personal');await closeSheet();
+         await click('.st-mobile-v2-more');await wait("document.querySelector('.st-mobile-sheet[open] .st-mobile-sheet-rows')");await fitsSheet(width,height);if(take)await capture('club-menu');
+         await click('.st-mobile-sheet-rows>button:first-child');await wait("document.querySelector('.st-mobile-sheet[open] .st2-members li')");await fitsSheet(width,height);if(take)await capture('members');await closeSheet();
+         await click('.st-mobile-v2-more');await click('.st-mobile-sheet-rows>button:nth-child(2)');await wait("document.querySelector('.st-mobile-sheet[open] h2')&&!document.querySelector('.st-mobile-sheet-rows')");await fitsSheet(width,height);if(take)await capture('ranking');await closeSheet();
+         assert.equal(await evaluate("[...document.querySelectorAll('.st-challenge-card')].filter(e=>!e.querySelector('.st-challenge-status')&&!e.querySelector('button')).length"),3,'expired, cancelled and accepted statuses are not duplicated');
+       }
+     }
+   }
+   await cdp('Page.navigate',{url:base+'&club=44444444-4444-4444-8444-444444444444'});await wait("document.querySelector('.st-mobile-room-trigger strong')?.textContent==='Maksim'&&document.querySelector('.st-mobile-play:not(:disabled)')");
+   await click('.st-mobile-play');await wait("document.querySelector('.st-mobile-challenge[open] .st-mobile-opponents button[aria-pressed=true]')?.textContent==='Maksim'");
+   assert.equal(await evaluate("document.querySelector('.st-mobile-challenge-kind button:nth-of-type(2)').getAttribute('aria-pressed')"),'true');await closeSheet();
+   return;
+ }
  if (polish) {
    const fixtureUrl=server.resolvedUrls.local[0]+'room-fixture?club=22222222-2222-4222-8222-222222222222&polish=1';
    for (const width of [375,1366,1920]) {
@@ -104,6 +137,16 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await cdp('Page.navigate',{url:fixtureUrl});
      await wait("document.querySelector('.st-messages .st-name') && document.querySelector('.st-challenge-icon')");
      assert.equal(await evaluate("Boolean(document.querySelector('.schach-treff>header>.st2-feedback'))"),false);
+     if(width===375){
+       await evaluate("document.querySelector('.st-mobile-v2-more').click()");
+       await wait("document.querySelector('.st-mobile-sheet[open] .st2-feedback')");
+       await evaluate("document.querySelector('.st-mobile-sheet[open] .st2-feedback').click()");
+       await wait("document.querySelector('.st2-feedback-dialog[open] textarea')");
+       await evaluate("document.querySelector('.st2-feedback-dialog .st2-icon-button').click()");
+       await wait("!document.querySelector('.st2-feedback-dialog[open]')");
+       await evaluate("document.querySelector('.st-mobile-sheet[open] .st-mobile-sheet-head>button').click()");
+       await wait("!document.querySelector('.st-mobile-sheet[open]')");
+     }else{
      assert.equal(await evaluate("document.querySelector('.st-menu nav').hidden"),true);
      await evaluate("document.querySelector('.st-menu>button').click()");
      await wait("!document.querySelector('.st-menu nav').hidden");
@@ -112,21 +155,6 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await evaluate("document.querySelector('.st2-feedback-dialog .st2-icon-button').click()");
      await wait("!document.querySelector('.st2-feedback-dialog[open]')");
      await evaluate("document.querySelector('.st-menu>button').click()");
-     if (width===375) {
-       for (const lang of ['de','en','az','tr','ua','ru']) {
-         await evaluate(`window.setFixtureLanguage('${lang}')`);
-         await wait(`document.documentElement.lang==='${lang==='ua'?'uk':lang}'`);
-         const geometry=await evaluate(`(()=>{const d=document.querySelector('.st-mobile-directory'),m=document.querySelector('.st-mobile-members'),f=document.querySelector('.st-messages'),c=document.querySelector('.st-composer'),chat=document.querySelector('.st-chat'),nav=document.querySelector('[data-mobile-app-nav]');return {closed:!d.open&&!m.open,feed:f.clientHeight,overflow:f.scrollWidth-f.clientWidth,composerOverflow:c.scrollWidth-c.clientWidth,bottom:c.getBoundingClientRect().bottom,chatBottom:chat.getBoundingClientRect().bottom,limit:nav&&nav.getBoundingClientRect().height?nav.getBoundingClientRect().top:innerHeight,doc:document.documentElement.scrollWidth}})()`);
-         assert.ok(geometry.closed&&geometry.feed>0&&geometry.overflow<=1&&geometry.composerOverflow<=1&&geometry.doc<=width+1&&geometry.bottom<=geometry.chatBottom+1&&geometry.bottom<=geometry.limit+1,lang+' mobile chat '+JSON.stringify(geometry));
-       }
-       for (const selector of ['.st-mobile-directory','.st-mobile-members']) {
-         await evaluate(`document.querySelector('${selector}>summary').click()`);
-         await wait(`document.querySelector('${selector}').open`);
-         const bounds=await evaluate(`(()=>{const d=document.querySelector('${selector}'),p=d.querySelector('aside'),r=p.getBoundingClientRect();return {width:r.width,left:r.left,right:r.right}})()`);
-         assert.ok(bounds.width>0&&bounds.left>=0&&bounds.right<=width+1,JSON.stringify(bounds));
-         await evaluate(`document.querySelector('${selector}>summary').click()`);
-         await wait(`!document.querySelector('${selector}').open`);
-       }
      }
      if (width>=1024) {
        assert.equal(await evaluate("getComputedStyle(document.querySelector('.st2-side:not(.st2-thread)>.st2-side-title')).color"),'rgb(195, 161, 122)');
