@@ -108,7 +108,7 @@ export default function Layout() {
           <nav className="px-3 xl:px-4 pt-10 xl:pt-9 pb-4 space-y-1 flex-1">
             <NavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} themeColor="theme-premium" alwaysGlow={!desktop} />
             <NavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} themeColor="theme-emerald" />
-            <NavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
+            <NavItem to="/chat" icon={<MessageSquare size={20} className="schach-treff-chat-icon"><defs><linearGradient id="sidebar-chat-dot-gradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#3153A3" /><stop offset="48%" stopColor="#AD85ED" /><stop offset="78%" stopColor="#E9C36D" /><stop offset="100%" stopColor="#C49242" /></linearGradient></defs><circle className="schach-treff-chat-dot" cx="12" cy="10.5" r="3" aria-hidden="true" /></MessageSquare>} label="Schach-Treff" themeColor="theme-violet" bronzeLabel />
             {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <NavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" themeColor="theme-gold" bronzeLabel />}
             {desktop && showSpieltag && <NavItem to="/spieltag" icon={<Grid size={20} />} label={t("nav.spieltag")} themeColor="theme-gold" />}
             <NavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} themeColor="theme-blue" />
@@ -207,6 +207,7 @@ function NavItem({ to, icon, label, themeColor = 'theme-cyan', alwaysGlow = fals
       className={({ isActive }) =>
         cx(
           "site-nav-link flex items-center px-4 border border-transparent rounded-2xl font-semibold text-[0.94rem] normal-case tracking-normal relative group active:scale-95 sidebar-item",
+          to === '/chat' && "site-nav-link--schach-treff",
           isActive
             ? `sidebar-item-active ${themeColor}`
             : cx("text-neutral-500 sidebar-item-hover", alwaysGlow && themeColor)
