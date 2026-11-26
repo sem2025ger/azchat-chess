@@ -120,7 +120,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
        })()`);
        assert.ok(compact.titleText&&compact.titleWidth<=1&&compact.titleHeight<=1,'duplicate title is visually hidden but accessible');
        assert.ok(compact.nrwHidden,'duplicate NRW link hidden on desktop');
-       assert.ok(compact.menuHeight>=44&&compact.headerHeight<=compact.menuHeight+1&&compact.margin==='0','compact header preserves menu: '+JSON.stringify(compact));
+       assert.ok(compact.menuHeight>=44&&compact.headerHeight<=compact.menuHeight+1&&compact.margin==='0px','compact header preserves menu: '+JSON.stringify(compact));
        assert.ok(Math.abs(compact.chatHeight-(900-109))<=1&&compact.chatBottom<=901,'chat gains the reclaimed 36px without bottom clipping: '+JSON.stringify(compact));
 
      }
