@@ -95,7 +95,7 @@ export const supabase = {
 };`;
 const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user:new URLSearchParams(location.search).has('guest')?null:user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!/^\/(?:room-fixture(?:\?|$)|schach-treff\/einladung\/|chat(?:\?|$))/.test(req.url))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
 export async function checkRoomLayout(moderation = false, polish = false){
- const server=await createServer({configFile:false,define:{'import.meta.env.VITE_SCHACH_TREFF_V2':JSON.stringify(polish?'true':'false'),'import.meta.env.VITE_SCHACH_TREFF_MODERATION_ENABLED':JSON.stringify(moderation?'true':'false')},cacheDir:join(tmpdir(),'room-vite-'+process.pid),optimizeDeps:{noDiscovery:true,include:['react','react-dom/client','react-router-dom','lucide-react']},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}}});let chrome,ws,profile;const pending=new Map();
+ const server=await createServer({configFile:false,define:{'import.meta.env.VITE_SCHACH_TREFF_V2':JSON.stringify(polish?'true':'false'),'import.meta.env.VITE_CLUBS_NRW_ENABLED':JSON.stringify(polish?'true':'false'),'import.meta.env.VITE_SCHACH_TREFF_MODERATION_ENABLED':JSON.stringify(moderation?'true':'false')},cacheDir:join(tmpdir(),'room-vite-'+process.pid),optimizeDeps:{noDiscovery:true,include:['react','react-dom/client','react-router-dom','lucide-react']},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}}});let chrome,ws,profile;const pending=new Map();
  try{await server.listen();const bin=process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(existsSync);assert.ok(bin,'Chromium required for Schach-Treff layout');profile=await mkdtemp(join(tmpdir(),'schach-rooms-'));chrome=spawn(bin,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--remote-allow-origins=*','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});let stderr='';chrome.stderr.on('data',c=>stderr=(stderr+c).slice(-4000));const pause=ms=>new Promise(r=>setTimeout(r,ms));let port;for(let i=0;i<600;i++){if(chrome.exitCode!==null)throw Error(stderr);try{port=Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]);if(port)break}catch{}await pause(50)}assert.ok(port,stderr);const targets=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();ws=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await new Promise((r,j)=>{ws.addEventListener('open',r,{once:true});ws.addEventListener('error',j,{once:true})});let seq=0;ws.addEventListener('message',({data})=>{const m=JSON.parse(data),p=pending.get(m.id);if(p){pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result)}});const cdp=(method,params={})=>new Promise((resolve,reject)=>{const id=++seq,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},20000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}))});const evaluate=async expression=>{let x=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(x.exceptionDetails)throw Error(JSON.stringify(x.exceptionDetails));return x.result.value};const wait=async expression=>{for(let i=0;i<240;i++){if(await evaluate('Boolean('+expression+')'))return;await pause(50)}throw Error('Fixture did not load '+expression)};await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Page.bringToFront');await cdp('Emulation.setFocusEmulationEnabled',{enabled:true});if(process.env.SECTIONS_CAPTURE)await mkdir(process.env.SECTIONS_CAPTURE,{recursive:true});
  if (polish) {
    const fixtureUrl=server.resolvedUrls.local[0]+'room-fixture?club=22222222-2222-4222-8222-222222222222&polish=1';
@@ -114,25 +114,15 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await evaluate("document.querySelector('.st-menu>button').click()");
      if (width>=1024) {
        assert.equal(await evaluate("getComputedStyle(document.querySelector('.st2-side:not(.st2-thread)>.st2-side-title')).color"),'rgb(195, 161, 122)');
-       const paint=await evaluate(`(()=>{
-         const title=document.querySelector('.schach-treff>header h1'),link=document.querySelector('.st-general-link');
-         const animation=title.getAnimations().find(a=>a.animationName==='st2TitleMetalShift');
-         if(!animation) return null;
-         animation.pause();animation.currentTime=0;
-         const first=title.getBoundingClientRect().toJSON(),start=getComputedStyle(title).backgroundPosition;
-         animation.currentTime=6000;
-         const second=title.getBoundingClientRect().toJSON(),end=getComputedStyle(title).backgroundPosition;
-         animation.play();
-         return {first,second,start,end,font:getComputedStyle(title).fontFamily,size:getComputedStyle(title).fontSize,
-           duration:getComputedStyle(title).animationDuration,linkAnimation:getComputedStyle(link).animationName};
+       const compact=await evaluate(`(()=>{
+         const header=document.querySelector('.schach-treff>header'),title=header.querySelector('h1'),nrw=header.querySelector('.st-region-entry'),menu=header.querySelector('.st-menu>button'),chat=document.querySelector('.st-chat'),style=getComputedStyle(header),r=title.getBoundingClientRect();
+         return {titleWidth:r.width,titleHeight:r.height,titleText:title.textContent,nrwHidden:!!nrw&&getComputedStyle(nrw).display==='none',menuHeight:menu.getBoundingClientRect().height,headerHeight:header.getBoundingClientRect().height,margin:style.marginBottom,chatHeight:chat.getBoundingClientRect().height,chatTop:chat.getBoundingClientRect().top,chatBottom:chat.getBoundingClientRect().bottom};
        })()`);
-       assert.ok(paint && paint.start!==paint.end,'title paint moves');
-       assert.deepEqual(paint.first,paint.second,'title geometry remains fixed during animation');
-       assert.ok(paint.font.includes('Bodoni Moda') && paint.size==='42.5px','approved 2.5rem title at the existing 17px root: '+JSON.stringify(paint));
-       assert.equal(paint.duration,'12s');assert.equal(paint.linkAnimation,'none');
-       await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
-       assert.equal(await evaluate("getComputedStyle(document.querySelector('.schach-treff>header h1')).animationName"),'none');
-       await cdp('Emulation.setEmulatedMedia',{features:[]});
+       assert.ok(compact.titleText&&compact.titleWidth<=1&&compact.titleHeight<=1,'duplicate title is visually hidden but accessible');
+       assert.ok(compact.nrwHidden,'duplicate NRW link hidden on desktop');
+       assert.ok(compact.menuHeight>=44&&compact.headerHeight<=compact.menuHeight+1&&compact.margin==='0px','compact header preserves menu: '+JSON.stringify(compact));
+       assert.ok(Math.abs(compact.chatHeight-(900-93))<=1&&compact.chatTop<=53&&compact.chatBottom<=901,'chat gains the reclaimed 52px without bottom clipping: '+JSON.stringify(compact));
+
      }
      await evaluate("document.querySelector('.st-messages .st-name').click()");
      await wait("document.querySelector('dialog.st2-player-dialog[open] .st-player-history li')");
@@ -165,14 +155,25 @@ export async function checkRoomLayout(moderation = false, polish = false){
        await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'room-fixture?polish=1'});
        await wait("document.querySelector('.st-general-link[aria-current=page]') && document.querySelector('.st-composer')");
        assert.equal(await evaluate("getComputedStyle(document.querySelector('.st-general-link')).animationName"),'none');
+       for (const lang of ['de','en','az','tr','ua','ru']) {
+         await evaluate(`window.setFixtureLanguage('${lang}')`);
+         await wait(`document.documentElement.lang==='${lang==='ua'?'uk':lang}'`);
+         const layout=await evaluate(`(()=>{
+           const chat=document.querySelector('.st-chat'),feed=chat.querySelector('.st-messages'),composer=chat.querySelector('.st-composer'),online=chat.querySelector('.st2-online'),seek=document.querySelector('.st2-rooms-seek .st2-seek-trigger'),settings=document.querySelector('.st-rooms .st2-settings-link'),motto=chat.querySelector('.st2-general-motto'),menu=document.querySelector('.st-menu>button'),nrw=document.querySelector('.st-region-entry'),title=document.querySelector('.schach-treff>header h1');
+           return {onlineHidden:!!online&&getComputedStyle(online).display==='none',nrwHidden:!!nrw&&getComputedStyle(nrw).display==='none',titleHidden:title.getBoundingClientRect().width<=1,seekVisible:!!seek&&seek.getBoundingClientRect().width>0,seekUnique:document.querySelectorAll('.st2-seek-trigger').length===1,seekBelowSettings:!!settings&&!!seek&&seek.getBoundingClientRect().top>=settings.getBoundingClientRect().bottom,seekNearComposer:!!seek&&Math.abs(seek.getBoundingClientRect().bottom-composer.getBoundingClientRect().bottom)<=20,mottoCentered:getComputedStyle(motto).textAlign==='center'&&Math.abs((motto.getBoundingClientRect().left+motto.getBoundingClientRect().right-chat.getBoundingClientRect().left-chat.getBoundingClientRect().right)/2)<=2,menuVisible:menu.getBoundingClientRect().height>=44,feedHeight:feed.clientHeight,chatHeight:chat.getBoundingClientRect().height,composerBottom:composer.getBoundingClientRect().bottom,chatBottom:chat.getBoundingClientRect().bottom,docWidth:document.documentElement.scrollWidth};
+         })()`);
+         assert.ok(layout.onlineHidden&&layout.nrwHidden&&layout.titleHidden&&layout.seekVisible&&layout.seekUnique&&layout.seekBelowSettings&&layout.seekNearComposer&&layout.mottoCentered&&layout.menuVisible,'desktop controls '+lang+' '+JSON.stringify(layout));
+         assert.ok(layout.feedHeight>0&&Math.abs(layout.chatHeight-(900-93))<=1&&layout.composerBottom<=layout.chatBottom+1&&layout.chatBottom<=901&&layout.docWidth<=width+1,'chat fits '+lang+' '+JSON.stringify(layout));
+       }
+       await evaluate("document.querySelector('.st2-rooms-seek .st2-seek-trigger').click()");
+       await wait("document.querySelector('.st2-rooms-seek .st2-seek-popover')");
+       const popupFits=await evaluate(`(()=>{const p=document.querySelector('.st2-rooms-seek .st2-seek-popover').getBoundingClientRect(),r=document.querySelector('.st-rooms').getBoundingClientRect();return p.left>=r.left&&p.right<=r.right&&p.top>=r.top&&p.bottom<=r.bottom})()`);
+       assert.ok(popupFits,'Seek popover fits in room column');
+       await evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))");
+       await wait("!document.querySelector('.st2-rooms-seek .st2-seek-popover')");
        if(process.env.SECTIONS_CAPTURE) {
          const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
-         await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-title-static-general-'+width+'.png'),Buffer.from(shot.data,'base64'));
-         for(const phase of [0,6000]) {
-           await evaluate(`(()=>{const a=document.querySelector('.schach-treff>header h1').getAnimations()[0];a.pause();a.currentTime=${phase};})()`);
-           const frame=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
-           await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-dark-metal-'+width+'-'+phase+'.png'),Buffer.from(frame.data,'base64'));
-         }
+         await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-compact-general-'+width+'.png'),Buffer.from(shot.data,'base64'));
 
        }
      }
