@@ -85,7 +85,8 @@ export const supabase = {
           rows=[{user_id:uid,role:params.get('role') || (params.has('club')?'admin':'member')},{user_id:guest,role:'member'}];
         } else if(table==='profiles') {
           rows=[{id:uid,username:'Sofia'},{id:guest,username:'Maksim'}];
-        } else if(table==='chess_club_messages') rows=columns==='parent_id' ? [] : feed.slice().reverse();
+        } else if(table==='chess_club_messages') rows=columns==='parent_id' ? (mobileFixture ? [{parent_id:'message-27'}] : []) : feed.slice().reverse();
+        else if(mobileFixture && table==='chess_club_message_reactions') rows=[{message_id:'message-27',user_id:guest,reaction:'!'}];
         else if(table==='chess_club_challenges') rows=[{
           id:'challenge-26',message_id:'message-26',created_by:guest,target_user_id:uid,
           time_control:'3+2',status:'open',expires_at:'2099-12-31T23:59:59Z',room_id:null
@@ -105,6 +106,10 @@ export async function checkRoomLayout(moderation = false, polish = false){
    const capture=async name=>{if(process.env.SECTIONS_CAPTURE){const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-mobile-v2-'+name+'.png'),Buffer.from(shot.data,'base64'));}};
    const click=async selector=>{await wait(`document.querySelector(${JSON.stringify(selector)})`);await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);};
    const closeSheet=async()=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await wait("!document.querySelector('dialog[open]')");};
+   const settle=()=>evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
+   const viewportGeometry=()=>evaluate(`(()=>{const page=document.querySelector('.st-mobile-v2'),title=page.querySelector('.st-mobile-v2-title'),more=title.querySelector('button'),composer=page.querySelector('.st-composer'),nav=document.querySelector('[data-mobile-app-nav]'),ancestors=[];for(let e=page;e;e=e.parentElement)ancestors.push({node:e.tagName,id:e.id,overflow:e.scrollHeight-e.clientHeight,scrollTop:e.scrollTop});const r=e=>e.getBoundingClientRect();return {ancestors,scrollTop:document.scrollingElement.scrollTop,top:r(title).top,titleBottom:r(title).bottom,moreTop:r(more).top,moreBottom:r(more).bottom,gap:r(nav).top-r(composer).bottom,navBottom:r(nav).bottom,visible:visualViewport?.height??innerHeight,layout:innerHeight,feed:page.querySelector('.st-messages').clientHeight}})()`);
+   const viewportFits=async context=>{await settle();const g=await viewportGeometry();assert.ok(g.scrollTop===0&&g.ancestors.every(a=>a.scrollTop===0&&a.overflow<=1)&&g.top>=-1&&g.moreTop>=-1&&g.moreBottom<=g.titleBottom+1&&g.titleBottom<g.visible&&g.gap>=-1&&g.gap<=2&&g.navBottom<=g.visible+1&&g.feed>0,context+' '+JSON.stringify(g));return g;};
+   const positionFits=async(width,height,captureName)=>{await click('.st2-position-trigger');await wait("document.querySelector('dialog[open] .st2-position-form .st2-board-play button')");await fitsSheet(width,height);const g=await evaluate(`(()=>{const d=document.querySelector('dialog[open]'),form=d.querySelector('.st2-position-form'),b=form.querySelector('.st2-board'),h=d.querySelector('h2'),r=b.getBoundingClientRect(),hr=h.getBoundingClientRect(),style=getComputedStyle(h);return {w:r.width,h:r.height,available:form.clientWidth,squares:b.querySelectorAll('button').length,scroll:d.scrollWidth-d.clientWidth,verticalScroll:getComputedStyle(d).overflowY,titleHeight:hr.height,lineHeight:parseFloat(style.lineHeight),titleFits:h.scrollWidth<=h.clientWidth+1,wordBreak:style.wordBreak,wrap:style.overflowWrap}})()`);assert.ok(Math.abs(g.w-Math.min(g.available,420))<=1&&Math.abs(g.w-g.h)<=1&&g.squares===64&&g.scroll<=1&&['auto','scroll'].includes(g.verticalScroll)&&g.titleFits&&g.wordBreak==='normal'&&g.wrap==='normal',JSON.stringify(g));if(captureName)await capture(captureName);await closeSheet();};
    const fitsSheet=async(width,height)=>{const box=await evaluate(`(()=>{const d=document.querySelector('dialog[open]'),r=d.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,scroll:d.scrollWidth,client:d.clientWidth}})()`);assert.ok(box.left>=-1&&box.right<=width+1&&box.top>=-1&&box.bottom<=height+1&&box.scroll<=box.client+1,JSON.stringify(box));};
    for(const width of [360,390,430]){const height=844;await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});await cdp('Page.navigate',{url:base});await wait("document.querySelector('.st-mobile-play:not(:disabled)')&&document.querySelector('.st-composer')&&document.querySelector('.st-mobile-online-list button')");
      for(const zoom of [100,125]){await evaluate(`document.documentElement.style.fontSize=17*${zoom}/100+'px'`);
@@ -115,7 +120,9 @@ export async function checkRoomLayout(moderation = false, polish = false){
          assert.ok(geometry.labels.every(l=>!l.outside&&l.textOverflow==='clip'&&l.overflowWrap==='normal'&&l.scroll<=l.client+1&&(l.text==='Schach-Treff'?(l.lines.join('')===l.text&&(l.lines.length===1||JSON.stringify(l.lines)===JSON.stringify(['Schach-','Treff']))):l.whiteSpace==='nowrap'&&l.lines.length===1&&l.lines[0]===l.text)),JSON.stringify(geometry.labels));
          assert.ok(geometry.labels.slice(1).every((l,i)=>l.left>=geometry.labels[i].right-1),JSON.stringify(geometry.labels));
          assert.ok(geometry.actions.length>0&&geometry.actions.every(Boolean),'message actions belong to their header and have 44px targets');
+         await viewportFits(lang+' '+zoom+' '+width);
          const take=width===390&&zoom===125&&lang==='ru';if(take){await capture('chat');await capture('bottom-nav');}
+         if(lang==='ru')await positionFits(width,height,take?'position-125':undefined);
          await click('.st-mobile-room-trigger');await wait("document.querySelector('.st-mobile-sheet[open] .st-room-list>a')");await fitsSheet(width,height);await wait("document.querySelector('.st-mobile-sheet[open] .st-unread-badge')");assert.ok(await evaluate("[...document.querySelectorAll('.st-mobile-sheet[open] .st-unread-badge')].every(e=>{const r=e.getBoundingClientRect();return r.height>0&&r.height<=24&&Math.abs(r.width-r.height)<=1})"),'single-digit unread counts are round');if(take)await capture('rooms');await closeSheet();
          await click('.st-mobile-play');await wait("document.querySelector('.st-mobile-challenge[open]')");await fitsSheet(width,height);
          const challenge=await evaluate(`(()=>{const d=document.querySelector('.st-mobile-challenge[open]'),[a,b]=d.querySelectorAll('.st-mobile-challenge-kind button'),p=d.querySelector('.st-mobile-primary'),s=d.querySelector('.st-mobile-secondary');return {open:a.getAttribute('aria-pressed')==='true',separate:b.getBoundingClientRect().top>=a.getBoundingClientRect().bottom,colors:getComputedStyle(p).backgroundColor!==getComputedStyle(s).backgroundColor,targets:[...d.querySelectorAll('button')].every(e=>e.getBoundingClientRect().height>=44),opponents:!!d.querySelector('.st-mobile-opponents')}})()`);
@@ -128,6 +135,37 @@ export async function checkRoomLayout(moderation = false, polish = false){
        }
      }
    }
+   // Real-phone regressions: enlarged nav line boxes, shorter visible window and keyboard focus.
+   for(const zoom of [125,150])for(const toolbar of [0,56]){
+     const width=390,height=844-toolbar,suffix=zoom+(toolbar?'-toolbar':'');
+     await cdp('Emulation.setDeviceMetricsOverride',{width,height,screenWidth:width,screenHeight:844,deviceScaleFactor:1,mobile:true});
+     await cdp('Page.navigate',{url:base});
+     await wait("document.querySelector('.st-mobile-play:not(:disabled)')&&document.querySelector('.st-mobile-reaction-trigger')");
+     await evaluate(`(()=>{document.documentElement.style.fontSize=17*${zoom}/100+'px';const style=document.createElement('style');style.textContent='[data-mobile-app-nav] .site-nav-label{line-height:2.4!important}';document.head.appendChild(style);})()`);
+     await evaluate("window.setFixtureLanguage('ru')");
+     await wait("document.documentElement.lang==='ru'&&document.querySelector('.st2-reaction-row')");
+     const before=await viewportFits('stress '+suffix);
+     assert.ok(before.visible<=height+1,'shortened visible viewport is actually applied');
+     await evaluate("document.querySelector('.st-composer input').focus()");
+     await viewportFits('focused '+suffix);
+     await evaluate("document.querySelector('.st-composer input').blur();document.querySelector('[data-route-scroll]').scrollTop=100;window.scrollTo(0,100)");
+     await viewportFits('blurred '+suffix);
+     assert.equal(await evaluate("document.querySelectorAll('.st2-tools').length"),0,'quick reactions start hidden');
+     assert.ok(await evaluate("document.querySelector('.st2-reaction-row .st2-reaction')&&document.querySelector('.st2-reaction-row .st2-replies')"),'existing reactions and reply count stay visible');
+     assert.ok(await evaluate("document.querySelector('.st-message-own .st-message-actions svg.lucide-ellipsis-vertical')&&document.querySelector('.st-message:not(.st-message-own) .st-message-actions svg.lucide-flag')"),'own/other message actions use distinct icons');
+     await capture('viewport-chat-'+suffix);await capture('viewport-nav-'+suffix);
+     const tap=async()=>{const p=await evaluate(`(()=>{const e=[...document.querySelectorAll('.st-mobile-reaction-trigger')].at(-1);e.scrollIntoView({block:'center',inline:'nearest'});const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await cdp('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await cdp('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});};
+     await tap();await wait("document.querySelectorAll('.st2-tools').length===1");
+     assert.ok(await evaluate("[...document.querySelectorAll('.st2-tools button')].every(e=>{const r=e.getBoundingClientRect();return r.width>=44&&r.height>=44})"),'44px reaction targets');
+     assert.ok(await evaluate("document.querySelector('.st2-reaction-row .st2-reaction')&&document.querySelector('.st2-reaction-row .st2-replies')"),'counts remain visible');
+     await evaluate("document.querySelector('.st2-tools').scrollIntoView({block:'nearest'})");await viewportFits('reactions '+suffix);await capture('viewport-reactions-'+suffix);
+     await tap();await wait("!document.querySelector('.st2-tools')");
+     await tap();await wait("document.querySelector('.st2-tools')");
+     await evaluate("document.querySelector('.st-mobile-v2-title h1').click()");await wait("!document.querySelector('.st2-tools')");
+     await positionFits(width,height,'viewport-position-'+suffix);
+     await click('.st-mobile-v2-more');await wait("document.querySelector('.st-mobile-sheet[open] .st-mobile-sheet-rows')");await fitsSheet(width,height);await capture('viewport-menu-'+suffix);await closeSheet();await viewportFits('closed '+suffix);
+   }
+   await cdp('Emulation.setDeviceMetricsOverride',{width:430,height:844,deviceScaleFactor:1,mobile:true});
    await cdp('Page.navigate',{url:base+'&club=44444444-4444-4444-8444-444444444444'});await wait("document.querySelector('.st-mobile-room-trigger strong')?.textContent==='Maksim'&&document.querySelector('.st-mobile-play:not(:disabled)')");
    await click('.st-mobile-play');await wait("document.querySelector('.st-mobile-challenge[open] .st-mobile-opponents button[aria-pressed=true]')?.textContent==='Maksim'");
    assert.equal(await evaluate("document.querySelector('.st-mobile-challenge-kind button:nth-of-type(2)').getAttribute('aria-pressed')"),'true');await closeSheet();
