@@ -1966,8 +1966,9 @@ aside .site-nav-link{min-height:58px;padding:10px 14px;border-radius:12px}
 .site-nav-subtitle{display:block;margin-top:3px;font:400 .705rem/1.35 Inter,system-ui,sans-serif;color:#a9a59c;letter-spacing:0;text-transform:none}
 aside nav{padding-top:20px!important}
 /* Equal-width mobile touch targets; wrap long localized labels instead of clipping. */
-[data-mobile-app-nav] .site-nav-link{flex:1 1 0%;min-width:44px}
-[data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:calc(100% - 6px);max-width:calc(100% - 6px);font-size:clamp(.58rem,2.65vw,.75rem);line-height:1.2;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-mobile-app-nav] .site-nav-link{flex:1 0 auto;min-width:44px;box-sizing:border-box;padding-inline:2px}
+[data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:auto;max-width:none;font-size:clamp(9px,2.65vw,.75rem);line-height:1.2;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;overflow-wrap:normal;word-break:normal;hyphens:manual}
+[data-mobile-app-nav] .site-nav-link[href="/chat"] .site-nav-label{width:min-content;white-space:normal}
 [data-mobile-app-nav]{gap:2px}
 [data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:58px;gap:4px}
 /* Equal navigation rows leave room for every desktop destination at 720 px. */
@@ -1987,7 +1988,7 @@ aside nav{padding-top:12px!important}
 [class~="text-[23px]"]{font-size:1.4375rem}
 [class~="text-[29px]"]{font-size:1.8125rem}
 [class~="text-[42px]"]{font-size:2.625rem}
-[data-mobile-app-nav] .site-nav-link{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:22px 2.4em;align-content:center;justify-items:center;gap:3px}
+[data-mobile-app-nav] .site-nav-link{display:grid;grid-template-columns:max-content;grid-template-rows:22px 2.4em;align-content:center;justify-content:center;justify-items:center;gap:3px}
 [data-mobile-app-nav] .site-nav-link>div{grid-row:1;align-self:start}
 [data-mobile-app-nav] .site-nav-link .site-nav-label{grid-row:2;align-self:start}
 /* UI copy uses self-hosted Inter; display faces are reserved for page titles. */

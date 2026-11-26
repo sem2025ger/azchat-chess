@@ -272,7 +272,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     {mobileV2 ? <div className="st-mobile-v2-top">
       <div className="st-mobile-v2-title"><h1>{t.title}</h1><button type="button" className="st-mobile-v2-more" aria-label={t.more} aria-haspopup="dialog" onClick={() => setMobileSheet('menu')}>⋯</button></div>
       <div className="st-mobile-v2-row"><button type="button" className="st-mobile-room-trigger" aria-haspopup="dialog" onClick={() => setMobileSheet('rooms')}><span><strong>{roomName}</strong><small>{dmChat ? copy2.directChat : isClub ? copy1.myClubs : copy1.subtitle}</small></span><ChevronDown size={18} aria-hidden="true" /></button><ChallengeButton targetUserId={dmChat?.partnerId} disabled={!member || iBlocked} play /></div>
-      {member && <div className="st-mobile-online"><div className="st-mobile-online-label"><span className="st2-online-dot" aria-hidden="true" />{onlineIds === null ? copy1.activeNow : copy1.onlineNow} · {mobileOnline.length}</div><div className="st-mobile-online-list">{mobileOnline.slice(0,12).map(person => <button type="button" key={person.id} aria-label={person.username} onClick={() => setPlayer(person)}><span className="st-mobile-online-avatar" style={nameStyle(person.id)}>{Array.from(person.username)[0]?.toLocaleUpperCase()}</span><span>{person.username}</span></button>)}{mobileOnline.length > 12 && <button type="button" aria-label={t.members} onClick={() => setPanel('members')}>+{mobileOnline.length-12}</button>}</div></div>}
+      {member && mobileOnline.length > 0 && <div className="st-mobile-online"><div className="st-mobile-online-label"><span className="st2-online-dot" aria-hidden="true" />{onlineIds === null ? copy1.activeNow : copy1.onlineNow} · {mobileOnline.length}</div><div className="st-mobile-online-list">{mobileOnline.slice(0,12).map(person => <button type="button" key={person.id} aria-label={person.username} onClick={() => setPlayer(person)}><span className="st-mobile-online-avatar" style={nameStyle(person.id)}>{Array.from(person.username)[0]?.toLocaleUpperCase()}</span><span>{person.username}</span></button>)}{mobileOnline.length > 12 && <button type="button" aria-label={t.members} onClick={() => setPanel('members')}>+{mobileOnline.length-12}</button>}</div></div>}
       {mobileSheet === 'rooms' && <MobileSheet title={copy2.roomSwitcher} closeLabel={t.close} onClose={() => setMobileSheet(null)}>
         <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" /><ClubRooms currentClubId={isClub ? clubId : null} heading={copy1.myClubs} /><DirectList currentClubId={clubId} /></aside>
       </MobileSheet>}
@@ -429,15 +429,18 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
         const exactTime = date.toLocaleString('de-DE', { dateStyle: 'full', timeStyle: 'medium' });
         const social = v2?.reactions && !challengeIds.has(message.id) && message.kind !== 'challenge' && !message.deleted_at && !message.hidden_at;
         const summary = v2?.summary.get(message.id) ?? [];
+        const messageActions = moderationEnabled && <MessageActions message={message} own={own} moderator={moderator}
+          challenge={challengeIds.has(message.id)} open={openModeration} t={t} compact={mobileV2} />;
         return <article key={message.id}
           className={['st-message', own && 'st-message-own', !first && 'st-message-grouped'].filter(Boolean).join(' ')}
           title={exactTime} tabIndex={first ? undefined : 0} style={v2 ? nameStyle(message.author_id) : undefined}>
           {first && <span className="st-avatar" aria-hidden="true">{Array.from(author?.username ?? '?')[0]?.toLocaleUpperCase()}</span>}
           <div className="st-message-content">
-            {first && <div className="st-message-heading">
-              {author && <button type="button" className="st-name" onClick={() => onPlayer(author)}>{author.username}</button>}
+            {(first || (mobileV2 && moderationEnabled && !message.deleted_at)) && <div className="st-message-heading">
+              {first && author && <button type="button" className="st-name" onClick={() => onPlayer(author)}>{author.username}</button>}
               <time dateTime={message.created_at}>{stamp(message.created_at)}</time>
-              {!own && <ChallengeButton targetUserId={message.author_id} icon />}
+              {first && !own && <ChallengeButton targetUserId={message.author_id} icon />}
+              {mobileV2 && messageActions}
             </div>}
             {moderationEnabled && message.deleted_at ? <p className="st-moderation-status">{t.deleted}</p>
               : <ChallengeMessage messageId={message.id} body={message.body ?? ''} />}
@@ -448,8 +451,7 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
                 onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />
               <MessageTools summary={summary} onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />
             </>}
-            {moderationEnabled && <MessageActions message={message} own={own} moderator={moderator}
-              challenge={challengeIds.has(message.id)} open={openModeration} t={t} compact={mobileV2} />}
+            {!mobileV2 && messageActions}
           </div>
         </article>;
       })}
