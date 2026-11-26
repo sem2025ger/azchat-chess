@@ -343,6 +343,11 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         ? <ThreadPanel key={thread.id} clubId={clubId} root={thread} people={profiles} onClose={() => setThread(null)} onChanged={() => void refresh()}
             revision={threadRevision} rootFen={v2.fens.get(thread.id)} scrollToEnd={threadScroll} onScrolled={threadScrolled}
             renderPosition={fen => <PositionMessage fen={fen} size={200} onReply={() => setComposer({ fen, root: thread })} />} />
+        : hideRooms ? <details className="st-mobile-members" key={clubId}>
+            <summary>{copy1.members}</summary>
+            <MembersPanel members={members} messages={messages} me={user?.id} onlineIds={onlineIds} onPlayer={setPlayer}
+              onMessage={direct.available ? person => void dmOpen.open(person.id) : undefined} />
+          </details>
         : <MembersPanel members={members} messages={messages} me={user?.id} onlineIds={onlineIds} onPlayer={setPlayer}
             onMessage={direct.available ? person => void dmOpen.open(person.id) : undefined} />)}
       {v2Enabled && composer && <PositionDialog initialFen={composer.fen} reply={Boolean(composer.root)} onSend={sendPosition} onClose={() => setComposer(null)} />}
