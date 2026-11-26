@@ -18,7 +18,10 @@
 .spieltag-controls .spieltag-actions button{flex:1 1 0;min-width:0;font-size:0.75rem;padding:8px 6px}
 @media(max-width:600px){.spieltag-controls{gap:10px}.spieltag-boards li{gap:6px;padding:10px}}
 
-.spieltag-page.section-page.spieltag-launch { padding-block: 16px; gap: 12px; }
+.spieltag-page.section-page.spieltag-launch {
+  padding-block: 16px; gap: 12px;
+  --spieltag-neo-metal: linear-gradient(180deg,#d5dde6 0%,#a5b0bf 34%,#8491a2 65%,#b9c4d0 100%);
+}
 .spieltag-launch > .spieltag-launch-heading {
   display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: .75rem 1.25rem;
 }
@@ -36,15 +39,27 @@
 .spieltag-launch-heading .spieltag-neo-accent {
   display: inline-block; font-size: 1.12em; font-weight: 700; color: #b5bec8;
 }
+.spieltag-launch .individual-create-hub .ai-organizer-badge {
+  color: #b5bec8;
+  border-color: #8995a6;
+  background: linear-gradient(165deg,#303945 0%,#171c24 62%,#252d37 100%);
+}
 @supports ((background-clip: text) or (-webkit-background-clip: text)) {
   .spieltag-launch-heading .spieltag-neo-accent {
-    background: linear-gradient(180deg,#dce2e8 0%,#aeb8c4 45%,#919ca9 72%,#b7c1cc 100%);
+    background: var(--spieltag-neo-metal);
     background-clip: text; -webkit-background-clip: text; color: transparent;
+  }
+  .spieltag-launch .individual-create-hub .ai-organizer-badge {
+    background-image: var(--spieltag-neo-metal), linear-gradient(165deg,#303945 0%,#171c24 62%,#252d37 100%);
+    background-clip: text, padding-box; -webkit-background-clip: text, padding-box;
+    color: transparent;
   }
 }
 @media (forced-colors: active) {
   .spieltag-launch.section-page > .spieltag-launch-heading h1,
-  .spieltag-launch-heading .spieltag-neo-accent { background: none; color: CanvasText; }
+  .spieltag-launch-heading .spieltag-neo-accent,
+  .spieltag-launch .individual-create-hub .ai-organizer-badge { background: none; color: CanvasText; }
+  .spieltag-launch .individual-create-hub .ai-organizer-badge { border-color: CanvasText; }
 }
 .spieltag-launch-heading .individual-create-soon {
   display: flex; align-items: center; justify-self: end; gap: .45rem;
