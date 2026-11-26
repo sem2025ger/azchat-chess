@@ -10,9 +10,11 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.match(home, /sidebar-brand-silver"><span className="text-\[1\.08em\]">Ch<\/span>essaz\.<\/span>/);
   assert.match(home, /sidebar-brand-de inline-block text-\[1\.06em\]">de<\/span>/);
   assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="28" height="56"/);
-  assert.ok(css.includes('gap: 12px;\n    padding-bottom: 12px;'));
-  assert.ok(css.includes('border-radius: 16px;\n    padding: 6px 10px 2px;'));
+  assert.ok(css.includes('gap: 20px;\n    padding-bottom: 12px;'));
+  assert.ok(css.includes('border-radius: 16px;\n    padding: 16px 10px;'));
   assert.ok(css.includes('max-width: calc(100% - 4px) !important;'));
+  assert.ok(css.includes('.home-screen-root .mobile-home-arena > a[href="/region/nrw"] {\n    display: none;'));
+  assert.ok(css.includes('.home-screen-root .home-board-column .home-board + nav {\n    margin-top: 20px;'));
   assert.ok(css.includes('max-width:calc(100% - 8px);font-size:.75rem;'));
   assert.match(home, /sidebar-king-sheen pointer-events-none absolute inset-0/);
   assert.match(home, /Chess<span className="text-chess-active"> Arena<\/span>/);

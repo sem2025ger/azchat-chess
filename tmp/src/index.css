@@ -676,12 +676,12 @@
 /* Compact mobile Home: reuse the desktop silver wordmark and king. */
 @media (max-width: 767px) {
   .home-screen-root [data-mobile-home-stack] {
-    gap: 12px;
+    gap: 20px;
     padding-bottom: 12px;
   }
   .home-screen-root [data-mobile-home-stack] .mobile-home-arena {
     border-radius: 16px;
-    padding: 6px 10px 2px;
+    padding: 16px 10px;
   }
   .mobile-home-arena .chess-arena-reference-title {
     display: flex;
@@ -693,8 +693,14 @@
     line-height: 1.8rem;
     background: none;
   }
+  .home-screen-root .mobile-home-arena .chess-arena-reference-title > span[aria-hidden="true"] {
+    transform: translateX(-2px);
+  }
   .home-screen-root .mobile-home-arena > a[href="/region/nrw"] {
-    margin-top: 0;
+    display: none;
+  }
+  .home-screen-root .home-board-column .home-board + nav {
+    margin-top: 20px;
   }
   .home-screen-root .home-board-column {
     max-width: calc(100% - 4px) !important;

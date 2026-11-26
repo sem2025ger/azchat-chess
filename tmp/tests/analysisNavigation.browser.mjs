@@ -261,7 +261,13 @@ try {
       const nav = document.querySelector('[data-mobile-app-nav]');
       const items = [...nav.querySelectorAll('.site-nav-link')];
       const labels = items.map(a=>r(a.querySelector('.site-nav-label')));
-      return {brand:brand.getAttribute('aria-label'), king:r(brand.querySelector('img')).width,
+      const header = brand.closest('.mobile-home-arena');
+      const king = r(brand.querySelector('img'));
+      const nrw = header.querySelector('a[href="/region/nrw"]');
+      return {brand:brand.getAttribute('aria-label'), king:king.width,
+        kingTop:king.top-r(header).top, kingBottom:r(header).bottom-king.bottom,
+        homeNRWHidden:!nrw||nrw.getClientRects().length===0,
+        controlGap:r(play.closest('nav')).top-r(board).bottom,
         headerHeight:r(brand.closest('.mobile-home-arena')).height,
         boardWidth:r(board).width,boardHeight:r(board).height,
         boardGap:r(board).top-r(brand.closest('.mobile-home-arena')).bottom,
@@ -273,7 +279,9 @@ try {
     })()`);
     assert.equal(geometry.brand,'Chessaz.de');
     assert.equal(geometry.king,28);
-    assert.ok(geometry.headerHeight<=120 && geometry.boardGap>=8 && geometry.boardGap<=20,JSON.stringify(geometry));
+    assert.ok(geometry.homeNRWHidden && geometry.kingTop>=12 && geometry.kingBottom>=12 && Math.abs(geometry.kingTop-geometry.kingBottom)<=3,JSON.stringify(geometry));
+    assert.ok(geometry.controlGap>=16 && geometry.controlGap<=24,JSON.stringify(geometry));
+    assert.ok(geometry.headerHeight<=120 && geometry.boardGap>=8 && geometry.boardGap<=21,JSON.stringify(geometry));
     assert.ok(geometry.boardWidth>=width-20 && Math.abs(geometry.boardWidth-geometry.boardHeight)<1.5,JSON.stringify(geometry));
     assert.ok(geometry.playGap>=8 && geometry.noNRW,JSON.stringify(geometry));
     assert.ok([5,6].includes(geometry.navCount) && geometry.minTarget>=44 && geometry.minIcon>=20 && geometry.minLabelGap>=4,JSON.stringify(geometry));

@@ -35,7 +35,7 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
    const height=width===390?844:768;
    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
    await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});await wait('typeof window.fixtureNavigate==="function"');
-   for(const [name,path,heading]of[['Home','/','Chess Arena'],['Spieler','/spieler','Spieler'],['NRW','/region/nrw','Schach in Nordrhein-Westfalen'],['Spieltag','/spieltag','Spieltag'],['Vorbereitung','/vorbereitung',verify?'Spieler':'Vorbereitung']]){
+   for(const [name,path,heading]of[['Home','/',width===390&&verify?'Chessaz.de':'Chess Arena'],['Spieler','/spieler','Spieler'],['NRW','/region/nrw','Schach in Nordrhein-Westfalen'],['Spieltag','/spieltag','Spieltag'],['Vorbereitung','/vorbereitung',verify?'Spieler':'Vorbereitung']]){
     await evaluate('window.fixtureNavigate('+JSON.stringify(path)+')');await wait(`document.querySelector('main')?.innerText.includes(${JSON.stringify(heading)})`);
     if(name==='Spieler'){await fill('Nachname','Huseynov');await click('Suchen');await wait(`document.querySelector('.spieler-results button')`);await evaluate("document.querySelector('.spieler-results button').click()");await wait(`document.querySelector('.spieler-card')`);}
     if(name==='Spieltag')await wait(`document.querySelector('[aria-label="Mannschaftskampf"]')&&document.querySelectorAll('.spieltag-boards li').length===2`);
