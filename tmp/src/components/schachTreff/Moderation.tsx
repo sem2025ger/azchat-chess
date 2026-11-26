@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
-import { Flag, Settings2 } from 'lucide-react';
+import { Flag, MoreVertical } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
 import { moderationEnabled, refreshUnreadCounts } from './unread';
@@ -44,7 +44,7 @@ export function MessageActions({ message, own, moderator, challenge, open, t, co
       event.currentTarget.querySelector('summary')?.focus();
     }
   }}>
-    <summary aria-label={t.messageActions}>{compact ? (own ? <Settings2 size={15} aria-hidden="true" /> : <Flag size={15} aria-hidden="true" />) : '⋯'}</summary>
+    <summary aria-label={t.messageActions}>{compact ? (own ? <MoreVertical size={18} aria-hidden="true" /> : <Flag size={15} aria-hidden="true" />) : '⋯'}</summary>
     <div className="st-message-action-buttons">
       {canDelete && <button type="button" onClick={event => select(event, 'delete')}>{t.deleteMessage}</button>}
       {!own && <button type="button" onClick={event => select(event, 'report')}>{t.reportMessage}</button>}

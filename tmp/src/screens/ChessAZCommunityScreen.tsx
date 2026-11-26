@@ -1,7 +1,7 @@
 import { useDesktop } from '../components/schachTreff/useDesktop';
 import SchachTreffDesktop from './SchachTreffDesktop';
 import { displayPlayerName } from '../utils/displayPlayerName';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Globe, Users, MessageCircle, Trophy, Loader2, BarChart3, Info } from 'lucide-react';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
@@ -88,6 +88,39 @@ const ru: Words = {
   submit: 'Публикация…', joined: 'Участник'
 };
 
+/** Mobile v2 owns its viewport; the feed, not the document, scrolls. */
+function MobileV2Viewport() {
+  const page = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    const update = () => {
+      // Ignore pinch zoom: preserve normal browser magnification and accessibility.
+      const height = viewport && Math.abs(viewport.scale - 1) < .01
+        ? Math.min(window.innerHeight, viewport.height) : window.innerHeight;
+      root.style.setProperty('--st-visible-height', Math.floor(height) + 'px');
+      const route = page.current?.closest('[data-route-scroll]');
+      if (route) route.scrollTop = 0;
+      if (document.scrollingElement?.scrollTop) window.scrollTo(0, 0);
+    };
+    update();
+    window.addEventListener('resize', update);
+    viewport?.addEventListener('resize', update);
+    viewport?.addEventListener('scroll', update);
+    window.addEventListener('focusin', update);
+    window.addEventListener('focusout', update);
+    return () => {
+      root.style.removeProperty('--st-visible-height');
+      window.removeEventListener('resize', update);
+      viewport?.removeEventListener('resize', update);
+      viewport?.removeEventListener('scroll', update);
+      window.removeEventListener('focusin', update);
+      window.removeEventListener('focusout', update);
+    };
+  }, []);
+  return <div ref={page} className="st-mobile-page st-mobile-v2"><SchachTreffDesktop hideRooms /></div>;
+}
+
 export default function ChessAZCommunityScreen() {
   const desktop = useDesktop();
   const t = useSchachTreffCopy();
@@ -95,7 +128,7 @@ export default function ChessAZCommunityScreen() {
   const copy2 = useV2Copy2();
   const [showCommunity, setShowCommunity] = useState(false);
   if (desktop) return <CommunityRouter />;
-  if (v2Enabled) return <div className="st-mobile-page st-mobile-v2"><SchachTreffDesktop hideRooms /></div>;
+  if (v2Enabled) return <MobileV2Viewport />;
   const params = new URLSearchParams(window.location.search);
   const club = params.get('club');
   return <div className="st-mobile-page">

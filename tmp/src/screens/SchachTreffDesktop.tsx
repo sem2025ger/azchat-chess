@@ -401,6 +401,17 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
 }) {
   const challengeIds = useChallengeMessageIds();
   const t = useSchachTreffCopy();
+  const [activeTools, setActiveTools] = useState<string | null>(null);
+  useEffect(() => {
+    if (!mobileV2) return;
+    function outside(event: MouseEvent) {
+      if (!(event.target instanceof Element) || !event.target.closest('.st-mobile-reaction-trigger,.st2-tools')) setActiveTools(null);
+    }
+    function escape(event: KeyboardEvent) { if (event.key === 'Escape') setActiveTools(null); }
+    document.addEventListener('click', outside);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('click', outside); document.removeEventListener('keydown', escape); };
+  }, [mobileV2]);
   const groups: ClubMessage[][] = [];
   for (const message of messages) {
     const previous = groups.at(-1)?.at(-1);
@@ -443,13 +454,16 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
               {mobileV2 && messageActions}
             </div>}
             {moderationEnabled && message.deleted_at ? <p className="st-moderation-status">{t.deleted}</p>
+              : mobileV2 && social ? <p className="st-mobile-reaction-trigger" role="button" tabIndex={0} aria-expanded={activeTools === message.id}
+                onClick={() => setActiveTools(current => current === message.id ? null : message.id)}
+                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setActiveTools(current => current === message.id ? null : message.id); } }}>{message.body ?? ''}</p>
               : <ChallengeMessage messageId={message.id} body={message.body ?? ''} />}
             {moderationEnabled && message.hidden_at && <p className="st-moderation-status">{t.hiddenMessage}</p>}
             {v2 && !message.deleted_at && v2.fens.get(message.id) && <PositionMessage fen={v2.fens.get(message.id)!} onReply={fen => v2.replyPosition(message, fen)} />}
             {v2 && social && <>
               <ReactionBar summary={summary} replies={v2.replies.get(message.id) ?? 0}
                 onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />
-              <MessageTools summary={summary} onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />
+              {(!mobileV2 || activeTools === message.id) && <MessageTools summary={summary} onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />}
             </>}
             {!mobileV2 && messageActions}
           </div>
