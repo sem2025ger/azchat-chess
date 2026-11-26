@@ -226,8 +226,8 @@
   .st-mobile-v2 .st-mobile-grouped-time{flex:none;margin-left:auto;align-self:baseline;font-size:11px;color:#A8A293;white-space:nowrap}
   .st-mobile-v2 .st-mobile-card-target{flex:1;min-width:0;cursor:pointer}
   .st-mobile-v2 .schach-treff.st-v2 dialog.st-mobile-message-sheet{display:flex;flex-direction:column;gap:8px}
-  .st-mobile-v2 .st-mobile-message-sheet .st2-tools{position:static;opacity:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;margin:0;gap:6px}
-  .st-mobile-v2 .st-mobile-message-sheet .st2-tools button{width:100%;min-height:44px;border:1px solid #ffffff22;background:#161816}
-  .st-mobile-v2 .st-mobile-message-sheet .st2-tools button[aria-pressed=true]{background:#D9AE5B20;border-color:#D9AE5B}
+  .st-mobile-v2 .schach-treff.st-v2 .st-mobile-message-sheet .st2-tools{position:static;opacity:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;margin:0;gap:6px}
+  .st-mobile-v2 .schach-treff.st-v2 .st-mobile-message-sheet .st2-tools button{width:100%;min-height:44px;border:1px solid #ffffff22;background:#161816}
+  .st-mobile-v2 .schach-treff.st-v2 .st-mobile-message-sheet .st2-tools button[aria-pressed=true]{background:#D9AE5B20;border-color:#D9AE5B}
   .st-mobile-v2 .schach-treff.st-v2 .st-mobile-message-sheet .st-mobile-sheet-rows>button{min-height:44px;width:100%;white-space:normal;line-height:1.35;overflow-wrap:anywhere;text-align:left}
 }

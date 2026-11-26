@@ -162,13 +162,13 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await evaluate("(()=>{const f=document.querySelector('.st-messages');f.scrollTop=f.scrollHeight;document.querySelector('.st-composer textarea').focus();})()");
      await viewportFits('focused '+suffix);
      const setDraft=async body=>{await evaluate(`(()=>{const e=document.querySelector('.st-composer textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,${JSON.stringify(body)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);await settle();};
-     const key=async(shift=false)=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,modifiers:shift?8:0,text:'\\r'});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,modifiers:shift?8:0});};
+     const key=async(shift=false)=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,modifiers:shift?8:0,text:'\r'});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,modifiers:shift?8:0});await settle();};
      const one=await evaluate("document.querySelector('.st-composer textarea').getBoundingClientRect().height");
      await setDraft('первая');await key(true);
      assert.ok(await evaluate("document.querySelector('.st-composer textarea').value.includes('\\n')"),'Shift+Enter inserts a newline');
-     await setDraft('первая\\nвторая\\nтретья');const three=await evaluate("document.querySelector('.st-composer textarea').getBoundingClientRect().height");
+     await setDraft('первая\nвторая\nтретья');const three=await evaluate("document.querySelector('.st-composer textarea').getBoundingClientRect().height");
      assert.ok(three>one+30,'textarea grows to three lines');await capture('composer-three-lines-'+suffix);
-     await setDraft('1\\n2\\n3\\n4\\n5\\n6');const cap=await evaluate("(()=>{const e=document.querySelector('.st-composer textarea');return {h:e.getBoundingClientRect().height,scroll:e.scrollHeight,client:e.clientHeight}})()");
+     await setDraft('1\n2\n3\n4\n5\n6');const cap=await evaluate("(()=>{const e=document.querySelector('.st-composer textarea');return {h:e.getBoundingClientRect().height,scroll:e.scrollHeight,client:e.clientHeight}})()");
      assert.ok(cap.h<=110&&cap.h>three&&cap.scroll>cap.client,'textarea caps at four lines then scrolls');
      await setDraft('mobile enter test');await key();await wait("document.querySelector('.st-composer textarea').value===''&&[...document.querySelectorAll('.st-mobile-reaction-trigger')].some(e=>e.textContent==='mobile enter test')");
      assert.ok(await evaluate("document.querySelector('.st-send').disabled"),'Enter submits and clears input');
