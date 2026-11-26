@@ -113,6 +113,30 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const seekInRooms = v2Enabled && desktop && !hideRooms && !isClub;
   const feedRef = useRef<HTMLDivElement>(null);
   const followFeed = useRef(true);
+  const mobileInput = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const input = mobileInput.current;
+    if (!mobileV2 || !input) return;
+    const resize = () => {
+      const feed = feedRef.current;
+      const follow = followFeed.current;
+      const style = getComputedStyle(input);
+      const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+      const border = parseFloat(style.borderTopWidth) + parseFloat(style.borderBottomWidth);
+      const max = 4 * parseFloat(style.lineHeight) + padding + border;
+      input.style.height = '0px';
+      input.style.height = `${Math.max(44, Math.min(max, input.scrollHeight + border))}px`;
+      if (feed && follow) feed.scrollTop = feed.scrollHeight;
+    };
+    resize();
+    let width = input.clientWidth;
+    const observer = new ResizeObserver(() => {
+      if (input.clientWidth !== width) { width = input.clientWidth; resize(); }
+    });
+    observer.observe(input);
+    window.addEventListener('resize', resize);
+    return () => { observer.disconnect(); window.removeEventListener('resize', resize); };
+  }, [body, mobileV2, member, loading, isLoading, language]);
   const newestMessage = messages.at(-1)?.id;
   useMarkClubRead(clubId, v2Data?.newestId ?? newestMessage, member && !loading && !isLoading, feedRef, user?.id);
   useEffect(() => { setThread(null); }, [clubId]);
@@ -352,7 +376,12 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
               mobile room view (hideRooms) keeps its approved composer layout. DMs challenge the partner here. */}
           {!mobileV2 && (v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} disabled={iBlocked} /> : isClub && hideRooms ? <SeekButton /> : null) : <ChallengeButton composer />)}
           {v2Enabled && <PositionTrigger label={copy2.sendPosition} disabled={iBlocked} onClick={() => setComposer({ fen: DEFAULT_POSITION, root: null })} />}
-          <input aria-label={t.placeholder} name={mobileV2 ? 'chat-message' : undefined} autoComplete={mobileV2 ? 'off' : undefined} inputMode={mobileV2 ? 'text' : undefined} enterKeyHint={mobileV2 ? 'send' : undefined} placeholder={iBlocked ? copy2.composerBlocked : hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required={!v2Enabled} disabled={iBlocked} />
+          {mobileV2 ? <textarea ref={mobileInput} rows={1} aria-label={t.placeholder} name="chat-message" autoComplete="off" autoCorrect="on" spellCheck inputMode="text" enterKeyHint="send" placeholder={iBlocked ? copy2.composerBlocked : t.shortPlaceholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} disabled={iBlocked}
+            onKeyDown={event => {
+              if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing || event.keyCode === 229) return;
+              event.preventDefault();
+              if (!busy && !iBlocked && body.trim()) event.currentTarget.form?.requestSubmit();
+            }} /> : <input aria-label={t.placeholder} placeholder={iBlocked ? copy2.composerBlocked : hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required={!v2Enabled} disabled={iBlocked} />}
           <button className="st-send" disabled={busy || iBlocked || !body.trim()}>{t.send}</button>
         </form>
       </section>
@@ -379,10 +408,15 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   </section>;
 }
 
-function MobileSheet({ title, closeLabel, onClose, children }: { title: ReactNode; closeLabel: string; onClose: () => void; children: ReactNode }) {
+function MobileSheet({ title, closeLabel, onClose, children, messageActions = false }: { title: ReactNode; closeLabel: string; onClose: () => void; children: ReactNode; messageActions?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => { dialog?.close(); }; }, []);
-  return <dialog ref={ref} className="st-mobile-sheet" aria-labelledby="st-mobile-sheet-title" onCancel={onClose} onClose={event => { if (!event.currentTarget.open) onClose(); }}>
+  return <dialog ref={ref} className={messageActions ? 'st-mobile-sheet st-mobile-message-sheet' : 'st-mobile-sheet'} aria-labelledby="st-mobile-sheet-title" onCancel={onClose} onClose={event => { if (!event.currentTarget.open) onClose(); }}
+    onClick={event => {
+      if (!messageActions || event.target !== event.currentTarget) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) onClose();
+    }}>
     <div className="st-mobile-sheet-head"><h2 id="st-mobile-sheet-title">{title}</h2><button type="button" aria-label={closeLabel} onClick={onClose}><X size={20} aria-hidden="true" /></button></div>
     {children}
   </dialog>;
@@ -401,17 +435,12 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
 }) {
   const challengeIds = useChallengeMessageIds();
   const t = useSchachTreffCopy();
+  const copy = useV2Copy();
   const [activeTools, setActiveTools] = useState<string | null>(null);
-  useEffect(() => {
-    if (!mobileV2) return;
-    function outside(event: MouseEvent) {
-      if (!(event.target instanceof Element) || !event.target.closest('.st-mobile-reaction-trigger,.st2-tools')) setActiveTools(null);
-    }
-    function escape(event: KeyboardEvent) { if (event.key === 'Escape') setActiveTools(null); }
-    document.addEventListener('click', outside);
-    document.addEventListener('keydown', escape);
-    return () => { document.removeEventListener('click', outside); document.removeEventListener('keydown', escape); };
-  }, [mobileV2]);
+  const selected = mobileV2 ? messages.find(message => message.id === activeTools && !message.deleted_at) : undefined;
+  const closeActions = () => setActiveTools(null);
+  const isSocial = (message: ClubMessage) => Boolean(v2?.reactions && !challengeIds.has(message.id) && message.kind !== 'challenge' && !message.deleted_at && !message.hidden_at);
+  const openActions = (message: ClubMessage) => { if (!message.deleted_at) setActiveTools(message.id); };
   const groups: ClubMessage[][] = [];
   for (const message of messages) {
     const previous = groups.at(-1)?.at(-1);
@@ -438,7 +467,8 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
         const first = index === 0;
         const date = new Date(message.created_at);
         const exactTime = date.toLocaleString('de-DE', { dateStyle: 'full', timeStyle: 'medium' });
-        const social = v2?.reactions && !challengeIds.has(message.id) && message.kind !== 'challenge' && !message.deleted_at && !message.hidden_at;
+        const social = isSocial(message);
+        const challengeCard = challengeIds.has(message.id) || message.kind === 'challenge';
         const summary = v2?.summary.get(message.id) ?? [];
         const messageActions = moderationEnabled && <MessageActions message={message} own={own} moderator={moderator}
           challenge={challengeIds.has(message.id)} open={openModeration} t={t} compact={mobileV2} />;
@@ -447,30 +477,42 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
           title={exactTime} tabIndex={first ? undefined : 0} style={v2 ? nameStyle(message.author_id) : undefined}>
           {first && <span className="st-avatar" aria-hidden="true">{Array.from(author?.username ?? '?')[0]?.toLocaleUpperCase()}</span>}
           <div className="st-message-content">
-            {(first || (mobileV2 && moderationEnabled && !message.deleted_at)) && <div className="st-message-heading">
+            {first && <div className="st-message-heading">
               {first && author && <button type="button" className="st-name" onClick={() => onPlayer(author)}>{author.username}</button>}
               <time dateTime={message.created_at}>{stamp(message.created_at)}</time>
-              {first && !own && <ChallengeButton targetUserId={message.author_id} icon />}
-              {mobileV2 && messageActions}
+              {!mobileV2 && first && !own && <ChallengeButton targetUserId={message.author_id} icon />}
             </div>}
-            {moderationEnabled && message.deleted_at ? <p className="st-moderation-status">{t.deleted}</p>
-              : mobileV2 && social ? <p className="st-mobile-reaction-trigger" role="button" tabIndex={0} aria-expanded={activeTools === message.id}
-                onClick={() => setActiveTools(current => current === message.id ? null : message.id)}
-                onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setActiveTools(current => current === message.id ? null : message.id); } }}>{message.body ?? ''}</p>
-              : <ChallengeMessage messageId={message.id} body={message.body ?? ''} />}
+            {mobileV2 ? <div className="st-mobile-message-line">
+              {moderationEnabled && message.deleted_at ? <p className="st-moderation-status">{t.deleted}</p>
+                : challengeCard ? <div className="st-mobile-card-target" tabIndex={0} aria-label={t.messageActions} aria-haspopup="dialog"
+                  onClick={event => { if (!(event.target as Element).closest('button,a,input,textarea,select,summary')) openActions(message); }}
+                  onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openActions(message); } }}><ChallengeMessage messageId={message.id} body={message.body ?? ''} /></div>
+                : <p className="st-mobile-reaction-trigger" role="button" tabIndex={0} aria-haspopup="dialog" aria-expanded={activeTools === message.id}
+                  aria-label={message.body || t.messageActions} onClick={() => openActions(message)}
+                  onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openActions(message); } }}>{message.body || (v2?.fens.has(message.id) ? t.messageActions : '')}</p>}
+              {!first && <time className="st-mobile-grouped-time" dateTime={message.created_at}>{stamp(message.created_at)}</time>}
+            </div> : moderationEnabled && message.deleted_at ? <p className="st-moderation-status">{t.deleted}</p> : <ChallengeMessage messageId={message.id} body={message.body ?? ''} />}
             {moderationEnabled && message.hidden_at && <p className="st-moderation-status">{t.hiddenMessage}</p>}
             {v2 && !message.deleted_at && v2.fens.get(message.id) && <PositionMessage fen={v2.fens.get(message.id)!} onReply={fen => v2.replyPosition(message, fen)} />}
             {v2 && social && <>
               <ReactionBar summary={summary} replies={v2.replies.get(message.id) ?? 0}
                 onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />
-              {(!mobileV2 || activeTools === message.id) && <MessageTools summary={summary} onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />}
+              {!mobileV2 && <MessageTools summary={summary} onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />}
             </>}
             {!mobileV2 && messageActions}
           </div>
         </article>;
       })}
     </div>;
-  })}</>;
+  })}{selected && <MobileSheet title={t.messageActions} closeLabel={t.close} onClose={closeActions} messageActions>
+    {v2 && isSocial(selected) && <>
+      <MessageTools summary={v2.summary.get(selected.id) ?? []} onToggle={(reaction, mine) => { closeActions(); v2.toggle(selected.id, reaction, mine); }} />
+      <div className="st-mobile-sheet-rows"><button type="button" onClick={() => { closeActions(); v2.openThread(selected); }}>{copy.reply}</button></div>
+    </>}
+    {selected.author_id !== me && <div className="st-mobile-sheet-rows"><ChallengeButton targetUserId={selected.author_id} beforeOpen={closeActions} /></div>}
+    <MessageActions message={selected} own={selected.author_id === me} moderator={moderator} challenge={challengeIds.has(selected.id)}
+      open={action => { closeActions(); openModeration(action); }} t={t} inline />
+  </MobileSheet>}</>;
 }
 
 function RoomInvite({ clubId }: { clubId: string }) {

@@ -105,7 +105,7 @@ function MobileV2Viewport() {
       const height = Math.floor(Math.min(window.innerHeight, viewport?.height ?? window.innerHeight));
       if (height <= 0) return;
       const active = document.activeElement;
-      const editing = active instanceof HTMLInputElement && !!current.querySelector('.st-composer')?.contains(active);
+      const editing = (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) && !!current.querySelector('.st-composer')?.contains(active);
       if (!editing || lastWidth !== window.innerWidth || !fullHeight) fullHeight = height;
       lastWidth = window.innerWidth;
       const keyboard = editing && Math.max(fullHeight, window.innerHeight) - height >= 120;

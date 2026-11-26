@@ -119,7 +119,8 @@ export async function checkRoomLayout(moderation = false, polish = false){
          assert.equal(geometry.labels.length,6,'include the optional Spieltag link');
          assert.ok(geometry.labels.every(l=>!l.outside&&l.textOverflow==='clip'&&l.overflowWrap==='normal'&&l.scroll<=l.client+1&&(l.text==='Schach-Treff'?(l.lines.join('')===l.text&&(l.lines.length===1||JSON.stringify(l.lines)===JSON.stringify(['Schach-','Treff']))):l.whiteSpace==='nowrap'&&l.lines.length===1&&l.lines[0]===l.text)),JSON.stringify(geometry.labels));
          assert.ok(geometry.labels.slice(1).every((l,i)=>l.left>=geometry.labels[i].right-1),JSON.stringify(geometry.labels));
-         assert.ok(geometry.actions.length>0&&geometry.actions.every(Boolean),'message actions belong to their header and have 44px targets');
+         assert.equal(geometry.actions.length,0,'no boxed message actions in mobile headers');
+         assert.ok(await evaluate("!document.querySelector('.st-message-heading .st-challenge-icon,.st-message-grouped .st-message-heading')&&[...document.querySelectorAll('.st-message-grouped .st-mobile-grouped-time')].every(e=>{const r=e.getBoundingClientRect(),line=e.parentElement.getBoundingClientRect();return r.right<=line.right+1&&r.top>=line.top-1&&r.bottom<=line.bottom+1})"),'grouped messages have inline time, no redundant header');
          await viewportFits(lang+' '+zoom+' '+width);
          const take=width===390&&zoom===125&&lang==='ru';if(take){await capture('chat');await capture('bottom-nav');}
          if(lang==='ru')await positionFits(width,height,take?'position-125':undefined);
@@ -144,11 +145,24 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await evaluate(`(()=>{document.documentElement.style.fontSize=17*${zoom}/100+'px';const style=document.createElement('style');style.textContent='[data-mobile-app-nav] .site-nav-label{line-height:2.4!important}';document.head.appendChild(style);})()`);
      await evaluate("window.setFixtureLanguage('ru')");
      await wait("document.documentElement.lang==='ru'&&document.querySelector('.st2-reaction-row')");
-     assert.ok(await evaluate("(()=>{const form=document.querySelector('.st-composer'),input=form.querySelector('input');return form.autocomplete==='off'&&input.autocomplete==='off'&&input.name==='chat-message'&&input.inputMode==='text'&&input.enterKeyHint==='send'})()"),'mobile chat is identified as plain message input, not a personal-data form');
+     assert.ok(await evaluate("(()=>{const form=document.querySelector('.st-composer'),input=form.querySelector('textarea');return form.autocomplete==='off'&&input.autocomplete==='off'&&input.name==='chat-message'&&input.inputMode==='text'&&input.enterKeyHint==='send'})()"),'mobile chat is identified as plain message input, not a personal-data form');
      const before=await viewportFits('stress '+suffix);
      assert.ok(before.visible<=height+1,'shortened visible viewport is actually applied');
-     await evaluate("(()=>{const f=document.querySelector('.st-messages');f.scrollTop=f.scrollHeight;document.querySelector('.st-composer input').focus();})()");
+     await evaluate("(()=>{const f=document.querySelector('.st-messages');f.scrollTop=f.scrollHeight;document.querySelector('.st-composer textarea').focus();})()");
      await viewportFits('focused '+suffix);
+     const setDraft=async body=>{await evaluate(`(()=>{const e=document.querySelector('.st-composer textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,${JSON.stringify(body)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);await settle();};
+     const key=async(shift=false)=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,modifiers:shift?8:0,text:'\\r'});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,modifiers:shift?8:0});};
+     const one=await evaluate("document.querySelector('.st-composer textarea').getBoundingClientRect().height");
+     await setDraft('первая');await key(true);
+     assert.ok(await evaluate("document.querySelector('.st-composer textarea').value.includes('\\n')"),'Shift+Enter inserts a newline');
+     await setDraft('первая\\nвторая\\nтретья');const three=await evaluate("document.querySelector('.st-composer textarea').getBoundingClientRect().height");
+     assert.ok(three>one+30,'textarea grows to three lines');await capture('composer-three-lines-'+suffix);
+     await setDraft('1\\n2\\n3\\n4\\n5\\n6');const cap=await evaluate("(()=>{const e=document.querySelector('.st-composer textarea');return {h:e.getBoundingClientRect().height,scroll:e.scrollHeight,client:e.clientHeight}})()");
+     assert.ok(cap.h<=110&&cap.h>three&&cap.scroll>cap.client,'textarea caps at four lines then scrolls');
+     await setDraft('mobile enter test');await key();await wait("document.querySelector('.st-composer textarea').value===''&&[...document.querySelectorAll('.st-mobile-reaction-trigger')].some(e=>e.textContent==='mobile enter test')");
+     assert.ok(await evaluate("document.querySelector('.st-send').disabled"),'Enter submits and clears input');
+     await setDraft('');await viewportFits('after multiline '+suffix);
+
      // A focused field alone does not emulate a keyboard. Also exercise a reduced viewport.
      const keyboardHeight=520;
      await cdp('Emulation.setDeviceMetricsOverride',{width,height:keyboardHeight,screenWidth:width,screenHeight:844,deviceScaleFactor:1,mobile:true});
@@ -158,7 +172,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
      assert.ok(keyboard.navHidden&&keyboard.atEnd&&keyboard.feed>before.feed-(before.visible-keyboard.visible),'keyboard hides navigation, recovers feed space and keeps the newest message visible');
      assert.ok(await evaluate("(()=>{const top=document.querySelector('.st-mobile-v2-top'),menu=top.querySelector('.st-mobile-v2-more').getBoundingClientRect(),room=top.querySelector('.st-mobile-room-trigger').getBoundingClientRect(),play=top.querySelector('.st-mobile-play').getBoundingClientRect();return Math.abs(menu.top-room.top)<=2&&Math.abs(menu.top-play.top)<=2&&menu.right<=room.left&&room.right<=play.left&&[menu,room,play].every(r=>r.height>=44&&r.width>=44)})()"),'keyboard toolbar fits in a single row with accessible targets');
      await capture('keyboard-'+suffix);
-     assert.ok(await evaluate("document.activeElement===document.querySelector('.st-composer input')&&getComputedStyle(document.querySelector('.st-mobile-online')).display==='none'"),'composer stays focused; presence strip compacts');
+     assert.ok(await evaluate("document.activeElement===document.querySelector('.st-composer textarea')&&getComputedStyle(document.querySelector('.st-mobile-online')).display==='none'"),'composer stays focused; presence strip compacts');
      await cdp('Emulation.setDeviceMetricsOverride',{width,height,screenWidth:width,screenHeight:844,deviceScaleFactor:1,mobile:true});
      await wait("!document.querySelector('.st-mobile-v2').hasAttribute('data-st-keyboard')");
      const restored=await viewportFits('restored viewport '+suffix);
@@ -170,20 +184,25 @@ export async function checkRoomLayout(moderation = false, polish = false){
      assert.ok(await evaluate("document.querySelector('.st-messages').scrollTop<=2"),'reading history must not jump to newest message on keyboard open');
      await cdp('Emulation.setDeviceMetricsOverride',{width,height,screenWidth:width,screenHeight:844,deviceScaleFactor:1,mobile:true});
      await wait("!document.querySelector('.st-mobile-v2').hasAttribute('data-st-keyboard')");
-     await evaluate("document.querySelector('.st-composer input').blur();document.querySelector('[data-route-scroll]').scrollTop=100;window.scrollTo(0,100)");
+     await evaluate("document.querySelector('.st-composer textarea').blur();document.querySelector('[data-route-scroll]').scrollTop=100;window.scrollTo(0,100)");
      await viewportFits('blurred '+suffix);
      assert.equal(await evaluate("document.querySelectorAll('.st2-tools').length"),0,'quick reactions start hidden');
      assert.ok(await evaluate("Boolean(document.querySelector('.st2-reaction-row .st2-reaction')&&document.querySelector('.st2-reaction-row .st2-replies'))"),'existing reactions and reply count stay visible');
-     assert.ok(await evaluate("Boolean(document.querySelector('.st-message-own .st-message-actions svg.lucide-ellipsis-vertical')&&document.querySelector('.st-message:not(.st-message-own) .st-message-actions svg.lucide-flag'))"),'own/other message actions use distinct icons');
+     assert.equal(await evaluate("document.querySelectorAll('.st-message .st-message-actions,.st-message .st-challenge-icon').length"),0,'no per-message action buttons');
      await capture('viewport-chat-'+suffix);await capture('viewport-nav-'+suffix);
-     const tap=async()=>{const p=await evaluate(`(()=>{const e=[...document.querySelectorAll('.st-mobile-reaction-trigger')].at(-1);e.scrollIntoView({block:'center',inline:'nearest'});const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await cdp('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await cdp('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});};
-     await tap();await wait("document.querySelectorAll('.st2-tools').length===1");
-     assert.ok(await evaluate("[...document.querySelectorAll('.st2-tools button')].every(e=>{const r=e.getBoundingClientRect();return r.width>=44&&r.height>=44})"),'44px reaction targets');
+     const tap=async(own)=>{const p=await evaluate(`(()=>{const e=[...document.querySelectorAll('${own?".st-message-own":".st-message:not(.st-message-own)"} .st-mobile-reaction-trigger')].at(-1);e.scrollIntoView({block:'center',inline:'nearest'});const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await cdp('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await cdp('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await wait("document.querySelector('.st-mobile-message-sheet[open]')");};
+     for(const own of [true,false]){
+       await tap(own);await fitsSheet(width,height);
+       assert.ok(await evaluate("document.querySelector('.st-mobile-message-sheet .st2-tools')?.querySelectorAll('button').length===3&&[...document.querySelectorAll('.st-mobile-message-sheet button')].every(e=>{const r=e.getBoundingClientRect();return r.width>=44&&r.height>=44})"),'reaction and action sheet targets are at least 44px');
+       assert.ok(await evaluate(`(()=>{const d=document.querySelector('.st-mobile-message-sheet[open]');return d.textContent.includes('Ответить в ветке')&&d.textContent.includes('Удалить сообщение')===${own}&&d.textContent.includes('Пожаловаться на сообщение')===${!own}&&d.querySelectorAll('.st-mobile-sheet-rows>button').length===${own?2:3}})()`),'own/other action permissions');
+       await capture((own?'message-actions-own-':'message-actions-other-')+suffix);await closeSheet();
+     }
+     await tap(false);
+     const backdrop=await evaluate("(()=>{const r=document.querySelector('.st-mobile-message-sheet[open]').getBoundingClientRect();return {x:10,y:Math.max(1,r.top-10)}})()");
+     await cdp('Input.dispatchMouseEvent',{type:'mousePressed',x:backdrop.x,y:backdrop.y,button:'left',clickCount:1});await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',x:backdrop.x,y:backdrop.y,button:'left',clickCount:1});
+     await wait("!document.querySelector('.st-mobile-message-sheet[open]')");
      assert.ok(await evaluate("Boolean(document.querySelector('.st2-reaction-row .st2-reaction')&&document.querySelector('.st2-reaction-row .st2-replies'))"),'counts remain visible');
-     await evaluate("document.querySelector('.st2-tools').scrollIntoView({block:'nearest'})");await viewportFits('reactions '+suffix);await capture('viewport-reactions-'+suffix);
-     await tap();await wait("!document.querySelector('.st2-tools')");
-     await tap();await wait("document.querySelector('.st2-tools')");
-     await evaluate("document.querySelector('.st-mobile-v2-title h1').click()");await wait("!document.querySelector('.st2-tools')");
+     await viewportFits('message sheet closed '+suffix);
      await positionFits(width,height,'viewport-position-'+suffix);
      await click('.st-mobile-v2-more');await wait("document.querySelector('.st-mobile-sheet[open] .st-mobile-sheet-rows')");await fitsSheet(width,height);await capture('viewport-menu-'+suffix);await closeSheet();await viewportFits('closed '+suffix);
    }
@@ -199,7 +218,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
    for (const width of [375,1366,1920]) {
      await cdp('Emulation.setDeviceMetricsOverride',{width,height:width===375?844:900,deviceScaleFactor:1,mobile:width===375});
      await cdp('Page.navigate',{url:fixtureUrl});
-     await wait("document.querySelector('.st-messages .st-name') && document.querySelector('.st-challenge-icon')");
+     await wait(width===375 ? "document.querySelector('.st-messages .st-name') && document.querySelector('.st-composer textarea')" : "document.querySelector('.st-messages .st-name') && document.querySelector('.st-challenge-icon') && document.querySelector('.st-composer input')");
      assert.equal(await evaluate("Boolean(document.querySelector('.schach-treff>header>.st2-feedback'))"),false);
      if(width===375){
        await evaluate("document.querySelector('.st-mobile-v2-more').click()");
