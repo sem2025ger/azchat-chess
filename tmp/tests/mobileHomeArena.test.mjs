@@ -15,8 +15,8 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="38" height="76"/);
   assert.ok(css.includes('justify-content: safe center;\n    gap: 16px;\n    padding: 0 2px;'));
   assert.ok(css.includes("font-size: clamp(44px, 14.5vw, 56px);"));
-  assert.match(css, /\.mobile-home-brand-domain\s*\{\s*color: #A09283;/);
-  assert.ok(css.includes('linear-gradient(110deg, #77716C, #A09283 48%, #827B74)'));
+  assert.match(css, /\.mobile-home-brand-domain\s*\{\s*color: #B2A79A;/);
+  assert.ok(css.includes('linear-gradient(110deg, #8F8983, #B2A79A 48%, #938C85)'));
   assert.match(css, /\.home-screen-root \.mobile-home-king\s*\{\s*width: \.67857143em;\s*height: 1\.35714286em;\s*margin-left: -\.015em;\s*transform: translateY\(-\.11em\);/);
   assert.match(css, /\.home-screen-root \[data-mobile-home-stack\] \.mobile-home-arena\s*\{\s*border: 0 !important;\s*outline: none;\s*background: none;/);
   assert.ok(css.includes('width: min(100%, max(0px, calc(100cqh - 180px)));\n    max-width: 100% !important;'));
@@ -25,8 +25,9 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.ok(css.includes('.home-screen-root .home-board-column .home-board + nav {\n    margin-top: 14px;'));
   const navLabel = css.match(/\[data-mobile-app-nav\] \.site-nav-link \.site-nav-label\{([^}]+)\}/)?.[1] ?? '';
   assert.match(navLabel, /max-width:none/);
-  assert.match(navLabel, /font-size:clamp\(9px,2\.4vw,\.75rem\)/);
+  assert.match(navLabel, /font-size:clamp\(9px,2\.7vw,\.8rem\)/);
   assert.match(navLabel, /white-space:nowrap;overflow:visible;text-overflow:clip/);
+  assert.ok(css.includes('[data-mobile-app-nav] .site-nav-link:not([aria-current="page"]):not([href="/chat"]):not(:hover) { color: #8A8A8A; }'));
   assert.doesNotMatch(navLabel, /overflow-wrap:anywhere|text-overflow:ellipsis/);
   assert.match(css, /font-size: calc\(clamp\(9px, 2\.4vw, \.75rem\) \+ 1px\);\s*font-weight: 700;\s*color: #C6CDD5/);
   assert.match(css, /\.mobile-home-brand-dot\s*\{\s*font-size: \.8em;\s*margin-right: -\.045em;/);
