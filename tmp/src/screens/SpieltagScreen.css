@@ -40,6 +40,7 @@
   display: inline-block; font-size: 1.12em; font-weight: 700; color: #b5bec8;
 }
 .spieltag-launch .individual-create-hub .ai-organizer-badge {
+  font-size: 1rem; padding: .24rem .7rem;
   color: #b5bec8;
   border-color: #8995a6;
   background: linear-gradient(165deg,#303945 0%,#171c24 62%,#252d37 100%);
