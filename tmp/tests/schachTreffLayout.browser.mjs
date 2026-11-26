@@ -116,12 +116,12 @@ export async function checkRoomLayout(moderation = false, polish = false){
        assert.equal(await evaluate("getComputedStyle(document.querySelector('.st2-side:not(.st2-thread)>.st2-side-title')).color"),'rgb(195, 161, 122)');
        const compact=await evaluate(`(()=>{
          const header=document.querySelector('.schach-treff>header'),title=header.querySelector('h1'),nrw=header.querySelector('.st-region-entry'),menu=header.querySelector('.st-menu>button'),chat=document.querySelector('.st-chat'),style=getComputedStyle(header),r=title.getBoundingClientRect();
-         return {titleWidth:r.width,titleHeight:r.height,titleText:title.textContent,nrwHidden:!!nrw&&getComputedStyle(nrw).display==='none',menuHeight:menu.getBoundingClientRect().height,headerHeight:header.getBoundingClientRect().height,margin:style.marginBottom,chatHeight:chat.getBoundingClientRect().height,chatBottom:chat.getBoundingClientRect().bottom};
+         return {titleWidth:r.width,titleHeight:r.height,titleText:title.textContent,nrwHidden:!!nrw&&getComputedStyle(nrw).display==='none',menuHeight:menu.getBoundingClientRect().height,headerHeight:header.getBoundingClientRect().height,margin:style.marginBottom,chatHeight:chat.getBoundingClientRect().height,chatTop:chat.getBoundingClientRect().top,chatBottom:chat.getBoundingClientRect().bottom};
        })()`);
        assert.ok(compact.titleText&&compact.titleWidth<=1&&compact.titleHeight<=1,'duplicate title is visually hidden but accessible');
        assert.ok(compact.nrwHidden,'duplicate NRW link hidden on desktop');
        assert.ok(compact.menuHeight>=44&&compact.headerHeight<=compact.menuHeight+1&&compact.margin==='0px','compact header preserves menu: '+JSON.stringify(compact));
-       assert.ok(Math.abs(compact.chatHeight-(900-109))<=1&&compact.chatBottom<=901,'chat gains the reclaimed 36px without bottom clipping: '+JSON.stringify(compact));
+       assert.ok(Math.abs(compact.chatHeight-(900-93))<=1&&compact.chatTop<=53&&compact.chatBottom<=901,'chat gains the reclaimed 52px without bottom clipping: '+JSON.stringify(compact));
 
      }
      await evaluate("document.querySelector('.st-messages .st-name').click()");
@@ -163,7 +163,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
            return {onlineHidden:!!online&&getComputedStyle(online).display==='none',nrwHidden:!!nrw&&getComputedStyle(nrw).display==='none',titleHidden:title.getBoundingClientRect().width<=1,seekVisible:!!seek&&seek.getBoundingClientRect().width>0,menuVisible:menu.getBoundingClientRect().height>=44,feedHeight:feed.clientHeight,chatHeight:chat.getBoundingClientRect().height,composerBottom:composer.getBoundingClientRect().bottom,chatBottom:chat.getBoundingClientRect().bottom,docWidth:document.documentElement.scrollWidth};
          })()`);
          assert.ok(layout.onlineHidden&&layout.nrwHidden&&layout.titleHidden&&layout.seekVisible&&layout.menuVisible,'desktop controls '+lang+' '+JSON.stringify(layout));
-         assert.ok(layout.feedHeight>0&&Math.abs(layout.chatHeight-(900-109))<=1&&layout.composerBottom<=layout.chatBottom+1&&layout.chatBottom<=901&&layout.docWidth<=width+1,'chat fits '+lang+' '+JSON.stringify(layout));
+         assert.ok(layout.feedHeight>0&&Math.abs(layout.chatHeight-(900-93))<=1&&layout.composerBottom<=layout.chatBottom+1&&layout.chatBottom<=901&&layout.docWidth<=width+1,'chat fits '+lang+' '+JSON.stringify(layout));
        }
        if(process.env.SECTIONS_CAPTURE) {
          const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
