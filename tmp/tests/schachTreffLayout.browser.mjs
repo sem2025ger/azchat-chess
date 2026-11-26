@@ -144,6 +144,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await evaluate(`(()=>{document.documentElement.style.fontSize=17*${zoom}/100+'px';const style=document.createElement('style');style.textContent='[data-mobile-app-nav] .site-nav-label{line-height:2.4!important}';document.head.appendChild(style);})()`);
      await evaluate("window.setFixtureLanguage('ru')");
      await wait("document.documentElement.lang==='ru'&&document.querySelector('.st2-reaction-row')");
+     assert.ok(await evaluate("(()=>{const form=document.querySelector('.st-composer'),input=form.querySelector('input');return form.autocomplete==='off'&&input.autocomplete==='off'&&input.name==='chat-message'&&input.inputMode==='text'&&input.enterKeyHint==='send'})()"),'mobile chat is identified as plain message input, not a personal-data form');
      const before=await viewportFits('stress '+suffix);
      assert.ok(before.visible<=height+1,'shortened visible viewport is actually applied');
      await evaluate("(()=>{const f=document.querySelector('.st-messages');f.scrollTop=f.scrollHeight;document.querySelector('.st-composer input').focus();})()");
@@ -155,6 +156,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
      const keyboard=await viewportFits('keyboard-sized viewport '+suffix);
      assert.ok(keyboard.visible<=keyboardHeight+1&&keyboard.visible<before.visible-120,'viewport actually shrank');
      assert.ok(keyboard.navHidden&&keyboard.atEnd&&keyboard.feed>before.feed-(before.visible-keyboard.visible),'keyboard hides navigation, recovers feed space and keeps the newest message visible');
+     assert.ok(await evaluate("(()=>{const top=document.querySelector('.st-mobile-v2-top'),menu=top.querySelector('.st-mobile-v2-more').getBoundingClientRect(),room=top.querySelector('.st-mobile-room-trigger').getBoundingClientRect(),play=top.querySelector('.st-mobile-play').getBoundingClientRect();return Math.abs(menu.top-room.top)<=2&&Math.abs(menu.top-play.top)<=2&&menu.right<=room.left&&room.right<=play.left&&[menu,room,play].every(r=>r.height>=44&&r.width>=44)})()"),'keyboard toolbar fits in a single row with accessible targets');
      await capture('keyboard-'+suffix);
      assert.ok(await evaluate("document.activeElement===document.querySelector('.st-composer input')&&getComputedStyle(document.querySelector('.st-mobile-online')).display==='none'"),'composer stays focused; presence strip compacts');
      await cdp('Emulation.setDeviceMetricsOverride',{width,height,screenWidth:width,screenHeight:844,deviceScaleFactor:1,mobile:true});
