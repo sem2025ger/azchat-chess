@@ -388,3 +388,21 @@
 .schach-treff.st-v2 .st-menu nav .st2-feedback{justify-content:flex-start;gap:8px;margin:6px 0 0;padding:12px;border:0;border-top:1px solid var(--st2-line);border-radius:0;background:transparent;color:#C3A17A;text-align:left;white-space:normal;line-height:1.45}
 .schach-treff.st-v2 .st-menu nav .st2-feedback svg{flex:none}
 .schach-treff.st-v2 .st2-side:not(.st2-thread)>.st2-side-title{color:#C3A17A}
+
+/* General chat only: keep the single Seek control under settings, and centre the motto. */
+@media(min-width:1024px){
+  .schach-treff.st-v2 .st2-seek-in-rooms .st-rooms .st2-direct{display:flex;flex-direction:column;flex:1 0 auto}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st-rooms .st2-settings-link{margin-top:auto}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-rooms-seek{flex:none;margin-top:10px}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-rooms-seek:empty{display:none}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-rooms-seek .st2-seek-trigger{display:flex;justify-content:center;width:100%;min-height:44px;height:auto;margin:0;padding:8px;font-size:13px;white-space:normal;background:#D4A37319}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-rooms-seek .st2-seek-popover{left:0;right:auto;top:auto;bottom:calc(100% + 8px);width:100%;padding:8px}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-rooms-seek .st2-seek-grid{gap:4px}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-rooms-seek .st2-seek-grid button{margin:0;padding:4px 2px;min-width:0;text-align:center}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-chat-meta{display:none}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-general-heading{flex:1 1 0;flex-direction:row;align-items:center;justify-content:center;gap:clamp(5px,1vw,14px)}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-general-heading::before,
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-general-heading::after{content:'';flex:1 1 28px;min-width:0;max-width:48px;height:9px;background:linear-gradient(90deg,transparent,#D4A373);clip-path:polygon(0 45%,calc(100% - 8px) 45%,calc(100% - 4px) 0,100% 50%,calc(100% - 4px) 100%,calc(100% - 8px) 55%,0 55%);opacity:.85}
+  .schach-treff.st-v2 .st2-seek-in-rooms .st2-general-heading::after{transform:scaleX(-1)}
+  #root .schach-treff.st-v2 .st2-seek-in-rooms .st2-general-heading .st2-general-motto{flex:0 1 auto;min-width:0;text-align:center}
+}
