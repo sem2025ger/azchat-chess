@@ -2019,8 +2019,17 @@ aside .site-nav-link--schach-treff .schach-treff-chat-dot {display:none}
 }
 @media (min-width:1280px) and (prefers-reduced-motion:no-preference) and (prefers-contrast:no-preference) {
   aside .site-nav-link--schach-treff .schach-treff-chat-dot {animation:schachTreffChatDotPulse 2.8s ease-in-out infinite}
+  aside .site-nav-link--schach-treff #sidebar-chat-dot-gradient > stop {animation:schachTreffChatDotColor 8.4s ease-in-out infinite}
+  aside .site-nav-link--schach-treff #sidebar-chat-dot-gradient > stop:nth-child(2) {animation-delay:-.6s}
+  aside .site-nav-link--schach-treff #sidebar-chat-dot-gradient > stop:nth-child(3) {animation-delay:-1.2s}
+  aside .site-nav-link--schach-treff #sidebar-chat-dot-gradient > stop:nth-child(4) {animation-delay:-1.8s}
 }
 @keyframes schachTreffChatDotPulse {0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes schachTreffChatDotColor {
+  0%,100% {stop-color:#3153A3}
+  33.333% {stop-color:#AD85ED}
+  66.667% {stop-color:#C49242}
+}
 @media (min-width:1280px) and (prefers-contrast:more) {
   aside .site-nav-link--schach-treff .schach-treff-chat-dot {fill:currentColor;animation:none;opacity:1}
   aside .site-nav-link--schach-treff .schach-treff-chat-icon > path {stroke:currentColor}
