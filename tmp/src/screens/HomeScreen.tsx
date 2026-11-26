@@ -456,12 +456,11 @@ export default function HomeScreen() {
               <span className="mobile-home-wordmark whitespace-nowrap">
                 <span className="mobile-home-brand-name">Chessaz</span><span className="mobile-home-brand-domain">.de</span>
               </span>
-              <span className="relative h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]" aria-hidden="true">
-                <img src="/brand/sidebar-king.svg" alt="" width="28" height="56" className="absolute inset-0 h-full w-full object-fill" />
+              <span className="mobile-home-king relative shrink-0" aria-hidden="true">
+                <img src="/brand/sidebar-king.svg" alt="" width="34" height="68" className="absolute inset-0 h-full w-full object-fill" />
                 <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
               </span>
             </h1>
-            <div className="mobile-home-slogan md:hidden"><span>{t('home.slogan')}</span></div>
           </div>
 
           {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && (

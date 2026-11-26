@@ -165,7 +165,7 @@ export default function Layout() {
       <nav data-mobile-app-nav data-spieltag-enabled={showSpieltag || undefined} className="md:hidden fixed bottom-0 left-0 right-0 bg-[#11110f]/97 border-t border-white/[0.05] flex items-center justify-around px-1 z-50 pb-safe pt-1.5 h-[calc(4.5rem+env(safe-area-inset-bottom,0px))]">
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} premiumHome />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} accent="analysis" />
-        <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" accent="chat" />
+        <MobileNavItem to="/chat" icon={<MobileSchachTreffIcon />} label="Schach-Treff" accent="chat" />
         {showSpieltag && <MobileNavItem to="/spieltag" icon={<CalendarDays size={20} />}
           label={t('nav.spieltag')} accent="settings" />}
         <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} accent="profile" />
@@ -239,6 +239,15 @@ const mobileActiveAccent = {
   settings: 'text-[#EACB9F] bg-[linear-gradient(150deg,rgba(145,107,69,.22),rgba(30,23,19,.9))] ring-1 ring-[#C6A174]/40 shadow-[inset_0_1px_0_rgba(255,227,191,.11)]',
 } as const;
 
+function MobileSchachTreffIcon() {
+  return (
+    <svg data-mobile-schach-treff-icon width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+      <path d="M7 3.5h10a4 4 0 0 1 4 4v7a4 4 0 0 1-4 4h-6l-5 3v-3.1a4 4 0 0 1-3-3.9v-7a4 4 0 0 1 4-4Z" stroke="#C9A26A" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M8 16v-1.6c0-1.6 1.5-2.7 3.2-4l-2 .4-1.3-.9 2.3-3.1.3-1.6 1.6 1.1c3.1-.1 4.8 2.1 4.8 5.3v4.4H8Z" fill="#C9A26A" />
+    </svg>
+  );
+}
+
 function MobileNavItem({ to, icon, label, premiumHome = false, accent }: { to: string, icon: React.ReactNode, label: string, premiumHome?: boolean, accent?: keyof typeof mobileActiveAccent }) {
   const { pathname } = useLocation();
   const destination = to === '/home' && pathname === '/' ? '/' : to;
@@ -262,7 +271,7 @@ function MobileNavItem({ to, icon, label, premiumHome = false, accent }: { to: s
     >
       <div className="relative">
         {icon}
-        <Circle size={4} className="absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-current fill-current" />
+        {to !== '/chat' && <Circle size={4} className="absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-current fill-current" />}
       </div>
       <span className="site-nav-label text-[0.75rem] font-semibold normal-case tracking-normal">{label}</span>
     </NavLink>

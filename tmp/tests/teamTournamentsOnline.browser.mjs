@@ -295,7 +295,7 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
           await wait("!!document.querySelector('.home-screen-root .chess-arena-reference-title')");
           const state = enabled ? 'on' : 'off';
           const expected = enabled ? ['/home','/game','/chat','/spieltag','/profile'] : ['/home','/game','/chat','/profile','/settings'];
-          for (const [width,height] of [[360,640],[390,844],[430,932]]) {
+          for (const [width,height] of [[360,640],[360,780],[390,844],[430,932]]) {
             await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});
             for (const zoom of [100,125]) {
               await evaluate("document.documentElement.style.fontSize='"+(17*zoom/100)+"px'");
@@ -311,30 +311,46 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
                   const fullLabel=rows.join('')===link.label&&(rows.length===1||(link.label==='Schach-Treff'&&JSON.stringify(rows)===JSON.stringify(['Schach-','Treff'])));
                   assert.ok(link.left>=metrics.left&&link.right<=metrics.right&&link.lines>=1&&link.lines<=2&&!link.hidden&&fullLabel&&link.textOverflow==='clip'&&link.overflowWrap==='normal'&&link.textLeft>=link.left-1&&link.textRight<=link.right+1&&link.right-link.left>=44&&link.height>=44&&(i===0||link.left>=metrics.links[i-1].right-1),context+' '+JSON.stringify(link));
                 }
-                const geometry = await evaluate(`(()=>{const root=document.querySelector('.home-screen-root'),title=root.querySelector('.chess-arena-reference-title'),word=title.firstElementChild,king=title.lastElementChild,letter=word.querySelector('.mobile-home-brand-domain'),arena=title.closest('.mobile-home-arena'),board=root.querySelector('.home-board:not(.home-board-frame)'),slogan=root.querySelector('.mobile-home-slogan'),copy=slogan.firstElementChild,play=board.nextElementSibling,nav=document.querySelector('[data-mobile-app-nav]'),chat=nav.querySelector('a[href="/chat"]'),r=e=>e.getBoundingClientRect(),center=e=>(r(e).left+r(e).right)/2,s=getComputedStyle(arena),range=document.createRange();range.selectNodeContents(copy);const text=range.getBoundingClientRect();return{titleCenter:center(word),kingGap:Math.max(0,r(king).left-r(letter).right),plaque:s.borderTopWidth!=='0px'||s.outlineStyle!=='none'||s.backgroundImage!=='none'||s.backgroundColor!=='rgba(0, 0, 0, 0)'||s.boxShadow!=='none',boardWidth:r(board).width,boardHeight:r(board).height,boardLeft:r(board).left,boardRight:innerWidth-r(board).right,duplicateChat:!!root.querySelector('a[href="/chat"],.mobile-home-chat'),topGap:r(title).top-r(root).top,bottomGap:r(nav).top-r(play).bottom,logoBoardGap:r(board).top-r(slogan).bottom,boardPlayGap:r(play).top-r(board).bottom,wordFont:parseFloat(getComputedStyle(word).fontSize),fontFamily:getComputedStyle(word).fontFamily,fontWeight:getComputedStyle(word).fontWeight,fontLoaded:document.fonts.check('700 40px "Bodoni Moda"'),gradient:getComputedStyle(letter).backgroundImage,gradientClip:getComputedStyle(letter).backgroundClip,sloganLines:range.getClientRects().length,sloganFits:text.left>=r(slogan).left-1&&text.right<=r(slogan).right+1&&text.left>=0&&text.right<=innerWidth&&slogan.scrollWidth<=slogan.clientWidth+1,sloganText:copy.textContent,kingWidth:r(king).width,kingHeight:r(king).height,kingSheen:getComputedStyle(king.querySelector('.sidebar-king-sheen')).backgroundImage,navIcons:[...nav.querySelectorAll('a>div>svg:first-child')].map(e=>r(e).width),highlight:getComputedStyle(chat).color,ring:getComputedStyle(chat).boxShadow,overflow:document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight||[...document.querySelectorAll('main,main div')].some(e=>e.clientHeight>0&&/auto|scroll/.test(getComputedStyle(e).overflowY)&&e.scrollHeight>e.clientHeight+1)}})()`);
-                assert.ok(!geometry.plaque&&Math.abs(geometry.titleCenter-width/2)<=2&&geometry.kingGap<=2,context+' brand '+JSON.stringify(geometry));
+                const geometry = await evaluate(`(()=>{
+                  const root=document.querySelector('.home-screen-root'),title=root.querySelector('.chess-arena-reference-title'),word=title.firstElementChild,king=title.lastElementChild,letter=word.querySelector('.mobile-home-brand-domain'),arena=title.closest('.mobile-home-arena'),board=root.querySelector('.home-board:not(.home-board-frame)'),play=board.nextElementSibling,nav=document.querySelector('[data-mobile-app-nav]'),chat=nav.querySelector('a[href="/chat"]'),r=e=>e.getBoundingClientRect(),center=e=>(r(e).left+r(e).right)/2,s=getComputedStyle(arena),range=document.createRange(),labels=[...nav.querySelectorAll('.site-nav-label')].map(e=>parseFloat(getComputedStyle(e).fontSize)),wave=getComputedStyle(word,'::after'),sheen=getComputedStyle(king.querySelector('.sidebar-king-sheen'));
+                  range.setStart(letter.firstChild,letter.textContent.length-1);range.setEnd(letter.firstChild,letter.textContent.length);
+                  return {titleCenter:center(title),titleLeft:r(title).left,titleRight:innerWidth-r(title).right,kingGap:r(king).left-range.getBoundingClientRect().right,plaque:s.borderTopWidth!=='0px'||s.outlineStyle!=='none'||s.backgroundImage!=='none'||s.backgroundColor!=='rgba(0, 0, 0, 0)'||s.boxShadow!=='none',boardWidth:r(board).width,boardHeight:r(board).height,boardLeft:r(board).left,boardRight:innerWidth-r(board).right,duplicateChat:!!root.querySelector('a[href="/chat"],.mobile-home-chat'),topGap:r(title).top-r(root).top,bottomGap:r(nav).top-r(play).bottom,logoBoardGap:r(board).top-r(title).bottom,boardPlayGap:r(play).top-r(board).bottom,wordFont:parseFloat(getComputedStyle(word).fontSize),fontFamily:getComputedStyle(word).fontFamily,fontWeight:getComputedStyle(word).fontWeight,fontLoaded:document.fonts.check('700 56px "Bodoni Moda"'),gradient:getComputedStyle(letter).backgroundImage,gradientClip:getComputedStyle(letter).backgroundClip,sloganAbsent:!root.querySelector('.mobile-home-slogan'),kingWidth:r(king).width,kingHeight:r(king).height,wave:[wave.animationName,wave.animationIterationCount,wave.animationDuration],sheen:[sheen.animationName,sheen.animationIterationCount,sheen.animationDelay],navIcons:[...nav.querySelectorAll('a>div>svg:first-child')].map(e=>r(e).width),labels,knight:!!chat.querySelector('[data-mobile-schach-treff-icon]'),dot:chat.querySelectorAll('svg').length!==1,highlight:getComputedStyle(chat.querySelector('.site-nav-label')).color,ring:getComputedStyle(chat).boxShadow,overflow:document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight||[...document.querySelectorAll('main,main div')].some(e=>e.clientHeight>0&&/auto|scroll/.test(getComputedStyle(e).overflowY)&&e.scrollHeight>e.clientHeight+1)};
+                })()`);
+                assert.ok(!geometry.plaque&&Math.abs(geometry.titleCenter-width/2)<=2&&geometry.kingGap>=-1&&geometry.kingGap<=1&&geometry.titleLeft>=12&&geometry.titleRight>=12,context+' brand '+JSON.stringify(geometry));
                 assert.ok(geometry.boardWidth>=width-4&&Math.abs(geometry.boardWidth-geometry.boardHeight)<=1&&geometry.boardLeft>=-1&&geometry.boardLeft<=2&&geometry.boardRight>=-1&&geometry.boardRight<=2,context+' board '+JSON.stringify(geometry));
-                assert.ok(!geometry.duplicateChat&&!geometry.overflow&&geometry.topGap>=-1&&geometry.bottomGap>=-1&&Math.abs(geometry.topGap-geometry.bottomGap)<=24&&geometry.wordFont===46&&geometry.fontFamily.includes('Bodoni Moda')&&geometry.fontWeight==='700'&&geometry.fontLoaded&&Math.abs(geometry.kingWidth-28)<=1&&Math.abs(geometry.kingHeight-56)<=1,context+' centered Home '+JSON.stringify(geometry));
-                assert.ok(Math.abs(geometry.logoBoardGap-22)<=2&&Math.abs(geometry.boardPlayGap-14)<=2,context+' spacing '+JSON.stringify(geometry));
-                assert.ok(geometry.gradient.includes('rgb(228, 225, 218)')&&geometry.gradient.includes('rgb(191, 195, 197)')&&geometry.gradient.includes('rgb(144, 150, 154)')&&geometry.gradientClip==='text',context+' platinum domain');
-                assert.ok(geometry.sloganLines===1&&geometry.sloganFits,context+' slogan '+JSON.stringify(geometry));
-                assert.ok(geometry.kingSheen.includes('rgba(37, 44, 55, 0.46)')&&geometry.navIcons.length===5&&geometry.navIcons.every(w=>Math.abs(w-17)<=1),context+' king sheen and compact icons '+JSON.stringify(geometry));
-                assert.equal(geometry.sloganText,{en:'Play • Learn • Win',de:'Spielen • Lernen • Siegen',ua:'Грай • Навчайся • Перемагай',ru:'Играй • Учись • Побеждай',az:'Oyna • Öyrən • Qalib gəl',tr:'Oyna • Öğren • Kazan'}[locale],context);
-                assert.ok(geometry.ring.includes('rgba(184, 190, 197, 0.18)'),context+' graphite sheen');
-                assert.equal(geometry.highlight,'rgb(184, 190, 197)',context+' graphite chat');
-                if(width===390&&locale==='ru'){
-                  await capture('mobile-home-'+state+'-'+zoom,locale,width);
-                  await capture('mobile-nav-'+state+'-'+zoom,locale,width);
+                const expectedFont=Math.min(56,Math.max(44,width*.145));
+                assert.ok(!geometry.duplicateChat&&!geometry.overflow&&geometry.topGap>=-1&&geometry.bottomGap>=-1&&Math.abs(geometry.topGap-geometry.bottomGap)<=24&&Math.abs(geometry.wordFont-expectedFont)<.1&&geometry.fontFamily.includes('Bodoni Moda')&&geometry.fontWeight==='700'&&geometry.fontLoaded&&Math.abs(geometry.kingWidth-expectedFont*34/56)<=1&&Math.abs(geometry.kingHeight-expectedFont*68/56)<=1,context+' centered Home '+JSON.stringify(geometry));
+                assert.ok(Math.abs(geometry.logoBoardGap-16)<=2&&Math.abs(geometry.boardPlayGap-14)<=2,context+' spacing '+JSON.stringify(geometry));
+                assert.ok(geometry.gradient.includes('rgb(205, 176, 137)')&&geometry.gradient.includes('rgb(168, 131, 80)')&&geometry.gradient.includes('rgb(122, 93, 58)')&&geometry.gradientClip==='text',context+' bronze domain');
+                assert.ok(geometry.sloganAbsent,context+' mobile slogan removed');
+                assert.deepEqual(geometry.wave,['chessazMobileBronzeWave','1','1.7s'],context);
+                assert.deepEqual(geometry.sheen,['chessazMobileBronzeWave','1','1s'],context);
+                assert.ok(geometry.navIcons.length===5&&geometry.navIcons.every((w,i)=>Math.abs(w-(i===2?20:17))<=1)&&geometry.knight&&!geometry.dot,context+' custom icon '+JSON.stringify(geometry));
+                assert.ok(geometry.labels.every((size,i)=>i===2||Math.abs(geometry.labels[2]-size-1)<.05),context+' chat label size');
+                assert.ok(geometry.ring.includes('rgba(168, 131, 80, 0.45)'),context+' bronze edge');
+                assert.equal(geometry.highlight,'rgb(230, 211, 176)',context+' bronze chat label');
+                if(locale==='ru'&&zoom===100&&height!==640){
+                  await evaluate("Promise.all(document.getAnimations().filter(a=>a.animationName==='chessazMobileBronzeWave').map(a=>a.finished.catch(()=>{})))");
+                  console.log('MOBILE_HOME_GEOMETRY '+context+' '+JSON.stringify(geometry));
+                  await capture('mobile-home-'+state+'-'+zoom+'-'+height,locale,width);
                 }
               }
             }
           }
           await cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+          await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+          const reduced=await evaluate(`(()=>{const word=document.querySelector('.mobile-home-wordmark'),king=document.querySelector('.home-screen-root .sidebar-king-sheen'),chat=document.querySelector('[data-mobile-app-nav] a[href="/chat"]');return [getComputedStyle(word,'::after').animationName,getComputedStyle(king).animationName,getComputedStyle(chat,'::before').animationName]})()`);
+          assert.deepEqual(reduced,['none','none','none']);
+          await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+          await wait("!!document.querySelector('.home-board-frame') && document.querySelector('.home-board-frame').getBoundingClientRect().width>0");
+          await capture('desktop-home-'+state,'ru',1440);
+          await cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+          await cdp('Emulation.setEmulatedMedia',{features:[]});
           await evaluate("window.fixtureHomeLanguage('ru');document.documentElement.style.fontSize='21.25px'");
           await evaluate("document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]').click()");
           await wait("!!document.querySelector('[data-home-fixture-chat]')");
           assert.equal(await evaluate("document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]').getAttribute('aria-current')"),'page');
-          assert.equal(await evaluate("getComputedStyle(document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]')).color"),'rgb(224, 227, 230)');
+          assert.ok((await evaluate("getComputedStyle(document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]')).boxShadow")).includes('rgb(201, 162, 106)'));
           await evaluate("window.fixtureHomeNav('/profile')");
           await wait("!!document.querySelector('[data-guest-settings]')");
           for(const [locale,word] of Object.entries({ru:'Настройки',de:'Einstellungen',en:'Settings',az:'Ayarlar',tr:'Ayarlar',ua:'Налаштування'})){
@@ -358,7 +374,7 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
           await wait("!!document.querySelector('.settings-mobile-view')");
           await evaluate("window.fixtureHomeMode=undefined;window.fixtureHomeNav('/spieltag');document.documentElement.style.fontSize=''");
           await wait("document.body.innerText.includes('Bochum Cup')");
-          console.log('PASS mobile Home/nav/Profile flag '+state+': 3 widths, 2 root font sizes, 6 locales');
+          console.log('PASS mobile Home/nav/Profile flag '+state+': 4 viewports, 2 root font sizes, 6 locales');
         }
         if (onlinePlay) {
           await navigate('play-online');

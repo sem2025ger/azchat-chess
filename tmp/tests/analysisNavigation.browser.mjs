@@ -263,9 +263,12 @@ try {
       const labels = items.map(a=>r(a.querySelector('.site-nav-label')));
       const header = brand.closest('.mobile-home-arena');
       const king = r(brand.querySelector('img'));
-      const kingTransform = new DOMMatrixReadOnly(getComputedStyle(brand.querySelector('span[aria-hidden=true]')).transform);
+      const domain=brand.querySelector('.mobile-home-brand-domain'), range=document.createRange();
+      range.setStart(domain.firstChild,domain.textContent.length-1);range.setEnd(domain.firstChild,domain.textContent.length);
+      const kingGap=king.left-range.getBoundingClientRect().right;
+      const wordFont=parseFloat(getComputedStyle(brand).fontSize);
       const nrw = header.querySelector('a[href="/region/nrw"]');
-      return {brand:brand.getAttribute('aria-label'), king:king.width, kingX:kingTransform.m41, kingY:kingTransform.m42,
+      return {brand:brand.getAttribute('aria-label'), king:king.width, kingHeight:king.height, kingGap, wordFont, titleLeft:r(brand).left, titleRight:innerWidth-r(brand).right,
         kingTop:king.top-r(header).top, kingBottom:r(header).bottom-king.bottom,
         homeNRWHidden:!nrw||nrw.getClientRects().length===0,
         controlGap:r(play.closest('nav')).top-r(board).bottom,
@@ -279,13 +282,14 @@ try {
         minLabelGap:Math.min(...labels.slice(1).map((label,i)=>label.left-labels[i].right))};
     })()`);
     assert.equal(geometry.brand,'Chessaz.de');
-    assert.equal(geometry.king,28);
-    assert.ok(geometry.homeNRWHidden && geometry.kingTop>=12 && geometry.kingBottom>=12 && geometry.kingX===-4 && geometry.kingY===-4 && Math.abs(geometry.kingBottom-geometry.kingTop-8)<=3,JSON.stringify(geometry));
-    assert.ok(geometry.controlGap>=16 && geometry.controlGap<=24,JSON.stringify(geometry));
-    assert.ok(geometry.headerHeight<=120 && geometry.boardGap>=8 && geometry.boardGap<=21,JSON.stringify(geometry));
-    assert.ok(geometry.boardWidth>=width-20 && Math.abs(geometry.boardWidth-geometry.boardHeight)<1.5,JSON.stringify(geometry));
+    const font=Math.min(56,Math.max(44,width*.145));
+    assert.ok(Math.abs(geometry.wordFont-font)<.1 && Math.abs(geometry.king-font*34/56)<1 && Math.abs(geometry.kingHeight-font*68/56)<1,JSON.stringify(geometry));
+    assert.ok(geometry.homeNRWHidden && geometry.kingGap>=-1 && geometry.kingGap<=1 && geometry.titleLeft>=12 && geometry.titleRight>=12,JSON.stringify(geometry));
+    assert.ok(Math.abs(geometry.controlGap-14)<=2,JSON.stringify(geometry));
+    assert.ok(geometry.headerHeight<=80 && Math.abs(geometry.boardGap-16)<=2,JSON.stringify(geometry));
+    assert.ok(geometry.boardWidth>=width-4 && Math.abs(geometry.boardWidth-geometry.boardHeight)<1.5,JSON.stringify(geometry));
     assert.ok(geometry.playGap>=8 && geometry.noNRW,JSON.stringify(geometry));
-    assert.ok([5,6].includes(geometry.navCount) && geometry.minTarget>=44 && geometry.minIcon>=20 && geometry.minLabelGap>=4,JSON.stringify(geometry));
+    assert.ok(geometry.navCount===5 && geometry.minTarget>=44 && geometry.minIcon>=17 && geometry.minLabelGap>=4,JSON.stringify(geometry));
   }
   // These are diagnostics, not an artificial guarantee of zero-millisecond navigation.
   // Regression gate: the board must render on both navigation attempts.
