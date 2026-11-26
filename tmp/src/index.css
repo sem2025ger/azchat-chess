@@ -1967,7 +1967,7 @@ aside .site-nav-link{min-height:58px;padding:10px 14px;border-radius:12px}
 aside nav{padding-top:20px!important}
 /* Equal-width mobile touch targets; wrap long localized labels instead of clipping. */
 [data-mobile-app-nav] .site-nav-link{flex:1 1 0%;min-width:44px}
-[data-mobile-app-nav] .site-nav-link .site-nav-label{max-width:calc(100% - 8px);font-size:.75rem;line-height:1.2;text-align:center;white-space:normal;overflow-wrap:anywhere}
+[data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:100%;max-width:100%;font-size:clamp(9px,2.65vw,12px);line-height:1.2;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-mobile-app-nav]{gap:2px}
 [data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:58px;gap:4px}
 /* Equal navigation rows leave room for every desktop destination at 720 px. */
