@@ -2082,7 +2082,7 @@ aside nav{padding-top:20px!important}
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
   [data-mobile-app-nav] .site-nav-link[href="/chat"]::before { animation: none; opacity: 0; }
 }
-@media(max-width:389px){[data-mobile-app-nav] .site-nav-link[href="/spieltag"] .site-nav-label{letter-spacing:-.04em}}
+@media(max-width:767px){[data-mobile-app-nav] .site-nav-link[href="/spieltag"] .site-nav-label{letter-spacing:-.04em}}
 [data-mobile-app-nav]{gap:2px}
 @media(max-width:359px){[data-mobile-app-nav]{gap:0;padding-inline:2px}[data-mobile-app-nav] .site-nav-link{padding-inline:1px}}
 [data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:58px;gap:4px}
