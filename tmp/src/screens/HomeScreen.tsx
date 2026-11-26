@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Chess } from 'chess.js';
+import '@fontsource/bodoni-moda/700.css';
 import ChessBoard from '../components/ChessBoard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -130,12 +131,6 @@ export default function HomeScreen() {
             font-size: 0.5rem !important;
             opacity: 0.6 !important;
             font-weight: 800 !important;
-          }
-        }
-        /* Mobile Home: the brand is unframed; desktop Arena stays unchanged. */
-        @media (max-width: 767px) {
-          .home-screen-root [data-mobile-home-stack] {
-            padding-top: clamp(16px, 3dvh, 24px);
           }
         }
         /* Home-only black CBURNETT artwork retains a discreet shadow without
@@ -458,14 +453,15 @@ export default function HomeScreen() {
               Chess<span className="text-chess-active"> Arena</span>
             </h1>
             <h1 className="chess-arena-reference-title md:hidden" aria-label="Chessaz.de">
-              <span className="font-black tracking-tight not-italic leading-none whitespace-nowrap">
-                <span className="sidebar-brand-silver"><span className="text-[1.08em]">Ch</span>essaz.</span><span className="sidebar-brand-de inline-block text-[1.06em]">de</span>
+              <span className="mobile-home-wordmark whitespace-nowrap">
+                <span className="mobile-home-brand-name">Chessaz</span><span className="mobile-home-brand-domain">.de</span>
               </span>
               <span className="relative h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]" aria-hidden="true">
                 <img src="/brand/sidebar-king.svg" alt="" width="28" height="56" className="absolute inset-0 h-full w-full object-fill" />
                 <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
               </span>
             </h1>
+            <div className="mobile-home-slogan md:hidden"><span>{t('home.slogan')}</span></div>
           </div>
 
           {import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && (

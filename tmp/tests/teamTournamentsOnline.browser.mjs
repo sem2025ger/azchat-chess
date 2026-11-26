@@ -8,6 +8,7 @@ import { createServer } from 'vite';
 const entry = '/__team_online_fixture.tsx';
 const fixtureOrigin = 'https://team-online-fixture.invalid';
 const fixture = `
+import '@fontsource/inter/600.css';
 import '/src/index.css';
 import '/src/components/teamTournaments/teamTournaments.css';
 import { createRoot } from 'react-dom/client';
@@ -307,14 +308,19 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
                   const fullLabel=rows.join('')===link.label&&(rows.length===1||(link.label==='Schach-Treff'&&JSON.stringify(rows)===JSON.stringify(['Schach-','Treff'])));
                   assert.ok(link.left>=metrics.left&&link.right<=metrics.right&&link.lines>=1&&link.lines<=2&&!link.hidden&&fullLabel&&link.textOverflow==='clip'&&link.overflowWrap==='normal'&&link.textLeft>=link.left-1&&link.textRight<=link.right+1&&link.right-link.left>=44&&link.height>=44&&(i===0||link.left>=metrics.links[i-1].right-1),context+' '+JSON.stringify(link));
                 }
-                const geometry = await evaluate("(()=>{const root=document.querySelector('.home-screen-root'),title=root.querySelector('.chess-arena-reference-title'),word=title.firstElementChild,king=title.lastElementChild,letter=word.querySelector('.sidebar-brand-de'),arena=title.closest('.mobile-home-arena'),board=root.querySelector('.home-board:not(.home-board-frame)'),nav=document.querySelector('[data-mobile-app-nav]'),chat=nav.querySelector('a[href=\"/chat\"]'),r=e=>e.getBoundingClientRect(),center=e=>(r(e).left+r(e).right)/2,s=getComputedStyle(arena);return{titleCenter:center(word),kingGap:Math.max(0,r(king).left-r(letter).right),plaque:s.borderTopWidth!=='0px'||s.outlineStyle!=='none'||s.backgroundImage!=='none'||s.backgroundColor!=='rgba(0, 0, 0, 0)'||s.boxShadow!=='none',boardWidth:r(board).width,boardHeight:r(board).height,boardLeft:r(board).left,boardRight:innerWidth-r(board).right,duplicateChat:!!root.querySelector('a[href=\"/chat\"],.mobile-home-chat'),titleTop:r(title).top-r(root).top,wordFont:parseFloat(getComputedStyle(word).fontSize),kingWidth:r(king).width,kingHeight:r(king).height,highlight:getComputedStyle(chat).color,overflow:document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight||[...document.querySelectorAll('main,main div')].some(e=>e.clientHeight>0&&/auto|scroll/.test(getComputedStyle(e).overflowY)&&e.scrollHeight>e.clientHeight+1)}})()");
+                const geometry = await evaluate(`(()=>{const root=document.querySelector('.home-screen-root'),title=root.querySelector('.chess-arena-reference-title'),word=title.firstElementChild,king=title.lastElementChild,letter=word.querySelector('.mobile-home-brand-domain'),arena=title.closest('.mobile-home-arena'),board=root.querySelector('.home-board:not(.home-board-frame)'),slogan=root.querySelector('.mobile-home-slogan'),copy=slogan.firstElementChild,play=board.nextElementSibling,nav=document.querySelector('[data-mobile-app-nav]'),chat=nav.querySelector('a[href="/chat"]'),r=e=>e.getBoundingClientRect(),center=e=>(r(e).left+r(e).right)/2,s=getComputedStyle(arena),range=document.createRange();range.selectNodeContents(copy);const text=range.getBoundingClientRect();return{titleCenter:center(word),kingGap:Math.max(0,r(king).left-r(letter).right),plaque:s.borderTopWidth!=='0px'||s.outlineStyle!=='none'||s.backgroundImage!=='none'||s.backgroundColor!=='rgba(0, 0, 0, 0)'||s.boxShadow!=='none',boardWidth:r(board).width,boardHeight:r(board).height,boardLeft:r(board).left,boardRight:innerWidth-r(board).right,duplicateChat:!!root.querySelector('a[href="/chat"],.mobile-home-chat'),topGap:r(title).top-r(root).top,bottomGap:r(nav).top-r(play).bottom,logoBoardGap:r(board).top-r(slogan).bottom,boardPlayGap:r(play).top-r(board).bottom,wordFont:parseFloat(getComputedStyle(word).fontSize),fontFamily:getComputedStyle(word).fontFamily,fontWeight:getComputedStyle(word).fontWeight,fontLoaded:document.fonts.check('700 40px "Bodoni Moda"'),gradient:getComputedStyle(letter).backgroundImage,gradientClip:getComputedStyle(letter).backgroundClip,sloganLines:range.getClientRects().length,sloganFits:text.left>=r(slogan).left-1&&text.right<=r(slogan).right+1&&text.left>=0&&text.right<=innerWidth&&slogan.scrollWidth<=slogan.clientWidth+1,sloganText:copy.textContent,kingWidth:r(king).width,kingHeight:r(king).height,highlight:getComputedStyle(chat).color,ring:getComputedStyle(chat).boxShadow,overflow:document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight||[...document.querySelectorAll('main,main div')].some(e=>e.clientHeight>0&&/auto|scroll/.test(getComputedStyle(e).overflowY)&&e.scrollHeight>e.clientHeight+1)}})()`);
                 assert.ok(!geometry.plaque&&Math.abs(geometry.titleCenter-width/2)<=2&&geometry.kingGap<=2,context+' brand '+JSON.stringify(geometry));
                 assert.ok(geometry.boardWidth>=width-4&&Math.abs(geometry.boardWidth-geometry.boardHeight)<=1&&geometry.boardLeft>=-1&&geometry.boardLeft<=2&&geometry.boardRight>=-1&&geometry.boardRight<=2,context+' board '+JSON.stringify(geometry));
-                assert.ok(!geometry.duplicateChat&&!geometry.overflow&&geometry.titleTop>=11&&geometry.wordFont>=30&&Math.abs(geometry.kingWidth-28)<=1&&Math.abs(geometry.kingHeight-56)<=1,context+' uncluttered Home '+JSON.stringify(geometry));
+                assert.ok(!geometry.duplicateChat&&!geometry.overflow&&geometry.topGap>=-1&&geometry.bottomGap>=-1&&Math.abs(geometry.topGap-geometry.bottomGap)<=24&&geometry.wordFont===40&&geometry.fontFamily.includes('Bodoni Moda')&&geometry.fontWeight==='700'&&geometry.fontLoaded&&Math.abs(geometry.kingWidth-28)<=1&&Math.abs(geometry.kingHeight-56)<=1,context+' centered Home '+JSON.stringify(geometry));
+                assert.ok(Math.abs(geometry.logoBoardGap-22)<=2&&Math.abs(geometry.boardPlayGap-14)<=2,context+' spacing '+JSON.stringify(geometry));
+                assert.ok(geometry.gradient.includes('rgb(234, 219, 184)')&&geometry.gradient.includes('rgb(200, 174, 126)')&&geometry.gradient.includes('rgb(158, 132, 89)')&&geometry.gradientClip==='text',context+' gilded domain');
+                assert.ok(geometry.sloganLines===1&&geometry.sloganFits,context+' slogan '+JSON.stringify(geometry));
+                assert.equal(geometry.sloganText,{en:'Play • Learn • Win',de:'Spielen • Lernen • Siegen',ua:'Грай • Навчайся • Перемагай',ru:'Играй • Учись • Побеждай',az:'Oyna • Öyrən • Qalib gəl',tr:'Oyna • Öğren • Kazan'}[locale],context);
+                assert.ok(geometry.ring.includes('rgba(200, 174, 126, 0.36)'),context+' gold ring');
                 assert.equal(geometry.highlight,'rgb(231, 196, 127)',context+' gold chat');
-                if(width===390&&zoom===125&&locale==='ru'){
-                  await capture('mobile-home-'+state,locale,width);
-                  await capture('mobile-nav-'+state,locale,width);
+                if(width===390&&locale==='ru'){
+                  await capture('mobile-home-'+state+'-'+zoom,locale,width);
+                  await capture('mobile-nav-'+state+'-'+zoom,locale,width);
                 }
               }
             }
@@ -334,7 +340,10 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
             assert.ok(guest.height>=44&&guest.href==='/settings'&&guest.visible,JSON.stringify(guest));
           }
           await evaluate("window.fixtureHomeLanguage('ru')");
-          await capture('mobile-guest-profile-'+state,'ru',390);
+          await capture('mobile-guest-profile-'+state+'-125','ru',390);
+          await evaluate("document.documentElement.style.fontSize='100%'");
+          await capture('mobile-guest-profile-'+state+'-100','ru',390);
+          await evaluate("document.documentElement.style.fontSize='125%'");
           await evaluate("document.querySelector('[data-guest-settings]').click()");
           await wait("!!document.querySelector('.settings-mobile-view')");
           await evaluate("window.fixtureHomeMode='signed-in';window.fixtureHomeNav('/profile')");

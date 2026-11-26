@@ -673,12 +673,17 @@
 }
 
 
-/* Compact mobile Home: reuse the desktop silver wordmark and king. */
+/* Mobile Home: centered, unframed brand and board; desktop stays unchanged. */
 @media (max-width: 767px) {
+  .home-screen-root {
+    height: 100%;
+    min-height: 0;
+    container-type: size;
+  }
   .home-screen-root [data-mobile-home-stack] {
-    gap: clamp(12px, 2dvh, 20px);
-    padding-inline: 2px;
-    padding-bottom: 12px;
+    justify-content: safe center;
+    gap: 22px;
+    padding: 0 2px;
   }
   .home-screen-root [data-mobile-home-stack] .mobile-home-arena {
     border: 0 !important;
@@ -697,13 +702,27 @@
     min-height: 56px;
     margin-inline: auto;
     gap: 0;
-    font-family: inherit;
-    font-size: clamp(1.95rem, 8.5vw, 2.12rem);
+    font-family: 'Bodoni Moda', Georgia, serif;
+    font-size: 40px;
+    font-weight: 700;
     line-height: 1.05;
+    letter-spacing: 0;
     background: none;
   }
-  .mobile-home-arena .chess-arena-reference-title > span:first-child {
-    letter-spacing: 0.015em;
+  .mobile-home-wordmark {
+    display: block;
+    font: inherit;
+    letter-spacing: inherit;
+  }
+  .mobile-home-brand-name {
+    color: #F2EEE3;
+  }
+  .mobile-home-brand-domain {
+    background-image: linear-gradient(110deg, #EADBB8, #C8AE7E, #9E8459);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: #C8AE7E;
   }
   .home-screen-root .mobile-home-arena .chess-arena-reference-title > span[aria-hidden="true"] {
     position: absolute;
@@ -711,22 +730,48 @@
     top: calc(50% - 28px);
     transform: translate(-4px, -4px);
   }
+  .mobile-home-slogan {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 6px auto 0;
+    max-width: 100%;
+    font: 600 11px/1.3 Inter, system-ui, sans-serif;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: #B9B2A3;
+    white-space: nowrap;
+  }
+  .mobile-home-slogan::before, .mobile-home-slogan::after {
+    content: '';
+    flex: 0 1 30px;
+    min-width: 12px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #C8AE7E);
+  }
+  .mobile-home-slogan::after {
+    background: linear-gradient(90deg, #C8AE7E, transparent);
+  }
   .home-screen-root .mobile-home-arena > a[href="/region/nrw"] {
     display: none;
   }
   .home-screen-root .home-board-column .home-board + nav {
-    margin-top: 20px;
+    margin-top: 14px;
   }
   .home-screen-root .home-board-column {
-    width: 100%;
+    width: min(100%, max(0px, calc(100cqh - 180px)));
     max-width: 100% !important;
   }
 }
-@media (max-width: 767px) and (max-height: 700px) {
-  .home-screen-root [data-mobile-home-stack] {
-    gap: 8px;
-    padding-block: 12px 4px !important;
-  }
+@media (max-width: 389px) {
+  .mobile-home-slogan { letter-spacing: .09em; gap: 6px; }
+}
+@media (max-width: 767px) and (max-height: 580px) {
+  .home-screen-root [data-mobile-home-stack] { gap: 14px; }
+  .mobile-home-arena .chess-arena-reference-title { font-size: 34px; }
+  .home-screen-root .home-board-column .home-board + nav { margin-top: 8px; }
+  .home-screen-root .home-board-column { width: min(100%, max(0px, calc(100cqh - 164px))); }
 }
 
 /* ChessAZ mobile premium controls: colors only, no board or layout changes. */
@@ -1991,7 +2036,8 @@ aside nav{padding-top:20px!important}
 [data-mobile-app-nav] .site-nav-link{flex:1 1 0;min-width:44px;box-sizing:border-box;padding-inline:1px}
 [data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:auto;max-width:none;font-size:clamp(9px,2.65vw,.75rem);line-height:1.2;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;overflow-wrap:normal;word-break:normal;hyphens:manual}
 [data-mobile-app-nav] .site-nav-link[href="/chat"] .site-nav-label{width:4.5em;white-space:normal}
-[data-mobile-app-nav] .site-nav-link[href="/chat"]:not([aria-current="page"]){color:#E7C47F}
+[data-mobile-app-nav] .site-nav-link[href="/chat"]:not([aria-current="page"]){color:#E7C47F;box-shadow:inset 0 0 0 1px rgba(200,174,126,.36)}
+[data-mobile-app-nav] .site-nav-link:is([href="/spieltag"],[href="/settings"]) .site-nav-label{font-size:clamp(8px,2.4vw,.75rem)}
 [data-mobile-app-nav]{gap:2px}
 @media(max-width:359px){[data-mobile-app-nav]{gap:0;padding-inline:2px}[data-mobile-app-nav] .site-nav-link{padding-inline:1px}}
 [data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:58px;gap:4px}

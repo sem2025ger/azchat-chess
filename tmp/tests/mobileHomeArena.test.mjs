@@ -7,17 +7,18 @@ const css = fs.readFileSync(new URL('../src/index.css', import.meta.url), 'utf8'
 
 test('mobile Home uses the desktop brand and compact layout without changing desktop Arena', () => {
   assert.match(home, /className="chess-arena-reference-title md:hidden" aria-label="Chessaz\.de"/);
-  assert.match(home, /sidebar-brand-silver"><span className="text-\[1\.08em\]">Ch<\/span>essaz\.<\/span>/);
-  assert.match(home, /sidebar-brand-de inline-block text-\[1\.06em\]">de<\/span>/);
+  assert.match(home, /mobile-home-brand-name">Chessaz<\/span><span className="mobile-home-brand-domain">\.de<\/span>/);
+  assert.match(home, /mobile-home-slogan md:hidden"><span>\{t\('home\.slogan'\)\}<\/span>/);
+  assert.ok(home.includes("@fontsource/bodoni-moda/700.css"));
   assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="28" height="56"/);
-  assert.ok(css.includes('gap: clamp(12px, 2dvh, 20px);\n    padding-inline: 2px;\n    padding-bottom: 12px;'));
-  assert.ok(css.includes('font-size: clamp(1.95rem, 8.5vw, 2.12rem);'));
-  assert.ok(css.includes('letter-spacing: 0.015em;'));
+  assert.ok(css.includes('justify-content: safe center;\n    gap: 22px;\n    padding: 0 2px;'));
+  assert.ok(css.includes("font-family: 'Bodoni Moda', Georgia, serif;\n    font-size: 40px;\n    font-weight: 700;"));
+  assert.ok(css.includes('linear-gradient(110deg, #EADBB8, #C8AE7E, #9E8459)'));
   assert.match(css, /\.home-screen-root \[data-mobile-home-stack\] \.mobile-home-arena\s*\{\s*border: 0 !important;\s*outline: none;\s*background: none;/);
-  assert.ok(css.includes('width: 100%;\n    max-width: 100% !important;'));
+  assert.ok(css.includes('width: min(100%, max(0px, calc(100cqh - 180px)));\n    max-width: 100% !important;'));
   assert.ok(home.includes('max-width: calc(100vw - 4px) !important;'));
   assert.ok(css.includes('.home-screen-root .mobile-home-arena > a[href="/region/nrw"] {\n    display: none;'));
-  assert.ok(css.includes('.home-screen-root .home-board-column .home-board + nav {\n    margin-top: 20px;'));
+  assert.ok(css.includes('.home-screen-root .home-board-column .home-board + nav {\n    margin-top: 14px;'));
   const navLabel = css.match(/\[data-mobile-app-nav\] \.site-nav-link \.site-nav-label\{([^}]+)\}/)?.[1] ?? '';
   assert.match(navLabel, /max-width:none/);
   assert.match(navLabel, /font-size:clamp\(9px,2\.65vw,\.75rem\)/);
@@ -27,12 +28,11 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.match(home, /sidebar-king-sheen pointer-events-none absolute inset-0/);
   assert.match(home, /Chess<span className="text-chess-active"> Arena<\/span>/);
   assert.match(home, /data-mobile-home-stack/);
-  assert.match(home, /padding-top: clamp\(16px, 3dvh, 24px\)/);
-  assert.match(home, /@media \(max-width: 767px\) \{\s*\.home-screen-root \[data-mobile-home-stack\]/);
+  assert.match(css, /@media \(max-width: 767px\) \{\s*\.home-screen-root \{\s*height: 100%;\s*min-height: 0;\s*container-type: size;/);
   assert.doesNotMatch(home, /\.home-screen-root \.mobile-home-arena::(?:before|after)/);
   assert.match(css, /\.home-screen-root \.mobile-home-arena::before,\s*\.home-screen-root \.mobile-home-arena::after\s*\{\s*display: none;/);
   assert.match(css, /\[data-mobile-app-nav\] \.site-nav-link\{flex:1 1 0;min-width:44px/);
-  assert.match(css, /\[data-mobile-app-nav\] \.site-nav-link\[href="\/chat"\]:not\(\[aria-current="page"\]\)\{color:#E7C47F\}/);
+  assert.match(css, /\[data-mobile-app-nav\] \.site-nav-link\[href="\/chat"\]:not\(\[aria-current="page"\]\)\{color:#E7C47F;box-shadow:inset 0 0 0 1px rgba\(200,174,126,\.36\)\}/);
   assert.doesNotMatch(home, /mobile-home-chat|schachTreffSubtitle|<Link to="\/chat"/);
   assert.match(home, /max-w-\[320px\]/);
   assert.match(home, /<MobileHomeBoard \/>/);

@@ -114,14 +114,17 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  const disabledFinish=disabledHome.indexOf(m3End,disabledStart);
  const withoutM3=disabledHome.slice(0,disabledStart)+disabledHome.slice(disabledFinish+m3End.length);
  // Owner-approved mobile brand replacement; normalize only the exact heading.
- const approvedMobileBrand = "            <h1 className=\"chess-arena-reference-title md:hidden\" aria-label=\"Chessaz.de\">\n              <span className=\"font-black tracking-tight not-italic leading-none whitespace-nowrap\">\n                <span className=\"sidebar-brand-silver\"><span className=\"text-[1.08em]\">Ch</span>essaz.</span><span className=\"sidebar-brand-de inline-block text-[1.06em]\">de</span>\n              </span>\n              <span className=\"relative h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]\" aria-hidden=\"true\">\n                <img src=\"/brand/sidebar-king.svg\" alt=\"\" width=\"28\" height=\"56\" className=\"absolute inset-0 h-full w-full object-fill\" />\n                <span className=\"sidebar-king-sheen pointer-events-none absolute inset-0\" />\n              </span>\n            </h1>";
+ const approvedMobileBrand = "            <h1 className=\"chess-arena-reference-title md:hidden\" aria-label=\"Chessaz.de\">\n              <span className=\"mobile-home-wordmark whitespace-nowrap\">\n                <span className=\"mobile-home-brand-name\">Chessaz</span><span className=\"mobile-home-brand-domain\">.de</span>\n              </span>\n              <span className=\"relative h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]\" aria-hidden=\"true\">\n                <img src=\"/brand/sidebar-king.svg\" alt=\"\" width=\"28\" height=\"56\" className=\"absolute inset-0 h-full w-full object-fill\" />\n                <span className=\"sidebar-king-sheen pointer-events-none absolute inset-0\" />\n              </span>\n            </h1>\n            <div className=\"mobile-home-slogan md:hidden\"><span>{t('home.slogan')}</span></div>";
  const originalMobileHeading = "            <h1 className=\"chess-arena-reference-title md:hidden text-[2.2rem] text-center leading-[0.95] tracking-[-0.03em]\">\n              Chess Arena\n            </h1>";
  assert.equal(withoutM3.split(approvedMobileBrand).length,2,'approved mobile brand appears exactly once');
  let homeSource=withoutM3.replace(approvedMobileBrand,originalMobileHeading);
+ const mobileFontImport="import '@fontsource/bodoni-moda/700.css';\n";
+ assert.equal(homeSource.split(mobileFontImport).length,2,'approved mobile font import appears exactly once');
+ homeSource=homeSource.replace(mobileFontImport,'');
  // Reverse only the approved mobile plaque removal, spacing and board-width change.
  for(const [next,previous] of [
   [
-    "        /* Mobile Home: the brand is unframed; desktop Arena stays unchanged. */\n        @media (max-width: 767px) {\n          .home-screen-root [data-mobile-home-stack] {\n            padding-top: clamp(16px, 3dvh, 24px);\n          }\n        }\n",
+    "",
     "        /* Chess Arena: mobile-only, understated obsidian-gold architectural frame.\n           Keep the approved golden wordmark and the exact board dimensions. */\n        @media (max-width: 767px) {\n          .home-screen-root [data-mobile-home-stack] {\n            padding-top: 12px;\n          }\n          .home-screen-root .mobile-home-arena {\n            border: 1px solid rgba(221, 184, 110, .5);\n            border-bottom: 1px solid rgba(221, 184, 110, .3);\n            border-radius: 24px;\n            box-shadow: 0 15px 28px -18px rgba(0,0,0,.85),\n              0 0 0 1px rgba(176, 142, 85, .11),\n              inset 0 1px 0 rgba(255, 234, 182, .17),\n              inset 0 -1px 0 rgba(255, 220, 155, .04);\n          }\n          .home-screen-root .mobile-home-arena::before {\n            inset: 5px; border-radius: 19px; opacity: 1; animation: none;\n            border: 1px solid rgba(207, 171, 105, .23);\n            box-shadow: inset 0 0 14px rgba(203, 168, 103, .035);\n          }\n          .home-screen-root .mobile-home-arena::after {\n            inset: -1px; border-radius: 25px; opacity: 1; animation: none;\n            border: 1px solid transparent;\n            background:\n              linear-gradient(90deg, transparent, rgba(247,213,151,.76), transparent) top 11px center / 38% 1px no-repeat,\n              linear-gradient(90deg, transparent, rgba(166,140,212,.34), transparent) bottom 10px center / 30% 1px no-repeat;\n            box-shadow: none;\n          }\n        }\n"
   ],
   [
@@ -129,8 +132,14 @@ test('all NRW flags off preserves the main routing and navigation entry points',
     "max-width: calc(100vw - 8px) !important;"
   ]
 ]){
-  assert.equal(homeSource.split(next).length,2,'approved mobile Home fragment appears exactly once');
-  homeSource=homeSource.replace(next,previous);
+  if (next) {
+   assert.equal(homeSource.split(next).length,2,'approved mobile Home fragment appears exactly once');
+   homeSource=homeSource.replace(next,previous);
+  } else {
+   const anchor='        /* Home-only black CBURNETT artwork';
+   assert.equal(homeSource.split(anchor).length,2,'approved mobile style insertion anchor');
+   homeSource=homeSource.replace(anchor,previous+anchor);
+  }
  }
  // Reverse only the explicitly approved, default-off Home feature additions.
  // Any other change to routing, flags, layout or the play button still fails.
