@@ -14,6 +14,7 @@ import { ChallengeProvider, ChallengeButton, ChallengeMessage, useChallengeMessa
 import PlayerSummary from '../components/schachTreff/PlayerSummary';
 import ClubRooms, { RoomTitle } from '../components/schachTreff/ClubRooms';
 import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
+import { useDesktop } from '../components/schachTreff/useDesktop';
 
 type Profile = { id: string; username: string };
 import { inviteCacheKey, MessageActions, ModerationDialog, type ClubMessage, type ModerationAction } from '../components/schachTreff/Moderation';
@@ -105,6 +106,8 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const block = useBlock(dmChat?.partnerId);
   const dmOpen = useOpenDirectChat();
   const isClub = new URLSearchParams(window.location.search).has('club');
+  const desktop = useDesktop();
+  const seekInRooms = v2Enabled && desktop && !hideRooms && !isClub;
   const feedRef = useRef<HTMLDivElement>(null);
   const followFeed = useRef(true);
   const newestMessage = messages.at(-1)?.id;
@@ -265,7 +268,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     </div></header>
     {error && (v2Enabled ? <Toast message={error} closeLabel={t.close} onClose={() => setError('')} /> : <p role="alert">{error}</p>)}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
-    <div className={hideRooms && v2Enabled ? 'st-columns st2-no-rooms' : 'st-columns'}>{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} heading={v2Enabled ? copy1.myClubs : undefined} />{v2Enabled && <DirectList currentClubId={clubId} />}</aside>}
+    <div className={hideRooms && v2Enabled ? 'st-columns st2-no-rooms' : seekInRooms ? 'st-columns st2-seek-in-rooms' : 'st-columns'}>{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} heading={v2Enabled ? copy1.myClubs : undefined} />{v2Enabled && <DirectList currentClubId={clubId} />}{seekInRooms && <div className="st2-rooms-seek"><SeekButton /></div>}</aside>}
       <section className="st-surface st-chat">
         {(isClub || hasChatActions || v2Enabled) && <div className="st-chat-header">
           {/* The rooms column already says "General chat": the feed headline is the room's motto (owner, 13 Nov). */}
@@ -276,7 +279,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
             <span className="st2-online" aria-label={onlineCount === null ? copy1.onlineNow : `${onlineCount} ${copy1.onlineNow}`} aria-live="polite">
               <span className="st2-online-dot" aria-hidden="true" /><strong>{onlineCount ?? '—'}</strong> {copy1.onlineNow}
             </span>
-            <SeekButton />
+            {!seekInRooms && <SeekButton />}
           </div>}
           {isClub && <>
             <a className="st-back-general" href="/chat"><ArrowLeft size={16} aria-hidden="true" /><span>{t.general}</span></a>
