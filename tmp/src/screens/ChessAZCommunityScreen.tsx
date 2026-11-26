@@ -94,28 +94,44 @@ function MobileV2Viewport() {
   useLayoutEffect(() => {
     const root = document.documentElement;
     const viewport = window.visualViewport;
+    let frame = 0;
+    let fullHeight = 0;
+    let lastWidth = window.innerWidth;
     const update = () => {
-      // Ignore pinch zoom: preserve normal browser magnification and accessibility.
-      const height = viewport && Math.abs(viewport.scale - 1) < .01
-        ? Math.min(window.innerHeight, viewport.height) : window.innerHeight;
-      root.style.setProperty('--st-visible-height', Math.floor(height) + 'px');
-      const route = page.current?.closest('[data-route-scroll]');
-      if (route) route.scrollTop = 0;
+      const current = page.current;
+      if (!current) return;
+      // Preserve pinch zoom and browser panning rather than fighting the user's gesture.
+      if (viewport && Math.abs(viewport.scale - 1) >= .01) return;
+      const height = Math.floor(Math.min(window.innerHeight, viewport?.height ?? window.innerHeight));
+      if (height <= 0) return;
+      const active = document.activeElement;
+      const editing = active instanceof HTMLInputElement && !!current.querySelector('.st-composer')?.contains(active);
+      if (!editing || lastWidth !== window.innerWidth || !fullHeight) fullHeight = height;
+      lastWidth = window.innerWidth;
+      current.toggleAttribute('data-st-keyboard', editing && Math.max(fullHeight, window.innerHeight) - height >= 120);
+      root.style.setProperty('--st-visible-height', height + 'px');
+      const route = current.closest('[data-route-scroll]');
+      if (route?.scrollTop) route.scrollTop = 0;
       if (document.scrollingElement?.scrollTop) window.scrollTo(0, 0);
     };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    };
     update();
-    window.addEventListener('resize', update);
-    viewport?.addEventListener('resize', update);
-    viewport?.addEventListener('scroll', update);
-    window.addEventListener('focusin', update);
-    window.addEventListener('focusout', update);
+    window.addEventListener('resize', schedule);
+    viewport?.addEventListener('resize', schedule);
+    viewport?.addEventListener('scroll', schedule);
+    window.addEventListener('focusin', schedule);
+    window.addEventListener('focusout', schedule);
     return () => {
+      cancelAnimationFrame(frame);
       root.style.removeProperty('--st-visible-height');
-      window.removeEventListener('resize', update);
-      viewport?.removeEventListener('resize', update);
-      viewport?.removeEventListener('scroll', update);
-      window.removeEventListener('focusin', update);
-      window.removeEventListener('focusout', update);
+      window.removeEventListener('resize', schedule);
+      viewport?.removeEventListener('resize', schedule);
+      viewport?.removeEventListener('scroll', schedule);
+      window.removeEventListener('focusin', schedule);
+      window.removeEventListener('focusout', schedule);
     };
   }, []);
   return <div ref={page} className="st-mobile-page st-mobile-v2"><SchachTreffDesktop hideRooms /></div>;

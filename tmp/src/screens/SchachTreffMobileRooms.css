@@ -167,7 +167,9 @@
   .st-mobile-v2 .st-mobile-v2-top{flex:0 0 auto}
   .st-mobile-v2 .schach-treff.st-v2 .st-columns{min-height:0;flex:1 1 0;overflow:clip}
   .st-mobile-v2 .schach-treff.st-v2 .st-columns>.st-chat{height:auto;min-height:0;max-height:100%;flex:1 1 0;padding-bottom:0;overflow:clip}
-  .st-mobile-v2 .schach-treff.st-v2 .st-chat .st-composer{flex:0 0 auto;min-height:0}
+  .st-mobile-v2 .schach-treff.st-v2 .st-chat .st-composer{box-sizing:border-box;flex:0 0 auto;min-height:0;margin:0}
+  /* Free the presence strip while typing in a genuinely shortened viewport. */
+  .st-mobile-v2[data-st-keyboard] .st-mobile-online{display:none}
   .st-mobile-v2 .schach-treff.st-v2 .st-messages{min-height:0;flex:1 1 0;overscroll-behavior:contain}
   .st-mobile-v2 .st-mobile-reaction-trigger{cursor:pointer;touch-action:manipulation}
   .st-mobile-v2 .st-mobile-reaction-trigger:focus-visible{outline:2px solid #D9AE5B;outline-offset:2px}
