@@ -8,7 +8,10 @@ import { createServer } from 'vite';
 const entry = '/__team_online_fixture.tsx';
 const fixtureOrigin = 'https://team-online-fixture.invalid';
 const fixture = `
+import '@fontsource/inter/400.css';
 import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/inter/800.css';
 import '/src/index.css';
 import '/src/components/teamTournaments/teamTournaments.css';
 import { createRoot } from 'react-dom/client';
@@ -295,7 +298,7 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
           for (const [width,height] of [[360,640],[390,844],[430,932]]) {
             await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});
             for (const zoom of [100,125]) {
-              await evaluate("document.documentElement.style.fontSize='"+zoom+"%'");
+              await evaluate("document.documentElement.style.fontSize='"+(17*zoom/100)+"px'");
               for (const locale of Object.keys(langs)) {
                 await evaluate("window.fixtureHomeLanguage("+JSON.stringify(locale)+")");
                 await evaluate('document.fonts.ready');
@@ -326,7 +329,7 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
             }
           }
           await cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
-          await evaluate("window.fixtureHomeLanguage('ru');document.documentElement.style.fontSize='125%'");
+          await evaluate("window.fixtureHomeLanguage('ru');document.documentElement.style.fontSize='21.25px'");
           await evaluate("document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]').click()");
           await wait("!!document.querySelector('[data-home-fixture-chat]')");
           assert.equal(await evaluate("document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]').getAttribute('aria-current')"),'page');
@@ -341,9 +344,9 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
           }
           await evaluate("window.fixtureHomeLanguage('ru')");
           await capture('mobile-guest-profile-'+state+'-125','ru',390);
-          await evaluate("document.documentElement.style.fontSize='100%'");
+          await evaluate("document.documentElement.style.fontSize='17px'");
           await capture('mobile-guest-profile-'+state+'-100','ru',390);
-          await evaluate("document.documentElement.style.fontSize='125%'");
+          await evaluate("document.documentElement.style.fontSize='21.25px'");
           await evaluate("document.querySelector('[data-guest-settings]').click()");
           await wait("!!document.querySelector('.settings-mobile-view')");
           await evaluate("window.fixtureHomeMode='signed-in';window.fixtureHomeNav('/profile')");
