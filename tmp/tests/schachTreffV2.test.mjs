@@ -366,7 +366,7 @@ test('notices float as toasts (no layout jump); a blocked DM partner disables th
   assert.match(screen, /\{error && \(v2Enabled \? <Toast message=\{error\} closeLabel=\{t\.close\} onClose=\{\(\) => setError\(''\)\} \/> : <p role="alert">\{error\}<\/p>\)\}/, 'flag off keeps the old inline alert');
   assert.match(screen, /dmOpen\.error && \(v2Enabled \? <Toast/);
   assert.match(screen, /const iBlocked = Boolean\(dmChat && block\.blocked\);/);
-  assert.match(screen, /<textarea[^>]*disabled=\{iBlocked\}[\s\S]*?\/> : <input[^>]*disabled=\{iBlocked\} \/>\}/, 'both mobile textarea and desktop input are disabled when blocked');
+  assert.match(screen, /<textarea[^\n]*disabled=\{iBlocked\}[\s\S]*?\/> : <input[^\n]*disabled=\{iBlocked\} \/>\}/, 'both mobile textarea and desktop input are disabled when blocked');
   assert.match(screen, /disabled=\{iBlocked\} \/>\}\n\s*<button className="st-send" disabled=\{busy \|\| iBlocked \|\| !body\.trim\(\)\}>/, 'send stays disabled when blocked or empty');
   const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
   assert.match(challenges, /\{error && !shown && \(v2Enabled \? <Toast/);
