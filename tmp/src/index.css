@@ -1965,11 +1965,12 @@ aside .site-nav-link{min-height:58px;padding:10px 14px;border-radius:12px}
 .site-nav-label{display:block}
 .site-nav-subtitle{display:block;margin-top:3px;font:400 .705rem/1.35 Inter,system-ui,sans-serif;color:#a9a59c;letter-spacing:0;text-transform:none}
 aside nav{padding-top:20px!important}
-/* Equal-width mobile touch targets; wrap long localized labels instead of clipping. */
+/* Mobile touch targets grow to fit localized text without clipping. */
 [data-mobile-app-nav] .site-nav-link{flex:1 0 auto;min-width:44px;box-sizing:border-box;padding-inline:2px}
 [data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:auto;max-width:none;font-size:clamp(9px,2.65vw,.75rem);line-height:1.2;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;overflow-wrap:normal;word-break:normal;hyphens:manual}
-[data-mobile-app-nav] .site-nav-link[href="/chat"] .site-nav-label{width:min-content;white-space:normal}
+[data-mobile-app-nav] .site-nav-link[href="/chat"] .site-nav-label{width:4.5em;white-space:normal}
 [data-mobile-app-nav]{gap:2px}
+@media(max-width:359px){[data-mobile-app-nav]{gap:0;padding-inline:2px}[data-mobile-app-nav] .site-nav-link{padding-inline:1px}}
 [data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:58px;gap:4px}
 /* Equal navigation rows leave room for every desktop destination at 720 px. */
 aside .site-nav-link{height:54px;min-height:54px;padding:7px 14px;align-items:flex-start}
