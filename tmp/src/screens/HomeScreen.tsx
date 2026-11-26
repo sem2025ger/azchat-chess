@@ -457,7 +457,7 @@ export default function HomeScreen() {
                 <span className="mobile-home-brand-name">Chessaz</span><span className="mobile-home-brand-domain">.de</span>
               </span>
               <span className="mobile-home-king relative shrink-0" aria-hidden="true">
-                <img src="/brand/sidebar-king.svg" alt="" width="36" height="72" className="absolute inset-0 h-full w-full object-fill" />
+                <img src="/brand/sidebar-king.svg" alt="" width="38" height="76" className="absolute inset-0 h-full w-full object-fill" />
                 <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
               </span>
             </h1>

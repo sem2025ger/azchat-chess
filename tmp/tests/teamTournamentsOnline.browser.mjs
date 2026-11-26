@@ -319,17 +319,17 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
                 assert.ok(!geometry.plaque&&Math.abs(geometry.titleCenter-width/2)<=2&&geometry.kingGap>=-1&&geometry.kingGap<=1&&geometry.titleLeft>=12&&geometry.titleRight>=12,context+' brand '+JSON.stringify(geometry));
                 assert.ok(geometry.boardWidth>=width-4&&Math.abs(geometry.boardWidth-geometry.boardHeight)<=1&&geometry.boardLeft>=-1&&geometry.boardLeft<=2&&geometry.boardRight>=-1&&geometry.boardRight<=2,context+' board '+JSON.stringify(geometry));
                 const expectedFont=Math.min(56,Math.max(44,width*.145));
-                assert.ok(!geometry.duplicateChat&&!geometry.overflow&&geometry.topGap>=-1&&geometry.bottomGap>=-1&&Math.abs(geometry.topGap-geometry.bottomGap)<=24&&Math.abs(geometry.wordFont-expectedFont)<.1&&geometry.fontFamily.includes('Bodoni Moda')&&geometry.fontWeight==='700'&&geometry.fontLoaded&&Math.abs(geometry.kingWidth-expectedFont*36/56)<=1&&Math.abs(geometry.kingHeight-expectedFont*72/56)<=1,context+' centered Home '+JSON.stringify(geometry));
+                assert.ok(!geometry.duplicateChat&&!geometry.overflow&&geometry.topGap>=-1&&geometry.bottomGap>=-1&&Math.abs(geometry.topGap-geometry.bottomGap)<=24&&Math.abs(geometry.wordFont-expectedFont)<.1&&geometry.fontFamily.includes('Bodoni Moda')&&geometry.fontWeight==='700'&&geometry.fontLoaded&&Math.abs(geometry.kingWidth-expectedFont*38/56)<=1&&Math.abs(geometry.kingHeight-expectedFont*76/56)<=1,context+' centered Home '+JSON.stringify(geometry));
                 assert.ok(Math.abs(geometry.logoBoardGap-16)<=2&&Math.abs(geometry.boardPlayGap-14)<=2,context+' spacing '+JSON.stringify(geometry));
-                assert.ok(geometry.domainColor==='rgb(156, 130, 103)'&&geometry.domainBackground==='none',context+' uniform aged-bronze domain');
-                assert.equal(geometry.chatIconColor,'rgb(156, 130, 103)',context+' muted bronze chat icon');
+                assert.ok(geometry.domainColor==='rgb(162, 140, 119)'&&geometry.domainBackground.includes('rgb(112, 100, 92)')&&geometry.domainBackground.includes('rgb(162, 140, 119)'),context+' graphite-bronze gradient domain');
+                assert.equal(geometry.chatIconColor,'rgb(131, 139, 149)',context+' muted titanium chat icon');
                 assert.ok(geometry.sloganAbsent,context+' mobile slogan removed');
                 assert.deepEqual(geometry.wave,['chessazMobileBronzeWave','1','5s'],context);
                 assert.deepEqual(geometry.sheen,['chessazMobileBronzeWave','1','4.8s'],context);
                 assert.ok(geometry.navIcons.length===5&&geometry.navIcons.every((w,i)=>Math.abs(w-(i===2?20:17))<=1)&&geometry.knight&&!geometry.dot,context+' custom icon '+JSON.stringify(geometry));
                 assert.ok(geometry.labels.every((size,i)=>i===2||Math.abs(geometry.labels[2]-size-1)<.05),context+' chat label size');
-                assert.ok(geometry.ring.includes('rgba(168, 131, 80, 0.45)'),context+' bronze edge');
-                assert.equal(geometry.highlight,'rgb(230, 211, 176)',context+' bronze chat label');
+                assert.ok(geometry.ring.includes('rgba(126, 137, 150, 0.48)'),context+' titanium edge');
+                assert.equal(geometry.highlight,'rgb(198, 205, 213)',context+' titanium chat label');
                 if(locale==='ru'&&zoom===100&&height!==640){
                   await evaluate("Promise.all(document.getAnimations().filter(a=>a.animationName==='chessazMobileBronzeWave').map(a=>a.finished.catch(()=>{})))");
                   console.log('MOBILE_HOME_GEOMETRY '+context+' '+JSON.stringify(geometry));
@@ -351,7 +351,8 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
           await evaluate("document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]').click()");
           await wait("!!document.querySelector('[data-home-fixture-chat]')");
           assert.equal(await evaluate("document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]').getAttribute('aria-current')"),'page');
-          assert.ok((await evaluate("getComputedStyle(document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]')).boxShadow")).includes('rgb(201, 162, 106)'));
+          await wait("getComputedStyle(document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]')).boxShadow.includes('rgb(155, 170, 186)') && getComputedStyle(document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]')).color === 'rgb(180, 190, 201)'");
+          assert.ok((await evaluate("getComputedStyle(document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]')).boxShadow")).includes('rgb(155, 170, 186)'));
           await evaluate("window.fixtureHomeNav('/profile')");
           await wait("!!document.querySelector('[data-guest-settings]')");
           for(const [locale,word] of Object.entries({ru:'Настройки',de:'Einstellungen',en:'Settings',az:'Ayarlar',tr:'Ayarlar',ua:'Налаштування'})){

@@ -699,7 +699,7 @@
     justify-content: center;
     position: relative;
     width: max-content;
-    min-height: 1.28571429em;
+    min-height: 1.35714286em;
     margin-inline: auto;
     gap: 0;
     font-family: 'Bodoni Moda', Georgia, serif;
@@ -720,13 +720,21 @@
     color: #F2EEE3;
   }
   .home-screen-root .mobile-home-brand-domain {
-    color: #9C8267;
+    color: #A28C77;
+  }
+  @supports ((background-clip: text) or (-webkit-background-clip: text)) {
+    .home-screen-root .mobile-home-brand-domain {
+      background-image: linear-gradient(110deg, #70645C, #A28C77 48%, #817168);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
   }
   .home-screen-root .mobile-home-king {
-    width: .64285714em;
-    height: 1.28571429em;
-    margin-left: 0;
-    transform: translateY(-.07em);
+    width: .67857143em;
+    height: 1.35714286em;
+    margin-left: -.015em;
+    transform: translateY(-.11em);
   }
   /* A single transparent metal band over the selectable static wordmark. */
   .home-screen-root .mobile-home-wordmark::after {
@@ -737,8 +745,8 @@
     letter-spacing: inherit;
     white-space: nowrap;
     pointer-events: none;
-    background-image: linear-gradient(110deg, transparent 36%, rgba(77, 73, 69, .48) 43%, rgba(52, 49, 46, .8) 50%, rgba(77, 73, 69, .48) 57%, transparent 64%);
-    background-size: 200% 100%;
+    background-image: linear-gradient(110deg, transparent 39%, rgba(108, 113, 122, .68) 42%, #8A9098 44%, #41464F 46%, #30343B 50%, #4A4F58 54%, #858B94 56%, rgba(108, 113, 122, .62) 58%, transparent 61%);
+    background-size: 300% 100%;
     background-position: 100% 50%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -747,8 +755,8 @@
   }
   /* Reuse the mask, not the desktop king's looping animation. */
   .home-screen-root .mobile-home-arena .sidebar-king-sheen {
-    background-image: linear-gradient(110deg, transparent 36%, rgba(77, 73, 69, .48) 43%, rgba(52, 49, 46, .8) 50%, rgba(77, 73, 69, .48) 57%, transparent 64%);
-    background-size: 200% 100%;
+    background-image: linear-gradient(110deg, transparent 39%, rgba(108, 113, 122, .68) 42%, #8A9098 44%, #41464F 46%, #30343B 50%, #4A4F58 54%, #858B94 56%, rgba(108, 113, 122, .62) 58%, transparent 61%);
+    background-size: 300% 100%;
     background-position: 100% 50%;
     opacity: 0;
     animation: none;
@@ -773,7 +781,7 @@
   }
   @keyframes chessazMobileBronzeWave {
     0% { background-position: 100% 50%; opacity: 0; }
-    15%, 85% { opacity: 1; }
+    5%, 95% { opacity: 1; }
     100% { background-position: 0% 50%; opacity: 0; }
   }
 }
@@ -2054,20 +2062,20 @@ aside nav{padding-top:20px!important}
     position: relative;
     isolation: isolate;
     overflow: hidden;
-    color: #9C8267;
-    background: linear-gradient(145deg, #2A2622, #17130F 58%, #3A2B1C);
-    box-shadow: inset 0 0 0 1px rgba(168,131,80,.45), inset 0 1px 0 rgba(230,211,176,.16);
+    color: #838B95;
+    background: linear-gradient(145deg, #282D34, #14171C 58%, #222830);
+    box-shadow: inset 0 0 0 1px rgba(126,137,150,.48), inset 0 1px 0 rgba(192,202,214,.14);
   }
   [data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"] {
-    color: #F6DCAC;
-    box-shadow: inset 0 0 0 1px rgba(201,162,106,.9), inset 0 1px 0 rgba(230,211,176,.24), inset 0 -3px 0 #C9A26A;
+    color: #B4BEC9;
+    box-shadow: inset 0 0 0 1px rgba(155,170,186,.9), inset 0 1px 0 rgba(192,202,214,.24), inset 0 -3px 0 #9BAABA;
   }
   [data-mobile-app-nav] .site-nav-link[href="/chat"] .site-nav-label {
     width: 4.5em;
     white-space: normal;
     font-size: calc(clamp(9px, 2.4vw, .75rem) + 1px);
     font-weight: 700;
-    color: #E6D3B0;
+    color: #C6CDD5;
   }
   [data-mobile-app-nav] .site-nav-link[href="/chat"] > div > svg:first-child { width: 20px; height: 20px; }
   [data-mobile-app-nav] .site-nav-link[href="/chat"]::before {
@@ -2076,7 +2084,7 @@ aside nav{padding-top:20px!important}
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background: linear-gradient(115deg, transparent 27%, #A88350 46%, #D6B27A 50%, #A88350 54%, transparent 73%);
+    background: linear-gradient(115deg, transparent 27%, #424A55 43%, #858F9B 50%, #424A55 57%, transparent 73%);
     transform: translate3d(-110%, 0, 0);
     opacity: 0;
   }
