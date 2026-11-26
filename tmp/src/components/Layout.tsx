@@ -87,8 +87,8 @@ export default function Layout() {
                 <span className="font-black text-[0.55rem] md:text-[0.6rem] xl:text-[1.72rem] xl:leading-[1.8rem] tracking-tight not-italic leading-none whitespace-nowrap text-center xl:text-left">
                   <span className="sidebar-brand-silver"><span className="xl:text-[1.08em]">Ch</span>essaz.</span><span className="sidebar-brand-de inline-block xl:text-[1.06em]">de</span>
                 </span>
-                <span className="relative hidden xl:block h-[62px] w-[31px] shrink-0 -translate-x-[2px] -translate-y-[6px]" aria-hidden="true">
-                  <img src="/brand/sidebar-king.svg" alt="" width="31" height="62" className="absolute inset-0 h-full w-full object-fill" />
+                <span className="relative hidden xl:block h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]" aria-hidden="true">
+                  <img src="/brand/sidebar-king.svg" alt="" width="28" height="56" className="absolute inset-0 h-full w-full object-fill" />
                   <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
                 </span>
               </div>

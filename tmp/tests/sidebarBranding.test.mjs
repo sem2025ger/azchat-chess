@@ -24,9 +24,9 @@ test('wordmark spells Chessaz.de with subtly enlarged Ch', () => {
   assert.match(css, /\.sidebar-brand-de\s*\{/);
 });
 
-test('king dimensions and position remain unchanged with lightweight decorative sheen', () => {
-  assert.match(layout, /h-\[62px\] w-\[31px\] shrink-0 -translate-x-\[2px\] -translate-y-\[6px\]/);
-  assert.match(layout, /src="\/brand\/sidebar-king\.svg"[^\n]*width="31" height="62"/);
+test('king uses approved 28x56 dimensions with unchanged offsets and decorative sheen', () => {
+  assert.match(layout, /h-\[56px\] w-\[28px\] shrink-0 -translate-x-\[2px\] -translate-y-\[6px\]/);
+  assert.match(layout, /src="\/brand\/sidebar-king\.svg"[^\n]*width="28" height="56"/);
   assert.match(layout, /sidebar-king-sheen pointer-events-none absolute inset-0/);
   assert.match(css, /\.sidebar-king-sheen\s*\{/);
   assert.match(css, /mask: url\('\/brand\/sidebar-king\.svg'\)/);

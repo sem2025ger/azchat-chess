@@ -53,6 +53,11 @@ test('all NRW flags off preserves the main routing and navigation entry points',
     assert.equal(current.split(next).length,count+1,'approved flag styling occurrence count');
     current=current.split(next).join(previous);
    }
+   // Owner-approved desktop king dimensions only; preserve the exact remaining baseline.
+   for (const [next, previous] of [["h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]","h-[62px] w-[31px] shrink-0 -translate-x-[2px] -translate-y-[6px]"],["src=\"/brand/sidebar-king.svg\" alt=\"\" width=\"28\" height=\"56\"","src=\"/brand/sidebar-king.svg\" alt=\"\" width=\"31\" height=\"62\""]]) {
+    assert.equal(current.split(next).length,2,'approved king sizing occurs exactly once');
+    current=current.replace(next,previous);
+   }
    // Allow only the separately reviewed 240px desktop sidebar geometry change (PR #219).
    // All route entries and feature-flagged links must remain byte-for-byte identical.
    for(const [next, previous] of [
