@@ -471,21 +471,21 @@
   outline-offset: -1px;
 }
 
-/* Keep the Home board rim without changing the dimensions of the field. */
+/* Home desktop: use the existing 1px field border as a flush metallic rim.
+   Keep the 12px layout gutter and field geometry aligned with Analysis. */
 @media (min-width: 1280px) {
-  .home-board-frame {
-    outline: 1px solid rgba(212, 175, 55, 0.62);
-    outline-offset: -1px;
+  .home-screen-root .home-board-frame,
+  .home-screen-root .home-board-frame > .touch-manipulation {
+    border-radius: 0;
   }
 
-  .home-board-frame::after {
-    content: '';
-    position: absolute;
-    inset: 1px;
-    border: 1px solid rgba(18, 14, 8, 0.96);
-    border-radius: inherit;
-    pointer-events: none;
-    z-index: 20;
+  .home-screen-root .home-board-frame > .pointer-events-none {
+    inset: 0.75rem;
+  }
+
+  .home-screen-root .home-board-frame .aspect-square.border {
+    border-radius: 0;
+    border-color: rgb(var(--chessaz-bronze-frame) / .9);
   }
 }
 

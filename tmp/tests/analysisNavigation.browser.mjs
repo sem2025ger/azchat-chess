@@ -110,6 +110,30 @@ try {
     return { top: first.top, width: last.right - first.left, height: last.bottom - first.top };
   })()`);
   const homeField = await fieldBounds('.home-board-frame');
+  const homePolish = await evaluate(`(() => {
+    const outer = document.querySelector('.home-board-frame');
+    const field = outer.querySelector('.aspect-square.border');
+    const first = field.querySelector('[data-square="a8"]').getBoundingClientRect();
+    const bounds = field.getBoundingClientRect();
+    const title = document.querySelector('.desktop-home-arena h1:not(.chess-arena-reference-title)');
+    const range = document.createRange();
+    range.selectNodeContents(title);
+    const wordmark = range.getBoundingClientRect();
+    const button = document.querySelector('.desktop-home-play').getBoundingClientRect();
+    const card = title.closest('.desktop-home-arena').getBoundingClientRect();
+    const style = getComputedStyle(field);
+    return { outerOutline: getComputedStyle(outer).outlineStyle,
+      rimWidth: style.borderTopWidth, rimColor: style.borderTopColor,
+      radius: style.borderTopLeftRadius, inset: first.left - bounds.left,
+      titleWidth: wordmark.width, buttonWidth: button.width,
+      titleFits: wordmark.left >= card.left && wordmark.right <= card.right };
+  })()`);
+  assert.equal(homePolish.outerOutline, 'none');
+  assert.equal(homePolish.rimWidth, '1px');
+  assert.equal(homePolish.rimColor, 'rgba(174, 126, 100, 0.9)');
+  assert.equal(homePolish.radius, '0px');
+  assert.ok(Math.abs(homePolish.inset - 1) < 0.5, JSON.stringify(homePolish));
+  assert.ok(homePolish.titleWidth > homePolish.buttonWidth && homePolish.titleFits, JSON.stringify(homePolish));
   assert.deepEqual(await evaluate(`(() => {
     const arena = document.querySelector('.desktop-home-arena');
     const style = getComputedStyle(arena);

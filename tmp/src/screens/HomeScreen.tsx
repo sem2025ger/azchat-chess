@@ -256,7 +256,7 @@ export default function HomeScreen() {
             font-family: Georgia, 'Times New Roman', serif;
             font-style: normal;
             font-weight: 700;
-            letter-spacing: -0.045em;
+            letter-spacing: 0.015em;
             -webkit-text-stroke: 0.35px rgba(116, 68, 21, 0.46);
             filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.85)) drop-shadow(0 -1px 0 rgba(255, 222, 146, 0.13));
             background-image: linear-gradient(
