@@ -171,8 +171,18 @@
   /* Keep room selection and play available, but prioritize the conversation. */
   .st-mobile-v2[data-st-keyboard] .st-mobile-online,
   .st-mobile-v2[data-st-keyboard] .st-mobile-room-trigger small{display:none}
-  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-top{gap:4px}
-  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-title h1{font-size:20px}
+  /* While typing, keep the room, play and menu in a single touch-accessible toolbar. */
+  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-top{grid-template-columns:44px minmax(0,1fr);align-items:center;gap:6px}
+  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-title{position:relative}
+  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-title h1{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-row{gap:6px}
+  .st-mobile-v2[data-st-keyboard] .st-mobile-play{padding-inline:8px}
+  .st-mobile-v2[data-st-keyboard] .schach-treff.st-v2 .st-columns>.st-chat{padding-inline:4px;padding-top:4px}
+  .st-mobile-v2[data-st-keyboard] .schach-treff.st-v2 .st-messages{padding-block:2px}
+  .st-mobile-v2[data-st-keyboard] .schach-treff.st-v2 .st-message-group{padding-block:2px}
+  .st-mobile-v2[data-st-keyboard] .schach-treff.st-v2 .st-message-group+.st-message-group{margin-top:4px}
+  .st-mobile-v2[data-st-keyboard] .schach-treff.st-v2 .st-message-heading .st-message-actions>summary{background:transparent;border-color:transparent}
+  .st-mobile-v2[data-st-keyboard] .schach-treff.st-v2 .st-chat .st-composer{padding-top:4px}
   .st-mobile-v2[data-st-keyboard] .st-mobile-room-trigger{min-height:44px;padding-block:4px}
   .st-mobile-v2[data-st-keyboard]>.schach-treff.st-v2{gap:4px}
   .st-mobile-v2 .schach-treff.st-v2 .st-message-group{row-gap:2px;padding-block:4px}
