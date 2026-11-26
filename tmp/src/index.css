@@ -2082,6 +2082,10 @@ aside .site-nav-link--schach-treff .schach-treff-chat-dot {display:none}
   .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button,
   .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-save-wrapper {flex:1 1 0;min-width:0;margin:0;}
   .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-new-button {width:0;padding-inline:8px;gap:6px;white-space:nowrap;overflow:hidden;}
+  .desktop-analysis-screen .desktop-analysis-bottom-actions > .desktop-analysis-flip-button {flex:0 0 40px;width:40px;height:40px;padding:0;box-sizing:border-box;}
+  .desktop-analysis-screen .desktop-analysis-flip-button:not(:disabled):hover {color:#F3E6C4;border-color:#C0AD91;}
+  .desktop-analysis-screen .desktop-analysis-flip-button[aria-pressed="true"] {color:#F3E6C4;border-color:#C0AD91;}
+  .desktop-analysis-screen .desktop-analysis-flip-button:disabled {opacity:.35;cursor:not-allowed;}
   .desktop-analysis-screen .desktop-analysis-new-button > span {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .desktop-analysis-screen .desktop-analysis-bottom-actions .desktop-analysis-save-menu-root,
   .desktop-analysis-screen .desktop-analysis-bottom-actions .desktop-analysis-save-button {width:100%;box-sizing:border-box;}

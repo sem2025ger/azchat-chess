@@ -192,6 +192,27 @@ try {
       !document.querySelector('.desktop-analysis-player-top') &&
       !document.querySelector('.desktop-analysis-review-player-bottom');
   })()`), 'The thin border and coordinate rails must remain without generic player labels');
+  // Flip is a view-only operation: board coordinates reverse, pieces remain on the same squares.
+  const flipState = () => evaluate(`(() => {
+    const board = document.querySelector('.desktop-analysis-main-board');
+    const button = document.querySelector('[data-desktop-board-flip]');
+    const grid = [...board.querySelectorAll('[data-square]:not([data-piece-square])')];
+    const pieces = [...board.querySelectorAll('[data-piece-square]')].map(p => [p.dataset.pieceSquare, p.querySelector('img')?.getAttribute('src')]).sort();
+    const field = board.querySelector('.aspect-square.border').getBoundingClientRect();
+    return {first:grid[0]?.dataset.square,last:grid.at(-1)?.dataset.square,pieces,pressed:button.getAttribute('aria-pressed'),visible:button.getBoundingClientRect().height>=36,field:[field.x,field.y,field.width,field.height]};
+  })()`);
+  const beforeFlip = await flipState();
+  assert.ok(beforeFlip.visible && beforeFlip.pressed === 'false' && beforeFlip.first === 'a8' && beforeFlip.last === 'h1');
+  await evaluate("document.querySelector('[data-desktop-board-flip]').click()");
+  await waitFor("document.querySelector('[data-desktop-board-flip]').getAttribute('aria-pressed') === 'true'");
+  const afterFlip = await flipState();
+  assert.equal(afterFlip.first, 'h1');
+  assert.equal(afterFlip.last, 'a8');
+  assert.deepEqual(afterFlip.pieces, beforeFlip.pieces);
+  assert.deepEqual(afterFlip.field, beforeFlip.field);
+  await evaluate("document.querySelector('[data-desktop-board-flip]').click()");
+  await waitFor("document.querySelector('[data-desktop-board-flip]').getAttribute('aria-pressed') === 'false'");
+  assert.deepEqual(await flipState(), beforeFlip);
   // Check the compact layout separately: both routes must agree on the playing field,
   // and the thin panel border must align with the playing field rather than its coordinate gutters.
   for (const [width, height] of [[1194, 800], [1106, 768], [1366, 768]]) {
@@ -213,6 +234,7 @@ try {
         compactCaptionVisible:caption && getComputedStyle(caption).display!=='none',
         genericPlayersVisible:!!document.querySelector('.desktop-analysis-player-top, .desktop-analysis-review-player-bottom'),
         controlCount:controls.filter(button=>button.getBoundingClientRect().height>=36).length,
+        flipVisible:document.querySelector('[data-desktop-board-flip]').getBoundingClientRect().height>=36,
       };
     })()`);
     for (const dimension of ['top', 'width', 'height']) {
@@ -223,6 +245,7 @@ try {
       width + 'px analysis border must align with field: ' + JSON.stringify(chrome));
     assert.ok(!chrome.compactCaptionVisible && !chrome.genericPlayersVisible, 'Empty Analysis shows no generic Black/White labels');
     assert.equal(chrome.controlCount, 4, 'All four move navigation controls remain visible');
+    assert.ok(chrome.flipVisible, 'Desktop flip stays visible in compact layouts');
   }
   // These are diagnostics, not an artificial guarantee of zero-millisecond navigation.
   // Regression gate: the board must render on both navigation attempts.

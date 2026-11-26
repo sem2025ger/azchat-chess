@@ -112,6 +112,8 @@ export default function GameScreen({ mode }: GameScreenProps) {
     return () => { document.body.style.overflow = previousOverflow; };
   }, [mobileTool]);
   const [mobileOrientation, setMobileOrientation] = useState<'w' | 'b'>('w');
+  const [desktopOrientation, setDesktopOrientation] = useState<'w' | 'b'>('w');
+  const desktopReviewOrientation = computerBranch ? computerSide : desktopOrientation;
   const [planHighlight, setPlanHighlight] = useState<{ fen: string; squares: Square[] } | null>(null);
   const [evaluations, setEvaluations] = useState<Record<string, PositionEvaluation>>({});
   const [loadedGameTitle, setLoadedGameTitle] = useState('');
@@ -1096,6 +1098,13 @@ export default function GameScreen({ mode }: GameScreenProps) {
           <RotateCcw size={17} aria-hidden="true" />{t('game.analysis.new')}
         </button>
         <DesktopAnalysisSave initialFen={positionHistory[0] || DEFAULT_POSITION} moveHistory={moveHistory} evaluations={evaluations} />
+        <button type="button" data-desktop-board-flip
+          aria-label={mobileAnalysisCopy[language].flip} title={mobileAnalysisCopy[language].flip}
+          aria-pressed={desktopReviewOrientation === 'b'} disabled={!!computerBranch || (workspaceTab === 'position' && editingPosition)}
+          className="desktop-analysis-flip-button hidden lg:inline-flex items-center justify-center"
+          onClick={() => setDesktopOrientation(previous => previous === 'w' ? 'b' : 'w')}>
+          <ArrowUpDown size={20} aria-hidden="true" />
+        </button>
         {analysisWorkspaceHeader()}
       </div>
     </div>
@@ -1369,9 +1378,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
           {mode === 'review' && hasReviewPlayers && (
             <div className="desktop-analysis-player-top hidden lg:flex h-7 shrink-0 items-center justify-between gap-3 px-1.5 text-xs">
               <div className="flex min-w-0 items-center gap-2">
-                <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-500", playerColor === 'w' ? "bg-neutral-950" : "bg-[#f5f2e8]")} />
-                <span className="min-w-0 truncate font-semibold text-neutral-200" title={displayPlayerName(playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white)}>
-                  {displayPlayerName(playerColor === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white)}
+                <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-500", desktopReviewOrientation === 'w' ? "bg-neutral-950" : "bg-[#f5f2e8]")} />
+                <span className="min-w-0 truncate font-semibold text-neutral-200" title={displayPlayerName(desktopReviewOrientation === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white)}>
+                  {displayPlayerName(desktopReviewOrientation === 'w' ? loadedGameDetails?.black || words.black : loadedGameDetails?.white || words.white)}
                 </span>
               </div>
               {loadedGameDetails?.timeControl && (
@@ -1418,6 +1427,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 score={engineResult?.evaluation || 0.0}
                 isMate={!!engineResult?.mate}
                 mateIn={engineResult?.mate}
+                flipped={mode === 'review' && isDesktop && desktopReviewOrientation === 'b'}
                 className="h-full rounded-xl ring-1 ring-white/10"
               />
             </div>
@@ -1458,7 +1468,7 @@ export default function GameScreen({ mode }: GameScreenProps) {
                 confirmMovesMobile={mode === 'live' && !isPostGameAnalysis && confirmMobileMoves}
                 game={computerGame || displayedGame}
                 onMove={handleGameMove}
-                orientation={computerBranch ? computerSide : mode === 'review' && !isDesktop ? mobileOrientation : playerColor}
+                orientation={computerBranch ? computerSide : mode === 'review' ? (isDesktop ? desktopOrientation : mobileOrientation) : playerColor}
                 readOnly={computerBranch
                   ? (computerGame?.turn() !== computerSide || computerError)
                   : !isPostGameAnalysis && ((mode !== 'review' && viewMoveIndex !== -1) || (mode !== 'review' && !!gameOverMessage) || (isMultiplayer && playerColor !== game.turn()))}
@@ -1503,9 +1513,9 @@ export default function GameScreen({ mode }: GameScreenProps) {
 
           {mode === 'review' && hasReviewPlayers && (
             <div className="desktop-analysis-review-player-bottom hidden lg:flex h-7 shrink-0 items-center gap-2 px-1.5 text-xs">
-              <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-400", playerColor === 'w' ? "bg-[#f5f2e8]" : "bg-neutral-950")} />
-              <span className="min-w-0 truncate font-semibold text-neutral-200" title={displayPlayerName(playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black)}>
-                {displayPlayerName(playerColor === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black)}
+              <span aria-hidden="true" className={cx("h-3 w-3 shrink-0 rounded-full border border-neutral-400", desktopReviewOrientation === 'w' ? "bg-[#f5f2e8]" : "bg-neutral-950")} />
+              <span className="min-w-0 truncate font-semibold text-neutral-200" title={displayPlayerName(desktopReviewOrientation === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black)}>
+                {displayPlayerName(desktopReviewOrientation === 'w' ? loadedGameDetails?.white || words.white : loadedGameDetails?.black || words.black)}
               </span>
             </div>
           )}

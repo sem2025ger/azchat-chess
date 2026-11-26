@@ -10,9 +10,10 @@ interface EvaluationBarProps {
   isMate?: boolean;
   mateIn?: number;
   className?: string;
+  flipped?: boolean;
 }
 
-export default function EvaluationBar({ score, isMate, mateIn, className }: EvaluationBarProps) {
+export default function EvaluationBar({ score, isMate, mateIn, className, flipped = false }: EvaluationBarProps) {
   // Map score to percentage. 0 means black wins, 1 means white wins.
   // 0.5 is equal.
   // Standardizing: +5 and -5 are near 90/10 respectively.
@@ -29,7 +30,8 @@ export default function EvaluationBar({ score, isMate, mateIn, className }: Eval
 
   return (
     <div className={cx(
-      "w-4 md:w-6 h-full bg-[#1c1b18] rounded-full overflow-hidden flex flex-col-reverse border border-white/5 relative shadow-inner shadow-black/80",
+      "w-4 md:w-6 h-full bg-[#1c1b18] rounded-full overflow-hidden flex border border-white/5 relative shadow-inner shadow-black/80",
+      flipped ? 'flex-col' : 'flex-col-reverse',
       className
     )}>
       {/* White Advantage Area (Bottom to Top) */}
@@ -43,7 +45,7 @@ export default function EvaluationBar({ score, isMate, mateIn, className }: Eval
       {/* Score Label (Middle) */}
       <div className={cx(
         "absolute w-full text-center text-[0.5rem] md:text-[0.65rem] font-black z-10 select-none pointer-events-none drop-shadow-md transition-all duration-1000",
-        whiteBarHeight > 50 ? "bottom-2 text-black/60" : "top-2 text-white/60"
+        whiteBarHeight > 50 ? (flipped ? "top-2 text-black/60" : "bottom-2 text-black/60") : (flipped ? "bottom-2 text-white/60" : "top-2 text-white/60")
       )}>
         {isMate ? `#${mateIn}` : Math.abs(score).toFixed(1)}
       </div>
