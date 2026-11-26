@@ -60,7 +60,7 @@
   .mobile-analysis-score { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 64px; min-height: 34px; padding: 4px 6px; border: 1px solid #e2ded04d; border-radius: 8px; background: linear-gradient(145deg, #ddcda6 0%, #c2b99b 70%, #969d94 100%); box-shadow: inset 0 0 0 1px #121a1b42, inset 0 -3px 8px #171c2420; color: #182021; font: 900 1.1875rem/1.2 ui-monospace, monospace; font-variant-numeric: tabular-nums; }
   .mobile-analysis-line { display: flex; height: 45px; align-items: center; gap: 6px; padding: 3px 8px; }
   .mobile-analysis-line + .mobile-analysis-line { border-top: 1px solid #ffffff14; }
-  .mobile-analysis-line p { flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; white-space: nowrap; color: #f2f3ed; font: oblique 6deg 900 1.125rem/1.25 Arial, "Helvetica Neue", sans-serif; scrollbar-width: thin; scrollbar-color: #8d9c8959 transparent; }
+  .mobile-analysis-line p { flex: 1; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; white-space: nowrap; color: #f2f3ed; font: oblique 6deg 900 18px/1.25 Arial, "Helvetica Neue", sans-serif; scrollbar-width: thin; scrollbar-color: #8d9c8959 transparent; }
   .mobile-analysis-san { display: inline-block; margin-inline-end: 4px; }
   .mobile-analysis-figurine { display: inline-block; width: 28px; height: 28px; vertical-align: -7px; object-fit: contain; }
   .mobile-analysis-figurine[src*='/b'] { background: transparent; filter: drop-shadow(0 0 1px #d3ddcc) drop-shadow(0 0 1px #d3ddcc); }
