@@ -12,8 +12,8 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.ok(home.includes("@fontsource/bodoni-moda/700.css"));
   assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="28" height="56"/);
   assert.ok(css.includes('justify-content: safe center;\n    gap: 22px;\n    padding: 0 2px;'));
-  assert.ok(css.includes("font-family: 'Bodoni Moda', Georgia, serif;\n    font-size: 40px;\n    font-weight: 700;"));
-  assert.ok(css.includes('linear-gradient(110deg, #EADBB8, #C8AE7E, #9E8459)'));
+  assert.ok(css.includes("font-family: 'Bodoni Moda', Georgia, serif;\n    font-size: 46px;\n    font-weight: 700;"));
+  assert.ok(css.includes('linear-gradient(110deg, #E4E1DA, #BFC3C5, #90969A)'));
   assert.match(css, /\.home-screen-root \[data-mobile-home-stack\] \.mobile-home-arena\s*\{\s*border: 0 !important;\s*outline: none;\s*background: none;/);
   assert.ok(css.includes('width: min(100%, max(0px, calc(100cqh - 180px)));\n    max-width: 100% !important;'));
   assert.ok(home.includes('max-width: calc(100vw - 4px) !important;'));
@@ -32,7 +32,10 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.doesNotMatch(home, /\.home-screen-root \.mobile-home-arena::(?:before|after)/);
   assert.match(css, /\.home-screen-root \.mobile-home-arena::before,\s*\.home-screen-root \.mobile-home-arena::after\s*\{\s*display: none;/);
   assert.match(css, /\[data-mobile-app-nav\] \.site-nav-link\{flex:1 1 0;min-width:44px/);
-  assert.match(css, /\[data-mobile-app-nav\] \.site-nav-link\[href="\/chat"\]:not\(\[aria-current="page"\]\)\{color:#E7C47F;box-shadow:inset 0 0 0 1px rgba\(200,174,126,\.36\)\}/);
+  assert.ok(css.includes('[data-mobile-app-nav] .site-nav-link[href="/chat"]:not([aria-current="page"]){color:#B8BEC5;background:linear-gradient(145deg,#2B3037,#171A1F 58%,#22262C);box-shadow:inset 0 1px 0 rgba(184,190,197,.18),inset 0 -1px 0 rgba(0,0,0,.36)}'));
+  assert.ok(css.includes('[data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"]{color:#E0E3E6;'));
+  assert.ok(css.includes('[data-mobile-app-nav] .site-nav-link>div>svg:first-child{width:17px;height:17px}'));
+  assert.ok(css.includes('.home-screen-root .mobile-home-arena .sidebar-king-sheen {\n    background-image: linear-gradient(110deg, transparent 14%, rgba(22,27,34,.16) 29%, rgba(37,44,55,.46)'));
   assert.doesNotMatch(home, /mobile-home-chat|schachTreffSubtitle|<Link to="\/chat"/);
   assert.match(home, /max-w-\[320px\]/);
   assert.match(home, /<MobileHomeBoard \/>/);
