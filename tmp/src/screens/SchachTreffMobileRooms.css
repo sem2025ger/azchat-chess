@@ -126,3 +126,14 @@
   .st-mobile-v2 .st-mobile-challenge .st-mobile-primary:disabled{opacity:.55}
   .st-mobile-v2 .st-mobile-challenge .st-mobile-secondary{background:#161816;color:#F2EEE3;border:1px solid #ffffff22}
 }
+
+@media(max-width:1023px){
+  .st-mobile-v2 .st-mobile-online{min-width:0;display:grid;gap:4px;padding:2px 0 0}
+  .st-mobile-v2 .st-mobile-online-label{display:flex;align-items:center;gap:6px;color:#A9A396;font-size:12px;line-height:1.3}
+  .st-mobile-v2 .st-mobile-online-list{display:flex;gap:5px;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+  .st-mobile-v2 .st-mobile-online-list:empty{display:none}
+  .st-mobile-v2 .st-mobile-online-list>button{display:flex;align-items:center;gap:5px;flex:none;min-height:44px;max-width:150px;padding:5px 8px;border:1px solid #ffffff17;border-radius:14px;background:#161816;color:#F2EEE3;font-size:12px}
+  .st-mobile-v2 .st-mobile-online-list>button>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .st-mobile-v2 .st-mobile-online-avatar{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1px solid #B8916A;color:var(--st-name,#F2EEE3)}
+  .st-mobile-v2 .st-message-actions>summary{display:grid;place-items:center}
+}

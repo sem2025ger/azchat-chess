@@ -20,7 +20,7 @@ import { useDesktop } from '../components/schachTreff/useDesktop';
 type Profile = { id: string; username: string };
 import { inviteCacheKey, MessageActions, ModerationDialog, type ClubMessage, type ModerationAction } from '../components/schachTreff/Moderation';
 import { moderationEnabled, useMarkClubRead } from '../components/schachTreff/unread';
-import { SEEK_CONTROLS, isMissingSchema, mergeTimeline, resultMessageId, summarizeReactions, v2Enabled, type ChatGameResult, type Reaction, type ReactionSummary } from '../components/schachTreff/v2/core';
+import { SEEK_CONTROLS, recentlyActive, isMissingSchema, mergeTimeline, resultMessageId, summarizeReactions, v2Enabled, type ChatGameResult, type Reaction, type ReactionSummary } from '../components/schachTreff/v2/core';
 import { useV2Copy } from '../components/schachTreff/v2/copy';
 import { useV2Copy2 } from '../components/schachTreff/v2/copy2';
 import { DirectList, GameResultCard, GameViewer, PositionDialog, PositionMessage, refusalMessage, useBlock, useDirectChats, useOpenDirectChat } from '../components/schachTreff/v2/Stage2';
@@ -248,6 +248,8 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const hasChatActions = canPin || (moderationEnabled && (moderator || privateAdmin));
   const members = profiles.filter(p => roster.includes(p.id));
   const onlineCount = onlineIds?.length ?? null;
+  const activeIds = mobileV2 ? new Set(onlineIds ?? recentlyActive(messages, Date.now())) : undefined;
+  const mobileOnline = mobileV2 ? members.filter(person => activeIds?.has(person.id)) : [];
   const roomName = isClub ? (dmChat ? dmChat.partnerName : <RoomTitle clubId={clubId} />) : t.general;
   // A DM partner I blocked cannot receive messages: say so in the composer instead of letting a send fail.
   const iBlocked = Boolean(dmChat && block.blocked);
@@ -266,15 +268,16 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     ? mergeTimeline(messages, v2Data.results, result => ({ id: resultMessageId(result), author_id: '', body: null, created_at: result.completed_at } as ClubMessage))
     : messages;
   return <section className={v2Enabled ? 'schach-treff st-v2' : 'schach-treff'} lang={language==="ua"?"uk":language} data-schach-treff-desktop>
-    <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member} finished={finishedChallenges} mobileV2={mobileV2}>
+    <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member} finished={finishedChallenges} mobileV2={mobileV2} activeIds={activeIds}>
     {mobileV2 ? <div className="st-mobile-v2-top">
       <div className="st-mobile-v2-title"><h1>{t.title}</h1><button type="button" className="st-mobile-v2-more" aria-label={t.more} aria-haspopup="dialog" onClick={() => setMobileSheet('menu')}>⋯</button></div>
       <div className="st-mobile-v2-row"><button type="button" className="st-mobile-room-trigger" aria-haspopup="dialog" onClick={() => setMobileSheet('rooms')}><span><strong>{roomName}</strong><small>{dmChat ? copy2.directChat : isClub ? copy1.myClubs : copy1.subtitle}</small></span><ChevronDown size={18} aria-hidden="true" /></button><ChallengeButton targetUserId={dmChat?.partnerId} disabled={!member || iBlocked} play /></div>
+      {member && <div className="st-mobile-online"><div className="st-mobile-online-label"><span className="st2-online-dot" aria-hidden="true" />{onlineIds === null ? copy1.activeNow : copy1.onlineNow} · {mobileOnline.length}</div><div className="st-mobile-online-list">{mobileOnline.slice(0,12).map(person => <button type="button" key={person.id} aria-label={person.username} onClick={() => setPlayer(person)}><span className="st-mobile-online-avatar" style={nameStyle(person.id)}>{Array.from(person.username)[0]?.toLocaleUpperCase()}</span><span>{person.username}</span></button>)}{mobileOnline.length > 12 && <button type="button" aria-label={t.members} onClick={() => setPanel('members')}>+{mobileOnline.length-12}</button>}</div></div>}
       {mobileSheet === 'rooms' && <MobileSheet title={copy2.roomSwitcher} closeLabel={t.close} onClose={() => setMobileSheet(null)}>
         <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" /><ClubRooms currentClubId={isClub ? clubId : null} heading={copy1.myClubs} /><DirectList currentClubId={clubId} /></aside>
       </MobileSheet>}
       {mobileSheet === 'menu' && <MobileSheet title={roomName} closeLabel={t.close} onClose={() => setMobileSheet(null)}>
-        <p className="st-mobile-sheet-meta">{members.length} {t.members} · {onlineCount ?? '—'} {copy1.onlineNow}</p>
+        <p className="st-mobile-sheet-meta">{members.length} {t.members} · {mobileOnline.length} {onlineIds === null ? copy1.activeNow : copy1.onlineNow}</p>
         <div className="st-mobile-sheet-rows">{(['members', 'ranking', 'tournaments', 'about'] as const).map(key => key === 'tournaments' && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' ? <Link key={key} to="/spieltag">{t[key]}</Link> : <button type="button" key={key} onClick={() => { setMobileSheet(null); setPanel(key); }}>{t[key]}</button>)}<FeedbackButton /></div>
       </MobileSheet>}
     </div> : <header><h1>{t.title}</h1>{import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Link className="st-region-entry" to="/region/nrw" aria-label={regional('NRW-Regionalübersicht öffnen')}>NRW ↗</Link>}<div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
@@ -334,7 +337,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
           followFeed.current = feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
         }}>
           {!messages.length && !error && <p>{t.empty}</p>}
-          <MessageItems messages={timeline} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} moderator={moderator} openModeration={setModerationAction} v2={v2} />
+          <MessageItems messages={timeline} profiles={profiles} me={user?.id} onPlayer={setPlayer} stamp={stamp} moderator={moderator} openModeration={setModerationAction} v2={v2} mobileV2={mobileV2} />
         </div>
         {moderationEnabled && moderationNotice && (v2Enabled
           ? <Toast message={moderationNotice} tone="status" closeLabel={t.close} onClose={() => setModerationNotice('')} />
@@ -391,10 +394,10 @@ type V2Items = {
   fens: Map<string, string>; results: Map<string, ChatGameResult>; replyPosition: (message: ClubMessage, fen: string) => void;
   watch: (game: ChatGameResult) => void; kindLabel: (control: string) => string;
 };
-function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, openModeration, v2 }: {
+function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, openModeration, v2, mobileV2 = false }: {
   messages: ClubMessage[]; profiles: Profile[]; me?: string;
   onPlayer: (profile: Profile) => void; stamp: (value: string) => string;
-  moderator: boolean; openModeration: (action: ModerationAction) => void; v2?: V2Items;
+  moderator: boolean; openModeration: (action: ModerationAction) => void; v2?: V2Items; mobileV2?: boolean;
 }) {
   const challengeIds = useChallengeMessageIds();
   const t = useSchachTreffCopy();
@@ -446,7 +449,7 @@ function MessageItems({ messages, profiles, me, onPlayer, stamp, moderator, open
               <MessageTools summary={summary} onToggle={(reaction, mine) => v2.toggle(message.id, reaction, mine)} onThread={() => v2.openThread(message)} />
             </>}
             {moderationEnabled && <MessageActions message={message} own={own} moderator={moderator}
-              challenge={challengeIds.has(message.id)} open={openModeration} t={t} />}
+              challenge={challengeIds.has(message.id)} open={openModeration} t={t} compact={mobileV2} />}
           </div>
         </article>;
       })}

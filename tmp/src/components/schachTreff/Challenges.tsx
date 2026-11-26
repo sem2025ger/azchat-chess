@@ -11,7 +11,7 @@ import { v2Enabled } from './v2/core';
 import { Toast } from './v2/Toast';
 type Person = { id: string; username: string };
 type Challenge = { id: string; message_id: string; created_by: string; target_user_id: string | null; time_control: string; status: string; expires_at: string; room_id: string | null; accepted_by?: string | null };
-type Controls = { now: number; available: boolean; me: string; rows: Challenge[]; people: Person[]; busy: boolean; open: (target?: string) => void; act: (action: 'accept' | 'cancel', id: string) => void; seek: (time: string) => Promise<boolean>; openOffers: number; finished: ReadonlySet<string> };
+type Controls = { now: number; available: boolean; me: string; rows: Challenge[]; people: Person[]; busy: boolean; open: (target?: string) => void; act: (action: 'accept' | 'cancel', id: string) => void; seek: (time: string) => Promise<boolean>; openOffers: number; finished: ReadonlySet<string>; mobileV2?: boolean };
 const Context = createContext<Controls | null>(null);
 const NONE: ReadonlySet<string> = new Set();
 /** finished: challenge ids whose game already has a result card (no "Open game" link for a game that is over). */
@@ -81,7 +81,7 @@ export function ChallengeProvider({ clubId, me, people, enabled, finished = NONE
   }
   const controls: Controls={ now,available:available && isConnected,me,rows,people,busy,open(id) { setTarget(id ?? ''); setPersonal(Boolean(id)); setError(''); setShown(true); },act(action,id) { void request(action,{challengeId:id}); },
     seek: time => request('create',{clubId,timeControl:time,targetUserId:null}),
-    openOffers: rows.filter(row => row.created_by===me && row.status==='open' && Date.parse(row.expires_at)>now).length, finished };
+    openOffers: rows.filter(row => row.created_by===me && row.status==='open' && Date.parse(row.expires_at)>now).length, finished, mobileV2 };
   return <Context.Provider value={controls}>{children}{error && !shown && (v2Enabled ? <Toast message={error} closeLabel={t.close} onClose={() => setError('')} /> : <p role="alert">{error}</p>)}
     <dialog aria-label={t.challenge} ref={dialog} className={mobileV2 ? 'st-mobile-sheet st-mobile-challenge' : undefined} onCancel={() => setShown(false)} onClose={() => setShown(false)}>
       <h2>{t.challenge}</h2><form onSubmit={event => { event.preventDefault(); if (mobileV2 && personal && !people.some(person => person.id === target && person.id !== me)) return; void request('create',{clubId,timeControl:time,targetUserId:personal ? target : null}); }}>
@@ -124,9 +124,9 @@ export function useChallengeMessageIds(): ReadonlySet<string> {
 export function ChallengeMessage({ messageId,body }: { messageId: string; body: string }) {
   const context=useContext(Context), row=context?.rows.find(item => item.message_id===messageId);
   if (!context || !row) return <p>{body}</p>;
-  return <ChallengeCard now={context.now} row={row} me={context.me} people={context.people} busy={context.busy} act={context.act} finished={context.finished.has(row.id)} />;
+  return <ChallengeCard now={context.now} row={row} me={context.me} people={context.people} busy={context.busy} act={context.act} finished={context.finished.has(row.id)} mobileV2={context.mobileV2} />;
 }
-export function ChallengeCard({now,row,me,people,busy,act,finished=false}: {now: number; row: Challenge; me: string; people: Person[]; busy: boolean; act: Controls['act']; finished?: boolean}) {
+export function ChallengeCard({now,row,me,people,busy,act,finished=false,mobileV2=false}: {now: number; row: Challenge; me: string; people: Person[]; busy: boolean; act: Controls['act']; finished?: boolean; mobileV2?: boolean}) {
   const t=useSchachTreffCopy();
   const expired=row.status==='expired' || (row.status==='open' && Date.parse(row.expires_at)<=now);
   const name=(id: string) => people.find(person => person.id===id)?.username ?? t.targetPlayer;
@@ -135,6 +135,6 @@ export function ChallengeCard({now,row,me,people,busy,act,finished=false}: {now:
     : row.target_user_id ? t.personalChallenge : t.openOffer;
   return <div className="st-challenge-card"><small>{heading}</small>
     <p className="st-challenge-title">{t.game} <span className="st-mono">{row.time_control}</span></p><p className="st-challenge-players">{name(row.created_by)}{row.target_user_id ? ` → ${name(row.target_user_id)}` : ''}</p>
-    {expired ? <p className="st-challenge-status">{t.expired}</p> : row.status==='cancelled' ? <p className="st-challenge-status">{t.cancelled}</p> : row.status==='accepted' ? <><p className="st-challenge-status">{finished ? t.gameFinished : row.room_id ? t.gameStarted : t.gameStarting}</p>{!finished && row.room_id && ROOM_ID.test(row.room_id) && (row.created_by===me || row.accepted_by===me) && <Link className="st-challenge-open" to={gamePath(row.room_id)}>{t.openGame}</Link>}</> : row.created_by===me ? <><p className="st-challenge-status">{t.waitingOpponent}</p><button disabled={busy} onClick={() => act('cancel',row.id)}>{t.cancel}</button></> : (!row.target_user_id || row.target_user_id===me) && <button disabled={busy} onClick={() => act('accept',row.id)}>{t.accept}</button>}
+    {expired ? (mobileV2 ? null : <p className="st-challenge-status">{t.expired}</p>) : row.status==='cancelled' ? (mobileV2 ? null : <p className="st-challenge-status">{t.cancelled}</p>) : row.status==='accepted' ? <>{!mobileV2 && <p className="st-challenge-status">{finished ? t.gameFinished : row.room_id ? t.gameStarted : t.gameStarting}</p>}{!finished && row.room_id && ROOM_ID.test(row.room_id) && (row.created_by===me || row.accepted_by===me) && <Link className="st-challenge-open" to={gamePath(row.room_id)}>{t.openGame}</Link>}</> : row.created_by===me ? <><p className="st-challenge-status">{t.waitingOpponent}</p><button disabled={busy} onClick={() => act('cancel',row.id)}>{t.cancel}</button></> : (!row.target_user_id || row.target_user_id===me) && <button disabled={busy} onClick={() => act('accept',row.id)}>{t.accept}</button>}
   </div>;
 }
