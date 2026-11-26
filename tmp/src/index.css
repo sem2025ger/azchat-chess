@@ -2003,18 +2003,19 @@ aside nav{padding-top:12px!important}
 @media(min-width:1280px) and (prefers-contrast:more){aside .site-nav-link .site-nav-label--bronze{animation:none}}
 
 
-/* Schach-Treff only: retain the shared bronze lettering, accent the chat bubble interior. */
+/* Schach-Treff only: keep the outlined bubble and pulse its small decorative center dot. */
+aside .site-nav-link--schach-treff .schach-treff-chat-dot {display:none}
 @media (min-width:1280px) {
   aside .site-nav-link--schach-treff .site-nav-label {font-size:18px;line-height:22px}
-  aside .site-nav-link--schach-treff .schach-treff-chat-icon > path {fill:url(#sidebar-chat-metal-fill);fill-opacity:.82}
+  aside .site-nav-link--schach-treff .schach-treff-chat-icon > path {fill:none}
+  aside .site-nav-link--schach-treff .schach-treff-chat-dot {display:inline;fill:url(#sidebar-chat-dot-gradient);stroke:none;opacity:1;pointer-events:none}
 }
 @media (min-width:1280px) and (prefers-reduced-motion:no-preference) and (prefers-contrast:no-preference) {
-  aside .site-nav-link--schach-treff .schach-treff-chat-icon > path {animation:schachTreffChatSheen 4s ease-in-out 1;transition:fill-opacity .45s ease}
-  aside .site-nav-link--schach-treff:is(:hover,:focus-visible) .schach-treff-chat-icon > path {fill-opacity:1}
+  aside .site-nav-link--schach-treff .schach-treff-chat-dot {animation:schachTreffChatDotPulse 2.8s ease-in-out infinite}
 }
-@keyframes schachTreffChatSheen {0%,100%{fill-opacity:.82}50%{fill-opacity:1}}
+@keyframes schachTreffChatDotPulse {0%,100%{opacity:.45}50%{opacity:1}}
 @media (min-width:1280px) and (prefers-contrast:more) {
-  aside .site-nav-link--schach-treff .schach-treff-chat-icon > path {fill:none;animation:none}
+  aside .site-nav-link--schach-treff .schach-treff-chat-dot {fill:currentColor;animation:none;opacity:1}
 }
 
 /* Owner analysis pass — desktop review only; no mobile or live engine overrides. */
