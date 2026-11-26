@@ -239,11 +239,15 @@
 .schach-treff.st-v2 .st-rooms .st2-settings-link{margin-top:12px}
 @media (min-width:1024px) {
   .schach-treff.st-v2{max-width:1440px;padding:20px 24px;box-sizing:border-box}
-  .schach-treff.st-v2>header{min-height:64px;margin-bottom:16px}
+  /* Owner: reclaim the duplicate heading row; retain the accessible title and overflow menu. */
+  .schach-treff.st-v2>header{min-height:44px;margin-bottom:0;justify-content:flex-end}
+  .schach-treff.st-v2>header h1{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .schach-treff.st-v2>header .st-region-entry,
+  .schach-treff.st-v2 .st-chat-header .st2-online{display:none}
   .schach-treff.st-v2 .st-columns{gap:16px}
   .schach-treff.st-v2 .st-columns>.st-rooms,
   .schach-treff.st-v2 .st-columns>.st-chat,
-  .schach-treff.st-v2 .st-columns>.st2-side{height:calc(100dvh - 145px);min-height:0;max-height:none;box-sizing:border-box}
+  .schach-treff.st-v2 .st-columns>.st2-side{height:calc(100dvh - 109px);min-height:0;max-height:none;box-sizing:border-box}
   .schach-treff.st-v2 .st-rooms{overflow:auto}
   .schach-treff.st-v2 .st-chat{padding:0 18px 16px}
   .schach-treff.st-v2 .st2-chat-meta{gap:10px}
