@@ -48,3 +48,10 @@ test('Home Arena retains silver words and uses 6px bronze diamond separators', (
   assert.match(home, /\.home-unified-slogan-word\s*\{\s*background: linear-gradient\(180deg, #f4f6f8 0%, #cfd5db 50%, #9aa3ac 100%\)/);
   assert.match(home, /\.home-unified-slogan-diamond\s*\{\s*display: inline-block;\s*width: 6px;\s*height: 6px;\s*flex: 0 0 6px;\s*transform: rotate\(45deg\);\s*background: linear-gradient\(135deg, #e9d1a1, rgb\(var\(--chessaz-bronze-frame\)\)\);/);
 });
+
+
+test('ordinary inactive desktop sidebar labels are matte silver, excluding active, hovered and metallic labels', () => {
+  assert.ok(css.includes('@media(min-width:1280px){\n aside .site-nav-link.sidebar-item:not(.sidebar-item-active):not(:hover) .site-nav-label:not(.site-nav-label--bronze){color:#B8B8B8;}\n}'));
+  assert.equal((layout.match(/bronzeLabel\s*\/>/g)||[]).length,2);
+  assert.match(css, /\.site-nav-label--bronze\s*\{[^}]*background-image:linear-gradient/);
+});

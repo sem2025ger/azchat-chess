@@ -34,8 +34,8 @@ test('unified desktop Arena is default-off, preserves the mobile layout and keep
   assert.match(home, /margin-bottom: 6px/);
   assert.match(home, /#f4f6f8 0%, #cfd5db 50%, #9aa3ac 100%/);
   assert.match(home, /filter: drop-shadow\(0 0 5px rgba\(220,228,235,0\.18\)\)/);
-  assert.match(home, /width: 7px;\s*height: 7px;\s*flex: 0 0 7px/);
-  assert.match(home, /linear-gradient\(135deg, #eef1f4, #8d969f\)/);
+  assert.match(home, /width: 6px;\s*height: 6px;\s*flex: 0 0 6px/);
+  assert.match(home, /linear-gradient\(135deg, #e9d1a1, rgb\(var\(--chessaz-bronze-frame\)\)\)/);
   assert.match(home, /@media \(min-width: 1280px\) \{[\s\S]*?\.desktop-home-arena\.home-unified-card \{\s*background:\s*radial-gradient\(120% 70% at 30% 0%, rgba\(205,215,230,0\.07\) 0%, rgba\(205,215,230,0\) 55%\),\s*linear-gradient\(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%\);\s*\}/);
   assert.match(home, /className="hidden md:flex mobile-home-play desktop-home-play/);
   assert.match(home, /\{t\('home\.playChessNow'\)\}/);
