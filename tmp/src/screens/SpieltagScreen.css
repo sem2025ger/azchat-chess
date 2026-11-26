@@ -20,7 +20,7 @@
 
 .spieltag-page.section-page.spieltag-launch {
   padding-block: 16px; gap: 12px;
-  --spieltag-neo-metal: linear-gradient(180deg,#d5dde6 0%,#a5b0bf 34%,#8491a2 65%,#b9c4d0 100%);
+  --spieltag-neo-metal: linear-gradient(180deg,#d0b8f5 0%,#9badef 30%,#8da5ed 58%,#b49be8 82%,#d0b8f5 100%);
 }
 .spieltag-launch > .spieltag-launch-heading {
   display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: .75rem 1.25rem;
@@ -37,11 +37,11 @@
   }
 }
 .spieltag-launch-heading .spieltag-neo-accent {
-  display: inline-block; font-size: 1.12em; font-weight: 700; color: #b5bec8;
+  display: inline-block; font-size: 1.12em; font-weight: 700; color: #b4a5eb;
 }
 .spieltag-launch .individual-create-hub .ai-organizer-badge {
   font-size: 1rem; padding: .24rem .7rem;
-  color: #b5bec8;
+  color: #b4a5eb;
   border-color: #8995a6;
   background: linear-gradient(165deg,#303945 0%,#171c24 62%,#252d37 100%);
 }
