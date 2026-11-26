@@ -107,3 +107,22 @@
   .st-mobile-v2 .st-chat .st-composer .st-send{background:#D9AE5B;color:#17130E;white-space:nowrap}
   .st-mobile-v2 .st-chat .st-messages{overflow-x:hidden;min-height:0;flex:1 1 0}
 }
+
+@media(max-width:1023px){
+  .st-mobile-v2 .st-mobile-challenge>h2{font-family:'Bodoni Moda',Georgia,serif;font-size:23px;margin:0 0 12px}
+  .st-mobile-v2 .st-mobile-challenge form{display:grid;gap:12px;min-width:0}
+  .st-mobile-v2 .st-mobile-challenge fieldset{display:grid;gap:6px;border:0;margin:0;padding:0;min-width:0}
+  .st-mobile-v2 .st-mobile-challenge legend{color:#A9A396;font-size:13px;margin:0 0 7px}
+  .st-mobile-v2 .st-mobile-challenge fieldset button{min-height:44px;background:#161816;border:1px solid #ffffff22;border-radius:14px;color:#F2EEE3;padding:10px;font-weight:600;overflow-wrap:anywhere}
+  .st-mobile-v2 .st-mobile-challenge fieldset button[aria-pressed=true]{border-color:#D9AE5B;background:#D9AE5B20;color:#F2EEE3}
+  .st-mobile-v2 .st-mobile-challenge .st-mobile-opponents{display:flex;flex-wrap:wrap}
+  .st-mobile-v2 .st-mobile-opponents button{max-width:100%}
+  .st-mobile-v2 .st-mobile-challenge .st-mobile-times{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .st-mobile-v2 .st-mobile-times button{display:grid;justify-items:center;gap:4px;padding:8px 4px;min-width:0}
+  .st-mobile-v2 .st-mobile-times small{font-size:11px;color:#A9A396;max-width:100%;overflow-wrap:anywhere}
+  .st-mobile-v2 .st-mobile-challenge .st-mobile-challenge-summary{color:#A9A396;font-size:13px;line-height:1.45;margin:0}
+  .st-mobile-v2 .st-mobile-challenge .st-mobile-primary,.st-mobile-v2 .st-mobile-challenge .st-mobile-secondary{min-height:48px;border-radius:14px;font-weight:700;white-space:normal}
+  .st-mobile-v2 .st-mobile-challenge .st-mobile-primary{background:#D9AE5B;color:#17130E;border:1px solid #D9AE5B}
+  .st-mobile-v2 .st-mobile-challenge .st-mobile-primary:disabled{opacity:.55}
+  .st-mobile-v2 .st-mobile-challenge .st-mobile-secondary{background:#161816;color:#F2EEE3;border:1px solid #ffffff22}
+}

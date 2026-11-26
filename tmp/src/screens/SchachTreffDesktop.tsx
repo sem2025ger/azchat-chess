@@ -266,7 +266,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     ? mergeTimeline(messages, v2Data.results, result => ({ id: resultMessageId(result), author_id: '', body: null, created_at: result.completed_at } as ClubMessage))
     : messages;
   return <section className={v2Enabled ? 'schach-treff st-v2' : 'schach-treff'} lang={language==="ua"?"uk":language} data-schach-treff-desktop>
-    <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member} finished={finishedChallenges}>
+    <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member} finished={finishedChallenges} mobileV2={mobileV2}>
     {mobileV2 ? <div className="st-mobile-v2-top">
       <div className="st-mobile-v2-title"><h1>{t.title}</h1><button type="button" className="st-mobile-v2-more" aria-label={t.more} aria-haspopup="dialog" onClick={() => setMobileSheet('menu')}>⋯</button></div>
       <div className="st-mobile-v2-row"><button type="button" className="st-mobile-room-trigger" aria-haspopup="dialog" onClick={() => setMobileSheet('rooms')}><span><strong>{roomName}</strong><small>{dmChat ? copy2.directChat : isClub ? copy1.myClubs : copy1.subtitle}</small></span><ChevronDown size={18} aria-hidden="true" /></button><ChallengeButton targetUserId={dmChat?.partnerId} disabled={!member || iBlocked} play /></div>
