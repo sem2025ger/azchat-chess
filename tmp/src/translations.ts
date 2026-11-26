@@ -60,7 +60,6 @@ export const translations: TranslationDictionary = {
   'home.board.nextMove': { en: 'Next', de: 'Weiter', ua: 'Вперед', ru: 'Вперёд', az: 'İrəli', tr: 'İleri' },
   'home.board.moveNavigation': { en: 'Chessboard move navigation', de: 'Schachzüge navigieren', ua: 'Навігація ходами', ru: 'Навигация по ходам', az: 'Gedişlər üzrə naviqasiya', tr: 'Hamleler arasında gezinme' },
   'home.slogan': { en: 'Play • Learn • Win', de: 'Spielen • Lernen • Siegen', ua: 'Грай • Навчайся • Перемагай', ru: 'Играй • Учись • Побеждай', az: 'Oyna • Öyrən • Qalib gəl', tr: 'Oyna • Öğren • Kazan' },
-  'home.schachTreffSubtitle': { en: 'Community chat and clubs', de: 'Gemeinschaftschat und Vereine', ua: 'Загальний чат і клуби', ru: 'Общий чат и клубы', az: 'Ümumi çat və klublar', tr: 'Genel sohbet ve kulüpler' },
   'home.cards.play.title': { en: 'Play Match', de: 'Match spielen', ua: 'Почати матч', ru: 'Начать матч', az: 'Matç Oyna', tr: 'Maç Oyna' },
   'home.cards.play.desc': { en: 'Find an opponent in Bullet, Blitz or Rapid.', de: 'Gegner finden in Bullet, Blitz oder Rapid.', ua: 'Знайдіть супротивника у Bullet, Blitz або Rapid.', ru: 'Найдите противника в Bullet, Blitz или Rapid.', az: 'Bullet, Blitz və ya Rapid rejimində rəqib tap.', tr: 'Bullet, Blitz veya Rapid modunda rakip bul.' },
   'home.cards.game.title': { en: 'Active Game', de: 'Aktives Spiel', ua: 'Активна гра', ru: 'Активная игра', az: 'Aktiv Oyun', tr: 'Aktif Oyun' },

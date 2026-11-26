@@ -10,7 +10,9 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.match(home, /sidebar-brand-silver"><span className="text-\[1\.08em\]">Ch<\/span>essaz\.<\/span>/);
   assert.match(home, /sidebar-brand-de inline-block text-\[1\.06em\]">de<\/span>/);
   assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="28" height="56"/);
-  assert.ok(css.includes('gap: 8px;\n    padding-inline: 2px;\n    padding-bottom: 8px;'));
+  assert.ok(css.includes('gap: clamp(12px, 2dvh, 20px);\n    padding-inline: 2px;\n    padding-bottom: 12px;'));
+  assert.ok(css.includes('font-size: clamp(1.95rem, 8.5vw, 2.12rem);'));
+  assert.ok(css.includes('letter-spacing: 0.015em;'));
   assert.match(css, /\.home-screen-root \[data-mobile-home-stack\] \.mobile-home-arena\s*\{\s*border: 0 !important;\s*outline: none;\s*background: none;/);
   assert.ok(css.includes('width: 100%;\n    max-width: 100% !important;'));
   assert.ok(home.includes('max-width: calc(100vw - 4px) !important;'));
@@ -25,14 +27,13 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.match(home, /sidebar-king-sheen pointer-events-none absolute inset-0/);
   assert.match(home, /Chess<span className="text-chess-active"> Arena<\/span>/);
   assert.match(home, /data-mobile-home-stack/);
-  assert.match(home, /padding-top: 12px/);
+  assert.match(home, /padding-top: clamp\(16px, 3dvh, 24px\)/);
   assert.match(home, /@media \(max-width: 767px\) \{\s*\.home-screen-root \[data-mobile-home-stack\]/);
   assert.doesNotMatch(home, /\.home-screen-root \.mobile-home-arena::(?:before|after)/);
   assert.match(css, /\.home-screen-root \.mobile-home-arena::before,\s*\.home-screen-root \.mobile-home-arena::after\s*\{\s*display: none;/);
   assert.match(css, /\[data-mobile-app-nav\] \.site-nav-link\{flex:1 1 0;min-width:44px/);
   assert.match(css, /\[data-mobile-app-nav\] \.site-nav-link\[href="\/chat"\]:not\(\[aria-current="page"\]\)\{color:#E7C47F\}/);
-  assert.match(home, /<Link to="\/chat" className="mobile-home-chat md:hidden[^\n]*min-h-\[44px\]/);
-  assert.match(home, /t\('home\.schachTreffSubtitle'\)/);
+  assert.doesNotMatch(home, /mobile-home-chat|schachTreffSubtitle|<Link to="\/chat"/);
   assert.match(home, /max-w-\[320px\]/);
   assert.match(home, /<MobileHomeBoard \/>/);
   assert.match(home, /<HomeMoveControls review=\{review\} goTo=\{goTo\} className="grid" compactMobile \/>/);

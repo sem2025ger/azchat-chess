@@ -118,23 +118,15 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  const originalMobileHeading = "            <h1 className=\"chess-arena-reference-title md:hidden text-[2.2rem] text-center leading-[0.95] tracking-[-0.03em]\">\n              Chess Arena\n            </h1>";
  assert.equal(withoutM3.split(approvedMobileBrand).length,2,'approved mobile brand appears exactly once');
  let homeSource=withoutM3.replace(approvedMobileBrand,originalMobileHeading);
- // Reverse only the approved mobile Home card, plaque removal and board-width change.
+ // Reverse only the approved mobile plaque removal, spacing and board-width change.
  for(const [next,previous] of [
   [
-    "import { ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';",
-    "import { ChevronLeft, ChevronRight } from 'lucide-react';"
-  ],
-  [
-    "        /* Mobile Home: the brand is unframed; desktop Arena stays unchanged. */\n        @media (max-width: 767px) {\n          .home-screen-root [data-mobile-home-stack] {\n            padding-top: 12px;\n          }\n        }\n",
+    "        /* Mobile Home: the brand is unframed; desktop Arena stays unchanged. */\n        @media (max-width: 767px) {\n          .home-screen-root [data-mobile-home-stack] {\n            padding-top: clamp(16px, 3dvh, 24px);\n          }\n        }\n",
     "        /* Chess Arena: mobile-only, understated obsidian-gold architectural frame.\n           Keep the approved golden wordmark and the exact board dimensions. */\n        @media (max-width: 767px) {\n          .home-screen-root [data-mobile-home-stack] {\n            padding-top: 12px;\n          }\n          .home-screen-root .mobile-home-arena {\n            border: 1px solid rgba(221, 184, 110, .5);\n            border-bottom: 1px solid rgba(221, 184, 110, .3);\n            border-radius: 24px;\n            box-shadow: 0 15px 28px -18px rgba(0,0,0,.85),\n              0 0 0 1px rgba(176, 142, 85, .11),\n              inset 0 1px 0 rgba(255, 234, 182, .17),\n              inset 0 -1px 0 rgba(255, 220, 155, .04);\n          }\n          .home-screen-root .mobile-home-arena::before {\n            inset: 5px; border-radius: 19px; opacity: 1; animation: none;\n            border: 1px solid rgba(207, 171, 105, .23);\n            box-shadow: inset 0 0 14px rgba(203, 168, 103, .035);\n          }\n          .home-screen-root .mobile-home-arena::after {\n            inset: -1px; border-radius: 25px; opacity: 1; animation: none;\n            border: 1px solid transparent;\n            background:\n              linear-gradient(90deg, transparent, rgba(247,213,151,.76), transparent) top 11px center / 38% 1px no-repeat,\n              linear-gradient(90deg, transparent, rgba(166,140,212,.34), transparent) bottom 10px center / 30% 1px no-repeat;\n            box-shadow: none;\n          }\n        }\n"
   ],
   [
     "max-width: calc(100vw - 4px) !important;",
     "max-width: calc(100vw - 8px) !important;"
-  ],
-  [
-    "        <Link to=\"/chat\" className=\"mobile-home-chat md:hidden flex w-full min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl border border-chess-gold/25 bg-neutral-900/80 px-2 py-1 text-chess-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chess-gold\">\n          <MessageSquare size={22} aria-hidden=\"true\" className=\"shrink-0\" />\n          <span className=\"flex min-w-0 flex-col text-center leading-tight\">\n            <span className=\"text-sm font-semibold\">Schach-Treff</span>\n            <span className=\"text-xs text-neutral-300\">{t('home.schachTreffSubtitle')}</span>\n          </span>\n        </Link>\n",
-    ""
   ]
 ]){
   assert.equal(homeSource.split(next).length,2,'approved mobile Home fragment appears exactly once');

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import ChessBoard from '../components/ChessBoard';
-import { ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import MyTournamentCard from '../components/teamTournaments/MyTournamentCard';
@@ -135,7 +135,7 @@ export default function HomeScreen() {
         /* Mobile Home: the brand is unframed; desktop Arena stays unchanged. */
         @media (max-width: 767px) {
           .home-screen-root [data-mobile-home-stack] {
-            padding-top: 12px;
+            padding-top: clamp(16px, 3dvh, 24px);
           }
         }
         /* Home-only black CBURNETT artwork retains a discreet shadow without
@@ -488,13 +488,6 @@ export default function HomeScreen() {
             <span className="relative z-10 w-full text-center font-extrabold text-[clamp(1rem,4.6vw,1.125rem)] tracking-[0.05em] uppercase not-italic leading-tight text-shadow-cycle">{t('home.playChessNow')}</span>
           </Link>
         </div>
-        <Link to="/chat" className="mobile-home-chat md:hidden flex w-full min-h-[44px] shrink-0 items-center justify-center gap-2 rounded-xl border border-chess-gold/25 bg-neutral-900/80 px-2 py-1 text-chess-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chess-gold">
-          <MessageSquare size={22} aria-hidden="true" className="shrink-0" />
-          <span className="flex min-w-0 flex-col text-center leading-tight">
-            <span className="text-sm font-semibold">Schach-Treff</span>
-            <span className="text-xs text-neutral-300">{t('home.schachTreffSubtitle')}</span>
-          </span>
-        </Link>
       </div>
     </div>
     </div>
