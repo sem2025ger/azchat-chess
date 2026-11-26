@@ -166,8 +166,6 @@ export default function Layout() {
         <MobileNavItem to="/home" icon={<Home size={20} />} label={t('nav.home')} premiumHome />
         <MobileNavItem to="/game" icon={<Grid size={20} />} label={t('nav.game')} accent="analysis" />
         <MobileNavItem to="/chat" icon={<MessageSquare size={20} />} label="Schach-Treff" accent="chat" />
-        {import.meta.env.VITE_SPIELTAG_LAUNCH_PREVIEW === 'true' && import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' &&
-          <MobileNavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" accent="settings" />}
         {showSpieltag && <MobileNavItem to="/spieltag" icon={<CalendarDays size={20} />}
           label={t('nav.spieltag')} accent="settings" />}
         <MobileNavItem to="/profile" icon={<User size={20} />} label={t('nav.profile')} accent="profile" />

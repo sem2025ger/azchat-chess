@@ -203,7 +203,7 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
       range.selectNodeContents(label);
       const text = range.getBoundingClientRect();
       const rect = link.getBoundingClientRect();
-      return { path: link.getAttribute('href'), label: label.textContent, left: rect.left, right: rect.right,
+      return { path: link.getAttribute('href'), label: label.textContent, left: rect.left, right: rect.right, height: rect.height,
         textLeft: text.left, textRight: text.right, lines: range.getClientRects().length,
         hidden: label.scrollWidth > label.clientWidth + 1, active: link.getAttribute('aria-current') };
     });
@@ -339,13 +339,16 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
             if (enabled) {
               assert.equal(links[3].label, spieltagLabel, context);
               assert.equal(links[3].active, 'page', context);
-              links.forEach((link, index) => {
-                const fits = link.left >= left && link.right <= right && link.lines === 1 && !link.hidden &&
-                  link.textLeft >= link.left - 1 && link.textRight <= link.right + 1 &&
-                  (index === 0 || link.left >= links[index - 1].right - 1);
-                assert.ok(fits, context + ' ' + JSON.stringify(link));
-              });
             }
+            links.forEach((link, index) => {
+              const buttonWidth = link.right - link.left;
+              const fits = link.left >= left && link.right <= right && link.lines >= 1 && link.lines <= 2 && !link.hidden &&
+                link.textLeft >= link.left - 1 && link.textRight <= link.right + 1 &&
+                buttonWidth >= 44 && link.height >= 44 &&
+                Math.abs(buttonWidth - (links[0].right - links[0].left)) <= 1 &&
+                (index === 0 || link.left >= links[index - 1].right - 1);
+              assert.ok(fits, context + ' ' + JSON.stringify(link));
+            });
           }
         }
         await setWidth(1366);

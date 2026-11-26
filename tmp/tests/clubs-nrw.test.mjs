@@ -19,11 +19,9 @@ test('all NRW flags off preserves the main routing and navigation entry points',
    const sharedGate = "  const showSpieltag = " + spieltagGate + " ||\n    import.meta.env.VITE_TEAM_TOURNAMENTS_ENABLED === 'true';\n";
    const mobileLink = '        {showSpieltag && <MobileNavItem to="/spieltag" icon={<CalendarDays size={20} />}\n' +
      "          label={t('nav.spieltag')} accent=\"settings\" />}\n";
-   const mobileNrwPreviewLink = "        {import.meta.env.VITE_SPIELTAG_LAUNCH_PREVIEW === 'true' && import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' &&\n" +
-     '          <MobileNavItem to="/region/nrw" icon={<MapPin size={20} />} label="NRW – Schach" accent="settings" />}\n';
    assert.ok(current.includes(sharedGate) && current.includes(mobileLink));
-   assert.ok(current.includes(mobileNrwPreviewLink));
-   current = current.replace(sharedGate, '').replace(mobileLink, '').replace(mobileNrwPreviewLink, '')
+   assert.doesNotMatch(current, /<MobileNavItem to="\/region\/nrw"/);
+   current = current.replace(sharedGate, '').replace(mobileLink, '')
      .replace('MapPin, CalendarDays', 'MapPin')
      .replace(' data-spieltag-enabled={showSpieltag || undefined}', '')
      .replace('desktop && showSpieltag', 'desktop && ' + tournamentGate);
