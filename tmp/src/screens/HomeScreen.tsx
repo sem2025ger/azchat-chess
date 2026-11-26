@@ -83,11 +83,11 @@ export default function HomeScreen() {
             }
             .home-screen-root .home-unified-card .home-unified-slogan-diamond {
               display: inline-block;
-              width: 7px;
-              height: 7px;
-              flex: 0 0 7px;
+              width: 6px;
+              height: 6px;
+              flex: 0 0 6px;
               transform: rotate(45deg);
-              background: linear-gradient(135deg, #eef1f4, #8d969f);
+              background: linear-gradient(135deg, #e9d1a1, rgb(var(--chessaz-bronze-frame)));
             }
           }
         `}</style>
