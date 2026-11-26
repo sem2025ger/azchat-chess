@@ -45,6 +45,9 @@ test('all NRW flags off preserves the main routing and navigation entry points',
    const originalChatRow = "            <NavItem to=\"/chat\" icon={<MessageSquare size={20} />} label=\"Schach-Treff\" themeColor=\"theme-violet\" bronzeLabel />";
    assert.equal(current.split(approvedChatRow).length,2,'approved Schach-Treff icon occurs exactly once');
    current=current.replace(approvedChatRow,originalChatRow);
+   const approvedChatClass = "          to === '/chat' && \"site-nav-link--schach-treff\",\n";
+   assert.equal(current.split(approvedChatClass).length,2,'approved chat-only CSS hook occurs exactly once');
+   current=current.replace(approvedChatClass,'');
    // Allow only the separately reviewed 240px desktop sidebar geometry change (PR #219).
    // All route entries and feature-flagged links must remain byte-for-byte identical.
    for(const [next, previous] of [
