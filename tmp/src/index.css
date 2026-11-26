@@ -694,7 +694,7 @@
     background: none;
   }
   .home-screen-root .mobile-home-arena .chess-arena-reference-title > span[aria-hidden="true"] {
-    transform: translateX(-2px);
+    transform: translate(-4px, -4px);
   }
   .home-screen-root .mobile-home-arena > a[href="/region/nrw"] {
     display: none;
