@@ -1,13 +1,14 @@
 import { useDesktop } from '../components/schachTreff/useDesktop';
 import SchachTreffDesktop from './SchachTreffDesktop';
 import { displayPlayerName } from '../utils/displayPlayerName';
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Globe, Users, MessageCircle, Trophy, Loader2, BarChart3, Info } from 'lucide-react';
 import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import ClubRooms from '../components/schachTreff/ClubRooms';
 import { v2Enabled } from '../components/schachTreff/v2/core';
 import { useV2Copy } from '../components/schachTreff/v2/copy';
+import { useV2Copy2 } from '../components/schachTreff/v2/copy2';
 import { DirectList } from '../components/schachTreff/v2/Stage2';
 import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
 import './SchachTreffMobileRooms.css';
@@ -87,21 +88,88 @@ const ru: Words = {
   submit: 'Публикация…', joined: 'Участник'
 };
 
+/** Mobile v2 owns its viewport; the feed, not the document, scrolls. */
+function MobileV2Viewport() {
+  const page = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    let frame = 0;
+    let fullHeight = 0;
+    let lastWidth = window.innerWidth;
+    const update = () => {
+      const current = page.current;
+      if (!current) return;
+      // Preserve pinch zoom and browser panning rather than fighting the user's gesture.
+      if (viewport && Math.abs(viewport.scale - 1) >= .01) return;
+      const height = Math.floor(Math.min(window.innerHeight, viewport?.height ?? window.innerHeight));
+      if (height <= 0) return;
+      const active = document.activeElement;
+      const editing = (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) && !!current.querySelector('.st-composer')?.contains(active);
+      if (!editing || lastWidth !== window.innerWidth || !fullHeight) fullHeight = height;
+      lastWidth = window.innerWidth;
+      const keyboard = editing && Math.max(fullHeight, window.innerHeight) - height >= 120;
+      const nextHeight = height + 'px';
+      const layoutChanged = current.hasAttribute('data-st-keyboard') !== keyboard ||
+        root.style.getPropertyValue('--st-visible-height') !== nextHeight;
+      if (layoutChanged) {
+        const feed = current.querySelector<HTMLElement>('.st-messages');
+        // The old layout is still in place. Preserve readers' scroll position,
+        // but follow the newest message if they were already near the bottom.
+        const follow = feed && feed.scrollHeight - feed.clientHeight - feed.scrollTop <= 64;
+        current.toggleAttribute('data-st-keyboard', keyboard);
+        root.style.setProperty('--st-visible-height', nextHeight);
+        if (feed && follow) feed.scrollTop = feed.scrollHeight;
+      }
+      const route = current.closest('[data-route-scroll]');
+      if (route?.scrollTop) route.scrollTop = 0;
+      if (document.scrollingElement?.scrollTop) window.scrollTo(0, 0);
+    };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('resize', schedule);
+    viewport?.addEventListener('resize', schedule);
+    viewport?.addEventListener('scroll', schedule);
+    window.addEventListener('focusin', schedule);
+    window.addEventListener('focusout', schedule);
+    return () => {
+      cancelAnimationFrame(frame);
+      root.style.removeProperty('--st-visible-height');
+      window.removeEventListener('resize', schedule);
+      viewport?.removeEventListener('resize', schedule);
+      viewport?.removeEventListener('scroll', schedule);
+      window.removeEventListener('focusin', schedule);
+      window.removeEventListener('focusout', schedule);
+    };
+  }, []);
+  return <div ref={page} className="st-mobile-page st-mobile-v2"><SchachTreffDesktop hideRooms /></div>;
+}
+
 export default function ChessAZCommunityScreen() {
   const desktop = useDesktop();
   const t = useSchachTreffCopy();
   const copy = useV2Copy();
+  const copy2 = useV2Copy2();
   const [showCommunity, setShowCommunity] = useState(false);
   if (desktop) return <CommunityRouter />;
+  if (v2Enabled) return <MobileV2Viewport />;
   const params = new URLSearchParams(window.location.search);
   const club = params.get('club');
   return <div className="st-mobile-page">
     <header className="st-mobile-header"><h1>{t.title}</h1></header>
-    <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
-      <ClubRooms currentClubId={club} heading={v2Enabled ? copy.myClubs : undefined} />
-      {v2Enabled && <DirectList currentClubId={club} />}
-    </aside>
-    {!club && <button type="button" className="st-mobile-community" aria-pressed={showCommunity} onClick={() => setShowCommunity(!showCommunity)}>{showCommunity ? t.backGeneral : t.more}</button>}
+    <div className="st-mobile-controls">
+      <details className="st-mobile-directory" key={club ?? 'general'}>
+        <summary><MessageCircle size={18} aria-hidden="true" /><span>{v2Enabled ? copy.myClubs + ' · ' + copy2.direct : t.clubs}</span></summary>
+        <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
+          <ClubRooms currentClubId={club} heading={v2Enabled ? copy.myClubs : undefined} />
+          {v2Enabled && <DirectList currentClubId={club} />}
+        </aside>
+      </details>
+      {!club && <button type="button" className="st-mobile-community" aria-pressed={showCommunity} onClick={() => setShowCommunity(!showCommunity)}>{showCommunity ? t.backGeneral : t.more}</button>}
+    </div>
     {!club && showCommunity ? <div className="st-mobile-legacy"><CommunityRouter /></div> : <SchachTreffDesktop hideRooms />}
   </div>;
 }

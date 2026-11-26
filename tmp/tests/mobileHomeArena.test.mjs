@@ -15,7 +15,12 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.ok(css.includes('max-width: calc(100% - 4px) !important;'));
   assert.ok(css.includes('.home-screen-root .mobile-home-arena > a[href="/region/nrw"] {\n    display: none;'));
   assert.ok(css.includes('.home-screen-root .home-board-column .home-board + nav {\n    margin-top: 20px;'));
-  assert.ok(css.includes('max-width:calc(100% - 8px);font-size:.75rem;'));
+  const navLabel = css.match(/\[data-mobile-app-nav\] \.site-nav-link \.site-nav-label\{([^}]+)\}/)?.[1] ?? '';
+  assert.match(navLabel, /max-width:none/);
+  assert.match(navLabel, /font-size:clamp\(9px,2\.65vw,\.75rem\)/);
+  assert.match(navLabel, /white-space:nowrap;overflow:visible;text-overflow:clip/);
+  assert.doesNotMatch(navLabel, /overflow-wrap:anywhere|text-overflow:ellipsis/);
+  assert.match(css, /\[data-mobile-app-nav\] \.site-nav-link\[href="\/chat"\] \.site-nav-label\{width:4\.5em;white-space:normal\}/);
   assert.match(home, /sidebar-king-sheen pointer-events-none absolute inset-0/);
   assert.match(home, /Chess<span className="text-chess-active"> Arena<\/span>/);
   assert.match(home, /data-mobile-home-stack/);

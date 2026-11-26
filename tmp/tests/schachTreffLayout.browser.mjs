@@ -6,17 +6,19 @@ import {tmpdir} from 'node:os';import {join} from 'node:path';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 
 const fixture=`import '/src/index.css';import React from 'react';import{createRoot}from'react-dom/client';import{MemoryRouter,BrowserRouter,Routes,Route}from'react-router-dom';import{LanguageProvider,useLanguage}from'/src/context/LanguageContext.tsx';import Chat from'/src/screens/ChessAZCommunityScreen.tsx';import Invite from'/src/screens/ClubInviteScreen.tsx';import Layout from'/src/components/Layout.tsx';import{ClubUnreadProvider}from'/src/components/schachTreff/unread.tsx';import{ThemeProvider}from'/src/context/ThemeContext.tsx';localStorage.setItem('app-language','ru');function Probe(){const {setLanguage}=useLanguage();window.setFixtureLanguage=setLanguage;return null}createRoot(document.getElementById('root')).render(<LanguageProvider>{import.meta.env.VITE_SCHACH_TREFF_MODERATION_ENABLED==='true'?<ThemeProvider><ClubUnreadProvider userId={new URLSearchParams(location.search).has('guest')?undefined:'11111111-1111-4111-8111-111111111111'}><BrowserRouter><Probe/><Routes><Route element={<Layout/>}><Route path='/chat' element={<Chat/>}/></Route></Routes></BrowserRouter></ClubUnreadProvider></ThemeProvider>:location.pathname==='/room-fixture'?<MemoryRouter><Probe/><Chat/></MemoryRouter>:<BrowserRouter><Probe/><Routes><Route path='/schach-treff/einladung/:token' element={<Invite/>}/><Route path='/chat' element={<Chat/>}/></Routes></BrowserRouter>}</LanguageProvider>);`;
-const db=`const uid='11111111-1111-4111-8111-111111111111', room='22222222-2222-4222-8222-222222222222', guest='33333333-3333-4333-8333-333333333333';
+const db=`const uid='11111111-1111-4111-8111-111111111111', room='22222222-2222-4222-8222-222222222222', guest='33333333-3333-4333-8333-333333333333', dm='44444444-4444-4444-8444-444444444444';
+const mobileFixture = new URLSearchParams(location.search).has('mobileFixture');
 const feed = Array.from({length:28}, (_, index) => ({
   id:'message-'+index, author_id:index===20 ? uid : index>=21 && index<=24 || index>=26 ? guest : index%2 ? uid : guest,
   body:['Добро пожаловать в Schach-Treff!','Кто хочет сыграть тренировочную партию?','Я буду онлайн после восьми.','Отлично, давайте обсудим дебют после партии.'][index%4],
   created_at:new Date(Date.UTC(2026,10,4,12,0,0)+(index+(index>=24?6:0))*60000).toISOString()
 }));
 const counts = { [uid]: 4, [room]: 2 };
+const reactions = [{message_id:'message-27',user_id:guest,reaction:'!'}];
 window.fixtureKeepBadges = true;
 const reports = [{message_id:'message-25',body:'Сообщение, на которое пожаловались',kind:'text',hidden:true,reasons:['spam','abuse','other']}];
 export const supabase = {
-  channel(){const channel={on(){return channel},subscribe(){return channel},presenceState(){return {}},track(){return Promise.resolve('ok')}};return channel},removeChannel(){return Promise.resolve()},
+  channel(){let sync;const channel={on(type,event,callback){if(type==='presence')sync=callback;return channel},subscribe(callback){if(mobileFixture){callback?.('SUBSCRIBED');sync?.()}return channel},presenceState(){return mobileFixture&&!new URLSearchParams(location.search).has('emptyOnline') ? {[guest]:[{}]} : {}},track(){return Promise.resolve('ok')}};return channel},removeChannel(){return Promise.resolve()},
   rpc(name, payload) {
     const ok = data => Promise.resolve({data,error:null});
     if(name==='get_club_unread_counts') return ok(Object.entries(counts).map(([id,count])=>({club_id:id,is_general:id===uid,unread_count:count})));
@@ -62,48 +64,217 @@ export const supabase = {
     throw Error('Unexpected RPC '+name);
   },
   from(table) {
-    let single=false, columns='';
+    let single=false, columns='', deleting=false;
     const filters=new Map();
     const q={not(){return q},is(){return q},select(v){columns=v;return q},eq(k,v){filters.set(k,v);return q},in(){return q},gte(){return q},order(){return q},limit(){return q},
-      maybeSingle(){single=true;return q},
+      maybeSingle(){single=true;return q},delete(){deleting=true;return q},
       insert(row) {
+        if(mobileFixture && table==='chess_club_message_reactions'){window.fixtureReaction={action:'insert',...row};reactions.push(row);return Promise.resolve({error:null});}
         if(table!=='chess_club_messages') throw Error('Unexpected write');
         feed.push({...row,id:'message-'+feed.length,created_at:new Date().toISOString()});
         return Promise.resolve({error:null});
       },
       then(resolve,reject) {
         let rows=[];
+        if(mobileFixture && table==='chess_club_message_reactions' && deleting){
+          window.fixtureReaction={action:'delete',...Object.fromEntries(filters)};
+          const index=reactions.findIndex(row=>[...filters].every(([key,value])=>row[key]===value));
+          if(index>=0)reactions.splice(index,1);
+          return Promise.resolve({error:null}).then(resolve,reject);
+        }
         if(table==='chess_clubs') {
           rows=filters.get('kind')==='room'||filters.get('id')===room
             ? [{id:room,name:'Schachverein',kind:'room',is_open:false,slug:'room-schachverein'},...(new URLSearchParams(location.search).has('duplicate') ? [{id:guest,name:'Schachverein'}] : [])]
             : [{id:uid,name:'ChessAZ Deutsch',kind:'community',is_open:true,slug:'chessaz-deutsch'}];
+          if(mobileFixture && (filters.get('kind')==='dm' || filters.get('id')===dm)) rows=[{id:dm,name:'Direct message',kind:'dm',dm_key:uid+':'+guest}];
           if(columns==='pinned_body,pinned_by' && filters.get('id')===room) rows=[{pinned_by:guest,pinned_body:('В пятницу тренировка по эндшпилю. Присоединяйтесь к разбору партий. ').repeat(6)}];
         } else if(table==='chess_club_members') {
           const params=new URLSearchParams(location.search);
           rows=[{user_id:uid,role:params.get('role') || (params.has('club')?'admin':'member')},{user_id:guest,role:'member'}];
         } else if(table==='profiles') {
           rows=[{id:uid,username:'Sofia'},{id:guest,username:'Maksim'}];
-        } else if(table==='chess_club_messages') rows=feed.slice().reverse();
+        } else if(table==='chess_club_messages') {
+          if(mobileFixture && filters.has('parent_id')) {window.fixtureThreadRoot=filters.get('parent_id');rows=[];}
+          else rows=columns==='parent_id' ? (mobileFixture ? [{parent_id:'message-27'}] : []) : feed.slice().reverse();
+        }
+        else if(mobileFixture && table==='chess_club_message_reactions') rows=reactions.slice();
         else if(table==='chess_club_challenges') rows=[{
           id:'challenge-26',message_id:'message-26',created_by:guest,target_user_id:uid,
           time_control:'3+2',status:'open',expires_at:'2099-12-31T23:59:59Z',room_id:null
         }];
+        if(mobileFixture && table==='chess_club_challenges') rows.push(...['cancelled','expired','accepted'].map((status,index)=>({id:'status-'+status,message_id:'message-'+(23+index),created_by:guest,target_user_id:uid,time_control:'5+0',status,expires_at:'2099-12-31T23:59:59Z',room_id:null}))); 
         return Promise.resolve({data:single?(rows[0]||null):rows,error:null}).then(resolve,reject);
       }
     };return q;
   }
 };`;
-const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user:new URLSearchParams(location.search).has('guest')?null:user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!/^\/(?:room-fixture(?:\?|$)|schach-treff\/einladung\/|chat(?:\?|$))/.test(req.url))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
+const plugin={name:'schach-treff-fixture',enforce:'pre',resolveId(id){if(id==='/__room_fixture.tsx')return id;if(/context\/AuthContext(?:\.tsx)?$/.test(id))return '\0room-auth';if(/context\/SocketContext(?:\.tsx)?$/.test(id))return '\0room-socket';if(/services\/supabase(?:\.ts)?$/.test(id))return '\0room-db';},load(id){if(id==='/__room_fixture.tsx')return fixture;if(id==='\0room-auth')return `const user={id:'11111111-1111-4111-8111-111111111111'};export function useAuth(){return {user:new URLSearchParams(location.search).has('guest')?null:user,isLoading:false}}`;if(id==='\0room-socket')return `const socket={on(){},off(){},emit(){},timeout(){return {emit(_event,_payload,cb){cb?.(null,{ok:true})}}}};export function useSocket(){return {socket,isConnected:true}}`;if(id==='\0room-db')return db},configureServer(server){server.middlewares.use(async(req,res,next)=>{if(!/^\/(?:room-fixture(?:\?|$)|schach-treff\/einladung\/|chat(?:\?|$))/.test(req.url))return next();res.setHeader('content-type','text/html');res.end(await server.transformIndexHtml('/room-fixture','<!doctype html><html><head><title>ChessAZ</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="root"></div><script type="module" src="/__room_fixture.tsx"></script></body></html>'));});}};
 export async function checkRoomLayout(moderation = false, polish = false){
- const server=await createServer({configFile:false,define:{'import.meta.env.VITE_SCHACH_TREFF_V2':JSON.stringify(polish?'true':'false'),'import.meta.env.VITE_CLUBS_NRW_ENABLED':JSON.stringify(polish?'true':'false'),'import.meta.env.VITE_SCHACH_TREFF_MODERATION_ENABLED':JSON.stringify(moderation?'true':'false')},cacheDir:join(tmpdir(),'room-vite-'+process.pid),optimizeDeps:{noDiscovery:true,include:['react','react-dom/client','react-router-dom','lucide-react']},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}}});let chrome,ws,profile;const pending=new Map();
+ const server=await createServer({configFile:false,define:{'import.meta.env.VITE_SCHACH_TREFF_V2':JSON.stringify(polish?'true':'false'),'import.meta.env.VITE_CLUBS_NRW_ENABLED':JSON.stringify(polish?'true':'false'),'import.meta.env.VITE_SPIELTAG_ENABLED':JSON.stringify(moderation&&polish?'true':'false'),'import.meta.env.VITE_SCHACH_TREFF_MODERATION_ENABLED':JSON.stringify(moderation?'true':'false')},cacheDir:join(tmpdir(),'room-vite-'+process.pid),optimizeDeps:{noDiscovery:true,include:['react','react-dom/client','react-router-dom','lucide-react']},plugins:[plugin,react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}}});let chrome,ws,profile;const pending=new Map();
  try{await server.listen();const bin=process.env.CHROME_BIN||['/usr/bin/google-chrome','/usr/bin/chromium','/usr/bin/chromium-browser'].find(existsSync);assert.ok(bin,'Chromium required for Schach-Treff layout');profile=await mkdtemp(join(tmpdir(),'schach-rooms-'));chrome=spawn(bin,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-first-run','--remote-allow-origins=*','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});let stderr='';chrome.stderr.on('data',c=>stderr=(stderr+c).slice(-4000));const pause=ms=>new Promise(r=>setTimeout(r,ms));let port;for(let i=0;i<600;i++){if(chrome.exitCode!==null)throw Error(stderr);try{port=Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]);if(port)break}catch{}await pause(50)}assert.ok(port,stderr);const targets=await(await fetch('http://127.0.0.1:'+port+'/json/list')).json();ws=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);await new Promise((r,j)=>{ws.addEventListener('open',r,{once:true});ws.addEventListener('error',j,{once:true})});let seq=0;ws.addEventListener('message',({data})=>{const m=JSON.parse(data),p=pending.get(m.id);if(p){pending.delete(m.id);clearTimeout(p.timer);m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result)}});const cdp=(method,params={})=>new Promise((resolve,reject)=>{const id=++seq,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},20000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}))});const evaluate=async expression=>{let x=await cdp('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(x.exceptionDetails)throw Error(JSON.stringify(x.exceptionDetails));return x.result.value};const wait=async expression=>{for(let i=0;i<240;i++){if(await evaluate('Boolean('+expression+')'))return;await pause(50)}throw Error('Fixture did not load '+expression)};await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Page.bringToFront');await cdp('Emulation.setFocusEmulationEnabled',{enabled:true});if(process.env.SECTIONS_CAPTURE)await mkdir(process.env.SECTIONS_CAPTURE,{recursive:true});
+ if (moderation && polish) {
+   const root=server.resolvedUrls.local[0], base=root+'chat?mobileFixture=1&role=member&polish=1';
+   const capture=async name=>{if(process.env.SECTIONS_CAPTURE){const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-mobile-v2-'+name+'.png'),Buffer.from(shot.data,'base64'));}};
+   const click=async selector=>{await wait(`document.querySelector(${JSON.stringify(selector)})`);await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);};
+   const closeSheet=async()=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await wait("!document.querySelector('dialog[open]')");};
+   const settle=()=>evaluate("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
+   const viewportGeometry=()=>evaluate(`(()=>{const page=document.querySelector('.st-mobile-v2'),title=page.querySelector('.st-mobile-v2-title'),more=title.querySelector('button'),composer=page.querySelector('.st-composer'),nav=document.querySelector('[data-mobile-app-nav]'),ancestors=[];for(let e=page;e;e=e.parentElement)ancestors.push({node:e.tagName,id:e.id,overflow:e.scrollHeight-e.clientHeight,scrollTop:e.scrollTop});const r=e=>e.getBoundingClientRect();return {ancestors,scrollTop:document.scrollingElement.scrollTop,top:r(title).top,titleBottom:r(title).bottom,moreTop:r(more).top,moreBottom:r(more).bottom,keyboard:page.hasAttribute('data-st-keyboard'),navHidden:getComputedStyle(nav).display==='none',gap:(getComputedStyle(nav).display==='none'?(visualViewport?.height??innerHeight):r(nav).top)-r(composer).bottom,navBottom:r(nav).bottom,visible:visualViewport?.height??innerHeight,layout:innerHeight,feed:page.querySelector('.st-messages').clientHeight,atEnd:(()=>{const f=page.querySelector('.st-messages');return f.scrollHeight-f.clientHeight-f.scrollTop<=2})()}})()`);
+   const viewportFits=async context=>{await settle();const g=await viewportGeometry();assert.ok(g.scrollTop===0&&g.ancestors.every(a=>a.scrollTop===0&&a.overflow<=1)&&g.top>=-1&&g.moreTop>=-1&&g.moreBottom<=g.titleBottom+1&&g.titleBottom<g.visible&&g.keyboard===g.navHidden&&g.gap>=6&&g.gap<=10&&g.navBottom<=g.visible+1&&g.feed>0,context+' '+JSON.stringify(g));return g;};
+   const positionFits=async(width,height,captureName)=>{await click('.st2-position-trigger');await wait("document.querySelector('dialog[open] .st2-position-form .st2-board-play button')");await fitsSheet(width,height);const g=await evaluate(`(()=>{const d=document.querySelector('dialog[open]'),form=d.querySelector('.st2-position-form'),b=form.querySelector('.st2-board'),h=d.querySelector('h2'),r=b.getBoundingClientRect(),hr=h.getBoundingClientRect(),style=getComputedStyle(h);return {w:r.width,h:r.height,available:form.clientWidth,squares:b.querySelectorAll('button').length,scroll:d.scrollWidth-d.clientWidth,verticalScroll:getComputedStyle(d).overflowY,titleHeight:hr.height,lineHeight:parseFloat(style.lineHeight),titleFits:h.scrollWidth<=h.clientWidth+1,wordBreak:style.wordBreak,wrap:style.overflowWrap}})()`);assert.ok(Math.abs(g.w-Math.min(g.available,420))<=1&&Math.abs(g.w-g.h)<=1&&g.squares===64&&g.scroll<=1&&['auto','scroll'].includes(g.verticalScroll)&&g.titleFits&&g.wordBreak==='normal'&&g.wrap==='normal',JSON.stringify(g));if(captureName)await capture(captureName);await closeSheet();};
+   const fitsSheet=async(width,height)=>{const box=await evaluate(`(()=>{const d=document.querySelector('dialog[open]'),r=d.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,scroll:d.scrollWidth,client:d.clientWidth}})()`);assert.ok(box.left>=-1&&box.right<=width+1&&box.top>=-1&&box.bottom<=height+1&&box.scroll<=box.client+1,JSON.stringify(box));};
+   for(const width of [360,390,430]){const height=844;await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});await cdp('Page.navigate',{url:base});await wait("document.querySelector('.st-mobile-play:not(:disabled)')&&document.querySelector('.st-composer')&&document.querySelector('.st-mobile-online-list button')");
+     for(const zoom of [100,125]){await evaluate(`document.documentElement.style.fontSize=17*${zoom}/100+'px'`);
+       for(const lang of ['de','en','ua','az','tr','ru']){await evaluate(`window.setFixtureLanguage('${lang}')`);await wait(`document.documentElement.lang==='${lang==='ua'?'uk':lang}'`);await evaluate('document.fonts.ready.then(()=>true)');
+         const geometry=await evaluate(`(()=>{const f=document.querySelector('.st-messages'),c=document.querySelector('.st-composer'),nav=document.querySelector('[data-mobile-app-nav]'),labels=[...nav.querySelectorAll('.site-nav-label')];return {legacy:!!document.querySelector('.st-mobile-legacy,.st-mobile-community,.st-mobile-directory,.st-mobile-members'),menu:[...document.querySelectorAll('.st-mobile-v2 button,.st-mobile-v2 summary')].filter(e=>e.getClientRects().length&&e.textContent.trim()==='⋯').length,feed:f.clientHeight,overflow:f.scrollWidth-f.clientWidth,composerOverflow:c.scrollWidth-c.clientWidth,composerBottom:c.getBoundingClientRect().bottom,navTop:nav.getBoundingClientRect().top,doc:document.documentElement.scrollWidth,title:document.title,labels:labels.map(e=>{const style=getComputedStyle(e),node=e.firstChild,r=e.getBoundingClientRect(),link=e.closest('a').getBoundingClientRect(),lines={};for(let i=0;i<node.textContent.length;i++){const range=document.createRange();range.setStart(node,i);range.setEnd(node,i+1);const rects=[...range.getClientRects()].filter(rect=>rect.width>0&&rect.height>0);const char=rects[0]??range.getBoundingClientRect();const key=char.top.toFixed(2);(lines[key]??=[]).push(node.textContent[i]);if(rects.some(rect=>rect.left<link.left-1||rect.right>link.right+1||rect.left<r.left-1||rect.right>r.right+1))return {text:e.textContent,outside:true,char:node.textContent[i],rects:rects.map(rect=>({left:rect.left,right:rect.right,top:rect.top})),label:{left:r.left,right:r.right},link:{left:link.left,right:link.right},font:style.font}}return {whiteSpace:style.whiteSpace,overflowWrap:style.overflowWrap,textOverflow:style.textOverflow,lines:Object.values(lines).map(chars=>chars.join('')),text:e.textContent,left:r.left,right:r.right,scroll:e.scrollWidth,client:e.clientWidth}}),actions:[...document.querySelectorAll('.st-message-actions>summary')].map(e=>{const header=e.closest('.st-message-heading'),r=e.getBoundingClientRect(),h=header?.getBoundingClientRect(),challenge=header?.querySelector('.st-challenge-icon')?.getBoundingClientRect();return !!h&&r.width>=44&&r.height>=44&&r.top>=h.top-1&&r.bottom<=h.bottom+1&&r.right<=h.right+1&&(!challenge||challenge.width>=44&&challenge.height>=44&&challenge.right<=r.left+1&&Math.abs(challenge.top-r.top)<=1)})}})()`);
+         assert.ok(!geometry.legacy&&geometry.menu===1&&geometry.feed>0&&geometry.overflow<=1&&geometry.composerOverflow<=1&&geometry.composerBottom<=geometry.navTop+1&&geometry.doc<=width+1&&geometry.title!=='tmp',lang+' '+zoom+' '+width+' '+JSON.stringify(geometry));
+         assert.equal(geometry.labels.length,6,'include the optional Spieltag link');
+         assert.ok(geometry.labels.every(l=>!l.outside&&l.textOverflow==='clip'&&l.overflowWrap==='normal'&&l.scroll<=l.client+1&&(l.text==='Schach-Treff'?(l.lines.join('')===l.text&&(l.lines.length===1||JSON.stringify(l.lines)===JSON.stringify(['Schach-','Treff']))):l.whiteSpace==='nowrap'&&l.lines.length===1&&l.lines[0]===l.text)),JSON.stringify(geometry.labels));
+         assert.ok(geometry.labels.slice(1).every((l,i)=>l.left>=geometry.labels[i].right-1),JSON.stringify(geometry.labels));
+         assert.equal(geometry.actions.length,0,'no boxed message actions in mobile headers');
+         assert.ok(await evaluate("!document.querySelector('.st-message-heading .st-challenge-icon,.st-message-grouped .st-message-heading')&&[...document.querySelectorAll('.st-message-grouped .st-mobile-grouped-time')].every(e=>{const r=e.getBoundingClientRect(),line=e.parentElement.getBoundingClientRect();return r.right<=line.right+1&&r.top>=line.top-1&&r.bottom<=line.bottom+1})"),'grouped messages have inline time, no redundant header');
+         await viewportFits(lang+' '+zoom+' '+width);
+         assert.ok(await evaluate(`(()=>{const p=document.querySelector('.st-mobile-v2'),top=p.querySelector('.st-mobile-v2-top'),chat=p.querySelector('.st-chat'),nav=document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]'),icon=nav.querySelector('div>svg'),label=nav.querySelector('.site-nav-label'),r=e=>e.getBoundingClientRect(),cx=e=>(r(e).left+r(e).right)/2;return r(top).top-r(p).top>=11&&r(top).top-r(p).top<=13&&r(chat).top-r(top).bottom>=-1&&r(chat).top-r(top).bottom<=5&&Math.abs(cx(icon)-cx(nav))<=1&&Math.abs(cx(label)-cx(nav))<=1})()`),'compact top and centered Schach-Treff icon/label');
+          assert.ok(await evaluate("(()=>{const top=document.querySelector('.st-mobile-v2-top'),heading=top.querySelector('h1'),strip=top.querySelector('.st-mobile-online'),menu=top.querySelector('.st-mobile-v2-more').getBoundingClientRect(),room=top.querySelector('.st-mobile-room-trigger').getBoundingClientRect(),play=top.querySelector('.st-mobile-play').getBoundingClientRect();return heading.getBoundingClientRect().height<=1&&(!strip||(getComputedStyle(strip).display==='none'&&strip.getClientRects().length===0))&&Math.abs(menu.top-room.top)<=2&&Math.abs(menu.top-play.top)<=2&&menu.right<=room.left&&room.right<=play.left&&[menu,room,play].every(r=>r.width>=44&&r.height>=44)})()"),'compact toolbar and no visible title or presence row in normal viewport');
+         const take=width===390&&zoom===125&&lang==='ru';if(take){await capture('chat');await capture('bottom-nav');}
+         if(lang==='ru')await positionFits(width,height,take?'position-125':undefined);
+         await click('.st-mobile-room-trigger');await wait("document.querySelector('.st-mobile-sheet[open] .st-room-list>a')");await fitsSheet(width,height);await wait("document.querySelector('.st-mobile-sheet[open] .st-unread-badge')");assert.ok(await evaluate("[...document.querySelectorAll('.st-mobile-sheet[open] .st-unread-badge')].every(e=>{const r=e.getBoundingClientRect();return r.height>0&&r.height<=24&&Math.abs(r.width-r.height)<=1})"),'single-digit unread counts are round');if(take)await capture('rooms');await closeSheet();
+         await click('.st-mobile-play');await wait("document.querySelector('.st-mobile-challenge[open]')");await fitsSheet(width,height);
+         const challenge=await evaluate(`(()=>{const d=document.querySelector('.st-mobile-challenge[open]'),[a,b]=d.querySelectorAll('.st-mobile-challenge-kind button'),p=d.querySelector('.st-mobile-primary'),s=d.querySelector('.st-mobile-secondary');return {open:a.getAttribute('aria-pressed')==='true',separate:b.getBoundingClientRect().top>=a.getBoundingClientRect().bottom,colors:getComputedStyle(p).backgroundColor!==getComputedStyle(s).backgroundColor,targets:[...d.querySelectorAll('button')].every(e=>e.getBoundingClientRect().height>=44),opponents:!!d.querySelector('.st-mobile-opponents')}})()`);
+         assert.ok(challenge.open&&challenge.separate&&challenge.colors&&challenge.targets&&!challenge.opponents,JSON.stringify(challenge));if(take)await capture('challenge-open');
+         await click('.st-mobile-challenge-kind button:nth-of-type(2)');await wait("document.querySelector('.st-mobile-opponents button')");await click('.st-mobile-opponents button');await fitsSheet(width,height);if(take)await capture('challenge-personal');await closeSheet();
+         await click('.st-mobile-v2-more');await wait("document.querySelector('.st-mobile-sheet[open] .st-mobile-sheet-rows')");await fitsSheet(width,height);if(take)await capture('club-menu');
+         await click('.st-mobile-sheet-rows>button:first-child');await wait("document.querySelector('.st-mobile-sheet[open] .st2-members li')");await fitsSheet(width,height);if(take)await capture('members');await closeSheet();
+         await click('.st-mobile-v2-more');await click('.st-mobile-sheet-rows>button:nth-child(2)');await wait("document.querySelector('.st-mobile-sheet[open] h2')&&!document.querySelector('.st-mobile-sheet-rows')");await fitsSheet(width,height);if(take)await capture('ranking');await closeSheet();
+         assert.equal(await evaluate("[...document.querySelectorAll('.st-challenge-card')].filter(e=>!e.querySelector('.st-challenge-status')&&!e.querySelector('button')).length"),3,'expired, cancelled and accepted statuses are not duplicated');
+       }
+     }
+   }
+   // Real-phone regressions: enlarged nav line boxes, shorter visible window and keyboard focus.
+   for(const zoom of [125,150])for(const toolbar of [0,56]){
+     const width=390,height=844-toolbar,suffix=zoom+(toolbar?'-toolbar':'');
+     await cdp('Emulation.setDeviceMetricsOverride',{width,height,screenWidth:width,screenHeight:844,deviceScaleFactor:1,mobile:true});
+     await cdp('Page.navigate',{url:base});
+     await wait("document.querySelector('.st-mobile-play:not(:disabled)')&&document.querySelector('.st-mobile-reaction-trigger')");
+     await evaluate(`(()=>{document.documentElement.style.fontSize=17*${zoom}/100+'px';const style=document.createElement('style');style.textContent='[data-mobile-app-nav] .site-nav-label{line-height:2.4!important}';document.head.appendChild(style);})()`);
+     await evaluate("window.setFixtureLanguage('ru')");
+     await wait("document.documentElement.lang==='ru'&&document.querySelector('.st2-reaction-row')");
+     assert.ok(await evaluate("(()=>{const form=document.querySelector('.st-composer'),input=form.querySelector('textarea');return form.autocomplete==='off'&&input.autocomplete==='off'&&input.name==='chat-message'&&input.inputMode==='text'&&input.enterKeyHint==='send'})()"),'mobile chat is identified as plain message input, not a personal-data form');
+     const before=await viewportFits('stress '+suffix);
+     assert.ok(before.visible<=height+1,'shortened visible viewport is actually applied');
+     await evaluate("(()=>{const f=document.querySelector('.st-messages');f.scrollTop=f.scrollHeight;document.querySelector('.st-composer textarea').focus();})()");
+     await viewportFits('focused '+suffix);
+     const setDraft=async body=>{await evaluate(`(()=>{const e=document.querySelector('.st-composer textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(e,${JSON.stringify(body)});e.dispatchEvent(new Event('input',{bubbles:true}));})()`);await settle();};
+     const key=async(shift=false)=>{await cdp('Input.dispatchKeyEvent',{type:'keyDown',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,modifiers:shift?8:0,text:'\r'});await cdp('Input.dispatchKeyEvent',{type:'keyUp',key:'Enter',code:'Enter',windowsVirtualKeyCode:13,modifiers:shift?8:0});await settle();};
+     const one=await evaluate("document.querySelector('.st-composer textarea').getBoundingClientRect().height");
+     await setDraft('первая');await key(true);
+     assert.ok(await evaluate("document.querySelector('.st-composer textarea').value.includes('\\n')"),'Shift+Enter inserts a newline');
+     await setDraft('первая\nвторая\nтретья');const three=await evaluate("document.querySelector('.st-composer textarea').getBoundingClientRect().height");
+     assert.ok(three>one+30,'textarea grows to three lines');await capture('composer-three-lines-'+suffix);
+     await setDraft('1\n2\n3\n4\n5\n6');const cap=await evaluate("(()=>{const e=document.querySelector('.st-composer textarea');return {h:e.getBoundingClientRect().height,scroll:e.scrollHeight,client:e.clientHeight}})()");
+     assert.ok(cap.h<=110&&cap.h>three&&cap.scroll>cap.client,'textarea caps at four lines then scrolls');
+     await setDraft('mobile enter test');await key();await wait("document.querySelector('.st-composer textarea').value===''&&[...document.querySelectorAll('.st-mobile-reaction-trigger')].some(e=>e.textContent==='mobile enter test')");
+     assert.ok(await evaluate("document.querySelector('.st-send').disabled"),'Enter submits and clears input');
+     await setDraft('');await viewportFits('after multiline '+suffix);
+
+     // A focused field alone does not emulate a keyboard. Also exercise a reduced viewport.
+     const keyboardHeight=520;
+     await cdp('Emulation.setDeviceMetricsOverride',{width,height:keyboardHeight,screenWidth:width,screenHeight:844,deviceScaleFactor:1,mobile:true});
+     await wait("document.querySelector('.st-mobile-v2').hasAttribute('data-st-keyboard')");
+     const keyboard=await viewportFits('keyboard-sized viewport '+suffix);
+     assert.ok(keyboard.visible<=keyboardHeight+1&&keyboard.visible<before.visible-120,'viewport actually shrank');
+     assert.ok(keyboard.navHidden&&keyboard.atEnd&&keyboard.feed>before.feed-(before.visible-keyboard.visible),'keyboard hides navigation, recovers feed space and keeps the newest message visible');
+     assert.ok(await evaluate("(()=>{const top=document.querySelector('.st-mobile-v2-top'),menu=top.querySelector('.st-mobile-v2-more').getBoundingClientRect(),room=top.querySelector('.st-mobile-room-trigger').getBoundingClientRect(),play=top.querySelector('.st-mobile-play').getBoundingClientRect();return Math.abs(menu.top-room.top)<=2&&Math.abs(menu.top-play.top)<=2&&menu.right<=room.left&&room.right<=play.left&&[menu,room,play].every(r=>r.height>=44&&r.width>=44)})()"),'keyboard toolbar fits in a single row with accessible targets');
+     await capture('keyboard-'+suffix);
+     assert.ok(await evaluate("document.activeElement===document.querySelector('.st-composer textarea')&&getComputedStyle(document.querySelector('.st-mobile-online')).display==='none'"),'composer stays focused; presence strip compacts');
+     await cdp('Emulation.setDeviceMetricsOverride',{width,height,screenWidth:width,screenHeight:844,deviceScaleFactor:1,mobile:true});
+     await wait("!document.querySelector('.st-mobile-v2').hasAttribute('data-st-keyboard')");
+     const restored=await viewportFits('restored viewport '+suffix);
+     assert.ok(!restored.navHidden&&restored.atEnd,'navigation and latest message restore after keyboard closes');
+     await evaluate("(()=>{const f=document.querySelector('.st-messages');f.scrollTop=0;})()");
+     await settle();
+     await cdp('Emulation.setDeviceMetricsOverride',{width,height:keyboardHeight,screenWidth:width,screenHeight:844,deviceScaleFactor:1,mobile:true});
+     await wait("document.querySelector('.st-mobile-v2').hasAttribute('data-st-keyboard')");
+     assert.ok(await evaluate("document.querySelector('.st-messages').scrollTop<=2"),'reading history must not jump to newest message on keyboard open');
+     await cdp('Emulation.setDeviceMetricsOverride',{width,height,screenWidth:width,screenHeight:844,deviceScaleFactor:1,mobile:true});
+     await wait("!document.querySelector('.st-mobile-v2').hasAttribute('data-st-keyboard')");
+     await evaluate("document.querySelector('.st-composer textarea').blur();document.querySelector('[data-route-scroll]').scrollTop=100;window.scrollTo(0,100)");
+     await viewportFits('blurred '+suffix);
+     assert.equal(await evaluate("document.querySelectorAll('.st2-tools').length"),0,'quick reactions start hidden');
+     assert.ok(await evaluate("Boolean(document.querySelector('.st2-reaction-row .st2-reaction')&&document.querySelector('.st2-reaction-row .st2-replies'))"),'existing reactions and reply count stay visible');
+     assert.equal(await evaluate("document.querySelectorAll('.st-message .st-message-actions,.st-message .st-challenge-icon').length"),0,'no per-message action buttons');
+     await capture('viewport-chat-'+suffix);await capture('viewport-nav-'+suffix);
+     const tap=async(own)=>{const p=await evaluate(`(()=>{const e=[...document.querySelectorAll('${own?".st-message-own":".st-message:not(.st-message-own)"} .st-mobile-reaction-trigger')].at(-1);e.scrollIntoView({block:'center',inline:'nearest'});const r=e.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2}})()`);await cdp('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[p]});await cdp('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await wait("document.querySelector('.st-mobile-message-sheet[open]')");};
+     for(const own of [true,false]){
+       await tap(own);await fitsSheet(width,height);
+       assert.ok(await evaluate("document.querySelector('.st-mobile-message-sheet .st2-tools')?.querySelectorAll('button').length===3&&[...document.querySelectorAll('.st-mobile-message-sheet button')].every(e=>{const r=e.getBoundingClientRect();return r.width>=44&&r.height>=44})"),'reaction and action sheet targets are at least 44px');
+       assert.ok(await evaluate(`(()=>{const d=document.querySelector('.st-mobile-message-sheet[open]');return d.textContent.includes('Ответить в ветке')&&d.textContent.includes('Удалить сообщение')===${own}&&d.textContent.includes('Пожаловаться на сообщение')===${!own}&&d.querySelectorAll('.st-mobile-sheet-rows>button').length===${own?2:3}})()`),'own/other action permissions');
+       await capture((own?'message-actions-own-':'message-actions-other-')+suffix);await closeSheet();
+     }
+     await tap(false);
+     const backdrop=await evaluate("(()=>{const r=document.querySelector('.st-mobile-message-sheet[open]').getBoundingClientRect();return {x:10,y:Math.max(1,r.top-10)}})()");
+     await cdp('Input.dispatchMouseEvent',{type:'mousePressed',x:backdrop.x,y:backdrop.y,button:'left',clickCount:1});await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',x:backdrop.x,y:backdrop.y,button:'left',clickCount:1});
+     await wait("!document.querySelector('.st-mobile-message-sheet[open]')");
+     assert.ok(await evaluate("Boolean(document.querySelector('.st2-reaction-row .st2-reaction')&&document.querySelector('.st2-reaction-row .st2-replies'))"),'counts remain visible');
+     await viewportFits('message sheet closed '+suffix);
+     await positionFits(width,height,'viewport-position-'+suffix);
+     await click('.st-mobile-v2-more');await wait("document.querySelector('.st-mobile-sheet[open] .st-mobile-sheet-rows')");await fitsSheet(width,height);await capture('viewport-menu-'+suffix);await closeSheet();await viewportFits('closed '+suffix);
+   }
+   // Exercise the existing handlers, not just the presence of the sheet controls.
+   await cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+   const selectMessage=async own=>{await evaluate(`[...document.querySelectorAll('${own?".st-message-own":".st-message:not(.st-message-own)"} .st-mobile-reaction-trigger')].at(-1).click()`);await wait("document.querySelector('.st-mobile-message-sheet[open]')");};
+   const sheetAction=async label=>{await evaluate(`[...document.querySelectorAll('.st-mobile-message-sheet[open] button')].find(e=>e.textContent.trim()===${JSON.stringify(label)}).click()`);};
+   for(const role of ['member','moderator']){
+     await cdp('Page.navigate',{url:base.replace('role=member','role='+role)});
+     await wait("document.querySelector('.st-mobile-reaction-trigger')&&document.querySelector('.st2-reaction-row')");
+     await evaluate("window.setFixtureLanguage('ru')");
+     await wait("document.documentElement.lang==='ru'");
+     await selectMessage(false);
+     assert.equal(await evaluate("document.querySelector('.st-mobile-message-sheet').textContent.includes('Удалить сообщение')"),role==='moderator','only moderators can delete another author’s text');
+     await sheetAction('!!');await wait("window.fixtureReaction?.action==='insert'&&window.fixtureReaction?.message_id==='message-27'&&window.fixtureReaction?.reaction==='!!'&&!document.querySelector('.st-mobile-message-sheet[open]')");
+     await wait("[...document.querySelectorAll('.st2-reaction-row button')].some(e=>e.getAttribute('aria-pressed')==='true'&&e.textContent.includes('!!'))");
+     await selectMessage(false);await sheetAction('!!');await wait("window.fixtureReaction?.action==='delete'&&window.fixtureReaction?.message_id==='message-27'&&!document.querySelector('.st-mobile-message-sheet[open]')");
+     await selectMessage(false);await sheetAction('Ответить в ветке');await wait("window.fixtureThreadRoot==='message-27'&&document.querySelector('.st2-thread')");
+     await click('.st2-thread-head button');
+     await selectMessage(false);
+     await evaluate("[...document.querySelectorAll('.st-mobile-message-sheet .st-mobile-sheet-rows>button')].find(e=>!e.closest('.st-message-action-buttons')&&e.textContent!=='Ответить в ветке').click()");
+     await wait("document.querySelector('.st-mobile-challenge[open] .st-mobile-opponents button[aria-pressed=true]')?.textContent==='Maksim'");await closeSheet();
+     await selectMessage(false);await sheetAction('Пожаловаться на сообщение');await wait("document.querySelector('dialog.st-moderation-dialog[open] select')");
+     await evaluate("const select=document.querySelector('dialog[open] select');select.value='abuse';select.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('dialog[open] button[type=submit]').click()");
+     await wait("window.fixtureReport?.p_message_id==='message-27'&&window.fixtureReport?.p_reason==='abuse'&&!document.querySelector('dialog[open]')");
+     if(role==='moderator'){
+       await selectMessage(false);await sheetAction('Удалить сообщение');await wait("document.querySelector('dialog.st-moderation-dialog[open]')");
+       await evaluate("[...document.querySelectorAll('dialog[open] button')].find(e=>e.textContent==='Удалить сообщение').click()");
+       await wait("window.fixtureDelete?.p_message_id==='message-27'&&!document.querySelector('dialog[open]')");
+     }else{
+       await selectMessage(true);await sheetAction('Удалить сообщение');await wait("document.querySelector('dialog.st-moderation-dialog[open]')");
+       await evaluate("[...document.querySelectorAll('dialog[open] button')].find(e=>e.textContent==='Удалить сообщение').click()");
+       await wait("window.fixtureDelete?.p_message_id==='message-20'&&!document.querySelector('dialog[open]')");
+     }
+   }
+   await cdp('Emulation.setDeviceMetricsOverride',{width:430,height:844,deviceScaleFactor:1,mobile:true});
+   await cdp('Page.navigate',{url:base+'&club=44444444-4444-4444-8444-444444444444'});await wait("document.querySelector('.st-mobile-room-trigger strong')?.textContent==='Maksim'&&document.querySelector('.st-mobile-play:not(:disabled)')");
+   await click('.st-mobile-play');await wait("document.querySelector('.st-mobile-challenge[open] .st-mobile-opponents button[aria-pressed=true]')?.textContent==='Maksim'");
+   assert.equal(await evaluate("document.querySelector('.st-mobile-challenge-kind button:nth-of-type(2)').getAttribute('aria-pressed')"),'true');await closeSheet();
+   await cdp('Page.navigate',{url:base+'&emptyOnline=1'});await wait("document.querySelector('.st-mobile-play:not(:disabled)')&&document.querySelector('.st-composer')");assert.equal(await evaluate("Boolean(document.querySelector('.st-mobile-online'))"),false,'empty online strip is hidden');
+   return;
+ }
  if (polish) {
    const fixtureUrl=server.resolvedUrls.local[0]+'room-fixture?club=22222222-2222-4222-8222-222222222222&polish=1';
    for (const width of [375,1366,1920]) {
      await cdp('Emulation.setDeviceMetricsOverride',{width,height:width===375?844:900,deviceScaleFactor:1,mobile:width===375});
      await cdp('Page.navigate',{url:fixtureUrl});
-     await wait("document.querySelector('.st-messages .st-name') && document.querySelector('.st-challenge-icon')");
+     await wait(width===375 ? "document.querySelector('.st-messages .st-name') && document.querySelector('.st-composer textarea')" : "document.querySelector('.st-messages .st-name') && document.querySelector('.st-challenge-icon') && document.querySelector('.st-composer input')");
      assert.equal(await evaluate("Boolean(document.querySelector('.schach-treff>header>.st2-feedback'))"),false);
+     if(width===375){
+       await evaluate("document.querySelector('.st-mobile-v2-more').click()");
+       await wait("document.querySelector('.st-mobile-sheet[open] .st2-feedback')");
+       await evaluate("document.querySelector('.st-mobile-sheet[open] .st2-feedback').click()");
+       await wait("document.querySelector('.st2-feedback-dialog[open] textarea')");
+       await evaluate("document.querySelector('.st2-feedback-dialog .st2-icon-button').click()");
+       await wait("!document.querySelector('.st2-feedback-dialog[open]')");
+       await evaluate("document.querySelector('.st-mobile-sheet[open] .st-mobile-sheet-head>button').click()");
+       await wait("!document.querySelector('.st-mobile-sheet[open]')");
+     }else{
      assert.equal(await evaluate("document.querySelector('.st-menu nav').hidden"),true);
      await evaluate("document.querySelector('.st-menu>button').click()");
      await wait("!document.querySelector('.st-menu nav').hidden");
@@ -112,6 +283,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await evaluate("document.querySelector('.st2-feedback-dialog .st2-icon-button').click()");
      await wait("!document.querySelector('.st2-feedback-dialog[open]')");
      await evaluate("document.querySelector('.st-menu>button').click()");
+     }
      if (width>=1024) {
        assert.equal(await evaluate("getComputedStyle(document.querySelector('.st2-side:not(.st2-thread)>.st2-side-title')).color"),'rgb(195, 161, 122)');
        const compact=await evaluate(`(()=>{
@@ -186,7 +358,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
    const url = root + 'chat?club=' + room;
    const capture = async (name, width) => {
      if (!process.env.SECTIONS_CAPTURE || width === 1280) return;
-     await evaluate('document.fonts.ready');
+     await evaluate('document.fonts.ready.then(()=>true)');
      const image = await cdp('Page.captureScreenshot', {format:'png',captureBeyondViewport:false});
      await writeFile(join(process.env.SECTIONS_CAPTURE, 'schach-treff-' + name + '-' + width + '.png'), Buffer.from(image.data,'base64'));
    };
@@ -206,8 +378,11 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await evaluate("window.fixtureKeepBadges=true");
      await wait(`document.documentElement.hasAttribute('data-schach-treff-unread') && [...document.querySelectorAll('.site-nav-link[href="/chat"] > div:first-child')].some(el => el.offsetWidth > 0 && getComputedStyle(el,'::after').backgroundColor === 'rgb(241, 187, 107)')`);
      await wait("document.querySelector('.st-unread-badge[aria-label=\"Непрочитанные сообщения 4\"]')");
+     if(width===375) await evaluate("document.querySelector('.st-mobile-directory>summary').click()");
      await fits('.st-room-list a',width);
+     if(width===375) assert.ok(await evaluate("document.querySelector('.st-unread-badge').getBoundingClientRect().height<=24"));
      await capture('badges',width);
+     if(width===375) await evaluate("document.querySelector('.st-mobile-directory>summary').click()");
      await wait("window.fixtureMarked?.p_club_id === '" + room + "'");
      await evaluate("document.querySelector('.st-pin-menu button').click()");
      await fits('.st-pin-actions',width);
@@ -262,7 +437,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
    }
    return;
  }
- for(const width of [1280,1920,375]){const height=width===375?844:1080;await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===375});await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'room-fixture'});await wait("document.querySelector('.st-room-list>a') && document.querySelector('.st-create-room') && document.querySelector('.st-composer')");await evaluate('document.fonts.ready');const x=await evaluate(`(()=>{const mobile=innerWidth<1024;const panel=document.querySelector(mobile?'.st-mobile-rooms':'.st-rooms');const general=panel.querySelector(mobile?'.st-mobile-general':'.st-general-link');const chat=document.querySelector('.st-chat');const heading=panel.querySelector('.st-club-heading');const button=panel.querySelector('.st-create-room');const club=panel.querySelector('.st-room-list>a');const rect=e=>{const r=e.getBoundingClientRect();return{left:r.left,right:r.right,width:r.width,scroll:e.scrollWidth,client:e.clientWidth}};return{width:document.documentElement.scrollWidth,panel:rect(panel),general:rect(general),chat:chat?rect(chat):null,club:rect(club),button:rect(button),sizes:[general,heading,button,club].map(e=>getComputedStyle(e).fontSize),weights:[general,heading,button,club].map(e=>getComputedStyle(e).fontWeight),current:general.getAttribute('aria-current'),visible:document.body.innerText}})()`);assert.ok(x.width<=width+1,JSON.stringify(x));assert.deepEqual(x.sizes,['17px','16px','16px','15px']);assert.deepEqual(x.weights,['600','600','600','400']);assert.equal(x.current,'page');assert.ok(await evaluate("!document.querySelector('.st-message-actions,.st-unread-badge,.st-moderation-dialog')"));assert.ok(x.general.left>=x.panel.left&&x.general.right<=x.panel.right,JSON.stringify(x));assert.ok(x.button.right<=x.panel.right&&x.club.right<=x.panel.right,JSON.stringify(x));if(width!==375){assert.ok(x.panel.right<=x.chat.left,JSON.stringify(x));assert.ok(await evaluate("!document.querySelector('.st-right') && Math.abs(document.querySelector('.schach-treff').getBoundingClientRect().right - document.querySelector('.st-chat').getBoundingClientRect().right - 24) <= 1"));assert.ok(!x.visible.includes('ChessAZ Deutsch'),'general chat should not show the old room title');const form=await evaluate(`(()=>{const f=document.querySelector('.st-composer');const button=f.querySelector('button');return {whiteSpace:getComputedStyle(button).whiteSpace,input:f.querySelector('input').getBoundingClientRect().width,scroll:f.scrollWidth,client:f.clientWidth}})()`);assert.equal(form.whiteSpace,'nowrap');assert.ok(form.input>0&&form.scroll<=form.client+1,JSON.stringify(form));}if(process.env.SECTIONS_CAPTURE && width===1920){let image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-desktop-general-1920.png'),Buffer.from(image.data,'base64'))}for(const lang of ['de','en','az','tr','ua','ru']){await evaluate(`window.setFixtureLanguage('${lang}')`);await wait(`document.documentElement.lang==='${lang==='ua'?'uk':lang}'`);const t=await evaluate(`(()=>{const p=document.querySelector(innerWidth<1024?'.st-mobile-rooms':'.st-rooms'),b=p.querySelector('.st-create-room'),h=p.querySelector('.st-club-heading'),g=p.querySelector(innerWidth<1024?'.st-mobile-general':'.st-general-link');let range=document.createRange();range.selectNodeContents(b);return {width:document.documentElement.scrollWidth,panel:p.getBoundingClientRect().right,button:b.getBoundingClientRect().right,scroll:b.scrollWidth,client:b.clientWidth,rects:[...range.getClientRects()].map(r=>({top:r.top,left:r.left,right:r.right})),text:b.textContent,lines:range.getClientRects().length,sizes:[g,h,b].map(e=>getComputedStyle(e).fontSize)}})()`);assert.ok(t.width<=width+1&&t.button<=t.panel,lang+' '+JSON.stringify(t));assert.deepEqual(t.sizes,['17px','16px','16px']);if(width>=1280&&['de','ru'].includes(lang)){assert.equal(t.lines,1,lang+' button wraps '+JSON.stringify(t));assert.ok(t.scroll<=t.client,lang+' button overflows '+JSON.stringify(t))}}}
+ for(const width of [1280,1920,375]){const height=width===375?844:1080;await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===375});await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'room-fixture'});await wait("document.querySelector('.st-room-list>a') && document.querySelector('.st-create-room') && document.querySelector('.st-composer')");await evaluate('document.fonts.ready.then(()=>true)');if(width===375){assert.equal(await evaluate("document.querySelector('.st-mobile-directory').open"),false);await evaluate("document.querySelector('.st-mobile-directory>summary').click()")}const x=await evaluate(`(()=>{const mobile=innerWidth<1024;const panel=document.querySelector(mobile?'.st-mobile-rooms':'.st-rooms');const general=panel.querySelector(mobile?'.st-mobile-general':'.st-general-link');const chat=document.querySelector('.st-chat');const heading=panel.querySelector('.st-club-heading');const button=panel.querySelector('.st-create-room');const club=panel.querySelector('.st-room-list>a');const rect=e=>{const r=e.getBoundingClientRect();return{left:r.left,right:r.right,width:r.width,scroll:e.scrollWidth,client:e.clientWidth}};return{width:document.documentElement.scrollWidth,panel:rect(panel),general:rect(general),chat:chat?rect(chat):null,club:rect(club),button:rect(button),sizes:[general,heading,button,club].map(e=>getComputedStyle(e).fontSize),weights:[general,heading,button,club].map(e=>getComputedStyle(e).fontWeight),current:general.getAttribute('aria-current'),visible:document.body.innerText}})()`);assert.ok(x.width<=width+1,JSON.stringify(x));assert.deepEqual(x.sizes,['17px','16px','16px','15px']);assert.deepEqual(x.weights,['600','600','600','400']);assert.equal(x.current,'page');assert.ok(await evaluate("!document.querySelector('.st-message-actions,.st-unread-badge,.st-moderation-dialog')"));assert.ok(x.general.left>=x.panel.left&&x.general.right<=x.panel.right,JSON.stringify(x));assert.ok(x.button.right<=x.panel.right&&x.club.right<=x.panel.right,JSON.stringify(x));if(width!==375){assert.ok(x.panel.right<=x.chat.left,JSON.stringify(x));assert.ok(await evaluate("!document.querySelector('.st-right') && Math.abs(document.querySelector('.schach-treff').getBoundingClientRect().right - document.querySelector('.st-chat').getBoundingClientRect().right - 24) <= 1"));assert.ok(!x.visible.includes('ChessAZ Deutsch'),'general chat should not show the old room title');const form=await evaluate(`(()=>{const f=document.querySelector('.st-composer');const button=f.querySelector('button');return {whiteSpace:getComputedStyle(button).whiteSpace,input:f.querySelector('input').getBoundingClientRect().width,scroll:f.scrollWidth,client:f.clientWidth}})()`);assert.equal(form.whiteSpace,'nowrap');assert.ok(form.input>0&&form.scroll<=form.client+1,JSON.stringify(form));}if(process.env.SECTIONS_CAPTURE && width===1920){let image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(process.env.SECTIONS_CAPTURE,'schach-treff-desktop-general-1920.png'),Buffer.from(image.data,'base64'))}for(const lang of ['de','en','az','tr','ua','ru']){await evaluate(`window.setFixtureLanguage('${lang}')`);await wait(`document.documentElement.lang==='${lang==='ua'?'uk':lang}'`);const t=await evaluate(`(()=>{const p=document.querySelector(innerWidth<1024?'.st-mobile-rooms':'.st-rooms'),b=p.querySelector('.st-create-room'),h=p.querySelector('.st-club-heading'),g=p.querySelector(innerWidth<1024?'.st-mobile-general':'.st-general-link');let range=document.createRange();range.selectNodeContents(b);return {width:document.documentElement.scrollWidth,panel:p.getBoundingClientRect().right,button:b.getBoundingClientRect().right,scroll:b.scrollWidth,client:b.clientWidth,rects:[...range.getClientRects()].map(r=>({top:r.top,left:r.left,right:r.right})),text:b.textContent,lines:range.getClientRects().length,sizes:[g,h,b].map(e=>getComputedStyle(e).fontSize)}})()`);assert.ok(t.width<=width+1&&t.button<=t.panel,lang+' '+JSON.stringify(t));assert.deepEqual(t.sizes,['17px','16px','16px']);if(width>=1280&&['de','ru'].includes(lang)){assert.equal(t.lines,1,lang+' button wraps '+JSON.stringify(t));assert.ok(t.scroll<=t.client,lang+' button overflows '+JSON.stringify(t))}}}
  const roomFixture=server.resolvedUrls.local[0]+'room-fixture?club=22222222-2222-4222-8222-222222222222';
  for (const width of [1280,1920,375]) {
    await cdp('Emulation.setDeviceMetricsOverride',{width,height:width===375?844:1080,deviceScaleFactor:1,mobile:width===375});

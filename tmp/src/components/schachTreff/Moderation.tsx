@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type MouseEvent } from 'react';
+import { Flag, MoreVertical } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
 import { moderationEnabled, refreshUnreadCounts } from './unread';
@@ -17,8 +18,8 @@ type ReportReason = 'spam' | 'abuse' | 'other';
 type Report = { message_id: string; body: string; kind: 'text' | 'challenge'; hidden: boolean; reasons: ReportReason[] };
 export const inviteCacheKey = (clubId: string) => 'schach-treff-invite:' + clubId;
 
-export function MessageActions({ message, own, moderator, challenge, open, t }: {
-  message: ClubMessage; own: boolean; moderator: boolean; challenge?: boolean;
+export function MessageActions({ message, own, moderator, challenge, open, t, compact = false, inline = false }: {
+  message: ClubMessage; own: boolean; moderator: boolean; challenge?: boolean; compact?: boolean; inline?: boolean;
   open: (action: ModerationAction) => void;
   t: Pick<ReturnType<typeof useSchachTreffCopy>, 'messageActions' | 'deleteMessage' | 'reportMessage'>;
 }) {
@@ -34,6 +35,11 @@ export function MessageActions({ message, own, moderator, challenge, open, t }: 
     }
     open({ kind, messageId: message.id });
   }
+  const buttons = <>
+    {canDelete && <button type="button" onClick={event => select(event, 'delete')}>{t.deleteMessage}</button>}
+    {!own && <button type="button" onClick={event => select(event, 'report')}>{t.reportMessage}</button>}
+  </>;
+  if (inline) return <div className="st-message-action-buttons st-mobile-sheet-rows">{buttons}</div>;
   return <details className="st-message-actions" onBlur={event => {
     // Clicking anywhere else closes the menu (focus leaves the details element).
     if (!event.currentTarget.contains(event.relatedTarget as Node | null)) event.currentTarget.open = false;
@@ -43,10 +49,9 @@ export function MessageActions({ message, own, moderator, challenge, open, t }: 
       event.currentTarget.querySelector('summary')?.focus();
     }
   }}>
-    <summary aria-label={t.messageActions}>⋯</summary>
+    <summary aria-label={t.messageActions}>{compact ? (own ? <MoreVertical size={18} aria-hidden="true" /> : <Flag size={15} aria-hidden="true" />) : '⋯'}</summary>
     <div className="st-message-action-buttons">
-      {canDelete && <button type="button" onClick={event => select(event, 'delete')}>{t.deleteMessage}</button>}
-      {!own && <button type="button" onClick={event => select(event, 'report')}>{t.reportMessage}</button>}
+      {buttons}
     </div>
   </details>;
 }

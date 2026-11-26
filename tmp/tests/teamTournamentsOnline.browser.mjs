@@ -205,7 +205,8 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
       const rect = link.getBoundingClientRect();
       return { path: link.getAttribute('href'), label: label.textContent, left: rect.left, right: rect.right, height: rect.height,
         textLeft: text.left, textRight: text.right, lines: range.getClientRects().length,
-        hidden: label.scrollWidth > label.clientWidth + 1, active: link.getAttribute('aria-current') };
+        hidden: label.scrollWidth > label.clientWidth + 1, textOverflow: getComputedStyle(label).textOverflow, overflowWrap: getComputedStyle(label).overflowWrap,
+        lineText: [...label.textContent].reduce((rows,char,i)=>{const part=document.createRange();part.setStart(label.firstChild,i);part.setEnd(label.firstChild,i+1);const rect=[...part.getClientRects()].find(r=>r.width>0)||part.getBoundingClientRect();const key=rect.top.toFixed(2);rows[key]=(rows[key]||'')+char;return rows;},{}), active: link.getAttribute('aria-current') };
     });
     return { width: innerWidth, hasFlag: nav.hasAttribute('data-spieltag-enabled'), left: bounds.left, right: bounds.right, links };
   })()`);
@@ -342,10 +343,12 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
             }
             links.forEach((link, index) => {
               const buttonWidth = link.right - link.left;
-              const fits = link.left >= left && link.right <= right && link.lines >= 1 && link.lines <= 2 && !link.hidden &&
+              const rows = Object.values(link.lineText);
+              const fullLabel = rows.join('') === link.label && (rows.length === 1 || (link.label === 'Schach-Treff' && JSON.stringify(rows) === JSON.stringify(['Schach-','Treff'])));
+              const fits = link.left >= left && link.right <= right && link.lines >= 1 && link.lines <= 2 && !link.hidden && fullLabel &&
+                link.textOverflow === 'clip' && link.overflowWrap === 'normal' &&
                 link.textLeft >= link.left - 1 && link.textRight <= link.right + 1 &&
                 buttonWidth >= 44 && link.height >= 44 &&
-                Math.abs(buttonWidth - (links[0].right - links[0].left)) <= 1 &&
                 (index === 0 || link.left >= links[index - 1].right - 1);
               assert.ok(fits, context + ' ' + JSON.stringify(link));
             });

@@ -3,6 +3,7 @@ import type { Language } from '../../../translations';
 
 // Stage 2 strings: direct messages, chat settings, positions and finished games.
 type Copy2 = {
+  roomSwitcher: string; play: string; openShort: string; personalShort: string; challengeExpiry: string;
   bullet: string;
   direct: string; directEmpty: string; writePrivately: string; directChat: string;
   settings: string; settingsTitle: string; whoCanWrite: string;
@@ -24,6 +25,7 @@ const slavic = (one: string, few: string, many: string) => (n: number) => {
 
 export const v2Copy2: Record<Language, Copy2> = {
   de: {
+    roomSwitcher: "Wohin schreiben?", play: "Spielen", openShort: "Für alle", personalShort: "Persönlich", challengeExpiry: "10 Minuten gültig",
     bullet: 'Bullet',
     direct: 'Direktnachrichten', directEmpty: 'Noch keine Gespräche. Tippe bei einem Mitglied auf „Privat schreiben“.',
     writePrivately: 'Privat schreiben', directChat: 'Nur ihr beide seht dieses Gespräch',
@@ -41,6 +43,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     noMoves: 'In dieser Partie wurde kein Zug gespielt.',
   },
   en: {
+    roomSwitcher: "Where to chat?", play: "Play", openShort: "For everyone", personalShort: "Personal", challengeExpiry: "Valid for 10 minutes",
     bullet: 'Bullet',
     direct: 'Direct messages', directEmpty: 'No conversations yet. Tap “Message privately” next to a member.',
     writePrivately: 'Message privately', directChat: 'Only the two of you see this conversation',
@@ -58,6 +61,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     noMoves: 'No moves were played in this game.',
   },
   ru: {
+    roomSwitcher: "Куда пишем?", play: "Играть", openShort: "Для всех", personalShort: "Личный", challengeExpiry: "Действует 10 минут",
     bullet: 'Пуля',
     direct: 'Личные сообщения', directEmpty: 'Пока нет разговоров. Нажмите «Написать лично» рядом с участником.',
     writePrivately: 'Написать лично', directChat: 'Этот разговор видите только вы двое',
@@ -75,6 +79,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     noMoves: 'В этой партии не было сделано ни одного хода.',
   },
   ua: {
+    roomSwitcher: "Куди пишемо?", play: "Грати", openShort: "Для всіх", personalShort: "Особистий", challengeExpiry: "Діє 10 хвилин",
     bullet: 'Куля',
     direct: 'Особисті повідомлення', directEmpty: 'Поки немає розмов. Натисніть «Написати особисто» біля учасника.',
     writePrivately: 'Написати особисто', directChat: 'Цю розмову бачите лише ви двоє',
@@ -92,6 +97,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     noMoves: 'У цій партії не було зроблено жодного ходу.',
   },
   az: {
+    roomSwitcher: "Hara yazaq?", play: "Oyna", openShort: "Hamı üçün", personalShort: "Şəxsi", challengeExpiry: "10 dəqiqə qüvvədədir",
     bullet: 'Bullet',
     direct: 'Şəxsi mesajlar', directEmpty: 'Hələ söhbət yoxdur. Üzvün yanında «Şəxsi yaz» düyməsinə basın.',
     writePrivately: 'Şəxsi yaz', directChat: 'Bu söhbəti yalnız siz ikiniz görürsünüz',
@@ -109,6 +115,7 @@ export const v2Copy2: Record<Language, Copy2> = {
     noMoves: 'Bu partiyada heç bir gediş edilməyib.',
   },
   tr: {
+    roomSwitcher: "Nereye yazalım?", play: "Oyna", openShort: "Herkese açık", personalShort: "Kişisel", challengeExpiry: "10 dakika geçerli",
     bullet: 'Bullet',
     direct: 'Özel mesajlar', directEmpty: 'Henüz sohbet yok. Bir üyenin yanında «Özel yaz» düğmesine dokunun.',
     writePrivately: 'Özel yaz', directChat: 'Bu sohbeti yalnızca ikiniz görüyorsunuz',
