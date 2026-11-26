@@ -196,7 +196,7 @@ export function AiOrganizerPanel({ tr, token, onApply, onCreate, onPublish, crea
             AI<span className="sr-only"> · {tr('aiOrganizerDisclosure')}</span>
           </span>
         </h3>
-        <small>chessaz.de</small>
+        {!individual && <small>chessaz.de</small>}
       </div>
       <p>{tr(individual ? 'individualAiHint' : 'aiOrganizerHint')}</p>
       {!individual && <p className="ai-organizer-steps">{tr('aiOrganizerSteps')}</p>}

@@ -9,6 +9,7 @@ import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 import {checkOnlineTeamTournaments} from './teamTournamentsOnline.browser.mjs';
 import {checkTournamentAuth} from './teamTournamentsAuth.browser.mjs';
 import {checkIndividualTournament} from './individualTournament.browser.mjs';
+import {checkIndividualLaunchLayout} from './individualLaunchLayout.browser.mjs';
 // SpielerScreen cannot be mounted without its own auth fixture: validate its existing copy map here.
 const playerCopySource=await readFile(new URL('../src/screens/SpielerScreen.tsx',import.meta.url),'utf8');
 const playerCopyLine=playerCopySource.split('\n').find(line=>line.startsWith('const playerUiCopy: '));
@@ -203,6 +204,9 @@ try{
  await checkIndividualTournament({cdp,evaluate,wait,click});
  assert.equal(exceptions.length,0,exceptions.join('\n'));
  console.log('PASS individual tournament browser: six locales, mobile/desktop, standings, colors, organizer-only result entry and final score');
+ await checkIndividualLaunchLayout({cdp,evaluate,wait});
+ assert.equal(exceptions.length,0,exceptions.join('\n'));
+ console.log('PASS Spieltag launch: six locales, guest/member, measured viewport geometry and mobile switch');
 
 }finally{
  try{ws?.close();}catch{}chrome?.kill('SIGKILL');await server.close();if(profile)await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:100});clearTimeout(deadline);

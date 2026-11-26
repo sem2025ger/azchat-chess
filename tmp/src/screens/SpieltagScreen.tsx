@@ -1,6 +1,7 @@
 import { translateSectionCopy } from '../i18n/sectionCopy';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Users } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useRegionalCopy } from '../i18n/regionalCopy';
 import { useAuth } from '../context/AuthContext';
@@ -60,13 +61,22 @@ function SpieltagTabs() {
 function SpieltagLaunchScreen() {
   const { language, t } = useLanguage();
   const tr = tournamentCopy(language);
+  const [params] = useSearchParams();
+  const detail = import.meta.env.VITE_INDIVIDUAL_TOURNAMENTS_LIVE_ENABLED === 'true' && Boolean(params.get('individual'));
 
-  return <section className="spieltag-page section-page">
-    <header><h1>{t('nav.spieltag')}</h1></header>
+  return <section className="spieltag-page section-page spieltag-launch">
+    {detail ? <h1 className="sr-only">{t('nav.spieltag')}</h1> : <header className="spieltag-launch-heading">
+      <h1>{tr('individualIntro').split(/(Neo)/).map((part, index) =>
+        part === 'Neo' ? <span key={index} className="spieltag-neo-accent">{part}</span> : part
+      )}</h1>
+      <aside className="individual-create-soon" aria-label={tr('teamTournamentsComingSoon')}>
+        <Users size={16} aria-hidden="true" />
+        <span>{tr('teamTournamentsComingSoon')}</span>
+      </aside>
+    </header>}
     <Suspense fallback={<p role="status">{tr('loading')}</p>}>
       <IndividualTournamentCreate />
     </Suspense>
-    <aside className="section-card spieltag-coming-soon">{tr('teamTournamentsComingSoon')}</aside>
   </section>;
 }
 

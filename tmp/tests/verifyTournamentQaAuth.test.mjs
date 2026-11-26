@@ -39,3 +39,12 @@ test('QA Preview fails closed on rejected key or unavailable Auth; skips product
   assert.equal(await verifyTournamentQaAuth({...env,VERCEL_ENV:'production'},never),false);
   assert.equal(await verifyTournamentQaAuth({},never),false);
 });
+
+test('Spieltag launch polish preview rejects non-QA endpoints before network access', async () => {
+  let calls = 0;
+  await assert.rejects(verifyTournamentQaAuth({
+    VERCEL_ENV:'preview', VERCEL_GIT_COMMIT_REF:'feat/spieltag-launch-ui-polish-20261125',
+    VITE_SUPABASE_URL:'https://non-qa.supabase.co', VITE_SERVER_URL:'https://non-qa.onrender.com',
+  },()=>{calls++;return never();}), {message:'QA Preview: expected QA Supabase and Render endpoints.'});
+  assert.equal(calls,0);
+});
