@@ -16,3 +16,59 @@
 .st-mobile-page .st-chat input{min-height:44px;background:#0E100F;color:#F2EEE3;border:1px solid #ffffff22;border-radius:8px}
 .st-mobile-page .st-chat .st-composer button{min-height:44px}
 }
+
+/* Mobile-only chat shell: the directory and roster expand on demand. */
+@media (max-width:1023px){
+  .st-mobile-page{box-sizing:border-box;position:relative;display:flex;flex-direction:column;gap:8px;padding:10px;min-width:0;min-height:400px;height:100dvh;width:100%}
+  [data-route-scroll]>.st-mobile-page{height:100%;flex:1 0 auto}
+  .st-mobile-page .st-mobile-header{flex:none;padding-right:48px}
+  .st-mobile-page .st-mobile-header h1{font-size:24px;line-height:1.25;margin:0;padding:6px 0}
+  .st-mobile-page .st-mobile-header h1:after{display:none}
+  .st-mobile-controls{display:flex;align-items:stretch;gap:6px;flex:none;min-width:0}
+  .st-mobile-directory{position:relative;flex:1 1 0;min-width:0}
+  .st-mobile-directory>summary,.st-mobile-members>summary,.st-mobile-page .st-mobile-community{box-sizing:border-box;display:flex;align-items:center;gap:6px;min-height:44px;padding:7px 10px;border:1px solid #ffffff22;border-radius:10px;background:#121413;color:#E3D3B4;font-size:13px;line-height:1.25;cursor:pointer;overflow-wrap:anywhere}
+  .st-mobile-directory>summary{height:100%}
+  .st-mobile-directory>summary span{flex:1;min-width:0}
+  .st-mobile-directory>summary svg{flex:none}
+  .st-mobile-directory>summary::after,.st-mobile-members>summary::after{content:'';display:block;flex:none;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin:0 3px 3px auto}
+  .st-mobile-directory[open]>summary::after,.st-mobile-members[open]>summary::after{transform:rotate(225deg);margin-bottom:0}
+  .st-mobile-directory>summary::-webkit-details-marker,.st-mobile-members>summary::-webkit-details-marker{display:none}
+  .st-mobile-directory[open]>summary,.st-mobile-members[open]>summary{border-color:#B8916A}
+  .st-mobile-page .st-mobile-community{flex:0 1 auto;max-width:44%;margin:0}
+  .st-mobile-page .st-mobile-rooms{position:absolute;top:calc(100% + 6px);left:0;width:min(440px,calc(100vw - 24px));box-sizing:border-box;z-index:32;margin:0;padding:10px;max-height:min(58dvh,480px);overflow-y:auto;overscroll-behavior:contain;box-shadow:0 12px 28px #0009}
+  .st-mobile-page .st-mobile-rooms h2{margin:8px 0 4px;padding-top:8px}
+  .st-mobile-page .st-mobile-rooms .st-room-list>a,.st-mobile-page .st-mobile-rooms .st2-direct>a{display:flex;align-items:center;gap:8px;min-height:44px;padding:7px 9px;margin:0;border-radius:9px;overflow-wrap:anywhere}
+  .st-mobile-page .st-mobile-rooms .st-unread-badge{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;align-self:center;min-width:22px;min-height:22px;width:auto;height:22px;padding:0 5px;margin-left:auto;border-radius:999px;line-height:1;font-size:11px}
+  .st-mobile-page .st-mobile-rooms .st-create-room{margin-top:6px}
+  .st-mobile-page .st-mobile-rooms .st2-settings-link{margin-top:6px}
+  .st-mobile-page>.schach-treff{display:flex;flex-direction:column;flex:1 1 0;min-height:0;min-width:0;max-width:100%;width:100%}
+  .st-mobile-page>.schach-treff>header{display:block;position:absolute;right:10px;top:10px;z-index:35}
+  .st-mobile-page>.schach-treff>header>h1,.st-mobile-page>.schach-treff>header>.st-region-entry{display:none}
+  .st-mobile-page .st-menu>button{min-width:44px;min-height:44px;border:1px solid #ffffff22;border-radius:10px;background:#121413;color:#E3D3B4}
+  .st-mobile-page .st-menu nav:not([hidden]){display:grid;position:absolute;top:calc(100% + 6px);right:0;z-index:36;width:min(260px,calc(100vw - 24px));padding:6px;border:1px solid #ffffff22;border-radius:12px;background:#1b1c1f;box-shadow:0 12px 28px #0009}
+  .st-mobile-page .st-menu nav>button{min-height:44px;text-align:left;padding:8px;overflow-wrap:anywhere}
+  .st-mobile-page .schach-treff .st-columns{display:flex;flex:1 1 0;flex-direction:column;gap:6px;min-height:0;min-width:0}
+  .st-mobile-page .schach-treff .st-columns>.st-chat{box-sizing:border-box;flex:1 1 0;height:auto;min-height:240px;max-height:none;width:100%;padding:8px;overflow:visible}
+  .st-mobile-page .st-mobile-members{position:relative;order:-1;flex:none;min-width:0}
+  .st-mobile-page .st-mobile-members>summary{justify-content:space-between}
+  .st-mobile-page .schach-treff.st-v2 .st-mobile-members>.st2-side{box-sizing:border-box;position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:31;display:flex;width:100%;min-height:0;height:auto;max-height:min(52dvh,420px);overflow:auto;border:1px solid #ffffff22;border-radius:12px;padding:10px;gap:6px;background:#141617;box-shadow:0 12px 28px #0009}
+  .st-mobile-page .st-mobile-members>.st2-side>.st2-side-title{display:none}
+  .st-mobile-page .schach-treff.st-v2 .st-mobile-members .st2-members{overflow:visible}
+  .st-mobile-page .schach-treff .st-messages{min-width:0;max-width:100%;overflow-y:auto;overflow-x:auto;scrollbar-width:thin}
+  .st-mobile-page .schach-treff .st-message-group,.st-mobile-page .schach-treff .st-message-content,.st-mobile-page .schach-treff .st-challenge-card,.st-mobile-page .schach-treff .st2-game-main{min-width:0;max-width:100%;overflow-wrap:anywhere}
+  .st-mobile-page .schach-treff .st-message-group{grid-template-columns:minmax(0,1fr)}
+  .st-mobile-page .schach-treff .st2-tools{max-width:100%;flex-wrap:wrap}
+  .st-mobile-page .schach-treff .st2-position .st2-board{max-width:100%;height:auto!important;aspect-ratio:1}
+  .st-mobile-page .schach-treff .st2-card-actions{min-width:0;max-width:100%}
+  .st-mobile-page .schach-treff .st2-card-actions button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+  #root .st-mobile-page .schach-treff.st-v2 .st2-general-heading .st2-general-motto{font-size:17px;line-height:1.25}
+  .st-mobile-page .schach-treff.st-v2 .st-chat-header:has(.st2-general-heading){gap:4px;padding:4px 0 6px}
+  .st-mobile-page .schach-treff .st-chat .st-composer{min-width:0;gap:5px}
+  .st-mobile-page .schach-treff .st-chat .st-composer input{font-size:16px;min-width:0}
+  .st-mobile-page .schach-treff .st-chat .st-composer .st-send{max-width:36%;white-space:normal;overflow-wrap:anywhere}
+  .st-mobile-page .st-mobile-legacy{flex:1 1 0;min-height:0;overflow:auto}
+}
+@media(max-width:767px){
+  .st-mobile-page{height:calc(100dvh - 72px - env(safe-area-inset-bottom,0px))}
+  [data-route-scroll]>.st-mobile-page{height:100%}
+}
