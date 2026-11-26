@@ -172,11 +172,13 @@
   .st-mobile-v2[data-st-keyboard] .st-mobile-online,
   .st-mobile-v2[data-st-keyboard] .st-mobile-room-trigger small{display:none}
   /* While typing, keep the room, play and menu in a single touch-accessible toolbar. */
-  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-top{grid-template-columns:44px minmax(0,1fr);align-items:center;gap:6px}
-  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-title{position:relative}
+  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-top{grid-template-columns:44px minmax(0,1fr);align-items:stretch;gap:6px}
+  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-title{position:relative;align-items:stretch}
+  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-title .st-mobile-v2-more{box-sizing:border-box;width:44px;min-width:44px;height:auto;min-height:44px;align-self:stretch}
   .st-mobile-v2[data-st-keyboard] .st-mobile-v2-title h1{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-row{gap:6px}
-  .st-mobile-v2[data-st-keyboard] .st-mobile-play{padding-inline:8px}
+  .st-mobile-v2[data-st-keyboard] .st-mobile-v2-row{gap:6px;align-items:stretch}
+  .st-mobile-v2[data-st-keyboard] .st-mobile-play{box-sizing:border-box;min-width:44px;min-height:44px;padding:4px 8px;white-space:nowrap}
+  .st-mobile-v2[data-st-keyboard] .st-mobile-room-trigger{box-sizing:border-box;min-width:44px}
   .st-mobile-v2[data-st-keyboard] .schach-treff.st-v2 .st-columns>.st-chat{padding-inline:4px;padding-top:4px}
   .st-mobile-v2[data-st-keyboard] .schach-treff.st-v2 .st-messages{padding-block:2px}
   .st-mobile-v2[data-st-keyboard] .schach-treff.st-v2 .st-message-group{padding-block:2px}
