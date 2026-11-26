@@ -14,6 +14,7 @@ const feed = Array.from({length:28}, (_, index) => ({
   created_at:new Date(Date.UTC(2026,10,4,12,0,0)+(index+(index>=24?6:0))*60000).toISOString()
 }));
 const counts = { [uid]: 4, [room]: 2 };
+const reactions = [{message_id:'message-27',user_id:guest,reaction:'!'}];
 window.fixtureKeepBadges = true;
 const reports = [{message_id:'message-25',body:'Сообщение, на которое пожаловались',kind:'text',hidden:true,reasons:['spam','abuse','other']}];
 export const supabase = {
@@ -63,17 +64,24 @@ export const supabase = {
     throw Error('Unexpected RPC '+name);
   },
   from(table) {
-    let single=false, columns='';
+    let single=false, columns='', deleting=false;
     const filters=new Map();
     const q={not(){return q},is(){return q},select(v){columns=v;return q},eq(k,v){filters.set(k,v);return q},in(){return q},gte(){return q},order(){return q},limit(){return q},
-      maybeSingle(){single=true;return q},
+      maybeSingle(){single=true;return q},delete(){deleting=true;return q},
       insert(row) {
+        if(mobileFixture && table==='chess_club_message_reactions'){window.fixtureReaction={action:'insert',...row};reactions.push(row);return Promise.resolve({error:null});}
         if(table!=='chess_club_messages') throw Error('Unexpected write');
         feed.push({...row,id:'message-'+feed.length,created_at:new Date().toISOString()});
         return Promise.resolve({error:null});
       },
       then(resolve,reject) {
         let rows=[];
+        if(mobileFixture && table==='chess_club_message_reactions' && deleting){
+          window.fixtureReaction={action:'delete',...Object.fromEntries(filters)};
+          const index=reactions.findIndex(row=>[...filters].every(([key,value])=>row[key]===value));
+          if(index>=0)reactions.splice(index,1);
+          return Promise.resolve({error:null}).then(resolve,reject);
+        }
         if(table==='chess_clubs') {
           rows=filters.get('kind')==='room'||filters.get('id')===room
             ? [{id:room,name:'Schachverein',kind:'room',is_open:false,slug:'room-schachverein'},...(new URLSearchParams(location.search).has('duplicate') ? [{id:guest,name:'Schachverein'}] : [])]
@@ -85,8 +93,11 @@ export const supabase = {
           rows=[{user_id:uid,role:params.get('role') || (params.has('club')?'admin':'member')},{user_id:guest,role:'member'}];
         } else if(table==='profiles') {
           rows=[{id:uid,username:'Sofia'},{id:guest,username:'Maksim'}];
-        } else if(table==='chess_club_messages') rows=columns==='parent_id' ? (mobileFixture ? [{parent_id:'message-27'}] : []) : feed.slice().reverse();
-        else if(mobileFixture && table==='chess_club_message_reactions') rows=[{message_id:'message-27',user_id:guest,reaction:'!'}];
+        } else if(table==='chess_club_messages') {
+          if(mobileFixture && filters.has('parent_id')) {window.fixtureThreadRoot=filters.get('parent_id');rows=[];}
+          else rows=columns==='parent_id' ? (mobileFixture ? [{parent_id:'message-27'}] : []) : feed.slice().reverse();
+        }
+        else if(mobileFixture && table==='chess_club_message_reactions') rows=reactions.slice();
         else if(table==='chess_club_challenges') rows=[{
           id:'challenge-26',message_id:'message-26',created_by:guest,target_user_id:uid,
           time_control:'3+2',status:'open',expires_at:'2099-12-31T23:59:59Z',room_id:null
@@ -205,6 +216,38 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await viewportFits('message sheet closed '+suffix);
      await positionFits(width,height,'viewport-position-'+suffix);
      await click('.st-mobile-v2-more');await wait("document.querySelector('.st-mobile-sheet[open] .st-mobile-sheet-rows')");await fitsSheet(width,height);await capture('viewport-menu-'+suffix);await closeSheet();await viewportFits('closed '+suffix);
+   }
+   // Exercise the existing handlers, not just the presence of the sheet controls.
+   await cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+   const selectMessage=async own=>{await evaluate(`[...document.querySelectorAll('${own?".st-message-own":".st-message:not(.st-message-own)"} .st-mobile-reaction-trigger')].at(-1).click()`);await wait("document.querySelector('.st-mobile-message-sheet[open]')");};
+   const sheetAction=async label=>{await evaluate(`[...document.querySelectorAll('.st-mobile-message-sheet[open] button')].find(e=>e.textContent.trim()===${JSON.stringify(label)}).click()`);};
+   for(const role of ['member','moderator']){
+     await cdp('Page.navigate',{url:base.replace('role=member','role='+role)});
+     await wait("document.querySelector('.st-mobile-reaction-trigger')&&document.querySelector('.st2-reaction-row')");
+     await evaluate("window.setFixtureLanguage('ru')");
+     await wait("document.documentElement.lang==='ru'");
+     await selectMessage(false);
+     assert.equal(await evaluate("document.querySelector('.st-mobile-message-sheet').textContent.includes('Удалить сообщение')"),role==='moderator','only moderators can delete another author’s text');
+     await sheetAction('!!');await wait("window.fixtureReaction?.action==='insert'&&window.fixtureReaction?.message_id==='message-27'&&window.fixtureReaction?.reaction==='!!'&&!document.querySelector('.st-mobile-message-sheet[open]')");
+     await wait("[...document.querySelectorAll('.st2-reaction-row button')].some(e=>e.getAttribute('aria-pressed')==='true'&&e.textContent.includes('!!'))");
+     await selectMessage(false);await sheetAction('!!');await wait("window.fixtureReaction?.action==='delete'&&window.fixtureReaction?.message_id==='message-27'&&!document.querySelector('.st-mobile-message-sheet[open]')");
+     await selectMessage(false);await sheetAction('Ответить в ветке');await wait("window.fixtureThreadRoot==='message-27'&&document.querySelector('.st2-thread')");
+     await click('.st2-thread-head button');
+     await selectMessage(false);
+     await evaluate("[...document.querySelectorAll('.st-mobile-message-sheet .st-mobile-sheet-rows>button')].find(e=>!e.closest('.st-message-action-buttons')&&e.textContent!=='Ответить в ветке').click()");
+     await wait("document.querySelector('.st-mobile-challenge[open] .st-mobile-opponents button[aria-pressed=true]')?.textContent==='Maksim'");await closeSheet();
+     await selectMessage(false);await sheetAction('Пожаловаться на сообщение');await wait("document.querySelector('dialog.st-moderation-dialog[open] select')");
+     await evaluate("const select=document.querySelector('dialog[open] select');select.value='abuse';select.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('dialog[open] button[type=submit]').click()");
+     await wait("window.fixtureReport?.p_message_id==='message-27'&&window.fixtureReport?.p_reason==='abuse'&&!document.querySelector('dialog[open]')");
+     if(role==='moderator'){
+       await selectMessage(false);await sheetAction('Удалить сообщение');await wait("document.querySelector('dialog.st-moderation-dialog[open]')");
+       await evaluate("[...document.querySelectorAll('dialog[open] button')].find(e=>e.textContent==='Удалить сообщение').click()");
+       await wait("window.fixtureDelete?.p_message_id==='message-27'&&!document.querySelector('dialog[open]')");
+     }else{
+       await selectMessage(true);await sheetAction('Удалить сообщение');await wait("document.querySelector('dialog.st-moderation-dialog[open]')");
+       await evaluate("[...document.querySelectorAll('dialog[open] button')].find(e=>e.textContent==='Удалить сообщение').click()");
+       await wait("window.fixtureDelete?.p_message_id==='message-20'&&!document.querySelector('dialog[open]')");
+     }
    }
    await cdp('Emulation.setDeviceMetricsOverride',{width:430,height:844,deviceScaleFactor:1,mobile:true});
    await cdp('Page.navigate',{url:base+'&club=44444444-4444-4444-8444-444444444444'});await wait("document.querySelector('.st-mobile-room-trigger strong')?.textContent==='Maksim'&&document.querySelector('.st-mobile-play:not(:disabled)')");
