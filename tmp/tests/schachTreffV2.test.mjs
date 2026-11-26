@@ -110,12 +110,14 @@ test('v2 reaction controls render accessible chess annotations; seek stays hidde
 test('flag off keeps the existing Schach-Treff markup paths', () => {
   const source = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   assert.match(source, /className=\{v2Enabled \? 'schach-treff st-v2' : 'schach-treff'\}/);
-  assert.match(source, /\{v2Enabled \? \(dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} disabled=\{iBlocked\} \/> : isClub && hideRooms \? <SeekButton \/> : null\) : <ChallengeButton composer \/>\}/);
+  assert.match(source, /\{!mobileV2 && \(v2Enabled \? \(dmChat \? <ChallengeButton composer targetUserId=\{dmChat\.partnerId\} disabled=\{iBlocked\} \/> : isClub && hideRooms \? <SeekButton \/> : null\) : <ChallengeButton composer \/>\)\}/);
+  assert.match(source, /const mobileV2 = v2Enabled && !desktop && hideRooms;/);
+  assert.match(source, /<ChallengeButton targetUserId=\{dmChat\?\.partnerId\} disabled=\{!member \|\| iBlocked\} play \/>/);
   assert.match(source, /\{v2Enabled && <FeedbackButton \/>\}/);
   assert.match(source, /\{\(v2Enabled \|\| menu\) && <nav hidden=\{!menu\}/, 'feedback stays mounted in the collapsed header menu');
   assert.doesNotMatch(source, /<FeedbackButton \/>\}<div className="st-menu"/, 'no standalone feedback pill in the header');
-  assert.match(source, /\(isClub \|\| hasChatActions \|\| v2Enabled\)/);
-  assert.match(source, /\{v2Enabled && !isClub && <div className="st2-general-heading">/);
+  assert.match(source, /\(mobileV2 \? hasChatActions \|\| Boolean\(dmChat\) \|\| canInvite : isClub \|\| hasChatActions \|\| v2Enabled\)/);
+  assert.match(source, /\{!mobileV2 && v2Enabled && !isClub && <div className="st2-general-heading">/);
   assert.match(source, /let threaded = v2Enabled;/);
   assert.match(source, /threaded \? query\.is\('parent_id', null\) : query/);
   const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
@@ -335,11 +337,12 @@ test('challenge card links both players to the started game; composer position b
 
 test('finished challenge games: no "Open game" link, card says the game is over; unread badges are not stretched', () => {
   const challenges = readFileSync(new URL('../src/components/schachTreff/Challenges.tsx', import.meta.url), 'utf8');
-  assert.match(challenges, /<p className="st-challenge-status">\{finished \? t\.gameFinished : row\.room_id \? t\.gameStarted : t\.gameStarting\}<\/p>\{!finished && row\.room_id/);
+  assert.match(challenges, /\{!mobileV2 && <p className="st-challenge-status">\{finished \? t\.gameFinished : row\.room_id \? t\.gameStarted : t\.gameStarting\}<\/p>\}\{!finished && row\.room_id/);
+  assert.match(challenges, /row\.status==='accepted' \? \(finished \? t\.gameFinished : row\.room_id \? t\.gameStarted : t\.gameStarting\)/);
   assert.match(challenges, /finished=\{context\.finished\.has\(row\.id\)\}/);
   const screen = readFileSync(new URL('../src/screens/SchachTreffDesktop.tsx', import.meta.url), 'utf8');
   assert.match(screen, /const finishedChallenges = new Set\(v2Data\?\.results\.map\(result => result\.challenge_id\) \?\? \[\]\);/);
-  assert.match(screen, /enabled=\{member\} finished=\{finishedChallenges\}>/);
+  assert.match(screen, /enabled=\{member\} finished=\{finishedChallenges\} mobileV2=\{mobileV2\} activeIds=\{activeIds\}>/);
   const i18n = readFileSync(new URL('../src/components/schachTreff/i18n.ts', import.meta.url), 'utf8');
   assert.match(i18n, /"Partie beendet": \{\n    "de": "Partie beendet",\n    "en": "Game over",[\s\S]*?"ru": "Партия завершена"/);
   const index = readFileSync(new URL('../src/index.css', import.meta.url), 'utf8');
