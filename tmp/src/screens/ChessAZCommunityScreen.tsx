@@ -8,6 +8,7 @@ import { useSchachTreffCopy } from '../components/schachTreff/copy';
 import ClubRooms from '../components/schachTreff/ClubRooms';
 import { v2Enabled } from '../components/schachTreff/v2/core';
 import { useV2Copy } from '../components/schachTreff/v2/copy';
+import { useV2Copy2 } from '../components/schachTreff/v2/copy2';
 import { DirectList } from '../components/schachTreff/v2/Stage2';
 import GeneralRoomLink from '../components/schachTreff/GeneralRoomLink';
 import './SchachTreffMobileRooms.css';
@@ -91,17 +92,23 @@ export default function ChessAZCommunityScreen() {
   const desktop = useDesktop();
   const t = useSchachTreffCopy();
   const copy = useV2Copy();
+  const copy2 = useV2Copy2();
   const [showCommunity, setShowCommunity] = useState(false);
   if (desktop) return <CommunityRouter />;
   const params = new URLSearchParams(window.location.search);
   const club = params.get('club');
   return <div className="st-mobile-page">
     <header className="st-mobile-header"><h1>{t.title}</h1></header>
-    <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
-      <ClubRooms currentClubId={club} heading={v2Enabled ? copy.myClubs : undefined} />
-      {v2Enabled && <DirectList currentClubId={club} />}
-    </aside>
-    {!club && <button type="button" className="st-mobile-community" aria-pressed={showCommunity} onClick={() => setShowCommunity(!showCommunity)}>{showCommunity ? t.backGeneral : t.more}</button>}
+    <div className="st-mobile-controls">
+      <details className="st-mobile-directory" key={club ?? 'general'}>
+        <summary><MessageCircle size={18} aria-hidden="true" /><span>{v2Enabled ? copy.myClubs + ' · ' + copy2.direct : t.clubs}</span></summary>
+        <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" />
+          <ClubRooms currentClubId={club} heading={v2Enabled ? copy.myClubs : undefined} />
+          {v2Enabled && <DirectList currentClubId={club} />}
+        </aside>
+      </details>
+      {!club && <button type="button" className="st-mobile-community" aria-pressed={showCommunity} onClick={() => setShowCommunity(!showCommunity)}>{showCommunity ? t.backGeneral : t.more}</button>}
+    </div>
     {!club && showCommunity ? <div className="st-mobile-legacy"><CommunityRouter /></div> : <SchachTreffDesktop hideRooms />}
   </div>;
 }
