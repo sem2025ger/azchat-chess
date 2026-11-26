@@ -2144,6 +2144,7 @@ aside .site-nav-link--schach-treff .schach-treff-chat-dot {display:none}
   .desktop-analysis-screen > .desktop-analysis-panel {
     margin-top:var(--review-board-gutter, 16px)!important;
     height:calc(var(--review-board-size, 580px) - 2 * var(--review-board-gutter, 16px))!important;
+    border-radius:16px!important;
   }
   .desktop-analysis-screen .desktop-analysis-compact-opponent {display:none;}
 }
