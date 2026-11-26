@@ -2006,6 +2006,7 @@ aside nav{padding-top:12px!important}
 /* Schach-Treff only: keep the outlined bubble and pulse its small decorative center dot. */
 aside .site-nav-link--schach-treff .schach-treff-chat-dot {display:none}
 @media (min-width:1280px) {
+  aside .site-nav-link--schach-treff .site-nav-copy {margin-left:4px}
   aside .site-nav-link--schach-treff .site-nav-label {font-size:18px;line-height:22px}
   aside .site-nav-link--schach-treff .schach-treff-chat-icon > path {fill:none}
   aside .site-nav-link--schach-treff .schach-treff-chat-dot {display:inline;fill:url(#sidebar-chat-dot-gradient);stroke:none;opacity:1;pointer-events:none}

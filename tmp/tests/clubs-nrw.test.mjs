@@ -40,6 +40,11 @@ test('all NRW flags off preserves the main routing and navigation entry points',
    current=current.replace(tournamentGate,spieltagGate);
   }
   if(path===layoutPath){
+   // Owner-approved desktop-only chat ornament; normalize only this exact row.
+   const approvedChatRow = "            <NavItem to=\"/chat\" icon={<MessageSquare size={20} className=\"schach-treff-chat-icon\"><defs><linearGradient id=\"sidebar-chat-dot-gradient\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\"><stop offset=\"0%\" stopColor=\"#3153A3\" /><stop offset=\"48%\" stopColor=\"#AD85ED\" /><stop offset=\"78%\" stopColor=\"#E9C36D\" /><stop offset=\"100%\" stopColor=\"#C49242\" /></linearGradient></defs><circle className=\"schach-treff-chat-dot\" cx=\"12\" cy=\"10.5\" r=\"3\" aria-hidden=\"true\" /></MessageSquare>} label=\"Schach-Treff\" themeColor=\"theme-violet\" bronzeLabel />";
+   const originalChatRow = "            <NavItem to=\"/chat\" icon={<MessageSquare size={20} />} label=\"Schach-Treff\" themeColor=\"theme-violet\" bronzeLabel />";
+   assert.equal(current.split(approvedChatRow).length,2,'approved Schach-Treff icon occurs exactly once');
+   current=current.replace(approvedChatRow,originalChatRow);
    // Allow only the separately reviewed 240px desktop sidebar geometry change (PR #219).
    // All route entries and feature-flagged links must remain byte-for-byte identical.
    for(const [next, previous] of [
