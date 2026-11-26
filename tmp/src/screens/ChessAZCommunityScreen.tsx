@@ -95,6 +95,7 @@ export default function ChessAZCommunityScreen() {
   const copy2 = useV2Copy2();
   const [showCommunity, setShowCommunity] = useState(false);
   if (desktop) return <CommunityRouter />;
+  if (v2Enabled) return <div className="st-mobile-page st-mobile-v2"><SchachTreffDesktop hideRooms /></div>;
   const params = new URLSearchParams(window.location.search);
   const club = params.get('club');
   return <div className="st-mobile-page">

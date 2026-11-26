@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
 import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
+import { useV2Copy2 } from './v2/copy2';
 import { ROOM_ID, gamePath, ownStartedGame } from './challengeRouting';
 import { v2Enabled } from './v2/core';
 import { Toast } from './v2/Toast';
@@ -95,9 +96,11 @@ export function ChallengeProvider({ clubId, me, people, enabled, finished = NONE
     </dialog>
   </Context.Provider>;
 }
-export function ChallengeButton({ targetUserId,beforeOpen,icon,composer,disabled=false }: { targetUserId?: string; beforeOpen?: () => void; icon?: boolean; composer?: boolean; disabled?: boolean }) {
+export function ChallengeButton({ targetUserId,beforeOpen,icon,composer,disabled=false,play=false }: { targetUserId?: string; beforeOpen?: () => void; icon?: boolean; composer?: boolean; disabled?: boolean; play?: boolean }) {
   const t=useSchachTreffCopy();
   const context=useContext(Context);
+  const copy2=useV2Copy2();
+  if (play) return <button type="button" className="st-mobile-play" disabled={disabled || !context?.available || targetUserId === context?.me} onClick={() => context?.open(targetUserId)}><Swords size={17} aria-hidden="true" />{copy2.play}</button>;
   if (!context?.available || targetUserId===context.me) return null;
   return <button type="button" className={icon ? 'st-challenge-icon' : composer ? 'st-composer-challenge' : undefined}
     aria-label={icon || composer ? t.challengePlayer : undefined} title={composer ? t.challengePlayer : undefined} disabled={disabled} onClick={() => { beforeOpen?.(); context.open(targetUserId); }}>

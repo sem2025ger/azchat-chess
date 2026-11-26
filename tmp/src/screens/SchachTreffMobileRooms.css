@@ -72,3 +72,38 @@
   .st-mobile-page{height:calc(100dvh - 72px - env(safe-area-inset-bottom,0px))}
   [data-route-scroll]>.st-mobile-page{height:100%}
 }
+
+/* V2-only mobile surfaces. The legacy layout and desktop rules remain intact. */
+@media(max-width:1023px){
+  .st-mobile-page.st-mobile-v2{height:100%;min-height:0;padding:10px;gap:0;flex:1 1 auto;font-family:Inter,ui-sans-serif,system-ui,sans-serif}
+  .st-mobile-v2>.schach-treff{min-height:0;flex:1 1 0;gap:8px}
+  .st-mobile-v2-top{display:grid;gap:8px;min-width:0;flex:none}
+  .st-mobile-v2-title,.st-mobile-v2-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+  .st-mobile-v2-title h1{font-family:'Bodoni Moda',Georgia,serif;font-size:26px;line-height:1.2;color:#D2B18A;font-weight:600;margin:0}
+  .st-mobile-v2-title h1::after{display:none}
+  .st-mobile-v2-title .st-mobile-v2-more,.st-mobile-v2 .st-mobile-sheet-head>button{display:grid;place-items:center;flex:none;width:44px;height:44px;min-height:44px;border:1px solid #ffffff22;border-radius:14px;background:#161816;color:#F2EEE3;padding:0}
+  .st-mobile-v2 .st-mobile-room-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:1 1 0;min-width:0;text-align:left;background:#161816;border:1px solid #ffffff22;border-radius:14px;padding:8px 10px;color:#F2EEE3;min-height:58px}
+  .st-mobile-room-trigger>span{display:grid;min-width:0;gap:2px}
+  .st-mobile-room-trigger strong,.st-mobile-room-trigger small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+  .st-mobile-room-trigger small,.st-mobile-sheet-meta{color:#A9A396;font-size:12px}
+  .st-mobile-room-trigger svg{flex:none;color:#B8916A}
+  .st-mobile-v2 .st-mobile-play{flex:none;display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 12px;color:#17130E;background:#D9AE5B;border:1px solid transparent;border-radius:14px;font-weight:700}
+  .st-mobile-v2 .st-mobile-play:disabled{opacity:.55}
+  .st-mobile-v2 .schach-treff.st-v2 .st-columns>.st-chat{min-height:0;padding:8px;flex:1 1 0;border-radius:14px;max-height:none}
+  .st-mobile-v2 .st-chat-header{display:flex;min-height:0;flex-wrap:wrap;justify-content:flex-end;gap:6px;padding:0 0 4px}
+  .st-mobile-v2 .st-chat-header .st-pin-menu,.st-mobile-v2 .st-chat-header .st-invite-control{margin:0}
+  .st-mobile-v2 .st-chat-header .st2-block{min-height:44px;white-space:normal}
+  .st-mobile-v2 .schach-treff.st-v2 dialog.st-mobile-sheet{box-sizing:border-box;position:fixed;inset:auto 0 0;width:100%;max-width:100%;max-height:min(90dvh,100%);margin:0;padding:16px 14px calc(16px + env(safe-area-inset-bottom,0px));border:1px solid #ffffff22;border-radius:22px 22px 0 0;background:#121413;color:#F2EEE3;overflow-y:auto;overscroll-behavior:contain}
+  .st-mobile-v2 .st-mobile-sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+  .st-mobile-v2 .st-mobile-sheet-head h2{font-family:'Bodoni Moda',Georgia,serif;font-size:23px;margin:0;min-width:0;overflow-wrap:anywhere}
+  .st-mobile-v2 .st-mobile-sheet .st-mobile-rooms{position:static;width:100%;max-height:none;overflow:visible;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent}
+  .st-mobile-v2 .st-mobile-sheet-rows{display:grid;gap:6px}
+  .st-mobile-v2 .st-mobile-sheet-rows>button,.st-mobile-v2 .st-mobile-sheet-rows>a{display:flex;align-items:center;gap:8px;min-height:48px;text-align:left;padding:10px 12px;border:1px solid #ffffff17;border-radius:14px;background:#161816;color:#F2EEE3;text-decoration:none;overflow-wrap:anywhere}
+  .st-mobile-v2 .st-mobile-sheet .st2-side:not(.st2-thread){display:flex;height:auto;max-height:none;min-height:0;padding:0;border:0;background:transparent}
+  .st-mobile-v2 .st-mobile-sheet .st2-side-title{display:none}
+  .st-mobile-v2 .st-mobile-sheet .st2-members{overflow:visible}
+  .st-mobile-v2 .st-mobile-sheet .st2-members li{min-width:0;min-height:44px}
+  .st-mobile-v2 .st-mobile-sheet .st2-icon-small{min-width:44px;min-height:44px}
+  .st-mobile-v2 .st-chat .st-composer .st-send{background:#D9AE5B;color:#17130E;white-space:nowrap}
+  .st-mobile-v2 .st-chat .st-messages{overflow-x:hidden;min-height:0;flex:1 1 0}
+}

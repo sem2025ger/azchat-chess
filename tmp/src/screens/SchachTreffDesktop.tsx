@@ -1,7 +1,8 @@
 import {useRegionalCopy} from '../i18n/regionalCopy';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Check, Link2, Pin } from 'lucide-react';
+import { ArrowLeft, Check, Link2, Pin, ChevronDown, Settings2, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 import VorbereitungLink from '../components/spieler/VorbereitungLink';
 import { useAuth } from '../context/AuthContext';
 import { useOptionalLanguage } from '../context/LanguageContext';
@@ -60,6 +61,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const [busy, setBusy] = useState(false);
   const [body, setBody] = useState('');
   const [menu, setMenu] = useState(false);
+  const [mobileSheet, setMobileSheet] = useState<'rooms' | 'menu' | null>(null);
   const [panel, setPanel] = useState<Panel | null>(null);
   const [player, setPlayer] = useState<Profile | null>(null);
   const [notify, setNotify] = useState(false);
@@ -107,6 +109,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const dmOpen = useOpenDirectChat();
   const isClub = new URLSearchParams(window.location.search).has('club');
   const desktop = useDesktop();
+  const mobileV2 = v2Enabled && !desktop && hideRooms;
   const seekInRooms = v2Enabled && desktop && !hideRooms && !isClub;
   const feedRef = useRef<HTMLDivElement>(null);
   const followFeed = useRef(true);
@@ -245,6 +248,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
   const hasChatActions = canPin || (moderationEnabled && (moderator || privateAdmin));
   const members = profiles.filter(p => roster.includes(p.id));
   const onlineCount = onlineIds?.length ?? null;
+  const roomName = isClub ? (dmChat ? dmChat.partnerName : <RoomTitle clubId={clubId} />) : t.general;
   // A DM partner I blocked cannot receive messages: say so in the composer instead of letting a send fail.
   const iBlocked = Boolean(dmChat && block.blocked);
   const finishedChallenges = new Set(v2Data?.results.map(result => result.challenge_id) ?? []);
@@ -263,27 +267,37 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
     : messages;
   return <section className={v2Enabled ? 'schach-treff st-v2' : 'schach-treff'} lang={language==="ua"?"uk":language} data-schach-treff-desktop>
     <ChallengeProvider clubId={clubId} me={user?.id ?? ''} people={profiles} enabled={member} finished={finishedChallenges}>
-    <header><h1>{t.title}</h1>{import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Link className="st-region-entry" to="/region/nrw" aria-label={regional('NRW-Regionalübersicht öffnen')}>NRW ↗</Link>}<div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
+    {mobileV2 ? <div className="st-mobile-v2-top">
+      <div className="st-mobile-v2-title"><h1>{t.title}</h1><button type="button" className="st-mobile-v2-more" aria-label={t.more} aria-haspopup="dialog" onClick={() => setMobileSheet('menu')}>⋯</button></div>
+      <div className="st-mobile-v2-row"><button type="button" className="st-mobile-room-trigger" aria-haspopup="dialog" onClick={() => setMobileSheet('rooms')}><span><strong>{roomName}</strong><small>{dmChat ? copy2.directChat : isClub ? copy1.myClubs : copy1.subtitle}</small></span><ChevronDown size={18} aria-hidden="true" /></button><ChallengeButton targetUserId={dmChat?.partnerId} disabled={!member || iBlocked} play /></div>
+      {mobileSheet === 'rooms' && <MobileSheet title={copy2.roomSwitcher} closeLabel={t.close} onClose={() => setMobileSheet(null)}>
+        <aside className="st-mobile-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-mobile-general" /><ClubRooms currentClubId={isClub ? clubId : null} heading={copy1.myClubs} /><DirectList currentClubId={clubId} /></aside>
+      </MobileSheet>}
+      {mobileSheet === 'menu' && <MobileSheet title={roomName} closeLabel={t.close} onClose={() => setMobileSheet(null)}>
+        <p className="st-mobile-sheet-meta">{members.length} {t.members} · {onlineCount ?? '—'} {copy1.onlineNow}</p>
+        <div className="st-mobile-sheet-rows">{(['members', 'ranking', 'tournaments', 'about'] as const).map(key => key === 'tournaments' && import.meta.env.VITE_SPIELTAG_ENABLED === 'true' ? <Link key={key} to="/spieltag">{t[key]}</Link> : <button type="button" key={key} onClick={() => { setMobileSheet(null); setPanel(key); }}>{t[key]}</button>)}<FeedbackButton /></div>
+      </MobileSheet>}
+    </div> : <header><h1>{t.title}</h1>{import.meta.env.VITE_CLUBS_NRW_ENABLED === 'true' && <Link className="st-region-entry" to="/region/nrw" aria-label={regional('NRW-Regionalübersicht öffnen')}>NRW ↗</Link>}<div className="st-menu"><button aria-label={t.more} aria-expanded={menu} onClick={() => setMenu(!menu)}>⋯</button>
       {(v2Enabled || menu) && <nav hidden={!menu} aria-label={t.more}>{(['tournaments', 'members', 'ranking', 'about'] as const).map(key => <button key={key} onClick={() => { setPanel(key); setMenu(false); }}>{t[key]}{key === 'tournaments' && <small>{t.soon}</small>}</button>)}{v2Enabled && <FeedbackButton />}</nav>}
-    </div></header>
+    </div></header>}
     {error && (v2Enabled ? <Toast message={error} closeLabel={t.close} onClose={() => setError('')} /> : <p role="alert">{error}</p>)}
     {(loading || isLoading) ? <p role="status">{t.loading}</p> : !clubId ? <p>{t.noClub}</p> : !member ? <div className="st-surface"><p>{t.joinHint}</p>{user ? <button disabled={busy} onClick={() => void perform(() => supabase.from('chess_club_members').insert({ club_id: clubId, user_id: user.id, role: 'member' }))}>{t.join}</button> : <Link to="/profile?returnTo=%2Fchat">{t.login}</Link>}</div> :
     <div className={hideRooms && v2Enabled ? 'st-columns st2-no-rooms' : seekInRooms ? 'st-columns st2-seek-in-rooms' : 'st-columns'}>{!hideRooms && <aside className="st-surface st-rooms"><GeneralRoomLink label={t.general} search={window.location.search} className="st-general-link" /><ClubRooms currentClubId={clubId} heading={v2Enabled ? copy1.myClubs : undefined} />{v2Enabled && <DirectList currentClubId={clubId} />}{seekInRooms && <div className="st2-rooms-seek"><SeekButton /></div>}</aside>}
       <section className="st-surface st-chat">
-        {(isClub || hasChatActions || v2Enabled) && <div className="st-chat-header">
+        {(mobileV2 ? hasChatActions || Boolean(dmChat) || canInvite : isClub || hasChatActions || v2Enabled) && <div className="st-chat-header">
           {/* The rooms column already says "General chat": the feed headline is the room's motto (owner, 13 Nov). */}
-          {v2Enabled && !isClub && <div className="st2-general-heading">
+          {!mobileV2 && v2Enabled && !isClub && <div className="st2-general-heading">
             <h2 className="st2-general-title st2-general-motto"><span className="st2-sr-only">{t.general}: </span>{copy1.subtitle.split(' ').flatMap((word, index) => [index ? ' ' : '', word.includes('-') ? <span key={index} className="st2-nowrap">{word}</span> : word])}</h2>
           </div>}
-          {v2Enabled && !isClub && <div className="st2-chat-meta">
+          {!mobileV2 && v2Enabled && !isClub && <div className="st2-chat-meta">
             <span className="st2-online" aria-label={onlineCount === null ? copy1.onlineNow : `${onlineCount} ${copy1.onlineNow}`} aria-live="polite">
               <span className="st2-online-dot" aria-hidden="true" /><strong>{onlineCount ?? '—'}</strong> {copy1.onlineNow}
             </span>
             {!seekInRooms && <SeekButton />}
           </div>}
           {isClub && <>
-            <a className="st-back-general" href="/chat"><ArrowLeft size={16} aria-hidden="true" /><span>{t.general}</span></a>
-            <h2>{dmChat ? <span className="st2-dm-title" style={nameStyle(dmChat.partnerId)}>{dmChat.partnerName}</span> : <RoomTitle clubId={clubId} />}</h2>
+            {!mobileV2 && <><a className="st-back-general" href="/chat"><ArrowLeft size={16} aria-hidden="true" /><span>{t.general}</span></a>
+            <h2>{dmChat ? <span className="st2-dm-title" style={nameStyle(dmChat.partnerId)}>{dmChat.partnerName}</span> : <RoomTitle clubId={clubId} />}</h2></>}
             {dmChat && <button type="button" className="st2-block" disabled={block.busy} onClick={() => void block.toggle()}>{block.blocked ? copy2.unblock : copy2.block}</button>}
             {canInvite && <RoomInvite key={clubId + '-' + inviteRevision} clubId={clubId} />}
             {v2Enabled && !dmChat && !hideRooms && <SeekButton />}
@@ -294,7 +308,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
               event.currentTarget.querySelector('button')?.focus();
             }
           }}>
-            <button type="button" ref={chatMenuButton} aria-label={moderationEnabled ? t.moderation : t.editPin} aria-expanded={pinMenu} onClick={() => setPinMenu(!pinMenu)}>⋯</button>
+            <button type="button" ref={chatMenuButton} aria-label={moderationEnabled ? t.moderation : t.editPin} aria-expanded={pinMenu} onClick={() => setPinMenu(!pinMenu)}>{mobileV2 ? <Settings2 size={18} aria-hidden="true" /> : '⋯'}</button>
             {pinMenu && <div className="st-pin-actions">
               {canPin && <button type="button" onClick={() => {
                 setPinMenu(false); setPinEdit(true); setPinDraft(pin?.body ?? '');
@@ -333,7 +347,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         <form className="st-composer" onSubmit={send}>
           {/* Desktop: Seek sits in the header (general chat and club rooms) so the input stays wide. The compact
               mobile room view (hideRooms) keeps its approved composer layout. DMs challenge the partner here. */}
-          {v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} disabled={iBlocked} /> : isClub && hideRooms ? <SeekButton /> : null) : <ChallengeButton composer />}
+          {!mobileV2 && (v2Enabled ? (dmChat ? <ChallengeButton composer targetUserId={dmChat.partnerId} disabled={iBlocked} /> : isClub && hideRooms ? <SeekButton /> : null) : <ChallengeButton composer />)}
           {v2Enabled && <PositionTrigger label={copy2.sendPosition} disabled={iBlocked} onClick={() => setComposer({ fen: DEFAULT_POSITION, root: null })} />}
           <input aria-label={t.placeholder} placeholder={iBlocked ? copy2.composerBlocked : hideRooms ? t.shortPlaceholder : t.placeholder} value={body} onChange={e => setBody(e.target.value)} maxLength={1200} required={!v2Enabled} disabled={iBlocked} />
           <button className="st-send" disabled={busy || iBlocked || !body.trim()}>{t.send}</button>
@@ -343,7 +357,7 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
         ? <ThreadPanel key={thread.id} clubId={clubId} root={thread} people={profiles} onClose={() => setThread(null)} onChanged={() => void refresh()}
             revision={threadRevision} rootFen={v2.fens.get(thread.id)} scrollToEnd={threadScroll} onScrolled={threadScrolled}
             renderPosition={fen => <PositionMessage fen={fen} size={200} onReply={() => setComposer({ fen, root: thread })} />} />
-        : hideRooms ? <details className="st-mobile-members" key={clubId}>
+        : mobileV2 ? null : hideRooms ? <details className="st-mobile-members" key={clubId}>
             <summary>{copy1.members}</summary>
             <MembersPanel members={members} messages={messages} me={user?.id} onlineIds={onlineIds} onPlayer={setPlayer}
               onMessage={direct.available ? person => void dmOpen.open(person.id) : undefined} />
@@ -353,13 +367,22 @@ export default function SchachTreffDesktop({ hideRooms = false }: { hideRooms?: 
       {v2Enabled && composer && <PositionDialog initialFen={composer.fen} reply={Boolean(composer.root)} onSend={sendPosition} onClose={() => setComposer(null)} />}
       {v2Enabled && viewing && <GameViewer game={viewing} onClose={() => setViewing(null)} />}
     </div>}
-    <dialog ref={dialog} className={v2Enabled && player ? 'st2-player-dialog' : undefined} aria-labelledby={player ? 'st-player-name' : undefined} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
+    <dialog ref={dialog} className={v2Enabled && player ? 'st2-player-dialog' : mobileV2 ? 'st-mobile-sheet' : undefined} aria-labelledby={player ? 'st-player-name' : undefined} onCancel={() => { setPanel(null); setPlayer(null); }} onClose={() => { setPanel(null); setPlayer(null); }}>
       <button className="st-close" onClick={() => { setPanel(null); setPlayer(null); }}>{t.close}</button>
       {/* Genuine ratings will be introduced by the future Glicko-2 task; do not display stored placeholder values here. */}
-      {player ? <><PlayerSummary userId={player.id}><header className="st-player-header"><h2 id="st-player-name">{player.username}</h2><p>{t.noLocation}</p></header><dl className="st-player-ratings"><div><dt>{t.blitz}</dt><dd>—</dd></div><div><dt>{t.rapid}</dt><dd>—</dd></div></dl></PlayerSummary><div className="st-player-actions"><ChallengeButton targetUserId={player.id} beforeOpen={() => setPlayer(null)} />{v2Enabled && direct.available && player.id !== user?.id && <button type="button" onClick={() => { const id = player.id; setPlayer(null); void dmOpen.open(id); }}>{copy2.writePrivately}</button>}<VorbereitungLink onClick={()=>{setPlayer(null);setPanel(null);}}/></div></> : panel === 'tournaments' ? <><h2 className="st-display">{t.tournamentTitle}</h2><p>{t.tournamentText}</p><button aria-pressed={notify} onClick={() => setNotify(!notify)}>{notify ? t.notified : t.notify}</button></> : panel === 'about' ? <><h2>{t.about}</h2><p>{t.aboutText}</p></> : panel === 'ranking' ? <><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></> : panel && <><h2>{t[panel]}</h2>{!members.length && !error && <p>{t.noMembers}</p>}{members.map(p => <div className="st-member" key={p.id}><button className="st-name" onClick={() => setPlayer(p)}>{p.username}</button></div>)}</>}
+      {player ? <><PlayerSummary userId={player.id}><header className="st-player-header"><h2 id="st-player-name">{player.username}</h2><p>{t.noLocation}</p></header><dl className="st-player-ratings"><div><dt>{t.blitz}</dt><dd>—</dd></div><div><dt>{t.rapid}</dt><dd>—</dd></div></dl></PlayerSummary><div className="st-player-actions"><ChallengeButton targetUserId={player.id} beforeOpen={() => setPlayer(null)} />{v2Enabled && direct.available && player.id !== user?.id && <button type="button" onClick={() => { const id = player.id; setPlayer(null); void dmOpen.open(id); }}>{copy2.writePrivately}</button>}<VorbereitungLink onClick={()=>{setPlayer(null);setPanel(null);}}/></div></> : panel === 'tournaments' ? <><h2 className="st-display">{t.tournamentTitle}</h2><p>{t.tournamentText}</p><button aria-pressed={notify} onClick={() => setNotify(!notify)}>{notify ? t.notified : t.notify}</button></> : panel === 'about' ? <><h2>{t.about}</h2><p>{t.aboutText}</p></> : panel === 'ranking' ? <><h2>{t.ranking}</h2><p>{t.rankingSoon}</p></> : panel && <><h2>{t[panel]}</h2>{mobileV2 && panel === 'members' ? <MembersPanel members={members} messages={messages} me={user?.id} onlineIds={onlineIds} onPlayer={setPlayer} onMessage={direct.available ? person => void dmOpen.open(person.id) : undefined} /> : <>{!members.length && !error && <p>{t.noMembers}</p>}{members.map(p => <div className="st-member" key={p.id}><button className="st-name" onClick={() => setPlayer(p)}>{p.username}</button></div>)}</>}</>}
     </dialog>
     </ChallengeProvider>
   </section>;
+}
+
+function MobileSheet({ title, closeLabel, onClose, children }: { title: ReactNode; closeLabel: string; onClose: () => void; children: ReactNode }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => { const dialog = ref.current; dialog?.showModal(); return () => { dialog?.close(); }; }, []);
+  return <dialog ref={ref} className="st-mobile-sheet" aria-labelledby="st-mobile-sheet-title" onCancel={onClose} onClose={onClose}>
+    <div className="st-mobile-sheet-head"><h2 id="st-mobile-sheet-title">{title}</h2><button type="button" aria-label={closeLabel} onClick={onClose}><X size={20} aria-hidden="true" /></button></div>
+    {children}
+  </dialog>;
 }
 
 type V2Items = {
