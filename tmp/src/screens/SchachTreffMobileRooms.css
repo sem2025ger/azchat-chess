@@ -133,7 +133,8 @@
 }
 
 @media(max-width:1023px){
-  .st-mobile-v2 .st-mobile-online{grid-column:1/-1;min-width:0;display:grid;padding:0}
+  /* Keep presence and member access in the overflow menu, without a toolbar row. */
+  .st-mobile-v2 .st-mobile-online{display:none}
   .st-mobile-v2 .st-mobile-online-label{display:none}
   .st-mobile-v2 .st-mobile-online-list{display:flex;gap:5px;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
   .st-mobile-v2 .st-mobile-online-list:empty{display:none}
@@ -173,7 +174,7 @@
   .st-mobile-v2 .schach-treff.st-v2 .st-columns>.st-chat{height:auto;min-height:0;max-height:100%;flex:1 1 0;padding-bottom:0;overflow:clip}
   .st-mobile-v2 .schach-treff.st-v2 .st-chat .st-composer{box-sizing:border-box;flex:0 0 auto;min-height:0;margin:0}
   /* Keep room selection and play available, but prioritize the conversation. */
-  .st-mobile-page.st-mobile-v2:not([data-st-keyboard]){padding-top:4px}
+  .st-mobile-page.st-mobile-v2:not([data-st-keyboard]){padding-top:12px}
   .st-mobile-page.st-mobile-v2:not([data-st-keyboard])>.schach-treff.st-v2{gap:4px}
   .st-mobile-v2:not([data-st-keyboard]) .st-mobile-v2-top{row-gap:4px}
   .st-mobile-v2:not([data-st-keyboard]) .st-mobile-room-trigger{min-height:48px;padding-block:4px}
