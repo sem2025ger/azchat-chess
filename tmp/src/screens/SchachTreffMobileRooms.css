@@ -173,6 +173,10 @@
   .st-mobile-v2 .schach-treff.st-v2 .st-columns>.st-chat{height:auto;min-height:0;max-height:100%;flex:1 1 0;padding-bottom:0;overflow:clip}
   .st-mobile-v2 .schach-treff.st-v2 .st-chat .st-composer{box-sizing:border-box;flex:0 0 auto;min-height:0;margin:0}
   /* Keep room selection and play available, but prioritize the conversation. */
+  .st-mobile-page.st-mobile-v2:not([data-st-keyboard]){padding-top:4px}
+  .st-mobile-page.st-mobile-v2:not([data-st-keyboard])>.schach-treff.st-v2{gap:4px}
+  .st-mobile-v2:not([data-st-keyboard]) .st-mobile-v2-top{row-gap:4px}
+  .st-mobile-v2:not([data-st-keyboard]) .st-mobile-room-trigger{min-height:48px;padding-block:4px}
   .st-mobile-v2[data-st-keyboard] .st-mobile-online,
   .st-mobile-v2[data-st-keyboard] .st-mobile-room-trigger small{display:none}
   /* While typing, compress the already single-row toolbar. */
@@ -210,6 +214,10 @@
   #root :has(> main > [data-route-scroll] > .st-mobile-v2)>[data-mobile-app-nav]{position:static;order:2;flex:0 0 auto;height:auto;min-height:calc(4.5rem + env(safe-area-inset-bottom,0px));align-items:stretch}
   #root :has(> main > [data-route-scroll] > .st-mobile-v2[data-st-keyboard])>[data-mobile-app-nav]{display:none}
   #root :has(> main > [data-route-scroll] > .st-mobile-v2)>[data-mobile-app-nav] .site-nav-link{height:auto;grid-template-rows:22px auto;padding-block:4px;align-content:center}
+  .st-mobile-v2:not([data-st-keyboard]) .schach-treff.st-v2 .st-columns>.st-chat{padding-bottom:8px}
+  #root :has(> main > [data-route-scroll] > .st-mobile-v2)>[data-mobile-app-nav] .site-nav-link[href="/chat"]{grid-template-columns:max-content;justify-content:center;justify-items:center}
+  #root :has(> main > [data-route-scroll] > .st-mobile-v2)>[data-mobile-app-nav] .site-nav-link[href="/chat"]>div{display:grid;place-items:center;width:22px;height:22px;justify-self:center;margin-inline:0}
+  #root :has(> main > [data-route-scroll] > .st-mobile-v2)>[data-mobile-app-nav] .site-nav-link[href="/chat"]>.site-nav-label{justify-self:center;text-align:center;margin-inline:0}
   #root main:has(> [data-route-scroll] > .st-mobile-v2){order:1;flex:1 1 0}
 }
 
