@@ -455,7 +455,6 @@ export default function HomeScreen() {
             <h1 className="chess-arena-reference-title md:hidden" aria-label="Chessaz.de">
               <span className="mobile-home-wordmark whitespace-nowrap">
                 <span className="mobile-home-brand-name">Chessaz</span><span className="mobile-home-brand-domain"><span className="mobile-home-brand-dot">.</span>de</span>
-                <span className="mobile-home-wordmark-sheen" aria-hidden="true">Chessaz<span className="mobile-home-brand-dot">.</span>de</span>
               </span>
               <span className="mobile-home-king relative shrink-0" aria-hidden="true">
                 <img src="/brand/sidebar-king.svg" alt="" width="38" height="76" className="absolute inset-0 h-full w-full object-fill" />

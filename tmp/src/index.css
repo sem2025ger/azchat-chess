@@ -721,9 +721,10 @@
   }
   .home-screen-root .mobile-home-brand-domain {
     color: #B2A79A;
+    letter-spacing: -.02em;
   }
   .home-screen-root .mobile-home-brand-dot {
-    font-size: .8em;
+    font-size: .75em;
     margin-right: -.045em;
   }
   @supports ((background-clip: text) or (-webkit-background-clip: text)) {
@@ -735,35 +736,15 @@
     }
   }
   .home-screen-root .mobile-home-king {
-    width: .67857143em;
-    height: 1.35714286em;
-    margin-left: -.015em;
+    width: calc(.67857143em + 1.5px);
+    height: calc(1.35714286em + 3px);
+    margin-left: -.03em;
     transform: translateY(-.11em);
   }
-  /* A single transparent metal band over the selectable static wordmark. */
-  .home-screen-root .mobile-home-wordmark-sheen {
-    user-select: none;
-    position: absolute;
-    inset: 0;
-    font: inherit;
-    letter-spacing: inherit;
-    white-space: nowrap;
-    pointer-events: none;
-    background-image: linear-gradient(110deg, transparent 39%, rgba(108, 113, 122, .68) 42%, #8A9098 44%, #41464F 46%, #30343B 50%, #4A4F58 54%, #858B94 56%, rgba(108, 113, 122, .62) 58%, transparent 61%);
-    background-size: 300% 100%;
-    background-position: 100% 50%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    opacity: 0;
-  }
-  /* Reuse the mask, not the desktop king's looping animation. */
+  /* King-only restrained metallic sheen, using the desktop mask and timing. */
   .home-screen-root .mobile-home-arena .sidebar-king-sheen {
-    background-image: linear-gradient(110deg, transparent 39%, rgba(108, 113, 122, .68) 42%, #8A9098 44%, #41464F 46%, #30343B 50%, #4A4F58 54%, #858B94 56%, rgba(108, 113, 122, .62) 58%, transparent 61%);
-    background-size: 300% 100%;
-    background-position: 100% 50%;
-    opacity: 0;
-    animation: none;
+    background-image: linear-gradient(110deg, transparent 15%, rgba(81,91,105,.16) 30%, rgba(47,53,63,.34) 43%, rgba(29,33,40,.44) 50%, rgba(75,84,96,.30) 60%, transparent 82%);
+    animation: sidebarKingSoftSheen 9s ease-in-out infinite;
   }
   .home-screen-root .mobile-home-arena > a[href="/region/nrw"] {
     display: none;
@@ -776,21 +757,7 @@
     max-width: 100% !important;
   }
 }
-@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
-  .home-screen-root .mobile-home-wordmark-sheen {
-    animation: chessazMobileBronzeWave 5s linear 0s 1 both;
-  }
-  .home-screen-root .mobile-home-arena .sidebar-king-sheen {
-    animation: chessazMobileBronzeWave 1s linear 4.8s 1 both;
-  }
-  @keyframes chessazMobileBronzeWave {
-    0% { background-position: 100% 50%; opacity: 0; }
-    5%, 95% { opacity: 1; }
-    100% { background-position: 0% 50%; opacity: 0; }
-  }
-}
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
-  .home-screen-root .mobile-home-wordmark-sheen,
   .home-screen-root .mobile-home-arena .sidebar-king-sheen { animation: none; opacity: 0; }
 }
 @media (max-width: 767px) and (max-height: 580px) {
@@ -2060,9 +2027,9 @@ aside .site-nav-link{min-height:58px;padding:10px 14px;border-radius:12px}
 aside nav{padding-top:20px!important}
 /* Mobile touch targets grow to fit localized text without clipping. */
 [data-mobile-app-nav] .site-nav-link{flex:1 1 0;min-width:44px;box-sizing:border-box;padding-inline:1px}
-[data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:auto;max-width:none;font-size:clamp(9px,2.7vw,.8rem);line-height:1.2;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;overflow-wrap:normal;word-break:normal;hyphens:manual}
+[data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:auto;max-width:none;font-size:clamp(9px,2.5vw,.8rem);line-height:1.2;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;overflow-wrap:normal;word-break:normal;hyphens:manual}
 @media (max-width: 767px) {
-  [data-mobile-app-nav] .site-nav-link:not([aria-current="page"]):not([href="/chat"]):not(:hover) { color: #8A8A8A; }
+  [data-mobile-app-nav] .site-nav-link:not([aria-current="page"]):not([href="/chat"]):not(:hover) { color: #969696; }
   [data-mobile-app-nav] .site-nav-link[href="/chat"] {
     position: relative;
     isolation: isolate;
@@ -2078,7 +2045,7 @@ aside nav{padding-top:20px!important}
   [data-mobile-app-nav] .site-nav-link[href="/chat"] .site-nav-label {
     width: 4.5em;
     white-space: normal;
-    font-size: calc(clamp(9px, 2.4vw, .75rem) + 1px);
+    font-size: calc(clamp(9px, 2.5vw, .8rem) + 1px);
     font-weight: 700;
     color: #C6CDD5;
   }

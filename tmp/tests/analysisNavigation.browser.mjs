@@ -283,8 +283,8 @@ try {
     })()`);
     assert.equal(geometry.brand,'Chessaz.de');
     const font=Math.min(56,Math.max(44,width*.145));
-    assert.ok(Math.abs(geometry.wordFont-font)<.1 && Math.abs(geometry.king-font*38/56)<1 && Math.abs(geometry.kingHeight-font*76/56)<1,JSON.stringify(geometry));
-    assert.ok(geometry.homeNRWHidden && geometry.kingGap>=-1 && geometry.kingGap<=1 && geometry.titleLeft>=12 && geometry.titleRight>=12,JSON.stringify(geometry));
+    assert.ok(Math.abs(geometry.wordFont-font)<.1 && Math.abs(geometry.king-(font*38/56+1.5))<1 && Math.abs(geometry.kingHeight-(font*76/56+3))<1,JSON.stringify(geometry));
+    assert.ok(geometry.homeNRWHidden && geometry.kingGap>=-2.5 && geometry.kingGap<=1 && geometry.titleLeft>=12 && geometry.titleRight>=12,JSON.stringify(geometry));
     assert.ok(Math.abs(geometry.controlGap-14)<=2,JSON.stringify(geometry));
     assert.ok(geometry.headerHeight<=80 && Math.abs(geometry.boardGap-16)<=2,JSON.stringify(geometry));
     assert.ok(geometry.boardWidth>=width-4 && Math.abs(geometry.boardWidth-geometry.boardHeight)<1.5,JSON.stringify(geometry));
