@@ -433,9 +433,37 @@ export default function HomeScreen() {
           </div>
 
           <div className="mobile-home-engraving hidden" aria-hidden="true">
-            <span className="mobile-home-engraving-line mobile-home-engraving-left" />
-            <span className="mobile-home-engraving-diamond"><span /></span>
-            <span className="mobile-home-engraving-line mobile-home-engraving-right" />
+            <svg className="mobile-home-engraving-art" width="100%" height="30" focusable="false">
+              <defs>
+                <linearGradient id="home-engraving-left">
+                  <stop stopColor="#3A2B1C" stopOpacity="0" /><stop offset=".3" stopColor="#3A2B1C" /><stop offset=".75" stopColor="#B98C6C" /><stop offset="1" stopColor="#E2BFA0" />
+                </linearGradient>
+                <linearGradient id="home-engraving-right" x1="100%" x2="0%">
+                  <stop stopColor="#3A2B1C" stopOpacity="0" /><stop offset=".3" stopColor="#3A2B1C" /><stop offset=".75" stopColor="#B98C6C" /><stop offset="1" stopColor="#E2BFA0" />
+                </linearGradient>
+                <linearGradient id="home-engraving-metal" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop stopColor="#5A4130" /><stop offset=".5" stopColor="#E2BFA0" /><stop offset="1" stopColor="#2E2A26" />
+                </linearGradient>
+                <linearGradient id="home-engraving-highlight">
+                  <stop offset=".43" stopColor="#F6E2CF" stopOpacity="0" /><stop offset=".5" stopColor="#F6E2CF" stopOpacity=".55" /><stop offset=".57" stopColor="#F6E2CF" stopOpacity="0" />
+                </linearGradient>
+                <mask id="home-engraving-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="30" style={{ maskType: 'alpha' }}>
+                  <use href="#home-engraving-shapes" />
+                </mask>
+              </defs>
+              <g id="home-engraving-shapes">
+                <rect className="mobile-home-engraving-line mobile-home-engraving-left" y="14.5" height="1" fill="url(#home-engraving-left)" />
+                <svg x="50%" y="15" width="1" height="1" overflow="visible">
+                  <g transform="rotate(45)">
+                    <path className="mobile-home-engraving-diamond" fill="url(#home-engraving-metal)" fillRule="evenodd" d="M-10 -10H10V10H-10Z M-8.5 -8.5H8.5V8.5H-8.5Z M-8.5 -8.5H0V0H-8.5Z M0 0H8.5V8.5H0Z" />
+                  </g>
+                </svg>
+                <rect className="mobile-home-engraving-line mobile-home-engraving-right" y="14.5" height="1" fill="url(#home-engraving-right)" />
+              </g>
+              <g mask="url(#home-engraving-mask)">
+                <rect className="mobile-home-engraving-sheen" width="100%" height="30" fill="url(#home-engraving-highlight)" />
+              </g>
+            </svg>
           </div>
 
           {/* Premium Dashboard Card */}

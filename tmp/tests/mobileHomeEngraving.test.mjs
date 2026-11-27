@@ -12,14 +12,15 @@ test('mobile Home engraved ornament, reduced motion and unchanged board/desktop'
  await mkdir(captureRoot,{recursive:true});
  let added=false;
  try{
-  execFileSync('git',['worktree','add','--detach',baseline,'c3ce87273fcbdf046c81d9e765c84cc4d8d6df5f'],{stdio:'pipe'});added=true;
+  execFileSync('git',['worktree','add','--detach',baseline,'d173bd8da6c81d5457b71baf39cd96acaef9a9d5'],{stdio:'pipe'});added=true;
   await symlink(resolve('node_modules'),join(baseline,'tmp','node_modules'),'dir');
   const before=await checkSectionLayouts({root:join(baseline,'tmp'),captureRoot,phase:'before',verify:false,homePolishOnly:true});
   const after=await checkSectionLayouts({captureRoot,homePolishOnly:true});
   for(const metric of after){
    const previous=before.find(m=>m.width===metric.width&&m.height===metric.height);
    assert.ok(previous);assert.ok(metric.boardWidth+0.01>=previous.boardWidth,'Board shrank '+JSON.stringify({previous,metric}));
-   for(const key of ['font','kingWidth','kingHeight'])assert.equal(metric[key],previous[key],key+' changed');
+   for(const key of ['font','kingWidth','kingHeight','boardTop','wordTop','kingTop'])assert.equal(metric[key],previous[key],key+' changed');
+   if(metric.width===390&&metric.height===844)assert.ok(metric.ornamentTop-previous.ornamentTop>=8&&metric.ornamentTop-previous.ornamentTop<=12,JSON.stringify({previous,metric}));
   }
   for(const size of ['768x1024','1440x900']){
    const a=await readFile(join(captureRoot,'before-home-'+size+'.png')),b=await readFile(join(captureRoot,'after-home-'+size+'.png'));

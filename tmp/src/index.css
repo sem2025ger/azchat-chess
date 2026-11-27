@@ -710,40 +710,37 @@
     background: none;
   }
   .home-screen-root .mobile-home-engraving {
+    --engraving-line: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex: none;
+    width: calc(2 * var(--engraving-line) + 56.2843px);
     height: 20px;
-    gap: 12px;
     margin-bottom: 10px;
+    transform: translateY(10px);
     pointer-events: none;
   }
-  .home-screen-root .mobile-home-engraving-line {
-    width: 96px;
-    height: 1px;
+  .home-screen-root .mobile-home-engraving-art {
     flex: none;
+    overflow: visible;
+  }
+  .home-screen-root .mobile-home-engraving-line {
+    width: var(--engraving-line);
+    height: 1px;
+    transform-box: fill-box;
   }
   .home-screen-root .mobile-home-engraving-left {
-    background: linear-gradient(90deg, transparent, #B98C6C);
+    x: 0;
     transform-origin: right center;
   }
   .home-screen-root .mobile-home-engraving-right {
-    background: linear-gradient(90deg, #B98C6C, transparent);
+    x: calc(100% - var(--engraving-line));
     transform-origin: left center;
   }
-  .home-screen-root .mobile-home-engraving-diamond {
-    display: grid;
-    place-items: stretch;
-    width: 14px;
-    height: 14px;
-    flex: none;
-    margin-inline: 3px;
-    transform: rotate(45deg);
-    border: 1px solid #C9A27A;
-  }
-  .home-screen-root .mobile-home-engraving-diamond > span {
-    background: conic-gradient(#C9A27A 0 25%, transparent 25% 50%, #C9A27A 50% 75%, transparent 75%);
+  .home-screen-root .mobile-home-engraving-sheen {
+    opacity: 0;
+    transform-box: fill-box;
   }
   .home-screen-root .mobile-home-arena .chess-arena-reference-title {
     isolation: isolate;
@@ -811,14 +808,16 @@
   }
 }
 @media (max-width: 375px) {
-  .home-screen-root .mobile-home-engraving-line { width: 72px; }
-}
-@media (max-width: 767px) and (min-resolution: 2dppx) {
-  .home-screen-root .mobile-home-engraving-line { height: .5px; }
+  .home-screen-root .mobile-home-engraving { --engraving-line: 88px; }
 }
 @media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
   .home-screen-root .mobile-home-engraving-diamond { animation: mobileHomeEngravingReveal 600ms ease-out both; }
   .home-screen-root .mobile-home-engraving-line { animation: mobileHomeEngravingDraw 1400ms cubic-bezier(.22,.61,.36,1) 600ms both; }
+  .home-screen-root .mobile-home-engraving-sheen { animation: mobileHomeEngravingHighlight 1200ms ease-in-out 2s both; }
+  @keyframes mobileHomeEngravingHighlight {
+    from { opacity: 1; transform: translateX(-100%); }
+    to { opacity: 1; transform: translateX(100%); }
+  }
   @keyframes mobileHomeEngravingReveal { from { opacity: 0; } to { opacity: 1; } }
   @keyframes mobileHomeEngravingDraw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 }

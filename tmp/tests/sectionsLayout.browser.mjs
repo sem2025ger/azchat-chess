@@ -38,7 +38,7 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
     const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
     await writeFile(join(captureRoot,phase+'-'+name+'-'+width+'x'+height+'.png'),Buffer.from(image.data,'base64'));
    };
-   for(const [width,height]of[[360,780],[390,844],[430,932],[360,580],[768,1024],[1440,900]]){
+   for(const [width,height]of[[360,780],[375,780],[390,844],[430,932],[360,580],[768,1024],[1440,900]]){
     const mobile=width<768;
     await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
     await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
@@ -49,20 +49,20 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
     await evaluate(`(()=>{const s=document.createElement('style');s.textContent='*,*::before,*::after{animation:none!important;transition:none!important}';document.head.append(s);})()`);
     await pause(120);await capture('home',width,height);
     if(!mobile)continue;
-    const metric=await evaluate(`(()=>{const root=document.querySelector('[data-mobile-home-stack]'),brand=document.querySelector('.chess-arena-reference-title'),word=brand.querySelector('.mobile-home-wordmark'),king=brand.querySelector('img'),board=document.querySelector('.home-board:not(.home-board-frame)'),ornament=document.querySelector('.mobile-home-engraving'),r=e=>e.getBoundingClientRect(),visible=!!ornament?.getClientRects().length;return {width:innerWidth,height:innerHeight,above:r(visible?ornament:brand).top-r(root).top,boardWidth:r(board).width,font:getComputedStyle(brand).fontSize,kingWidth:r(king).width,kingHeight:r(king).height,visible,hidden:ornament?.getAttribute('aria-hidden'),distance:visible?r(word).top-r(ornament).bottom:null,overflow:root.scrollWidth-root.clientWidth,documentWidth:document.documentElement.scrollWidth,animation:visible?getComputedStyle(ornament.firstElementChild).animationName:null};})()`);
+    const metric=await evaluate(`(()=>{const root=document.querySelector('[data-mobile-home-stack]'),brand=document.querySelector('.chess-arena-reference-title'),word=brand.querySelector('.mobile-home-wordmark'),king=brand.querySelector('img'),board=document.querySelector('.home-board:not(.home-board-frame)'),ornament=document.querySelector('.mobile-home-engraving'),r=e=>e.getBoundingClientRect(),visible=!!ornament?.getClientRects().length,diamond=ornament?.querySelector('.mobile-home-engraving-diamond'),line=ornament?.querySelector('.mobile-home-engraving-line'),sheen=ornament?.querySelector('.mobile-home-engraving-sheen');return {width:innerWidth,height:innerHeight,above:r(visible?ornament:brand).top-r(root).top,boardWidth:r(board).width,boardTop:r(board).top,wordTop:r(word).top,kingTop:r(king).top,ornamentTop:visible?r(ornament).top:null,diamondSize:visible?(diamond.getBBox?.().width??diamond.offsetWidth):null,lineWidth:visible?r(line).width:null,lineHeight:visible?r(line).height:null,font:getComputedStyle(brand).fontSize,kingWidth:r(king).width,kingHeight:r(king).height,visible,hidden:ornament?.getAttribute('aria-hidden'),distance:visible?r(word).top-r(ornament).bottom:null,overflow:root.scrollWidth-root.clientWidth,documentWidth:document.documentElement.scrollWidth,animation:visible?getComputedStyle(line).animationName:null,diamondAnimation:visible?getComputedStyle(diamond).animationName:null,sheenAnimation:sheen?getComputedStyle(sheen).animationName:null};})()`);
     measurements.push(metric);
     if(verify){
      assert.equal(metric.visible,height>580);assert.equal(metric.hidden,'true');assert.ok(metric.overflow<=1&&metric.documentWidth<=width+1,JSON.stringify(metric));
-     if(metric.visible){assert.ok(metric.distance>=26&&metric.distance<=32,JSON.stringify(metric));assert.equal(metric.animation,'none');}
+     if(metric.visible){assert.ok(metric.distance>=14&&metric.distance<=20,JSON.stringify(metric));assert.equal(metric.diamondSize,20);assert.equal(metric.lineWidth,width<=375?88:120);assert.equal(metric.lineHeight,1);assert.equal(metric.animation,'none');assert.equal(metric.diamondAnimation,'none');assert.equal(metric.sheenAnimation,'none');}
     }
     await evaluate("document.documentElement.setAttribute('data-schach-treff-unread','')");
     await capture('home-unread',width,height);
-    if(verify&&height===844){
+    if(verify&&height>580&&width!==375){
      await evaluate("document.head.lastElementChild.remove()");
      await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
-     const motion=await evaluate(`(()=>{const o=document.querySelector('.mobile-home-engraving'),a=getComputedStyle(o.firstElementChild),b=getComputedStyle(o.children[1]);return {line:a.animationDuration,delay:a.animationDelay,diamond:b.animationDuration,iterations:[a.animationIterationCount,b.animationIterationCount]};})()`);
-     assert.deepEqual(motion,{line:'1.4s',delay:'0.6s',diamond:'0.6s',iterations:['1','1']});
-     await pause(2100);await capture('home-entrance-complete',width,height);
+     const motion=await evaluate(`(()=>{const o=document.querySelector('.mobile-home-engraving'),a=getComputedStyle(o.querySelector('.mobile-home-engraving-line')),b=getComputedStyle(o.querySelector('.mobile-home-engraving-diamond')),c=getComputedStyle(o.querySelector('.mobile-home-engraving-sheen'));return {line:a.animationDuration,delay:a.animationDelay,diamond:b.animationDuration,sheen:c.animationDuration,sheenDelay:c.animationDelay,iterations:[a.animationIterationCount,b.animationIterationCount,c.animationIterationCount]};})()`);
+     assert.deepEqual(motion,{line:'1.4s',delay:'0.6s',diamond:'0.6s',sheen:'1.2s',sheenDelay:'2s',iterations:['1','1','1']});
+     await pause(3300);await capture('home-entrance-complete',width,height);
      await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
     }
    }
