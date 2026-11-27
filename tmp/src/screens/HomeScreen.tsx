@@ -566,7 +566,7 @@ function HomeMoveControls({
           className="mobile-home-play group relative flex min-h-[50px] min-w-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 btn-glow-cycle px-2 py-2 text-black shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)] transition-[transform,box-shadow] duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80"
         >
           <span className="relative z-10 w-full text-center font-extrabold text-[clamp(0.85rem,3.75vw,1.01rem)] leading-tight tracking-[0.005em] uppercase text-shadow-cycle">
-            {t('home.playChessNow')}
+            {t('home.playNow')}
           </span>
         </Link>
       )}
@@ -621,7 +621,7 @@ function MobileHomeBoard() {
 
   return (
     <div className="md:hidden w-full min-w-0 space-y-2">
-      <div className="home-board w-full aspect-square overflow-hidden rounded-lg ring-1 ring-white/10 shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]">
+      <div className="home-board mobile-home-board-frame w-full aspect-square overflow-hidden rounded-lg shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]">
         <ChessBoard game={game} onMove={onMove} overrideBoardTheme="Classic Wood" className="!border-none !p-0" />
       </div>
       <HomeMoveControls review={review} goTo={goTo} className="grid" compactMobile />

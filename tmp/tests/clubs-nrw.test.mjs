@@ -177,6 +177,10 @@ test('all NRW flags off preserves the main routing and navigation entry points',
   // PR #197 approved square board and frame containment; preserve exact prior layout below.
   ["          <div className=\"relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] xl:p-3 overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 xl:ring-0 group transform-gpu transition-transform duration-1000 board-perspective home-board home-board-frame max-md:hidden\">\n", "          <div className=\"relative w-full aspect-square rounded-[1rem] md:rounded-[2rem] overflow-hidden shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)] ring-2 ring-white/10 group transform-gpu transition-transform duration-1000 xl:rotate-y-[12deg] xl:rotate-x-[8deg] hover:rotate-y-0 hover:rotate-x-0 board-perspective home-board home-board-frame max-md:hidden\">\n"],
   ["xl:!p-0\" />", "xl:!p-2\" />"],
+  // Approved mobile board frame 27.11.2026: bronze frame class replaces the white ring on the mobile board only.
+  ["<div className=\"home-board mobile-home-board-frame w-full aspect-square overflow-hidden rounded-lg shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]\">", "<div className=\"home-board w-full aspect-square overflow-hidden rounded-lg ring-1 ring-white/10 shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]\">"],
+  // Approved 27.11.2026: the mobile play button uses the existing short "home.playNow" label in all languages.
+  ["            {t('home.playNow')}\n          </span>\n        </Link>", "            {t('home.playChessNow')}\n          </span>\n        </Link>"],
  ];
  for(const [withFlag,withoutFlag] of unifiedCardChanges){
   assert.equal(homeSource.split(withFlag).length,2,'approved Home feature fragment must occur exactly once');

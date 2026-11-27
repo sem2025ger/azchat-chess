@@ -102,3 +102,24 @@ test('mobile Schach-Treff uses its own knight bubble, without a decorative dot',
   assert.match(css, /animation: chessazMobileChatSheen 8s ease-in-out infinite/);
   assert.match(css, /prefers-reduced-motion: reduce\) \{\s*\[data-mobile-app-nav\] \.site-nav-link\[href="\/chat"\]::before \{ animation: none; opacity: 0; \}/);
 });
+
+test('mobile Home board has the approved bronze frame and tall-screen lift only', () => {
+  assert.match(home, /className="home-board mobile-home-board-frame w-full aspect-square overflow-hidden rounded-lg shadow-\[/);
+  assert.doesNotMatch(home, /home-board mobile-home-board-frame[^"]*ring-1/);
+  const frame = css.match(/\.home-screen-root \.home-board\.mobile-home-board-frame::after\s*\{([^}]+)\}/)?.[1] ?? '';
+  assert.match(frame, /padding: 1px;/);
+  assert.match(frame, /linear-gradient\(to bottom, #B08C60, #5C4228\)/);
+  assert.match(frame, /pointer-events: none;/);
+  const lift = css.match(/@media \(max-width: 767px\) and \(min-height: 701px\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.match(lift, /\.home-dashboard-column \{\s*transform: translateY\(-8px\);/);
+  assert.match(lift, /\.home-board\.mobile-home-board-frame \{\s*transform: translateY\(-16px\);/);
+});
+
+test('mobile Home pieces, file letters and play label follow the 27.11.2026 approval', () => {
+  assert.match(css, /\.home-board\.mobile-home-board-frame \[data-piece-square\] img \{\s*transform: scale\(1\.044\);/);
+  assert.match(css, /\.home-board\.mobile-home-board-frame \[class\*="bottom-0\.5 right-1"\] \{\s*bottom: 0;\s*right: 2px;\s*line-height: 1;\s*\}/);
+  assert.match(home, /className="mobile-home-play[\s\S]*?\{t\('home\.playNow'\)\}/);
+  assert.match(css, /\.mobile-home-play \.text-shadow-cycle \{\s*transform-origin: center;\s*animation: mobilePlayLabelSteady 3\.8s ease-in-out infinite;/);
+  assert.match(css, /@keyframes mobilePlayLabelSteady \{\s*0%, 100% \{ transform: scale\(1\); \}\s*50% \{ transform: scale\(0\.974659\); \}/);
+  assert.match(css, /animation: mobilePlayGentlePulse 3\.8s ease-in-out infinite;/);
+});
