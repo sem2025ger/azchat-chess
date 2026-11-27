@@ -16,16 +16,16 @@ test('desktop rail is 240px with matching override and compact internal spacing'
   assert.match(layout, /languageOptions\.map\(\(\{ id: lang, name \}\) =>/);
 });
 
-test('wordmark spells Chessaz.de with subtly enlarged Ch', () => {
+test('wordmark spells Chessaz.de with desktop-only tighter punctuation and subtly enlarged Ch', () => {
   assert.match(layout, /aria-label="Chessaz\.de"/);
-  assert.match(layout, /sidebar-brand-silver"><span className="xl:text-\[1\.08em\]">Ch<\/span>essaz\.<\/span>/);
-  assert.match(layout, /sidebar-brand-de inline-block xl:text-\[1\.06em\]">de<\/span>/);
+  assert.match(layout, /sidebar-brand-silver"><span className="xl:text-\[1\.08em\]">Ch<\/span>essaz<span className="xl:text-\[0\.8em\]">\.<\/span><\/span>/);
+  assert.match(layout, /sidebar-brand-de inline-block xl:text-\[1\.06em\] xl:-ml-px">de<\/span>/);
   assert.match(css, /\.sidebar-brand-silver\s*\{/);
   assert.match(css, /\.sidebar-brand-de\s*\{/);
 });
 
-test('king uses approved 28x56 dimensions with unchanged offsets and decorative sheen', () => {
-  assert.match(layout, /h-\[56px\] w-\[28px\] shrink-0 -translate-x-\[2px\] -translate-y-\[6px\]/);
+test('king uses approved 28x56 dimensions with tighter horizontal spacing and unchanged vertical offset and decorative sheen', () => {
+  assert.match(layout, /h-\[56px\] w-\[28px\] shrink-0 -translate-x-\[5px\] -translate-y-\[6px\]/);
   assert.match(layout, /src="\/brand\/sidebar-king\.svg"[^\n]*width="28" height="56"/);
   assert.match(layout, /sidebar-king-sheen pointer-events-none absolute inset-0/);
   assert.match(css, /\.sidebar-king-sheen\s*\{/);
