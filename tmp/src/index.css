@@ -709,6 +709,58 @@
     letter-spacing: 0;
     background: none;
   }
+  .home-screen-root .mobile-home-engraving {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    height: 20px;
+    gap: 12px;
+    margin-bottom: 10px;
+    pointer-events: none;
+  }
+  .home-screen-root .mobile-home-engraving-line {
+    width: 96px;
+    height: 1px;
+    flex: none;
+  }
+  .home-screen-root .mobile-home-engraving-left {
+    background: linear-gradient(90deg, transparent, #B98C6C);
+    transform-origin: right center;
+  }
+  .home-screen-root .mobile-home-engraving-right {
+    background: linear-gradient(90deg, #B98C6C, transparent);
+    transform-origin: left center;
+  }
+  .home-screen-root .mobile-home-engraving-diamond {
+    display: grid;
+    place-items: stretch;
+    width: 14px;
+    height: 14px;
+    flex: none;
+    margin-inline: 3px;
+    transform: rotate(45deg);
+    border: 1px solid #C9A27A;
+  }
+  .home-screen-root .mobile-home-engraving-diamond > span {
+    background: conic-gradient(#C9A27A 0 25%, transparent 25% 50%, #C9A27A 50% 75%, transparent 75%);
+  }
+  .home-screen-root .mobile-home-arena .chess-arena-reference-title {
+    isolation: isolate;
+  }
+  .home-screen-root .chess-arena-reference-title::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    width: min(460px, calc(100vw - 12px));
+    height: 330px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(closest-side, rgba(226,191,160,.16), rgba(185,140,108,.06) 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 46%, transparent 66%);
+  }
   .home-screen-root .mobile-home-wordmark {
     display: block;
     position: relative;
@@ -758,10 +810,23 @@
     max-width: 100% !important;
   }
 }
+@media (max-width: 375px) {
+  .home-screen-root .mobile-home-engraving-line { width: 72px; }
+}
+@media (max-width: 767px) and (min-resolution: 2dppx) {
+  .home-screen-root .mobile-home-engraving-line { height: .5px; }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  .home-screen-root .mobile-home-engraving-diamond { animation: mobileHomeEngravingReveal 600ms ease-out both; }
+  .home-screen-root .mobile-home-engraving-line { animation: mobileHomeEngravingDraw 1400ms cubic-bezier(.22,.61,.36,1) 600ms both; }
+  @keyframes mobileHomeEngravingReveal { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes mobileHomeEngravingDraw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+}
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
   .home-screen-root .mobile-home-arena .sidebar-king-sheen { animation: none; opacity: 0; }
 }
 @media (max-width: 767px) and (max-height: 580px) {
+  .home-screen-root .mobile-home-engraving { display: none; }
   .home-screen-root [data-mobile-home-stack] { gap: 14px; }
   .home-screen-root .mobile-home-arena .chess-arena-reference-title { font-size: clamp(38px, 12.5vw, 46px); }
   .home-screen-root .home-board-column .home-board + nav { margin-top: 8px; }

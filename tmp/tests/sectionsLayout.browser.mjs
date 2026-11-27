@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 import {sectionsFixturePlugin} from './sectionsFixtures.mjs';
 
-export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase='after',verify=true,playOnly=false}={}){
+export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase='after',verify=true,playOnly=false,homePolishOnly=false}={}){
  const server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-sections-vite-'+process.pid+'-'+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[sectionsFixturePlugin({play:playOnly}),react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:Object.fromEntries([
   ['VITE_SERVER_URL','https://sections-fixture.invalid'],...['VITE_SPIELER_V1_ENABLED','VITE_CLUBS_NRW_ENABLED','VITE_SPIELTAG_ENABLED','VITE_VORBEREITUNG_ENABLED'].map(k=>[k,'true'])
  ].map(([k,v])=>['import.meta.env.'+k,JSON.stringify(v)]))});
@@ -31,6 +31,45 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
   await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Network.enable');
   await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   if(captureRoot)await mkdir(captureRoot,{recursive:true});
+
+  if(homePolishOnly){
+   const capture=async(name,width,height)=>{
+    if(!captureRoot)return;
+    const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(join(captureRoot,phase+'-'+name+'-'+width+'x'+height+'.png'),Buffer.from(image.data,'base64'));
+   };
+   for(const [width,height]of[[360,780],[390,844],[430,932],[360,580],[768,1024],[1440,900]]){
+    const mobile=width<768;
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
+    await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
+    await wait("document.querySelector('.home-screen-root .home-board [data-square]')");
+    await evaluate("import('/src/components/schachTreff/moderation.css').then(()=>true)");
+    await evaluate('document.fonts.ready');
+    await evaluate("Promise.all([...document.images].filter(img=>img.getClientRects().length).map(img=>img.decode().catch(()=>{})))");
+    await evaluate(`(()=>{const s=document.createElement('style');s.textContent='*,*::before,*::after{animation:none!important;transition:none!important}';document.head.append(s);})()`);
+    await pause(120);await capture('home',width,height);
+    if(!mobile)continue;
+    const metric=await evaluate(`(()=>{const root=document.querySelector('[data-mobile-home-stack]'),brand=document.querySelector('.chess-arena-reference-title'),word=brand.querySelector('.mobile-home-wordmark'),king=brand.querySelector('img'),board=document.querySelector('.home-board:not(.home-board-frame)'),ornament=document.querySelector('.mobile-home-engraving'),r=e=>e.getBoundingClientRect(),visible=!!ornament?.getClientRects().length;return {width:innerWidth,height:innerHeight,above:r(visible?ornament:brand).top-r(root).top,boardWidth:r(board).width,font:getComputedStyle(brand).fontSize,kingWidth:r(king).width,kingHeight:r(king).height,visible,hidden:ornament?.getAttribute('aria-hidden'),distance:visible?r(word).top-r(ornament).bottom:null,overflow:root.scrollWidth-root.clientWidth,documentWidth:document.documentElement.scrollWidth,animation:visible?getComputedStyle(ornament.firstElementChild).animationName:null};})()`);
+    measurements.push(metric);
+    if(verify){
+     assert.equal(metric.visible,height>580);assert.equal(metric.hidden,'true');assert.ok(metric.overflow<=1&&metric.documentWidth<=width+1,JSON.stringify(metric));
+     if(metric.visible){assert.ok(metric.distance>=26&&metric.distance<=32,JSON.stringify(metric));assert.equal(metric.animation,'none');}
+    }
+    await evaluate("document.documentElement.setAttribute('data-schach-treff-unread','')");
+    await capture('home-unread',width,height);
+    if(verify&&height===844){
+     await evaluate("document.head.lastElementChild.remove()");
+     await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+     const motion=await evaluate(`(()=>{const o=document.querySelector('.mobile-home-engraving'),a=getComputedStyle(o.firstElementChild),b=getComputedStyle(o.children[1]);return {line:a.animationDuration,delay:a.animationDelay,diamond:b.animationDuration,iterations:[a.animationIterationCount,b.animationIterationCount]};})()`);
+     assert.deepEqual(motion,{line:'1.4s',delay:'0.6s',diamond:'0.6s',iterations:['1','1']});
+     await pause(2100);await capture('home-entrance-complete',width,height);
+     await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    }
+   }
+   assert.deepEqual(exceptions,[],'Home polish browser runtime errors');
+   if(captureRoot)await writeFile(join(captureRoot,phase+'-home-measurements.json'),JSON.stringify(measurements,null,2));
+   return measurements;
+  }
 
   // A separate fixture mode keeps the existing section regression unchanged.
   if(playOnly){

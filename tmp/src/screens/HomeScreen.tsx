@@ -432,6 +432,12 @@ export default function HomeScreen() {
              <span className="desktop-home-slogan-text hidden">{t('home.slogan')}</span>
           </div>
 
+          <div className="mobile-home-engraving hidden" aria-hidden="true">
+            <span className="mobile-home-engraving-line mobile-home-engraving-left" />
+            <span className="mobile-home-engraving-diamond"><span /></span>
+            <span className="mobile-home-engraving-line mobile-home-engraving-right" />
+          </div>
+
           {/* Premium Dashboard Card */}
           <div className={`mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 max-md:gap-0 md:gap-4 p-3 max-md:py-5 max-md:px-4 md:p-6 rounded-[2rem] max-md:rounded-[1.75rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]${homeUnifiedCard ? " home-unified-card" : ""}`}>
 
