@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Chess } from 'chess.js';
+import '@fontsource/bodoni-moda/700.css';
 import ChessBoard from '../components/ChessBoard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -130,35 +131,6 @@ export default function HomeScreen() {
             font-size: 0.5rem !important;
             opacity: 0.6 !important;
             font-weight: 800 !important;
-          }
-        }
-        /* Chess Arena: mobile-only, understated obsidian-gold architectural frame.
-           Keep the approved golden wordmark and the exact board dimensions. */
-        @media (max-width: 767px) {
-          .home-screen-root [data-mobile-home-stack] {
-            padding-top: 12px;
-          }
-          .home-screen-root .mobile-home-arena {
-            border: 1px solid rgba(221, 184, 110, .5);
-            border-bottom: 1px solid rgba(221, 184, 110, .3);
-            border-radius: 24px;
-            box-shadow: 0 15px 28px -18px rgba(0,0,0,.85),
-              0 0 0 1px rgba(176, 142, 85, .11),
-              inset 0 1px 0 rgba(255, 234, 182, .17),
-              inset 0 -1px 0 rgba(255, 220, 155, .04);
-          }
-          .home-screen-root .mobile-home-arena::before {
-            inset: 5px; border-radius: 19px; opacity: 1; animation: none;
-            border: 1px solid rgba(207, 171, 105, .23);
-            box-shadow: inset 0 0 14px rgba(203, 168, 103, .035);
-          }
-          .home-screen-root .mobile-home-arena::after {
-            inset: -1px; border-radius: 25px; opacity: 1; animation: none;
-            border: 1px solid transparent;
-            background:
-              linear-gradient(90deg, transparent, rgba(247,213,151,.76), transparent) top 11px center / 38% 1px no-repeat,
-              linear-gradient(90deg, transparent, rgba(166,140,212,.34), transparent) bottom 10px center / 30% 1px no-repeat;
-            box-shadow: none;
           }
         }
         /* Home-only black CBURNETT artwork retains a discreet shadow without
@@ -400,7 +372,7 @@ export default function HomeScreen() {
         }
         @media (max-width: 767px) {
           .home-screen-root .board-container {
-            max-width: calc(100vw - 8px) !important;
+            max-width: calc(100vw - 4px) !important;
           }
           /* On mobile Home, render black pieces with their original SVG colors,
              exactly as on Analysis. Preserve the existing desktop filter. */
@@ -460,6 +432,40 @@ export default function HomeScreen() {
              <span className="desktop-home-slogan-text hidden">{t('home.slogan')}</span>
           </div>
 
+          <div className="mobile-home-engraving hidden" aria-hidden="true">
+            <svg className="mobile-home-engraving-art" width="100%" height="30" focusable="false">
+              <defs>
+                <linearGradient id="home-engraving-left">
+                  <stop stopColor="#3A2B1C" stopOpacity="0" /><stop offset=".3" stopColor="#3A2B1C" /><stop offset=".75" stopColor="#B98C6C" /><stop offset="1" stopColor="#E2BFA0" />
+                </linearGradient>
+                <linearGradient id="home-engraving-right" x1="100%" x2="0%">
+                  <stop stopColor="#3A2B1C" stopOpacity="0" /><stop offset=".3" stopColor="#3A2B1C" /><stop offset=".75" stopColor="#B98C6C" /><stop offset="1" stopColor="#E2BFA0" />
+                </linearGradient>
+                <linearGradient id="home-engraving-metal" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop stopColor="#5A4130" /><stop offset=".5" stopColor="#E2BFA0" /><stop offset="1" stopColor="#2E2A26" />
+                </linearGradient>
+                <linearGradient id="home-engraving-highlight">
+                  <stop offset=".43" stopColor="#F6E2CF" stopOpacity="0" /><stop offset=".5" stopColor="#F6E2CF" stopOpacity=".55" /><stop offset=".57" stopColor="#F6E2CF" stopOpacity="0" />
+                </linearGradient>
+                <mask id="home-engraving-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="100%" height="30" style={{ maskType: 'alpha' }}>
+                  <use href="#home-engraving-shapes" />
+                </mask>
+              </defs>
+              <g id="home-engraving-shapes">
+                <rect className="mobile-home-engraving-line mobile-home-engraving-left" y="14.5" height="1" fill="url(#home-engraving-left)" />
+                <svg x="50%" y="15" width="1" height="1" overflow="visible">
+                  <g transform="rotate(45)">
+                    <path className="mobile-home-engraving-diamond" fill="url(#home-engraving-metal)" fillRule="evenodd" d="M-10 -10H10V10H-10Z M-8.5 -8.5H8.5V8.5H-8.5Z M-8.5 -8.5H0V0H-8.5Z M0 0H8.5V8.5H0Z" />
+                  </g>
+                </svg>
+                <rect className="mobile-home-engraving-line mobile-home-engraving-right" y="14.5" height="1" fill="url(#home-engraving-right)" />
+              </g>
+              <g mask="url(#home-engraving-mask)">
+                <rect className="mobile-home-engraving-sheen" width="100%" height="30" fill="url(#home-engraving-highlight)" />
+              </g>
+            </svg>
+          </div>
+
           {/* Premium Dashboard Card */}
           <div className={`mobile-home-arena desktop-home-arena w-full flex flex-col justify-center gap-2 max-md:gap-0 md:gap-4 p-3 max-md:py-5 max-md:px-4 md:p-6 rounded-[2rem] max-md:rounded-[1.75rem] md:rounded-[2.5rem] border-[2px] border-cyan-500/[0.18] border-b-[4px] border-b-cyan-500/[0.11] transition-colors relative shadow-[0_16px_34px_-18px_rgba(0,0,0,0.75)]${homeUnifiedCard ? " home-unified-card" : ""}`}>
 
@@ -481,11 +487,11 @@ export default function HomeScreen() {
               Chess<span className="text-chess-active"> Arena</span>
             </h1>
             <h1 className="chess-arena-reference-title md:hidden" aria-label="Chessaz.de">
-              <span className="font-black tracking-tight not-italic leading-none whitespace-nowrap">
-                <span className="sidebar-brand-silver"><span className="text-[1.08em]">Ch</span>essaz.</span><span className="sidebar-brand-de inline-block text-[1.06em]">de</span>
+              <span className="mobile-home-wordmark whitespace-nowrap">
+                <span className="mobile-home-brand-name">Chessaz</span><span className="mobile-home-brand-domain"><span className="mobile-home-brand-dot">.</span>de</span>
               </span>
-              <span className="relative h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]" aria-hidden="true">
-                <img src="/brand/sidebar-king.svg" alt="" width="28" height="56" className="absolute inset-0 h-full w-full object-fill" />
+              <span className="mobile-home-king relative shrink-0" aria-hidden="true">
+                <img src="/brand/sidebar-king.svg" alt="" width="38" height="76" className="absolute inset-0 h-full w-full object-fill" />
                 <span className="sidebar-king-sheen pointer-events-none absolute inset-0" />
               </span>
             </h1>

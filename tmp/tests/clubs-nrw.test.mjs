@@ -21,7 +21,10 @@ test('all NRW flags off preserves the main routing and navigation entry points',
      "          label={t('nav.spieltag')} accent=\"settings\" />}\n";
    assert.ok(current.includes(sharedGate) && current.includes(mobileLink));
    assert.doesNotMatch(current, /<MobileNavItem to="\/region\/nrw"/);
-   current = current.replace(sharedGate, '').replace(mobileLink, '')
+   const settingsWhenOff = "        {!showSpieltag && <MobileNavItem to=\"/settings\" icon={<Settings size={20} />} label={t('nav.settings')} accent=\"settings\" />}";
+   const previousSettings = "        <MobileNavItem to=\"/settings\" icon={<Settings size={20} />} label={t('nav.settings')} accent=\"settings\" />";
+   assert.equal(current.split(settingsWhenOff).length,2,'mobile Settings appears only when Spieltag is off');
+   current = current.replace(settingsWhenOff,previousSettings).replace(sharedGate, '').replace(mobileLink, '')
      .replace('MapPin, CalendarDays', 'MapPin')
      .replace(' data-spieltag-enabled={showSpieltag || undefined}', '')
      .replace('desktop && showSpieltag', 'desktop && ' + tournamentGate);
@@ -38,6 +41,11 @@ test('all NRW flags off preserves the main routing and navigation entry points',
    current=current.replace(tournamentGate,spieltagGate);
   }
   if(path===layoutPath){
+   // Normalize only the explicitly approved mobile chat icon and decorative dot removal.
+   for(const [next,previous] of [["function MobileSchachTreffIcon() {\n  return (\n    <svg data-mobile-schach-treff-icon width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\" focusable=\"false\">\n      <defs><linearGradient id=\"mobile-chat-titanium\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\"><stop offset=\"0%\" stopColor=\"#66717C\" /><stop offset=\"100%\" stopColor=\"#929BA4\" /></linearGradient></defs>\n      <path d=\"M7 3.5h10a4 4 0 0 1 4 4v7a4 4 0 0 1-4 4h-6l-5 3v-3.1a4 4 0 0 1-3-3.9v-7a4 4 0 0 1 4-4Z\" stroke=\"url(#mobile-chat-titanium)\" strokeWidth=\"1.6\" strokeLinejoin=\"round\" />\n      <path d=\"M8 16v-1.6c0-1.6 1.5-2.7 3.2-4l-2 .4-1.3-.9 2.3-3.1.3-1.6 1.6 1.1c3.1-.1 4.8 2.1 4.8 5.3v4.4H8Z\" fill=\"url(#mobile-chat-titanium)\" />\n    </svg>\n  );\n}\n\n", ''],['<MobileSchachTreffIcon />','<MessageSquare size={20} />'],["{to !== '/chat' && <Circle size={4} className=\"absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-current fill-current\" />}","<Circle size={4} className=\"absolute -top-1 -right-1 opacity-0 group-[.active]:opacity-100 text-current fill-current\" />"]]){
+    assert.equal(current.split(next).length,2,'approved mobile chat fragment occurs exactly once');
+    current=current.replace(next,previous);
+   }
    // Owner-approved desktop-only chat ornament; normalize only this exact row.
    const approvedChatRow = "            <NavItem to=\"/chat\" icon={<MessageSquare size={20} className=\"schach-treff-chat-icon\"><defs><linearGradient id=\"sidebar-chat-dot-gradient\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\"><stop offset=\"0%\" stopColor=\"#3153A3\" /><stop offset=\"48%\" stopColor=\"#AD85ED\" /><stop offset=\"78%\" stopColor=\"#E9C36D\" /><stop offset=\"100%\" stopColor=\"#C49242\" /></linearGradient></defs><circle className=\"schach-treff-chat-dot\" cx=\"12\" cy=\"10.5\" r=\"3\" aria-hidden=\"true\" /></MessageSquare>} label=\"Schach-Treff\" themeColor=\"theme-violet\" bronzeLabel />";
    const originalChatRow = "            <NavItem to=\"/chat\" icon={<MessageSquare size={20} />} label=\"Schach-Treff\" themeColor=\"theme-violet\" bronzeLabel />";
@@ -111,10 +119,33 @@ test('all NRW flags off preserves the main routing and navigation entry points',
  const disabledFinish=disabledHome.indexOf(m3End,disabledStart);
  const withoutM3=disabledHome.slice(0,disabledStart)+disabledHome.slice(disabledFinish+m3End.length);
  // Owner-approved mobile brand replacement; normalize only the exact heading.
- const approvedMobileBrand = "            <h1 className=\"chess-arena-reference-title md:hidden\" aria-label=\"Chessaz.de\">\n              <span className=\"font-black tracking-tight not-italic leading-none whitespace-nowrap\">\n                <span className=\"sidebar-brand-silver\"><span className=\"text-[1.08em]\">Ch</span>essaz.</span><span className=\"sidebar-brand-de inline-block text-[1.06em]\">de</span>\n              </span>\n              <span className=\"relative h-[56px] w-[28px] shrink-0 -translate-x-[2px] -translate-y-[6px]\" aria-hidden=\"true\">\n                <img src=\"/brand/sidebar-king.svg\" alt=\"\" width=\"28\" height=\"56\" className=\"absolute inset-0 h-full w-full object-fill\" />\n                <span className=\"sidebar-king-sheen pointer-events-none absolute inset-0\" />\n              </span>\n            </h1>";
+ const approvedMobileBrand = "            <h1 className=\"chess-arena-reference-title md:hidden\" aria-label=\"Chessaz.de\">\n              <span className=\"mobile-home-wordmark whitespace-nowrap\">\n                <span className=\"mobile-home-brand-name\">Chessaz</span><span className=\"mobile-home-brand-domain\"><span className=\"mobile-home-brand-dot\">.</span>de</span>\n              </span>\n              <span className=\"mobile-home-king relative shrink-0\" aria-hidden=\"true\">\n                <img src=\"/brand/sidebar-king.svg\" alt=\"\" width=\"38\" height=\"76\" className=\"absolute inset-0 h-full w-full object-fill\" />\n                <span className=\"sidebar-king-sheen pointer-events-none absolute inset-0\" />\n              </span>\n            </h1>";
  const originalMobileHeading = "            <h1 className=\"chess-arena-reference-title md:hidden text-[2.2rem] text-center leading-[0.95] tracking-[-0.03em]\">\n              Chess Arena\n            </h1>";
  assert.equal(withoutM3.split(approvedMobileBrand).length,2,'approved mobile brand appears exactly once');
  let homeSource=withoutM3.replace(approvedMobileBrand,originalMobileHeading);
+ const mobileFontImport="import '@fontsource/bodoni-moda/700.css';\n";
+ assert.equal(homeSource.split(mobileFontImport).length,2,'approved mobile font import appears exactly once');
+ homeSource=homeSource.replace(mobileFontImport,'');
+ // Reverse only the approved mobile plaque removal, spacing and board-width change.
+ for(const [next,previous] of [
+  [
+    "",
+    "        /* Chess Arena: mobile-only, understated obsidian-gold architectural frame.\n           Keep the approved golden wordmark and the exact board dimensions. */\n        @media (max-width: 767px) {\n          .home-screen-root [data-mobile-home-stack] {\n            padding-top: 12px;\n          }\n          .home-screen-root .mobile-home-arena {\n            border: 1px solid rgba(221, 184, 110, .5);\n            border-bottom: 1px solid rgba(221, 184, 110, .3);\n            border-radius: 24px;\n            box-shadow: 0 15px 28px -18px rgba(0,0,0,.85),\n              0 0 0 1px rgba(176, 142, 85, .11),\n              inset 0 1px 0 rgba(255, 234, 182, .17),\n              inset 0 -1px 0 rgba(255, 220, 155, .04);\n          }\n          .home-screen-root .mobile-home-arena::before {\n            inset: 5px; border-radius: 19px; opacity: 1; animation: none;\n            border: 1px solid rgba(207, 171, 105, .23);\n            box-shadow: inset 0 0 14px rgba(203, 168, 103, .035);\n          }\n          .home-screen-root .mobile-home-arena::after {\n            inset: -1px; border-radius: 25px; opacity: 1; animation: none;\n            border: 1px solid transparent;\n            background:\n              linear-gradient(90deg, transparent, rgba(247,213,151,.76), transparent) top 11px center / 38% 1px no-repeat,\n              linear-gradient(90deg, transparent, rgba(166,140,212,.34), transparent) bottom 10px center / 30% 1px no-repeat;\n            box-shadow: none;\n          }\n        }\n"
+  ],
+  [
+    "max-width: calc(100vw - 4px) !important;",
+    "max-width: calc(100vw - 8px) !important;"
+  ]
+]){
+  if (next) {
+   assert.equal(homeSource.split(next).length,2,'approved mobile Home fragment appears exactly once');
+   homeSource=homeSource.replace(next,previous);
+  } else {
+   const anchor='        /* Home-only black CBURNETT artwork';
+   assert.equal(homeSource.split(anchor).length,2,'approved mobile style insertion anchor');
+   homeSource=homeSource.replace(anchor,previous+anchor);
+  }
+ }
  // Reverse only the explicitly approved, default-off Home feature additions.
  // Any other change to routing, flags, layout or the play button still fails.
  const unifiedCardChanges=[

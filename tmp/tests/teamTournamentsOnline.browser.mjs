@@ -8,12 +8,19 @@ import { createServer } from 'vite';
 const entry = '/__team_online_fixture.tsx';
 const fixtureOrigin = 'https://team-online-fixture.invalid';
 const fixture = `
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/inter/800.css';
 import '/src/index.css';
 import '/src/components/teamTournaments/teamTournaments.css';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Layout from '/src/components/Layout.tsx';
+import HomeScreen from '/src/screens/HomeScreen.tsx';
+import ProfileScreen from '/src/screens/ProfileScreen.tsx';
+import SettingsScreen from '/src/screens/SettingsScreen.tsx';
 import { LanguageProvider, useLanguage } from '/src/context/LanguageContext.tsx';
 import { ThemeProvider, useThemeContext } from '/src/context/ThemeContext.tsx';
 import { premiumInterfaceThemes } from '/src/lib/interfaceThemes.ts';
@@ -127,11 +134,24 @@ function Showcase() {
         matches: [match], official, provisional: official }} />
   </section>;
 }
+function HomeFixtureControls() {
+  const navigate = useNavigate();
+  const { setLanguage } = useLanguage();
+  window.fixtureHomeNav = path => flushSync(() => navigate(path));
+  window.fixtureHomeLanguage = locale => flushSync(() => setLanguage(locale));
+  return null;
+}
 localStorage.setItem('app-language', 'en');
 createRoot(document.getElementById('root')).render(<ThemeProvider><LanguageProvider><MemoryRouter initialEntries={['/spieltag']}>
+  <HomeFixtureControls />
   {online && <TournamentOnlineBanner />}
   <Routes><Route element={<Layout/>}><Route path="/spieltag" element={<Showcase />} />
-    <Route path="/play" element={<p data-online-test-game>{away}</p>} /></Route></Routes>
+    <Route path="/play" element={<p data-online-test-game>{away}</p>} />
+    <Route path="/home" element={<HomeScreen />} />
+    <Route path="/profile" element={<ProfileScreen />} />
+    <Route path="/settings" element={<SettingsScreen />} />
+    <Route path="/chat" element={<p data-home-fixture-chat>Schach-Treff</p>} />
+  </Route></Routes>
 </MemoryRouter></LanguageProvider></ThemeProvider>);
 `;
 
@@ -142,11 +162,29 @@ const plugin = {
     if (id === entry) return id;
     if (/(?:^|\/)context\/AuthContext(?:\.tsx)?$/.test(id)) return '\0team-online-auth';
     if (/(?:^|\/)context\/SocketContext(?:\.tsx)?$/.test(id)) return '\0team-online-socket';
+    if (/(?:^|\/)services\/supabase(?:\.ts)?$/.test(id)) return '\0team-online-profile-db';
     if (/(?:^|\/)routeLoaders(?:\.ts)?$/.test(id)) return '\0team-online-preload';
   },
   load(id) {
     if (id === entry) return fixture;
-    if (id === '\0team-online-auth') return "export const useAuth = () => ({ session: { access_token: 'fixture-token', user: { id: '22222222-2222-4222-8222-222222222222' } } });";
+    if (id === '\0team-online-auth') return `
+      const user = { id: '22222222-2222-4222-8222-222222222222' };
+      const session = { access_token: 'fixture-token', user };
+      const profile = { username: 'QA Player' };
+      const signOut = async () => {};
+      export const useAuth = () => window.fixtureHomeMode === 'guest'
+        ? { session: null, user: null, isLoading: false, signOut }
+        : window.fixtureHomeMode === 'signed-in'
+          ? { session, user, profile, isLoading: false, signOut }
+          : { session };
+    `;
+    if (id === '\0team-online-profile-db') return `
+      export const supabase = { from() {
+        const q = { select: () => q, or: () => q, order: () => q, limit: () => q,
+          then: (resolve, reject) => Promise.resolve({ data: [], error: null }).then(resolve, reject) };
+        return q;
+      } };
+    `;
     if (id === '\0team-online-socket') return `
       const listeners = new Map();
       const socket = {
@@ -204,7 +242,7 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
       const text = range.getBoundingClientRect();
       const rect = link.getBoundingClientRect();
       return { path: link.getAttribute('href'), label: label.textContent, left: rect.left, right: rect.right, height: rect.height,
-        textLeft: text.left, textRight: text.right, lines: range.getClientRects().length,
+        bottomInset: bounds.bottom-rect.bottom, textLeft: text.left, textRight: text.right, lines: range.getClientRects().length,
         hidden: label.scrollWidth > label.clientWidth + 1, textOverflow: getComputedStyle(label).textOverflow, overflowWrap: getComputedStyle(label).overflowWrap,
         lineText: [...label.textContent].reduce((rows,char,i)=>{const part=document.createRange();part.setStart(label.firstChild,i);part.setEnd(label.firstChild,i+1);const rect=[...part.getClientRects()].find(r=>r.width>0)||part.getBoundingClientRect();const key=rect.top.toFixed(2);rows[key]=(rows[key]||'')+char;return rows;},{}), active: link.getAttribute('aria-current') };
     });
@@ -251,6 +289,94 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
         await wait('location.href === ' + JSON.stringify(url.href) +
           ' && typeof window.fixtureSelect === "function" && !!document.querySelector("[data-mobile-app-nav]")');
         await evaluate('document.fonts.ready');
+        if (!tournaments) {
+          // Real Home, Profile and Settings, synthetic auth only. Exercise both flag states.
+          await evaluate("window.fixtureHomeMode='guest';window.fixtureHomeNav('/home')");
+          await wait("!!document.querySelector('.home-screen-root .chess-arena-reference-title')");
+          const state = enabled ? 'on' : 'off';
+          const expected = enabled ? ['/home','/game','/chat','/spieltag','/profile'] : ['/home','/game','/chat','/profile','/settings'];
+          for (const [width,height] of [[360,640],[360,780],[390,844],[430,932]]) {
+            await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});
+            for (const zoom of [100,125]) {
+              await evaluate("document.documentElement.style.fontSize='"+(17*zoom/100)+"px'");
+              for (const locale of Object.keys(langs)) {
+                await evaluate("window.fixtureHomeLanguage("+JSON.stringify(locale)+")");
+                await evaluate('document.fonts.ready');
+                const context = state+' '+locale+' '+width+' '+zoom+'%';
+                const metrics = await navMetrics();
+                assert.deepEqual(metrics.links.map(link=>link.path),expected,context);
+                assert.ok(Math.abs((metrics.links[2].left+metrics.links[2].right)/2-width/2)<=2,context+' centered chat');
+                for (const [i,link] of metrics.links.entries()) {
+                  const rows=Object.values(link.lineText);
+                  const fullLabel=rows.join('')===link.label&&(rows.length===1||(link.label==='Schach-Treff'&&JSON.stringify(rows)===JSON.stringify(['Schach-','Treff']))||(link.path==='/spieltag'&&rows.length===2&&rows.map(s=>s.trim()).join(' ')===link.label));
+                  assert.ok(link.left>=metrics.left&&link.right<=metrics.right&&link.lines>=1&&link.lines<=2&&!link.hidden&&fullLabel&&link.textOverflow==='clip'&&link.overflowWrap==='normal'&&link.textLeft>=link.left-1&&link.textRight<=link.right+1&&link.right-link.left>=44&&link.height>=44&&link.bottomInset>=6&&(i===0||link.left>=metrics.links[i-1].right-1),context+' '+JSON.stringify(link));
+                }
+                const geometry = await evaluate(`(()=>{
+                  const root=document.querySelector('.home-screen-root'),title=root.querySelector('.chess-arena-reference-title'),word=title.firstElementChild,king=title.lastElementChild,letter=word.querySelector('.mobile-home-brand-domain'),arena=title.closest('.mobile-home-arena'),board=root.querySelector('.home-board:not(.home-board-frame)'),play=board.nextElementSibling,nav=document.querySelector('[data-mobile-app-nav]'),chat=nav.querySelector('a[href="/chat"]'),r=e=>e.getBoundingClientRect(),center=e=>(r(e).left+r(e).right)/2,s=getComputedStyle(arena),range=document.createRange(),labels=[...nav.querySelectorAll('.site-nav-label')].map(e=>parseFloat(getComputedStyle(e).fontSize)),wave=word.querySelector('.mobile-home-wordmark-sheen'),sheen=getComputedStyle(king.querySelector('.sidebar-king-sheen'));
+                  range.setStart(letter.lastChild,letter.lastChild.length-1);range.setEnd(letter.lastChild,letter.lastChild.length);
+                  return {titleCenter:center(title),titleLeft:r(title).left,titleRight:innerWidth-r(title).right,kingGap:r(king).left-range.getBoundingClientRect().right,plaque:s.borderTopWidth!=='0px'||s.outlineStyle!=='none'||s.backgroundImage!=='none'||s.backgroundColor!=='rgba(0, 0, 0, 0)'||s.boxShadow!=='none',boardWidth:r(board).width,boardHeight:r(board).height,boardLeft:r(board).left,boardRight:innerWidth-r(board).right,duplicateChat:!!root.querySelector('a[href="/chat"],.mobile-home-chat'),topGap:r(title).top-r(root).top,bottomGap:r(nav).top-r(play).bottom,logoBoardGap:r(board).top-r(title).bottom,boardPlayGap:r(play).top-r(board).bottom,wordFont:parseFloat(getComputedStyle(word).fontSize),fontFamily:getComputedStyle(word).fontFamily,fontWeight:getComputedStyle(word).fontWeight,fontLoaded:document.fonts.check('700 56px "Bodoni Moda"'),dotFont:parseFloat(getComputedStyle(letter.querySelector('.mobile-home-brand-dot')).fontSize),dotMargin:parseFloat(getComputedStyle(letter.querySelector('.mobile-home-brand-dot')).marginRight),domainColor:getComputedStyle(letter).color,domainBackground:getComputedStyle(letter).backgroundImage,chatIconColor:getComputedStyle(chat.querySelector('[data-mobile-schach-treff-icon]')).color,sloganAbsent:!root.querySelector('.mobile-home-slogan'),kingWidth:r(king).width,kingHeight:r(king).height,wave:!!wave,sheen:[sheen.animationName,sheen.animationIterationCount,sheen.animationDelay],navIcons:[...nav.querySelectorAll('a>div>svg:first-child')].map(e=>r(e).width),labels,knight:!!chat.querySelector('[data-mobile-schach-treff-icon]'),dot:chat.querySelectorAll('svg').length!==1,highlight:getComputedStyle(chat.querySelector('.site-nav-label')).color,ring:getComputedStyle(chat).boxShadow,overflow:document.documentElement.scrollWidth>innerWidth||document.documentElement.scrollHeight>innerHeight||[...document.querySelectorAll('main,main div')].some(e=>e.clientHeight>0&&/auto|scroll/.test(getComputedStyle(e).overflowY)&&e.scrollHeight>e.clientHeight+1)};
+                })()`);
+                assert.ok(!geometry.plaque&&Math.abs(geometry.titleCenter-width/2)<=2&&geometry.kingGap>=-2.5&&geometry.kingGap<=1&&geometry.titleLeft>=12&&geometry.titleRight>=12,context+' brand '+JSON.stringify(geometry));
+                assert.ok(geometry.boardWidth>=width-4&&Math.abs(geometry.boardWidth-geometry.boardHeight)<=1&&geometry.boardLeft>=-1&&geometry.boardLeft<=2&&geometry.boardRight>=-1&&geometry.boardRight<=2,context+' board '+JSON.stringify(geometry));
+                const expectedFont=Math.min(56,Math.max(44,width*.145));
+                assert.ok(!geometry.duplicateChat&&!geometry.overflow&&geometry.topGap>=-1&&geometry.bottomGap>=-1&&Math.abs(geometry.topGap-geometry.bottomGap)<=24&&Math.abs(geometry.wordFont-expectedFont)<.1&&geometry.fontFamily.includes('Bodoni Moda')&&geometry.fontWeight==='700'&&geometry.fontLoaded&&Math.abs(geometry.kingWidth-(expectedFont*38/56+1.5))<=1&&Math.abs(geometry.kingHeight-(expectedFont*76/56+3))<=1,context+' centered Home '+JSON.stringify(geometry));
+                assert.ok(Math.abs(geometry.logoBoardGap-16)<=2&&Math.abs(geometry.boardPlayGap-14)<=2,context+' spacing '+JSON.stringify(geometry));
+                assert.ok(geometry.domainColor==='rgb(214, 205, 190)'&&geometry.domainBackground.includes('rgb(185, 183, 178)')&&geometry.domainBackground.includes('rgb(232, 222, 208)')&&Math.abs(geometry.dotFont-expectedFont*.75)<.1&&geometry.dotMargin<0,context+' satin titanium champagne domain');
+                assert.equal(geometry.chatIconColor,'rgb(157, 166, 176)',context+' muted titanium chat icon');
+                assert.ok(geometry.sloganAbsent,context+' mobile slogan removed');
+                assert.equal(geometry.wave,false,context+' static wordmark');
+                assert.deepEqual(geometry.sheen,['sidebarKingSoftSheen','infinite','0s'],context);
+                assert.ok(geometry.navIcons.length===5&&geometry.navIcons.every((w,i)=>Math.abs(w-(i===2?19:16))<=1)&&geometry.knight&&!geometry.dot,context+' custom icon '+JSON.stringify(geometry));
+                assert.ok(geometry.labels.every((size,i)=>i===2||Math.abs(geometry.labels[2]-size-1)<.05),context+' chat label size');
+                assert.ok(geometry.ring.includes('rgba(126, 137, 150, 0.48)'),context+' titanium edge');
+                assert.equal(geometry.highlight,'rgb(198, 205, 213)',context+' titanium chat label');
+                if(locale==='ru'&&zoom===100&&height!==640){
+                  console.log('MOBILE_HOME_GEOMETRY '+context+' '+JSON.stringify(geometry));
+                  await capture('mobile-home-'+state+'-'+zoom+'-'+height,locale,width);
+                }
+              }
+            }
+          }
+          await cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+          await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+          const reduced=await evaluate(`(()=>{const word=document.querySelector('.mobile-home-wordmark'),king=document.querySelector('.home-screen-root .sidebar-king-sheen'),chat=document.querySelector('[data-mobile-app-nav] a[href="/chat"]');return [word.querySelector('.mobile-home-wordmark-sheen')?'present':'none',getComputedStyle(king).animationName,getComputedStyle(chat,'::before').animationName]})()`);
+          assert.deepEqual(reduced,['none','none','none']);
+          await cdp('Emulation.setDeviceMetricsOverride',{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+          await wait("!!document.querySelector('.home-board-frame') && document.querySelector('.home-board-frame').getBoundingClientRect().width>0");
+          await capture('desktop-home-'+state,'ru',1440);
+          await cdp('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+          await cdp('Emulation.setEmulatedMedia',{features:[]});
+          await evaluate("window.fixtureHomeLanguage('ru');document.documentElement.style.fontSize='21.25px'");
+          await evaluate("document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]').click()");
+          await wait("!!document.querySelector('[data-home-fixture-chat]')");
+          assert.equal(await evaluate("document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]').getAttribute('aria-current')"),'page');
+          await wait("getComputedStyle(document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]')).boxShadow.includes('rgb(155, 170, 186)') && getComputedStyle(document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]')).color === 'rgb(180, 190, 201)'");
+          assert.ok((await evaluate("getComputedStyle(document.querySelector('[data-mobile-app-nav] a[href=\"/chat\"]')).boxShadow")).includes('rgb(155, 170, 186)'));
+          await evaluate("window.fixtureHomeNav('/profile')");
+          await wait("!!document.querySelector('[data-guest-settings]')");
+          for(const [locale,word] of Object.entries({ru:'Настройки',de:'Einstellungen',en:'Settings',az:'Ayarlar',tr:'Ayarlar',ua:'Налаштування'})){
+            await evaluate("window.fixtureHomeLanguage("+JSON.stringify(locale)+")");
+            const guest=await evaluate("(()=>{const a=document.querySelector('[data-guest-settings]'),r=a.getBoundingClientRect();return{text:a.textContent.trim(),height:r.height,href:a.getAttribute('href'),visible:r.bottom<=document.querySelector('[data-mobile-app-nav]').getBoundingClientRect().top}})()");
+            assert.equal(guest.text,word);
+            assert.ok(guest.height>=44&&guest.href==='/settings'&&guest.visible,JSON.stringify(guest));
+          }
+          await evaluate("window.fixtureHomeLanguage('ru')");
+          await capture('mobile-guest-profile-'+state+'-125','ru',390);
+          await evaluate("document.documentElement.style.fontSize='17px'");
+          await capture('mobile-guest-profile-'+state+'-100','ru',390);
+          await evaluate("document.documentElement.style.fontSize='21.25px'");
+          await evaluate("document.querySelector('[data-guest-settings]').click()");
+          await wait("!!document.querySelector('.settings-mobile-view')");
+          await evaluate("window.fixtureHomeMode='signed-in';window.fixtureHomeNav('/profile')");
+          await wait("!!document.querySelector('button[aria-label=\"Меню профиля\"]')");
+          await evaluate("document.querySelector('button[aria-label=\"Меню профиля\"]').click()");
+          await wait("!!document.querySelector('[role=menuitem]')");
+          await evaluate("[...document.querySelectorAll('[role=menuitem]')].find(e=>e.textContent.trim()==='Настройки').click()");
+          await wait("!!document.querySelector('.settings-mobile-view')");
+          await evaluate("window.fixtureHomeMode=undefined;window.fixtureHomeNav('/spieltag');document.documentElement.style.fontSize=''");
+          await wait("document.body.innerText.includes('Bochum Cup')");
+          console.log('PASS mobile Home/nav/Profile flag '+state+': 4 viewports, 2 root font sizes, 6 locales');
+        }
         if (onlinePlay) {
           await navigate('play-online');
           const testLayout = `(() => {
@@ -333,7 +459,7 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
             const { width, hasFlag, left, right, links } = await navMetrics();
             const context = '390px / ' + lang + ' / ' + theme;
             const paths = ['/home', '/game', '/chat', '/profile', '/settings'];
-            if (enabled) paths.splice(3, 0, '/spieltag');
+            if (enabled) paths.splice(3, 2, '/spieltag', '/profile');
             assert.equal(width, 390, context);
             assert.equal(hasFlag, enabled, context);
             assert.deepEqual(links.map(link => link.path), paths, context);

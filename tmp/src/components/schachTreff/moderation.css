@@ -9,6 +9,18 @@
   border-radius: 50%;
   background: #f1bb6b;
 }
+@media (max-width: 767px) {
+  [data-schach-treff-unread] [data-mobile-app-nav] a.site-nav-link[href="/chat"] > div:first-child::after {
+    top: 0;
+    right: -9px;
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(135deg, #5B7BEA, #9D7CF0);
+    box-shadow: 0 0 0 1.5px #23272B, 0 0 6px rgba(157,124,240,.45);
+    animation: none;
+    pointer-events: none;
+  }
+}
 .st-unread-badge {
   display: inline-block;
   margin-inline-start: .45rem;

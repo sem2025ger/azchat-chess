@@ -7,8 +7,8 @@ import {fileURLToPath} from 'node:url';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 import {sectionsFixturePlugin} from './sectionsFixtures.mjs';
 
-export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase='after',verify=true}={}){
- const server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-sections-vite-'+process.pid+'-'+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[sectionsFixturePlugin(),react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:Object.fromEntries([
+export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase='after',verify=true,playOnly=false,homePolishOnly=false}={}){
+ const server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-sections-vite-'+process.pid+'-'+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[sectionsFixturePlugin({play:playOnly}),react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:Object.fromEntries([
   ['VITE_SERVER_URL','https://sections-fixture.invalid'],...['VITE_SPIELER_V1_ENABLED','VITE_CLUBS_NRW_ENABLED','VITE_SPIELTAG_ENABLED','VITE_VORBEREITUNG_ENABLED'].map(k=>[k,'true'])
  ].map(([k,v])=>['import.meta.env.'+k,JSON.stringify(v)]))});
  let chrome,ws,profile;const pending=new Map(),exceptions=[],diagnostics=[],measurements=[];
@@ -31,6 +31,132 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
   await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Network.enable');
   await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   if(captureRoot)await mkdir(captureRoot,{recursive:true});
+
+  if(homePolishOnly){
+   const capture=async(name,width,height)=>{
+    if(!captureRoot)return;
+    const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(join(captureRoot,phase+'-'+name+'-'+width+'x'+height+'.png'),Buffer.from(image.data,'base64'));
+   };
+   for(const [width,height]of[[360,780],[375,780],[390,844],[430,932],[360,580],[768,1024],[1440,900]]){
+    const mobile=width<768;
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
+    await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
+    await wait("document.querySelector('.home-screen-root .home-board [data-square]')");
+    await evaluate("import('/src/components/schachTreff/moderation.css').then(()=>true)");
+    await evaluate('document.fonts.ready');
+    await evaluate("Promise.all([...document.images].filter(img=>img.getClientRects().length).map(img=>img.decode().catch(()=>{})))");
+    await evaluate(`(()=>{const s=document.createElement('style');s.textContent='*,*::before,*::after{animation:none!important;transition:none!important}';document.head.append(s);})()`);
+    await pause(120);await capture('home',width,height);
+    if(!mobile)continue;
+    const metric=await evaluate(`(()=>{const root=document.querySelector('[data-mobile-home-stack]'),brand=document.querySelector('.chess-arena-reference-title'),word=brand.querySelector('.mobile-home-wordmark'),king=brand.querySelector('img'),board=document.querySelector('.home-board:not(.home-board-frame)'),ornament=document.querySelector('.mobile-home-engraving'),r=e=>e.getBoundingClientRect(),visible=!!ornament?.getClientRects().length,diamond=ornament?.querySelector('.mobile-home-engraving-diamond'),line=ornament?.querySelector('.mobile-home-engraving-line'),sheen=ornament?.querySelector('.mobile-home-engraving-sheen');return {width:innerWidth,height:innerHeight,above:r(visible?ornament:brand).top-r(root).top,boardWidth:r(board).width,boardTop:r(board).top,wordTop:r(word).top,kingTop:r(king).top,ornamentTop:visible?r(ornament).top:null,diamondSize:visible?(diamond.getBBox?.().width??diamond.offsetWidth):null,lineWidth:visible?r(line).width:null,lineHeight:visible?r(line).height:null,font:getComputedStyle(brand).fontSize,kingWidth:r(king).width,kingHeight:r(king).height,visible,hidden:ornament?.getAttribute('aria-hidden'),distance:visible?r(word).top-r(ornament).bottom:null,overflow:root.scrollWidth-root.clientWidth,documentWidth:document.documentElement.scrollWidth,animation:visible?getComputedStyle(line).animationName:null,diamondAnimation:visible?getComputedStyle(diamond).animationName:null,sheenAnimation:sheen?getComputedStyle(sheen).animationName:null};})()`);
+    measurements.push(metric);
+    if(verify){
+     assert.equal(metric.visible,height>580);assert.equal(metric.hidden,'true');assert.ok(metric.overflow<=1&&metric.documentWidth<=width+1,JSON.stringify(metric));
+     if(metric.visible){assert.ok(metric.distance>=14&&metric.distance<=20,JSON.stringify(metric));assert.equal(metric.diamondSize,20);assert.equal(metric.lineWidth,width<=375?88:120);assert.equal(metric.lineHeight,1);assert.equal(metric.animation,'none');assert.equal(metric.diamondAnimation,'none');assert.equal(metric.sheenAnimation,'none');}
+    }
+    await evaluate("document.documentElement.setAttribute('data-schach-treff-unread','')");
+    await capture('home-unread',width,height);
+    if(verify&&height>580&&width!==375){
+     await evaluate("document.head.lastElementChild.remove()");
+     await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
+     const motion=await evaluate(`(()=>{const o=document.querySelector('.mobile-home-engraving'),a=getComputedStyle(o.querySelector('.mobile-home-engraving-line')),b=getComputedStyle(o.querySelector('.mobile-home-engraving-diamond')),c=getComputedStyle(o.querySelector('.mobile-home-engraving-sheen'));return {line:a.animationDuration,delay:a.animationDelay,diamond:b.animationDuration,sheen:c.animationDuration,sheenDelay:c.animationDelay,iterations:[a.animationIterationCount,b.animationIterationCount,c.animationIterationCount]};})()`);
+     assert.deepEqual(motion,{line:'1.4s',delay:'0.6s',diamond:'0.6s',sheen:'1.2s',sheenDelay:'2s',iterations:['1','1','1']});
+     await pause(3300);await capture('home-entrance-complete',width,height);
+     await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    }
+   }
+   assert.deepEqual(exceptions,[],'Home polish browser runtime errors');
+   if(captureRoot)await writeFile(join(captureRoot,phase+'-home-measurements.json'),JSON.stringify(measurements,null,2));
+   return measurements;
+  }
+
+  // A separate fixture mode keeps the existing section regression unchanged.
+  if(playOnly){
+   const snapshot=async(name,width,height)=>{
+    if(!captureRoot)return;
+    const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(join(captureRoot,phase+'-'+name+'-'+width+'x'+height+'.png'),Buffer.from(image.data,'base64'));
+   };
+   const settled=async()=>{
+    await evaluate('document.fonts.ready');
+    await evaluate("Promise.all([...document.images].filter(img=>img.getClientRects().length).map(img=>img.decode().catch(()=>{})))");
+    await pause(120);
+   };
+   const measure=()=>evaluate(`(()=>{
+    const r=s=>document.querySelector(s).getBoundingClientRect();
+    const root=document.querySelector('.play-lobby-screen'),route=document.querySelector('[data-route-scroll]');
+    const board=r('.play-lobby-board'),panel=r('.mobile-arena-panel'),nav=r('[data-mobile-app-nav]'),content=route.getBoundingClientRect();
+    return {above:board.top-content.top,below:nav.top-panel.bottom,gap:panel.top-board.bottom,boardWidth:board.width,boardHeight:board.height,boardTop:board.top,panelBottom:panel.bottom,navTop:nav.top,contentTop:content.top,scrollable:root.scrollHeight>root.clientHeight+1||route.scrollHeight>route.clientHeight+1};
+   })()`);
+   const boardOverlay=async selector=>{
+    const rects=await evaluate(`(()=>{const b=document.querySelector('.play-lobby-board').getBoundingClientRect(),o=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return ['top','left','width','height'].map(k=>Math.abs(b[k]-o[k]));})()`);
+    assert.ok(rects.every(n=>n<=1),'Overlay must stay over the board: '+JSON.stringify(rects));
+   };
+   for(const [width,height]of[[360,780],[390,844],[430,932],[360,640],[768,1024],[1023,900],[1440,900]]){
+    const mobile=width<768;
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
+    await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
+    await wait('typeof window.fixtureNavigate==="function"');
+    // Freeze decorative animation only in this test for reproducible pixel comparisons.
+    await evaluate(`(()=>{const s=document.createElement('style');s.textContent='*,*::before,*::after{animation:none!important;transition:none!important}';document.head.append(s);})()`);
+    await wait(mobile?"document.querySelector('.mobile-home-brand-domain')?.getClientRects().length":"document.querySelector('.desktop-home-arena')?.getClientRects().length");
+    await settled();await snapshot('home',width,height);
+    if(verify&&mobile){
+     const colors=await evaluate(`(()=>{const d=document.querySelector('.mobile-home-brand-domain'),p=d.querySelector('.mobile-home-brand-dot');return [getComputedStyle(d).color,getComputedStyle(p).color];})()`);
+     assert.deepEqual(colors,['rgb(226, 191, 160)','rgb(226, 191, 160)']);
+    }
+    await evaluate("window.fixtureNavigate('/play')");
+    await wait("document.querySelector('.play-lobby-board [data-square]') && document.querySelector("+(mobile?"'.mobile-arena-panel'":"'.arena-start-game'")+")");
+    await settled();await snapshot('play-idle',width,height);
+    if(!mobile)continue;
+    const metric=await measure();measurements.push({width,height,...metric});
+    if(verify){
+     assert.ok(metric.gap>=14&&metric.gap<=16,'Board/panel gap '+JSON.stringify(metric));
+     assert.ok(Math.abs(metric.boardWidth-metric.boardHeight)<=1,'Square board '+JSON.stringify(metric));
+     if(width===390)assert.ok(Math.abs(metric.above-metric.below)<=16,'Unbalanced composition '+JSON.stringify(metric));
+     if(height!==640)assert.ok(metric.above>=0&&metric.below>=0,'Content clipped '+JSON.stringify(metric));
+     else{
+      if(metric.below<0)assert.ok(metric.scrollable,'Short screen must scroll');
+      await evaluate("document.querySelector('.mobile-arena-panel').scrollIntoView({block:'end'})");
+      const end=await measure();assert.ok(end.below>=-1,'Panel unreachable '+JSON.stringify(end));
+      await evaluate("document.querySelector('.play-lobby-board').scrollIntoView({block:'start'})");
+      const start=await measure();assert.ok(start.above>=-1,'Board unreachable '+JSON.stringify(start));
+     }
+    }
+    if(height===640)continue;
+    await evaluate("document.querySelector('.mobile-arena-start').click()");
+    await wait("document.querySelector('.chessaz-search-mobile')?.getClientRects().length");
+    await settled();await snapshot('play-searching',width,height);
+    if(verify){
+     await boardOverlay('.chessaz-search-mobile');
+     const search=await measure();
+     for(const k of ['above','below','gap','boardWidth'])assert.ok(Math.abs(search[k]-metric[k])<=1,'Search moved layout: '+k);
+    }
+    await evaluate("document.querySelector('.chessaz-search-mobile__cancel').click()");
+    await wait("!document.querySelector('.chessaz-search-mobile')");
+    if(verify&&width===390){
+     await evaluate("document.querySelector('.mobile-arena-time').click()");
+     await wait("document.querySelector('.mobile-time-dialog[open]')");
+     await evaluate("document.querySelector('.mobile-time-close').click()");
+     await wait("!document.querySelector('.mobile-time-dialog')");
+     await evaluate("document.querySelector('.mobile-arena-footer button').click()");
+     await wait("document.getElementById('mobile-time-invite-title')");
+     await evaluate("document.getElementById('mobile-time-invite-title').closest('[role=dialog]').querySelector('button').click()");
+     await wait("!document.getElementById('mobile-time-invite-title')");
+     await evaluate("window.fixtureNavigate('/play?room=qa-private-room')");
+     await wait("document.querySelector('.play-lobby-screen').innerText.includes('Joining private room...')");
+     const privateOverlay=await evaluate(`(()=>{const b=document.querySelector('.play-lobby-board'),overlay=[...b.parentElement.children].find(e=>e!==b&&e.textContent.includes('Joining private room...'));if(!overlay)throw Error('Missing private overlay');overlay.setAttribute('data-fixture-private-overlay','');return true;})()`);
+     assert.ok(privateOverlay);await boardOverlay('[data-fixture-private-overlay]');
+     await evaluate("window.fixtureSocketEvent('join_failed',{reason:'room_not_found'})");
+     await wait("document.querySelector('.play-lobby-screen').innerText.includes('Room not found or expired.')");
+     assert.ok(await evaluate(`(()=>{const board=document.querySelector('.play-lobby-board'),toast=[...board.parentElement.children].find(e=>e.textContent==='Room not found or expired.');if(!toast)return false;const b=board.getBoundingClientRect(),t=toast.getBoundingClientRect();return t.top>=b.top&&t.bottom<=b.bottom&&t.left>=b.left&&t.right<=b.right;})()`),'Join error toast must stay on the board');
+    }
+   }
+   assert.deepEqual(exceptions,[],'Play browser runtime errors');
+   if(captureRoot)await writeFile(join(captureRoot,phase+'-play-measurements.json'),JSON.stringify(measurements,null,2));
+   return measurements;
+  }
   for(const width of [1366,390]){
    const height=width===390?844:768;
    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
@@ -41,10 +167,17 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
     if(name==='Spieltag')await wait(`document.querySelector('[aria-label="Mannschaftskampf"]')&&document.querySelectorAll('.spieltag-boards li').length===2`);
     if(name==='Vorbereitung'){if(verify){await wait(`document.getElementById('spieler-section-opponent')?.getAttribute('aria-selected')==='true'`);await pause(120);await fill('Nachname','Huseynov');await click('Suchen');await wait(`document.querySelector('#spieler-section-panel-opponent .spieler-results button')`);await evaluate("document.querySelector('#spieler-section-panel-opponent .spieler-results button').click()");}else{await fill('Spielername','Huseynov, Sabir');await click('Spielerpartien laden');}await wait(`document.body.innerText.includes('0 importierte Partien')`);await evaluate("document.querySelector('.preparation-position')?.closest('details')?.setAttribute('open','')");if(verify){await wait(`document.querySelector('.preparation-shared-board [data-piece-square="f1"] img')?.naturalWidth>0`);assert.match(await evaluate(`document.querySelector('.preparation-shared-board [data-piece-square="f1"] img').getAttribute('src')`),/\/pieces\/mobile\/neo\/wB\.svg$/);}}
     await evaluate('document.fonts.ready');await pause(120);
-    const metric=await evaluate(`(()=>{const main=document.querySelector('main');const scrolling=[...main.querySelectorAll('*')].filter(e=>{const s=getComputedStyle(e);return /^(auto|scroll)$/.test(s.overflowY)&&e.clientHeight>0&&e.scrollHeight>e.clientHeight+1;});return{heading:[...main.querySelectorAll('h1')].filter(e=>e.getClientRects().length).map(e=>e.textContent.trim()),width:innerWidth,height:innerHeight,documentWidth:document.documentElement.scrollWidth,documentHeight:document.documentElement.scrollHeight,scrollContainers:scrolling.map(e=>({tag:e.tagName,className:e.className,height:e.clientHeight,scrollHeight:e.scrollHeight})),boardBottom:document.querySelector('.home-screen-root .home-board')?.getBoundingClientRect().bottom};})()`);
+    const metric=await evaluate(`(()=>{const main=document.querySelector('main');const scrolling=[...main.querySelectorAll('*')].filter(e=>{const s=getComputedStyle(e);return /^(auto|scroll)$/.test(s.overflowY)&&e.clientHeight>0&&e.scrollHeight>e.clientHeight+1;});return{heading:[...main.querySelectorAll('h1')].filter(e=>e.getClientRects().length).map(e=>{const copy=e.cloneNode(true);copy.querySelectorAll('[aria-hidden="true"]').forEach(n=>n.remove());const content=copy.textContent.trim();const label=e.getAttribute('aria-label');return label&&label!==content?label+' [content: '+content+']':content}),width:innerWidth,height:innerHeight,documentWidth:document.documentElement.scrollWidth,documentHeight:document.documentElement.scrollHeight,scrollContainers:scrolling.map(e=>({tag:e.tagName,className:e.className,height:e.clientHeight,scrollHeight:e.scrollHeight})),boardBottom:document.querySelector('.home-screen-root .home-board')?.getBoundingClientRect().bottom};})()`);
     measurements.push({name,...metric});
     if(captureRoot){const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(captureRoot,phase+'-'+name.toLowerCase()+'-'+width+'.png'),Buffer.from(image.data,'base64'));await writeFile(join(captureRoot,phase+'-measurements.json'),JSON.stringify(measurements,null,2));}
     if(verify){assert.equal(metric.documentWidth<=width+1,true,name+' horizontal overflow '+JSON.stringify(metric));assert.deepEqual(metric.heading,[heading],name+' main heading');if(name!=='Home'||width===1366)assert.ok(metric.scrollContainers.length<=1,name+' nested vertical scroll '+JSON.stringify(metric));assert.ok(metric.documentHeight<=height+1,name+' body scroll competes with route '+JSON.stringify(metric));}
+    if(verify&&name==='Home'&&width===390){
+     const brand=await evaluate(`(()=>{const domain=document.querySelector('.mobile-home-brand-domain'),dot=domain.querySelector('.mobile-home-brand-dot');const d=getComputedStyle(domain),p=getComputedStyle(dot);return{color:d.color,dotColor:p.color,gradient:d.backgroundImage,clip:d.backgroundClip,dotFill:p.webkitTextFillColor,fill:d.webkitTextFillColor};})()`);
+     assert.equal(brand.color,'rgb(226, 191, 160)');
+     assert.equal(brand.dotColor,brand.color);
+     assert.equal(brand.gradient,'linear-gradient(110deg, rgb(246, 226, 207), rgb(226, 191, 160) 45%, rgb(185, 140, 108))');
+     assert.equal(brand.clip,'text');assert.equal(brand.dotFill,brand.fill);
+    }
     if(verify&&name==='Home'&&width===1366){const bounds=await evaluate(`(()=>{const root=document.querySelector('.home-screen-root');const b=root.querySelector('.board-container');const controls=b.querySelector('.home-desktop-controls');return{root:root.getBoundingClientRect().bottom,board:b.getBoundingClientRect().bottom,controls:controls?.getBoundingClientRect().bottom,arena:root.querySelector('.desktop-home-arena').getBoundingClientRect().bottom,scroll:document.querySelector('main > div').scrollHeight,height:document.querySelector('main > div').clientHeight};})()`);assert.ok(bounds.scroll<=bounds.height+1,'Home page overflow '+JSON.stringify(bounds));assert.ok(bounds.root<=height+1&&bounds.board<=height+1&&bounds.controls<=height+1&&bounds.arena<=height+1,'Home clipped '+JSON.stringify(bounds));}
    }
   }

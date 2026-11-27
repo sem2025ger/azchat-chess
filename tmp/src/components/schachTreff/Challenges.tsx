@@ -7,7 +7,7 @@ import { useSchachTreffCopy } from './copy';
 import { useV2Copy2 } from './v2/copy2';
 import { useV2Copy } from './v2/copy';
 import { ROOM_ID, gamePath, ownStartedGame } from './challengeRouting';
-import { v2Enabled } from './v2/core';
+import { SEEK_CONTROLS, v2Enabled } from './v2/core';
 import { Toast } from './v2/Toast';
 type Person = { id: string; username: string };
 type Challenge = { id: string; message_id: string; created_by: string; target_user_id: string | null; time_control: string; status: string; expires_at: string; room_id: string | null; accepted_by?: string | null };
@@ -18,6 +18,7 @@ const NONE: ReadonlySet<string> = new Set();
 export function ChallengeProvider({ clubId, me, people, enabled, finished = NONE, children, mobileV2 = false, activeIds }: { clubId: string | null; me: string; people: Person[]; enabled: boolean; finished?: ReadonlySet<string>; children: ReactNode; mobileV2?: boolean; activeIds?: ReadonlySet<string> }) {
   const t=useSchachTreffCopy();
   const mobileCopy=useV2Copy2(), v2Copy=useV2Copy();
+  const timeLabels = { bullet: mobileCopy.bullet, blitz: v2Copy.blitz, rapid: v2Copy.rapid };
   const { socket, isConnected } = useSocket(), navigate = useNavigate();
   const [now,setNow]=useState(() => Date.now());
   const [rows,setRows] = useState<Challenge[]>([]), [available,setAvailable] = useState(false);
@@ -82,23 +83,25 @@ export function ChallengeProvider({ clubId, me, people, enabled, finished = NONE
   const controls: Controls={ now,available:available && isConnected,me,rows,people,busy,open(id) { setTarget(id ?? ''); setPersonal(Boolean(id)); setError(''); setShown(true); },act(action,id) { void request(action,{challengeId:id}); },
     seek: time => request('create',{clubId,timeControl:time,targetUserId:null}),
     openOffers: rows.filter(row => row.created_by===me && row.status==='open' && Date.parse(row.expires_at)>now).length, finished, mobileV2 };
+  const actions = <><button className={mobileV2 ? 'st-mobile-primary' : undefined} disabled={busy || (personal && (!target || (mobileV2 && !people.some(person => person.id === target && person.id !== me)))) || rows.filter(row => row.created_by===me && row.status==='open' && Date.parse(row.expires_at)>now).length>=3}>{t.sendChallenge}</button>
+        <button type="button" className={mobileV2 ? 'st-mobile-secondary' : undefined} onClick={() => setShown(false)}>{t.cancel}</button></>;
   return <Context.Provider value={controls}>{children}{error && !shown && (v2Enabled ? <Toast message={error} closeLabel={t.close} onClose={() => setError('')} /> : <p role="alert">{error}</p>)}
     <dialog aria-label={t.challenge} ref={dialog} className={mobileV2 ? 'st-mobile-sheet st-mobile-challenge' : undefined} onCancel={() => setShown(false)} onClose={() => setShown(false)}>
       <h2>{t.challenge}</h2><form onSubmit={event => { event.preventDefault(); if (mobileV2 && personal && !people.some(person => person.id === target && person.id !== me)) return; void request('create',{clubId,timeControl:time,targetUserId:personal ? target : null}); }}>
-        {mobileV2 ? <>
+        {mobileV2 ? <div className="st-mobile-challenge-content">
           <fieldset className="st-mobile-challenge-kind"><legend>{t.challengeKind}</legend><button type="button" aria-pressed={!personal} onClick={() => setPersonal(false)}>{mobileCopy.openShort}</button><button type="button" aria-pressed={personal} onClick={() => setPersonal(true)}>{mobileCopy.personalShort}</button></fieldset>
           {personal && <fieldset className="st-mobile-opponents"><legend>{t.targetPlayer}</legend>{people.filter(person => person.id !== me).sort((a,b) => Number(Boolean(activeIds?.has(b.id))) - Number(Boolean(activeIds?.has(a.id))) || a.username.localeCompare(b.username)).map(person => <button type="button" key={person.id} aria-pressed={target === person.id} onClick={() => setTarget(person.id)}>{person.username}</button>)}{!people.some(person => person.id !== me) && <p>{t.noMembers}</p>}</fieldset>}
-          <fieldset className="st-mobile-times"><legend>{t.timeControl}</legend>{['3+2','5+0','10+0'].map(value => <button type="button" key={value} aria-pressed={time === value} onClick={() => setTime(value)}><strong>{value}</strong><small>{value === '10+0' ? v2Copy.rapid : v2Copy.blitz}</small></button>)}</fieldset>
+          <fieldset className="st-mobile-times"><legend>{t.timeControl}</legend>{SEEK_CONTROLS.map(({ value, kind }) => <button type="button" key={value} aria-pressed={time === value} onClick={() => setTime(value)}><strong>{value}</strong><small>{timeLabels[kind]}</small></button>)}</fieldset>
           <p className="st-mobile-challenge-summary">{personal ? mobileCopy.personalShort : mobileCopy.openShort} · {time} · {mobileCopy.challengeExpiry}</p>
-        </> : <><fieldset><legend>{t.challengeKind}</legend>
+          {error && <p role="alert">{error}</p>}
+        </div> : <><fieldset><legend>{t.challengeKind}</legend>
           <label><input name="challenge-kind" type="radio" checked={!personal} onChange={() => setPersonal(false)} />{t.openChallenge}</label>
           <label><input name="challenge-kind" type="radio" checked={personal} onChange={() => setPersonal(true)} />{t.personalChallenge}</label>
         </fieldset>
         {personal && <label>{t.targetPlayer}<select value={target} onChange={event => setTarget(event.target.value)} required><option value="">{t.choosePlayer}</option>{people.filter(person => person.id!==me).map(person => <option key={person.id} value={person.id}>{person.username}</option>)}</select></label>}
-        <label>{t.timeControl}<select value={time} onChange={event => setTime(event.target.value)}>{['3+2','5+0','10+0'].map(value => <option key={value}>{value}</option>)}</select></label></>}
-        {error && <p role="alert">{error}</p>}
-        <button className={mobileV2 ? 'st-mobile-primary' : undefined} disabled={busy || (personal && (!target || (mobileV2 && !people.some(person => person.id === target && person.id !== me)))) || rows.filter(row => row.created_by===me && row.status==='open' && Date.parse(row.expires_at)>now).length>=3}>{t.sendChallenge}</button>
-        <button type="button" className={mobileV2 ? 'st-mobile-secondary' : undefined} onClick={() => setShown(false)}>{t.cancel}</button>
+        <label>{t.timeControl}<select value={time} onChange={event => setTime(event.target.value)}>{SEEK_CONTROLS.map(({ value, kind }) => <option key={value} value={value}>{value} · {timeLabels[kind]}</option>)}</select></label></>}
+        {!mobileV2 && error && <p role="alert">{error}</p>}
+        {mobileV2 ? <div className="st-mobile-challenge-actions">{actions}</div> : actions}
       </form>
     </dialog>
   </Context.Provider>;

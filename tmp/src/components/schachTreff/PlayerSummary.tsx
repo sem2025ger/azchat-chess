@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { supabase } from '../../services/supabase';
 import { useSchachTreffCopy } from './copy';
-type Summary = { completed_games: number; last_games: { opponent: string | null; time_control: string; result: string }[] };
+import { playerOutcome } from './playerOutcome';
+type Summary = { completed_games: number; last_games: { opponent: string | null; time_control: string; result: string; color?: 'w' | 'b' | null }[] };
 export default function PlayerSummary({ userId,children }: { userId: string; children: ReactNode }) {
   const t=useSchachTreffCopy();
   const [state,setState]=useState<{ userId: string; data?: Summary; error?: boolean; missing?: boolean } | null>(null);
@@ -22,6 +23,6 @@ export default function PlayerSummary({ userId,children }: { userId: string; chi
   const error=state?.userId===userId && state.error;
   return <>{children}{state?.userId===userId && state.missing ? null : error ? <p role="alert">{t.error}</p> : !data ? <p role="status">{t.loading}</p> : <>
     <p className="st-player-total"><span>{t.games}: </span><strong className="st-mono">{data.completed_games}</strong></p><section className="st-player-history"><h3>{t.lastGames}</h3>
-    {!data.last_games.length && <p>{t.noGames}</p>}<ul>{data.last_games.map((game,index) => <li key={index}><span className="st-player-opponent">{game.opponent ?? '—'}</span><span className="st-player-separator" aria-hidden="true"> · </span><span className="st-mono">{game.time_control}</span><span className="st-player-separator" aria-hidden="true"> · </span><strong className="st-mono">{game.result}</strong></li>)}</ul></section>
+    {!data.last_games.length && <p>{t.noGames}</p>}<ul>{data.last_games.map((game,index) => { const outcome=playerOutcome(game.result,game.color); return <li key={index}><span className="st-player-opponent">{game.opponent ?? '—'}</span><span className="st-player-separator" aria-hidden="true"> · </span><span className="st-mono">{game.time_control}</span><span className="st-player-separator" aria-hidden="true"> · </span><span className="st-player-result">{outcome ? <><span className="st-player-outcome" data-outcome={outcome}>{t[outcome]}</span><small className="st-player-score st-mono"> · {game.result}</small></> : <strong className="st-mono">{game.result}</strong>}</span></li>; })}</ul></section>
   </>}</>;
 }

@@ -36,6 +36,10 @@
   .mobile-arena-panel .mobile-arena-start { background:linear-gradient(110deg,#f6cf62,#6eddd7,#bd9be8,#f6cf62); background-size:300% 100%; animation:glowCycle 18s ease-in-out infinite; }
   .mobile-arena-panel .text-glow-cycle { background-size:200% 100%; animation:textGlowCycle 18s ease-in-out infinite; }
 }
+@media (max-width:767px) {
+  .play-lobby-screen.flex { justify-content:safe center; padding-block:4px; }
+  .play-lobby-screen > .play-lobby-grid { gap:15px; }
+}
 @media (max-width:767px) and (orientation:portrait) {
   .play-lobby-screen { padding-bottom:4px; padding-inline:4px; }
   .play-lobby-board { max-width:min(100%, max(200px, calc(100dvh - 342px - env(safe-area-inset-bottom, 0px)))) !important; }

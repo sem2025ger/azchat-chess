@@ -673,38 +673,163 @@
 }
 
 
-/* Compact mobile Home: reuse the desktop silver wordmark and king. */
+/* Mobile Home: centered, unframed brand and board; desktop stays unchanged. */
 @media (max-width: 767px) {
+  .home-screen-root {
+    height: 100%;
+    min-height: 0;
+    container-type: size;
+  }
   .home-screen-root [data-mobile-home-stack] {
-    gap: 20px;
-    padding-bottom: 12px;
+    justify-content: safe center;
+    gap: 16px;
+    padding: 0 2px;
   }
   .home-screen-root [data-mobile-home-stack] .mobile-home-arena {
-    border-radius: 16px;
-    padding: 16px 10px;
+    border: 0 !important;
+    outline: none;
+    background: none;
+    box-shadow: none !important;
+    border-radius: 0;
+    padding: 0;
   }
-  .mobile-home-arena .chess-arena-reference-title {
+  .home-screen-root .mobile-home-arena .chess-arena-reference-title {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    width: max-content;
+    min-height: 1.35714286em;
+    margin-inline: auto;
     gap: 0;
-    font-family: inherit;
-    font-size: 1.72rem;
-    line-height: 1.8rem;
+    font-family: 'Bodoni Moda', Georgia, serif;
+    font-size: clamp(44px, 14.5vw, 56px);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: 0;
     background: none;
   }
-  .home-screen-root .mobile-home-arena .chess-arena-reference-title > span[aria-hidden="true"] {
-    transform: translate(-4px, -4px);
+  .home-screen-root .mobile-home-engraving {
+    --engraving-line: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: calc(2 * var(--engraving-line) + 56.2843px);
+    height: 20px;
+    margin-bottom: 10px;
+    transform: translateY(10px);
+    pointer-events: none;
+  }
+  .home-screen-root .mobile-home-engraving-art {
+    flex: none;
+    overflow: visible;
+  }
+  .home-screen-root .mobile-home-engraving-line {
+    width: var(--engraving-line);
+    height: 1px;
+    transform-box: fill-box;
+  }
+  .home-screen-root .mobile-home-engraving-left {
+    x: 0;
+    transform-origin: right center;
+  }
+  .home-screen-root .mobile-home-engraving-right {
+    x: calc(100% - var(--engraving-line));
+    transform-origin: left center;
+  }
+  .home-screen-root .mobile-home-engraving-sheen {
+    opacity: 0;
+    transform-box: fill-box;
+  }
+  .home-screen-root .mobile-home-arena .chess-arena-reference-title {
+    isolation: isolate;
+  }
+  .home-screen-root .chess-arena-reference-title::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+    width: min(460px, calc(100vw - 12px));
+    height: 330px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(closest-side, rgba(226,191,160,.16), rgba(185,140,108,.06) 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 46%, transparent 66%);
+  }
+  .home-screen-root .mobile-home-wordmark {
+    display: block;
+    position: relative;
+    flex: none;
+    font: inherit;
+    letter-spacing: inherit;
+  }
+  .home-screen-root .mobile-home-brand-name {
+    color: #F2EEE3;
+  }
+  .home-screen-root .mobile-home-brand-domain {
+    color: #E2BFA0;
+    letter-spacing: -.02em;
+  }
+  .home-screen-root .mobile-home-brand-dot {
+    font-size: .75em;
+    margin-right: -.045em;
+  }
+  @supports ((background-clip: text) or (-webkit-background-clip: text)) {
+    .home-screen-root .mobile-home-brand-domain {
+      background-image: linear-gradient(110deg, #F6E2CF, #E2BFA0 45%, #B98C6C);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  }
+  .home-screen-root .mobile-home-king {
+    width: calc(.67857143em + 1.5px);
+    height: calc(1.35714286em + 3px);
+    margin-left: -.03em;
+    transform: translateY(-.11em);
+  }
+  .home-screen-root .mobile-home-king > img { filter: brightness(1.19) contrast(.96); }
+  /* King-only silver and champagne sheen, using the desktop mask and timing. */
+  .home-screen-root .mobile-home-arena .sidebar-king-sheen {
+    background-image: linear-gradient(110deg, transparent 15%, rgba(151,160,171,.13) 30%, rgba(221,226,232,.30) 43%, rgba(249,242,225,.42) 50%, rgba(219,190,137,.30) 60%, transparent 82%);
+    animation: sidebarKingSoftSheen 9s ease-in-out infinite;
   }
   .home-screen-root .mobile-home-arena > a[href="/region/nrw"] {
     display: none;
   }
   .home-screen-root .home-board-column .home-board + nav {
-    margin-top: 20px;
+    margin-top: 14px;
   }
   .home-screen-root .home-board-column {
-    max-width: calc(100% - 4px) !important;
+    width: min(100%, max(0px, calc(100cqh - 180px)));
+    max-width: 100% !important;
   }
+}
+@media (max-width: 375px) {
+  .home-screen-root .mobile-home-engraving { --engraving-line: 88px; }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  .home-screen-root .mobile-home-engraving-diamond { animation: mobileHomeEngravingReveal 600ms ease-out both; }
+  .home-screen-root .mobile-home-engraving-line { animation: mobileHomeEngravingDraw 1400ms cubic-bezier(.22,.61,.36,1) 600ms both; }
+  .home-screen-root .mobile-home-engraving-sheen { animation: mobileHomeEngravingHighlight 1200ms ease-in-out 2s both; }
+  @keyframes mobileHomeEngravingHighlight {
+    from { opacity: 1; transform: translateX(-100%); }
+    to { opacity: 1; transform: translateX(100%); }
+  }
+  @keyframes mobileHomeEngravingReveal { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes mobileHomeEngravingDraw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .home-screen-root .mobile-home-arena .sidebar-king-sheen { animation: none; opacity: 0; }
+}
+@media (max-width: 767px) and (max-height: 580px) {
+  .home-screen-root .mobile-home-engraving { display: none; }
+  .home-screen-root [data-mobile-home-stack] { gap: 14px; }
+  .home-screen-root .mobile-home-arena .chess-arena-reference-title { font-size: clamp(38px, 12.5vw, 46px); }
+  .home-screen-root .home-board-column .home-board + nav { margin-top: 8px; }
+  .home-screen-root .home-board-column { width: min(100%, max(0px, calc(100cqh - 164px))); }
 }
 
 /* ChessAZ mobile premium controls: colors only, no board or layout changes. */
@@ -1966,12 +2091,66 @@ aside .site-nav-link{min-height:58px;padding:10px 14px;border-radius:12px}
 .site-nav-subtitle{display:block;margin-top:3px;font:400 .705rem/1.35 Inter,system-ui,sans-serif;color:#a9a59c;letter-spacing:0;text-transform:none}
 aside nav{padding-top:20px!important}
 /* Mobile touch targets grow to fit localized text without clipping. */
-[data-mobile-app-nav] .site-nav-link{flex:1 0 auto;min-width:44px;box-sizing:border-box;padding-inline:1px}
-[data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:auto;max-width:none;font-size:clamp(9px,2.65vw,.75rem);line-height:1.2;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;overflow-wrap:normal;word-break:normal;hyphens:manual}
-[data-mobile-app-nav] .site-nav-link[href="/chat"] .site-nav-label{width:4.5em;white-space:normal}
+[data-mobile-app-nav] .site-nav-link{flex:1 1 0;min-width:44px;box-sizing:border-box;padding-inline:1px}
+[data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:auto;max-width:none;font-size:clamp(9.5px,2.65vw,.85rem);line-height:1.2;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;overflow-wrap:normal;word-break:normal;hyphens:manual}
+@media (max-width: 767px) {
+  [data-mobile-app-nav] .site-nav-link:not([aria-current="page"]):not([href="/chat"]):not(:hover) { color: #AAAAAA; }
+  [data-mobile-app-nav] .site-nav-link[href="/chat"] {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    color: #9DA6B0;
+    background: linear-gradient(145deg, #23272B, #14171C 58%, #29343F);
+    box-shadow: inset 0 0 0 1px rgba(126,137,150,.48), inset 0 1px 0 rgba(192,202,214,.14);
+  }
+  [data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"] {
+    color: #B4BEC9;
+    box-shadow: inset 0 0 0 1px rgba(155,170,186,.9), inset 0 1px 0 rgba(192,202,214,.24), inset 0 -3px 0 #9BAABA;
+  }
+  [data-mobile-app-nav] .site-nav-link[href="/chat"] .site-nav-label {
+    width: 4.5em;
+    white-space: normal;
+    font-size: calc(clamp(9.5px, 2.65vw, .85rem) + 1px);
+    font-weight: 700;
+    color: #C6CDD5;
+  }
+  [data-mobile-app-nav] .site-nav-link[href="/chat"] > div > svg:first-child { width: 19px; height: 19px; }
+  [data-mobile-app-nav] [data-mobile-schach-treff-icon] stop:first-child { stop-color: #87929D; }
+  [data-mobile-app-nav] [data-mobile-schach-treff-icon] stop:last-child { stop-color: #ADB6BF; }
+  [data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"] [data-mobile-schach-treff-icon] stop:first-child { stop-color: #929BA4; }
+  [data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"] [data-mobile-schach-treff-icon] stop:last-child { stop-color: #B4BEC9; }
+  @media (forced-colors: active) {
+    [data-mobile-app-nav] [data-mobile-schach-treff-icon] > path:first-of-type { stroke: currentColor; }
+    [data-mobile-app-nav] [data-mobile-schach-treff-icon] > path:last-of-type { fill: currentColor; }
+  }
+  [data-mobile-app-nav] .site-nav-link[href="/chat"]::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(115deg, transparent 27%, #29343F 43%, #66717C 50%, #29343F 57%, transparent 73%);
+    transform: translate3d(-110%, 0, 0);
+    opacity: 0;
+  }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  [data-mobile-app-nav] .site-nav-link[href="/chat"]::before {
+    animation: chessazMobileChatSheen 8s ease-in-out infinite;
+  }
+  @keyframes chessazMobileChatSheen {
+    0%, 15% { transform: translate3d(-110%, 0, 0); opacity: 0; }
+    30%, 65% { opacity: .16; }
+    80%, 100% { transform: translate3d(110%, 0, 0); opacity: 0; }
+  }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  [data-mobile-app-nav] .site-nav-link[href="/chat"]::before { animation: none; opacity: 0; }
+}
+@media(max-width:767px){[data-mobile-app-nav] .site-nav-link[href="/spieltag"] .site-nav-label{letter-spacing:-.04em;white-space:normal;max-width:100%}}
 [data-mobile-app-nav]{gap:2px}
 @media(max-width:359px){[data-mobile-app-nav]{gap:0;padding-inline:2px}[data-mobile-app-nav] .site-nav-link{padding-inline:1px}}
-[data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:58px;gap:4px}
+[data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:54px;gap:3px}
 /* Equal navigation rows leave room for every desktop destination at 720 px. */
 aside .site-nav-link{height:54px;min-height:54px;padding:7px 14px;align-items:flex-start}
 aside [role=img]{margin-top:10px!important;min-height:52px!important}
@@ -1989,12 +2168,22 @@ aside nav{padding-top:12px!important}
 [class~="text-[23px]"]{font-size:1.4375rem}
 [class~="text-[29px]"]{font-size:1.8125rem}
 [class~="text-[42px]"]{font-size:2.625rem}
-[data-mobile-app-nav] .site-nav-link{display:grid;grid-template-columns:max-content;grid-template-rows:22px 2.4em;align-content:center;justify-content:center;justify-items:center;gap:3px}
+[data-mobile-app-nav] .site-nav-link{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:20px 29px;align-content:center;justify-content:center;justify-items:center;gap:3px}
 [data-mobile-app-nav] .site-nav-link>div{grid-row:1;align-self:start}
+[data-mobile-app-nav] .site-nav-link>div>svg:first-child{width:16px;height:16px}
 [data-mobile-app-nav] .site-nav-link .site-nav-label{grid-row:2;align-self:start}
 /* UI copy uses self-hosted Inter; display faces are reserved for page titles. */
 #root :is(button,input,select,textarea,label,p,small,dt,dd,summary,a,h2,h3,h4,h5,h6){font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif!important;font-style:normal!important}
 [data-mobile-app-nav] .site-nav-link{transform:none!important}
+@media(max-width:767px){
+  /* Shared mobile bar height: preserve system inset and usable 44px+ tap targets. */
+  [data-mobile-app-nav]{height:calc(74px + env(safe-area-inset-bottom,0px));padding-top:4px;padding-bottom:calc(7px + env(safe-area-inset-bottom,0px));}
+  [data-mobile-app-nav] + main{padding-bottom:calc(74px + env(safe-area-inset-bottom,0px));}
+  [data-mobile-app-nav] .site-nav-link{height:100%;max-height:60px;}
+  /* Preserve scroll fallback on short Home viewports without a horizontal gutter. */
+  [data-home-route] [data-route-scroll], .home-screen-root [data-mobile-home-stack]{scrollbar-width:none;}
+  [data-home-route] [data-route-scroll]::-webkit-scrollbar, .home-screen-root [data-mobile-home-stack]::-webkit-scrollbar{display:none;}
+}
 
 /* Desktop sidebar: equal centered rows, one-line labels across all six locales. */
 @media(min-width:768px){aside .site-nav-link.sidebar-item{height:54px;min-height:54px;padding:0 14px;display:flex;align-items:center;justify-content:flex-start;box-sizing:border-box;gap:0}aside .site-nav-link .site-nav-copy{align-self:center;align-items:center;min-height:100%;min-width:0;white-space:nowrap}aside .site-nav-link .site-nav-label{font-family:Inter,system-ui,sans-serif;font-size:16px;font-weight:600;line-height:20px;white-space:nowrap;overflow:visible;text-overflow:clip;margin:0;padding:0}aside .site-nav-link>div:first-child{align-self:center;align-items:center}}
