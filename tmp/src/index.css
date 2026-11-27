@@ -868,6 +868,18 @@
     pointer-events: none;
     z-index: 60;
   }
+
+  /* Approved 27.11.2026: pieces 10% smaller than the inline 1.16 Home scale. */
+  .home-screen-root .home-board.mobile-home-board-frame [data-piece-square] img {
+    transform: scale(1.044);
+  }
+
+  /* Bottom-row file letters sit in the square corner, clear of the pieces; colour and size unchanged. */
+  .home-screen-root .home-board.mobile-home-board-frame [class*="bottom-0.5 right-1"] {
+    bottom: 0;
+    right: 2px;
+    line-height: 1;
+  }
 }
 
 @media (max-width: 767px) and (min-height: 701px) {
@@ -924,6 +936,18 @@
   .mobile-home-play:active {
     animation: none;
   }
+  /* Approved 27.11.2026: keep the label still while the button pulses (exact counter-scale). */
+  .mobile-home-play .text-shadow-cycle {
+    transform-origin: center;
+    animation: mobilePlayLabelSteady 3.8s ease-in-out infinite;
+  }
+  .mobile-home-play:active .text-shadow-cycle {
+    animation: none;
+  }
+}
+@keyframes mobilePlayLabelSteady {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(0.974659); } /* = 1 / 1.026 */
 }
 @keyframes mobileObsidianSheen { from { opacity: .12; } to { opacity: .45; } }
 @keyframes mobilePlayGoldWave {

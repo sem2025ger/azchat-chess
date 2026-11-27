@@ -114,3 +114,12 @@ test('mobile Home board has the approved bronze frame and tall-screen lift only'
   assert.match(lift, /\.home-dashboard-column \{\s*transform: translateY\(-8px\);/);
   assert.match(lift, /\.home-board\.mobile-home-board-frame \{\s*transform: translateY\(-16px\);/);
 });
+
+test('mobile Home pieces, file letters and play label follow the 27.11.2026 approval', () => {
+  assert.match(css, /\.home-board\.mobile-home-board-frame \[data-piece-square\] img \{\s*transform: scale\(1\.044\);/);
+  assert.match(css, /\.home-board\.mobile-home-board-frame \[class\*="bottom-0\.5 right-1"\] \{\s*bottom: 0;\s*right: 2px;\s*line-height: 1;\s*\}/);
+  assert.match(home, /className="mobile-home-play[\s\S]*?\{t\('home\.playNow'\)\}/);
+  assert.match(css, /\.mobile-home-play \.text-shadow-cycle \{\s*transform-origin: center;\s*animation: mobilePlayLabelSteady 3\.8s ease-in-out infinite;/);
+  assert.match(css, /@keyframes mobilePlayLabelSteady \{\s*0%, 100% \{ transform: scale\(1\); \}\s*50% \{ transform: scale\(0\.974659\); \}/);
+  assert.match(css, /animation: mobilePlayGentlePulse 3\.8s ease-in-out infinite;/);
+});

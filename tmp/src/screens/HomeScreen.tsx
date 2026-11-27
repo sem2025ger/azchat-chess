@@ -566,7 +566,7 @@ function HomeMoveControls({
           className="mobile-home-play group relative flex min-h-[50px] min-w-0 items-center justify-center overflow-hidden rounded-xl border border-white/20 btn-glow-cycle px-2 py-2 text-black shadow-[0_8px_18px_-10px_rgba(0,0,0,0.45)] transition-[transform,box-shadow] duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80"
         >
           <span className="relative z-10 w-full text-center font-extrabold text-[clamp(0.85rem,3.75vw,1.01rem)] leading-tight tracking-[0.005em] uppercase text-shadow-cycle">
-            {t('home.playChessNow')}
+            {t('home.playNow')}
           </span>
         </Link>
       )}

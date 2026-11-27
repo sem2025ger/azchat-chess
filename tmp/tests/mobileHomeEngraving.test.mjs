@@ -25,8 +25,11 @@ test('mobile Home engraved ornament, reduced motion and unchanged board/desktop'
    const lift=metric.height>=701?{boardTop:-16,wordTop:-8,kingTop:-8,ornamentTop:-8}:{};
    assert.equal(metric.font,previous.font,'font changed');
    for(const key of ['kingWidth','kingHeight'])assert.ok(Math.abs(metric[key]-previous[key])<=0.01,key+' changed '+JSON.stringify({previous,metric}));
-   for(const key of ['boardTop','wordTop','kingTop'])assert.ok(Math.abs(metric[key]-(previous[key]+(lift[key]??0)))<=0.01,key+' changed '+JSON.stringify({previous,metric}));
-   if(metric.width===390&&metric.height===844){const shift=metric.ornamentTop-(lift.ornamentTop??0)-previous.ornamentTop;assert.ok(shift>=8&&shift<=12,JSON.stringify({previous,metric}));}
+   // Approved one-line play label 27.11.2026: the vertically centred stack may move as a whole by at most 3px.
+   const centring=metric.wordTop-(previous.wordTop+(lift.wordTop??0));
+   assert.ok(Math.abs(centring)<=3,'centring shift '+JSON.stringify({previous,metric}));
+   for(const key of ['boardTop','wordTop','kingTop'])assert.ok(Math.abs(metric[key]-(previous[key]+(lift[key]??0)+centring))<=0.01,key+' changed '+JSON.stringify({previous,metric}));
+   if(metric.width===390&&metric.height===844){const shift=metric.ornamentTop-(lift.ornamentTop??0)-centring-previous.ornamentTop;assert.ok(shift>=8&&shift<=12,JSON.stringify({previous,metric}));}
   }
   for(const size of ['768x1024']){
    const a=await readFile(join(captureRoot,'before-home-'+size+'.png')),b=await readFile(join(captureRoot,'after-home-'+size+'.png'));

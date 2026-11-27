@@ -179,6 +179,8 @@ test('all NRW flags off preserves the main routing and navigation entry points',
   ["xl:!p-0\" />", "xl:!p-2\" />"],
   // Approved mobile board frame 27.11.2026: bronze frame class replaces the white ring on the mobile board only.
   ["<div className=\"home-board mobile-home-board-frame w-full aspect-square overflow-hidden rounded-lg shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]\">", "<div className=\"home-board w-full aspect-square overflow-hidden rounded-lg ring-1 ring-white/10 shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]\">"],
+  // Approved 27.11.2026: the mobile play button uses the existing short "home.playNow" label in all languages.
+  ["            {t('home.playNow')}\n          </span>\n        </Link>", "            {t('home.playChessNow')}\n          </span>\n        </Link>"],
  ];
  for(const [withFlag,withoutFlag] of unifiedCardChanges){
   assert.equal(homeSource.split(withFlag).length,2,'approved Home feature fragment must occur exactly once');
