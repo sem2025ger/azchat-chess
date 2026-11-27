@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, ChevronUp, Rocket, Sparkles, Timer, Trophy, Users, X, Zap } from 'lucide-react';
+import { ChevronDown, Rocket, Timer, Users, X, Zap } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import type { ArenaPlayPanelProps } from './ArenaPlayPanel';
 import './MobileArenaPlayPanel.css';
@@ -10,6 +10,7 @@ const timeGroups = {
   Blitz: ['3 min.', '3 | 2', '5 min.'],
   Rapid: ['10 min.', '15 | 10', '30 min.'],
 };
+const popularTimes = ['1 min.', '3 min.', '5 min.', '10 min.'];
 
 export default function MobileArenaPlayPanel({ timeControl, onTimeChange, onStart, onFriend }: ArenaPlayPanelProps) {
   const { language, t } = useLanguage();
@@ -17,9 +18,9 @@ export default function MobileArenaPlayPanel({ timeControl, onTimeChange, onStar
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const groupLabel = (name: string) => name === 'Rapid' && language === 'de' ? 'Schnellschach' : name;
-  const category = Object.entries(timeGroups).find(([, times]) => times.includes(timeControl))?.[0] || 'Blitz';
+  const customTime = !popularTimes.includes(timeControl);
   const label = (value: string) => value.replace('min.', language === 'ru' || language === 'ua' ? 'мин.' : language === 'az' || language === 'tr' ? 'dəq.' : 'min.');
-  const tournament = language === 'ru' ? 'Турниры · скоро' : language === 'de' ? 'Turniere · bald' : language === 'az' ? 'Turnirlər · tezliklə' : 'Tournaments · soon';
+  const optionLabel = (value: string) => label(value).replace(' | ', ' + ');
   useEffect(() => {
     if (!timeOpen) return;
     const dialog = dialogRef.current;
@@ -36,13 +37,13 @@ export default function MobileArenaPlayPanel({ timeControl, onTimeChange, onStar
   }, [timeOpen]);
   return (
     <section className="mobile-arena-panel panel-glow-cycle" aria-label={t('play.startGame')}>
-      <button ref={triggerRef} type="button" className="mobile-arena-time" aria-label={`${t('invite.chooseTime')}: ${label(timeControl)}`} aria-haspopup="dialog" aria-expanded={timeOpen} onClick={() => setTimeOpen(open => !open)}>
-        <Sparkles size={20} className="mobile-arena-time-icon" aria-hidden="true" />
-        <span className="mobile-arena-clock" aria-hidden="true">
-          <strong className="text-glow-cycle">{label(timeControl)}</strong><small>{groupLabel(category)}</small>
-        </span>
-        <ChevronDown size={17} aria-hidden="true" />
-      </button>
+      <div className="mobile-arena-times" role="group" aria-label={t('invite.chooseTime')}>
+        {popularTimes.map(time => <button key={time} type="button" aria-pressed={time === timeControl} onClick={() => { if (time !== timeControl) onTimeChange(time); }}>{label(time)}</button>)}
+        <button ref={triggerRef} type="button" className="mobile-arena-more" data-selected={customTime || undefined} aria-label={`${t('invite.chooseTime')}: ${label(timeControl)}`} aria-haspopup="dialog" aria-expanded={timeOpen} onClick={() => setTimeOpen(open => !open)}>
+          <span>{customTime ? optionLabel(timeControl) : t('play.moreTimes')}</span>
+          <ChevronDown size={10} aria-hidden="true" />
+        </button>
+      </div>
       {timeOpen && createPortal(
         <dialog ref={dialogRef} className="mobile-time-dialog" aria-labelledby="mobile-time-title" onCancel={event => { event.preventDefault(); setTimeOpen(false); }} onClick={event => {
           if (event.target !== event.currentTarget) return;
@@ -58,19 +59,17 @@ export default function MobileArenaPlayPanel({ timeControl, onTimeChange, onStar
             return <div key={name} className="mobile-time-group" role="group" aria-labelledby={`mobile-time-${name}`}>
               <h3 id={`mobile-time-${name}`}><Icon size={17} aria-hidden="true" />{groupLabel(name)}</h3>
               <div className="mobile-time-options">
-                {times.map(time => <button type="button" key={time} aria-pressed={time === timeControl} onClick={() => { if (time === timeControl) setTimeOpen(false); else onTimeChange(time); }}>{label(time).replace(' | ', ' + ')}</button>)}
+                {times.map(time => <button type="button" key={time} aria-pressed={time === timeControl} onClick={() => { if (time !== timeControl) onTimeChange(time); setTimeOpen(false); }}>{optionLabel(time)}</button>)}
               </div>
             </div>;
           })}
-          <button type="button" className="mobile-time-done" aria-label={`${t('invite.close')}: ${label(timeControl)}`} onClick={() => setTimeOpen(false)}>{label(timeControl)}<ChevronUp size={17} aria-hidden="true" /></button>
         </dialog>, document.body
       )}
       <div className="mobile-arena-action">
         <button type="button" className="mobile-arena-start btn-glow-cycle" onClick={onStart}>{t('play.startGame')}</button>
       </div>
       <div className="mobile-arena-footer">
-        <button type="button" aria-haspopup="dialog" onClick={onFriend}><Users size={18} aria-hidden="true" /><span>{language === 'ru' ? 'Игра с другом' : t('play.friend')}</span></button>
-        <button type="button" disabled><Trophy size={18} aria-hidden="true" /><span>{tournament}</span></button>
+        <button type="button" aria-haspopup="dialog" onClick={onFriend}><Users size={18} aria-hidden="true" /><span>{t('play.friend')}</span></button>
       </div>
     </section>
   );
