@@ -129,14 +129,16 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
    const measure=()=>evaluate(`(()=>{
     const r=s=>document.querySelector(s).getBoundingClientRect();
     const root=document.querySelector('.play-lobby-screen'),route=document.querySelector('[data-route-scroll]');
-    const board=r('.play-lobby-board'),panel=r('.mobile-arena-panel'),nav=r('[data-mobile-app-nav]'),content=route.getBoundingClientRect();
-    return {above:board.top-content.top,below:nav.top-panel.bottom,gap:panel.top-board.bottom,boardWidth:board.width,boardHeight:board.height,boardTop:board.top,panelBottom:panel.bottom,navTop:nav.top,contentTop:content.top,scrollable:root.scrollHeight>root.clientHeight+1||route.scrollHeight>route.clientHeight+1};
+    const wrapper=document.querySelector('.play-lobby-board'),board=wrapper.getBoundingClientRect(),panel=r('.mobile-arena-panel'),nav=r('[data-mobile-app-nav]'),content=route.getBoundingClientRect(),style=getComputedStyle(root),edge=getComputedStyle(wrapper,'::after');
+    const piece=wrapper.querySelector('[data-piece-square="a2"] img'),square=wrapper.querySelector('[data-square="a2"]:not([data-piece-square])');
+    const available=Math.max(0,nav.top-content.top-panel.height-15-parseFloat(style.paddingTop)-parseFloat(style.paddingBottom));
+    return {above:board.top-content.top,below:nav.top-panel.bottom,gap:panel.top-board.bottom,boardWidth:board.width,boardHeight:board.height,boardTop:board.top,panelBottom:panel.bottom,navTop:nav.top,contentTop:content.top,panelHeight:panel.height,available,edge:edge.backgroundImage,edgePadding:edge.padding,edgePointer:edge.pointerEvents,pieceRatio:piece&&square?piece.getBoundingClientRect().width/square.getBoundingClientRect().width:null,scrollable:root.scrollHeight>root.clientHeight+1||route.scrollHeight>route.clientHeight+1};
    })()`);
    const boardOverlay=async selector=>{
     const rects=await evaluate(`(()=>{const b=document.querySelector('.play-lobby-board').getBoundingClientRect(),o=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return ['top','left','width','height'].map(k=>Math.abs(b[k]-o[k]));})()`);
     assert.ok(rects.every(n=>n<=1),'Overlay must stay over the board: '+JSON.stringify(rects));
    };
-   for(const [width,height]of[[360,780],[390,844],[430,932],[360,640],[768,1024],[1023,900],[1440,900]]){
+   for(const [width,height]of[[360,780],[390,844],[430,932],[360,640],[390,716],[768,1024],[1023,900],[1440,900]]){
     const mobile=width<768;
     await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
     await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
@@ -145,6 +147,7 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
     await evaluate(`(()=>{const s=document.createElement('style');s.textContent='*,*::before,*::after{animation:none!important;transition:none!important}';document.head.append(s);})()`);
     await wait(mobile?"document.querySelector('.mobile-home-brand-domain')?.getClientRects().length":"document.querySelector('.desktop-home-arena')?.getClientRects().length");
     await settled();await snapshot('home',width,height);
+    const home=mobile?await evaluate(`(()=>{const b=document.querySelector('.home-board:not(.home-board-frame)'),piece=b.querySelector('[data-piece-square="a2"] img'),square=b.querySelector('[data-square="a2"]:not([data-piece-square])');return {homeWidth:b.getBoundingClientRect().width,homeRatio:piece&&square?piece.getBoundingClientRect().width/square.getBoundingClientRect().width:null};})()`):null;
     if(verify&&mobile){
      const colors=await evaluate(`(()=>{const d=document.querySelector('.mobile-home-brand-domain'),p=d.querySelector('.mobile-home-brand-dot');return [getComputedStyle(d).color,getComputedStyle(p).color];})()`);
      assert.deepEqual(colors,['rgb(226, 191, 160)','rgb(226, 191, 160)']);
@@ -153,19 +156,19 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
     await wait("document.querySelector('.play-lobby-board [data-square]') && document.querySelector("+(mobile?"'.mobile-arena-panel'":"'.arena-start-game'")+")");
     await settled();await snapshot('play-idle',width,height);
     if(!mobile)continue;
-    const metric=await measure();measurements.push({width,height,...metric});
+    const metric={...await measure(),...home};measurements.push({width,height,...metric});
     if(verify){
      assert.ok(metric.gap>=14&&metric.gap<=16,'Board/panel gap '+JSON.stringify(metric));
      assert.ok(Math.abs(metric.boardWidth-metric.boardHeight)<=1,'Square board '+JSON.stringify(metric));
-     if(width===390)assert.ok(Math.abs(metric.above-metric.below)<=16,'Unbalanced composition '+JSON.stringify(metric));
-     if(height!==640)assert.ok(metric.above>=0&&metric.below>=0,'Content clipped '+JSON.stringify(metric));
-     else{
-      if(metric.below<0)assert.ok(metric.scrollable,'Short screen must scroll');
-      await evaluate("document.querySelector('.mobile-arena-panel').scrollIntoView({block:'end'})");
-      const end=await measure();assert.ok(end.below>=-1,'Panel unreachable '+JSON.stringify(end));
-      await evaluate("document.querySelector('.play-lobby-board').scrollIntoView({block:'start'})");
-      const start=await measure();assert.ok(start.above>=-1,'Board unreachable '+JSON.stringify(start));
-     }
+     assert.ok(Math.abs(metric.above-metric.below)<=2,'Unbalanced composition '+JSON.stringify(metric));
+     assert.ok(metric.above>=-1&&metric.below>=-0.01&&!metric.scrollable,'Content clipped or scrollable '+JSON.stringify(metric));
+     assert.ok(metric.panelBottom<=metric.navTop,'Panel overlaps nav '+JSON.stringify(metric));
+     if(height===780||height===844||height===932||metric.available>=metric.homeWidth-1)
+      assert.ok(Math.abs(metric.boardWidth-metric.homeWidth)<=1,'Lobby/Home board width '+JSON.stringify(metric));
+     else assert.ok(Math.abs(metric.boardWidth-Math.min(width-4,metric.available))<=1,'Overlap-safe cap '+JSON.stringify(metric));
+     assert.match(metric.edge,/linear-gradient\(rgb\(176, 140, 96\), rgb\(92, 66, 40\)\)|linear-gradient\(to bottom, rgb\(176, 140, 96\), rgb\(92, 66, 40\)\)/);
+     assert.equal(metric.edgePadding,'1px');assert.equal(metric.edgePointer,'none');
+     assert.ok(metric.pieceRatio&&metric.homeRatio&&Math.abs(metric.pieceRatio/metric.homeRatio-1)<=.01,'Piece ratio differs from Home '+JSON.stringify(metric));
     }
     if(height===640)continue;
     await evaluate("document.querySelector('.mobile-arena-start').click()");
@@ -179,7 +182,7 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
     await evaluate("document.querySelector('.chessaz-search-mobile__cancel').click()");
     await wait("!document.querySelector('.chessaz-search-mobile')");
     if(verify&&width===390){
-     await evaluate("document.querySelector('.mobile-arena-time').click()");
+     await evaluate("document.querySelector('.mobile-arena-more').click()");
      await wait("document.querySelector('.mobile-time-dialog[open]')");
      await evaluate("document.querySelector('.mobile-time-close').click()");
      await wait("!document.querySelector('.mobile-time-dialog')");
@@ -194,6 +197,33 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
      await evaluate("window.fixtureSocketEvent('join_failed',{reason:'room_not_found'})");
      await wait("document.querySelector('.play-lobby-screen').innerText.includes('Room not found or expired.')");
      assert.ok(await evaluate(`(()=>{const board=document.querySelector('.play-lobby-board'),toast=[...board.parentElement.children].find(e=>e.textContent==='Room not found or expired.');if(!toast)return false;const b=board.getBoundingClientRect(),t=toast.getBoundingClientRect();return t.top>=b.top&&t.bottom<=b.bottom&&t.left>=b.left&&t.right<=b.right;})()`),'Join error toast must stay on the board');
+    }
+   }
+   if(verify){
+    // Use the fixture's existing language provider. Override only its initial
+    // test-local storage write, then navigate normally; no app configuration changes.
+    const chipsFit=async(language)=>{
+     const chips=await evaluate(`(()=>[...document.querySelectorAll('.mobile-arena-times button,.mobile-time-dialog[open] .mobile-time-options button')].map(b=>{const r=b.getBoundingClientRect(),range=document.createRange();range.selectNodeContents(b);const s=getComputedStyle(b);return {label:b.textContent,width:r.width,height:r.height,font:parseFloat(s.fontSize),nowrap:s.whiteSpace==='nowrap',fits:[...range.getClientRects()].filter(t=>t.width>0).every(t=>t.left>=r.left-.5&&t.right<=r.right+.5)&&b.scrollWidth<=b.clientWidth+1};}))()`);
+     assert.ok(chips.length>=5&&chips.every(c=>c.height>=44&&c.font>=13&&c.nowrap&&c.fits),'Time chip overflow '+language+' '+JSON.stringify(chips));
+     assert.ok(Math.max(...chips.slice(0,5).map(c=>c.width))-Math.min(...chips.slice(0,5).map(c=>c.width))<=1,'Unequal time chips '+language);
+    };
+    for(const [language,width,height]of[['ru',360,640],['de',360,640],['en',360,640],['az',360,640],['tr',360,640],['ua',360,640],['ru',390,844]]){
+     const script=await cdp('Page.addScriptToEvaluateOnNewDocument',{source:'{const set=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){return set.call(this,key,key==="app-language"?'+JSON.stringify(language)+':value);};}'});
+     await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:2,mobile:true});
+     await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture?play-locale='+language});
+     await wait('typeof window.fixtureNavigate==="function" && document.documentElement.lang==='+JSON.stringify(language==='ua'?'uk':language));
+     await cdp('Page.removeScriptToEvaluateOnNewDocument',{identifier:script.identifier});
+     await wait("document.querySelector('.home-board [data-square]')");await settled();
+     if(language==='ru'&&width===390)await snapshot('home-ru-dpr2',width,height);
+     await evaluate("window.fixtureNavigate('/play')");await wait("document.querySelector('.mobile-arena-more')");await settled();
+     await chipsFit(language);
+     if(language==='ru')await snapshot('play-ru-default-dpr2',width,height);
+     for(const index of [4,1,2,7,8]){
+      await evaluate("document.querySelector('.mobile-arena-more').click()");await wait("document.querySelector('.mobile-time-dialog[open]')");await chipsFit(language);
+      if(language==='ru'&&index===4)await snapshot('play-ru-more-dpr2',width,height);
+      await evaluate('document.querySelectorAll(".mobile-time-options button")['+index+'].click()');await wait("!document.querySelector('.mobile-time-dialog')");await chipsFit(language);
+      if(language==='ru'&&index===4)await snapshot('play-ru-3-plus-2-dpr2',width,height);
+     }
     }
    }
    assert.deepEqual(exceptions,[],'Play browser runtime errors');
