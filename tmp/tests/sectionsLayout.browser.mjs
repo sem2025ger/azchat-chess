@@ -57,7 +57,15 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
    assert.ok(metrics.visibleWords===1&&metrics.text===previous.text&&metrics.text==='Chessaz.de'&&metrics.dot==='.'&&Math.abs(metrics.dotRatio-.8)<.001&&metrics.deMargin==='-1px'&&metrics.king.width===28&&metrics.king.height===56&&metrics.kingX===-5&&metrics.kingY===-6,'approved desktop wordmark geometry '+JSON.stringify(metrics));
    assert.equal(metrics.kingTop,previous.kingTop,'king vertical position changed');
    assert.equal(metrics.src,previous.src,'king artwork source changed');
-   assert.deepEqual(metrics.styles,previous.styles,'wordmark and king styling changed outside approved spacing');
+   // Each fixture uses an independent ephemeral Vite port. Verify the exact
+   // same-origin SVG mask when capturing, then compare its path, not the port.
+   const normalizedMask=mask=>{
+    const match=/^url\("http:\/\/127\.0\.0\.1:\d+\/brand\/sidebar-king\.svg"\)$/.exec(mask);
+    assert.ok(match,'unexpected king mask URL '+mask);
+    return '/brand/sidebar-king.svg';
+   };
+   const normalizedStyles=styles=>({...styles,sheen:{...styles.sheen,maskImage:normalizedMask(styles.sheen.maskImage)}});
+   assert.deepEqual(normalizedStyles(metrics.styles),normalizedStyles(previous.styles),'wordmark and king styling changed outside approved spacing');
    // Allow two tightly bounded rectangles, never the whole sidebar or page.
    // Two pixels of padding cover glyph antialiasing at fractional CSS positions.
    const regions=['word','king'].map(part=>({left:Math.floor(Math.min(previous[part].left,metrics[part].left))-2,top:Math.floor(Math.min(previous[part].top,metrics[part].top))-2,right:Math.ceil(Math.max(previous[part].right,metrics[part].right))+2,bottom:Math.ceil(Math.max(previous[part].bottom,metrics[part].bottom))+2}));
