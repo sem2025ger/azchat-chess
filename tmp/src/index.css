@@ -720,7 +720,7 @@
     color: #F2EEE3;
   }
   .home-screen-root .mobile-home-brand-domain {
-    color: #B2A79A;
+    color: #D6CDBE;
     letter-spacing: -.02em;
   }
   .home-screen-root .mobile-home-brand-dot {
@@ -729,7 +729,7 @@
   }
   @supports ((background-clip: text) or (-webkit-background-clip: text)) {
     .home-screen-root .mobile-home-brand-domain {
-      background-image: linear-gradient(110deg, #8F8983, #B2A79A 48%, #938C85);
+      background-image: linear-gradient(110deg, #B9B7B2, #E8DED0 48%, #C4BBAE);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -741,9 +741,10 @@
     margin-left: -.03em;
     transform: translateY(-.11em);
   }
-  /* King-only restrained metallic sheen, using the desktop mask and timing. */
+  .home-screen-root .mobile-home-king > img { filter: brightness(1.19) contrast(.96); }
+  /* King-only silver and champagne sheen, using the desktop mask and timing. */
   .home-screen-root .mobile-home-arena .sidebar-king-sheen {
-    background-image: linear-gradient(110deg, transparent 15%, rgba(81,91,105,.16) 30%, rgba(47,53,63,.34) 43%, rgba(29,33,40,.44) 50%, rgba(75,84,96,.30) 60%, transparent 82%);
+    background-image: linear-gradient(110deg, transparent 15%, rgba(151,160,171,.13) 30%, rgba(221,226,232,.30) 43%, rgba(249,242,225,.42) 50%, rgba(219,190,137,.30) 60%, transparent 82%);
     animation: sidebarKingSoftSheen 9s ease-in-out infinite;
   }
   .home-screen-root .mobile-home-arena > a[href="/region/nrw"] {
@@ -2027,14 +2028,14 @@ aside .site-nav-link{min-height:58px;padding:10px 14px;border-radius:12px}
 aside nav{padding-top:20px!important}
 /* Mobile touch targets grow to fit localized text without clipping. */
 [data-mobile-app-nav] .site-nav-link{flex:1 1 0;min-width:44px;box-sizing:border-box;padding-inline:1px}
-[data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:auto;max-width:none;font-size:clamp(9px,2.5vw,.8rem);line-height:1.2;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;overflow-wrap:normal;word-break:normal;hyphens:manual}
+[data-mobile-app-nav] .site-nav-link .site-nav-label{display:block;min-width:0;width:auto;max-width:none;font-size:clamp(9.5px,2.65vw,.85rem);line-height:1.2;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;overflow-wrap:normal;word-break:normal;hyphens:manual}
 @media (max-width: 767px) {
-  [data-mobile-app-nav] .site-nav-link:not([aria-current="page"]):not([href="/chat"]):not(:hover) { color: #969696; }
+  [data-mobile-app-nav] .site-nav-link:not([aria-current="page"]):not([href="/chat"]):not(:hover) { color: #AAAAAA; }
   [data-mobile-app-nav] .site-nav-link[href="/chat"] {
     position: relative;
     isolation: isolate;
     overflow: hidden;
-    color: #838B95;
+    color: #9DA6B0;
     background: linear-gradient(145deg, #23272B, #14171C 58%, #29343F);
     box-shadow: inset 0 0 0 1px rgba(126,137,150,.48), inset 0 1px 0 rgba(192,202,214,.14);
   }
@@ -2045,13 +2046,13 @@ aside nav{padding-top:20px!important}
   [data-mobile-app-nav] .site-nav-link[href="/chat"] .site-nav-label {
     width: 4.5em;
     white-space: normal;
-    font-size: calc(clamp(9px, 2.5vw, .8rem) + 1px);
+    font-size: calc(clamp(9.5px, 2.65vw, .85rem) + 1px);
     font-weight: 700;
     color: #C6CDD5;
   }
-  [data-mobile-app-nav] .site-nav-link[href="/chat"] > div > svg:first-child { width: 20px; height: 20px; }
-  [data-mobile-app-nav] [data-mobile-schach-treff-icon] stop:first-child { stop-color: #66717C; }
-  [data-mobile-app-nav] [data-mobile-schach-treff-icon] stop:last-child { stop-color: #929BA4; }
+  [data-mobile-app-nav] .site-nav-link[href="/chat"] > div > svg:first-child { width: 19px; height: 19px; }
+  [data-mobile-app-nav] [data-mobile-schach-treff-icon] stop:first-child { stop-color: #87929D; }
+  [data-mobile-app-nav] [data-mobile-schach-treff-icon] stop:last-child { stop-color: #ADB6BF; }
   [data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"] [data-mobile-schach-treff-icon] stop:first-child { stop-color: #929BA4; }
   [data-mobile-app-nav] .site-nav-link[href="/chat"][aria-current="page"] [data-mobile-schach-treff-icon] stop:last-child { stop-color: #B4BEC9; }
   @media (forced-colors: active) {
@@ -2082,10 +2083,10 @@ aside nav{padding-top:20px!important}
 @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
   [data-mobile-app-nav] .site-nav-link[href="/chat"]::before { animation: none; opacity: 0; }
 }
-@media(max-width:767px){[data-mobile-app-nav] .site-nav-link[href="/spieltag"] .site-nav-label{letter-spacing:-.04em}}
+@media(max-width:767px){[data-mobile-app-nav] .site-nav-link[href="/spieltag"] .site-nav-label{letter-spacing:-.04em;white-space:normal;max-width:100%}}
 [data-mobile-app-nav]{gap:2px}
 @media(max-width:359px){[data-mobile-app-nav]{gap:0;padding-inline:2px}[data-mobile-app-nav] .site-nav-link{padding-inline:1px}}
-[data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:58px;gap:4px}
+[data-mobile-app-nav] .site-nav-link{font-style:normal;min-height:54px;gap:3px}
 /* Equal navigation rows leave room for every desktop destination at 720 px. */
 aside .site-nav-link{height:54px;min-height:54px;padding:7px 14px;align-items:flex-start}
 aside [role=img]{margin-top:10px!important;min-height:52px!important}
@@ -2103,13 +2104,22 @@ aside nav{padding-top:12px!important}
 [class~="text-[23px]"]{font-size:1.4375rem}
 [class~="text-[29px]"]{font-size:1.8125rem}
 [class~="text-[42px]"]{font-size:2.625rem}
-[data-mobile-app-nav] .site-nav-link{display:grid;grid-template-columns:max-content;grid-template-rows:22px 2.4em;align-content:center;justify-content:center;justify-items:center;gap:3px}
+[data-mobile-app-nav] .site-nav-link{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:20px 29px;align-content:center;justify-content:center;justify-items:center;gap:3px}
 [data-mobile-app-nav] .site-nav-link>div{grid-row:1;align-self:start}
-[data-mobile-app-nav] .site-nav-link>div>svg:first-child{width:17px;height:17px}
+[data-mobile-app-nav] .site-nav-link>div>svg:first-child{width:16px;height:16px}
 [data-mobile-app-nav] .site-nav-link .site-nav-label{grid-row:2;align-self:start}
 /* UI copy uses self-hosted Inter; display faces are reserved for page titles. */
 #root :is(button,input,select,textarea,label,p,small,dt,dd,summary,a,h2,h3,h4,h5,h6){font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif!important;font-style:normal!important}
 [data-mobile-app-nav] .site-nav-link{transform:none!important}
+@media(max-width:767px){
+  /* Shared mobile bar height: preserve system inset and usable 44px+ tap targets. */
+  [data-mobile-app-nav]{height:calc(74px + env(safe-area-inset-bottom,0px));padding-top:4px;padding-bottom:calc(7px + env(safe-area-inset-bottom,0px));}
+  [data-mobile-app-nav] + main{padding-bottom:calc(74px + env(safe-area-inset-bottom,0px));}
+  [data-mobile-app-nav] .site-nav-link{height:100%;max-height:60px;}
+  /* Preserve scroll fallback on short Home viewports without a horizontal gutter. */
+  [data-home-route] [data-route-scroll], .home-screen-root [data-mobile-home-stack]{scrollbar-width:none;}
+  [data-home-route] [data-route-scroll]::-webkit-scrollbar, .home-screen-root [data-mobile-home-stack]::-webkit-scrollbar{display:none;}
+}
 
 /* Desktop sidebar: equal centered rows, one-line labels across all six locales. */
 @media(min-width:768px){aside .site-nav-link.sidebar-item{height:54px;min-height:54px;padding:0 14px;display:flex;align-items:center;justify-content:flex-start;box-sizing:border-box;gap:0}aside .site-nav-link .site-nav-copy{align-self:center;align-items:center;min-height:100%;min-width:0;white-space:nowrap}aside .site-nav-link .site-nav-label{font-family:Inter,system-ui,sans-serif;font-size:16px;font-weight:600;line-height:20px;white-space:nowrap;overflow:visible;text-overflow:clip;margin:0;padding:0}aside .site-nav-link>div:first-child{align-self:center;align-items:center}}

@@ -242,7 +242,7 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
       const text = range.getBoundingClientRect();
       const rect = link.getBoundingClientRect();
       return { path: link.getAttribute('href'), label: label.textContent, left: rect.left, right: rect.right, height: rect.height,
-        textLeft: text.left, textRight: text.right, lines: range.getClientRects().length,
+        bottomInset: bounds.bottom-rect.bottom, textLeft: text.left, textRight: text.right, lines: range.getClientRects().length,
         hidden: label.scrollWidth > label.clientWidth + 1, textOverflow: getComputedStyle(label).textOverflow, overflowWrap: getComputedStyle(label).overflowWrap,
         lineText: [...label.textContent].reduce((rows,char,i)=>{const part=document.createRange();part.setStart(label.firstChild,i);part.setEnd(label.firstChild,i+1);const rect=[...part.getClientRects()].find(r=>r.width>0)||part.getBoundingClientRect();const key=rect.top.toFixed(2);rows[key]=(rows[key]||'')+char;return rows;},{}), active: link.getAttribute('aria-current') };
     });
@@ -308,8 +308,8 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
                 assert.ok(Math.abs((metrics.links[2].left+metrics.links[2].right)/2-width/2)<=2,context+' centered chat');
                 for (const [i,link] of metrics.links.entries()) {
                   const rows=Object.values(link.lineText);
-                  const fullLabel=rows.join('')===link.label&&(rows.length===1||(link.label==='Schach-Treff'&&JSON.stringify(rows)===JSON.stringify(['Schach-','Treff'])));
-                  assert.ok(link.left>=metrics.left&&link.right<=metrics.right&&link.lines>=1&&link.lines<=2&&!link.hidden&&fullLabel&&link.textOverflow==='clip'&&link.overflowWrap==='normal'&&link.textLeft>=link.left-1&&link.textRight<=link.right+1&&link.right-link.left>=44&&link.height>=44&&(i===0||link.left>=metrics.links[i-1].right-1),context+' '+JSON.stringify(link));
+                  const fullLabel=rows.join('')===link.label&&(rows.length===1||(link.label==='Schach-Treff'&&JSON.stringify(rows)===JSON.stringify(['Schach-','Treff']))||(link.path==='/spieltag'&&rows.length===2&&rows.map(s=>s.trim()).join(' ')===link.label));
+                  assert.ok(link.left>=metrics.left&&link.right<=metrics.right&&link.lines>=1&&link.lines<=2&&!link.hidden&&fullLabel&&link.textOverflow==='clip'&&link.overflowWrap==='normal'&&link.textLeft>=link.left-1&&link.textRight<=link.right+1&&link.right-link.left>=44&&link.height>=44&&link.bottomInset>=6&&(i===0||link.left>=metrics.links[i-1].right-1),context+' '+JSON.stringify(link));
                 }
                 const geometry = await evaluate(`(()=>{
                   const root=document.querySelector('.home-screen-root'),title=root.querySelector('.chess-arena-reference-title'),word=title.firstElementChild,king=title.lastElementChild,letter=word.querySelector('.mobile-home-brand-domain'),arena=title.closest('.mobile-home-arena'),board=root.querySelector('.home-board:not(.home-board-frame)'),play=board.nextElementSibling,nav=document.querySelector('[data-mobile-app-nav]'),chat=nav.querySelector('a[href="/chat"]'),r=e=>e.getBoundingClientRect(),center=e=>(r(e).left+r(e).right)/2,s=getComputedStyle(arena),range=document.createRange(),labels=[...nav.querySelectorAll('.site-nav-label')].map(e=>parseFloat(getComputedStyle(e).fontSize)),wave=word.querySelector('.mobile-home-wordmark-sheen'),sheen=getComputedStyle(king.querySelector('.sidebar-king-sheen'));
@@ -321,12 +321,12 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
                 const expectedFont=Math.min(56,Math.max(44,width*.145));
                 assert.ok(!geometry.duplicateChat&&!geometry.overflow&&geometry.topGap>=-1&&geometry.bottomGap>=-1&&Math.abs(geometry.topGap-geometry.bottomGap)<=24&&Math.abs(geometry.wordFont-expectedFont)<.1&&geometry.fontFamily.includes('Bodoni Moda')&&geometry.fontWeight==='700'&&geometry.fontLoaded&&Math.abs(geometry.kingWidth-(expectedFont*38/56+1.5))<=1&&Math.abs(geometry.kingHeight-(expectedFont*76/56+3))<=1,context+' centered Home '+JSON.stringify(geometry));
                 assert.ok(Math.abs(geometry.logoBoardGap-16)<=2&&Math.abs(geometry.boardPlayGap-14)<=2,context+' spacing '+JSON.stringify(geometry));
-                assert.ok(geometry.domainColor==='rgb(178, 167, 154)'&&geometry.domainBackground.includes('rgb(143, 137, 131)')&&geometry.domainBackground.includes('rgb(178, 167, 154)')&&Math.abs(geometry.dotFont-expectedFont*.75)<.1&&geometry.dotMargin<0,context+' graphite-bronze gradient domain');
-                assert.equal(geometry.chatIconColor,'rgb(131, 139, 149)',context+' muted titanium chat icon');
+                assert.ok(geometry.domainColor==='rgb(214, 205, 190)'&&geometry.domainBackground.includes('rgb(185, 183, 178)')&&geometry.domainBackground.includes('rgb(232, 222, 208)')&&Math.abs(geometry.dotFont-expectedFont*.75)<.1&&geometry.dotMargin<0,context+' satin titanium champagne domain');
+                assert.equal(geometry.chatIconColor,'rgb(157, 166, 176)',context+' muted titanium chat icon');
                 assert.ok(geometry.sloganAbsent,context+' mobile slogan removed');
                 assert.equal(geometry.wave,false,context+' static wordmark');
                 assert.deepEqual(geometry.sheen,['sidebarKingSoftSheen','infinite','0s'],context);
-                assert.ok(geometry.navIcons.length===5&&geometry.navIcons.every((w,i)=>Math.abs(w-(i===2?20:17))<=1)&&geometry.knight&&!geometry.dot,context+' custom icon '+JSON.stringify(geometry));
+                assert.ok(geometry.navIcons.length===5&&geometry.navIcons.every((w,i)=>Math.abs(w-(i===2?19:16))<=1)&&geometry.knight&&!geometry.dot,context+' custom icon '+JSON.stringify(geometry));
                 assert.ok(geometry.labels.every((size,i)=>i===2||Math.abs(geometry.labels[2]-size-1)<.05),context+' chat label size');
                 assert.ok(geometry.ring.includes('rgba(126, 137, 150, 0.48)'),context+' titanium edge');
                 assert.equal(geometry.highlight,'rgb(198, 205, 213)',context+' titanium chat label');

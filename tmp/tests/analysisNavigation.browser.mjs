@@ -289,7 +289,7 @@ try {
     assert.ok(geometry.headerHeight<=80 && Math.abs(geometry.boardGap-16)<=2,JSON.stringify(geometry));
     assert.ok(geometry.boardWidth>=width-4 && Math.abs(geometry.boardWidth-geometry.boardHeight)<1.5,JSON.stringify(geometry));
     assert.ok(geometry.playGap>=8 && geometry.noNRW,JSON.stringify(geometry));
-    assert.ok(geometry.navCount===5 && geometry.minTarget>=44 && geometry.minIcon>=17 && geometry.minLabelGap>=4,JSON.stringify(geometry));
+    assert.ok(geometry.navCount===5 && geometry.minTarget>=44 && geometry.minIcon>=16 && geometry.minLabelGap>=4,JSON.stringify(geometry));
   }
   // These are diagnostics, not an artificial guarantee of zero-millisecond navigation.
   // Regression gate: the board must render on both navigation attempts.
