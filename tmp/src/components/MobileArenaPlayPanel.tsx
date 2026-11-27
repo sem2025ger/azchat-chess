@@ -39,7 +39,7 @@ export default function MobileArenaPlayPanel({ timeControl, onTimeChange, onStar
     <section className="mobile-arena-panel panel-glow-cycle" aria-label={t('play.startGame')}>
       <div className="mobile-arena-times" role="group" aria-label={t('invite.chooseTime')}>
         {popularTimes.map(time => <button key={time} type="button" aria-pressed={time === timeControl} onClick={() => { if (time !== timeControl) onTimeChange(time); }}>{label(time)}</button>)}
-        <button ref={triggerRef} type="button" className="mobile-arena-more" data-selected={customTime || undefined} aria-label={`${t('invite.chooseTime')}: ${label(timeControl)}`} aria-haspopup="dialog" aria-expanded={timeOpen} onClick={() => setTimeOpen(open => !open)}>
+        <button ref={triggerRef} type="button" className={customTime ? 'mobile-arena-more is-custom' : 'mobile-arena-more'} data-selected={customTime || undefined} aria-label={`${t('invite.chooseTime')}: ${label(timeControl)}`} aria-haspopup="dialog" aria-expanded={timeOpen} onClick={() => setTimeOpen(open => !open)}>
           <span>{customTime ? optionLabel(timeControl) : t('play.moreTimes')}</span>
           <ChevronDown size={10} aria-hidden="true" />
         </button>
