@@ -91,8 +91,10 @@ export const supabase = {
         } else if(table==='chess_club_members') {
           const params=new URLSearchParams(location.search);
           rows=[{user_id:uid,role:params.get('role') || (params.has('club')?'admin':'member')},{user_id:guest,role:'member'}];
+          if(params.has('manyMembers')) rows.push(...Array.from({length:24},(_,i)=>({user_id:'55555555-5555-4555-8555-'+String(i).padStart(12,'0'),role:'member'})));
         } else if(table==='profiles') {
           rows=[{id:uid,username:'Sofia'},{id:guest,username:'Maksim'}];
+          if(new URLSearchParams(location.search).has('manyMembers')) rows.push(...Array.from({length:24},(_,i)=>({id:'55555555-5555-4555-8555-'+String(i).padStart(12,'0'),username:'Fixture player '+String(i+1)})));
         } else if(table==='chess_club_messages') {
           if(mobileFixture && filters.has('parent_id')) {window.fixtureThreadRoot=filters.get('parent_id');rows=[];}
           else rows=columns==='parent_id' ? (mobileFixture ? [{parent_id:'message-27'}] : []) : feed.slice().reverse();
@@ -128,6 +130,18 @@ export async function checkRoomLayout(moderation = false, polish = false){
    const viewportFits=async context=>{await settle();const g=await viewportGeometry();assert.ok(g.scrollTop===0&&g.ancestors.every(a=>a.scrollTop===0&&a.overflow<=1)&&g.top>=-1&&g.moreTop>=-1&&g.moreBottom<=g.titleBottom+1&&g.titleBottom<g.visible&&g.keyboard===g.navHidden&&g.gap>=6&&g.gap<=10&&g.navBottom<=g.visible+1&&g.feed>0,context+' '+JSON.stringify(g));return g;};
    const positionFits=async(width,height,captureName)=>{await click('.st2-position-trigger');await wait("document.querySelector('dialog[open] .st2-position-form .st2-board-play button')");await fitsSheet(width,height);const g=await evaluate(`(()=>{const d=document.querySelector('dialog[open]'),form=d.querySelector('.st2-position-form'),b=form.querySelector('.st2-board'),h=d.querySelector('h2'),r=b.getBoundingClientRect(),hr=h.getBoundingClientRect(),style=getComputedStyle(h);return {w:r.width,h:r.height,available:form.clientWidth,squares:b.querySelectorAll('button').length,scroll:d.scrollWidth-d.clientWidth,verticalScroll:getComputedStyle(d).overflowY,titleHeight:hr.height,lineHeight:parseFloat(style.lineHeight),titleFits:h.scrollWidth<=h.clientWidth+1,wordBreak:style.wordBreak,wrap:style.overflowWrap}})()`);assert.ok(Math.abs(g.w-Math.min(g.available,420))<=1&&Math.abs(g.w-g.h)<=1&&g.squares===64&&g.scroll<=1&&['auto','scroll'].includes(g.verticalScroll)&&g.titleFits&&g.wordBreak==='normal'&&g.wrap==='normal',JSON.stringify(g));if(captureName)await capture(captureName);await closeSheet();};
    const fitsSheet=async(width,height)=>{const box=await evaluate(`(()=>{const d=document.querySelector('dialog[open]'),r=d.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,scroll:d.scrollWidth,client:d.clientWidth}})()`);assert.ok(box.left>=-1&&box.right<=width+1&&box.top>=-1&&box.bottom<=height+1&&box.scroll<=box.client+1,JSON.stringify(box));};
+   for(const [width,height] of [[360,640],[390,844],[430,932]]){
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});await cdp('Page.navigate',{url:base+'&manyMembers=1'});
+    await wait("document.querySelector('.st-mobile-play:not(:disabled)')");await evaluate("window.setFixtureLanguage('ru')");
+    await click('.st-mobile-play');await wait("document.querySelector('.st-mobile-challenge[open]')");
+    const visibleActions=()=>evaluate(`(()=>{const d=document.querySelector('.st-mobile-challenge[open]'),r=d.getBoundingClientRect();return [...d.querySelectorAll('.st-mobile-challenge-actions button')].map(b=>{const x=b.getBoundingClientRect();return x.height>=44&&x.top>=r.top&&x.bottom<=Math.min(r.bottom,innerHeight)&&x.left>=r.left&&x.right<=r.right});})()`);
+    assert.deepEqual(await visibleActions(),[true,true]);
+    await click('.st-mobile-challenge-kind button:nth-of-type(2)');await wait("document.querySelectorAll('.st-mobile-opponents button').length>=20");await settle();
+    assert.deepEqual(await visibleActions(),[true,true]);
+    const scroll=await evaluate(`(()=>{const e=document.querySelector('.st-mobile-opponents');const d=document.querySelector('.st-mobile-challenge'),content=d.querySelector('.st-mobile-challenge-content');e.scrollTop=e.scrollHeight;return {opponents:e.scrollTop,dialog:d.scrollTop,content:getComputedStyle(content).overflowY};})()`);
+    assert.ok(scroll.opponents>0&&scroll.dialog===0&&scroll.content==='auto',JSON.stringify(scroll));
+    assert.deepEqual(await visibleActions(),[true,true]);await capture('personal-actions-'+width+'x'+height);await closeSheet();
+   }
    for(const width of [360,390,430]){const height=844;await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});await cdp('Page.navigate',{url:base});await wait("document.querySelector('.st-mobile-play:not(:disabled)')&&document.querySelector('.st-composer')&&document.querySelector('.st-mobile-online-list button')");
      for(const zoom of [100,125]){await evaluate(`document.documentElement.style.fontSize=17*${zoom}/100+'px'`);
        for(const lang of ['de','en','ua','az','tr','ru']){await evaluate(`window.setFixtureLanguage('${lang}')`);await wait(`document.documentElement.lang==='${lang==='ua'?'uk':lang}'`);await evaluate('document.fonts.ready.then(()=>true)');

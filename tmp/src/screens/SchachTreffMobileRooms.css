@@ -115,12 +115,16 @@
 
 @media(max-width:1023px){
   .st-mobile-v2 .st-mobile-challenge>h2{font-family:'Bodoni Moda',Georgia,serif;font-size:23px;margin:0 0 12px}
-  .st-mobile-v2 .st-mobile-challenge form{display:grid;gap:12px;min-width:0}
+  .st-mobile-v2 .schach-treff.st-v2 dialog.st-mobile-challenge[open]{display:flex;flex-direction:column;overflow:hidden;padding-bottom:0}
+  .st-mobile-v2 .st-mobile-challenge>h2{flex:none}
+  .st-mobile-v2 .st-mobile-challenge form{display:flex;flex-direction:column;gap:0;min-width:0;min-height:0;overflow:hidden}
+  .st-mobile-v2 .st-mobile-challenge-content{display:grid;gap:12px;min-width:0;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:12px}
+  .st-mobile-v2 .st-mobile-challenge-actions{display:grid;gap:8px;flex:none;position:sticky;bottom:0;background:#121413;border-top:1px solid #ffffff17;padding:10px 0 calc(12px + env(safe-area-inset-bottom,0px))}
   .st-mobile-v2 .st-mobile-challenge fieldset{display:grid;gap:6px;border:0;margin:0;padding:0;min-width:0}
   .st-mobile-v2 .st-mobile-challenge legend{color:#A9A396;font-size:13px;margin:0 0 7px}
   .st-mobile-v2 .st-mobile-challenge fieldset button{min-height:44px;background:#161816;border:1px solid #ffffff22;border-radius:14px;color:#F2EEE3;padding:10px;font-weight:600;overflow-wrap:anywhere}
   .st-mobile-v2 .st-mobile-challenge fieldset button[aria-pressed=true]{border-color:#D9AE5B;background:#D9AE5B20;color:#F2EEE3}
-  .st-mobile-v2 .st-mobile-challenge .st-mobile-opponents{display:flex;flex-wrap:wrap}
+  .st-mobile-v2 .st-mobile-challenge .st-mobile-opponents{display:flex;flex-wrap:wrap;align-content:start;max-height:clamp(88px,18dvh,160px);overflow-y:auto;overscroll-behavior:contain}
   .st-mobile-v2 .st-mobile-opponents button{max-width:100%}
   .st-mobile-v2 .st-mobile-challenge .st-mobile-times{grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:8px}
   .st-mobile-v2 .st-mobile-times button{display:grid;justify-items:center;gap:4px;padding:8px 4px;min-width:0}
