@@ -39,16 +39,25 @@ const tables={clubs_nrw:[{id,slug:'qa-testverein',name:'QA-Testverein',city:'Boc
 export const supabase={from(table){let single=false;const q={select(){return q;},eq(){return q;},in(){return q;},gte(){return q;},order(){return q;},limit(){return q;},abortSignal(){return q;},maybeSingle(){single=true;return q;},then(resolve,reject){const rows=tables[table]||[];return Promise.resolve({data:single?(rows[0]||null):rows,error:null}).then(resolve,reject);}};return q;}};
 `;
 
-export function sectionsFixturePlugin() {
+// Test-only socket: no network or production matchmaking.
+const playSocket = `
+const handlers=new Map();
+const socket={on(name,fn){if(!handlers.has(name))handlers.set(name,new Set());handlers.get(name).add(fn);return socket;},off(name,fn){handlers.get(name)?.delete(fn);return socket;},emit(){return socket;}};
+window.fixtureSocketEvent=(name,data)=>{for(const fn of handlers.get(name)||[])fn(data);};
+export function useSocket(){return {socket,isConnected:true,authError:null};}
+`;
+export function sectionsFixturePlugin({play=false}={}) {
  return {name:'sections-layout-fixtures',enforce:'pre',
   resolveId(id){
    if(id==='/__sections_fixture.tsx')return id;
+   if(play&&/(?:^|\/)context\/SocketContext(?:\.tsx)?$/.test(id))return '\0sections-play-socket';
    if(/(?:^|\/)context\/AuthContext(?:\.tsx)?$/.test(id))return '\0sections-auth';
    if(/(?:^|\/)services\/supabase(?:\.ts)?$/.test(id))return '\0sections-db';
    if(/(?:^|\/)routeLoaders(?:\.ts)?$/.test(id))return '\0sections-preload';
   },
   load(id){
-   if(id==='/__sections_fixture.tsx')return fixture;
+   if(id==='/__sections_fixture.tsx')return play?fixture.replace("import Home from","import Play from'/src/screens/PlayScreen.tsx';import Home from").replace("<Route path='/' element={<Home/>}/>","<Route path='/' element={<Home/>}/><Route path='/play' element={<Play/>}/>"):fixture;
+   if(id==='\0sections-play-socket')return playSocket;
    if(id==='\0sections-auth')return auth;
    if(id==='\0sections-db')return database;
    if(id==='\0sections-preload')return 'export const prefetchRoute=()=>{};export const scheduleNavigationPreload=()=>()=>{};';

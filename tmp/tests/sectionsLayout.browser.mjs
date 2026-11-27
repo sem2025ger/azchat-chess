@@ -7,8 +7,8 @@ import {fileURLToPath} from 'node:url';
 import {createServer} from 'vite';import react from '@vitejs/plugin-react';
 import {sectionsFixturePlugin} from './sectionsFixtures.mjs';
 
-export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase='after',verify=true}={}){
- const server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-sections-vite-'+process.pid+'-'+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[sectionsFixturePlugin(),react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:Object.fromEntries([
+export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase='after',verify=true,playOnly=false}={}){
+ const server=await createServer({root,configFile:false,cacheDir:join(tmpdir(),'chessaz-sections-vite-'+process.pid+'-'+phase),optimizeDeps:{include:['react','react-dom/client','react-router-dom','chess.js','lucide-react'],noDiscovery:true},plugins:[sectionsFixturePlugin({play:playOnly}),react()],server:{host:'127.0.0.1',port:0,hmr:false,fs:{strict:false}},define:Object.fromEntries([
   ['VITE_SERVER_URL','https://sections-fixture.invalid'],...['VITE_SPIELER_V1_ENABLED','VITE_CLUBS_NRW_ENABLED','VITE_SPIELTAG_ENABLED','VITE_VORBEREITUNG_ENABLED'].map(k=>[k,'true'])
  ].map(([k,v])=>['import.meta.env.'+k,JSON.stringify(v)]))});
  let chrome,ws,profile;const pending=new Map(),exceptions=[],diagnostics=[],measurements=[];
@@ -31,6 +31,93 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
   await cdp('Runtime.enable');await cdp('Page.enable');await cdp('Network.enable');
   await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   if(captureRoot)await mkdir(captureRoot,{recursive:true});
+
+  // A separate fixture mode keeps the existing section regression unchanged.
+  if(playOnly){
+   const snapshot=async(name,width,height)=>{
+    if(!captureRoot)return;
+    const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+    await writeFile(join(captureRoot,phase+'-'+name+'-'+width+'x'+height+'.png'),Buffer.from(image.data,'base64'));
+   };
+   const settled=async()=>{
+    await evaluate('document.fonts.ready');
+    await evaluate("Promise.all([...document.images].filter(img=>img.getClientRects().length).map(img=>img.decode().catch(()=>{})))");
+    await pause(120);
+   };
+   const measure=()=>evaluate(`(()=>{
+    const r=s=>document.querySelector(s).getBoundingClientRect();
+    const root=document.querySelector('.play-lobby-screen'),route=document.querySelector('[data-route-scroll]');
+    const board=r('.play-lobby-board'),panel=r('.mobile-arena-panel'),nav=r('[data-mobile-app-nav]'),content=route.getBoundingClientRect();
+    return {above:board.top-content.top,below:nav.top-panel.bottom,gap:panel.top-board.bottom,boardWidth:board.width,boardHeight:board.height,boardTop:board.top,panelBottom:panel.bottom,navTop:nav.top,contentTop:content.top,scrollable:root.scrollHeight>root.clientHeight+1||route.scrollHeight>route.clientHeight+1};
+   })()`);
+   const boardOverlay=async selector=>{
+    const rects=await evaluate(`(()=>{const b=document.querySelector('.play-lobby-board').getBoundingClientRect(),o=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return ['top','left','width','height'].map(k=>Math.abs(b[k]-o[k]));})()`);
+    assert.ok(rects.every(n=>n<=1),'Overlay must stay over the board: '+JSON.stringify(rects));
+   };
+   for(const [width,height]of[[360,780],[390,844],[430,932],[360,640],[768,1024],[1023,900],[1440,900]]){
+    const mobile=width<768;
+    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
+    await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
+    await wait('typeof window.fixtureNavigate==="function"');
+    // Freeze decorative animation only in this test for reproducible pixel comparisons.
+    await evaluate(`(()=>{const s=document.createElement('style');s.textContent='*,*::before,*::after{animation:none!important;transition:none!important}';document.head.append(s);})()`);
+    await wait(mobile?"document.querySelector('.mobile-home-brand-domain')?.getClientRects().length":"document.querySelector('.desktop-home-arena')?.getClientRects().length");
+    await settled();await snapshot('home',width,height);
+    if(verify&&mobile){
+     const colors=await evaluate(`(()=>{const d=document.querySelector('.mobile-home-brand-domain'),p=d.querySelector('.mobile-home-brand-dot');return [getComputedStyle(d).color,getComputedStyle(p).color];})()`);
+     assert.deepEqual(colors,['rgb(226, 191, 160)','rgb(226, 191, 160)']);
+    }
+    await evaluate("window.fixtureNavigate('/play')");
+    await wait("document.querySelector('.play-lobby-board [data-square]') && document.querySelector("+(mobile?"'.mobile-arena-panel'":"'.arena-start-game'")+")");
+    await settled();await snapshot('play-idle',width,height);
+    if(!mobile)continue;
+    const metric=await measure();measurements.push({width,height,...metric});
+    if(verify){
+     assert.ok(metric.gap>=14&&metric.gap<=16,'Board/panel gap '+JSON.stringify(metric));
+     assert.ok(Math.abs(metric.boardWidth-metric.boardHeight)<=1,'Square board '+JSON.stringify(metric));
+     if(width===390)assert.ok(Math.abs(metric.above-metric.below)<=16,'Unbalanced composition '+JSON.stringify(metric));
+     if(height!==640)assert.ok(metric.above>=0&&metric.below>=0,'Content clipped '+JSON.stringify(metric));
+     else{
+      if(metric.below<0)assert.ok(metric.scrollable,'Short screen must scroll');
+      await evaluate("document.querySelector('.mobile-arena-panel').scrollIntoView({block:'end'})");
+      const end=await measure();assert.ok(end.below>=-1,'Panel unreachable '+JSON.stringify(end));
+      await evaluate("document.querySelector('.play-lobby-board').scrollIntoView({block:'start'})");
+      const start=await measure();assert.ok(start.above>=-1,'Board unreachable '+JSON.stringify(start));
+     }
+    }
+    if(height===640)continue;
+    await evaluate("document.querySelector('.mobile-arena-start').click()");
+    await wait("document.querySelector('.chessaz-search-mobile')?.getClientRects().length");
+    await settled();await snapshot('play-searching',width,height);
+    if(verify){
+     await boardOverlay('.chessaz-search-mobile');
+     const search=await measure();
+     for(const k of ['above','below','gap','boardWidth'])assert.ok(Math.abs(search[k]-metric[k])<=1,'Search moved layout: '+k);
+    }
+    await evaluate("document.querySelector('.chessaz-search-mobile__cancel').click()");
+    await wait("!document.querySelector('.chessaz-search-mobile')");
+    if(verify&&width===390){
+     await evaluate("document.querySelector('.mobile-arena-time').click()");
+     await wait("document.querySelector('.mobile-time-dialog[open]')");
+     await evaluate("document.querySelector('.mobile-time-close').click()");
+     await wait("!document.querySelector('.mobile-time-dialog')");
+     await evaluate("document.querySelector('.mobile-arena-footer button').click()");
+     await wait("document.getElementById('mobile-time-invite-title')");
+     await evaluate("document.getElementById('mobile-time-invite-title').closest('[role=dialog]').querySelector('button').click()");
+     await wait("!document.getElementById('mobile-time-invite-title')");
+     await evaluate("window.fixtureNavigate('/play?room=qa-private-room')");
+     await wait("document.querySelector('.play-lobby-screen').innerText.includes('Joining private room...')");
+     const privateOverlay=await evaluate(`(()=>{const b=document.querySelector('.play-lobby-board'),overlay=[...b.parentElement.children].find(e=>e!==b&&e.textContent.includes('Joining private room...'));if(!overlay)throw Error('Missing private overlay');overlay.setAttribute('data-fixture-private-overlay','');return true;})()`);
+     assert.ok(privateOverlay);await boardOverlay('[data-fixture-private-overlay]');
+     await evaluate("window.fixtureSocketEvent('join_failed',{reason:'room_not_found'})");
+     await wait("document.querySelector('.play-lobby-screen').innerText.includes('Room not found or expired.')");
+     assert.ok(await evaluate(`(()=>{const board=document.querySelector('.play-lobby-board'),toast=[...board.parentElement.children].find(e=>e.textContent==='Room not found or expired.');if(!toast)return false;const b=board.getBoundingClientRect(),t=toast.getBoundingClientRect();return t.top>=b.top&&t.bottom<=b.bottom&&t.left>=b.left&&t.right<=b.right;})()`),'Join error toast must stay on the board');
+    }
+   }
+   assert.deepEqual(exceptions,[],'Play browser runtime errors');
+   if(captureRoot)await writeFile(join(captureRoot,phase+'-play-measurements.json'),JSON.stringify(measurements,null,2));
+   return measurements;
+  }
   for(const width of [1366,390]){
    const height=width===390?844:768;
    await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width===390});
