@@ -418,7 +418,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await cdp('Page.navigate',{url});
      await wait("document.querySelector('.st-room-list .st-unread-badge') && document.querySelector('.st-chat-header .st-pin-menu button')");
      await evaluate("window.fixtureKeepBadges=true");
-     await wait(`document.documentElement.hasAttribute('data-schach-treff-unread') && [...document.querySelectorAll('.site-nav-link[href="/chat"] > div:first-child')].some(el => el.offsetWidth > 0 && getComputedStyle(el,'::after').backgroundColor === 'rgb(241, 187, 107)')`);
+     await wait(`document.documentElement.hasAttribute('data-schach-treff-unread') && [...document.querySelectorAll('.site-nav-link[href="/chat"] > div:first-child')].some(el => el.offsetWidth > 0 && getComputedStyle(el,'::after').content !== 'none' && (matchMedia('(max-width: 767px)').matches ? getComputedStyle(el,'::after').backgroundImage === 'linear-gradient(135deg, rgb(91, 123, 234), rgb(157, 124, 240))' : getComputedStyle(el,'::after').backgroundColor === 'rgb(241, 187, 107)'))`);
      await wait("document.querySelector('.st-unread-badge[aria-label=\"Непрочитанные сообщения 4\"]')");
      if(width===375) await evaluate("document.querySelector('.st-mobile-directory>summary').click()");
      await fits('.st-room-list a',width);
