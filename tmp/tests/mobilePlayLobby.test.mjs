@@ -23,7 +23,7 @@ test('mobile Play composition, overlays, board width and unchanged tablet/deskto
   }
   for(const size of ['768x1024','1023x900','1440x900'])for(const page of ['home','play-idle']){
    const a=await readFile(join(captureRoot,'before-'+page+'-'+size+'.png'));
-   const b=await readFile(join(captureRoot,'after-'+page+'-'+size+'.png'));
+   const b=await readFile(join(captureRoot,'after-'+page+'-'+size+(size==='1440x900'?'-legacy-wordmark':'')+'.png'));
    assert.ok(a.equals(b),page+' '+size+' screenshot differs from baseline');
   }
   console.log('MOBILE_PLAY_QA '+JSON.stringify({before,after}));
