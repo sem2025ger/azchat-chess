@@ -32,12 +32,42 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
   await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   if(captureRoot)await mkdir(captureRoot,{recursive:true});
 
-  if(homePolishOnly){
-   const capture=async(name,width,height)=>{
-    if(!captureRoot)return;
+  // The old mobile-only baselines predate the approved desktop wordmark kerning.
+  // Keep the real screenshots, and compare a second screenshot with ONLY that
+  // exact wordmark reverted at xl. Tablet screenshots always remain unmodified.
+  const captureMobileMilestone=async(name,width,height)=>{
+   if(!captureRoot)return;
+   const screenshot=async suffix=>{
     const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
-    await writeFile(join(captureRoot,phase+'-'+name+'-'+width+'x'+height+'.png'),Buffer.from(image.data,'base64'));
+    await writeFile(join(captureRoot,phase+'-'+name+'-'+width+'x'+height+suffix+'.png'),Buffer.from(image.data,'base64'));
    };
+   await screenshot('');
+   if(!verify||phase!=='after'||width<1280)return;
+   const metrics=await evaluate(`(()=>{
+    const brand=document.querySelector('aside [aria-label="Chessaz.de"]');
+    const spans=[...brand.children],tablet=spans.find(e=>e.classList.contains('xl:hidden')),desktop=spans.find(e=>e.classList.contains('xl:inline')),king=spans.find(e=>e.querySelector('img[src="/brand/sidebar-king.svg"]'));
+    const dot=desktop.querySelector('.sidebar-brand-silver > span:last-child'),de=desktop.querySelector('.sidebar-brand-de');
+    const k=king.getBoundingClientRect(),m=new DOMMatrix(getComputedStyle(king).transform);
+    return {tabletHidden:getComputedStyle(tablet).display==='none',desktopVisible:desktop.getClientRects().length>0,dot:dot.textContent,dotRatio:parseFloat(getComputedStyle(dot).fontSize)/parseFloat(getComputedStyle(dot.parentElement).fontSize),deMargin:getComputedStyle(de).marginLeft,kingWidth:k.width,kingHeight:k.height,kingX:m.m41,kingY:m.m42};
+   })()`);
+   assert.ok(metrics.tabletHidden&&metrics.desktopVisible&&metrics.dot==='.'&&Math.abs(metrics.dotRatio-.8)<.001&&metrics.deMargin==='-1px'&&metrics.kingWidth===28&&metrics.kingHeight===56&&metrics.kingX===-5&&metrics.kingY===-6,'approved desktop wordmark geometry '+JSON.stringify(metrics));
+   await evaluate(`(()=>{
+    const brand=document.querySelector('aside [aria-label="Chessaz.de"]'),spans=[...brand.children],tablet=spans.find(e=>e.classList.contains('xl:hidden')),desktop=spans.find(e=>e.classList.contains('xl:inline')),king=spans.find(e=>e.querySelector('img[src="/brand/sidebar-king.svg"]'));
+    window.__restoreQaWordmark=()=>{
+     tablet.classList.add('xl:hidden');desktop.style.removeProperty('display');king.style.removeProperty('--tw-translate-x');delete window.__restoreQaWordmark;
+    };
+    tablet.classList.remove('xl:hidden');desktop.style.display='none';king.style.setProperty('--tw-translate-x','-2px');
+   })()`);
+   try{
+    await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+    await screenshot('-legacy-wordmark');
+   }finally{
+    await evaluate('window.__restoreQaWordmark()');
+   }
+  };
+
+  if(homePolishOnly){
+   const capture=captureMobileMilestone;
    for(const [width,height]of[[360,780],[375,780],[390,844],[430,932],[360,580],[768,1024],[1440,900]]){
     const mobile=width<768;
     await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
@@ -73,11 +103,7 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
 
   // A separate fixture mode keeps the existing section regression unchanged.
   if(playOnly){
-   const snapshot=async(name,width,height)=>{
-    if(!captureRoot)return;
-    const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
-    await writeFile(join(captureRoot,phase+'-'+name+'-'+width+'x'+height+'.png'),Buffer.from(image.data,'base64'));
-   };
+   const snapshot=captureMobileMilestone;
    const settled=async()=>{
     await evaluate('document.fonts.ready');
     await evaluate("Promise.all([...document.images].filter(img=>img.getClientRects().length).map(img=>img.decode().catch(()=>{})))");
