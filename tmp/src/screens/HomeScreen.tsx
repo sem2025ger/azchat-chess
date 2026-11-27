@@ -621,7 +621,7 @@ function MobileHomeBoard() {
 
   return (
     <div className="md:hidden w-full min-w-0 space-y-2">
-      <div className="home-board w-full aspect-square overflow-hidden rounded-lg ring-1 ring-white/10 shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]">
+      <div className="home-board mobile-home-board-frame w-full aspect-square overflow-hidden rounded-lg shadow-[0_18px_42px_-18px_rgba(0,0,0,0.9)]">
         <ChessBoard game={game} onMove={onMove} overrideBoardTheme="Classic Wood" className="!border-none !p-0" />
       </div>
       <HomeMoveControls review={review} goTo={goTo} className="grid" compactMobile />

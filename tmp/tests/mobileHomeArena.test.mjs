@@ -102,3 +102,15 @@ test('mobile Schach-Treff uses its own knight bubble, without a decorative dot',
   assert.match(css, /animation: chessazMobileChatSheen 8s ease-in-out infinite/);
   assert.match(css, /prefers-reduced-motion: reduce\) \{\s*\[data-mobile-app-nav\] \.site-nav-link\[href="\/chat"\]::before \{ animation: none; opacity: 0; \}/);
 });
+
+test('mobile Home board has the approved bronze frame and tall-screen lift only', () => {
+  assert.match(home, /className="home-board mobile-home-board-frame w-full aspect-square overflow-hidden rounded-lg shadow-\[/);
+  assert.doesNotMatch(home, /home-board mobile-home-board-frame[^"]*ring-1/);
+  const frame = css.match(/\.home-screen-root \.home-board\.mobile-home-board-frame::after\s*\{([^}]+)\}/)?.[1] ?? '';
+  assert.match(frame, /padding: 1px;/);
+  assert.match(frame, /linear-gradient\(to bottom, #B08C60, #5C4228\)/);
+  assert.match(frame, /pointer-events: none;/);
+  const lift = css.match(/@media \(max-width: 767px\) and \(min-height: 701px\) \{([\s\S]*?)\n\}/)?.[1] ?? '';
+  assert.match(lift, /\.home-dashboard-column \{\s*transform: translateY\(-8px\);/);
+  assert.match(lift, /\.home-board\.mobile-home-board-frame \{\s*transform: translateY\(-16px\);/);
+});

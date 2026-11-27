@@ -846,6 +846,39 @@
   .home-screen-root .home-board-column { width: min(100%, max(0px, calc(100cqh - 164px))); }
 }
 
+/* Mobile Home only: bronze board edge and approved tall-screen lift. */
+@media (max-width: 767px) {
+  .home-screen-root .home-board.mobile-home-board-frame {
+    position: relative;
+    box-shadow: 0 10px 24px -12px rgba(0,0,0,.75);
+  }
+
+  .home-screen-root .home-board.mobile-home-board-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(to bottom, #B08C60, #5C4228);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 60;
+  }
+}
+
+@media (max-width: 767px) and (min-height: 701px) {
+  .home-screen-root .home-dashboard-column {
+    transform: translateY(-8px);
+  }
+  .home-screen-root .home-board.mobile-home-board-frame {
+    transform: translateY(-16px);
+  }
+}
+
 /* ChessAZ mobile premium controls: colors only, no board or layout changes. */
 @media (max-width: 767px) {
   .mobile-new-analysis-obsidian::before {

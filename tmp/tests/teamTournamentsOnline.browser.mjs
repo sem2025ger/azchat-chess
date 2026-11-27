@@ -320,7 +320,9 @@ export async function checkOnlineTeamTournaments({ cdp, evaluate, wait }) {
                 assert.ok(geometry.boardWidth>=width-4&&Math.abs(geometry.boardWidth-geometry.boardHeight)<=1&&geometry.boardLeft>=-1&&geometry.boardLeft<=2&&geometry.boardRight>=-1&&geometry.boardRight<=2,context+' board '+JSON.stringify(geometry));
                 const expectedFont=Math.min(56,Math.max(44,width*.145));
                 assert.ok(!geometry.duplicateChat&&!geometry.overflow&&geometry.topGap>=-1&&geometry.bottomGap>=-1&&Math.abs(geometry.topGap-geometry.bottomGap)<=24&&Math.abs(geometry.wordFont-expectedFont)<.1&&geometry.fontFamily.includes('Bodoni Moda')&&geometry.fontWeight==='700'&&geometry.fontLoaded&&Math.abs(geometry.kingWidth-(expectedFont*38/56+1.5))<=1&&Math.abs(geometry.kingHeight-(expectedFont*76/56+3))<=1,context+' centered Home '+JSON.stringify(geometry));
-                assert.ok(Math.abs(geometry.logoBoardGap-16)<=2&&Math.abs(geometry.boardPlayGap-14)<=2,context+' spacing '+JSON.stringify(geometry));
+                // Approved mobile lift 27.11.2026: on heights >=701px the brand moves up 8px and the board 16px.
+                const lifted=height>=701;
+                assert.ok(Math.abs(geometry.logoBoardGap-(lifted?8:16))<=2&&Math.abs(geometry.boardPlayGap-(lifted?30:14))<=2,context+' spacing '+JSON.stringify(geometry));
                 assert.ok(geometry.domainColor==='rgb(226, 191, 160)'&&geometry.domainBackground==='linear-gradient(110deg, rgb(246, 226, 207), rgb(226, 191, 160) 45%, rgb(185, 140, 108))'&&Math.abs(geometry.dotFont-expectedFont*.75)<.1&&geometry.dotMargin<0,context+' rose champagne domain');
                 assert.equal(geometry.chatIconColor,'rgb(157, 166, 176)',context+' muted titanium chat icon');
                 assert.ok(geometry.sloganAbsent,context+' mobile slogan removed');
