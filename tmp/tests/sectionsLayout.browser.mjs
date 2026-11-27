@@ -210,7 +210,7 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
     for(const [language,width,height]of[['ru',360,640],['de',360,640],['en',360,640],['az',360,640],['tr',360,640],['ua',360,640],['ru',390,844]]){
      const script=await cdp('Page.addScriptToEvaluateOnNewDocument',{source:'{const set=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){return set.call(this,key,key==="app-language"?'+JSON.stringify(language)+':value);};}'});
      await cdp('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:2,mobile:true});
-     await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture?play-locale='+language});
+     await cdp('Page.navigate',{url:server.resolvedUrls.local[0]+'sections-fixture'});
      await wait('typeof window.fixtureNavigate==="function" && document.documentElement.lang==='+JSON.stringify(language==='ua'?'uk':language));
      await cdp('Page.removeScriptToEvaluateOnNewDocument',{identifier:script.identifier});
      await wait("document.querySelector('.home-board [data-square]')");await settled();
