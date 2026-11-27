@@ -40,10 +40,13 @@
   .mobile-arena-panel .mobile-arena-start { animation:mobileStartBronzeSweep 9s ease-in-out infinite; }
 }
 @media (max-width:767px) {
-  .play-lobby-screen.flex { justify-content:safe center; padding-block:4px; }
-  .play-lobby-screen > .play-lobby-grid { gap:15px; }
-}
-@media (max-width:767px) and (orientation:portrait) {
-  .play-lobby-screen { padding-bottom:4px; padding-inline:4px; }
-  .play-lobby-board { max-width:min(100%, max(200px, calc(100dvh - 342px - env(safe-area-inset-bottom, 0px)))) !important; }
+  /* The route's existing flex viewport already excludes the bottom navigation and safe area.
+     Let the board row shrink against the panel's actual intrinsic height, not a viewport estimate. */
+  .play-lobby-screen.flex { flex:1 1 0; min-height:0; justify-content:safe center; padding:4px 2px; container-type:inline-size; }
+  .play-lobby-screen > .play-lobby-grid { display:flex; flex:1 1 0; min-height:0; flex-direction:column; align-items:stretch; justify-content:safe center; gap:15px; }
+  .play-lobby-grid > :first-child { flex:0 1 100cqw; min-height:0; container-type:size; }
+  .play-lobby-grid > :first-child > .group\/board { width:min(100%, 100cqh); margin-inline:auto; }
+  .play-lobby-grid > :last-child { flex:0 0 auto; }
+  .play-lobby-board.mobile-home-board-frame { max-width:100%; transition:none; }
+  .play-lobby-board.mobile-home-board-frame > .pointer-events-none { display:none; }
 }
