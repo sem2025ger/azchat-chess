@@ -23,7 +23,7 @@ test('mobile Home engraved ornament, reduced motion and unchanged board/desktop'
    if(metric.width===390&&metric.height===844)assert.ok(metric.ornamentTop-previous.ornamentTop>=8&&metric.ornamentTop-previous.ornamentTop<=12,JSON.stringify({previous,metric}));
   }
   for(const size of ['768x1024','1440x900']){
-   const a=await readFile(join(captureRoot,'before-home-'+size+'.png')),b=await readFile(join(captureRoot,'after-home-'+size+'.png'));
+   const a=await readFile(join(captureRoot,'before-home-'+size+'.png')),b=await readFile(join(captureRoot,'after-home-'+size+(size==='1440x900'?'-legacy-wordmark':'')+'.png'));
    assert.ok(a.equals(b),'Home '+size+' differs from baseline');
   }
   console.log('MOBILE_HOME_ENGRAVING_QA '+JSON.stringify({before,after}));
