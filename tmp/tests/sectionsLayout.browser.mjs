@@ -45,6 +45,13 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
     measurements.push({name,...metric});
     if(captureRoot){const image=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(captureRoot,phase+'-'+name.toLowerCase()+'-'+width+'.png'),Buffer.from(image.data,'base64'));await writeFile(join(captureRoot,phase+'-measurements.json'),JSON.stringify(measurements,null,2));}
     if(verify){assert.equal(metric.documentWidth<=width+1,true,name+' horizontal overflow '+JSON.stringify(metric));assert.deepEqual(metric.heading,[heading],name+' main heading');if(name!=='Home'||width===1366)assert.ok(metric.scrollContainers.length<=1,name+' nested vertical scroll '+JSON.stringify(metric));assert.ok(metric.documentHeight<=height+1,name+' body scroll competes with route '+JSON.stringify(metric));}
+    if(verify&&name==='Home'&&width===390){
+     const brand=await evaluate(`(()=>{const domain=document.querySelector('.mobile-home-brand-domain'),dot=domain.querySelector('.mobile-home-brand-dot');const d=getComputedStyle(domain),p=getComputedStyle(dot);return{color:d.color,dotColor:p.color,gradient:d.backgroundImage,clip:d.backgroundClip,dotFill:p.webkitTextFillColor,fill:d.webkitTextFillColor};})()`);
+     assert.equal(brand.color,'rgb(226, 191, 160)');
+     assert.equal(brand.dotColor,brand.color);
+     assert.equal(brand.gradient,'linear-gradient(110deg, rgb(246, 226, 207), rgb(226, 191, 160) 45%, rgb(185, 140, 108))');
+     assert.equal(brand.clip,'text');assert.equal(brand.dotFill,brand.fill);
+    }
     if(verify&&name==='Home'&&width===1366){const bounds=await evaluate(`(()=>{const root=document.querySelector('.home-screen-root');const b=root.querySelector('.board-container');const controls=b.querySelector('.home-desktop-controls');return{root:root.getBoundingClientRect().bottom,board:b.getBoundingClientRect().bottom,controls:controls?.getBoundingClientRect().bottom,arena:root.querySelector('.desktop-home-arena').getBoundingClientRect().bottom,scroll:document.querySelector('main > div').scrollHeight,height:document.querySelector('main > div').clientHeight};})()`);assert.ok(bounds.scroll<=bounds.height+1,'Home page overflow '+JSON.stringify(bounds));assert.ok(bounds.root<=height+1&&bounds.board<=height+1&&bounds.controls<=height+1&&bounds.arena<=height+1,'Home clipped '+JSON.stringify(bounds));}
    }
   }

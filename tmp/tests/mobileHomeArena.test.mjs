@@ -15,8 +15,8 @@ test('mobile Home uses the desktop brand and compact layout without changing des
   assert.match(home, /src="\/brand\/sidebar-king\.svg"[^\n]*width="38" height="76"/);
   assert.ok(css.includes('justify-content: safe center;\n    gap: 16px;\n    padding: 0 2px;'));
   assert.ok(css.includes("font-size: clamp(44px, 14.5vw, 56px);"));
-  assert.match(css, /\.mobile-home-brand-domain\s*\{\s*color: #D6CDBE;/);
-  assert.ok(css.includes('linear-gradient(110deg, #B9B7B2, #E8DED0 48%, #C4BBAE)'));
+  assert.match(css, /\.mobile-home-brand-domain\s*\{\s*color: #E2BFA0;/);
+  assert.ok(css.includes('linear-gradient(110deg, #F6E2CF, #E2BFA0 45%, #B98C6C)'));
   assert.match(css, /\.home-screen-root \.mobile-home-king\s*\{\s*width: calc\(\.67857143em \+ 1\.5px\);\s*height: calc\(1\.35714286em \+ 3px\);\s*margin-left: -\.03em;\s*transform: translateY\(-\.11em\);/);
   assert.match(css, /\.home-screen-root \[data-mobile-home-stack\] \.mobile-home-arena\s*\{\s*border: 0 !important;\s*outline: none;\s*background: none;/);
   assert.ok(css.includes('width: min(100%, max(0px, calc(100cqh - 180px)));\n    max-width: 100% !important;'));

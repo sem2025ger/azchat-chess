@@ -720,7 +720,7 @@
     color: #F2EEE3;
   }
   .home-screen-root .mobile-home-brand-domain {
-    color: #D6CDBE;
+    color: #E2BFA0;
     letter-spacing: -.02em;
   }
   .home-screen-root .mobile-home-brand-dot {
@@ -729,7 +729,7 @@
   }
   @supports ((background-clip: text) or (-webkit-background-clip: text)) {
     .home-screen-root .mobile-home-brand-domain {
-      background-image: linear-gradient(110deg, #B9B7B2, #E8DED0 48%, #C4BBAE);
+      background-image: linear-gradient(110deg, #F6E2CF, #E2BFA0 45%, #B98C6C);
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
