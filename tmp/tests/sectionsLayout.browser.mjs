@@ -54,12 +54,14 @@ export async function checkSectionLayouts({root=process.cwd(),captureRoot,phase=
    await evaluate(`(()=>{
     const brand=document.querySelector('aside [aria-label="Chessaz.de"]'),spans=[...brand.children],tablet=spans.find(e=>e.classList.contains('xl:hidden')),desktop=spans.find(e=>e.classList.contains('xl:inline')),king=spans.find(e=>e.querySelector('img[src="/brand/sidebar-king.svg"]'));
     window.__restoreQaWordmark=()=>{
-     tablet.classList.add('xl:hidden');desktop.style.removeProperty('display');king.style.removeProperty('--tw-translate-x');delete window.__restoreQaWordmark;
+     tablet.classList.add('xl:hidden');desktop.style.removeProperty('display');king.style.removeProperty('transform');delete window.__restoreQaWordmark;
     };
-    tablet.classList.remove('xl:hidden');desktop.style.display='none';king.style.setProperty('--tw-translate-x','-2px');
+    tablet.classList.remove('xl:hidden');desktop.style.display='none';king.style.transform='translate(-2px, -6px)';
    })()`);
    try{
     await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+    const legacyKing=await evaluate("(()=>{const king=document.querySelector('aside [aria-label=\\\"Chessaz.de\\\"] img[src=\\\"/brand/sidebar-king.svg\\\"]').parentElement,m=new DOMMatrix(getComputedStyle(king).transform);return [m.m41,m.m42];})()");
+    assert.deepEqual(legacyKing,[-2,-6],'legacy king transform must actually take effect');
     await screenshot('-legacy-wordmark');
    }finally{
     await evaluate('window.__restoreQaWordmark()');
