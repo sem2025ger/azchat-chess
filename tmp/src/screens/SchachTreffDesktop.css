@@ -161,3 +161,11 @@
   .schach-treff dialog form{display:grid;gap:8px}
   .schach-treff dialog button,.schach-treff dialog input:not([type=radio]),.schach-treff dialog select{min-height:44px;padding:6px 8px;background:#101113;color:#F2EEE3;border:1px solid #ffffff25;border-radius:8px}
 }
+
+/* Player-card outcome is always relative to the card owner, not the viewer. */
+.schach-treff .st-player-result{display:inline-flex;flex-wrap:wrap;justify-content:flex-end;align-items:baseline;column-gap:3px;min-width:0;max-width:100%}
+.schach-treff .st-player-outcome{font-weight:600;color:#B9C2BE;white-space:nowrap}
+.schach-treff .st-player-outcome::before{content:'';display:inline-block;width:6px;height:6px;margin-inline-end:5px;border-radius:50%;background:currentColor;vertical-align:middle}
+.schach-treff .st-player-outcome[data-outcome=win]{color:#8FC7A5}
+.schach-treff .st-player-outcome[data-outcome=loss]{color:#E2A09A}
+.schach-treff .st-player-score{font-size:.75em;color:#A8B1AD;white-space:nowrap}

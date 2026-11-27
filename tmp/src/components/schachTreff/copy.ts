@@ -38,6 +38,7 @@ export const copy = {
   sendChallenge: 'Herausforderung senden', game: 'Partie', accept: 'Annehmen', expired: 'Abgelaufen', cancelled: 'Abgebrochen',
   challengeCancelled: 'Herausforderung zurückgezogen', challengeExpired: 'Herausforderung abgelaufen',
   waitingOpponent: 'Wartet auf Gegner', gameStarting: 'Partie startet …', gameStarted: 'Partie gestartet', gameFinished: 'Partie beendet', openGame: 'Zur Partie',
+  win: 'Sieg', loss: 'Niederlage', draw: 'Remis',
   games: 'Partien', lastGames: 'Letzte Partien', noGames: 'Noch keine abgeschlossenen Partien.',
   challengeErrors: {
     not_allowed: 'Diese Aktion ist nicht erlaubt.', not_member: 'Beide Spieler müssen Mitglieder des Raums sein.',

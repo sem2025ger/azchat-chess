@@ -42,7 +42,7 @@ export const supabase = {
       return ok(null);
     }
     if(name==='revoke_club_invites') {window.fixtureRevoked=payload;return ok(null)}
-    if(name==='club_player_summary') return {abortSignal(){return Promise.resolve({data:new URLSearchParams(location.search).has('polish') ? {completed_games:24,last_games:[{opponent:'LongPlayerNameWithoutSpaces0123456789',time_control:'5+0',result:'1-0'},{opponent:'nar',time_control:'3+2',result:'1/2-1/2'}]} : {completed_games:0,last_games:[]},error:null})}};
+    if(name==='club_player_summary') return {abortSignal(){return Promise.resolve({data:new URLSearchParams(location.search).has('polish') ? {completed_games:24,last_games:[{opponent:'LongPlayerNameWithoutSpaces0123456789',time_control:'5+0',result:'1-0',color:'w'},{opponent:'nar',time_control:'3+2',result:'1-0',color:'b'},{opponent:'Maksim',time_control:'10+0',result:'1/2-1/2',color:'b'}]} : {completed_games:0,last_games:[]},error:null})}};
     if(name==='club_chat_game_results') return ok([]);
     if(name==='create_club_invite' && payload.p_club_id===room) {
       window.fixtureInvites = (window.fixtureInvites || 0) + 1;
@@ -339,6 +339,13 @@ export async function checkRoomLayout(moderation = false, polish = false){
      for (const lang of ['de','en','az','tr','ua','ru']) {
        await evaluate(`window.setFixtureLanguage('${lang}')`);
        await wait(`document.documentElement.lang==='${lang==='ua'?'uk':lang}'`);
+       if(lang==='de'||lang==='ru'){
+        const results=await evaluate("[...document.querySelectorAll('.st-player-outcome')].map(e=>[e.dataset.outcome,e.textContent])");
+        const words=lang==='ru'?['Победа','Поражение','Ничья']:['Sieg','Niederlage','Remis'];
+        assert.deepEqual(results,[['win',words[0]],['loss',words[1]],['draw',words[2]]]);
+        assert.deepEqual(await evaluate("[...document.querySelectorAll('.st-player-score')].map(e=>e.textContent.trim())"),['· 1-0','· 1-0','· 1/2-1/2']);
+        if(process.env.SECTIONS_CAPTURE){const shot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(join(process.env.SECTIONS_CAPTURE,'player-outcomes-'+lang+'-'+width+'.png'),Buffer.from(shot.data,'base64'));}
+       }
        const layout=await evaluate(`(()=>{
          const d=document.querySelector('dialog[open]'),r=d.getBoundingClientRect(),name=d.querySelector('h2');
          return {left:r.left,right:r.right,bottom:r.bottom,top:r.top,scroll:d.scrollWidth,client:d.clientWidth,

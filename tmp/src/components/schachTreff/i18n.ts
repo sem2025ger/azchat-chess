@@ -1,5 +1,8 @@
 import type { Language } from '../../translations';
 const fixedCopy: Record<string, Record<Language,string>> = {
+  'Sieg': {de:'Sieg',en:'Win',az:'Qələbə',tr:'Galibiyet',ua:'Перемога',ru:'Победа'},
+  'Niederlage': {de:'Niederlage',en:'Loss',az:'Məğlubiyyət',tr:'Mağlubiyet',ua:'Поразка',ru:'Поражение'},
+  'Remis': {de:'Remis',en:'Draw',az:'Heç-heçə',tr:'Beraberlik',ua:'Нічия',ru:'Ничья'},
   "Herausforderung zurückgezogen": {de: "Herausforderung zurückgezogen", en: "Challenge cancelled", az: "Çağırış ləğv edilib", tr: "Meydan okuma iptal edildi", ua: "Виклик скасовано", ru: "Вызов отменён"},
   "Herausforderung abgelaufen": {de: "Herausforderung abgelaufen", en: "Challenge expired", az: "Çağırışın vaxtı bitib", tr: "Meydan okumanın süresi doldu", ua: "Термін виклику минув", ru: "Срок вызова истёк"},
   "Nachricht gelöscht": {de: "Nachricht gelöscht", en: "Message deleted", az: "Mesaj silindi", tr: "Mesaj silindi", ua: "Повідомлення видалено", ru: "Сообщение удалено"},
