@@ -76,12 +76,29 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
   await cdp('Page.addScriptToEvaluateOnNewDocument',{source:"localStorage.setItem('app-language','ru');document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}';document.head.appendChild(s)});"});
   const capture=process.env.SECTIONS_CAPTURE;if(capture)await mkdir(capture,{recursive:true});
   const results={before:{},after:{}};let baselineMobile,baselineProfileMobile;
-  let baselineNavTop;
-  const captureRoute = async () => {
-   const top = await evaluate("document.querySelector('[data-mobile-app-nav]').getBoundingClientRect().top");
-   if(baselineNavTop===undefined)baselineNavTop=top;
-   assert.equal(top,baselineNavTop,'shared navigation must not move the route boundary');
-   return (await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false,clip:{x:0,y:0,width:390,height:Math.floor(top),scale:1}})).data;
+  let baselineNavHeight;
+  const captureRoute = async (phase, artifactName) => {
+   const measure=()=>evaluate("(()=>{const nav=document.querySelector('[data-mobile-app-nav]'),main=nav.nextElementSibling,route=main.querySelector('[data-route-scroll]'),n=nav.getBoundingClientRect(),r=route.getBoundingClientRect();return {height:n.height,top:n.top,bottom:n.bottom,routeBottom:r.bottom,padding:parseFloat(getComputedStyle(main).paddingBottom),viewport:innerHeight,rootFont:parseFloat(getComputedStyle(document.documentElement).fontSize)}})()");
+   const actual=await measure();
+   const near=(a,b)=>Math.abs(a-b)<=.1;
+   // Independently verify the live route boundary; the approved shared bar now uses 74px.
+   assert.ok(near(actual.height,phase==='before'?4.5*actual.rootFont:74)&&near(actual.bottom,actual.viewport)&&near(actual.routeBottom,actual.top)&&near(actual.padding,actual.height),'live mobile route/nav geometry '+JSON.stringify(actual));
+   if(phase==='before')baselineNavHeight=actual.height;
+   assert.ok(Number.isFinite(baselineNavHeight));
+   const screenshot=async top=>(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false,clip:{x:0,y:0,width:390,height:Math.floor(top),scale:1}})).data;
+   if(phase==='before')return screenshot(actual.top);
+   if(capture)await writeFile(join(capture,'after-'+artifactName+'-actual.png'),Buffer.from(await screenshot(actual.top),'base64'));
+   // Restore ONLY the former bar height and matching main padding for the strict
+   // Settings/Profile content comparison. No route styles or pixels are masked.
+   const original=await evaluate(`(()=>{const nav=document.querySelector('[data-mobile-app-nav]'),main=nav.nextElementSibling,original=[nav.getAttribute('style'),main.getAttribute('style')];nav.style.height='${baselineNavHeight}px';main.style.paddingBottom='${baselineNavHeight}px';return original;})()`);
+   try{
+    await evaluate('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+    const normalized=await measure();
+    assert.ok(near(normalized.height,baselineNavHeight)&&near(normalized.routeBottom,normalized.top)&&near(normalized.padding,baselineNavHeight),'normalized route/nav geometry '+JSON.stringify(normalized));
+    return await screenshot(normalized.top);
+   }finally{
+    await evaluate(`(()=>{const nav=document.querySelector('[data-mobile-app-nav]'),elements=[nav,nav.nextElementSibling];${JSON.stringify(original)}.forEach((style,i)=>style===null?elements[i].removeAttribute('style'):elements[i].setAttribute('style',style));})()`);
+   }
   };
   for(const phase of ['before','after']){
    const root=phase==='before'?oldRoot:process.cwd();
@@ -144,7 +161,7 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
        }
        return true;
      })()`);
-     const image=width===390?await captureRoute():(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
+     const image=width===390?await captureRoute(phase,'settings-390x844'):(await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:false})).data;
      if(capture)await writeFile(join(capture,phase+'-settings-'+width+'x'+height+'.png'),Buffer.from(image,'base64'));
      if(width===390){if(phase==='before')baselineMobile=image;else assert.equal(image,baselineMobile,'mobile Settings differs outside the approved piece picker and frames');}
     }
@@ -160,7 +177,7 @@ test('Settings/Profile browser geometry and mobile Settings baseline pixel ident
       if(width>=1024){assert.ok(profile.scroll<=1,'Profile scrolled '+JSON.stringify(profile));assert.ok(profile.bottom<=height,'Profile clipped '+JSON.stringify(profile));assert.ok(profile.bottomFree>=16&&profile.bottomFree<=40,'Profile bottom margin '+JSON.stringify(profile));assert.ok(Math.abs(profile.identityHeight-profile.ratingHeight)<=2&&Math.abs(profile.nextHeight-profile.performanceHeight)<=2,'Profile paired heights '+JSON.stringify(profile));assert.ok(profile.rowGap1>=0&&profile.rowGap1<=16&&profile.rowGap2>=0&&profile.rowGap2<=16,'Profile rows gaps '+JSON.stringify(profile));}
      }
      if(width===390){
-      const image=await captureRoute();
+      const image=await captureRoute(phase,'profile-390');
       if(phase==='before') baselineProfileMobile=image;
       else assert.equal(image,baselineProfileMobile,'mobile Profile differs from 8a2f0f2');
       if(capture) await writeFile(join(capture,phase+'-profile-390.png'),Buffer.from(image,'base64'));

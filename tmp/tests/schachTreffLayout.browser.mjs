@@ -179,7 +179,17 @@ export async function checkRoomLayout(moderation = false, polish = false){
          await click('.st-mobile-challenge-kind button:nth-of-type(2)');await wait("document.querySelector('.st-mobile-opponents button')");await click('.st-mobile-opponents button');await fitsSheet(width,height);if(take)await capture('challenge-personal');await closeSheet();
          await click('.st-mobile-v2-more');await wait("document.querySelector('.st-mobile-sheet[open] .st-mobile-sheet-rows')");await fitsSheet(width,height);if(take)await capture('club-menu');
          await click('.st-mobile-sheet-rows>button:first-child');await wait("document.querySelector('.st-mobile-sheet[open] .st2-members li')");await fitsSheet(width,height);if(take)await capture('members');await closeSheet();
-         await click('.st-mobile-v2-more');await click('.st-mobile-sheet-rows>button:nth-child(2)');await wait("document.querySelector('.st-mobile-sheet[open] h2')&&!document.querySelector('.st-mobile-sheet-rows')");await fitsSheet(width,height);if(take)await capture('ranking');await closeSheet();
+         await click('.st-mobile-v2-more');
+         const rankingButton='dialog.st-mobile-sheet[open] .st-mobile-sheet-rows>button:nth-child(2)';
+         await wait(`document.querySelector(${JSON.stringify(rankingButton)})`);
+         const rankingTitle=await evaluate(`document.querySelector(${JSON.stringify(rankingButton)}).textContent`);
+         await click(rankingButton);
+         await wait(`document.querySelector('.st-mobile-sheet[open] h2')?.textContent===${JSON.stringify(rankingTitle)}&&!document.querySelector('.st-mobile-sheet-rows')`);
+         // A queued native close event from the previous panel must not close a reopened dialog.
+         await evaluate("document.querySelector('dialog.st-mobile-sheet[open]').dispatchEvent(new Event('close'))");
+         await settle();
+         assert.equal(await evaluate("document.querySelector('.st-mobile-sheet[open] h2')?.textContent"),rankingTitle,'stale close event cannot dismiss the reopened ranking dialog');
+         await fitsSheet(width,height);if(take)await capture('ranking');await closeSheet();
          assert.equal(await evaluate("[...document.querySelectorAll('.st-challenge-card')].filter(e=>!e.querySelector('.st-challenge-status')&&!e.querySelector('button')).length"),3,'expired, cancelled and accepted statuses are not duplicated');
        }
      }
@@ -418,7 +428,7 @@ export async function checkRoomLayout(moderation = false, polish = false){
      await cdp('Page.navigate',{url});
      await wait("document.querySelector('.st-room-list .st-unread-badge') && document.querySelector('.st-chat-header .st-pin-menu button')");
      await evaluate("window.fixtureKeepBadges=true");
-     await wait(`document.documentElement.hasAttribute('data-schach-treff-unread') && [...document.querySelectorAll('.site-nav-link[href="/chat"] > div:first-child')].some(el => el.offsetWidth > 0 && getComputedStyle(el,'::after').backgroundColor === 'rgb(241, 187, 107)')`);
+     await wait(`document.documentElement.hasAttribute('data-schach-treff-unread') && [...document.querySelectorAll('.site-nav-link[href="/chat"] > div:first-child')].some(el => el.offsetWidth > 0 && getComputedStyle(el,'::after').content !== 'none' && (matchMedia('(max-width: 767px)').matches ? getComputedStyle(el,'::after').backgroundImage === 'linear-gradient(135deg, rgb(91, 123, 234), rgb(157, 124, 240))' : getComputedStyle(el,'::after').backgroundColor === 'rgb(241, 187, 107)'))`);
      await wait("document.querySelector('.st-unread-badge[aria-label=\"Непрочитанные сообщения 4\"]')");
      if(width===375) await evaluate("document.querySelector('.st-mobile-directory>summary').click()");
      await fits('.st-room-list a',width);

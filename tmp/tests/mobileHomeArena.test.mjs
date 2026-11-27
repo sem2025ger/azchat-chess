@@ -69,7 +69,7 @@ test('unified desktop Arena is default-off, preserves the mobile layout and keep
   assert.match(home, /filter: drop-shadow\(0 0 5px rgba\(220,228,235,0\.18\)\)/);
   assert.match(home, /width: 6px;\s*height: 6px;\s*flex: 0 0 6px/);
   assert.match(home, /linear-gradient\(135deg, #e9d1a1, rgb\(var\(--chessaz-bronze-frame\)\)\)/);
-  assert.match(home, /@media \(min-width: 1280px\) \{[\s\S]*?\.desktop-home-arena\.home-unified-card \{\s*background:\s*radial-gradient\(120% 70% at 30% 0%, rgba\(205,215,230,0\.07\) 0%, rgba\(205,215,230,0\) 55%\),\s*linear-gradient\(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%\);\s*\}/);
+  assert.match(home, /@media \(min-width: 1280px\) \{[\s\S]*?\.desktop-home-arena\.home-unified-card \{\s*background:\s*radial-gradient\(120% 70% at 30% 0%, rgba\(205,215,230,0\.07\) 0%, rgba\(205,215,230,0\) 55%\),\s*linear-gradient\(150deg, #28292b 0%, #332c25 30%, #192923 68%, #0b1a15 100%\);\s*\}/);
   assert.match(home, /className="hidden md:flex mobile-home-play desktop-home-play/);
   assert.match(home, /\{t\('home\.playChessNow'\)\}/);
 });
@@ -84,7 +84,7 @@ test('Chess Arena keeps its default surface and overrides it only for the unifie
   assert.equal(overrides[0][0], `.home-screen-root .desktop-home-arena.home-unified-card {
             background:
               radial-gradient(120% 70% at 30% 0%, rgba(205,215,230,0.07) 0%, rgba(205,215,230,0) 55%),
-              linear-gradient(150deg, #24272c 0%, #1d2023 32%, #16241f 68%, #0b1a15 100%);
+              linear-gradient(150deg, #28292b 0%, #332c25 30%, #192923 68%, #0b1a15 100%);
           }`);
   const desktopStyles = home.lastIndexOf('@media (min-width: 1280px)', overrides[0].index);
   assert.ok(desktopStyles > home.lastIndexOf('@media (max-width:', overrides[0].index));

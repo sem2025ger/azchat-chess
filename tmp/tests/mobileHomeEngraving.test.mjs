@@ -14,6 +14,8 @@ test('mobile Home engraved ornament, reduced motion and unchanged board/desktop'
  try{
   execFileSync('git',['worktree','add','--detach',baseline,'d173bd8da6c81d5457b71baf39cd96acaef9a9d5'],{stdio:'pipe'});added=true;
   await symlink(resolve('node_modules'),join(baseline,'tmp','node_modules'),'dir');
+  assert.ok((await readFile(join(baseline,'tmp','public','brand','sidebar-king.svg'))).equals(await readFile(resolve('public/brand/sidebar-king.svg'))),'King artwork bytes changed');
+  // Desktop screenshots are checked pixel-by-pixel by checkSectionLayouts, outside the two approved wordmark bounds.
   const before=await checkSectionLayouts({root:join(baseline,'tmp'),captureRoot,phase:'before',verify:false,homePolishOnly:true});
   const after=await checkSectionLayouts({captureRoot,homePolishOnly:true});
   for(const metric of after){
@@ -22,7 +24,7 @@ test('mobile Home engraved ornament, reduced motion and unchanged board/desktop'
    for(const key of ['font','kingWidth','kingHeight','boardTop','wordTop','kingTop'])assert.equal(metric[key],previous[key],key+' changed');
    if(metric.width===390&&metric.height===844)assert.ok(metric.ornamentTop-previous.ornamentTop>=8&&metric.ornamentTop-previous.ornamentTop<=12,JSON.stringify({previous,metric}));
   }
-  for(const size of ['768x1024','1440x900']){
+  for(const size of ['768x1024']){
    const a=await readFile(join(captureRoot,'before-home-'+size+'.png')),b=await readFile(join(captureRoot,'after-home-'+size+'.png'));
    assert.ok(a.equals(b),'Home '+size+' differs from baseline');
   }

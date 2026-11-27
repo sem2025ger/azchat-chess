@@ -14,6 +14,8 @@ test('mobile Play composition, overlays, board width and unchanged tablet/deskto
  try{
   execFileSync('git',['worktree','add','--detach',baseline,'2dab8d1c917270523e895bb4dbc2f92ca303c6a3'],{stdio:'pipe'});added=true;
   await symlink(resolve('node_modules'),join(baseline,'tmp','node_modules'),'dir');
+  assert.ok((await readFile(join(baseline,'tmp','public','brand','sidebar-king.svg'))).equals(await readFile(resolve('public/brand/sidebar-king.svg'))),'King artwork bytes changed');
+  // Desktop screenshots are checked pixel-by-pixel by checkSectionLayouts, outside the two approved wordmark bounds.
   const before=await checkSectionLayouts({root:join(baseline,'tmp'),captureRoot,phase:'before',verify:false,playOnly:true});
   const after=await checkSectionLayouts({captureRoot,playOnly:true});
   for(const metric of after){
@@ -21,7 +23,7 @@ test('mobile Play composition, overlays, board width and unchanged tablet/deskto
    assert.ok(previous,'Missing baseline measurement');
    assert.ok(metric.boardWidth+0.01>=previous.boardWidth,'Board shrank '+JSON.stringify({previous,metric}));
   }
-  for(const size of ['768x1024','1023x900','1440x900'])for(const page of ['home','play-idle']){
+  for(const size of ['768x1024','1023x900'])for(const page of ['home','play-idle']){
    const a=await readFile(join(captureRoot,'before-'+page+'-'+size+'.png'));
    const b=await readFile(join(captureRoot,'after-'+page+'-'+size+'.png'));
    assert.ok(a.equals(b),page+' '+size+' screenshot differs from baseline');
