@@ -451,6 +451,8 @@ try {
     await waitFor("!!document.querySelector('[role=dialog]')");
     const friendDialog=()=>evaluate(`(()=>{const d=document.querySelector('[role=dialog]'),p=d.querySelector('button[aria-pressed=true]'),primary=d.querySelector('.mobile-soft-shimmer'),style=getComputedStyle(primary);return {rect:d.getBoundingClientRect().toJSON(),width:innerWidth,height:innerHeight,buttons:[...d.querySelectorAll('button')].map(b=>b.textContent.trim()),selected:p?.textContent,border:p?getComputedStyle(p).borderTopColor:null,primary:primary?.classList.contains('mobile-soft-shimmer'),animation:style.animationName,duration:style.animationDuration,direction:style.animationDirection,header:d.querySelector('h2 + p')?.textContent};})()`);
     const assertFriendDialog=async selected=>{
+      // Selection uses a 150ms color transition. Assert its exact final border, not an intermediate frame.
+      await waitFor("(() => {const p=document.querySelector('[role=dialog] button[aria-pressed=true]');return !!p && getComputedStyle(p).borderTopColor === 'rgb(226, 191, 160)';})()");
       const dialog=await friendDialog();
       assert.ok(dialog.rect.top>=0&&Math.abs(dialog.rect.bottom-dialog.height)<1&&Math.abs(dialog.rect.width-dialog.width)<1,'Friend bottom sheet geometry '+JSON.stringify(dialog));
       assert.ok(dialog.buttons.every(label=>!label.includes('|')),'Raw time label '+JSON.stringify(dialog));
