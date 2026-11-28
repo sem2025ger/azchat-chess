@@ -343,10 +343,40 @@ try {
   // Lobby layout is independent of game/analysis layout and needs no account.
   await cdp('Page.navigate', { url:'about:blank' });
   await waitFor("location.href === 'about:blank'");
+  // The existing later browser screenshot artifact is available on GitHub Actions.
+  // Keep the new captures in a distinct subdirectory without changing the workflow.
+  const playCaptureDir = process.env.MOBILE_QA_SCREENSHOT_DIR ||
+    (process.env.RUNNER_TEMP ? join(process.env.RUNNER_TEMP, 'bochum-cup', 'mobile-play-round2') : null);
+  const capturePlay = async (name, width, height) => {
+    if (!playCaptureDir || !((width === 390 && height === 844) || (width === 360 && height === 640))) return;
+    await evaluate('document.fonts.ready');
+    await evaluate("Promise.all([...document.images].filter(img=>img.getClientRects().length).map(img=>img.decode().catch(()=>{})))");
+    await mkdir(playCaptureDir, { recursive:true });
+    const shot = await cdp('Page.captureScreenshot', { format:'png' });
+    await writeFile(join(playCaptureDir, name + '-' + width + 'x' + height + '.png'), Buffer.from(shot.data, 'base64'));
+  };
+  const friendLabelGeometry = () => evaluate(`(() => {
+    const button=document.querySelector('.mobile-arena-footer button'),label=button.querySelector('span'),range=document.createRange(),rect=button.getBoundingClientRect();
+    range.selectNodeContents(label);const textRects=[...range.getClientRects()].filter(r=>r.width>0);
+    return {text:label.textContent,height:rect.height,font:parseFloat(getComputedStyle(button).fontSize),lines:new Set(textRects.map(r=>Math.round(r.top))).size,fits:textRects.every(r=>r.left>=rect.left-.5&&r.right<=rect.right+.5)};
+  })()`);
+  const assertFriendLabel = async language => {
+    const geometry=await friendLabelGeometry();
+    assert.ok(geometry.height<=48 && geometry.font>=12 && geometry.lines===1 && geometry.fits,'Friend label overflow '+language+' '+JSON.stringify(geometry));
+  };
+  await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
   for (const [width, height] of [[375,667], [393,720], [390,844], [360,640]]) {
-    await cdp('Emulation.setDeviceMetricsOverride', { mobile:true, width, height, deviceScaleFactor:1 });
+    await cdp('Emulation.setDeviceMetricsOverride', { mobile:true, width, height, deviceScaleFactor:width===390||width===360?2:1 });
     await cdp('Page.navigate', { url:base + '/play?mobile-qa=arena' });
     await waitFor("!!document.querySelector('.mobile-arena-more[aria-haspopup=dialog]')");
+    const shimmer=await evaluate(`(()=>{const s=getComputedStyle(document.querySelector('.mobile-arena-start'));return {name:s.animationName,duration:s.animationDuration,direction:s.animationDirection,background:s.backgroundImage};})()`);
+    assert.equal(shimmer.name,'mobileSoftSweep');assert.equal(shimmer.duration,'22s');assert.equal(shimmer.direction,'alternate');
+    assert.ok(shimmer.background.includes('rgb(74, 138, 133)')&&shimmer.background.includes('rgb(102, 86, 143)'),JSON.stringify(shimmer));
+    await assertFriendLabel('ru');
+    await capturePlay('lobby-ru-default-dpr2',width,height);
+    await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+    assert.equal(await evaluate("getComputedStyle(document.querySelector('.mobile-arena-start')).animationName"),'none');
+    await cdp('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
     const geometry = await evaluate(`(() => {
       const panel = document.querySelector('.mobile-arena-panel');
       const board = document.querySelector('.play-lobby-board').getBoundingClientRect();
@@ -415,15 +445,41 @@ try {
     await cdp('Input.dispatchMouseEvent',{type:'mousePressed',x:width/2,y:4,button:'left',clickCount:1});
     await cdp('Input.dispatchMouseEvent',{type:'mouseReleased',x:width/2,y:4,button:'left',clickCount:1});
     await waitFor("!document.querySelector('.mobile-time-dialog')");
+    await evaluate("[...document.querySelectorAll('.mobile-arena-times button[aria-pressed]')].find(b=>b.textContent === '3 мин.').click()");
+    await waitFor("document.querySelector('.mobile-arena-times button[aria-pressed=true]')?.textContent === '3 мин.'");
     await evaluate("document.querySelector('.mobile-arena-footer button').focus();document.querySelector('.mobile-arena-footer button').click()");
     await waitFor("!!document.querySelector('[role=dialog]')");
-    const dialog = await evaluate("document.querySelector('[role=dialog]').getBoundingClientRect().toJSON()");
-    assert.ok(dialog.top >= 0 && dialog.bottom <= height, 'Friend dialog fits mobile viewport');
+    const friendDialog=()=>evaluate(`(()=>{const d=document.querySelector('[role=dialog]'),p=d.querySelector('button[aria-pressed=true]'),primary=d.querySelector('.mobile-soft-shimmer'),style=getComputedStyle(primary);return {rect:d.getBoundingClientRect().toJSON(),width:innerWidth,height:innerHeight,buttons:[...d.querySelectorAll('button')].map(b=>b.textContent.trim()),selected:p?.textContent,border:p?getComputedStyle(p).borderTopColor:null,primary:primary?.classList.contains('mobile-soft-shimmer'),animation:style.animationName,duration:style.animationDuration,direction:style.animationDirection,header:d.querySelector('h2 + p')?.textContent};})()`);
+    const assertFriendDialog=async selected=>{
+      const dialog=await friendDialog();
+      assert.ok(dialog.rect.top>=0&&Math.abs(dialog.rect.bottom-dialog.height)<1&&Math.abs(dialog.rect.width-dialog.width)<1,'Friend bottom sheet geometry '+JSON.stringify(dialog));
+      assert.ok(dialog.buttons.every(label=>!label.includes('|')),'Raw time label '+JSON.stringify(dialog));
+      assert.equal(dialog.selected,selected);assert.equal(dialog.border,'rgb(226, 191, 160)');
+      assert.equal(dialog.primary,true);assert.equal(dialog.animation,'mobileSoftSweep');assert.equal(dialog.duration,'22s');assert.equal(dialog.direction,'alternate');
+      assert.ok(dialog.header.startsWith(selected+' · '),'Time summary '+JSON.stringify(dialog));
+    };
+    await assertFriendDialog('3 мин.');
+    await capturePlay('friend-ru-3-min-dpr2',width,height);
+    await evaluate("[...document.querySelectorAll('[role=dialog] button[aria-pressed]')].find(b=>b.textContent === '15 + 10').click()");
+    await waitFor("document.querySelector('[role=dialog] button[aria-pressed=true]')?.textContent === '15 + 10'");
+    await assertFriendDialog('15 + 10');
+    await capturePlay('friend-ru-15-plus-10-dpr2',width,height);
     await evaluate("document.querySelector('[aria-label=\"Закрыть\"]').click()");
     await waitFor("!document.querySelector('[role=dialog]')");
     assert.equal(await evaluate("document.activeElement === document.querySelector('.mobile-arena-footer button')"), true, 'Closing the friend dialog restores focus to its visible trigger');
+    if(width===360){
+      for(const language of ['en','de','az','tr','ua']){
+        const script=await cdp('Page.addScriptToEvaluateOnNewDocument',{source:"localStorage.setItem('app-language',"+JSON.stringify(language)+");"});
+        try{
+          await cdp('Page.navigate',{url:base+'/play?mobile-qa=arena'});
+          await waitFor("document.documentElement.lang === "+JSON.stringify(language==='ua'?'uk':language)+" && !!document.querySelector('.mobile-arena-footer button')");
+          await assertFriendLabel(language);
+        }finally{await cdp('Page.removeScriptToEvaluateOnNewDocument',{identifier:script.identifier});}
+      }
+    }
     console.log('PASS larger board, bottom sheet, immediate selection/close/focus and friend dialog at', width, height);
   }
+  await cdp('Emulation.setEmulatedMedia',{features:[]});
   await cdp('Page.navigate', { url:'about:blank' });
   await waitFor("location.href === 'about:blank'");
   await cdp('Emulation.setDeviceMetricsOverride', { mobile:false, width:1440, height:900, deviceScaleFactor:1 });
