@@ -11,6 +11,16 @@
 .mobile-arena-start { display:block; width:100%; border-radius:28px; font-size:1.0625rem; font-style:italic; font-weight:900; text-transform:uppercase; letter-spacing:-.035em; }
 .mobile-arena-panel .mobile-arena-start { min-height:54px; }
 @media (max-width:767px) {
+  .mobile-friend-sheet {
+    box-sizing:border-box; max-height:100dvh; overflow-y:auto;
+    padding:16px; padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    border:1px solid #ffffff26; border-bottom:0; border-radius:22px 22px 0 0;
+    background:#202322; color:#eee9dd;
+  }
+  .mobile-friend-sheet::before {
+    content:""; display:block; width:36px; height:4px;
+    margin:-6px auto 10px; border-radius:4px; background:#ffffff40;
+  }
   .mobile-arena-panel .mobile-soft-shimmer, .mobile-friend-sheet .mobile-soft-shimmer {
     border:1px solid rgba(226,205,185,.4);
     background-image:linear-gradient(110deg,#2e221a 0%,#5e4331 12%,#8a664c 24%,#5e4331 32%,#2f6461 46%,#4a8a85 54%,#2f6461 62%,#4b3d6e 72%,#66568f 77%,#4b3d6e 82%,#5e4331 92%,#2e221a 100%);

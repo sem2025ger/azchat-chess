@@ -6,6 +6,7 @@ import { Check, ChevronDown, Clock, Copy, Link2, Loader2, Share2, X } from 'luci
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSocket } from '../context/SocketContext';
+import './MobileArenaPlayPanel.css';
 
 type Props = {
   controlsHidden?: boolean;
@@ -30,7 +31,7 @@ export default function MobileFriendTimeControl(props: Props) {
 }
 
 function MobileControl({ timeControl, onTimeChange, presets, resetRef, controlsHidden, openRef }: Props) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { socket, isConnected, authError } = useSocket();
   const { session, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -211,8 +212,9 @@ function MobileControl({ timeControl, onTimeChange, presets, resetRef, controlsH
     }
   };
 
-  const buttonClass = 'min-h-11 rounded-xl border px-3 py-2 font-bold text-sm transition-colors duration-150 touch-manipulation focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-300 disabled:opacity-50';
-  const primaryClass = `${buttonClass} bg-gradient-to-r from-[#e3c77d] to-[#84d4c9] text-[#121b19] border-white/20`;
+  const timeLabel = (value: string) => value.replace(' | ', ' + ').replace('min.', language === 'ru' || language === 'ua' ? 'мин.' : language === 'az' || language === 'tr' ? 'dəq.' : 'min.');
+  const buttonClass = 'min-h-11 rounded-xl border px-3 py-2 font-bold text-sm transition-colors duration-150 touch-manipulation focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E2BFA0] disabled:opacity-50';
+  const primaryClass = `${buttonClass} mobile-soft-shimmer`;
   return (
     <div className="md:hidden">
       <div className="flex items-stretch gap-2" hidden={controlsHidden} style={controlsHidden ? { display: 'none' } : undefined}>
@@ -232,39 +234,39 @@ function MobileControl({ timeControl, onTimeChange, presets, resetRef, controlsH
         </button>
       </div>
       {mode && createPortal(
-        <div className="fixed inset-0 z-[999] md:hidden flex items-center justify-center bg-black/80 px-3 py-[max(0.5rem,env(safe-area-inset-top))]" onClick={() => setMode(null)}>
+        <div className="fixed inset-0 z-[999] md:hidden flex items-end justify-center bg-black/80" onClick={() => setMode(null)}>
           <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="mobile-time-invite-title" onClick={event => event.stopPropagation()}
-            className="w-full max-w-sm rounded-2xl border border-[#8bc7b8]/30 bg-gradient-to-br from-[#1b2520] to-[#111715] p-4 shadow-2xl [@media(max-height:600px)]:p-3">
+            className="mobile-friend-sheet w-full shadow-2xl">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="min-w-0">
-                <h2 id="mobile-time-invite-title" className="text-xl font-bold text-[#f1efdf] leading-tight">{t(mode === 'time' ? 'invite.chooseTime' : room ? 'invite.ready' : 'invite.title')}</h2>
-                <p className="text-xs text-[#b6c3bb] mt-1">{room ? roomTime : timeControl} · {category}</p>
+                <h2 id="mobile-time-invite-title" className="text-xl font-bold text-[#eee9dd] leading-tight">{t(mode === 'time' ? 'invite.chooseTime' : room ? 'invite.ready' : 'invite.title')}</h2>
+                <p className="text-xs text-[#E6DFD0] mt-1">{timeLabel(room ? roomTime : timeControl)} · {category}</p>
               </div>
-              <button type="button" aria-label={t('invite.close')} onClick={() => setMode(null)} className="w-11 h-11 shrink-0 rounded-xl border border-white/10 flex items-center justify-center text-neutral-300 active:bg-white/10"><X size={21} /></button>
+              <button type="button" aria-label={t('invite.close')} onClick={() => setMode(null)} className="w-11 h-11 shrink-0 rounded-xl border border-[#ffffff14] bg-[#ffffff06] flex items-center justify-center text-[#E6DFD0] active:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E2BFA0]"><X size={21} /></button>
             </div>
             {room ? (
               <div className="space-y-3">
-                <p className="text-sm text-[#bdcbc3] leading-relaxed">{t('invite.sendLink')}</p>
-                <input aria-label={t('invite.link')} readOnly value={url} onFocus={event => event.target.select()} className="w-full h-12 min-w-0 px-3 rounded-xl bg-black/25 border border-white/15 text-sm text-[#e4ece6] font-mono focus:outline focus:outline-1 focus:outline-cyan-300" />
+                <p className="text-sm text-[#E6DFD0] leading-relaxed">{t('invite.sendLink')}</p>
+                <input aria-label={t('invite.link')} readOnly value={url} onFocus={event => event.target.select()} className="w-full h-12 min-w-0 px-3 rounded-xl bg-[#00000040] border border-[#ffffff1f] text-sm text-[#eee9dd] font-mono focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#E2BFA0]" />
                 <div className="grid grid-cols-2 gap-2">
                   <button type="button" onClick={copyLink} className={`${primaryClass} flex items-center justify-center gap-2`}>
                     {copied ? <Check size={17} /> : <Copy size={17} />} {t(copied ? 'invite.copied' : 'invite.copy')}
                   </button>
-                  <button type="button" onClick={shareLink} className={`${buttonClass} flex items-center justify-center gap-2 border-[#83b9ac]/30 text-[#c5dfd2] bg-white/[0.03]`}><Share2 size={17} />{t('invite.share')}</button>
+                  <button type="button" onClick={shareLink} className={`${buttonClass} flex items-center justify-center gap-2 border-[#ffffff14] bg-[#ffffff06] text-[#E6DFD0]`}><Share2 size={17} />{t('invite.share')}</button>
                 </div>
-                <p role="status" className="rounded-xl border border-[#83b9ac]/15 bg-[#14231c] px-3 py-3 text-sm text-[#b7cfbe] flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#9bc6ab] shrink-0" />{t('invite.waiting')}</p>
-                <button type="button" onClick={cancelInvitation} className={`${buttonClass} w-full text-[#c7c2b6] border-white/10`}>{t('invite.cancel')}</button>
+                <p role="status" className="rounded-xl border border-[#ffffff12] bg-[#ffffff08] px-3 py-3 text-sm text-[#E6DFD0] flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#4a8a85] shrink-0" />{t('invite.waiting')}</p>
+                <button type="button" onClick={cancelInvitation} className={`${buttonClass} w-full border-[#ffffff14] bg-[#ffffff06] text-[#E6DFD0]`}>{t('invite.cancel')}</button>
               </div>
             ) : (
               <>
                 <div className="space-y-3 [@media(max-height:600px)]:space-y-2">
                   {Object.entries(presets).map(([name, items]) => (
                     <section key={name} aria-label={name}>
-                      <h3 className="text-[0.65rem] font-bold tracking-[0.14em] uppercase text-[#b4c5b9] mb-1.5">{name}</h3>
+                      <h3 className="text-[0.65rem] font-bold tracking-[0.14em] uppercase text-[#E6DFD0] mb-1.5">{name}</h3>
                       <div className="grid grid-cols-3 gap-2">
                         {items.map(item => <button key={item} type="button" disabled={creating} aria-pressed={timeControl === item}
                           onClick={() => { onTimeChange(item); setError(null); if (mode === 'time') setMode(null); }}
-                          className={`${buttonClass} min-h-[48px] [@media(max-height:600px)]:min-h-11 ${timeControl === item ? 'bg-[#e0c47b]/10 border-[#e0c47b]/65 text-[#f0dda4]' : 'bg-white/[0.025] border-white/10 text-[#d3ddd5]'}`}>{item}</button>)}
+                          className={`${buttonClass} min-h-[48px] [@media(max-height:600px)]:min-h-11 ${timeControl === item ? 'bg-[#e2bfa021] border-[#E2BFA0] text-[#F6E2CF] shadow-[inset_0_0_0_1px_rgba(226,191,160,.55)]' : 'bg-[#ffffff08] border-[#ffffff12] text-[#E6DFD0]'}`}>{timeLabel(item)}</button>)}
                       </div>
                     </section>
                   ))}
