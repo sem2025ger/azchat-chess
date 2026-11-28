@@ -66,7 +66,7 @@ export default function MobileArenaPlayPanel({ timeControl, onTimeChange, onStar
         </dialog>, document.body
       )}
       <div className="mobile-arena-action">
-        <button type="button" className="mobile-arena-start btn-glow-cycle" onClick={onStart}>{t('play.startGame')}</button>
+        <button type="button" className="mobile-arena-start btn-glow-cycle mobile-soft-shimmer" onClick={onStart}>{t('play.startGame')}</button>
       </div>
       <div className="mobile-arena-footer">
         <button type="button" aria-haspopup="dialog" onClick={onFriend}><Users size={18} aria-hidden="true" /><span>{t('play.friend')}</span></button>
