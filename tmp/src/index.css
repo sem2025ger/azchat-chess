@@ -848,11 +848,13 @@
 
 /* Mobile Home only: bronze board edge and approved tall-screen lift. */
 @media (max-width: 767px) {
+  .play-lobby-board.mobile-home-board-frame,
   .home-screen-root .home-board.mobile-home-board-frame {
     position: relative;
     box-shadow: 0 10px 24px -12px rgba(0,0,0,.75);
   }
 
+  .play-lobby-board.mobile-home-board-frame::after,
   .home-screen-root .home-board.mobile-home-board-frame::after {
     content: "";
     position: absolute;
@@ -870,11 +872,13 @@
   }
 
   /* Approved 27.11.2026: pieces 10% smaller than the inline 1.16 Home scale. */
+  .play-lobby-board.mobile-home-board-frame [data-piece-square] img,
   .home-screen-root .home-board.mobile-home-board-frame [data-piece-square] img {
     transform: scale(1.044);
   }
 
   /* Bottom-row file letters sit in the square corner, clear of the pieces; colour and size unchanged. */
+  .play-lobby-board.mobile-home-board-frame [class*="bottom-0.5 right-1"],
   .home-screen-root .home-board.mobile-home-board-frame [class*="bottom-0.5 right-1"] {
     bottom: 0;
     right: 2px;

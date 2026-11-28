@@ -39,7 +39,7 @@ test('desktop arena shows chosen clock and mode without quick presets, preservin
   }
 });
 
-test('mobile arena has one dialog trigger and compact actions without native lists or desktop lobby controls', async () => {
+test('mobile arena has four popular times, More and compact actions without native lists or desktop lobby controls', async () => {
   const storage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: { getItem: key => key === 'app-language' ? 'ru' : null } });
   const server = await createServer({ optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
@@ -50,12 +50,19 @@ test('mobile arena has one dialog trigger and compact actions without native lis
       const html = renderToStaticMarkup(createElement(LanguageProvider, null,
         createElement(Panel, { timeControl, onTimeChange() {}, onStart() {}, onFriend() {} })));
       assert.equal((html.match(/<select |<option /g) || []).length, 0);
-      assert.match(html, /aria-expanded="false"/);
-      assert.ok(html.includes(timeControl.replace('min.', 'мин.')));
-      assert.equal((html.match(/<button /g) || []).length, 4);
+      const popular = [...html.matchAll(/<button\b[^>]*aria-pressed="(true|false)"[^>]*>([^<]*)<\/button>/g)];
+      assert.deepEqual(popular.map(m => m[2]), ['1 мин.', '3 мин.', '5 мин.', '10 мин.']);
+      assert.deepEqual(popular.filter(m => m[1] === 'true').map(m => m[2]), timeControl === '3 min.' ? ['3 мин.'] : []);
+      const more = html.match(/<button\b[^>]*class="mobile-arena-more(?: is-custom)?"[^>]*>[\s\S]*?<\/button>/)?.[0] ?? '';
+      assert.match(more, /aria-haspopup="dialog"/);
+      assert.match(more, /aria-expanded="false"/);
+      assert.ok(more.includes('<span>' + (timeControl === '3 min.' ? 'Ещё' : timeControl.replace(' | ', ' + ')) + '</span>'));
+      assert.equal(more.includes('data-selected="true"'), timeControl !== '3 min.');
+      assert.equal(more.includes('class="mobile-arena-more is-custom"'), timeControl !== '3 min.');
+      assert.equal((html.match(/<button /g) || []).length, 7);
       assert.match(html, /НАЧАТЬ ИГРУ/);
-      assert.match(html, /aria-haspopup="dialog"/);
-      assert.match(html, /Турниры · скоро/);
+      assert.match(html, /Играть с другом/);
+      assert.doesNotMatch(html, /Турниры · скоро/);
       assert.doesNotMatch(html, /role="switch"|Выбрать соперника|arena-quick-times|overflow-y/);
     }
   } finally {

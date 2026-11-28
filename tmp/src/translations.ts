@@ -79,6 +79,7 @@ export const translations: TranslationDictionary = {
   'play.type.casual': { en: 'Casual', de: 'Zwanglos', ua: 'Товариський', ru: 'Товарищеский', az: 'Dostluq', tr: 'Dostluk' },
   'play.region': { en: 'Region', de: 'Region', ua: 'Регіон', ru: 'Регион', az: 'Region', tr: 'Bölge' },
   'play.region.global': { en: 'Global', de: 'Global', ua: 'Глобальний', ru: 'Глобальный', az: 'Qlobal', tr: 'Küresel' },
+  'play.moreTimes': { en: 'More', de: 'Mehr', ua: 'Ще', ru: 'Ещё', az: 'Digər', tr: 'Diğer' },
   'play.startGame': { en: 'START GAME', de: 'SPIEL STARTEN', ua: 'ПОЧАТИ ГРУ', ru: 'НАЧАТЬ ИГРУ', az: 'OYUNA BAŞLA', tr: 'OYUNA BAŞLA' },
   'play.playersOnline': { en: 'Players Online', de: 'Spieler online', ua: 'Гравців онлайн', ru: 'Игроков онлайн', az: 'Oyunçu Onlayn', tr: 'Oyuncu Çevrimiçi' },
   'play.searching': { en: 'Searching for opponent...', de: 'Gegner wird gesucht...', ua: 'Пошук супротивника...', ru: 'Поиск противника...', az: 'Rəqib axtarılır...', tr: 'Rakip aranıyor...' },

@@ -1,46 +1,75 @@
 .mobile-arena-panel { width:100%; border:1px solid #ffffff26; border-radius:24px; background:#141718; color:#dfd9c7; overflow:visible; }
-.mobile-arena-time { position:relative; display:flex; width:calc(100% - 12px); align-items:center; justify-content:center; gap:12px; min-height:48px; margin:6px; padding:0 8px; color:inherit; border:1px solid #ffffff12; border-radius:14px; background:#ffffff05; }
-.mobile-arena-time-icon { box-sizing:content-box; padding:6px; border:1px solid #ffffff12; border-radius:10px; background:#ffffff07; color:#e8c76b; }
-.mobile-arena-clock { display:flex; flex-direction:column; align-items:center; gap:3px; line-height:1; }
-.mobile-arena-clock strong { font-size:1.3125rem; font-weight:900; font-style:italic; text-transform:uppercase; letter-spacing:-.05em; }
-.mobile-arena-clock small { color:#a8a7a2; font-size:0.5625rem; font-weight:800; text-transform:uppercase; letter-spacing:.2em; }
+.mobile-arena-panel.panel-glow-cycle { animation:none; box-shadow:0 18px 40px -22px rgba(185,140,108,.3); }
+.mobile-arena-times { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:4px; padding:6px; }
+.mobile-arena-times button { display:flex; align-items:center; justify-content:center; min-width:0; min-height:44px; padding:2px 1px; border:1px solid #ffffff12; border-radius:12px; background:#ffffff05; color:inherit; font-size:clamp(13px,3.55vw,15px); font-weight:700; white-space:nowrap; }
+.mobile-arena-times .mobile-arena-more { gap:2px; }
+.mobile-arena-more svg { flex:none; }
+/* A chosen non-popular time keeps its full label; the chevron moves under it so it takes no width. */
+.mobile-arena-times .mobile-arena-more.is-custom { position:relative; }
+.mobile-arena-more.is-custom svg { position:absolute; left:50%; bottom:3px; transform:translateX(-50%); }
 .mobile-arena-action { padding:6px; border-top:1px solid #ffffff12; }
-.mobile-arena-start { display:block; width:100%; min-height:44px; border:1px solid #ffffff40; border-radius:28px; color:#132321; font-size:1.0625rem; font-style:italic; font-weight:900; text-transform:uppercase; letter-spacing:-.035em; }
-.mobile-arena-footer { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; padding:6px; border-top:1px solid #ffffff0d; }
-.mobile-arena-footer button { display:flex; align-items:center; justify-content:center; gap:7px; min-height:44px; padding:6px; border:1px solid #ffffff12; border-radius:13px; background:#ffffff05; font-size:clamp(0.625rem,2.8vw,0.8125rem); font-weight:800; text-transform:uppercase; color:#e6d29c; }
-.mobile-arena-footer svg { flex-shrink:0; color:#bdbeb8; }
-.mobile-arena-footer button:disabled { color:#999b96; cursor:not-allowed; }
+.mobile-arena-start { display:block; width:100%; border-radius:28px; font-size:1.0625rem; font-style:italic; font-weight:900; text-transform:uppercase; letter-spacing:-.035em; }
+.mobile-arena-panel .mobile-arena-start { min-height:54px; }
+@media (max-width:767px) {
+  .mobile-friend-sheet {
+    box-sizing:border-box; max-height:100dvh; overflow-y:auto;
+    padding:16px; padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    border:1px solid #ffffff26; border-bottom:0; border-radius:22px 22px 0 0;
+    background:#202322; color:#eee9dd;
+  }
+  .mobile-friend-sheet::before {
+    content:""; display:block; width:36px; height:4px;
+    margin:-6px auto 10px; border-radius:4px; background:#ffffff40;
+  }
+  .mobile-arena-panel .mobile-soft-shimmer, .mobile-friend-sheet .mobile-soft-shimmer {
+    border:1px solid rgba(226,205,185,.4);
+    background-image:linear-gradient(110deg,#2e221a 0%,#5e4331 12%,#8a664c 24%,#5e4331 32%,#2f6461 46%,#4a8a85 54%,#2f6461 62%,#4b3d6e 72%,#66568f 77%,#4b3d6e 82%,#5e4331 92%,#2e221a 100%);
+    background-size:250% 100%;
+    color:#F6E2CF; text-shadow:0 1px 2px rgba(0,0,0,.45);
+    box-shadow:0 14px 30px -14px rgba(120,140,125,.5), inset 0 1px 0 rgba(255,236,214,.16);
+    animation:none;
+  }
+}
+.mobile-arena-footer { display:grid; grid-template-columns:minmax(0,1fr); padding:6px; border-top:1px solid #ffffff0d; }
+.mobile-arena-footer button { display:flex; align-items:center; justify-content:center; gap:7px; min-height:44px; padding:6px; border:1px solid #ffffff12; border-radius:13px; background:#ffffff05; font-size:clamp(12px,3.6vw,15px); font-weight:800; text-transform:uppercase; color:#e6d29c; }
+.mobile-arena-footer svg { flex-shrink:0; color:#bdbeb8; width:20px; height:20px; }
 .mobile-arena-panel button { touch-action:manipulation; }
-.mobile-arena-panel button:focus-visible { outline:2px solid #8ee1db; outline-offset:2px; }
-.mobile-time-dialog { box-sizing:border-box; width:min(360px, calc(100vw - 24px)); max-width:none; max-height:calc(100dvh - 24px); margin:auto; padding:16px; border:1px solid #ffffff26; border-radius:22px; background:#202322; color:#eee9dd; box-shadow:0 24px 80px #0009; }
+.mobile-arena-panel button:focus-visible { outline:2px solid #E2BFA0; outline-offset:2px; }
+.mobile-time-dialog { box-sizing:border-box; position:fixed; inset:0; width:100%; max-width:none; max-height:100dvh; margin:auto auto 0; padding:16px; padding-bottom:calc(16px + env(safe-area-inset-bottom,0px)); border:1px solid #ffffff26; border-radius:22px 22px 0 0; background:#202322; color:#eee9dd; box-shadow:0 24px 80px #0009; overflow-y:auto; }
+.mobile-time-dialog::before { content:""; display:block; width:36px; height:4px; margin:0 auto 10px; border-radius:4px; background:#ffffff40; }
 .mobile-time-dialog::backdrop { background:#000a; backdrop-filter:blur(5px); }
 .mobile-time-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
 .mobile-time-heading h2 { font-size:1.0625rem; font-weight:800; }
-.mobile-time-close { display:grid; place-items:center; width:44px; height:44px; margin:-6px -6px -6px 0; border-radius:12px; color:#c4c6c0; }
+.mobile-time-close { display:grid; place-items:center; width:44px; height:44px; flex:none; margin:-6px -6px -6px 0; border-radius:12px; color:#c4c6c0; }
 .mobile-time-group + .mobile-time-group { margin-top:16px; }
 .mobile-time-group h3 { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:0.8125rem; font-weight:700; }
 .mobile-time-group h3 svg { color:#e8c76b; }
 .mobile-time-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
-.mobile-time-options button { min-height:44px; padding:6px 3px; border:1px solid #ffffff12; border-radius:10px; background:#ffffff08; font-size:0.9375rem; font-weight:700; }
-.mobile-time-options button[aria-pressed=true] { border-color:#91d8c9; background:#91d8c91c; box-shadow:inset 0 0 0 1px #91d8c9; color:#c8f4e7; }
-.mobile-time-done { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:44px; margin-top:16px; border:1px solid #91d8c940; border-radius:12px; background:#91d8c910; color:#c8f4e7; font-size:1rem; font-weight:800; }
+.mobile-time-options button { min-height:44px; padding:6px 3px; border:1px solid #ffffff12; border-radius:10px; background:#ffffff08; font-size:clamp(13px,3.8vw,15px); font-weight:700; white-space:nowrap; }
+.mobile-arena-times button[aria-pressed=true], .mobile-arena-times button[data-selected=true], .mobile-time-options button[aria-pressed=true] { border-color:#E2BFA0; background:rgba(226,191,160,.13); color:#F6E2CF; box-shadow:inset 0 0 0 1px rgba(226,191,160,.55); }
 .mobile-time-dialog button { touch-action:manipulation; }
-.mobile-time-dialog button:focus-visible { outline:2px solid #8ee1db; outline-offset:2px; }
+.mobile-time-dialog button:focus-visible { outline:2px solid #E2BFA0; outline-offset:2px; }
 @media (max-height:420px) {
-  .mobile-time-dialog { padding:12px; }
+  .mobile-time-dialog { padding:12px; padding-bottom:calc(12px + env(safe-area-inset-bottom,0px)); }
   .mobile-time-heading { margin-bottom:8px; }
-  .mobile-time-group + .mobile-time-group, .mobile-time-done { margin-top:8px; }
+  .mobile-time-group + .mobile-time-group { margin-top:8px; }
   .mobile-time-group h3 { margin-bottom:4px; }
 }
-@media (prefers-reduced-motion:no-preference) {
-  .mobile-arena-panel .mobile-arena-start { background:linear-gradient(110deg,#f6cf62,#6eddd7,#bd9be8,#f6cf62); background-size:300% 100%; animation:glowCycle 18s ease-in-out infinite; }
-  .mobile-arena-panel .text-glow-cycle { background-size:200% 100%; animation:textGlowCycle 18s ease-in-out infinite; }
+@keyframes mobileSoftSweep {
+  from { background-position:0% 50%; }
+  to { background-position:100% 50%; }
+}
+@media (max-width:767px) and (prefers-reduced-motion:no-preference) {
+  .mobile-arena-panel .mobile-soft-shimmer, .mobile-friend-sheet .mobile-soft-shimmer { animation:mobileSoftSweep 22s cubic-bezier(.45,0,.55,1) infinite alternate; }
 }
 @media (max-width:767px) {
-  .play-lobby-screen.flex { justify-content:safe center; padding-block:4px; }
-  .play-lobby-screen > .play-lobby-grid { gap:15px; }
-}
-@media (max-width:767px) and (orientation:portrait) {
-  .play-lobby-screen { padding-bottom:4px; padding-inline:4px; }
-  .play-lobby-board { max-width:min(100%, max(200px, calc(100dvh - 342px - env(safe-area-inset-bottom, 0px)))) !important; }
+  /* The route's existing flex viewport already excludes the bottom navigation and safe area.
+     Let the board row shrink against the panel's actual intrinsic height, not a viewport estimate. */
+  .play-lobby-screen.flex { flex:1 1 0; min-height:0; justify-content:safe center; padding:4px 2px; container-type:inline-size; }
+  .play-lobby-screen > .play-lobby-grid { display:flex; flex:1 1 0; min-height:0; flex-direction:column; align-items:stretch; justify-content:safe center; gap:15px; }
+  .play-lobby-grid > :first-child { flex:0 1 100cqw; min-height:0; container-type:size; }
+  .play-lobby-grid > :first-child > .group\/board { width:min(100%, 100cqh); margin-inline:auto; }
+  .play-lobby-grid > :last-child { flex:0 0 auto; }
+  .play-lobby-board.mobile-home-board-frame { max-width:100%; transition:none; }
+  .play-lobby-board.mobile-home-board-frame > .pointer-events-none { display:none; }
 }
